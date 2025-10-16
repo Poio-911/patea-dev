@@ -35,7 +35,9 @@ export default function DashboardPage() {
   const { data: players, loading: playersLoading } = useCollection(playersQuery);
   const { data: matches, loading: matchesLoading } = useCollection(matchesQuery);
 
-  if (playersLoading || matchesLoading) {
+  const loading = playersLoading || matchesLoading;
+
+  if (loading) {
     return <div>Cargando...</div>;
   }
   
@@ -97,7 +99,7 @@ export default function DashboardPage() {
                 {matches?.map((match) => (
                   <TableRow key={match.id}>
                     <TableCell className="font-medium">{match.title}</TableCell>
-                    <TableCell>{format(new Date(match.date), 'dd MMM, yyyy')}</TableCell>
+                    <TableCell>{match.date ? format(new Date(match.date), 'dd MMM, yyyy') : 'N/A'}</TableCell>
                     <TableCell>{match.type}</TableCell>
                     <TableCell>
                       <Badge
