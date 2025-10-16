@@ -1,5 +1,5 @@
+'use client';
 import { PageHeader } from '@/components/page-header';
-import { matches } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -14,8 +14,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { useCollection, useFirestore, useUser } from '@/firebase';
+import { collection, query, where, orderBy } from 'firebase/firestore';
+import { useMemo } from 'react';
 
 export default function MatchesPage() {
+    const { user } = useUser();
+    const firestore = useFirestore();
+
+    const matchesQuery = useMemo(() => {
+        if (!firestore || !user) return null;
+        return query(collection(firestore, 'matches'), where('ownerUid', '==', user.uid), orderBy('date', 'desc'));
+    }, [firestore, user]);
+
+    const { data: matches, loading } = useCollection(matchesQuery);
+
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
@@ -29,6 +42,7 @@ export default function MatchesPage() {
           <CardTitle>Match History</CardTitle>
         </CardHeader>
         <CardContent>
+        {loading && <p>Loading matches...</p>}
           <Table>
             <TableHeader>
               <TableRow>
@@ -43,7 +57,7 @@ export default function MatchesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {matches.map((match) => (
+              {matches?.map((match) => (
                 <TableRow key={match.id}>
                   <TableCell className="font-medium">{match.title}</TableCell>
                   <TableCell>{format(new Date(match.date), 'E, MMM d, yyyy')} - {match.time}</TableCell>

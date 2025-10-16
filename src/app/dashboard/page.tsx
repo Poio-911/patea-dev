@@ -1,4 +1,6 @@
-import { players, matches } from '@/lib/data';
+'use client';
+
+import { useCollection } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { StatCard } from '@/components/stat-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,11 +10,35 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Users, Goal, Star, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { useFirestore } from '@/firebase';
+import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { useUser } from '@/firebase';
+import { useMemo } from 'react';
 
 export default function DashboardPage() {
-  const topPlayer = [...players].sort((a, b) => b.ovr - a.ovr)[0];
-  const upcomingMatches = matches.filter(m => m.status === 'upcoming');
-  const top5Players = [...players].sort((a, b) => b.ovr - a.ovr).slice(0, 5);
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const playersQuery = useMemo(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'players'), where('ownerUid', '==', user.uid));
+  }, [firestore, user]);
+
+  const matchesQuery = useMemo(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'matches'), where('ownerUid', '==', user.uid), orderBy('date', 'desc'), limit(5));
+  }, [firestore, user]);
+
+  const { data: players, loading: playersLoading } = useCollection(playersQuery);
+  const { data: matches, loading: matchesLoading } = useCollection(matchesQuery);
+
+  if (playersLoading || matchesLoading) {
+    return <div>Loading...</div>;
+  }
+  
+  const topPlayer = players ? [...players].sort((a, b) => b.ovr - a.ovr)[0] : null;
+  const upcomingMatches = matches ? matches.filter(m => m.status === 'upcoming') : [];
+  const top5Players = players ? [...players].sort((a, b) => b.ovr - a.ovr).slice(0, 5) : [];
 
   return (
     <div className="flex flex-col gap-8">
@@ -22,9 +48,9 @@ export default function DashboardPage() {
       />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Players" value={players.length} icon={<Users className="h-6 w-6 text-primary" />} />
+        <StatCard title="Total Players" value={players?.length || 0} icon={<Users className="h-6 w-6 text-primary" />} />
         <StatCard title="Upcoming Matches" value={upcomingMatches.length} icon={<Calendar className="h-6 w-6 text-primary" />} />
-        <StatCard title="Top Rated Player" value={`${topPlayer.name} (${topPlayer.ovr})`} icon={<Star className="h-6 w-6 text-primary" />} />
+        <StatCard title="Top Rated Player" value={topPlayer ? `${topPlayer.name} (${topPlayer.ovr})` : '-'} icon={<Star className="h-6 w-6 text-primary" />} />
         <StatCard title="Default Formation" value="4-3-3" icon={<Goal className="h-6 w-6 text-primary" />} />
       </div>
 
@@ -44,7 +70,7 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {matches.slice(0, 5).map((match) => (
+                {matches?.map((match) => (
                   <TableRow key={match.id}>
                     <TableCell className="font-medium">{match.title}</TableCell>
                     <TableCell>{format(new Date(match.date), 'MMM dd, yyyy')}</TableCell>

@@ -17,9 +17,11 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, Users, Calendar, Swords, WandSparkles, LogOut, Settings, Goal } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Swords, LogOut, Settings, Goal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
+import { useUser, useAuth } from '@/firebase';
+import { useRouter } from 'next/navigation';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -30,6 +32,34 @@ const navItems = [
 
 export function MainNav({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user, loading } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
+  React.useEffect(() => {
+    if (!loading && !user && pathname !== '/') {
+      router.push('/');
+    }
+  }, [user, loading, pathname, router]);
+
+  const handleLogout = async () => {
+    if (auth) {
+      await auth.signOut();
+      router.push('/');
+    }
+  };
+
+  if (pathname === '/') {
+    return <>{children}</>;
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Goal className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -77,7 +107,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton tooltip="Logout">
+                    <SidebarMenuButton tooltip="Logout" onClick={handleLogout}>
                         <LogOut />
                         <span>Logout</span>
                     </SidebarMenuButton>
@@ -91,13 +121,9 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             <div className="flex-1">
                 {/* Maybe breadcrumbs or page title here */}
             </div>
-            <Button variant="outline" size="icon" className="h-8 w-8">
-                <WandSparkles className="h-4 w-4" />
-                <span className="sr-only">AI Credits</span>
-            </Button>
             <Avatar className="h-8 w-8 border">
-                <AvatarImage src="https://picsum.photos/seed/user/100/100" data-ai-hint="user avatar" />
-                <AvatarFallback>U</AvatarFallback>
+                <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} data-ai-hint="user avatar" />
+                <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
             </Avatar>
           </header>
           <main className="flex-1 p-4 sm:p-6">{children}</main>

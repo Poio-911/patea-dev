@@ -1,3 +1,5 @@
+import { DocumentData, DocumentReference } from "firebase/firestore";
+
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
 
 export type PlayerStats = {
@@ -20,7 +22,9 @@ export type Player = {
   phy: number;
   photoUrl?: string;
   stats: PlayerStats;
-};
+  ownerUid: string;
+} & DocumentData;
+
 
 export type MatchStatus = 'upcoming' | 'active' | 'completed' | 'evaluated';
 
@@ -32,7 +36,8 @@ export type Match = {
   location: string;
   type: string;
   status: MatchStatus;
-};
+  ownerUid: string;
+} & DocumentData;
 
 export type Team = {
   name: string;

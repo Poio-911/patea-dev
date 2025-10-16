@@ -3,6 +3,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { MainNav } from '@/components/main-nav';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
   title: 'Amateur Football Manager',
@@ -29,8 +30,10 @@ export default function RootLayout({
           'min-h-screen bg-background font-body antialiased'
         )}
       >
-        <Toaster />
-        <MainNav>{children}</MainNav>
+        <FirebaseClientProvider>
+          <Toaster />
+          <MainNav>{children}</MainNav>
+        </FirebaseClientProvider>
       </body>
     </html>
   );

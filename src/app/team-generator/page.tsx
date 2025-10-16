@@ -1,15 +1,27 @@
+'use client';
 import { PageHeader } from '@/components/page-header';
 import { TeamGeneratorClient } from '@/components/team-generator-client';
-import { players } from '@/lib/data';
+import { useCollection, useFirestore, useUser } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import { useMemo } from 'react';
 
 export default function TeamGeneratorPage() {
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const playersQuery = useMemo(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'players'), where('ownerUid', '==', user.uid));
+  }, [firestore, user]);
+  const { data: players, loading } = useCollection(playersQuery);
+  
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
         title="Team Generator"
         description="Select players and let AI create balanced teams for your match."
       />
-      <TeamGeneratorClient allPlayers={players} />
+      {loading && <p>Loading players...</p>}
+      {players && <TeamGeneratorClient allPlayers={players} />}
     </div>
   );
 }
