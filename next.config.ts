@@ -30,6 +30,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    // This is to allow cross-origin requests in development,
+    // which is necessary for the Firebase Studio environment.
+    allowedDevOrigins: ["*"],
+  }
 };
 
 export default nextConfig;
