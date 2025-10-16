@@ -5,7 +5,7 @@ import { doc, writeBatch, collection, getDocs, updateDoc, getDoc, runTransaction
 import { useParams, useRouter } from 'next/navigation';
 import type { Match, Player, PlayerPosition } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -13,9 +13,15 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Slider } from '@/components/ui/slider';
+import { performanceTags } from '@/lib/data';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+
 
 const evaluationSchema = z.object({
   evaluations: z.array(z.object({
@@ -24,6 +30,7 @@ const evaluationSchema = z.object({
     photoUrl: z.string(),
     goals: z.coerce.number().min(0).max(20).default(0),
     rating: z.coerce.number().min(1).max(10).default(5),
+    performanceTags: z.array(z.string()).max(2, 'Puedes seleccionar hasta 2 etiquetas.').default([]),
   }))
 });
 
@@ -122,6 +129,7 @@ export default function EvaluateMatchPage() {
       photoUrl: p.photoUrl || '',
       goals: 0,
       rating: 5,
+      performanceTags: []
     }));
     replace(initialEvals);
   }
@@ -203,6 +211,7 @@ export default function EvaluateMatchPage() {
                     playerId: evaluation.playerId,
                     goals: evaluation.goals,
                     rating: evaluation.rating,
+                    performanceTags: evaluation.performanceTags,
                     evaluatedBy: user?.uid,
                     evaluatedAt: new Date().toISOString(),
                 });
@@ -263,11 +272,11 @@ export default function EvaluateMatchPage() {
           <Card>
             <CardHeader>
                 <CardTitle>Jugadores</CardTitle>
-                <CardDescription>Asigna goles y una calificación del 1 al 10 a cada jugador.</CardDescription>
+                <CardDescription>Asigna goles, una calificación (1-10) y hasta 2 etiquetas de rendimiento a cada jugador.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {fields.map((field, index) => (
-                <div key={field.id} className="grid grid-cols-1 md:grid-cols-4 items-center gap-4 border-b pb-4">
+                <div key={field.id} className="grid grid-cols-1 md:grid-cols-5 items-start gap-4 border-b pb-4">
                   <div className="md:col-span-2 flex items-center gap-4">
                      <Avatar className="h-12 w-12">
                         <AvatarImage src={field.photoUrl} alt={field.displayName} data-ai-hint="player portrait" />
@@ -311,6 +320,66 @@ export default function EvaluateMatchPage() {
                       </FormItem>
                     )}
                   />
+
+                  <Controller
+                    control={form.control}
+                    name={`evaluations.${index}.performanceTags`}
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                            <FormLabel>Etiquetas</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button variant="outline" role="combobox" className={cn("w-full justify-between", !field.value?.length && "text-muted-foreground")}>
+                                            <span className="truncate">
+                                                {field.value?.length ? field.value.join(', ') : "Seleccionar etiquetas"}
+                                            </span>
+                                        </Button>
+                                    </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[200px] p-0" align="start">
+                                    <Command>
+                                        <CommandInput placeholder="Buscar etiqueta..." />
+                                        <CommandList>
+                                            <CommandEmpty>No se encontró la etiqueta.</CommandEmpty>
+                                            <CommandGroup>
+                                                {performanceTags.map((tag) => {
+                                                    const isSelected = field.value?.includes(tag);
+                                                    return (
+                                                        <CommandItem
+                                                            key={tag}
+                                                            onSelect={() => {
+                                                                if (isSelected) {
+                                                                    field.onChange(field.value.filter((t: string) => t !== tag));
+                                                                } else if (field.value.length < 2) {
+                                                                    field.onChange([...field.value, tag]);
+                                                                } else {
+                                                                    toast({
+                                                                        variant: 'destructive',
+                                                                        title: 'Límite alcanzado',
+                                                                        description: 'Solo puedes seleccionar hasta 2 etiquetas.'
+                                                                    });
+                                                                }
+                                                            }}
+                                                        >
+                                                            <div className={cn("mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary", isSelected ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible")}>
+                                                                <Check className={cn("h-4 w-4")} />
+                                                            </div>
+                                                            {tag}
+                                                        </CommandItem>
+                                                    )
+                                                })}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                             {form.formState.errors.evaluations?.[index]?.performanceTags && (
+                                <p className="text-xs text-destructive">{form.formState.errors.evaluations[index].performanceTags.message}</p>
+                            )}
+                        </FormItem>
+                    )}
+                />
                 </div>
               ))}
             </CardContent>

@@ -14,6 +14,28 @@ export const matches: Match[] = [
   // This data is now fetched from Firestore
 ];
 
+export const performanceTags = [
+  'Velocidad',
+  'Pase',
+  'Defensa',
+  'Actitud',
+  'Ataque',
+  'Resistencia',
+  'Posicionamiento',
+  'Liderazgo',
+  'Comunicacion',
+  'Regate',
+  'Marcaje',
+  'Finalización',
+  'Cabeceo',
+  'Apoyo',
+  'Recuperación',
+  'Creatividad',
+  'Presión',
+  'Coberturas'
+];
+
+
 export const mockEvaluations = [
     { performanceTags: ['Goleador', 'Regate exitoso'], evaluatedBy: 'user-2', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
     { performanceTags: ['Asistencia', 'Jugada clave'], evaluatedBy: 'user-3', timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() },

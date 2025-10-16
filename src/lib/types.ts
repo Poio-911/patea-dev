@@ -75,4 +75,5 @@ export type Evaluation = {
     playerId: string;
     goals: number;
     rating: number; // Scale 1-10
+    performanceTags: string[];
 }
