@@ -32,27 +32,27 @@ export default function MatchesPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        title="Matches"
-        description="Schedule, view, and manage all your matches."
+        title="Partidos"
+        description="Programa, visualiza y gestiona todos tus partidos."
       >
-        <Button>Schedule Match</Button>
+        <Button>Programar Partido</Button>
       </PageHeader>
       <Card>
         <CardHeader>
-          <CardTitle>Match History</CardTitle>
+          <CardTitle>Historial de Partidos</CardTitle>
         </CardHeader>
         <CardContent>
-        {loading && <p>Loading matches...</p>}
+        {loading && <p>Cargando partidos...</p>}
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Date & Time</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Título</TableHead>
+                <TableHead>Fecha y Hora</TableHead>
+                <TableHead>Ubicación</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Estado</TableHead>
                 <TableHead>
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">Acciones</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -60,7 +60,7 @@ export default function MatchesPage() {
               {matches?.map((match) => (
                 <TableRow key={match.id}>
                   <TableCell className="font-medium">{match.title}</TableCell>
-                  <TableCell>{format(new Date(match.date), 'E, MMM d, yyyy')} - {match.time}</TableCell>
+                  <TableCell>{format(new Date(match.date), 'E, d MMM, yyyy')} - {match.time}</TableCell>
                   <TableCell>{match.location}</TableCell>
                   <TableCell>{match.type}</TableCell>
                   <TableCell>
@@ -71,7 +71,7 @@ export default function MatchesPage() {
                           'bg-muted text-muted-foreground': match.status === 'completed',
                         })}
                       >
-                        {match.status}
+                        {match.status === 'upcoming' ? 'Próximo' : 'Completado'}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -83,10 +83,10 @@ export default function MatchesPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                        <DropdownMenuItem>Ver Detalles</DropdownMenuItem>
+                        <DropdownMenuItem>Editar</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive">Eliminar</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

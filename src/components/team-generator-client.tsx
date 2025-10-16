@@ -35,8 +35,8 @@ export function TeamGeneratorClient({ allPlayers }: TeamGeneratorClientProps) {
     if (selectedPlayers.length < 2) {
       toast({
         variant: 'destructive',
-        title: 'Not enough players',
-        description: 'Please select at least 2 players to generate teams.',
+        title: 'Jugadores insuficientes',
+        description: 'Por favor, selecciona al menos 2 jugadores para generar equipos.',
       });
       return;
     }
@@ -57,8 +57,8 @@ export function TeamGeneratorClient({ allPlayers }: TeamGeneratorClientProps) {
         // @ts-ignore
         setBalanceMetrics(result.balanceMetrics);
         toast({
-          title: 'Teams Generated!',
-          description: 'The AI has created balanced teams for your match.',
+          title: '¡Equipos Generados!',
+          description: 'La IA ha creado equipos equilibrados para tu partido.',
         });
       }
     });
@@ -68,7 +68,7 @@ export function TeamGeneratorClient({ allPlayers }: TeamGeneratorClientProps) {
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
       <Card className="lg:col-span-1">
         <CardHeader>
-          <CardTitle>Select Players ({selectedPlayers.length})</CardTitle>
+          <CardTitle>Seleccionar Jugadores ({selectedPlayers.length})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 max-h-[60vh] overflow-y-auto">
           {allPlayers.map((player) => (
@@ -97,7 +97,7 @@ export function TeamGeneratorClient({ allPlayers }: TeamGeneratorClientProps) {
       <div className="lg:col-span-2 space-y-8">
         <Button onClick={handleGenerateTeams} disabled={isPending || selectedPlayers.length < 2} className="w-full lg:w-auto">
           {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Swords className="mr-2 h-4 w-4" />}
-          Generate Balanced Teams
+          Generar Equipos Equilibrados
         </Button>
         
         {generatedTeams.length > 0 ? (
@@ -105,22 +105,22 @@ export function TeamGeneratorClient({ allPlayers }: TeamGeneratorClientProps) {
              {balanceMetrics && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Balance Metrics</CardTitle>
+                        <CardTitle>Métricas de Equilibrio</CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
                         <div className="flex flex-col items-center gap-2 p-4 bg-muted/50 rounded-lg">
                             <Scale className="w-6 h-6 text-primary"/>
-                            <p className="text-sm text-muted-foreground">OVR Difference</p>
+                            <p className="text-sm text-muted-foreground">Diferencia OVR</p>
                             <p className="text-2xl font-bold">{balanceMetrics.ovrDifference}</p>
                         </div>
                         <div className="flex flex-col items-center gap-2 p-4 bg-muted/50 rounded-lg">
                             <Trophy className="w-6 h-6 text-primary"/>
-                            <p className="text-sm text-muted-foreground">Fairness</p>
+                            <p className="text-sm text-muted-foreground">Justicia</p>
                             <p className="text-2xl font-bold">{balanceMetrics.fairnessPercentage}%</p>
                         </div>
                         <div className="flex flex-col items-center gap-2 p-4 bg-muted/50 rounded-lg">
                             <Users className="w-6 h-6 text-primary"/>
-                            <p className="text-sm text-muted-foreground">Players/Team</p>
+                            <p className="text-sm text-muted-foreground">Jugadores/Equipo</p>
                             <p className="text-2xl font-bold">{generatedTeams[0].players.length}</p>
                         </div>
                     </CardContent>
@@ -131,7 +131,7 @@ export function TeamGeneratorClient({ allPlayers }: TeamGeneratorClientProps) {
                 <Card key={team.name}>
                     <CardHeader className="flex-row items-center justify-between">
                     <CardTitle>{team.name}</CardTitle>
-                    <Badge variant="secondary">Avg OVR: {team.averageOVR.toFixed(1)}</Badge>
+                    <Badge variant="secondary">OVR Prom: {team.averageOVR.toFixed(1)}</Badge>
                     </CardHeader>
                     <CardContent className="space-y-3">
                     {team.players.map((player) => (
@@ -149,7 +149,7 @@ export function TeamGeneratorClient({ allPlayers }: TeamGeneratorClientProps) {
                     ))}
                     <Separator className="my-4"/>
                     <div className="flex justify-between font-bold">
-                        <span>Total OVR</span>
+                        <span>OVR Total</span>
                         <span>{team.totalOVR}</span>
                     </div>
                     </CardContent>
@@ -160,9 +160,9 @@ export function TeamGeneratorClient({ allPlayers }: TeamGeneratorClientProps) {
         ) : (
             <Alert>
                 <Swords className="h-4 w-4" />
-                <AlertTitle>Awaiting Teams</AlertTitle>
+                <AlertTitle>Esperando Equipos</AlertTitle>
                 <AlertDescription>
-                    Select players from the list and click "Generate Balanced Teams" to see the magic happen.
+                    Selecciona jugadores de la lista y haz clic en "Generar Equipos Equilibrados" para ver la magia.
                 </AlertDescription>
             </Alert>
         )}

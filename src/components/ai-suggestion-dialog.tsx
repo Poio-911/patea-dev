@@ -49,18 +49,18 @@ export function AISuggestionDialog({ player, children }: AISuggestionDialogProps
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>AI Performance Suggestions for {player.name}</DialogTitle>
+          <DialogTitle>Sugerencias de rendimiento de IA para {player.name}</DialogTitle>
           <DialogDescription>
-            Get personalized feedback to help {player.name} improve their game.
+            Obtén comentarios personalizados para ayudar a {player.name} a mejorar su juego.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4">
           {!suggestions.length && !isPending && (
              <Alert>
                 <WandSparkles className="h-4 w-4" />
-                <AlertTitle>Ready to Analyze!</AlertTitle>
+                <AlertTitle>¡Listo para analizar!</AlertTitle>
                 <AlertDescription>
-                    Click the button below to generate AI-powered suggestions based on {player.name}'s recent performance data.
+                    Haz clic en el botón de abajo para generar sugerencias de la IA basadas en los datos de rendimiento recientes de {player.name}.
                 </AlertDescription>
             </Alert>
           )}
@@ -68,13 +68,13 @@ export function AISuggestionDialog({ player, children }: AISuggestionDialogProps
           {isPending && (
             <div className="flex items-center justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="ml-4 text-muted-foreground">AI is analyzing performance...</p>
+              <p className="ml-4 text-muted-foreground">La IA está analizando el rendimiento...</p>
             </div>
           )}
 
           {suggestions.length > 0 && (
             <div className="space-y-2">
-                <h3 className="font-semibold">Here are some suggestions:</h3>
+                <h3 className="font-semibold">Aquí tienes algunas sugerencias:</h3>
                 <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground bg-secondary/50 p-4 rounded-md">
                     {suggestions.map((suggestion, index) => (
                         <li key={index}>{suggestion}</li>
@@ -88,12 +88,12 @@ export function AISuggestionDialog({ player, children }: AISuggestionDialogProps
           {isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generating...
+              Generando...
             </>
           ) : (
             <>
               <WandSparkles className="mr-2 h-4 w-4" />
-              Generate Suggestions
+              Generar Sugerencias
             </>
           )}
         </Button>

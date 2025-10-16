@@ -33,7 +33,7 @@ export default function DashboardPage() {
   const { data: matches, loading: matchesLoading } = useCollection(matchesQuery);
 
   if (playersLoading || matchesLoading) {
-    return <div>Loading...</div>;
+    return <div>Cargando...</div>;
   }
   
   const topPlayer = players ? [...players].sort((a, b) => b.ovr - a.ovr)[0] : null;
@@ -43,37 +43,37 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        title="Dashboard"
-        description="Welcome to your Amateur Football Manager."
+        title="Panel de control"
+        description="Bienvenido a tu Manager de Fútbol Amateur."
       />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Players" value={players?.length || 0} icon={<Users className="h-6 w-6 text-primary" />} />
-        <StatCard title="Upcoming Matches" value={upcomingMatches.length} icon={<Calendar className="h-6 w-6 text-primary" />} />
-        <StatCard title="Top Rated Player" value={topPlayer ? `${topPlayer.name} (${topPlayer.ovr})` : '-'} icon={<Star className="h-6 w-6 text-primary" />} />
-        <StatCard title="Default Formation" value="4-3-3" icon={<Goal className="h-6 w-6 text-primary" />} />
+        <StatCard title="Jugadores Totales" value={players?.length || 0} icon={<Users className="h-6 w-6 text-primary" />} />
+        <StatCard title="Próximos Partidos" value={upcomingMatches.length} icon={<Calendar className="h-6 w-6 text-primary" />} />
+        <StatCard title="Mejor Jugador" value={topPlayer ? `${topPlayer.name} (${topPlayer.ovr})` : '-'} icon={<Star className="h-6 w-6 text-primary" />} />
+        <StatCard title="Formación por Defecto" value="4-3-3" icon={<Goal className="h-6 w-6 text-primary" />} />
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Recent Matches</CardTitle>
+            <CardTitle>Partidos Recientes</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Match</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Partido</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Estado</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {matches?.map((match) => (
                   <TableRow key={match.id}>
                     <TableCell className="font-medium">{match.title}</TableCell>
-                    <TableCell>{format(new Date(match.date), 'MMM dd, yyyy')}</TableCell>
+                    <TableCell>{format(new Date(match.date), 'dd MMM, yyyy')}</TableCell>
                     <TableCell>{match.type}</TableCell>
                     <TableCell>
                       <Badge
@@ -95,7 +95,7 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Top Players</CardTitle>
+            <CardTitle>Mejores Jugadores</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">

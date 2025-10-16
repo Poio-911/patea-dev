@@ -6,8 +6,8 @@ import { MainNav } from '@/components/main-nav';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
-  title: 'Amateur Football Manager',
-  description: 'Organize matches, manage players, and generate balanced teams.',
+  title: 'Manager de Fútbol Amateur',
+  description: 'Organiza partidos, gestiona jugadores y genera equipos equilibrados.',
 };
 
 export default function RootLayout({
@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

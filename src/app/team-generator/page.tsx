@@ -17,10 +17,10 @@ export default function TeamGeneratorPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        title="Team Generator"
-        description="Select players and let AI create balanced teams for your match."
+        title="Generador de Equipos"
+        description="Selecciona jugadores y deja que la IA cree equipos equilibrados para tu partido."
       />
-      {loading && <p>Loading players...</p>}
+      {loading && <p>Cargando jugadores...</p>}
       {players && <TeamGeneratorClient allPlayers={players} />}
     </div>
   );

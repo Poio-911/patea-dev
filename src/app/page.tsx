@@ -26,11 +26,11 @@ export default function HomePage() {
       await signInWithPopup(auth, provider);
       router.push('/dashboard');
     } catch (error) {
-      console.error('Error signing in with Google', error);
+      console.error('Error al iniciar sesión con Google', error);
     }
   };
 
-  if (loading) {
+  if (loading && !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Goal className="h-12 w-12 animate-spin text-primary" />
@@ -38,18 +38,22 @@ export default function HomePage() {
     );
   }
 
+  if (user) {
+    return null;
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="mx-auto flex w-full max-w-md flex-col items-center justify-center space-y-6">
         <div className="flex items-center gap-4">
           <Goal className="h-16 w-16 text-primary" />
-          <h1 className="text-4xl font-bold font-headline">Amateur Football Manager</h1>
+          <h1 className="text-4xl font-bold font-headline">Manager de Fútbol Amateur</h1>
         </div>
         <p className="text-center text-lg text-muted-foreground">
-          Organize matches, manage your players, and generate balanced teams with the power of AI.
+          Organiza partidos, gestiona tus jugadores y genera equipos equilibrados con el poder de la IA.
         </p>
         <Button onClick={handleLogin} size="lg" className="w-full">
-          Sign in with Google
+          Iniciar sesión con Google
         </Button>
       </div>
     </div>

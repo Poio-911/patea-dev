@@ -49,18 +49,18 @@ export function PlayerCard({ player }: PlayerCardProps) {
         <h3 className="mt-2 text-lg font-bold font-headline">{player.name}</h3>
         
         <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2">
-          <Stat label="PAC" value={player.pac} />
-          <Stat label="SHO" value={player.sho} />
+          <Stat label="RIT" value={player.pac} />
+          <Stat label="TIR" value={player.sho} />
           <Stat label="PAS" value={player.pas} />
-          <Stat label="DRI" value={player.dri} />
+          <Stat label="REG" value={player.dri} />
           <Stat label="DEF" value={player.def} />
-          <Stat label="PHY" value={player.phy} />
+          <Stat label="FIS" value={player.phy} />
         </div>
 
         <AISuggestionDialog player={player}>
           <Button variant="outline" size="sm" className="mt-4 w-full">
             <WandSparkles className="mr-2 h-4 w-4" />
-            AI Tips
+            Consejos IA
           </Button>
         </AISuggestionDialog>
       </CardContent>

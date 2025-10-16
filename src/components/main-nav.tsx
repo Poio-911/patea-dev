@@ -24,10 +24,10 @@ import { useUser, useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/players', label: 'Players', icon: Users },
-  { href: '/matches', label: 'Matches', icon: Calendar },
-  { href: '/team-generator', label: 'Team Generator', icon: Swords },
+  { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
+  { href: '/players', label: 'Jugadores', icon: Users },
+  { href: '/matches', label: 'Partidos', icon: Calendar },
+  { href: '/team-generator', label: 'Generador', icon: Swords },
 ];
 
 export function MainNav({ children }: { children: React.ReactNode }) {
@@ -76,7 +76,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                 </div>
                 <div className="duration-200 group-data-[collapsible=icon]:opacity-0">
                     <h2 className="font-headline text-lg font-semibold">AFM</h2>
-                    <p className="text-xs text-sidebar-foreground/70">Amateur Football</p>
+                    <p className="text-xs text-sidebar-foreground/70">Fútbol Amateur</p>
                 </div>
              </div>
           </SidebarHeader>
@@ -101,15 +101,15 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             <Separator className="my-2 bg-sidebar-border" />
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton tooltip="Settings">
+                    <SidebarMenuButton tooltip="Ajustes">
                         <Settings />
-                        <span>Settings</span>
+                        <span>Ajustes</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton tooltip="Logout" onClick={handleLogout}>
+                    <SidebarMenuButton tooltip="Cerrar sesión" onClick={handleLogout}>
                         <LogOut />
-                        <span>Logout</span>
+                        <span>Cerrar sesión</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
