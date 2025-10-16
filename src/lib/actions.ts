@@ -1,3 +1,4 @@
+
 // @ts-nocheck
 'use server';
 
@@ -27,6 +28,15 @@ export async function generateTeamsAction(players: Player[]) {
     }
     // Attach balance metrics to the first team for easier access
     if (result.teams.length > 0 && result.balanceMetrics) {
+        // Ensure the player UIDs from the AI output match the original player IDs
+        result.teams.forEach(team => {
+            team.players.forEach(player => {
+                const originalPlayer = players.find(p => p.name === player.displayName && p.position === player.position);
+                if (originalPlayer) {
+                    player.uid = originalPlayer.id;
+                }
+            });
+        });
         result.teams[0].balanceMetrics = result.balanceMetrics;
     }
     return result;

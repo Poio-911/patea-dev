@@ -75,19 +75,22 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
                   <Badge variant="secondary">OVR Prom: {team.averageOVR.toFixed(1)}</Badge>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {team.players.map((player) => (
-                    <div key={player.uid} className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                         <AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoUrl} alt={player.displayName} data-ai-hint="player portrait" />
-                        <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-semibold">{player.displayName}</p>
-                        <p className="text-xs text-muted-foreground">{player.position}</p>
-                      </div>
-                      <p className="ml-auto font-bold text-primary">{player.ovr}</p>
-                    </div>
-                  ))}
+                  {team.players.map((player) => {
+                    const matchPlayer = match.players.find(p => p.uid === player.uid);
+                    return (
+                        <div key={player.uid} className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                            <AvatarImage src={matchPlayer?.photoUrl} alt={player.displayName} data-ai-hint="player portrait" />
+                            <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <p className="font-semibold">{player.displayName}</p>
+                            <p className="text-xs text-muted-foreground">{player.position}</p>
+                        </div>
+                        <p className="ml-auto font-bold text-primary">{player.ovr}</p>
+                        </div>
+                    );
+                  })}
                   <Separator className="my-4" />
                   <div className="flex justify-between font-bold">
                     <span>OVR Total</span>
