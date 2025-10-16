@@ -23,6 +23,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Calendar, Clock, MapPin, Users, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, ShieldQuestion } from 'lucide-react';
 import { InvitePlayerDialog } from './invite-player-dialog';
@@ -271,7 +272,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                  <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                        <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                        <AlertDialogTitle>¿Estás absolutely seguro?</AlertDialogTitle>
                         <AlertDialogDescription>
                             Esta acción no se puede deshacer. Esto eliminará permanentemente el partido
                             y todos sus datos asociados.
