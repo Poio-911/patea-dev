@@ -49,11 +49,19 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             setDoc(userRef, newUserProfile)
               .then(() => {
                 setUser(newUserProfile as UserData);
+                setLoading(false);
               })
-              .catch(e => console.error("Error creating user profile:", e));
+              .catch(e => {
+                console.error("Error creating user profile:", e);
+                setLoading(false);
+              });
           } else {
              setUser(userDoc.data() as UserData);
+             setLoading(false);
           }
+        }, (error) => {
+          console.error("Error listening to user document:", error);
+          setUser(null);
           setLoading(false);
         });
 
