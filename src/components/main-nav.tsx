@@ -18,7 +18,7 @@ import {
 import { SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, Users, Calendar, Swords, LogOut, Settings, Goal, Users2 } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, LogOut, Settings, Goal, Users2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
 import { useUser, useAuth } from '@/firebase';
@@ -29,7 +29,6 @@ const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
   { href: '/players', label: 'Jugadores', icon: Users },
   { href: '/matches', label: 'Partidos', icon: Calendar },
-  { href: '/matches', label: 'Generador', icon: Swords },
   { href: '/groups', label: 'Grupos', icon: Users2 },
 ];
 
