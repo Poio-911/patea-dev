@@ -3,7 +3,7 @@
 import { useDoc, useFirestore, useUser } from '@/firebase';
 import { doc, writeBatch, collection, getDocs, updateDoc, getDoc, runTransaction, DocumentData, query } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
-import type { Match, Player } from '@/lib/types';
+import type { Match, Player, PlayerPosition } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
@@ -36,7 +36,9 @@ const OVR_PROGRESSION = {
     DECAY_START: 70,
     SOFT_CAP: 95,
     HARD_CAP: 99,
-    MIN_OVR: 40
+    MIN_OVR: 40,
+    MIN_ATTRIBUTE: 20,
+    MAX_ATTRIBUTE: 90
 };
 
 
@@ -46,25 +48,48 @@ const calculateOvrChange = (currentOvr: number, newRating: number): number => {
     const ratingDelta = newRating - BASELINE_RATING;
     let rawDelta = ratingDelta * SCALE;
 
-    // Progressive dampening
-    if (currentOvr >= DECAY_START) {
+    if (currentOvr >= DECAY_START && currentOvr < SOFT_CAP) {
         const t = (currentOvr - DECAY_START) / (SOFT_CAP - DECAY_START);
-        const factor = 1 - (0.6 * Math.min(1, t)); // Ensure t doesn't exceed 1
+        const factor = 1 - (0.6 * Math.min(1, t)); 
         rawDelta *= factor;
-    }
-
-    // Strong reduction
-    if (currentOvr >= SOFT_CAP) {
+    } else if (currentOvr >= SOFT_CAP) {
         const t2 = (currentOvr - SOFT_CAP) / (HARD_CAP - SOFT_CAP);
         const hardFactor = 0.25 * (1 - t2);
         rawDelta *= hardFactor;
     }
 
-    // Clamp to max step and round
     const finalDelta = Math.max(-MAX_STEP, Math.min(MAX_STEP, rawDelta));
     return Math.round(finalDelta);
 }
 
+const calculateAttributeChanges = (position: PlayerPosition, rating: number) => {
+    const intensity = (rating - OVR_PROGRESSION.BASELINE_RATING) * 0.2; // Reduced scale for attributes
+    const changes = { pac: 0, sho: 0, pas: 0, dri: 0, def: 0, phy: 0 };
+
+    switch(position) {
+        case 'DEL':
+            changes.sho += intensity * 1.5;
+            changes.pac += intensity;
+            changes.dri += intensity * 0.5;
+            break;
+        case 'MED':
+            changes.pas += intensity * 1.5;
+            changes.dri += intensity;
+            changes.sho += intensity * 0.5;
+            break;
+        case 'DEF':
+            changes.def += intensity * 1.5;
+            changes.phy += intensity;
+            changes.pas += intensity * 0.5;
+            break;
+        case 'POR':
+            changes.def += intensity * 1.5; // Goalkeeper stats are simplified to DEF
+            changes.phy += intensity;
+            changes.pas += intensity * 0.5;
+            break;
+    }
+    return changes;
+}
 
 export default function EvaluateMatchPage() {
   const { id: matchId } = useParams();
@@ -116,18 +141,7 @@ export default function EvaluateMatchPage() {
                 return transaction.get(playerRef);
             });
             const playerDocs = await Promise.all(playerDocsPromises);
-
-            data.evaluations.forEach(evaluation => {
-                const evalRef = doc(evaluationsCollectionRef, evaluation.playerId);
-                transaction.set(evalRef, {
-                    playerId: evaluation.playerId,
-                    goals: evaluation.goals,
-                    rating: evaluation.rating,
-                    evaluatedBy: user?.uid,
-                    evaluatedAt: new Date().toISOString(),
-                });
-            });
-
+            
             playerDocs.forEach((playerDoc, index) => {
                 const evaluation = data.evaluations[index];
                 if (playerDoc.exists()) {
@@ -140,16 +154,38 @@ export default function EvaluateMatchPage() {
                     const totalRatingPoints = (currentStats.averageRating * currentStats.matchesPlayed) + evaluation.rating;
                     const newAverageRating = totalRatingPoints / newMatchesPlayed;
                     
-                    const ovrChange = calculateOvrChange(playerData.ovr, evaluation.rating);
-                    const newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, playerData.ovr + ovrChange));
+                    const attributeChanges = calculateAttributeChanges(playerData.position, evaluation.rating);
+                    
+                    const newAttributes = {
+                        pac: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round(playerData.pac + attributeChanges.pac))),
+                        sho: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round(playerData.sho + attributeChanges.sho))),
+                        pas: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round(playerData.pas + attributeChanges.pas))),
+                        dri: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round(playerData.dri + attributeChanges.dri))),
+                        def: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round(playerData.def + attributeChanges.def))),
+                        phy: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round(playerData.phy + attributeChanges.phy))),
+                    };
+
+                    const newOvr = Math.round(Object.values(newAttributes).reduce((sum, val) => sum + val, 0) / 6);
                     
                     transaction.update(playerDoc.ref, {
+                        ...newAttributes,
                         'stats.matchesPlayed': newMatchesPlayed,
                         'stats.goals': newGoals,
                         'stats.averageRating': newAverageRating,
-                        'ovr': newOvr,
+                        'ovr': Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, newOvr)),
                     });
                 }
+            });
+
+            data.evaluations.forEach(evaluation => {
+                const evalRef = doc(evaluationsCollectionRef, evaluation.playerId);
+                transaction.set(evalRef, {
+                    playerId: evaluation.playerId,
+                    goals: evaluation.goals,
+                    rating: evaluation.rating,
+                    evaluatedBy: user?.uid,
+                    evaluatedAt: new Date().toISOString(),
+                });
             });
             
             const matchDocRef = doc(firestore, 'matches', match.id);
