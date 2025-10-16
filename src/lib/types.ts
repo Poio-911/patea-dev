@@ -76,4 +76,6 @@ export type Evaluation = {
     goals: number;
     rating: number; // Scale 1-10
     performanceTags: string[];
+    evaluatedBy: string;
+    evaluatedAt: string;
 }

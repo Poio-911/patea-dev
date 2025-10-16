@@ -13,9 +13,9 @@ import { WandSparkles, Loader2 } from 'lucide-react';
 import { useState, useTransition } from 'react';
 import type { Player } from '@/lib/types';
 import { getPlayerImprovementSuggestionsAction } from '@/lib/actions';
-import { mockEvaluations } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useUser } from '@/firebase';
 
 type AISuggestionDialogProps = {
   player: Player;
@@ -27,18 +27,28 @@ export function AISuggestionDialog({ player, children }: AISuggestionDialogProps
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const { user } = useUser();
 
   const handleGenerate = () => {
+    if (!user?.activeGroupId) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No hay un grupo activo seleccionado.',
+      });
+      return;
+    }
     startTransition(async () => {
-      const result = await getPlayerImprovementSuggestionsAction(player, mockEvaluations);
+      setSuggestions([]); // Clear previous suggestions
+      const result = await getPlayerImprovementSuggestionsAction(player.id, user.activeGroupId);
       if (result.error) {
         toast({
           variant: 'destructive',
-          title: 'Error',
+          title: 'Error de la IA',
           description: result.error,
         });
         setSuggestions([]);
-      } else {
+      } else if (result.suggestions) {
         setSuggestions(result.suggestions);
       }
     });
@@ -60,7 +70,7 @@ export function AISuggestionDialog({ player, children }: AISuggestionDialogProps
                 <WandSparkles className="h-4 w-4" />
                 <AlertTitle>¡Listo para analizar!</AlertTitle>
                 <AlertDescription>
-                    Haz clic en el botón de abajo para generar sugerencias de la IA basadas en los datos de rendimiento recientes de {player.name}.
+                    Haz clic en el botón de abajo para generar sugerencias de la IA basadas en los datos de rendimiento reales de {player.name}.
                 </AlertDescription>
             </Alert>
           )}

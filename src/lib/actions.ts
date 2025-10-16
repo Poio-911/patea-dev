@@ -1,10 +1,17 @@
-
 // @ts-nocheck
 'use server';
 
 import { generateBalancedTeams, GenerateBalancedTeamsInput } from '@/ai/flows/generate-balanced-teams';
 import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/flows/suggest-player-improvements';
-import { Player } from './types';
+import { Player, Evaluation } from './types';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { initializeFirebase } from '@/firebase';
+
+// Helper to get firestore instance on the server
+function getFirestoreInstance() {
+    return initializeFirebase().firestore;
+}
+
 
 export async function generateTeamsAction(players: Player[]) {
   if (!players || players.length < 2) {
@@ -46,18 +53,61 @@ export async function generateTeamsAction(players: Player[]) {
   }
 }
 
-export async function getPlayerImprovementSuggestionsAction(player: Player, evaluations: any[]) {
-    const input: SuggestPlayerImprovementsInput = {
-        playerId: player.id,
-        playerStats: player.stats,
-        evaluations: evaluations,
-    };
+export async function getPlayerEvaluationsAction(playerId: string, groupId: string): Promise<Partial<Evaluation>[]> {
+    const firestore = getFirestoreInstance();
+    const evaluations: Partial<Evaluation>[] = [];
+    
+    try {
+        const matchesQuery = query(collection(firestore, 'matches'), where('groupId', '==', groupId));
+        const matchesSnapshot = await getDocs(matchesQuery);
+
+        for (const matchDoc of matchesSnapshot.docs) {
+            const evalDocRef = doc(firestore, 'matches', matchDoc.id, 'evaluations', playerId);
+            const evalDocSnap = await getDoc(evalDocRef);
+
+            if (evalDocSnap.exists()) {
+                evaluations.push(evalDocSnap.data() as Partial<Evaluation>);
+            }
+        }
+        return evaluations;
+
+    } catch (error) {
+        console.error("Error fetching player evaluations:", error);
+        return [];
+    }
+}
+
+
+export async function getPlayerImprovementSuggestionsAction(playerId: string, groupId: string) {
+    const firestore = getFirestoreInstance();
 
     try {
+        const playerDocRef = doc(firestore, 'players', playerId);
+        const playerDocSnap = await getDoc(playerDocRef);
+
+        if (!playerDocSnap.exists()) {
+            return { error: 'No se pudo encontrar al jugador.' };
+        }
+        const player = playerDocSnap.data() as Player;
+
+        const evaluations = await getPlayerEvaluationsAction(playerId, groupId);
+
+        const input: SuggestPlayerImprovementsInput = {
+            playerId: playerId,
+            playerStats: player.stats,
+            evaluations: evaluations.map(e => ({
+                rating: e.rating || 0,
+                performanceTags: e.performanceTags || [],
+                evaluatedBy: e.evaluatedBy || '',
+                evaluatedAt: e.evaluatedAt || '',
+            })),
+        };
+        
         const result = await suggestPlayerImprovements(input);
         return result;
+
     } catch (error) {
         console.error('Error getting player improvement suggestions:', error);
-        return { error: 'Failed to get suggestions.' };
+        return { error: 'No se pudieron obtener las sugerencias de la IA.' };
     }
 }
