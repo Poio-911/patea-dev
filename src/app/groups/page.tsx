@@ -183,11 +183,16 @@ export default function GroupsPage() {
   const handleSetActiveGroup = async (groupId: string) => {
     if (!firestore || !user) return;
 
+    const batch = writeBatch(firestore);
     const userRef = doc(firestore, 'users', user.uid);
+    const playerRef = doc(firestore, 'players', user.uid);
+    
     try {
-        await updateDoc(userRef, {
-            activeGroupId: groupId
-        });
+        batch.update(userRef, { activeGroupId: groupId });
+        batch.update(playerRef, { groupId: groupId });
+        
+        await batch.commit();
+
         toast({
             title: 'Grupo Activado',
             description: 'Has cambiado tu grupo activo.'
@@ -317,4 +322,5 @@ export default function GroupsPage() {
     </div>
   );
 }
+    
     
