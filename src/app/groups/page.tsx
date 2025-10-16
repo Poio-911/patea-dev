@@ -71,7 +71,6 @@ export default function GroupsPage() {
     const batch = writeBatch(firestore);
     const newGroupRef = doc(collection(firestore, 'groups'));
     const userRef = doc(firestore, 'users', user.uid);
-    const playerRef = doc(firestore, 'players', user.uid);
 
     try {
       const newGroup: Omit<Group, 'id'> = {
@@ -86,10 +85,6 @@ export default function GroupsPage() {
       batch.update(userRef, {
         groups: arrayUnion(newGroupRef.id),
         activeGroupId: newGroupRef.id,
-      });
-
-      batch.update(playerRef, {
-        groupId: newGroupRef.id,
       });
 
       await batch.commit();
@@ -145,7 +140,6 @@ export default function GroupsPage() {
       const batch = writeBatch(firestore);
       const groupRef = doc(firestore, 'groups', groupDoc.id);
       const userRef = doc(firestore, 'users', user.uid);
-      const playerRef = doc(firestore, 'players', user.uid);
 
       batch.update(groupRef, {
         members: arrayUnion(user.uid),
@@ -154,10 +148,6 @@ export default function GroupsPage() {
       batch.update(userRef, {
         groups: arrayUnion(groupDoc.id),
         activeGroupId: groupDoc.id,
-      });
-
-      batch.update(playerRef, {
-        groupId: groupDoc.id,
       });
 
       await batch.commit();
@@ -183,16 +173,11 @@ export default function GroupsPage() {
   const handleSetActiveGroup = async (groupId: string) => {
     if (!firestore || !user) return;
 
-    const batch = writeBatch(firestore);
     const userRef = doc(firestore, 'users', user.uid);
-    const playerRef = doc(firestore, 'players', user.uid);
     
     try {
-        batch.update(userRef, { activeGroupId: groupId });
-        batch.update(playerRef, { groupId: groupId });
+        await updateDoc(userRef, { activeGroupId: groupId });
         
-        await batch.commit();
-
         toast({
             title: 'Grupo Activado',
             description: 'Has cambiado tu grupo activo.'
@@ -322,5 +307,3 @@ export default function GroupsPage() {
     </div>
   );
 }
-    
-    
