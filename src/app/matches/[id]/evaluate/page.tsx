@@ -1,7 +1,7 @@
 'use client';
 
 import { useDoc, useFirestore, useUser } from '@/firebase';
-import { doc, writeBatch, collection, getDocs, updateDoc, getDoc, runTransaction } from 'firebase/firestore';
+import { doc, writeBatch, collection, getDocs, updateDoc, getDoc, runTransaction, DocumentData } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
 import type { Match, Player } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
@@ -67,17 +67,27 @@ export default function EvaluateMatchPage() {
 
     try {
         await runTransaction(firestore, async (transaction) => {
-            const evaluationsCollection = collection(firestore, 'matches', match.id, 'evaluations');
+            const evaluationsCollectionRef = collection(firestore, 'matches', match.id, 'evaluations');
             
-            // 1. Check if evaluations already exist
-            const existingEvals = await getDocs(evaluationsCollection);
-            if (!existingEvals.empty) {
+            // 1. Check if evaluations already exist (read operation, but not a transactional one)
+            // This is better done outside a transaction or by attempting a read first.
+            const existingEvalsSnap = await getDocs(query(evaluationsCollectionRef));
+            if (!existingEvalsSnap.empty) {
                 throw new Error('Este partido ya ha sido evaluado.');
             }
 
+            // --- ALL READS FIRST ---
+            const playerDocsPromises = data.evaluations.map(evaluation => {
+                const playerRef = doc(firestore, 'players', evaluation.playerId);
+                return transaction.get(playerRef);
+            });
+            const playerDocs = await Promise.all(playerDocsPromises);
+
+            // --- THEN ALL WRITES ---
+
             // 2. Save new evaluations
             data.evaluations.forEach(evaluation => {
-                const evalRef = doc(evaluationsCollection, evaluation.playerId);
+                const evalRef = doc(evaluationsCollectionRef, evaluation.playerId);
                 transaction.set(evalRef, {
                     playerId: evaluation.playerId,
                     goals: evaluation.goals,
@@ -88,28 +98,26 @@ export default function EvaluateMatchPage() {
             });
 
             // 3. Update player stats for each evaluation
-            for (const evaluation of data.evaluations) {
-                const playerRef = doc(firestore, 'players', evaluation.playerId);
-                const playerDoc = await transaction.get(playerRef);
-
+            playerDocs.forEach((playerDoc, index) => {
+                const evaluation = data.evaluations[index];
                 if (playerDoc.exists()) {
                     const playerData = playerDoc.data() as Player;
                     const currentStats = playerData.stats || { matchesPlayed: 0, goals: 0, assists: 0, averageRating: 0 };
                     
                     const newMatchesPlayed = currentStats.matchesPlayed + 1;
-                    const newGoals = currentStats.goals + evaluation.goals;
+                    const newGoals = (currentStats.goals || 0) + evaluation.goals;
 
                     // Calculate new average rating
                     const totalRatingPoints = (currentStats.averageRating * currentStats.matchesPlayed) + evaluation.rating;
                     const newAverageRating = totalRatingPoints / newMatchesPlayed;
                     
-                    transaction.update(playerRef, {
+                    transaction.update(playerDoc.ref, {
                         'stats.matchesPlayed': newMatchesPlayed,
                         'stats.goals': newGoals,
                         'stats.averageRating': newAverageRating,
                     });
                 }
-            }
+            });
             
             // 4. Update match status
             const matchDocRef = doc(firestore, 'matches', match.id);
