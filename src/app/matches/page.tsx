@@ -124,53 +124,55 @@ export default function MatchesPage() {
                  </Alert>
             )}
             {!loading && matches && matches.length > 0 && (
-            <Table>
-                <TableHeader>
-                <TableRow>
-                    <TableHead>Título</TableHead>
-                    <TableHead>Fecha y Hora</TableHead>
-                    <TableHead>Jugadores</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-                </TableHeader>
-                <TableBody>
-                {matches?.map((match) => (
-                    <TableRow key={match.id}>
-                    <TableCell className="font-medium">{match.title}</TableCell>
-                    <TableCell>{match.date ? `${format(new Date(match.date), 'E, d MMM, yyyy')} - ${match.time}`: 'Fecha no definida'}</TableCell>
-                    <TableCell>{match.players.length} / {match.matchSize}</TableCell>
-                    <TableCell>
-                        <Badge variant="outline">{match.type === 'manual' ? 'Manual' : 'Colaborativo'}</Badge>
-                    </TableCell>
-                    <TableCell>
-                        <Badge
-                            variant={match.status === 'completed' ? 'secondary' : 'default'}
-                            className={cn({
-                                'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300': match.status === 'upcoming',
-                                'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300': match.status === 'completed',
-                            })}
-                        >
-                             {match.status === 'upcoming' ? 'Próximo' : 'Finalizado'}
-                        </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                        {match.status === 'upcoming' && (
-                            <Button variant="outline" size="sm" onClick={() => handleFinishMatch(match)}>
-                                <CheckCircle2 className="mr-2 h-4 w-4" />
-                                Finalizar
-                            </Button>
-                        )}
-                        <Button variant="destructive" size="sm" className="ml-2" onClick={() => handleDeleteMatch(match.id)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Eliminar
-                        </Button>
-                    </TableCell>
+            <div className="overflow-x-auto">
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>Título</TableHead>
+                        <TableHead>Fecha y Hora</TableHead>
+                        <TableHead>Jugadores</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
-                ))}
-                </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                    {matches?.map((match) => (
+                        <TableRow key={match.id}>
+                        <TableCell className="font-medium">{match.title}</TableCell>
+                        <TableCell>{match.date ? `${format(new Date(match.date), 'E, d MMM, yyyy')} - ${match.time}`: 'Fecha no definida'}</TableCell>
+                        <TableCell>{match.players.length} / {match.matchSize}</TableCell>
+                        <TableCell>
+                            <Badge variant="outline">{match.type === 'manual' ? 'Manual' : 'Colaborativo'}</Badge>
+                        </TableCell>
+                        <TableCell>
+                            <Badge
+                                variant={match.status === 'completed' ? 'secondary' : 'default'}
+                                className={cn({
+                                    'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300': match.status === 'upcoming',
+                                    'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300': match.status === 'completed',
+                                })}
+                            >
+                                {match.status === 'upcoming' ? 'Próximo' : 'Finalizado'}
+                            </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                            {match.status === 'upcoming' && (
+                                <Button variant="outline" size="sm" onClick={() => handleFinishMatch(match)}>
+                                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                                    Finalizar
+                                </Button>
+                            )}
+                            <Button variant="destructive" size="sm" className="ml-2" onClick={() => handleDeleteMatch(match.id)}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Eliminar
+                            </Button>
+                        </TableCell>
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+            </div>
             )}
             </CardContent>
         </Card>
