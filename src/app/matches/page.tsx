@@ -60,7 +60,7 @@ export default function MatchesPage() {
             </CardHeader>
             <CardContent>
             {loading && <p>Cargando partidos...</p>}
-            {!loading && matches?.length === 0 && (
+            {!loading && matches && matches.length === 0 && (
                  <Alert variant="default" className="text-center">
                     <Calendar className="h-4 w-4" />
                     <AlertTitle>No hay partidos programados</AlertTitle>
@@ -69,7 +69,7 @@ export default function MatchesPage() {
                     </AlertDescription>
                  </Alert>
             )}
-            {matches && matches.length > 0 && (
+            {!loading && matches && matches.length > 0 && (
             <Table>
                 <TableHeader>
                 <TableRow>
@@ -87,7 +87,7 @@ export default function MatchesPage() {
                 {matches?.map((match) => (
                     <TableRow key={match.id}>
                     <TableCell className="font-medium">{match.title}</TableCell>
-                    <TableCell>{format(new Date(match.date), 'E, d MMM, yyyy')} - {match.time}</TableCell>
+                    <TableCell>{match.date ? `${format(new Date(match.date), 'E, d MMM, yyyy')} - ${match.time}`: 'Fecha no definida'}</TableCell>
                     <TableCell>{match.location}</TableCell>
                     <TableCell>{match.type}</TableCell>
                     <TableCell>
