@@ -15,14 +15,11 @@ import { MatchCard } from '@/components/match-card';
 export default function MatchesPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
-    console.log('[MatchesPage] Render. User loading:', userLoading, 'User:', user?.uid, 'Active Group ID:', user?.activeGroupId);
 
     const playersQuery = useMemo(() => {
         if (!firestore || !user?.activeGroupId) {
-            console.log('[MatchesPage] playersQuery: Not ready. Firestore:', !!firestore, 'Active Group ID:', user?.activeGroupId);
             return null;
         };
-        console.log('[MatchesPage] playersQuery: Creating query for group', user.activeGroupId);
         return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
     }, [firestore, user?.activeGroupId]);
 
@@ -30,20 +27,16 @@ export default function MatchesPage() {
 
     const matchesQuery = useMemo(() => {
         if (!firestore || !user?.activeGroupId) {
-            console.log('[MatchesPage] matchesQuery: Not ready. Firestore:', !!firestore, 'Active Group ID:', user?.activeGroupId);
             return null;
         }
-        console.log('[MatchesPage] matchesQuery: Creating query for group', user.activeGroupId);
         return query(collection(firestore, 'matches'), where('groupId', '==', user.activeGroupId), orderBy('date', 'desc'));
     }, [firestore, user?.activeGroupId]);
     
     const { data: matches, loading: matchesLoading } = useCollection<Match>(matchesQuery);
-    console.log('[MatchesPage] useCollection(matches) returned. Loading:', matchesLoading, 'Matches count:', matches?.length ?? 0);
 
     const loading = userLoading || playersLoading || matchesLoading;
 
     if (loading) {
-        console.log('[MatchesPage] Rendering loader...');
         return (
             <div className="flex items-center justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -51,7 +44,6 @@ export default function MatchesPage() {
             </div>
         )
     }
-    console.log('[MatchesPage] Loading finished. Rendering content.');
 
     return (
         <div className="flex flex-col gap-8">

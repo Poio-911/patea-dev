@@ -63,6 +63,7 @@ const calculateOvrChange = (currentOvr: number, newRating: number): number => {
 }
 
 const calculateAttributeChanges = (position: PlayerPosition, rating: number) => {
+    console.log(`[EVAL] Calculating attribute changes for Pos: ${position}, Rating: ${rating}`);
     const intensity = (rating - OVR_PROGRESSION.BASELINE_RATING) * 0.2; // Reduced scale for attributes
     const changes = { pac: 0, sho: 0, pas: 0, dri: 0, def: 0, phy: 0 };
 
@@ -88,6 +89,7 @@ const calculateAttributeChanges = (position: PlayerPosition, rating: number) => 
             changes.pas += intensity * 0.5;
             break;
     }
+    console.log(`[EVAL] Intensity: ${intensity.toFixed(2)}, Changes:`, changes);
     return changes;
 }
 
@@ -128,6 +130,7 @@ export default function EvaluateMatchPage() {
     if (!firestore || !match) return;
 
     try {
+        console.log('[EVAL] Starting transaction for match evaluation:', match.id);
         await runTransaction(firestore, async (transaction) => {
             const evaluationsCollectionRef = collection(firestore, 'matches', match.id, 'evaluations');
             
@@ -142,10 +145,16 @@ export default function EvaluateMatchPage() {
             });
             const playerDocs = await Promise.all(playerDocsPromises);
             
+            console.log('[EVAL] All player reads completed. Starting writes.');
+
             playerDocs.forEach((playerDoc, index) => {
                 const evaluation = data.evaluations[index];
+                console.log(`[EVAL] Processing player ${evaluation.displayName} (${evaluation.playerId})`);
+
                 if (playerDoc.exists()) {
                     const playerData = playerDoc.data() as Player;
+                    console.log(`[EVAL] Player ${playerData.name} current data:`, { ovr: playerData.ovr, pac: playerData.pac, sho: playerData.sho, pas: playerData.pas, dri: playerData.dri, def: playerData.def, phy: playerData.phy, stats: playerData.stats });
+                    
                     const currentStats = playerData.stats || { matchesPlayed: 0, goals: 0, assists: 0, averageRating: 0 };
                     
                     const newMatchesPlayed = currentStats.matchesPlayed + 1;
@@ -154,6 +163,8 @@ export default function EvaluateMatchPage() {
                     const totalRatingPoints = (currentStats.averageRating * currentStats.matchesPlayed) + evaluation.rating;
                     const newAverageRating = totalRatingPoints / newMatchesPlayed;
                     
+                    console.log(`[EVAL] New stats for ${playerData.name}:`, { newMatchesPlayed, newGoals, newAverageRating: newAverageRating.toFixed(2) });
+
                     const attributeChanges = calculateAttributeChanges(playerData.position, evaluation.rating);
                     
                     const newAttributes = {
@@ -164,16 +175,26 @@ export default function EvaluateMatchPage() {
                         def: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round(playerData.def + attributeChanges.def))),
                         phy: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round(playerData.phy + attributeChanges.phy))),
                     };
+                    console.log(`[EVAL] New attributes for ${playerData.name}:`, newAttributes);
+
 
                     const newOvr = Math.round(Object.values(newAttributes).reduce((sum, val) => sum + val, 0) / 6);
+                    const finalNewOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, newOvr));
+                    console.log(`[EVAL] New OVR for ${playerData.name}: ${finalNewOvr} (Calculated from new attributes)`);
                     
-                    transaction.update(playerDoc.ref, {
+                    const updatePayload = {
                         ...newAttributes,
                         'stats.matchesPlayed': newMatchesPlayed,
                         'stats.goals': newGoals,
                         'stats.averageRating': newAverageRating,
-                        'ovr': Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, newOvr)),
-                    });
+                        'ovr': finalNewOvr,
+                    };
+
+                    console.log(`[EVAL] Player ${playerData.name} update payload:`, updatePayload);
+                    transaction.update(playerDoc.ref, updatePayload);
+
+                } else {
+                    console.warn(`[EVAL] Player document not found for ID: ${evaluation.playerId}`);
                 }
             });
 
@@ -190,8 +211,10 @@ export default function EvaluateMatchPage() {
             
             const matchDocRef = doc(firestore, 'matches', match.id);
             transaction.update(matchDocRef, { status: 'evaluated' });
+             console.log('[EVAL] Transaction updated match status to evaluated.');
         });
 
+        console.log('[EVAL] Transaction committed successfully.');
         toast({
             title: 'Evaluación Guardada',
             description: 'Las estadísticas y el OVR de los jugadores se han actualizado.'

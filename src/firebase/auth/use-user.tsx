@@ -24,22 +24,17 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('[useUser] useEffect triggered. Auth:', !!auth, 'Firestore:', !!firestore);
     if (!auth || !firestore) {
       if (loading) setLoading(false);
       return;
     };
     
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-      console.log('[useUser] onAuthStateChanged triggered. User:', firebaseUser?.uid || 'null');
       if (firebaseUser) {
         const userRef = doc(firestore, 'users', firebaseUser.uid);
-        console.log('[useUser] Setting up onSnapshot for userRef:', userRef.path);
         
         const unsubUser = onSnapshot(userRef, (userDoc) => {
-          console.log('[useUser] onSnapshot received update. Doc exists:', userDoc.exists());
           if (!userDoc.exists()) {
-            console.log('[useUser] User doc does not exist, creating it...');
             // Create user profile if it doesn't exist
             const newUserProfile = {
               uid: firebaseUser.uid,
@@ -52,7 +47,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             };
             setDoc(userRef, newUserProfile)
               .then(() => {
-                console.log('[useUser] New user profile created. Setting user state.');
                 setUser(newUserProfile as UserData);
               })
               .catch(e => {
@@ -63,7 +57,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
               });
           } else {
              const userData = userDoc.data() as UserData;
-             console.log('[useUser] User doc exists. activeGroupId:', userData.activeGroupId, 'Setting user state.');
              setUser(userData);
              setLoading(false);
           }
@@ -74,7 +67,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         });
 
         return () => {
-          console.log('[useUser] Unsubscribing from user snapshot.');
           unsubUser();
         };
       } else {
@@ -84,10 +76,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => {
-      console.log('[useUser] Unsubscribing from auth state changes.');
       unsubscribe();
     };
-  }, [auth, firestore, loading]);
+  }, [auth, firestore]);
 
   return (
     <UserContext.Provider value={{ user, loading }}>
