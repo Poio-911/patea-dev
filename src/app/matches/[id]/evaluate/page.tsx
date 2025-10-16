@@ -31,7 +31,7 @@ const evaluationSchema = z.object({
     photoUrl: z.string(),
     goals: z.coerce.number().min(0).max(20).default(0),
     rating: z.coerce.number().min(1).max(10).default(5),
-    performanceTags: z.array(z.string()).max(2, 'Puedes seleccionar hasta 2 etiquetas.').default([]),
+    performanceTags: z.array(z.string()).optional(),
   }))
 });
 
@@ -181,16 +181,15 @@ export default function EvaluateMatchPage() {
                     const ovrChange = calculateOvrChange(playerData.ovr, evaluation.rating);
                     const newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, playerData.ovr + ovrChange));
                     
-                    const updatePayload = {
+                    const updatePayload: DocumentData = {
                         ...newAttributes,
                         'stats.matchesPlayed': newMatchesPlayed,
                         'stats.goals': newGoals,
                         'stats.averageRating': newAverageRating,
                         'ovr': newOvr,
                     };
-
+                    
                     transaction.update(playerDoc.ref, updatePayload);
-
                 }
             });
 
@@ -200,7 +199,7 @@ export default function EvaluateMatchPage() {
                     playerId: evaluation.playerId,
                     goals: evaluation.goals,
                     rating: evaluation.rating,
-                    performanceTags: evaluation.performanceTags,
+                    performanceTags: evaluation.performanceTags || [],
                     evaluatedBy: user?.uid,
                     evaluatedAt: new Date().toISOString(),
                 });
@@ -315,7 +314,7 @@ export default function EvaluateMatchPage() {
                     name={`evaluations.${index}.performanceTags`}
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
-                            <FormLabel>Etiquetas</FormLabel>
+                            <FormLabel>Etiquetas (Opcional)</FormLabel>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <FormControl>
@@ -338,10 +337,11 @@ export default function EvaluateMatchPage() {
                                                         <CommandItem
                                                             key={tag}
                                                             onSelect={() => {
+                                                                const currentValue = field.value || [];
                                                                 if (isSelected) {
-                                                                    field.onChange(field.value.filter((t: string) => t !== tag));
-                                                                } else if (field.value.length < 2) {
-                                                                    field.onChange([...field.value, tag]);
+                                                                    field.onChange(currentValue.filter((t: string) => t !== tag));
+                                                                } else if (currentValue.length < 2) {
+                                                                    field.onChange([...currentValue, tag]);
                                                                 } else {
                                                                     toast({
                                                                         variant: 'destructive',
@@ -385,3 +385,5 @@ export default function EvaluateMatchPage() {
     </div>
   );
 }
+
+    
