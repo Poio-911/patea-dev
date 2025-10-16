@@ -6,7 +6,7 @@
 import { FirebaseOptions } from 'firebase/app';
 
 export const firebaseConfig: FirebaseOptions = {
-  apiKey: "YOUR_API_KEY",
+  apiKey: "AIzaSyDP4vP1q5-XXXXXXXX-XXXXXXXX-XXXXXXX",
   authDomain: "mil-disculpis.firebaseapp.com",
   projectId: "mil-disculpis",
   storageBucket: "mil-disculpis.appspot.com",
