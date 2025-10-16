@@ -29,6 +29,43 @@ const evaluationSchema = z.object({
 
 type EvaluationFormData = z.infer<typeof evaluationSchema>;
 
+const OVR_PROGRESSION = {
+    BASELINE_RATING: 5,
+    SCALE: 0.6,
+    MAX_STEP: 2,
+    DECAY_START: 70,
+    SOFT_CAP: 95,
+    HARD_CAP: 99,
+    MIN_OVR: 40
+};
+
+
+const calculateOvrChange = (currentOvr: number, newRating: number): number => {
+    const { BASELINE_RATING, SCALE, MAX_STEP, DECAY_START, SOFT_CAP, HARD_CAP } = OVR_PROGRESSION;
+
+    const ratingDelta = newRating - BASELINE_RATING;
+    let rawDelta = ratingDelta * SCALE;
+
+    // Progressive dampening
+    if (currentOvr >= DECAY_START) {
+        const t = (currentOvr - DECAY_START) / (SOFT_CAP - DECAY_START);
+        const factor = 1 - (0.6 * Math.min(1, t)); // Ensure t doesn't exceed 1
+        rawDelta *= factor;
+    }
+
+    // Strong reduction
+    if (currentOvr >= SOFT_CAP) {
+        const t2 = (currentOvr - SOFT_CAP) / (HARD_CAP - SOFT_CAP);
+        const hardFactor = 0.25 * (1 - t2);
+        rawDelta *= hardFactor;
+    }
+
+    // Clamp to max step and round
+    const finalDelta = Math.max(-MAX_STEP, Math.min(MAX_STEP, rawDelta));
+    return Math.round(finalDelta);
+}
+
+
 export default function EvaluateMatchPage() {
   const { id: matchId } = useParams();
   const firestore = useFirestore();
@@ -69,23 +106,17 @@ export default function EvaluateMatchPage() {
         await runTransaction(firestore, async (transaction) => {
             const evaluationsCollectionRef = collection(firestore, 'matches', match.id, 'evaluations');
             
-            // 1. Check if evaluations already exist (read operation, but not a transactional one)
-            // This is better done outside a transaction or by attempting a read first.
             const existingEvalsSnap = await getDocs(query(evaluationsCollectionRef));
             if (!existingEvalsSnap.empty) {
                 throw new Error('Este partido ya ha sido evaluado.');
             }
 
-            // --- ALL READS FIRST ---
             const playerDocsPromises = data.evaluations.map(evaluation => {
                 const playerRef = doc(firestore, 'players', evaluation.playerId);
                 return transaction.get(playerRef);
             });
             const playerDocs = await Promise.all(playerDocsPromises);
 
-            // --- THEN ALL WRITES ---
-
-            // 2. Save new evaluations
             data.evaluations.forEach(evaluation => {
                 const evalRef = doc(evaluationsCollectionRef, evaluation.playerId);
                 transaction.set(evalRef, {
@@ -97,7 +128,6 @@ export default function EvaluateMatchPage() {
                 });
             });
 
-            // 3. Update player stats for each evaluation
             playerDocs.forEach((playerDoc, index) => {
                 const evaluation = data.evaluations[index];
                 if (playerDoc.exists()) {
@@ -107,26 +137,28 @@ export default function EvaluateMatchPage() {
                     const newMatchesPlayed = currentStats.matchesPlayed + 1;
                     const newGoals = (currentStats.goals || 0) + evaluation.goals;
 
-                    // Calculate new average rating
                     const totalRatingPoints = (currentStats.averageRating * currentStats.matchesPlayed) + evaluation.rating;
                     const newAverageRating = totalRatingPoints / newMatchesPlayed;
+                    
+                    const ovrChange = calculateOvrChange(playerData.ovr, evaluation.rating);
+                    const newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, playerData.ovr + ovrChange));
                     
                     transaction.update(playerDoc.ref, {
                         'stats.matchesPlayed': newMatchesPlayed,
                         'stats.goals': newGoals,
                         'stats.averageRating': newAverageRating,
+                        'ovr': newOvr,
                     });
                 }
             });
             
-            // 4. Update match status
             const matchDocRef = doc(firestore, 'matches', match.id);
             transaction.update(matchDocRef, { status: 'evaluated' });
         });
 
         toast({
             title: 'Evaluación Guardada',
-            description: 'Las estadísticas del partido y de los jugadores se han actualizado.'
+            description: 'Las estadísticas y el OVR de los jugadores se han actualizado.'
         });
         router.push('/matches');
 
