@@ -31,7 +31,7 @@ const evaluationSchema = z.object({
     photoUrl: z.string(),
     goals: z.coerce.number().min(0).max(20).default(0),
     rating: z.coerce.number().min(1).max(10).default(5),
-    performanceTags: z.array(z.string()).min(1, "Debes seleccionar al menos una etiqueta.").max(2, "No puedes seleccionar más de 2 etiquetas."),
+    performanceTags: z.array(z.string()).max(2, "No puedes seleccionar más de 2 etiquetas.").optional(),
   }))
 });
 
@@ -70,7 +70,7 @@ const calculateOvrChange = (currentOvr: number, newRating: number): number => {
 }
 
 const calculateAttributeChanges = (position: PlayerPosition, rating: number) => {
-    const intensity = (rating - OVR_PROGRESSION.BASELINE_RATING) * 0.2; // Reduced scale for attributes
+    const intensity = (rating - OVR_PROGRESSION.BASELINE_RATING) * 0.2; 
     const changes = { pac: 0, sho: 0, pas: 0, dri: 0, def: 0, phy: 0 };
 
     switch(position) {
@@ -90,7 +90,7 @@ const calculateAttributeChanges = (position: PlayerPosition, rating: number) => 
             changes.pas += intensity * 0.5;
             break;
         case 'POR':
-            changes.def += intensity * 1.5; // Goalkeeper stats are simplified to DEF
+            changes.def += intensity * 1.5; 
             changes.phy += intensity;
             changes.pas += intensity * 0.5;
             break;
@@ -172,12 +172,12 @@ export default function EvaluateMatchPage() {
                     const attributeChanges = calculateAttributeChanges(playerData.position, evaluation.rating);
                     
                     const newAttributes = {
-                        pac: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round(playerData.pac + attributeChanges.pac))),
-                        sho: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round(playerData.sho + attributeChanges.sho))),
-                        pas: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round(playerData.pas + attributeChanges.pas))),
-                        dri: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round(playerData.dri + attributeChanges.dri))),
-                        def: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round(playerData.def + attributeChanges.def))),
-                        phy: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round(playerData.phy + attributeChanges.phy))),
+                        pac: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round((playerData.pac || 50) + attributeChanges.pac))),
+                        sho: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round((playerData.sho || 50) + attributeChanges.sho))),
+                        pas: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round((playerData.pas || 50) + attributeChanges.pas))),
+                        dri: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round((playerData.dri || 50) + attributeChanges.dri))),
+                        def: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round((playerData.def || 50) + attributeChanges.def))),
+                        phy: Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, Math.round((playerData.phy || 50) + attributeChanges.phy))),
                     };
 
                     const ovrChange = calculateOvrChange(playerData.ovr, evaluation.rating);
@@ -218,7 +218,6 @@ export default function EvaluateMatchPage() {
         router.push('/matches');
 
     } catch (error: any) {
-        console.error('Error saving evaluations:', error);
         toast({
             variant: 'destructive',
             title: 'Error',
@@ -262,7 +261,7 @@ export default function EvaluateMatchPage() {
           <Card>
             <CardHeader>
                 <CardTitle>Jugadores</CardTitle>
-                <CardDescription>Asigna goles, una calificación (1-10) y 1 o 2 etiquetas de rendimiento a cada jugador.</CardDescription>
+                <CardDescription>Asigna goles, una calificación (1-10) y hasta 2 etiquetas de rendimiento a cada jugador.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {fields.map((field, index) => (
@@ -314,9 +313,9 @@ export default function EvaluateMatchPage() {
                   <Controller
                     control={form.control}
                     name={`evaluations.${index}.performanceTags`}
-                    render={({ field }) => (
+                    render={({ field, fieldState }) => (
                         <FormItem className="flex flex-col">
-                            <FormLabel>Etiquetas</FormLabel>
+                            <FormLabel>Etiquetas (Opcional)</FormLabel>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <FormControl>
@@ -365,7 +364,7 @@ export default function EvaluateMatchPage() {
                                     </Command>
                                 </PopoverContent>
                             </Popover>
-                             <FormMessage />
+                             <FormMessage>{fieldState.error?.message}</FormMessage>
                         </FormItem>
                     )}
                 />
