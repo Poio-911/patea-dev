@@ -38,9 +38,9 @@ const statusConfig = {
     evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' },
 };
 
-const InfoRow = ({ icon, text }: { icon: React.ElementType, text: string }) => (
+const InfoRow = ({ icon: Icon, text }: { icon: React.ElementType, text: string }) => (
     <div className="flex items-center gap-3 text-sm">
-        <icon className="h-4 w-4 text-muted-foreground" />
+        <Icon className="h-4 w-4 text-muted-foreground" />
         <span>{text}</span>
     </div>
 );
