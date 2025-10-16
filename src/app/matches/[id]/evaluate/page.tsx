@@ -1,7 +1,7 @@
 'use client';
 
 import { useDoc, useFirestore, useUser } from '@/firebase';
-import { doc, writeBatch, collection, getDocs, updateDoc, getDoc, runTransaction, DocumentData } from 'firebase/firestore';
+import { doc, writeBatch, collection, getDocs, updateDoc, getDoc, runTransaction, DocumentData, query } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
 import type { Match, Player } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
