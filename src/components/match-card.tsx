@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -133,10 +134,13 @@ export function MatchCard({ match }: MatchCardProps) {
                 )}
 
                  <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                    <Button variant="ghost" size="sm" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive col-span-2" onClick={() => setIsDeleteDialogOpen(true)}>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Eliminar
-                    </Button>
+                    {/* The button to trigger the delete confirmation is now outside the logical flow for completed matches */}
+                    {match.status !== 'completed' && match.status !== 'evaluated' && (
+                         <Button variant="ghost" size="sm" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive col-span-2" onClick={() => setIsDeleteDialogOpen(true)}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Eliminar
+                        </Button>
+                    )}
                     <AlertDialogContent>
                         <AlertDialogHeader>
                         <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
@@ -154,6 +158,13 @@ export function MatchCard({ match }: MatchCardProps) {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
+                 {/* This is a separate delete button for completed/evaluated matches if needed, or can be combined. */}
+                 {(match.status === 'completed' || match.status === 'evaluated') && (
+                     <Button variant="ghost" size="sm" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive col-span-2" onClick={() => setIsDeleteDialogOpen(true)}>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Eliminar
+                    </Button>
+                 )}
             </CardFooter>
         </Card>
     );
