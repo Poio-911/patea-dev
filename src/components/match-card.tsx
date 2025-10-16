@@ -7,9 +7,8 @@ import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/fir
 import { useFirestore, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 import { generateTeamsAction } from '@/lib/actions';
-
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

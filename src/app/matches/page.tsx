@@ -12,7 +12,7 @@ import type { Match, Player } from '@/lib/types';
 import { MatchCard } from '@/components/match-card';
 
 export default function MatchesPage() {
-    const { user } = useUser();
+    const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
 
     const playersQuery = useMemo(() => {
@@ -29,7 +29,7 @@ export default function MatchesPage() {
 
     const { data: matches, loading: matchesLoading } = useCollection<Match>(matchesQuery);
 
-    const loading = playersLoading || matchesLoading;
+    const loading = userLoading || playersLoading || matchesLoading;
 
   return (
     <div className="flex flex-col gap-8">
