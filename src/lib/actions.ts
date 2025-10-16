@@ -6,10 +6,14 @@ import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/
 import { Player } from './types';
 
 export async function generateTeamsAction(players: Player[]) {
+  if (!players || players.length < 2) {
+    return { error: 'Se necesitan al menos 2 jugadores para generar equipos.'};
+  }
+
   const input: GenerateBalancedTeamsInput = {
     players: players.map(p => ({
-      uid: p.id,
-      displayName: p.name,
+      uid: p.id || p.uid,
+      displayName: p.name || p.displayName,
       ovr: p.ovr,
       position: p.position,
     })),
@@ -21,7 +25,7 @@ export async function generateTeamsAction(players: Player[]) {
     return result;
   } catch (error) {
     console.error('Error generating teams:', error);
-    return { error: 'Failed to generate teams.' };
+    return { error: 'La IA no pudo generar los equipos. Inténtalo de nuevo.' };
   }
 }
 

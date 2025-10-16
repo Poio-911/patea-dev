@@ -28,6 +28,8 @@ export type Player = {
 
 
 export type MatchStatus = 'upcoming' | 'active' | 'completed' | 'evaluated';
+export type MatchType = 'manual' | 'collaborative';
+export type MatchSize = 10 | 14 | 22;
 
 export type Match = {
   id: string;
@@ -35,7 +37,10 @@ export type Match = {
   date: string;
   time: string;
   location: string;
-  type: string;
+  type: MatchType;
+  matchSize: MatchSize;
+  players: { uid: string; displayName: string; ovr: number; position: PlayerPosition; photoUrl: string }[];
+  teams: Team[];
   status: MatchStatus;
   ownerUid: string;
   groupId: string;

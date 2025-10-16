@@ -52,12 +52,50 @@
         "date": { "type": "string", "format": "date-time" },
         "time": { "type": "string" },
         "location": { "type": "string" },
-        "type": { "type": "string" },
+        "type": { "type": "string", "enum": ["manual", "collaborative"] },
+        "matchSize": { "type": "number", "enum": [10, 14, 22] },
         "status": { "type": "string", "enum": ["upcoming", "active", "completed", "evaluated"] },
         "ownerUid": { "type": "string" },
-        "groupId": { "type": "string", "description": "The ID of the group this match belongs to." }
+        "groupId": { "type": "string", "description": "The ID of the group this match belongs to." },
+        "players": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "uid": { "type": "string" },
+              "displayName": { "type": "string" },
+              "ovr": { "type": "number" },
+              "position": { "type": "string" },
+              "photoUrl": { "type": "string", "format": "uri" }
+            }
+          }
+        },
+        "teams": { "type": "array", "items": { "$ref": "#/entities/team" } }
       },
-      "required": ["title", "date", "status", "ownerUid", "groupId"]
+      "required": ["title", "date", "status", "ownerUid", "groupId", "type", "matchSize"]
+    },
+    "team": {
+      "title": "Team",
+      "description": "Represents a generated team for a match.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "players": {
+          "type": "array",
+           "items": {
+            "type": "object",
+            "properties": {
+              "uid": { "type": "string" },
+              "displayName": { "type": "string" },
+              "ovr": { "type": "number" },
+              "position": { "type": "string" }
+            }
+          }
+        },
+        "totalOVR": { "type": "number" },
+        "averageOVR": { "type": "number" }
+      },
+      "required": ["name", "players"]
     },
     "group": {
       "title": "Group",
@@ -82,7 +120,7 @@
     },
     "/players/{playerId}": {
       "schema": { "$ref": "#/entities/player" },
-      "description": "Stores data for each player, linked to a group. PlayerId is the same as the user's UID."
+      "description": "Stores data for each player, linked to a group. PlayerId is the same as the user's UID for registered users."
     },
     "/matches/{matchId}": {
       "schema": { "$ref": "#/entities/match" },
