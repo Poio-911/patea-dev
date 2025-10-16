@@ -11,7 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Loader2, Save, X, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -21,7 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 
 const evaluationSchema = z.object({
@@ -31,7 +31,7 @@ const evaluationSchema = z.object({
     photoUrl: z.string(),
     goals: z.coerce.number().min(0).max(20).default(0),
     rating: z.coerce.number().min(1).max(10).default(5),
-    performanceTags: z.array(z.string()).optional(),
+    performanceTags: z.array(z.string()).min(1, "Debes seleccionar al menos una etiqueta.").max(2, "No puedes seleccionar más de 2 etiquetas."),
   }))
 });
 
@@ -49,7 +49,6 @@ const OVR_PROGRESSION = {
     MAX_ATTRIBUTE: 90
 };
 
-
 const calculateOvrChange = (currentOvr: number, newRating: number): number => {
     const { BASELINE_RATING, SCALE, MAX_STEP, DECAY_START, SOFT_CAP, HARD_CAP } = OVR_PROGRESSION;
 
@@ -58,7 +57,7 @@ const calculateOvrChange = (currentOvr: number, newRating: number): number => {
 
     if (currentOvr >= DECAY_START && currentOvr < SOFT_CAP) {
         const t = (currentOvr - DECAY_START) / (SOFT_CAP - DECAY_START);
-        const factor = 1 - (0.6 * Math.min(1, t)); 
+        const factor = 1 - (0.6 * Math.min(1, t));
         rawDelta *= factor;
     } else if (currentOvr >= SOFT_CAP) {
         const t2 = (currentOvr - SOFT_CAP) / (HARD_CAP - SOFT_CAP);
@@ -122,17 +121,20 @@ export default function EvaluateMatchPage() {
     name: "evaluations",
   });
 
-  if (match && form.getValues('evaluations').length === 0) {
-    const initialEvals = match.players.map(p => ({
-      playerId: p.uid,
-      displayName: p.displayName,
-      photoUrl: p.photoUrl || '',
-      goals: 0,
-      rating: 5,
-      performanceTags: []
-    }));
-    replace(initialEvals);
-  }
+  useEffect(() => {
+    if (match && form.getValues('evaluations').length === 0 && match.players.length > 0) {
+        const initialEvals = match.players.map(p => ({
+            playerId: p.uid,
+            displayName: p.displayName,
+            photoUrl: p.photoUrl || '',
+            goals: 0,
+            rating: 5,
+            performanceTags: []
+        }));
+        replace(initialEvals);
+    }
+  }, [match, form, replace]);
+
 
   const onSubmit = async (data: EvaluationFormData) => {
     if (!firestore || !match) return;
@@ -260,7 +262,7 @@ export default function EvaluateMatchPage() {
           <Card>
             <CardHeader>
                 <CardTitle>Jugadores</CardTitle>
-                <CardDescription>Asigna goles, una calificación (1-10) y hasta 2 etiquetas de rendimiento a cada jugador.</CardDescription>
+                <CardDescription>Asigna goles, una calificación (1-10) y 1 o 2 etiquetas de rendimiento a cada jugador.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {fields.map((field, index) => (
@@ -314,7 +316,7 @@ export default function EvaluateMatchPage() {
                     name={`evaluations.${index}.performanceTags`}
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
-                            <FormLabel>Etiquetas (Opcional)</FormLabel>
+                            <FormLabel>Etiquetas</FormLabel>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <FormControl>
@@ -363,9 +365,7 @@ export default function EvaluateMatchPage() {
                                     </Command>
                                 </PopoverContent>
                             </Popover>
-                             {form.formState.errors.evaluations?.[index]?.performanceTags && (
-                                <p className="text-xs text-destructive">{form.formState.errors.evaluations[index].performanceTags.message}</p>
-                            )}
+                             <FormMessage />
                         </FormItem>
                     )}
                 />
@@ -385,5 +385,3 @@ export default function EvaluateMatchPage() {
     </div>
   );
 }
-
-    
