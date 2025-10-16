@@ -34,6 +34,7 @@ import { Loader2, Users } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 const createGroupSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
@@ -166,6 +167,28 @@ export default function GroupsPage() {
       setIsJoining(false);
     }
   };
+  
+  const handleSetActiveGroup = async (groupId: string) => {
+    if (!firestore || !user) return;
+
+    const userRef = doc(firestore, 'users', user.uid);
+    try {
+        await updateDoc(userRef, {
+            activeGroupId: groupId
+        });
+        toast({
+            title: 'Grupo Activado',
+            description: 'Has cambiado tu grupo activo.'
+        });
+    } catch (error) {
+        console.error("Error setting active group:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'No se pudo cambiar el grupo activo.'
+        });
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -260,7 +283,7 @@ export default function GroupsPage() {
                            </CardContent>
                            <CardFooter>
                                 {user?.activeGroupId !== group.id && (
-                                    <Button variant="outline" className="w-full" disabled>
+                                    <Button variant="outline" className="w-full" onClick={() => handleSetActiveGroup(group.id)}>
                                         Activar Grupo
                                     </Button>
                                 )}
@@ -282,3 +305,4 @@ export default function GroupsPage() {
     </div>
   );
 }
+    
