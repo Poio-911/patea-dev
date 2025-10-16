@@ -1,7 +1,7 @@
 'use client';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Users2, Calendar } from 'lucide-react';
+import { Users2, Calendar, Loader2 } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { useMemo } from 'react';
@@ -26,13 +26,18 @@ export default function MatchesPage() {
         if (!firestore || !user?.activeGroupId) return null;
         return query(collection(firestore, 'matches'), where('groupId', '==', user.activeGroupId), orderBy('date', 'desc'));
     }, [firestore, user?.activeGroupId]);
-
+    
     const { data: matches, loading: matchesLoading } = useCollection<Match>(matchesQuery);
 
     const loading = userLoading || playersLoading || matchesLoading;
 
     if (loading) {
-        return <p>Cargando partidos...</p>;
+        return (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="ml-4 text-muted-foreground">Cargando partidos...</p>
+            </div>
+        )
     }
 
     return (

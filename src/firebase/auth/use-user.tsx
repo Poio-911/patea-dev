@@ -49,10 +49,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             setDoc(userRef, newUserProfile)
               .then(() => {
                 setUser(newUserProfile as UserData);
-                setLoading(false);
               })
               .catch(e => {
                 console.error("Error creating user profile:", e);
+              })
+              .finally(() => {
                 setLoading(false);
               });
           } else {
