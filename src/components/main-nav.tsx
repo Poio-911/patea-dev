@@ -17,17 +17,19 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, Users, Calendar, Swords, LogOut, Settings, Goal } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Swords, LogOut, Settings, Goal, Users2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
 import { useUser, useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
+import { GroupSwitcher } from './group-switcher';
 
 const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
   { href: '/players', label: 'Jugadores', icon: Users },
   { href: '/matches', label: 'Partidos', icon: Calendar },
   { href: '/team-generator', label: 'Generador', icon: Swords },
+  { href: '/groups', label: 'Grupos', icon: Users2 },
 ];
 
 export function MainNav({ children }: { children: React.ReactNode }) {
@@ -125,7 +127,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
             <SidebarTrigger className="md:hidden"/>
             <div className="flex-1">
-                {/* Maybe breadcrumbs or page title here */}
+                <GroupSwitcher />
             </div>
             <Avatar className="h-8 w-8 border">
                 <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} data-ai-hint="user avatar" />

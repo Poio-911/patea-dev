@@ -7,27 +7,30 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Users, Goal, Star, Calendar } from 'lucide-react';
+import { Users, Goal, Star, Calendar, Users2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { useUser } from '@/firebase';
 import { useMemo } from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function DashboardPage() {
   const { user } = useUser();
   const firestore = useFirestore();
 
   const playersQuery = useMemo(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, 'players'), where('ownerUid', '==', user.uid));
-  }, [firestore, user]);
+    if (!firestore || !user?.activeGroupId) return null;
+    return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
+  }, [firestore, user?.activeGroupId]);
 
   const matchesQuery = useMemo(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, 'matches'), where('ownerUid', '==', user.uid), orderBy('date', 'desc'), limit(5));
-  }, [firestore, user]);
+    if (!firestore || !user?.activeGroupId) return null;
+    return query(collection(firestore, 'matches'), where('groupId', '==', user.activeGroupId), orderBy('date', 'desc'), limit(5));
+  }, [firestore, user?.activeGroupId]);
 
   const { data: players, loading: playersLoading } = useCollection(playersQuery);
   const { data: matches, loading: matchesLoading } = useCollection(matchesQuery);
@@ -36,6 +39,27 @@ export default function DashboardPage() {
     return <div>Cargando...</div>;
   }
   
+  if (!user?.activeGroupId) {
+    return (
+        <div className="flex flex-col gap-8">
+             <PageHeader
+                title="Panel de control"
+                description="Bienvenido a tu Manager de Fútbol Amateur."
+            />
+            <Alert>
+                <Users2 className="h-4 w-4" />
+                <AlertTitle>¡Bienvenido!</AlertTitle>
+                <AlertDescription>
+                    Parece que eres nuevo por aquí. Para empezar, crea tu primer grupo o únete a uno existente.
+                    <Button asChild variant="link" className="p-0 h-auto ml-1">
+                        <Link href="/groups">Gestionar Grupos</Link>
+                    </Button>
+                </AlertDescription>
+            </Alert>
+        </div>
+    )
+  }
+
   const topPlayer = players ? [...players].sort((a, b) => b.ovr - a.ovr)[0] : null;
   const upcomingMatches = matches ? matches.filter(m => m.status === 'upcoming') : [];
   const top5Players = players ? [...players].sort((a, b) => b.ovr - a.ovr).slice(0, 5) : [];

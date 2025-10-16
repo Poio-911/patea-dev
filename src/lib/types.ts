@@ -23,6 +23,7 @@ export type Player = {
   photoUrl?: string;
   stats: PlayerStats;
   ownerUid: string;
+  groupId: string;
 } & DocumentData;
 
 
@@ -37,6 +38,7 @@ export type Match = {
   type: string;
   status: MatchStatus;
   ownerUid: string;
+  groupId: string;
 } & DocumentData;
 
 export type Team = {
@@ -50,3 +52,11 @@ export type Team = {
   totalOVR: number;
   averageOVR: number;
 };
+
+export type Group = {
+    id: string;
+    name: string;
+    ownerUid: string;
+    inviteCode: string;
+    members: string[];
+} & DocumentData;

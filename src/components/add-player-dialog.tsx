@@ -28,6 +28,7 @@ import { useFirestore, useUser } from '@/firebase';
 import { addDoc, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { PlayerPosition } from '@/lib/types';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 const playerSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio'),
@@ -68,7 +69,14 @@ export function AddPlayerDialog() {
   });
 
   const onSubmit = async (data: PlayerFormData) => {
-    if (!user || !firestore) return;
+    if (!user || !firestore || !user.activeGroupId) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Debes seleccionar un grupo activo para añadir un jugador.',
+      });
+      return;
+    }
 
     const ovr = Math.round(
       (data.pac + data.sho + data.pas + data.dri + data.def + data.phy) / 6
@@ -79,6 +87,7 @@ export function AddPlayerDialog() {
         ...data,
         ovr,
         ownerUid: user.uid,
+        groupId: user.activeGroupId,
         stats: { matchesPlayed: 0, goals: 0, assists: 0, averageRating: 0 },
         photoUrl: `https://picsum.photos/seed/${data.name}/400/400`,
       });
@@ -104,77 +113,86 @@ export function AddPlayerDialog() {
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <DialogHeader>
-            <DialogTitle>Añadir Nuevo Jugador</DialogTitle>
-            <DialogDescription>
-              Introduce los detalles del nuevo jugador. Haz clic en guardar cuando hayas terminado.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Nombre
-              </Label>
-              <Input id="name" {...register('name')} className="col-span-3" />
-            </div>
-            {errors.name && <p className="col-span-4 text-right text-xs text-destructive">{errors.name.message}</p>}
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="position" className="text-right">
-                Posición
-              </Label>
-              <Controller
-                name="position"
-                control={control}
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Selecciona una posición" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="DEL">DEL (Delantero)</SelectItem>
-                      <SelectItem value="MED">MED (Centrocampista)</SelectItem>
-                      <SelectItem value="DEF">DEF (Defensa)</SelectItem>
-                      <SelectItem value="POR">POR (Portero)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-             {errors.position && <p className="col-span-4 text-right text-xs text-destructive">{errors.position.message}</p>}
+        {!user?.activeGroupId ? (
+            <Alert variant="destructive">
+                <AlertTitle>No hay grupo activo</AlertTitle>
+                <AlertDescription>
+                    Por favor, selecciona o crea un grupo antes de añadir un jugador.
+                </AlertDescription>
+            </Alert>
+        ) : (
+            <form onSubmit={handleSubmit(onSubmit)}>
+            <DialogHeader>
+                <DialogTitle>Añadir Nuevo Jugador</DialogTitle>
+                <DialogDescription>
+                Introduce los detalles del nuevo jugador. Haz clic en guardar cuando hayas terminado.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                    Nombre
+                </Label>
+                <Input id="name" {...register('name')} className="col-span-3" />
+                </div>
+                {errors.name && <p className="col-span-4 text-right text-xs text-destructive">{errors.name.message}</p>}
+                
+                <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="position" className="text-right">
+                    Posición
+                </Label>
+                <Controller
+                    name="position"
+                    control={control}
+                    render={({ field }) => (
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Selecciona una posición" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="DEL">DEL (Delantero)</SelectItem>
+                        <SelectItem value="MED">MED (Centrocampista)</SelectItem>
+                        <SelectItem value="DEF">DEF (Defensa)</SelectItem>
+                        <SelectItem value="POR">POR (Portero)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    )}
+                />
+                </div>
+                {errors.position && <p className="col-span-4 text-right text-xs text-destructive">{errors.position.message}</p>}
 
-            <div className="grid grid-cols-2 gap-4">
-               <div className="grid grid-cols-2 items-center gap-2">
-                  <Label htmlFor="pac">PAC</Label>
-                  <Input id="pac" type="number" {...register('pac')} />
-              </div>
-               <div className="grid grid-cols-2 items-center gap-2">
-                  <Label htmlFor="sho">TIR</Label>
-                  <Input id="sho" type="number" {...register('sho')} />
-              </div>
-               <div className="grid grid-cols-2 items-center gap-2">
-                  <Label htmlFor="pas">PAS</Label>
-                  <Input id="pas" type="number" {...register('pas')} />
-              </div>
-               <div className="grid grid-cols-2 items-center gap-2">
-                  <Label htmlFor="dri">REG</Label>
-                  <Input id="dri" type="number" {...register('dri')} />
-              </div>
-               <div className="grid grid-cols-2 items-center gap-2">
-                  <Label htmlFor="def">DEF</Label>
-                  <Input id="def" type="number" {...register('def')} />
-              </div>
-               <div className="grid grid-cols-2 items-center gap-2">
-                  <Label htmlFor="phy">FIS</Label>
-                  <Input id="phy" type="number" {...register('phy')} />
-              </div>
+                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 items-center gap-2">
+                    <Label htmlFor="pac">PAC</Label>
+                    <Input id="pac" type="number" {...register('pac')} />
+                </div>
+                <div className="grid grid-cols-2 items-center gap-2">
+                    <Label htmlFor="sho">TIR</Label>
+                    <Input id="sho" type="number" {...register('sho')} />
+                </div>
+                <div className="grid grid-cols-2 items-center gap-2">
+                    <Label htmlFor="pas">PAS</Label>
+                    <Input id="pas" type="number" {...register('pas')} />
+                </div>
+                <div className="grid grid-cols-2 items-center gap-2">
+                    <Label htmlFor="dri">REG</Label>
+                    <Input id="dri" type="number" {...register('dri')} />
+                </div>
+                <div className="grid grid-cols-2 items-center gap-2">
+                    <Label htmlFor="def">DEF</Label>
+                    <Input id="def" type="number" {...register('def')} />
+                </div>
+                <div className="grid grid-cols-2 items-center gap-2">
+                    <Label htmlFor="phy">FIS</Label>
+                    <Input id="phy" type="number" {...register('phy')} />
+                </div>
+                </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit">Guardar Jugador</Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter>
+                <Button type="submit">Guardar Jugador</Button>
+            </DialogFooter>
+            </form>
+        )}
       </DialogContent>
     </Dialog>
   );

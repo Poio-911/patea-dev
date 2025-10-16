@@ -5,14 +5,19 @@ import { PlayerCard } from '@/components/player-card';
 import { AddPlayerDialog } from '@/components/add-player-dialog';
 import { collection, query, where } from 'firebase/firestore';
 import { useMemo } from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Users2 } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function PlayersPage() {
   const { user } = useUser();
   const firestore = useFirestore();
+
   const playersQuery = useMemo(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, 'players'), where('ownerUid', '==', user.uid));
-  }, [firestore, user]);
+    if (!firestore || !user?.activeGroupId) return null;
+    return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
+  }, [firestore, user?.activeGroupId]);
 
   const { data: players, loading } = useCollection(playersQuery);
 
@@ -25,6 +30,30 @@ export default function PlayersPage() {
         <AddPlayerDialog />
       </PageHeader>
        {loading && <p>Cargando jugadores...</p>}
+
+       {!loading && !user?.activeGroupId && (
+         <Alert>
+            <Users2 className="h-4 w-4" />
+            <AlertTitle>No hay grupo activo</AlertTitle>
+            <AlertDescription>
+                No tienes un grupo activo seleccionado. Por favor, crea o únete a un grupo para ver a tus jugadores.
+                <Button asChild variant="link" className="p-0 h-auto ml-1">
+                    <Link href="/groups">Ir a la página de grupos</Link>
+                </Button>
+            </AlertDescription>
+         </Alert>
+       )}
+
+      {!loading && user?.activeGroupId && players?.length === 0 && (
+        <Alert>
+            <Users className="h-4 w-4" />
+            <AlertTitle>No hay jugadores en este grupo</AlertTitle>
+            <AlertDescription>
+                Aún no has añadido ningún jugador a este grupo. ¡Empieza por añadir el primero!
+            </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {players?.map((player) => (
           <PlayerCard key={player.id} player={player} />

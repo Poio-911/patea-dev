@@ -5,24 +5,12 @@
       "description": "Represents a user's profile information.",
       "type": "object",
       "properties": {
-        "uid": {
-          "type": "string",
-          "description": "The user's unique ID."
-        },
-        "email": {
-          "type": "string",
-          "format": "email",
-          "description": "The user's email address."
-        },
-        "displayName": {
-          "type": "string",
-          "description": "The user's display name."
-        },
-        "photoURL": {
-          "type": "string",
-          "format": "uri",
-          "description": "URL of the user's profile picture."
-        }
+        "uid": { "type": "string", "description": "The user's unique ID." },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string", "format": "uri" },
+        "groups": { "type": "array", "items": { "type": "string" }, "description": "List of group IDs the user is a member of." },
+        "activeGroupId": { "type": "string", "description": "The ID of the user's currently active group." }
       },
       "required": ["uid", "email"]
     },
@@ -50,9 +38,10 @@
             "averageRating": { "type": "number" }
           }
         },
-        "ownerUid": { "type": "string" }
+        "ownerUid": { "type": "string" },
+        "groupId": { "type": "string", "description": "The ID of the group this player belongs to." }
       },
-      "required": ["name", "position", "ovr", "ownerUid"]
+      "required": ["name", "position", "ovr", "ownerUid", "groupId"]
     },
     "match": {
       "title": "Match",
@@ -65,9 +54,22 @@
         "location": { "type": "string" },
         "type": { "type": "string" },
         "status": { "type": "string", "enum": ["upcoming", "active", "completed", "evaluated"] },
-        "ownerUid": { "type": "string" }
+        "ownerUid": { "type": "string" },
+        "groupId": { "type": "string", "description": "The ID of the group this match belongs to." }
       },
-      "required": ["title", "date", "status", "ownerUid"]
+      "required": ["title", "date", "status", "ownerUid", "groupId"]
+    },
+    "group": {
+      "title": "Group",
+      "description": "Represents a user group.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerUid": { "type": "string" },
+        "inviteCode": { "type": "string" },
+        "members": { "type": "array", "items": { "type": "string" }, "description": "List of user UIDs who are members of this group." }
+      },
+      "required": ["name", "ownerUid", "inviteCode"]
     }
   },
   "auth": {
@@ -80,11 +82,15 @@
     },
     "/players/{playerId}": {
       "schema": { "$ref": "#/entities/player" },
-      "description": "Stores data for each player."
+      "description": "Stores data for each player, linked to a group."
     },
     "/matches/{matchId}": {
       "schema": { "$ref": "#/entities/match" },
-      "description": "Stores data for each match."
+      "description": "Stores data for each match, linked to a group."
+    },
+    "/groups/{groupId}": {
+      "schema": { "$ref": "#/entities/group" },
+      "description": "Stores data for each user group."
     }
   }
 }

@@ -2,11 +2,12 @@
 import { useEffect, useState, createContext, useContext } from 'react';
 import type { User } from 'firebase/auth';
 import { useAuth } from '@/firebase';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 
 export interface UserData extends User {
-  // custom user data
+  groups?: string[];
+  activeGroupId?: string;
 }
 
 const UserContext = createContext<{ user: UserData | null; loading: boolean }>({
@@ -31,31 +32,36 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         const userRef = doc(firestore, 'users', firebaseUser.uid);
-        const userDoc = await getDoc(userRef);
-        if (!userDoc.exists()) {
-          // Create user profile if it doesn't exist
-          const newUserProfile = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL,
-            createdAt: serverTimestamp(),
-          };
-          try {
-            await setDoc(userRef, newUserProfile);
-            const createdUserDoc = await getDoc(userRef);
-            setUser(createdUserDoc.data() as UserData);
-          } catch(e) {
-            console.error("Error creating user profile:", e);
-            setUser(null);
+        
+        // Use onSnapshot for real-time updates on user profile
+        const unsubUser = onSnapshot(userRef, (userDoc) => {
+          if (!userDoc.exists()) {
+            // Create user profile if it doesn't exist
+            const newUserProfile = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+              createdAt: serverTimestamp(),
+              groups: [],
+              activeGroupId: null,
+            };
+            setDoc(userRef, newUserProfile)
+              .then(() => {
+                setUser(newUserProfile as UserData);
+              })
+              .catch(e => console.error("Error creating user profile:", e));
+          } else {
+             setUser(userDoc.data() as UserData);
           }
-        } else {
-           setUser(userDoc.data() as UserData);
-        }
+          setLoading(false);
+        });
+
+        return () => unsubUser();
       } else {
         setUser(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
