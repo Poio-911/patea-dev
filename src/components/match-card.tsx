@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -25,8 +24,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Users, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, ShieldQuestion } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, ShieldQuestion, Star } from 'lucide-react';
 import { InvitePlayerDialog } from './invite-player-dialog';
+import Link from 'next/link';
 
 
 type MatchCardProps = {
@@ -55,7 +55,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isFinishing, setIsFinishing] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     const isUserInMatch = useMemo(() => {
         if (!user) return false;
@@ -262,31 +261,42 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     </>
                 )}
                  
-                 {(match.status === 'completed' || match.status === 'evaluated') && (
-                     <Button variant="ghost" size="sm" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive col-span-2" onClick={() => setIsDeleteDialogOpen(true)}>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Eliminar
+                 {match.status === 'completed' && user?.uid === match.ownerUid && (
+                    <Button asChild variant="default" size="sm" className="w-full">
+                        <Link href={`/matches/${match.id}/evaluate`}>
+                            <Star className="mr-2 h-4 w-4" />
+                            Evaluar Partido
+                        </Link>
                     </Button>
                  )}
+                 
+                 {(match.status === 'completed' || match.status === 'evaluated') && user?.uid === match.ownerUid && (
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Eliminar
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta acción no se puede deshacer. Esto eliminará permanentemente el partido
+                                y todos sus datos asociados.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Sí, eliminar partido
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                 )}
 
-                 <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                        <AlertDialogTitle>¿Estás absolutely seguro?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Esta acción no se puede deshacer. Esto eliminará permanentemente el partido
-                            y todos sus datos asociados.
-                        </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Sí, eliminar partido
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
                  {match.status !== 'completed' && match.status !== 'evaluated' && user?.uid === match.ownerUid &&(
                      <AlertDialog>
                         <AlertDialogTrigger asChild>

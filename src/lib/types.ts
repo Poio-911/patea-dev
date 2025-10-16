@@ -69,3 +69,10 @@ export type Group = {
     inviteCode: string;
     members: string[];
 } & DocumentData;
+
+export type Evaluation = {
+    id: string;
+    playerId: string;
+    goals: number;
+    rating: number; // Scale 1-10
+}
