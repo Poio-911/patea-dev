@@ -88,15 +88,16 @@ export function PlayerCard({ player }: PlayerCardProps) {
   return (
     <Card className={cn("overflow-hidden border-2 shadow-lg transition-transform hover:scale-105 hover:shadow-xl", positionBorderColors[player.position])}>
       <div className={cn("relative p-2 text-white", positionColors[player.position])}>
-        <div className="flex items-center justify-between">
-          <div className="text-2xl font-bold">{player.ovr}</div>
-          <div className="text-sm font-semibold">{player.position}</div>
-        </div>
-        {canDelete && (
+        <div className="flex items-start justify-between">
+          <div className="flex flex-col">
+            <div className="text-2xl font-bold">{player.ovr}</div>
+            <div className="text-sm font-semibold">{player.position}</div>
+          </div>
+          {canDelete && (
              <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="absolute top-0 right-0 h-8 w-8 text-white hover:bg-white/20 hover:text-white">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 hover:text-white">
                             <MoreVertical size={16} />
                         </Button>
                     </DropdownMenuTrigger>
@@ -123,6 +124,7 @@ export function PlayerCard({ player }: PlayerCardProps) {
                 </AlertDialogContent>
             </AlertDialog>
         )}
+        </div>
       </div>
       <CardContent className="p-4 text-center">
         <Avatar className="mx-auto -mt-10 h-20 w-20 border-4 border-card">
