@@ -41,7 +41,7 @@
         "ownerUid": { "type": "string" },
         "groupId": { "type": "string", "description": "The ID of the group this player belongs to." }
       },
-      "required": ["name", "position", "ovr", "ownerUid", "groupId"]
+      "required": ["name", "position", "ovr", "ownerUid"]
     },
     "match": {
       "title": "Match",
@@ -82,7 +82,7 @@
     },
     "/players/{playerId}": {
       "schema": { "$ref": "#/entities/player" },
-      "description": "Stores data for each player, linked to a group."
+      "description": "Stores data for each player, linked to a group. PlayerId is the same as the user's UID."
     },
     "/matches/{matchId}": {
       "schema": { "$ref": "#/entities/match" },

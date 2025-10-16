@@ -1,13 +1,13 @@
 'use client';
 
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Goal } from 'lucide-react';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useAuth } from '@/firebase';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,11 +15,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { writeBatch, collection, doc } from 'firebase/firestore';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const registerSchema = z.object({
     displayName: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
     email: z.string().email('Por favor, introduce un correo electrónico válido.'),
     password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.'),
+    position: z.enum(['DEL', 'MED', 'DEF', 'POR'], { required_error: 'La posición es obligatoria.'}),
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -28,6 +31,7 @@ export default function RegisterPage() {
   const { user, loading } = useUser();
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
 
   const form = useForm<RegisterFormValues>({
@@ -47,14 +51,55 @@ export default function RegisterPage() {
 
 
   const onSubmit = async (data: RegisterFormValues) => {
-    if (!auth) return;
+    if (!auth || !firestore) return;
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-        if(userCredential.user) {
-            await updateProfile(userCredential.user, {
-                displayName: data.displayName
+        const newUser = userCredential.user;
+
+        if(newUser) {
+            const batch = writeBatch(firestore);
+
+            // 1. Update auth profile
+            await updateProfile(newUser, {
+                displayName: data.displayName,
+                photoURL: `https://picsum.photos/seed/${data.displayName}/400/400`
             });
+
+            // 2. Create user document in /users
+            const userRef = doc(firestore, 'users', newUser.uid);
+            const newUserProfile = {
+              uid: newUser.uid,
+              email: newUser.email,
+              displayName: data.displayName,
+              photoURL: `https://picsum.photos/seed/${data.displayName}/400/400`,
+              groups: [],
+              activeGroupId: null,
+            };
+            batch.set(userRef, newUserProfile);
+
+            // 3. Create player document in /players
+            const playerRef = doc(firestore, 'players', newUser.uid); // Use user UID as player ID
+            const baseStat = 75;
+            const newPlayer = {
+                name: data.displayName,
+                position: data.position,
+                pac: baseStat,
+                sho: baseStat,
+                pas: baseStat,
+                dri: baseStat,
+                def: baseStat,
+                phy: baseStat,
+                ovr: baseStat,
+                photoUrl: `https://picsum.photos/seed/${data.displayName}/400/400`,
+                stats: { matchesPlayed: 0, goals: 0, assists: 0, averageRating: 0 },
+                ownerUid: newUser.uid,
+                groupId: null,
+            };
+            batch.set(playerRef, newPlayer);
+
+            await batch.commit();
         }
+        
         toast({
             title: '¡Cuenta creada!',
             description: 'Te hemos redirigido al panel de control.',
@@ -118,7 +163,7 @@ export default function RegisterPage() {
                             </FormItem>
                         )}
                     />
-                    <FormField
+                     <FormField
                         control={form.control}
                         name="password"
                         render={({ field }) => (
@@ -127,6 +172,29 @@ export default function RegisterPage() {
                                 <FormControl>
                                     <Input type="password" placeholder="********" {...field} />
                                 </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="position"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Posición Favorita</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecciona tu posición en el campo" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="DEL">DEL (Delantero)</SelectItem>
+                                        <SelectItem value="MED">MED (Centrocampista)</SelectItem>
+                                        <SelectItem value="DEF">DEF (Defensa)</SelectItem>
+                                        <SelectItem value="POR">POR (Portero)</SelectItem>
+                                    </SelectContent>
+                                </Select>
                                 <FormMessage />
                             </FormItem>
                         )}
