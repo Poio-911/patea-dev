@@ -8,8 +8,7 @@ import { useFirestore, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useCollection } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { generateTeamsAction } from '@/lib/actions';
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +31,7 @@ import { InvitePlayerDialog } from './invite-player-dialog';
 
 type MatchCardProps = {
   match: Match;
+  allPlayers: Player[];
 };
 
 const statusConfig = {
@@ -48,7 +48,7 @@ const InfoRow = ({ icon: Icon, text }: { icon: React.ElementType, text: string }
     </div>
 );
 
-export function MatchCard({ match }: MatchCardProps) {
+export function MatchCard({ match, allPlayers }: MatchCardProps) {
     const firestore = useFirestore();
     const { user } = useUser();
     const { toast } = useToast();
@@ -65,13 +65,6 @@ export function MatchCard({ match }: MatchCardProps) {
     const isMatchFull = useMemo(() => {
         return match.players.length >= match.matchSize;
     }, [match.players, match.matchSize]);
-
-    const playersQuery = useMemo(() => {
-        if (!firestore || !user?.activeGroupId) return null;
-        return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
-    }, [firestore, user?.activeGroupId]);
-
-    const { data: allPlayers, loading: playersLoading } = useCollection<Player>(playersQuery);
 
     const availablePlayersToInvite = useMemo(() => {
         if (!allPlayers) return [];
@@ -106,19 +99,39 @@ export function MatchCard({ match }: MatchCardProps) {
         if (!firestore) return;
         setIsFinishing(true);
         try {
-            await updateDoc(doc(firestore, 'matches', match.id), {
-                status: 'completed'
-            });
+            // For collaborative matches that are full, generate teams first
+            if(match.type === 'collaborative' && isMatchFull) {
+                const selectedPlayersData = allPlayers.filter(p => match.players.some(mp => mp.uid === p.id));
+                const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
+                
+                if (teamGenerationResult.error || !teamGenerationResult.teams) {
+                    throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
+                }
+                 if (teamGenerationResult.teams.length > 0 && teamGenerationResult.balanceMetrics) {
+                    teamGenerationResult.teams[0].balanceMetrics = teamGenerationResult.balanceMetrics;
+                }
+
+                await updateDoc(doc(firestore, 'matches', match.id), {
+                    status: 'completed',
+                    teams: teamGenerationResult.teams
+                });
+
+            } else {
+                 await updateDoc(doc(firestore, 'matches', match.id), {
+                    status: 'completed'
+                });
+            }
+           
              toast({
                 title: 'Partido Finalizado',
                 description: `El partido "${match.title}" ha sido marcado como finalizado.`
             });
-        } catch (error) {
+        } catch (error: any) {
              console.error("Error finishing match: ", error);
              toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'No se pudo finalizar el partido.'
+                description: error.message || 'No se pudo finalizar el partido.'
             });
         } finally {
             setIsFinishing(false);
@@ -148,9 +161,12 @@ export function MatchCard({ match }: MatchCardProps) {
 
         try {
             if(isUserInMatch) {
-                await updateDoc(matchRef, {
-                    players: arrayRemove(playerPayload)
-                });
+                const playerToRemove = match.players.find(p => p.uid === user.uid);
+                if (playerToRemove) {
+                    await updateDoc(matchRef, {
+                        players: arrayRemove(playerToRemove)
+                    });
+                }
                 toast({ title: 'Te has dado de baja', description: `Ya no estás apuntado a "${match.title}".` });
             } else {
                 if (isMatchFull) {
@@ -211,7 +227,7 @@ export function MatchCard({ match }: MatchCardProps) {
                 {match.status === 'upcoming' && match.type === 'collaborative' && (
                      <>
                         {!isMatchFull && (
-                            <Button variant={isUserInMatch ? 'secondary' : 'default'} size="sm" onClick={handleJoinOrLeaveMatch} disabled={isJoining || playersLoading}>
+                            <Button variant={isUserInMatch ? 'secondary' : 'default'} size="sm" onClick={handleJoinOrLeaveMatch} disabled={isJoining}>
                                 {isJoining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isUserInMatch ? <LogOut className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />)}
                                 {isUserInMatch ? 'Darse de baja' : 'Apuntarse'}
                             </Button>
@@ -220,7 +236,7 @@ export function MatchCard({ match }: MatchCardProps) {
                             <Button variant="outline" size="sm" disabled>Partido Lleno</Button>
                         )}
                          {isMatchFull && isUserInMatch && (
-                            <Button variant="secondary" size="sm" onClick={handleJoinOrLeaveMatch} disabled={isJoining || playersLoading}>
+                            <Button variant="secondary" size="sm" onClick={handleJoinOrLeaveMatch} disabled={isJoining}>
                                 {isJoining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
                                 Darse de baja
                             </Button>
@@ -229,9 +245,9 @@ export function MatchCard({ match }: MatchCardProps) {
                         <InvitePlayerDialog 
                             match={match} 
                             availablePlayers={availablePlayersToInvite}
-                            disabled={isMatchFull || playersLoading} 
+                            disabled={isMatchFull} 
                         >
-                            <Button variant="outline" size="sm" className="w-full" disabled={isMatchFull || playersLoading}>
+                            <Button variant="outline" size="sm" className="w-full" disabled={isMatchFull}>
                                 <UserPlus className="mr-2 h-4 w-4" />
                                 Invitar
                             </Button>

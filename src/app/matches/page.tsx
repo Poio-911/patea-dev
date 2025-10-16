@@ -8,7 +8,7 @@ import { useMemo } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { AddMatchDialog } from '@/components/add-match-dialog';
-import type { Match } from '@/lib/types';
+import type { Match, Player } from '@/lib/types';
 import { MatchCard } from '@/components/match-card';
 
 export default function MatchesPage() {
@@ -20,7 +20,7 @@ export default function MatchesPage() {
         return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
     }, [firestore, user?.activeGroupId]);
 
-    const { data: players, loading: playersLoading } = useCollection(playersQuery);
+    const { data: players, loading: playersLoading } = useCollection<Player>(playersQuery);
 
     const matchesQuery = useMemo(() => {
         if (!firestore || !user?.activeGroupId) return null;
@@ -71,7 +71,7 @@ export default function MatchesPage() {
       {!loading && matches && matches.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {matches.map((match) => (
-                <MatchCard key={match.id} match={match} />
+                <MatchCard key={match.id} match={match} allPlayers={players || []} />
             ))}
         </div>
       )}
