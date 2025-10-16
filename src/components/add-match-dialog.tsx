@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Calendar as CalendarIcon, Loader2, PlusCircle } from 'lucide-react';
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,7 +39,7 @@ const matchSchema = z.object({
   location: z.string().min(3, 'La ubicación es obligatoria.'),
   type: z.enum(['manual', 'collaborative'], { required_error: 'El tipo es obligatorio.' }),
   matchSize: z.enum(['10', '14', '22'], { required_error: 'El tamaño es obligatorio.' }),
-  players: z.array(z.string()).refine(val => val.length > 0, { message: 'Debes seleccionar al menos un jugador.' }),
+  players: z.array(z.string()),
 });
 
 type MatchFormData = z.infer<typeof matchSchema>;
@@ -69,6 +69,17 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   });
 
   const selectedMatchSize = parseInt(form.watch('matchSize') as MatchSize | string, 10);
+  const matchType = form.watch('type');
+
+  useEffect(() => {
+    form.reset({
+      ...form.getValues(),
+      players: [], 
+      title: 'Partido Amistoso',
+      time: '21:00',
+      location: 'Cancha Principal',
+    });
+  }, [matchType, selectedMatchSize]);
 
   const handlePlayerSelect = (playerId: string, checked: boolean) => {
     const currentPlayers = form.getValues('players');
@@ -95,35 +106,20 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       return;
     }
     
-    if (data.players.length !== selectedMatchSize) {
+    if (data.type === 'manual' && data.players.length !== selectedMatchSize) {
       toast({ variant: 'destructive', title: 'Error de jugadores', description: `Debes seleccionar exactamente ${selectedMatchSize} jugadores.` });
       return;
     }
 
     startTransition(async () => {
         try {
-            const selectedPlayersData = allPlayers.filter(p => data.players.includes(p.id));
-
-            const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
-            
-            if (teamGenerationResult.error || !teamGenerationResult.teams) {
-                throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
+            if (data.type === 'manual') {
+              await createManualMatch(data);
+            } else {
+              await createCollaborativeMatch(data);
             }
-
-            const newMatch = {
-                ...data,
-                matchSize: selectedMatchSize,
-                date: data.date.toISOString(),
-                status: 'upcoming',
-                ownerUid: user.uid,
-                groupId: user.activeGroupId,
-                players: selectedPlayersData.map(p => ({ uid: p.id, displayName: p.name, ovr: p.ovr, position: p.position, photoUrl: p.photoUrl || '' })),
-                teams: teamGenerationResult.teams,
-            };
-    
-            await addDoc(collection(firestore, 'matches'), newMatch);
             
-            toast({ title: 'Éxito', description: 'Partido programado y equipos generados.' });
+            toast({ title: 'Éxito', description: 'Partido programado correctamente.' });
             setOpen(false);
             form.reset();
         } catch (error: any) {
@@ -136,6 +132,48 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         }
     });
   };
+
+  const createManualMatch = async (data: MatchFormData) => {
+    const selectedPlayersData = allPlayers.filter(p => data.players.includes(p.id));
+
+    const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
+    
+    if (teamGenerationResult.error || !teamGenerationResult.teams) {
+        throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
+    }
+    if (teamGenerationResult.teams.length > 0 && teamGenerationResult.balanceMetrics) {
+        teamGenerationResult.teams[0].balanceMetrics = teamGenerationResult.balanceMetrics;
+    }
+
+    const newMatch = {
+        ...data,
+        matchSize: selectedMatchSize,
+        date: data.date.toISOString(),
+        status: 'upcoming',
+        ownerUid: user!.uid,
+        groupId: user!.activeGroupId,
+        players: selectedPlayersData.map(p => ({ uid: p.id, displayName: p.name, ovr: p.ovr, position: p.position, photoUrl: p.photoUrl || '' })),
+        teams: teamGenerationResult.teams,
+    };
+
+    await addDoc(collection(firestore!, 'matches'), newMatch);
+  }
+
+  const createCollaborativeMatch = async (data: MatchFormData) => {
+    const newMatch = {
+      ...data,
+      matchSize: selectedMatchSize,
+      date: data.date.toISOString(),
+      status: 'upcoming',
+      ownerUid: user!.uid,
+      groupId: user!.activeGroupId,
+      players: [], // Starts empty
+      teams: [],
+    };
+
+    await addDoc(collection(firestore!, 'matches'), newMatch);
+  }
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -150,7 +188,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
           <DialogHeader>
             <DialogTitle>Programar Nuevo Partido</DialogTitle>
             <DialogDescription>
-              Introduce los detalles del partido y selecciona los jugadores.
+              Introduce los detalles del partido y selecciona el tipo.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-8 py-4">
@@ -229,8 +267,8 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                 <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent has-[:checked]:bg-accent">
                                     <RadioGroupItem value="manual" /> Manual
                                 </Label>
-                                <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent has-[:checked]:bg-accent" aria-disabled>
-                                    <RadioGroupItem value="collaborative" disabled /> Colaborativo (Próximamente)
+                                <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent has-[:checked]:bg-accent">
+                                    <RadioGroupItem value="collaborative" /> Colaborativo
                                 </Label>
                             </RadioGroup>
                         )}
@@ -240,43 +278,54 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 </div>
 
                 {/* Column 2: Player Selection */}
-                <div className="space-y-4">
-                    <Label>Jugadores ({form.watch('players').length} / {selectedMatchSize})</Label>
-                    {allPlayers.length > 0 ? (
-                        <div className="max-h-[400px] md:max-h-full overflow-y-auto space-y-2 border p-2 rounded-md">
-                            {allPlayers.map(player => (
-                                <div key={player.id} className="flex items-center space-x-3 rounded-md border p-3 hover:bg-accent/50 has-[:checked]:bg-accent">
-                                    <Checkbox
-                                        id={`player-${player.id}`}
-                                        onCheckedChange={(checked) => handlePlayerSelect(player.id, !!checked)}
-                                        checked={form.getValues('players').includes(player.id)}
-                                    />
-                                    <Avatar className="h-9 w-9">
-                                        <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
-                                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <Label htmlFor={`player-${player.id}`} className="flex-1 cursor-pointer">
-                                        <span className="font-semibold">{player.name}</span>
-                                        <span className="ml-2 text-xs text-muted-foreground">{player.position} - OVR: {player.ovr}</span>
-                                    </Label>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <Alert>
-                            <AlertDescription>
-                                No hay jugadores en tu grupo activo. Añade jugadores desde la página de Jugadores.
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                    {form.formState.errors.players && <p className="text-xs text-destructive mt-1">{form.formState.errors.players.message}</p>}
-                </div>
+                {matchType === 'manual' && (
+                    <div className="space-y-4">
+                        <Label>Jugadores ({form.watch('players').length} / {selectedMatchSize})</Label>
+                        {allPlayers.length > 0 ? (
+                            <div className="max-h-[400px] md:max-h-full overflow-y-auto space-y-2 border p-2 rounded-md">
+                                {allPlayers.map(player => (
+                                    <div key={player.id} className="flex items-center space-x-3 rounded-md border p-3 hover:bg-accent/50 has-[:checked]:bg-accent">
+                                        <Checkbox
+                                            id={`player-${player.id}`}
+                                            onCheckedChange={(checked) => handlePlayerSelect(player.id, !!checked)}
+                                            checked={form.getValues('players').includes(player.id)}
+                                        />
+                                        <Avatar className="h-9 w-9">
+                                            <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
+                                            <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <Label htmlFor={`player-${player.id}`} className="flex-1 cursor-pointer">
+                                            <span className="font-semibold">{player.name}</span>
+                                            <span className="ml-2 text-xs text-muted-foreground">{player.position} - OVR: {player.ovr}</span>
+                                        </Label>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <Alert>
+                                <AlertDescription>
+                                    No hay jugadores en tu grupo activo. Añade jugadores desde la página de Jugadores.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                        {form.formState.errors.players && <p className="text-xs text-destructive mt-1">{form.formState.errors.players.message}</p>}
+                    </div>
+                )}
+                 {matchType === 'collaborative' && (
+                    <Alert>
+                        <AlertTitle>Partido Colaborativo</AlertTitle>
+                        <AlertDescription>
+                            Has seleccionado un partido colaborativo. Los jugadores podrán apuntarse ellos mismos.
+                            También podrás invitar jugadores manualmente una vez creado el partido.
+                        </AlertDescription>
+                    </Alert>
+                 )}
             </div>
           </div>
           <DialogFooter>
             <Button type="submit" disabled={isPending}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isPending ? 'Programando...' : 'Programar Partido y Generar Equipos'}
+                {isPending ? 'Programando...' : 'Programar Partido'}
             </Button>
           </DialogFooter>
         </form>
