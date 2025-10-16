@@ -7,9 +7,9 @@ import { FirebaseOptions } from 'firebase/app';
 
 export const firebaseConfig: FirebaseOptions = {
   apiKey: "YOUR_API_KEY",
-  authDomain: "futbol-app-pwa-25266201-1bba5.firebaseapp.com",
-  projectId: "futbol-app-pwa-25266201-1bba5",
-  storageBucket: "futbol-app-pwa-25266201-1bba5.appspot.com",
-  messagingSenderId: "843616956629",
-  appId: "1:843616956629:web:9c22b109632360f0892095",
+  authDomain: "mil-disculpis.firebaseapp.com",
+  projectId: "mil-disculpis",
+  storageBucket: "mil-disculpis.appspot.com",
+  messagingSenderId: "1024088317155",
+  appId: "1:1024088317155:web:a6217c376f906d489b4b01",
 };
