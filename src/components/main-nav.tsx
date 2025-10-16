@@ -60,6 +60,11 @@ export function MainNav({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
+  
+  if (!user) {
+    return null; // o un esqueleto de carga
+  }
+
 
   return (
     <SidebarProvider>
