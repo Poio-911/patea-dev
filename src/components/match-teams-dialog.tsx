@@ -14,20 +14,42 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import type { Match } from '@/lib/types';
-import { Scale, Trophy, Users } from 'lucide-react';
+import { Star, Scale } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type MatchTeamsDialogProps = {
   match: Match;
   children: React.ReactNode;
 };
 
+const BalanceRating = ({ fairnessPercentage }: { fairnessPercentage: number }) => {
+    const totalStars = 5;
+    const filledStars = Math.round((fairnessPercentage / 100) * totalStars);
+  
+    return (
+      <div className="flex flex-col items-center gap-2">
+        <div className="flex items-center gap-1">
+          {[...Array(totalStars)].map((_, i) => (
+            <Star
+              key={i}
+              className={cn(
+                'w-6 h-6',
+                i < filledStars
+                  ? 'text-yellow-400 fill-yellow-400'
+                  : 'text-gray-300 dark:text-gray-600'
+              )}
+            />
+          ))}
+        </div>
+        <p className="text-sm font-medium text-muted-foreground">Nivel de Equilibrio</p>
+      </div>
+    );
+  };
+
 export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
   const teams = match.teams || [];
   
-  const balanceMetrics = match.teams?.[0]?.balanceMetrics;
-
-  const ovrDifference = balanceMetrics?.ovrDifference ?? 0;
-  const fairnessPercentage = balanceMetrics?.fairnessPercentage ?? 100;
+  const fairnessPercentage = match.teams?.[0]?.balanceMetrics?.fairnessPercentage ?? 0;
   
   return (
     <Dialog>
@@ -39,30 +61,11 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
             Equipos generados por IA para un partido equilibrado.
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4 space-y-4">
-            {balanceMetrics && (
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Métricas de Equilibrio</CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                      <div className="flex flex-col items-center gap-2 p-4 bg-muted/50 rounded-lg">
-                          <Scale className="w-6 h-6 text-primary"/>
-                          <p className="text-sm text-muted-foreground">Diferencia OVR</p>
-                          <p className="text-2xl font-bold">{ovrDifference}</p>
-                      </div>
-                      <div className="flex flex-col items-center gap-2 p-4 bg-muted/50 rounded-lg">
-                          <Trophy className="w-6 h-6 text-primary"/>
-                          <p className="text-sm text-muted-foreground">Justicia</p>
-                          <p className="text-2xl font-bold">{fairnessPercentage.toFixed(0)}%</p>
-                      </div>
-                      <div className="flex flex-col items-center gap-2 p-4 bg-muted/50 rounded-lg">
-                          <Users className="w-6 h-6 text-primary"/>
-                          <p className="text-sm text-muted-foreground">Jugadores/Equipo</p>
-                          <p className="text-2xl font-bold">{teams.length > 0 ? teams[0].players.length : 0}</p>
-                      </div>
-                  </CardContent>
-              </Card>
+        <div className="py-4 space-y-6">
+            {fairnessPercentage > 0 && (
+                <div className="flex justify-center">
+                    <BalanceRating fairnessPercentage={fairnessPercentage} />
+                </div>
             )}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {teams.map((team) => (
