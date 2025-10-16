@@ -15,6 +15,7 @@ import {
   SidebarTrigger,
   SidebarFooter,
 } from '@/components/ui/sidebar';
+import { SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LayoutDashboard, Users, Calendar, Swords, LogOut, Settings, Goal, Users2 } from 'lucide-react';
@@ -28,7 +29,7 @@ const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
   { href: '/players', label: 'Jugadores', icon: Users },
   { href: '/matches', label: 'Partidos', icon: Calendar },
-  { href: '/team-generator', label: 'Generador', icon: Swords },
+  { href: '/matches', label: 'Generador', icon: Swords },
   { href: '/groups', label: 'Grupos', icon: Users2 },
 ];
 
@@ -76,6 +77,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           collapsible="icon"
           className="group-data-[variant=sidebar]:bg-sidebar group-data-[variant=sidebar]:text-sidebar-foreground"
         >
+          <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
           <SidebarHeader className="p-4">
              <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
