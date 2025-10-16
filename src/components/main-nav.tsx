@@ -37,8 +37,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   React.useEffect(() => {
-    if (!loading && !user && pathname !== '/') {
-      router.push('/');
+    if (!loading && !user && pathname !== '/' && pathname !== '/login' && pathname !== '/register') {
+      router.push('/login');
     }
   }, [user, loading, pathname, router]);
 
@@ -49,7 +49,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     }
   };
 
-  if (pathname === '/') {
+  if (pathname === '/' || pathname === '/login' || pathname === '/register') {
     return <>{children}</>;
   }
 
