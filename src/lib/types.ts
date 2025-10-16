@@ -56,6 +56,10 @@ export type Team = {
   }[];
   totalOVR: number;
   averageOVR: number;
+  balanceMetrics?: {
+    ovrDifference: number;
+    fairnessPercentage: number;
+  }
 };
 
 export type Group = {

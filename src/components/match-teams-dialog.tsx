@@ -15,9 +15,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import type { Match } from '@/lib/types';
 import { Scale, Trophy, Users } from 'lucide-react';
-import { useCollection, useFirestore } from '@/firebase';
-import { useMemo } from 'react';
-import { collection, query, where } from 'firebase/firestore';
 
 type MatchTeamsDialogProps = {
   match: Match;
@@ -26,13 +23,16 @@ type MatchTeamsDialogProps = {
 
 export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
   const teams = match.teams || [];
-  const ovrDifference = teams.length > 1 ? Math.abs(teams[0].totalOVR - teams[1].totalOVR) : 0;
-  const fairnessPercentage = teams.length > 1 ? (1 - (ovrDifference / Math.max(teams[0].totalOVR, teams[1].totalOVR))) * 100 : 100;
+  
+  const balanceMetrics = match.teams?.[0]?.balanceMetrics;
+
+  const ovrDifference = balanceMetrics?.ovrDifference ?? 0;
+  const fairnessPercentage = balanceMetrics?.fairnessPercentage ?? 100;
   
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Equipos para "{match.title}"</DialogTitle>
           <DialogDescription>
@@ -40,28 +40,30 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Métricas de Equilibrio</CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                    <div className="flex flex-col items-center gap-2 p-4 bg-muted/50 rounded-lg">
-                        <Scale className="w-6 h-6 text-primary"/>
-                        <p className="text-sm text-muted-foreground">Diferencia OVR</p>
-                        <p className="text-2xl font-bold">{ovrDifference}</p>
-                    </div>
-                    <div className="flex flex-col items-center gap-2 p-4 bg-muted/50 rounded-lg">
-                        <Trophy className="w-6 h-6 text-primary"/>
-                        <p className="text-sm text-muted-foreground">Justicia</p>
-                        <p className="text-2xl font-bold">{fairnessPercentage.toFixed(0)}%</p>
-                    </div>
-                    <div className="flex flex-col items-center gap-2 p-4 bg-muted/50 rounded-lg">
-                        <Users className="w-6 h-6 text-primary"/>
-                        <p className="text-sm text-muted-foreground">Jugadores/Equipo</p>
-                        <p className="text-2xl font-bold">{teams.length > 0 ? teams[0].players.length : 0}</p>
-                    </div>
-                </CardContent>
-            </Card>
+            {balanceMetrics && (
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Métricas de Equilibrio</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                      <div className="flex flex-col items-center gap-2 p-4 bg-muted/50 rounded-lg">
+                          <Scale className="w-6 h-6 text-primary"/>
+                          <p className="text-sm text-muted-foreground">Diferencia OVR</p>
+                          <p className="text-2xl font-bold">{ovrDifference}</p>
+                      </div>
+                      <div className="flex flex-col items-center gap-2 p-4 bg-muted/50 rounded-lg">
+                          <Trophy className="w-6 h-6 text-primary"/>
+                          <p className="text-sm text-muted-foreground">Justicia</p>
+                          <p className="text-2xl font-bold">{fairnessPercentage.toFixed(0)}%</p>
+                      </div>
+                      <div className="flex flex-col items-center gap-2 p-4 bg-muted/50 rounded-lg">
+                          <Users className="w-6 h-6 text-primary"/>
+                          <p className="text-sm text-muted-foreground">Jugadores/Equipo</p>
+                          <p className="text-2xl font-bold">{teams.length > 0 ? teams[0].players.length : 0}</p>
+                      </div>
+                  </CardContent>
+              </Card>
+            )}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {teams.map((team) => (
               <Card key={team.name}>
