@@ -14,32 +14,28 @@ export default function HomePage() {
   const auth = useAuth();
 
   useEffect(() => {
-    if (user) {
+    if (!loading && user) {
       router.push('/dashboard');
     }
-  }, [user, router]);
+  }, [user, loading, router]);
 
   const handleLogin = async () => {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      router.push('/dashboard');
+      // The useEffect will handle the redirect
     } catch (error) {
       console.error('Error al iniciar sesión con Google', error);
     }
   };
 
-  if (loading && !user) {
+  if (loading || user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Goal className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
-  }
-
-  if (user) {
-    return null;
   }
 
   return (

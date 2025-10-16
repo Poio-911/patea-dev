@@ -2,7 +2,7 @@
 import { useEffect, useState, createContext, useContext } from 'react';
 import type { User } from 'firebase/auth';
 import { useAuth } from '@/firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 
 export interface UserData extends User {
@@ -39,9 +39,16 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
+            createdAt: serverTimestamp(),
           };
-          await setDoc(userRef, newUserProfile);
-          setUser(firebaseUser as UserData);
+          try {
+            await setDoc(userRef, newUserProfile);
+            const createdUserDoc = await getDoc(userRef);
+            setUser(createdUserDoc.data() as UserData);
+          } catch(e) {
+            console.error("Error creating user profile:", e);
+            setUser(null);
+          }
         } else {
            setUser(userDoc.data() as UserData);
         }
