@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, Save, X } from 'lucide-react';
+import { Loader2, Save, X, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Slider } from '@/components/ui/slider';
 import { performanceTags } from '@/lib/data';
@@ -50,22 +50,27 @@ const OVR_PROGRESSION = {
 
 
 const calculateOvrChange = (currentOvr: number, newRating: number): number => {
+    console.log(`[EVAL] Calculating OVR change for OVR: ${currentOvr}, Rating: ${newRating}`);
     const { BASELINE_RATING, SCALE, MAX_STEP, DECAY_START, SOFT_CAP, HARD_CAP } = OVR_PROGRESSION;
 
     const ratingDelta = newRating - BASELINE_RATING;
     let rawDelta = ratingDelta * SCALE;
+    console.log(`[EVAL] Raw delta: ${rawDelta.toFixed(2)}`);
 
     if (currentOvr >= DECAY_START && currentOvr < SOFT_CAP) {
         const t = (currentOvr - DECAY_START) / (SOFT_CAP - DECAY_START);
         const factor = 1 - (0.6 * Math.min(1, t)); 
         rawDelta *= factor;
+        console.log(`[EVAL] OVR >= 70. Decay factor: ${factor.toFixed(2)}. Decayed delta: ${rawDelta.toFixed(2)}`);
     } else if (currentOvr >= SOFT_CAP) {
         const t2 = (currentOvr - SOFT_CAP) / (HARD_CAP - SOFT_CAP);
         const hardFactor = 0.25 * (1 - t2);
         rawDelta *= hardFactor;
+        console.log(`[EVAL] OVR >= 95. Hard cap factor: ${hardFactor.toFixed(2)}. Decayed delta: ${rawDelta.toFixed(2)}`);
     }
 
     const finalDelta = Math.max(-MAX_STEP, Math.min(MAX_STEP, rawDelta));
+    console.log(`[EVAL] Final delta after clamping: ${finalDelta.toFixed(2)}`);
     return Math.round(finalDelta);
 }
 
