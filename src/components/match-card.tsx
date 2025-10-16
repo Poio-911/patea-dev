@@ -269,12 +269,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                  )}
 
                  <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                    {match.status !== 'completed' && match.status !== 'evaluated' && (
-                         <Button variant="ghost" size="sm" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive col-span-2" onClick={() => setIsDeleteDialogOpen(true)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Eliminar
-                        </Button>
-                    )}
                     <AlertDialogContent>
                         <AlertDialogHeader>
                         <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
@@ -292,6 +286,32 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
+                 {match.status !== 'completed' && match.status !== 'evaluated' && user?.uid === match.ownerUid &&(
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive col-span-2">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Eliminar
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta acción no se puede deshacer. Esto eliminará permanentemente el partido
+                                y todos sus datos asociados.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Sí, eliminar partido
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                 )}
             </CardFooter>
         </Card>
     );
