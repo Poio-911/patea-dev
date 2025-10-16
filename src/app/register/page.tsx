@@ -79,7 +79,7 @@ export default function RegisterPage() {
 
             // 3. Create player document in /players
             const playerRef = doc(firestore, 'players', newUser.uid); // Use user UID as player ID
-            const baseStat = 75;
+            const baseStat = 50;
             const newPlayer = {
                 name: data.displayName,
                 position: data.position,

@@ -59,12 +59,12 @@ export function AddPlayerDialog() {
     resolver: zodResolver(playerSchema),
     defaultValues: {
       name: 'Nuevo Jugador',
-      pac: 75,
-      sho: 75,
-      pas: 75,
-      dri: 75,
-      def: 75,
-      phy: 75,
+      pac: 50,
+      sho: 50,
+      pas: 50,
+      dri: 50,
+      def: 50,
+      phy: 50,
     },
   });
 
