@@ -23,14 +23,23 @@ export const useCollection = <T extends DocumentData>(
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const queryPath = query ? query.path : 'null';
+    console.log(`[useCollection] useEffect for query: ${queryPath}`);
+
     if (!query) {
+      console.log('[useCollection] Query is null, setting loading to false.');
+      setData(null);
       setLoading(false);
       return;
     }
 
+    setLoading(true);
+    console.log(`[useCollection] Setting up onSnapshot for: ${queryPath}`);
+
     const unsubscribe = onSnapshot(
       query,
       (querySnapshot) => {
+        console.log(`[useCollection] onSnapshot success for ${queryPath}. Doc count: ${querySnapshot.size}`);
         const collectionData: T[] = [];
         querySnapshot.forEach((doc) => {
           collectionData.push({ id: doc.id, ...doc.data() } as T);
@@ -39,17 +48,22 @@ export const useCollection = <T extends DocumentData>(
         setLoading(false);
       },
       (err) => {
+        console.error(`[useCollection] onSnapshot error for ${queryPath}:`, err);
         const permissionError = new FirestorePermissionError({
             path: query.path,
             operation: 'list',
         });
         errorEmitter.emit('permission-error', permissionError);
         setError(err);
+        setData(null);
         setLoading(false);
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+        console.log(`[useCollection] Unsubscribing from: ${queryPath}`);
+        unsubscribe();
+    };
   }, [query]);
 
   return { data, loading, error };
