@@ -10,10 +10,11 @@ export async function generateTeamsAction(players: Player[]) {
     return { error: 'Se necesitan al menos 2 jugadores para generar equipos.'};
   }
 
+  // FIX: Ensure the object passed to the AI flow has the correct shape.
   const input: GenerateBalancedTeamsInput = {
     players: players.map(p => ({
-      uid: p.id || p.uid,
-      displayName: p.name || p.displayName,
+      uid: p.id || p.uid, // Handle both 'id' from firestore docs and 'uid'
+      displayName: p.name || p.displayName, // Handle both 'name' and 'displayName'
       ovr: p.ovr,
       position: p.position,
     })),
@@ -22,6 +23,9 @@ export async function generateTeamsAction(players: Player[]) {
 
   try {
     const result = await generateBalancedTeams(input);
+    if (!result || !result.teams) {
+      throw new Error('La respuesta de la IA no contiene equipos.');
+    }
     return result;
   } catch (error) {
     console.error('Error generating teams:', error);
