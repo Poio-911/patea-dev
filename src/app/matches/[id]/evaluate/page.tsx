@@ -21,6 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
 
 
 const evaluationSchema = z.object({
@@ -111,6 +112,7 @@ export default function EvaluateMatchPage() {
   const { user } = useUser();
   const router = useRouter();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const matchRef = doc(firestore, 'matches', matchId as string);
   const { data: match, loading: matchLoading } = useDoc<Match>(matchRef);
@@ -141,6 +143,7 @@ export default function EvaluateMatchPage() {
 
   const onSubmit = async (data: EvaluationFormData) => {
     if (!firestore || !match) return;
+    setIsSubmitting(true);
 
     try {
         console.log('[EVAL] Starting transaction for match evaluation:', match.id);
@@ -241,6 +244,8 @@ export default function EvaluateMatchPage() {
             title: 'Error',
             description: error.message || 'No se pudieron guardar las evaluaciones.'
         });
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -391,8 +396,8 @@ export default function EvaluateMatchPage() {
           </Card>
           
           <div className="flex justify-end">
-            <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               Guardar Evaluaciones
             </Button>
           </div>
