@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Users2, Calendar, Trash2, CheckCircle2 } from 'lucide-react';
+import { MoreHorizontal, Users2, Calendar, Trash2, CheckCircle2, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import {
   DropdownMenu,
@@ -16,17 +16,30 @@ import {
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, orderBy, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { AddMatchDialog } from '@/components/add-match-dialog';
 import type { Match } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { MatchTeamsDialog } from '@/components/match-teams-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function MatchesPage() {
     const { user } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const playersQuery = useMemo(() => {
         if (!firestore || !user?.activeGroupId) return null;
@@ -44,21 +57,22 @@ export default function MatchesPage() {
 
     const handleDeleteMatch = async (matchId: string) => {
         if (!firestore) return;
-        if (confirm('¿Estás seguro de que quieres eliminar este partido? Esta acción no se puede deshacer.')) {
-            try {
-                await deleteDoc(doc(firestore, 'matches', matchId));
-                toast({
-                    title: 'Partido Eliminado',
-                    description: 'El partido ha sido eliminado correctamente.'
-                });
-            } catch (error) {
-                console.error("Error deleting match: ", error);
-                toast({
-                    variant: 'destructive',
-                    title: 'Error',
-                    description: 'No se pudo eliminar el partido.'
-                });
-            }
+        setIsDeleting(true);
+        try {
+            await deleteDoc(doc(firestore, 'matches', matchId));
+            toast({
+                title: 'Partido Eliminado',
+                description: 'El partido ha sido eliminado correctamente.'
+            });
+        } catch (error) {
+            console.error("Error deleting match: ", error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'No se pudo eliminar el partido.'
+            });
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -147,26 +161,53 @@ export default function MatchesPage() {
                         </TableCell>
                         <TableCell>
                             <Badge
-                                variant={match.status === 'completed' ? 'secondary' : 'default'}
+                                variant={match.status === 'completed' || match.status === 'evaluated' ? 'secondary' : 'default'}
                                 className={cn({
                                     'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300': match.status === 'upcoming',
+                                    'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300': match.status === 'active',
                                     'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300': match.status === 'completed',
+                                    'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300': match.status === 'evaluated',
                                 })}
                             >
-                                {match.status === 'upcoming' ? 'Próximo' : 'Finalizado'}
+                                {match.status === 'upcoming' ? 'Próximo' : match.status === 'completed' ? 'Finalizado' : match.status === 'evaluated' ? 'Evaluado' : 'Activo'}
                             </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right space-x-2">
+                           <MatchTeamsDialog match={match}>
+                                <Button variant="outline" size="sm" disabled={!match.teams || match.teams.length === 0}>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    Equipos
+                                </Button>
+                           </MatchTeamsDialog>
                             {match.status === 'upcoming' && (
-                                <Button variant="outline" size="sm" onClick={() => handleFinishMatch(match)}>
+                                <Button variant="default" size="sm" onClick={() => handleFinishMatch(match)}>
                                     <CheckCircle2 className="mr-2 h-4 w-4" />
                                     Finalizar
                                 </Button>
                             )}
-                            <Button variant="destructive" size="sm" className="ml-2" onClick={() => handleDeleteMatch(match.id)}>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Eliminar
-                            </Button>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" size="sm" disabled={isDeleting}>
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Eliminar
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta acción no se puede deshacer. Esto eliminará permanentemente el partido
+                                        y todos sus datos asociados.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteMatch(match.id)}>
+                                        Sí, eliminar partido
+                                    </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </TableCell>
                         </TableRow>
                     ))}
