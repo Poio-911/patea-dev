@@ -177,17 +177,16 @@ export default function EvaluateMatchPage() {
                     };
                     console.log(`[EVAL] New attributes for ${playerData.name}:`, newAttributes);
 
-
-                    const newOvr = Math.round(Object.values(newAttributes).reduce((sum, val) => sum + val, 0) / 6);
-                    const finalNewOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, newOvr));
-                    console.log(`[EVAL] New OVR for ${playerData.name}: ${finalNewOvr} (Calculated from new attributes)`);
+                    const ovrChange = calculateOvrChange(playerData.ovr, evaluation.rating);
+                    const newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, playerData.ovr + ovrChange));
+                    console.log(`[EVAL] OVR Change for ${playerData.name}: ${ovrChange}. New OVR: ${newOvr}`);
                     
                     const updatePayload = {
                         ...newAttributes,
                         'stats.matchesPlayed': newMatchesPlayed,
                         'stats.goals': newGoals,
                         'stats.averageRating': newAverageRating,
-                        'ovr': finalNewOvr,
+                        'ovr': newOvr,
                     };
 
                     console.log(`[EVAL] Player ${playerData.name} update payload:`, updatePayload);
