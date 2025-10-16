@@ -62,9 +62,6 @@ export default function MatchesPage() {
                 <p className="mt-2 text-sm text-muted-foreground">
                     Este grupo todavía no tiene partidos. ¡Programa el primero para empezar!
                 </p>
-                <div className="mt-6">
-                    <AddMatchDialog allPlayers={players || []} disabled={!user?.activeGroupId} />
-                </div>
             </div>
       )}
 
