@@ -1,9 +1,9 @@
 'use client';
 
 import { useDoc, useFirestore, useUser } from '@/firebase';
-import { doc, writeBatch, collection, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, writeBatch, collection, getDocs, updateDoc, getDoc, runTransaction } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
-import type { Match } from '@/lib/types';
+import type { Match, Player } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
@@ -65,49 +65,70 @@ export default function EvaluateMatchPage() {
   const onSubmit = async (data: EvaluationFormData) => {
     if (!firestore || !match) return;
 
-    const batch = writeBatch(firestore);
-    const evaluationsCollection = collection(firestore, 'matches', match.id, 'evaluations');
-    
-    // Check if evaluations already exist
-    const existingEvals = await getDocs(evaluationsCollection);
-    if (!existingEvals.empty) {
+    try {
+        await runTransaction(firestore, async (transaction) => {
+            const evaluationsCollection = collection(firestore, 'matches', match.id, 'evaluations');
+            
+            // 1. Check if evaluations already exist
+            const existingEvals = await getDocs(evaluationsCollection);
+            if (!existingEvals.empty) {
+                throw new Error('Este partido ya ha sido evaluado.');
+            }
+
+            // 2. Save new evaluations
+            data.evaluations.forEach(evaluation => {
+                const evalRef = doc(evaluationsCollection, evaluation.playerId);
+                transaction.set(evalRef, {
+                    playerId: evaluation.playerId,
+                    goals: evaluation.goals,
+                    rating: evaluation.rating,
+                    evaluatedBy: user?.uid,
+                    evaluatedAt: new Date().toISOString(),
+                });
+            });
+
+            // 3. Update player stats for each evaluation
+            for (const evaluation of data.evaluations) {
+                const playerRef = doc(firestore, 'players', evaluation.playerId);
+                const playerDoc = await transaction.get(playerRef);
+
+                if (playerDoc.exists()) {
+                    const playerData = playerDoc.data() as Player;
+                    const currentStats = playerData.stats || { matchesPlayed: 0, goals: 0, assists: 0, averageRating: 0 };
+                    
+                    const newMatchesPlayed = currentStats.matchesPlayed + 1;
+                    const newGoals = currentStats.goals + evaluation.goals;
+
+                    // Calculate new average rating
+                    const totalRatingPoints = (currentStats.averageRating * currentStats.matchesPlayed) + evaluation.rating;
+                    const newAverageRating = totalRatingPoints / newMatchesPlayed;
+                    
+                    transaction.update(playerRef, {
+                        'stats.matchesPlayed': newMatchesPlayed,
+                        'stats.goals': newGoals,
+                        'stats.averageRating': newAverageRating,
+                    });
+                }
+            }
+            
+            // 4. Update match status
+            const matchDocRef = doc(firestore, 'matches', match.id);
+            transaction.update(matchDocRef, { status: 'evaluated' });
+        });
+
+        toast({
+            title: 'Evaluación Guardada',
+            description: 'Las estadísticas del partido y de los jugadores se han actualizado.'
+        });
+        router.push('/matches');
+
+    } catch (error: any) {
+        console.error('Error saving evaluations:', error);
         toast({
             variant: 'destructive',
-            title: 'Evaluación ya enviada',
-            description: 'Este partido ya ha sido evaluado.'
+            title: 'Error',
+            description: error.message || 'No se pudieron guardar las evaluaciones.'
         });
-        return;
-    }
-
-    data.evaluations.forEach(evaluation => {
-      const evalRef = doc(evaluationsCollection, evaluation.playerId);
-      batch.set(evalRef, {
-        playerId: evaluation.playerId,
-        goals: evaluation.goals,
-        rating: evaluation.rating, // Storing 1-10 scale
-        evaluatedBy: user?.uid,
-        evaluatedAt: new Date().toISOString(),
-      });
-    });
-    
-    // Update match status
-    const matchDocRef = doc(firestore, 'matches', match.id);
-    batch.update(matchDocRef, { status: 'evaluated' });
-
-    try {
-      await batch.commit();
-      toast({
-        title: 'Evaluación Guardada',
-        description: 'Las estadísticas del partido se han registrado correctamente.'
-      });
-      router.push('/matches');
-    } catch (error) {
-      console.error('Error saving evaluations:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'No se pudieron guardar las evaluaciones.'
-      });
     }
   };
 
@@ -121,6 +142,16 @@ export default function EvaluateMatchPage() {
   
   if (match.ownerUid !== user?.uid) {
     return <div>No tienes permiso para evaluar este partido.</div>;
+  }
+  
+  if (match.status === 'evaluated') {
+    return (
+        <div className="flex flex-col gap-4 items-center justify-center text-center p-8">
+            <PageHeader title={`Evaluar: ${match.title}`}/>
+             <p>Este partido ya ha sido evaluado.</p>
+            <Button onClick={() => router.push('/matches')}>Volver a Partidos</Button>
+        </div>
+    )
   }
 
   return (

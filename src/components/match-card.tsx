@@ -269,6 +269,14 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                         </Link>
                     </Button>
                  )}
+                 {match.status === 'evaluated' && user?.uid === match.ownerUid && (
+                    <Button asChild variant="secondary" size="sm" className="w-full" disabled>
+                        <Link href={`/matches/${match.id}/evaluate`}>
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Partido Evaluado
+                        </Link>
+                    </Button>
+                 )}
                  
                  {(match.status === 'completed' || match.status === 'evaluated') && user?.uid === match.ownerUid && (
                      <AlertDialog>
