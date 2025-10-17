@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -199,71 +200,12 @@ export default function GroupsPage() {
         description="Crea, únete y gestiona tus grupos de fútbol."
       />
 
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Unirse a un Grupo</CardTitle>
-            <CardDescription>
-              Introduce un código de invitación para unirte a un grupo existente.
-            </CardDescription>
-          </CardHeader>
-          <form onSubmit={joinForm.handleSubmit(handleJoinGroup)}>
-            <CardContent>
-              <Input
-                {...joinForm.register('inviteCode')}
-                placeholder="Código de invitación"
-                disabled={isJoining}
-              />
-              {joinForm.formState.errors.inviteCode && (
-                <p className="mt-2 text-xs text-destructive">
-                  {joinForm.formState.errors.inviteCode.message}
-                </p>
-              )}
-            </CardContent>
-            <CardFooter>
-              <Button type="submit" disabled={isJoining}>
-                {isJoining && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Unirse al Grupo
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Crear un Grupo Nuevo</CardTitle>
-            <CardDescription>
-              Crea un nuevo espacio para tus partidos y jugadores.
-            </CardDescription>
-          </CardHeader>
-          <form onSubmit={createForm.handleSubmit(handleCreateGroup)}>
-            <CardContent>
-              <Input
-                {...createForm.register('name')}
-                placeholder="Nombre del grupo"
-                disabled={isCreating}
-              />
-               {createForm.formState.errors.name && (
-                <p className="mt-2 text-xs text-destructive">
-                  {createForm.formState.errors.name.message}
-                </p>
-              )}
-            </CardContent>
-            <CardFooter>
-              <Button type="submit" disabled={isCreating}>
-                {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Crear Grupo
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
-      </div>
-
-      <Separator />
-
       <Card>
         <CardHeader>
             <CardTitle>Tus Grupos</CardTitle>
+            <CardDescription>
+                Selecciona un grupo para activarlo o copia el código para invitar a otros.
+            </CardDescription>
         </CardHeader>
         <CardContent>
             {groupsLoading ? (
@@ -304,6 +246,69 @@ export default function GroupsPage() {
             )}
         </CardContent>
       </Card>
+
+      <Separator />
+
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Unirse a un Grupo</CardTitle>
+            <CardDescription>
+              Introduce un código de invitación para unirte a un grupo existente.
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={joinForm.handleSubmit(handleJoinGroup)}>
+            <CardContent>
+              <Input
+                {...joinForm.register('inviteCode')}
+                placeholder="Código de invitación"
+                disabled={isJoining}
+              />
+              {joinForm.formState.errors.inviteCode && (
+                <p className="mt-2 text-xs text-destructive">
+                  {joinForm.formState.errors.inviteCode.message}
+                </p>
+              )}
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" disabled={isJoining}>
+                {isJoining && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Unirse al Grupo
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Crear un Grupo Nuevo</CardTitle>
+            <CardDescription>
+              Crea un nuevo espacio para tus partidos y jugadores.
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={createForm.handleSubmit(handleCreateGroup)}>
+            <CardContent>
+              <Input
+                {...register('name')}
+                placeholder="Nombre del grupo"
+                disabled={isCreating}
+              />
+               {createForm.formState.errors.name && (
+                <p className="mt-2 text-xs text-destructive">
+                  {createForm.formState.errors.name.message}
+                </p>
+              )}
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" disabled={isCreating}>
+                {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Crear Grupo
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+
     </div>
   );
 }
