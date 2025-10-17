@@ -49,9 +49,10 @@ export const mockEvaluations = [
 
 
 export const youtubeGoalHighlights = [
-  { videoId: 'Y_9t3_I4_2Q', title: 'Nacional vs Peñarol | Mejores Momentos | Apertura 2024' },
-  { videoId: 'abc123def45', title: 'Golazo de Alan Medina | Liverpool vs Defensor Sporting' },
-  { videoId: 'fNFzfwLM72c', title: 'Top 5 Goles de la Fecha | Campeonato Uruguayo' },
-  { videoId: 'o-YBDTqX_ZU', title: 'Resumen: Wanderers vs Danubio | Goles y Jugadas' },
-  { videoId: 'r6y1a-1e62A', title: 'Gol de último minuto | Cerro Largo vs Fénix' },
+  { videoId: 'Y_9t3_I4_2Q', title: 'Nacional vs. Peñarol: los goles del clásico del Apertura 2024' },
+  { videoId: 'fNFzfwLM72c', title: 'Los goles de la 1ª fecha del Torneo Apertura 2024 | Tenfield' },
+  { videoId: 'o-YBDTqX_ZU', title: 'Los goles de la 2ª fecha del Torneo Apertura 2024 | Tenfield' },
+  { videoId: 'r6y1a-1e62A', title: 'Los goles de la 3ª fecha del Torneo Apertura 2024 | Tenfield' },
+  { videoId: 'YQ-qB4I3M7s', title: 'Uruguay 3-1 Chile | Mejores Momentos | Eliminatorias CONMEBOL' }
 ];
+
