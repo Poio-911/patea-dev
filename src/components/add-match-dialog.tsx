@@ -267,13 +267,13 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                         control={form.control}
                         render={({ field }) => (
                             <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-wrap gap-4 mt-2">
-                                <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+                                <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
                                     <RadioGroupItem value="10" /> 5 vs 5
                                 </Label>
-                                <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+                                <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
                                     <RadioGroupItem value="14" /> 7 vs 7
                                 </Label>
-                                <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+                                <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
                                     <RadioGroupItem value="22" /> 11 vs 11
                                 </Label>
                             </RadioGroup>
@@ -288,10 +288,10 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                         control={form.control}
                         render={({ field }) => (
                             <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4 mt-2">
-                                <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent has-[:checked]:bg-accent">
+                                <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
                                     <RadioGroupItem value="manual" /> Manual
                                 </Label>
-                                <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent has-[:checked]:bg-accent">
+                                <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
                                     <RadioGroupItem value="collaborative" /> Colaborativo
                                 </Label>
                             </RadioGroup>
@@ -319,7 +319,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                     {allPlayers.length > 0 ? (
                         <div className="max-h-[350px] md:max-h-full overflow-y-auto space-y-2 border p-2 rounded-md">
                             {filteredPlayers.map(player => (
-                                <div key={player.id} className="flex items-center space-x-3 rounded-md border p-3 hover:bg-accent/50 has-[:checked]:bg-accent">
+                                <div key={player.id} className="flex items-center space-x-3 rounded-md border p-3 hover:bg-accent/50 has-[:checked]:bg-accent has-[:checked]:text-accent-foreground">
                                     <Checkbox
                                         id={`player-${player.id}`}
                                         onCheckedChange={(checked) => handlePlayerSelect(player.id, !!checked)}
@@ -331,7 +331,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                     </Avatar>
                                     <Label htmlFor={`player-${player.id}`} className="flex-1 cursor-pointer">
                                         <span className="font-semibold">{player.name}</span>
-                                        <span className="ml-2 text-xs text-muted-foreground">{player.position} - OVR: {player.ovr}</span>
+                                        <span className="ml-2 text-xs">{player.position} - OVR: {player.ovr}</span>
                                     </Label>
                                 </div>
                             ))}
