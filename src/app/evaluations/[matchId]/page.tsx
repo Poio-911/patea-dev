@@ -33,7 +33,6 @@ const playerEvaluationSchema = z.object({
   subjectId: z.string(),
   displayName: z.string(),
   photoUrl: z.string(),
-  goals: z.coerce.number().min(0).max(20).default(0),
   rating: z.coerce.number().min(1).max(10).default(5),
   performanceTags: z.array(z.string()).max(2, "No puedes seleccionar más de 2 etiquetas.").optional(),
 });
@@ -92,7 +91,6 @@ export default function PerformEvaluationPage() {
                 subjectId: assignment.subjectId,
                 displayName: subject?.name || 'Jugador desconocido',
                 photoUrl: subject?.photoUrl || '',
-                goals: 0,
                 rating: 5,
                 performanceTags: []
             };
@@ -121,7 +119,7 @@ export default function PerformEvaluationPage() {
                 playerId: evaluation.subjectId,
                 evaluatorId: user.uid,
                 matchId: matchId as string,
-                goals: evaluation.goals,
+                goals: 0, // Set to 0 as it's no longer asked for the subject
                 rating: evaluation.rating,
                 performanceTags: evaluation.performanceTags || [],
                 evaluatedAt: new Date().toISOString(),
@@ -212,12 +210,12 @@ export default function PerformEvaluationPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Jugadores a Evaluar</CardTitle>
-                            <CardDescription>Asigna goles, una calificación (1-10) y hasta 2 etiquetas de rendimiento a cada jugador.</CardDescription>
+                            <CardDescription>Asigna una calificación (1-10) y hasta 2 etiquetas de rendimiento a cada jugador.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
                         {fields.map((field, index) => (
-                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-5 items-start gap-4 border-b pb-4">
-                            <div className="md:col-span-2 flex items-center gap-4">
+                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-3 items-start gap-4 border-b pb-4">
+                            <div className="flex items-center gap-4">
                                 <Avatar className="h-12 w-12">
                                     <AvatarImage src={field.photoUrl} alt={field.displayName} data-ai-hint="player portrait" />
                                     <AvatarFallback>{field.displayName.charAt(0)}</AvatarFallback>
@@ -225,19 +223,6 @@ export default function PerformEvaluationPage() {
                                 <p className="font-semibold">{field.displayName}</p>
                             </div>
                             
-                            <FormField
-                                control={form.control}
-                                name={`evaluations.${index}.goals`}
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Goles</FormLabel>
-                                    <FormControl>
-                                    <Input type="number" min="0" {...field} />
-                                    </FormControl>
-                                </FormItem>
-                                )}
-                            />
-
                             <FormField
                                 control={form.control}
                                 name={`evaluations.${index}.rating`}
