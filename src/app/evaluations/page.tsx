@@ -87,7 +87,7 @@ export default function EvaluationsPage() {
                             <CardHeader>
                                 <CardTitle>{match.title}</CardTitle>
                                 <CardDescription>
-                                    {format(new Date(match.date), 'E, d MMM, yyyy', { locale: es })} - {match.location}
+                                    {format(new Date(match.date), 'E, d MMM, yyyy', { locale: es })} - {match.location.address}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
