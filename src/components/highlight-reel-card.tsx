@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clapperboard, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
 import { youtubeGoalHighlights } from '@/lib/data';
 
 export function HighlightReelCard() {
@@ -16,13 +16,7 @@ export function HighlightReelCard() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clapperboard className="h-5 w-5" />
-          Jugada Destacada
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="p-2">
         {selectedVideo ? (
           <div className="aspect-video">
             <iframe
