@@ -160,25 +160,25 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           </SidebarFooter>
         </Sidebar>
         <SidebarInset className="bg-background">
-          <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
+          <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background/80 px-2 backdrop-blur-sm sm:h-16 sm:px-6">
             <SidebarTrigger className="md:hidden"/>
             <div className="flex-1">
                 <GroupSwitcher />
             </div>
 
             {player && (
-                <div className="hidden md:flex items-center gap-2 sm:gap-4">
+                <div className="flex items-center gap-2 sm:gap-3">
                     <div className="text-right">
-                        <p className="font-bold text-sm truncate">{player.name}</p>
+                        <p className="font-bold text-xs sm:text-sm truncate">{player.name}</p>
                     </div>
-                    <div className={cn("font-bold text-lg", ovrColors[player.position])}>
+                    <div className={cn("font-bold text-base sm:text-lg", ovrColors[player.position])}>
                         {player.ovr}
                     </div>
                     <Badge className={cn("text-xs", positionColors[player.position])}>{player.position}</Badge>
                 </div>
             )}
             
-            <Separator orientation="vertical" className="h-8 mx-2 hidden md:block" />
+            <Separator orientation="vertical" className="h-8 mx-1 sm:mx-2" />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
