@@ -221,14 +221,14 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           <main className="flex-1 p-4 sm:p-6">{children}</main>
           
           {/* Bottom Navigation for Mobile */}
-          <nav className="fixed bottom-0 left-0 right-0 z-20 border-t bg-card p-2 md:hidden">
+          <nav className="fixed bottom-0 left-0 right-0 z-20 border-t bg-background/80 p-2 backdrop-blur-sm md:hidden">
             <div className="grid h-full max-w-lg grid-cols-5 mx-auto">
               {navItems.map((item) => {
                   const isActive = pathname.startsWith(item.href);
                   return (
                     <Link key={item.href} href={item.href} className="inline-flex flex-col items-center justify-center px-2 hover:bg-muted rounded-lg group">
                         <item.icon className={cn("w-6 h-6 mb-1 text-muted-foreground group-hover:text-primary", isActive && "text-primary")} />
-                        <span className="sr-only">{item.label}</span>
+                        <span className={cn("text-xs text-muted-foreground group-hover:text-primary", isActive && "text-primary")}>{item.label}</span>
                     </Link>
                   )
                 })}
