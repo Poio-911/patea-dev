@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ShieldQuestion, Calendar, Users, Edit } from 'lucide-react';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export default function EvaluationsPage() {
     const { user, loading: userLoading } = useUser();
@@ -85,7 +87,7 @@ export default function EvaluationsPage() {
                             <CardHeader>
                                 <CardTitle>{match.title}</CardTitle>
                                 <CardDescription>
-                                    {format(new Date(match.date), 'E, d MMM, yyyy')} - {match.location}
+                                    {format(new Date(match.date), 'E, d MMM, yyyy', { locale: es })} - {match.location}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">

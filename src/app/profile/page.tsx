@@ -19,6 +19,7 @@ import PlayerProfileView from '@/components/player-profile-view';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
@@ -149,7 +150,7 @@ export default function ProfilePage() {
                             {createdMatches && createdMatches.length > 0 ? createdMatches.map(match => (
                                 <TableRow key={match.id}>
                                     <TableCell className="font-medium">{match.title}</TableCell>
-                                    <TableCell>{format(new Date(match.date), 'dd/MM/yyyy')}</TableCell>
+                                    <TableCell>{format(new Date(match.date), 'dd/MM/yyyy', { locale: es })}</TableCell>
                                     <TableCell>{match.players.length} / {match.matchSize}</TableCell>
                                     <TableCell>
                                         <Badge variant={match.status === 'completed' ? 'secondary' : 'default'}>{match.status}</Badge>

@@ -2,11 +2,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { Match, Player, EvaluationAssignment, MatchStatus } from '@/lib/types';
+import type { Match, Player, EvaluationAssignment } from '@/lib/types';
 import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { generateTeamsAction } from '@/lib/actions';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,7 +36,7 @@ type MatchCardProps = {
   allPlayers: Player[];
 };
 
-const statusConfig: Record<MatchStatus, { label: string; className: string; neonClass: string; gradientClass: string }> = {
+const statusConfig: Record<Match['status'], { label: string; className: string; neonClass: string; gradientClass: string }> = {
     upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300', neonClass: 'text-shadow-[0_0_10px_hsl(var(--primary))]', gradientClass: 'from-blue-500/20' },
     active: { label: 'Activo', className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300', neonClass: 'text-shadow-[0_0_10px_hsl(var(--accent))]', gradientClass: 'from-green-500/20' },
     completed: { label: 'Finalizado', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', neonClass: 'text-shadow-[0_0_8px_hsl(var(--muted-foreground))]', gradientClass: 'from-gray-500/20' },
@@ -322,7 +323,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             <CardContent className="flex-grow space-y-4 pt-6">
 
                 <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3">
-                    <InfoRow icon={Calendar} text={match.date ? format(new Date(match.date), 'E, d MMM, yyyy') : 'Fecha no definida'} />
+                    <InfoRow icon={Calendar} text={match.date ? format(new Date(match.date), 'E, d MMM, yyyy', { locale: es }) : 'Fecha no definida'} />
                     <InfoRow icon={Clock} text={match.time} />
                     <InfoRow icon={MapPin} text={match.location} />
                 </div>

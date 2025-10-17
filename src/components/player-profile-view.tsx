@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -9,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Loader2, BarChart2, Star, Goal, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -264,7 +266,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                     <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
                                 </TableCell>
                                 <TableCell className="font-medium">{match.title}</TableCell>
-                                <TableCell>{format(new Date(match.date), 'dd MMM, yyyy')}</TableCell>
+                                <TableCell>{format(new Date(match.date), 'dd MMM, yyyy', { locale: es })}</TableCell>
                                 <TableCell className="text-center">
                                     <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'} className="text-base">
                                     <Star className="mr-1 h-3 w-3" /> {avgRating.toFixed(2)}
