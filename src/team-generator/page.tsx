@@ -1,11 +1,7 @@
 'use client';
 import { PageHeader } from '@/components/page-header';
-import { TeamGeneratorClient } from '@/components/team-generator-client';
-import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
-import { useMemo } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Users2, ShieldAlert } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
