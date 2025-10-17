@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import {
@@ -51,6 +52,7 @@ export const useDoc = <T extends DocumentData>(
     );
 
     return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ref ? ref.path : '']);
 
   return { data, loading, error };
