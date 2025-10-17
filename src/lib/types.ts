@@ -72,10 +72,10 @@ export type Group = {
 
 export type Evaluation = {
     id: string;
-    playerId: string;
+    playerId: string; // The player being evaluated
     goals: number;
     rating: number; // Scale 1-10
     performanceTags: string[];
-    evaluatedBy: string;
+    evaluatedBy: string; // The user UID who submitted the evaluation
     evaluatedAt: string;
-}
+} & DocumentData;
