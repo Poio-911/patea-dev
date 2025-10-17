@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users } from 'lucide-react';
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -213,7 +213,10 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
 
     if ('error' in teamGenerationResult) {
-      throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
+        throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
+    }
+    if (!teamGenerationResult.teams) {
+        throw new Error('La respuesta de la IA no contiene equipos.');
     }
 
     const newMatch = {
@@ -350,20 +353,30 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 
                 <div>
                     <Label>Tipo de Partido</Label>
-                    <Controller
+                     <Controller
                         name="type"
                         control={form.control}
                         render={({ field }) => (
-                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-2 gap-4 mt-2">
-                                <Label className="flex flex-col items-center justify-center gap-2 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
-                                    <RadioGroupItem value="manual" />
-                                    <span>Manual</span>
-                                    <span className="text-xs text-center font-normal leading-tight">Eliges todos los jugadores y la IA crea los equipos.</span>
+                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                                <Label className="flex gap-4 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+                                    <RadioGroupItem value="manual" className="mt-1" />
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-2 font-bold">
+                                            <UserCheck className="h-5 w-5" />
+                                            <span>Manual</span>
+                                        </div>
+                                        <span className="text-xs font-normal leading-tight">El organizador elige a todos los jugadores del partido.</span>
+                                    </div>
                                 </Label>
-                                <Label className="flex flex-col items-center justify-center gap-2 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
-                                    <RadioGroupItem value="collaborative" />
-                                     <span>Colaborativo</span>
-                                     <span className="text-xs text-center font-normal leading-tight">Los jugadores se apuntan y la IA crea equipos al finalizar.</span>
+                                <Label className="flex gap-4 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+                                    <RadioGroupItem value="collaborative" className="mt-1" />
+                                    <div className="flex flex-col gap-1">
+                                         <div className="flex items-center gap-2 font-bold">
+                                            <Users className="h-5 w-5" />
+                                            <span>Colaborativo</span>
+                                        </div>
+                                        <span className="text-xs font-normal leading-tight">Los jugadores del grupo se apuntan para participar.</span>
+                                    </div>
                                 </Label>
                             </RadioGroup>
                         )}
@@ -448,4 +461,3 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   );
 }
 
-    
