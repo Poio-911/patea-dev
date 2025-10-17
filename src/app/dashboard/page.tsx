@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useCollection } from '@/firebase';
@@ -132,7 +133,7 @@ export default function DashboardPage() {
                                                     </div>
                                                     <div className="flex items-center gap-1.5">
                                                         <MapPin className="h-3.5 w-3.5" />
-                                                        <span>{match.location}</span>
+                                                        <span>{match.location.address}</span>
                                                     </div>
                                                 </div>
                                             </div>

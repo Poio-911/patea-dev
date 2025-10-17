@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -55,7 +56,7 @@ export function NextMatchCard({ match }: NextMatchCardProps) {
         <div className="md:col-span-2 space-y-3">
              <InfoRow icon={Calendar} text={match.date ? format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es }) : 'Fecha no definida'} />
              <InfoRow icon={Clock} text={match.time} />
-             <InfoRow icon={MapPin} text={match.location} />
+             <InfoRow icon={MapPin} text={match.location.address} />
         </div>
         <div className="flex justify-center items-center">
             <Button asChild size="lg">
