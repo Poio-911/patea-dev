@@ -175,7 +175,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        <SidebarInset className="bg-background pb-16 md:pb-0">
+        <SidebarInset className="bg-background pb-32 md:pb-0">
            <div className="sticky top-0 z-10 flex flex-col bg-background/80 backdrop-blur-lg">
                 <header className="flex h-16 items-center justify-between border-b px-4 sm:px-6">
                     <div className="flex items-center gap-2">
@@ -185,17 +185,19 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                     <div className="flex items-center gap-2 sm:gap-4">
                         <div className="flex items-center gap-3">
                             {player && (
-                                <div className="text-right flex items-center gap-3">
-                                    <p className="font-bold text-sm truncate">{player.name}</p>
-                                    <Badge className={cn("px-3 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
+                                <div className="flex items-center gap-3">
+                                  <div className="text-right hidden sm:block">
+                                      <p className="font-bold text-sm truncate">{player.name}</p>
+                                  </div>
+                                  <Badge className={cn("px-3 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
                                       <span className="font-bold">{player.ovr}</span>
                                       <span className="font-medium ml-1.5">{player.position}</span>
-                                    </Badge>
+                                  </Badge>
                                 </div>
                             )}
                         </div>
                         
-                        <Separator orientation="vertical" className="h-10 mx-1" />
+                        <Separator orientation="vertical" className="h-10 mx-1 hidden sm:block" />
 
                         <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -216,20 +218,20 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                             </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                             <div className="p-2">
+                             <div className="p-2 md:hidden">
                                 <GroupSwitcher />
                             </div>
-                            <DropdownMenuSeparator />
+                             <DropdownMenuItem asChild className="md:hidden">
+                                <Link href="/groups">
+                                    <Users2 className="mr-2 h-4 w-4" />
+                                    <span>Gestionar Grupos</span>
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="md:hidden" />
                             <DropdownMenuItem asChild>
                             <Link href="/profile">
                                 <User className="mr-2 h-4 w-4" />
                                 <span>Mi Perfil</span>
-                            </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                            <Link href="/groups">
-                                <Users2 className="mr-2 h-4 w-4" />
-                                <span>Gestionar Grupos</span>
                             </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem>
@@ -249,6 +251,21 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
           <main className="flex-1 p-4 sm:p-6">{children}</main>
           
+          {/* Group Context Bar for Mobile */}
+          <div className="fixed bottom-16 left-0 right-0 z-20 border-t bg-primary/10 p-2 backdrop-blur-lg md:hidden">
+            <div className="max-w-lg mx-auto flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                    <GroupSwitcher />
+                </div>
+                <Button asChild variant="secondary" size="sm">
+                    <Link href="/groups">
+                      <Users2 className="mr-2 h-4 w-4" />
+                      Gestionar
+                    </Link>
+                </Button>
+            </div>
+          </div>
+
           {/* Bottom Navigation for Mobile */}
           <nav className="fixed bottom-0 left-0 right-0 z-20 border-t bg-background/80 p-2 backdrop-blur-lg md:hidden">
             <div className="grid h-full max-w-lg grid-cols-5 mx-auto">
