@@ -13,13 +13,13 @@ import fetch from 'node-fetch';
 import { differenceInHours, parseISO } from 'date-fns';
 
 // Define the input and output schemas for our main flow
-export const GetMatchDayForecastInputSchema = z.object({
+const GetMatchDayForecastInputSchema = z.object({
   location: z.string().describe('The location of the match (e.g., "Montevideo, Uruguay").'),
   date: z.string().describe('The date and time of the match in ISO 8601 format.'),
 });
 export type GetMatchDayForecastInput = z.infer<typeof GetMatchDayForecastInputSchema>;
 
-export const GetMatchDayForecastOutputSchema = z.object({
+const GetMatchDayForecastOutputSchema = z.object({
   description: z.string().describe('A concise, user-friendly description of the weather.'),
   icon: z.enum(['Sun', 'Cloud', 'Cloudy', 'CloudRain', 'CloudSnow', 'Wind', 'Zap']).describe('An icon name representing the weather condition.'),
   temperature: z.number().describe('The temperature in Celsius.'),
