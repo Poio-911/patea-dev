@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { Match, Player, EvaluationAssignment } from '@/lib/types';
+import type { Match, Player, EvaluationAssignment, MatchStatus } from '@/lib/types';
 import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -385,5 +385,3 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         </Card>
     );
 }
-
-    
