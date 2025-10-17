@@ -9,14 +9,13 @@ import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, BarChart2, Star, Goal } from 'lucide-react';
+import { Loader2, BarChart2, Star, Goal, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useState, useEffect, useMemo } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const positionColors: Record<Player['position'], string> = {
   DEL: 'text-red-400',
@@ -45,6 +44,7 @@ export default function PlayerDetailPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const [evaluatorProfiles, setEvaluatorProfiles] = useState<Record<string, {displayName: string, photoURL: string}>>({});
+  const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   
   const playerRef = useMemo(() => firestore && playerId ? doc(firestore, 'players', playerId as string) : null, [firestore, playerId]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
@@ -127,7 +127,7 @@ export default function PlayerDetailPage() {
 
     return Object.values(evalsByMatch).map(summary => {
         const ratings = summary.individualEvaluations.map(ev => ev.rating);
-        summary.avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+        summary.avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
         return summary;
     }).sort((a,b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime());
 
@@ -258,74 +258,77 @@ export default function PlayerDetailPage() {
                 <TableHead className="text-center">Goles</TableHead>
               </TableRow>
             </TableHeader>
-            <Accordion type="single" asChild collapsible className="w-full">
-                <TableBody>
-                {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, avgRating, goals, individualEvaluations }) => (
-                    <AccordionItem value={match.id} key={match.id} asChild>
-                      <>
-                        <TableRow className="cursor-pointer">
-                            <TableCell>
-                                <AccordionTrigger />
-                            </TableCell>
-                            <TableCell className="font-medium">{match.title}</TableCell>
-                            <TableCell>{format(new Date(match.date), 'dd MMM, yyyy')}</TableCell>
-                            <TableCell className="text-center">
-                                <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'} className="text-base">
-                                <Star className="mr-1 h-3 w-3" /> {avgRating.toFixed(2)}
-                                </Badge>
-                            </TableCell>
-                            <TableCell className="text-center">
-                                <Badge variant="outline" className="text-base">
-                                    <Goal className="mr-1 h-3 w-3" /> {goals}
-                                </Badge>
-                            </TableCell>
-                        </TableRow>
-                        <AccordionContent asChild>
-                            <TableRow>
-                                <TableCell colSpan={5} className="p-0">
-                                  <div className="bg-muted/50 p-4">
-                                      <h4 className="font-semibold text-md mb-2 ml-4">Detalle de evaluaciones:</h4>
-                                      <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Evaluador</TableHead>
-                                                <TableHead className="text-center">Rating</TableHead>
-                                                <TableHead>Etiquetas de Rendimiento</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {individualEvaluations.map(ev => (
-                                                <TableRow key={ev.id} className="bg-background">
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-2">
-                                                            <Avatar className="h-8 w-8">
-                                                                <AvatarImage src={ev.evaluatorPhoto} alt={ev.evaluatorName} />
-                                                                <AvatarFallback>{ev.evaluatorName?.charAt(0)}</AvatarFallback>
-                                                            </Avatar>
-                                                            <span>{ev.evaluatorName}</span>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        <Badge variant="secondary">{ev.rating}</Badge>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex gap-1 flex-wrap">
-                                                        {ev.performanceTags.length > 0 ? ev.performanceTags.map(tag => (
-                                                            <Badge key={tag} variant="outline">{tag}</Badge>
-                                                        )) : <span className="text-muted-foreground text-xs">Sin etiquetas</span>}
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                      </Table>
-                                  </div>
+            <TableBody>
+                {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, avgRating, goals, individualEvaluations }) => {
+                    const isOpen = openAccordion === match.id;
+                    return (
+                        <React.Fragment key={match.id}>
+                            <TableRow 
+                                className="cursor-pointer"
+                                onClick={() => setOpenAccordion(isOpen ? null : match.id)}
+                            >
+                                <TableCell>
+                                    <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+                                </TableCell>
+                                <TableCell className="font-medium">{match.title}</TableCell>
+                                <TableCell>{format(new Date(match.date), 'dd MMM, yyyy')}</TableCell>
+                                <TableCell className="text-center">
+                                    <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'} className="text-base">
+                                    <Star className="mr-1 h-3 w-3" /> {avgRating.toFixed(2)}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    <Badge variant="outline" className="text-base">
+                                        <Goal className="mr-1 h-3 w-3" /> {goals}
+                                    </Badge>
                                 </TableCell>
                             </TableRow>
-                        </AccordionContent>
-                      </>
-                    </AccordionItem>
-                )) : (
+                            {isOpen && (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="p-0">
+                                        <div className="bg-muted/50 p-4">
+                                            <h4 className="font-semibold text-md mb-2 ml-4">Detalle de evaluaciones:</h4>
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Evaluador</TableHead>
+                                                        <TableHead className="text-center">Rating</TableHead>
+                                                        <TableHead>Etiquetas de Rendimiento</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {individualEvaluations.map(ev => (
+                                                        <TableRow key={ev.id} className="bg-background">
+                                                            <TableCell>
+                                                                <div className="flex items-center gap-2">
+                                                                    <Avatar className="h-8 w-8">
+                                                                        <AvatarImage src={ev.evaluatorPhoto} alt={ev.evaluatorName} />
+                                                                        <AvatarFallback>{ev.evaluatorName?.charAt(0)}</AvatarFallback>
+                                                                    </Avatar>
+                                                                    <span>{ev.evaluatorName}</span>
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell className="text-center">
+                                                                <Badge variant="secondary">{ev.rating}</Badge>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="flex gap-1 flex-wrap">
+                                                                {ev.performanceTags.length > 0 ? ev.performanceTags.map(tag => (
+                                                                    <Badge key={tag} variant="outline">{tag}</Badge>
+                                                                )) : <span className="text-muted-foreground text-xs">Sin etiquetas</span>}
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </React.Fragment>
+                    )
+                }) : (
                     <TableRow>
                         <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
                             Este jugador aún no tiene evaluaciones registradas.
@@ -333,11 +336,9 @@ export default function PlayerDetailPage() {
                     </TableRow>
                 )}
                 </TableBody>
-            </Accordion>
           </Table>
         </CardContent>
       </Card>
     </div>
   );
 }
-
