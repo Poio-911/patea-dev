@@ -188,7 +188,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                     <div className="flex items-center gap-2 sm:gap-4">
                         {player && (
                             <div className="flex items-center gap-3">
-                                <div className="text-right hidden sm:block">
+                                <div className="text-right">
                                     <p className="font-bold text-sm truncate">{player.name}</p>
                                 </div>
                                 <Badge className={cn("px-2.5 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
