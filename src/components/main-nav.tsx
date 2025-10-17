@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, Users, Calendar, LogOut, Settings, Goal, Users2, ShieldQuestion, User, Star } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, LogOut, Settings, Goal, Users2, ShieldQuestion, User, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -42,7 +42,7 @@ const navItems = [
   { href: '/players', label: 'Jugadores', icon: Users },
   { href: '/matches', label: 'Partidos', icon: Calendar },
   { href: '/evaluations', label: 'Evaluaciones', icon: ShieldQuestion },
-  { href: '/groups', label: 'Grupos', icon: Users2 },
+  { href: '/find-match', label: 'Buscar', icon: Globe },
 ];
 
 const positionColors: Record<Player['position'], string> = {
@@ -134,6 +134,18 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/groups')}
+                    tooltip="Grupos"
+                  >
+                    <Link href="/groups">
+                      <Users2 />
+                      <span>Grupos</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="p-2">

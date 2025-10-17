@@ -1,0 +1,119 @@
+
+'use client';
+
+import { useState, useMemo } from 'react';
+import { MarkerF, InfoWindowF } from '@react-google-maps/api';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { useFirestore, useUser } from '@/firebase';
+import type { Match, Player } from '@/lib/types';
+import { Button } from './ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, UserPlus, LogOut } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
+
+interface MatchMarkerProps {
+  match: any; // Geocoded match with position
+  allPlayers: Player[];
+  activeMarker: string | null;
+  handleMarkerClick: (matchId: string) => void;
+}
+
+export function MatchMarker({ match, allPlayers, activeMarker, handleMarkerClick }: MatchMarkerProps) {
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const { toast } = useToast();
+  const [isJoining, setIsJoining] = useState(false);
+
+  const isUserInMatch = useMemo(() => {
+    if (!user) return false;
+    return match.players.some((p: any) => p.uid === user.uid);
+  }, [match.players, user]);
+
+  const isMatchFull = useMemo(() => {
+    return match.players.length >= match.matchSize;
+  }, [match.players, match.matchSize]);
+
+  const handleJoinOrLeaveMatch = async () => {
+    if (!firestore || !user) return;
+    setIsJoining(true);
+
+    const playerProfile = allPlayers?.find(p => p.id === user.uid);
+
+    if (!playerProfile && !isUserInMatch) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se encontró tu perfil de jugador en el grupo activo.' });
+      setIsJoining(false);
+      return;
+    }
+
+    const matchRef = doc(firestore, 'matches', match.id);
+
+    try {
+      if (isUserInMatch) {
+        const playerToRemove = match.players.find((p: any) => p.uid === user.uid);
+        if (playerToRemove) {
+          await updateDoc(matchRef, {
+            players: arrayRemove(playerToRemove),
+          });
+        }
+        toast({ title: 'Te has dado de baja', description: `Ya no estás apuntado a "${match.title}".` });
+      } else {
+        if (isMatchFull) {
+          toast({ variant: 'destructive', title: 'Partido Lleno', description: 'No quedan plazas disponibles en este partido.' });
+          setIsJoining(false);
+          return;
+        }
+         const playerPayload = {
+            uid: user.uid,
+            displayName: playerProfile!.name,
+            ovr: playerProfile!.ovr,
+            position: playerProfile!.position,
+            photoUrl: playerProfile!.photoUrl || '',
+          };
+        await updateDoc(matchRef, {
+          players: arrayUnion(playerPayload),
+        });
+        toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${match.title}".` });
+      }
+    } catch (error) {
+      console.error('Error joining/leaving match: ', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo completar la operación.' });
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  return (
+    <MarkerF
+      position={match.position}
+      onClick={() => handleMarkerClick(match.id)}
+    >
+      {activeMarker === match.id && (
+        <InfoWindowF onCloseClick={() => handleMarkerClick(match.id)}>
+            <div className='p-2'>
+                <h3 className="font-bold">{match.title}</h3>
+                <p className="text-sm text-muted-foreground">{format(new Date(match.date), "d MMM, HH:mm'hs'", { locale: es })}</p>
+                <p className="text-sm text-muted-foreground">{match.location}</p>
+                <p className="text-sm font-semibold mt-2">Plazas: {match.players.length} / {match.matchSize}</p>
+                <Button
+                    variant={isUserInMatch ? 'secondary' : 'default'}
+                    size="sm"
+                    onClick={handleJoinOrLeaveMatch}
+                    disabled={isJoining || (isMatchFull && !isUserInMatch)}
+                    className="w-full mt-4"
+                >
+                    {isJoining ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : isUserInMatch ? (
+                        <><LogOut className="mr-2 h-4 w-4" /> Darse de baja</>
+                    ) : (
+                       <><UserPlus className="mr-2 h-4 w-4" /> Apuntarse</>
+                    )}
+                </Button>
+            </div>
+        </InfoWindowF>
+      )}
+    </MarkerF>
+  );
+}
