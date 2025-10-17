@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -13,8 +14,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Calendar as CalendarIcon, Loader2, PlusCircle } from 'lucide-react';
-import { useState, useTransition, useEffect } from 'react';
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Search } from 'lucide-react';
+import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -51,6 +52,7 @@ interface AddMatchDialogProps {
 
 export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -79,7 +81,8 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       time: '21:00',
       location: 'Cancha Principal',
     });
-  }, [matchType, selectedMatchSize]);
+    setSearchTerm('');
+  }, [matchType, selectedMatchSize, open]);
 
   const handlePlayerSelect = (playerId: string, checked: boolean) => {
     const currentPlayers = form.getValues('players');
@@ -98,6 +101,11 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
 
     form.setValue('players', newPlayers);
   };
+  
+  const filteredPlayers = useMemo(() => {
+    if (!allPlayers) return [];
+    return allPlayers.filter(player => player.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [allPlayers, searchTerm]);
 
 
   const onSubmit = (data: MatchFormData) => {
@@ -121,7 +129,6 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
             
             toast({ title: 'Éxito', description: 'Partido programado correctamente.' });
             setOpen(false);
-            form.reset();
         } catch (error: any) {
             console.error('Error al crear el partido:', error);
             toast({
@@ -281,9 +288,18 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 {matchType === 'manual' && (
                     <div className="space-y-4">
                         <Label>Jugadores ({form.watch('players').length} / {selectedMatchSize})</Label>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Buscar jugador por nombre..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10"
+                            />
+                        </div>
                         {allPlayers.length > 0 ? (
-                            <div className="max-h-[400px] md:max-h-full overflow-y-auto space-y-2 border p-2 rounded-md">
-                                {allPlayers.map(player => (
+                            <div className="max-h-[350px] md:max-h-full overflow-y-auto space-y-2 border p-2 rounded-md">
+                                {filteredPlayers.map(player => (
                                     <div key={player.id} className="flex items-center space-x-3 rounded-md border p-3 hover:bg-accent/50 has-[:checked]:bg-accent">
                                         <Checkbox
                                             id={`player-${player.id}`}
@@ -300,6 +316,11 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                         </Label>
                                     </div>
                                 ))}
+                                {filteredPlayers.length === 0 && (
+                                    <p className="p-4 text-center text-sm text-muted-foreground">
+                                        No se encontraron jugadores con ese nombre.
+                                    </p>
+                                )}
                             </div>
                         ) : (
                             <Alert>

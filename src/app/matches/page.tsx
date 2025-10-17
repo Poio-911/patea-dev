@@ -3,25 +3,29 @@
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Users2, Calendar, Loader2 } from 'lucide-react';
-import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { useCollection, useFirestore, useUser, useDoc } from '@/firebase';
+import { collection, query, where, orderBy, doc } from 'firebase/firestore';
 import { useMemo } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { AddMatchDialog } from '@/components/add-match-dialog';
-import type { Match, Player } from '@/lib/types';
+import type { Match, Player, Group } from '@/lib/types';
 import { MatchCard } from '@/components/match-card';
 
 export default function MatchesPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
 
+    const groupRef = useMemo(() => {
+        if (!firestore || !user?.activeGroupId) return null;
+        return doc(firestore, 'groups', user.activeGroupId);
+      }, [firestore, user?.activeGroupId]);
+    const { data: activeGroup } = useDoc<Group>(groupRef);
+
     const playersQuery = useMemo(() => {
-        if (!firestore || !user?.activeGroupId) {
-            return null;
-        };
-        return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
-    }, [firestore, user?.activeGroupId]);
+        if (!firestore || !activeGroup || !activeGroup.members || activeGroup.members.length === 0) return null;
+        return query(collection(firestore, 'players'), where('__name__', 'in', activeGroup.members.slice(0, 30)));
+    }, [firestore, activeGroup]);
 
     const { data: players, loading: playersLoading } = useCollection<Player>(playersQuery);
 
@@ -44,6 +48,8 @@ export default function MatchesPage() {
             </div>
         )
     }
+    
+    const allGroupPlayers = players || [];
 
     return (
         <div className="flex flex-col gap-8">
@@ -51,7 +57,7 @@ export default function MatchesPage() {
                 title="Partidos"
                 description="Programa, visualiza y gestiona todos tus partidos."
             >
-                <AddMatchDialog allPlayers={players || []} disabled={!user?.activeGroupId} />
+                <AddMatchDialog allPlayers={allGroupPlayers} disabled={!user?.activeGroupId} />
             </PageHeader>
 
             {!user?.activeGroupId && (
@@ -80,7 +86,7 @@ export default function MatchesPage() {
             {user?.activeGroupId && matches && matches.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {matches.map((match) => (
-                        <MatchCard key={match.id} match={match} allPlayers={players || []} />
+                        <MatchCard key={match.id} match={match} allPlayers={allGroupPlayers} />
                     ))}
                 </div>
             )}
