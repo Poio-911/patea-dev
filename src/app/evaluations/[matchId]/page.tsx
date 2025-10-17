@@ -1,7 +1,7 @@
 'use client';
 
-import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { doc, writeBatch, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
+import { useFirestore, useUser, useCollection } from '@/firebase';
+import { doc, writeBatch, collection, query, where } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
 import type { Match, Player, EvaluationAssignment, Evaluation } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
@@ -24,6 +24,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useState, useEffect, useMemo } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import Link from 'next/link';
 
 const playerEvaluationSchema = z.object({
   assignmentId: z.string(),
@@ -113,6 +114,7 @@ export default function PerformEvaluationPage() {
                 assignmentId: evaluation.assignmentId,
                 playerId: evaluation.subjectId,
                 evaluatorId: user.uid,
+                matchId: matchId as string, // Store matchId for easier querying
                 goals: evaluation.goals,
                 rating: evaluation.rating,
                 performanceTags: evaluation.performanceTags || [],

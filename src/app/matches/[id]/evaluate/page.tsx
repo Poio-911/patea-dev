@@ -1,12 +1,12 @@
 'use client';
 
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { doc, collection, query, writeBatch, runTransaction, getDocs, where } from 'firebase/firestore';
+import { doc, collection, query, writeBatch, runTransaction, getDocs, where, addDoc } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
-import type { Match, Player, EvaluationAssignment, Evaluation } from '@/lib/types';
+import type { Match, Player, EvaluationAssignment, Evaluation, OvrHistory } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Loader2, Check, BarChart, UserCheck, UserX, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -111,7 +111,7 @@ export default function EvaluateMatchPage() {
   }, [matchLoading, assignmentsLoading, playersLoading]);
   
   const handleFinalizeEvaluation = async () => {
-    if (!firestore || !match) return;
+    if (!firestore || !match || !match.id) return;
     setIsFinalizing(true);
 
     try {
@@ -122,7 +122,7 @@ export default function EvaluateMatchPage() {
         }
         const evaluationsQuery = query(collection(firestore, 'evaluations'), where('assignmentId', 'in', completedAssignmentIds));
         const evaluationsSnapshot = await getDocs(evaluationsQuery);
-        const matchEvaluations = evaluationsSnapshot.docs.map(doc => doc.data() as Evaluation);
+        const matchEvaluations = evaluationsSnapshot.docs.map(doc => ({...doc.data(), id: doc.id} as Evaluation));
 
         // 2. Group evaluations by player
         const evaluationsByPlayer = matchEvaluations.reduce((acc, ev) => {
@@ -133,7 +133,8 @@ export default function EvaluateMatchPage() {
 
         // 3. Run the transaction
         await runTransaction(firestore, async (transaction) => {
-            const matchDoc = await transaction.get(matchRef!);
+            if (!matchRef) return;
+            const matchDoc = await transaction.get(matchRef);
             if (!matchDoc.exists() || matchDoc.data().status === 'evaluated') {
                 throw new Error("Este partido ya ha sido evaluado o no existe.");
             }
@@ -146,7 +147,7 @@ export default function EvaluateMatchPage() {
                 const playerDocRef = doc(firestore, 'players', playerId);
                 const playerDoc = await transaction.get(playerDocRef);
                 if (playerDoc.exists()) {
-                    playerDocs.set(playerId, playerDoc.data() as Player);
+                    playerDocs.set(playerId, { id: playerDoc.id, ...playerDoc.data() } as Player);
                 }
             }
 
@@ -179,9 +180,20 @@ export default function EvaluateMatchPage() {
                         averageRating: newAvgRating,
                     },
                 });
+
+                // Create OVR history record
+                const historyRef = doc(collection(firestore, 'players', playerId, 'ovrHistory'));
+                const historyEntry: Omit<OvrHistory, 'id'> = {
+                    date: new Date().toISOString(),
+                    oldOVR: player.ovr,
+                    newOVR: newOvr,
+                    change: ovrChange,
+                    matchId: match.id,
+                };
+                transaction.set(historyRef, historyEntry);
             }
 
-            transaction.update(matchRef!, { status: 'evaluated' });
+            transaction.update(matchRef, { status: 'evaluated' });
         });
 
         toast({

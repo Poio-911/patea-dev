@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ import React from 'react';
 
 type PlayerCardProps = {
   player: Player;
+  isLink?: boolean;
 };
 
 const positionColors: Record<Player['position'], string> = {
@@ -48,7 +50,7 @@ const Stat = ({ label, value }: { label: string; value: number }) => (
   </div>
 );
 
-export function PlayerCard({ player }: PlayerCardProps) {
+export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -83,8 +85,8 @@ export function PlayerCard({ player }: PlayerCardProps) {
     }
   }
 
-  return (
-    <Card className="overflow-hidden border-2 shadow-lg transition-transform hover:scale-105 hover:shadow-xl border-border">
+  const CardContentComponent = () => (
+    <Card className="overflow-hidden border-2 shadow-lg transition-transform hover:scale-105 hover:shadow-xl border-border h-full flex flex-col">
        <div className={cn("relative p-4 text-white bg-gradient-to-br", positionColors[player.position])}>
             <div className="flex items-start justify-between">
                 <div className="flex flex-col">
@@ -137,14 +139,14 @@ export function PlayerCard({ player }: PlayerCardProps) {
             </div>
         </div>
 
-      <CardContent className="p-4 text-center bg-card">
+      <CardContent className="p-4 text-center bg-card flex-grow flex flex-col">
         <Avatar className="mx-auto -mt-16 h-24 w-24 border-4 border-background">
           <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
           <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
         </Avatar>
         <h3 className="mt-2 text-xl font-bold font-headline truncate">{player.name}</h3>
         
-        <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2">
+        <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 flex-grow">
           <Stat label="RIT" value={player.pac} />
           <Stat label="TIR" value={player.sho} />
           <Stat label="PAS" value={player.pas} />
@@ -162,4 +164,14 @@ export function PlayerCard({ player }: PlayerCardProps) {
       </CardContent>
     </Card>
   );
+
+  if (isLink) {
+    return (
+        <Link href={`/players/${player.id}`} className="block h-full">
+            <CardContentComponent />
+        </Link>
+    );
+  }
+
+  return <CardContentComponent />;
 }

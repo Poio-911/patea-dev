@@ -58,17 +58,23 @@ export async function getPlayerEvaluationsAction(playerId: string, groupId: stri
     const evaluations: Partial<Evaluation>[] = [];
     
     try {
+        const q = query(
+            collection(firestore, 'evaluations'), 
+            where('playerId', '==', playerId)
+        );
+        const querySnapshot = await getDocs(q);
+
         const matchesQuery = query(collection(firestore, 'matches'), where('groupId', '==', groupId));
         const matchesSnapshot = await getDocs(matchesQuery);
+        const groupMatchIds = new Set(matchesSnapshot.docs.map(doc => doc.id));
 
-        for (const matchDoc of matchesSnapshot.docs) {
-            const evalDocRef = doc(firestore, 'matches', matchDoc.id, 'evaluations', playerId);
-            const evalDocSnap = await getDoc(evalDocRef);
-
-            if (evalDocSnap.exists()) {
-                evaluations.push(evalDocSnap.data() as Partial<Evaluation>);
+        querySnapshot.forEach(doc => {
+            const evaluation = doc.data() as Evaluation;
+            if (groupMatchIds.has(evaluation.matchId)) {
+                evaluations.push(evaluation);
             }
-        }
+        });
+
         return evaluations;
 
     } catch (error) {
@@ -98,8 +104,9 @@ export async function getPlayerImprovementSuggestionsAction(playerId: string, gr
             evaluations: evaluations.map(e => ({
                 rating: e.rating || 0,
                 performanceTags: e.performanceTags || [],
-                evaluatedBy: e.evaluatedBy || '',
+                evaluatedBy: e.evaluatorId || '',
                 evaluatedAt: e.evaluatedAt || '',
+                matchId: e.matchId || ''
             })),
         };
         

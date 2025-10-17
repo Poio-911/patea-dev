@@ -25,6 +25,7 @@ const SuggestPlayerImprovementsInputSchema = z.object({
       performanceTags: z.array(z.string()).describe('Las etiquetas de rendimiento recibidas por el jugador en un partido.'),
       evaluatedBy: z.string().describe('El ID del usuario que evaluó al jugador.'),
       evaluatedAt: z.string().describe('La fecha y hora de la evaluación.'),
+      matchId: z.string().describe('El ID del partido.'),
     })
   ).describe('Las evaluaciones históricas del jugador.'),
 });

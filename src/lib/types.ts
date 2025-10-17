@@ -9,6 +9,14 @@ export type PlayerStats = {
   averageRating: number;
 };
 
+export type OvrHistory = {
+  date: string;
+  oldOVR: number;
+  newOVR: number;
+  change: number;
+  matchId: string;
+}
+
 export type Player = {
   id: string;
   name: string;
@@ -75,6 +83,7 @@ export type Evaluation = {
     assignmentId: string; // The ID of the assignment this evaluation fulfills
     playerId: string; // The player being evaluated
     evaluatorId: string; // The user UID who submitted the evaluation
+    matchId: string; // The ID of the match, added for easier querying
     goals: number;
     rating: number; // Scale 1-10
     performanceTags: string[];

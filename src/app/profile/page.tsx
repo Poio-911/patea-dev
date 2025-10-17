@@ -144,7 +144,7 @@ export default function ProfilePage() {
                     <CardTitle className="text-center">Tu Carta de Jugador</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <PlayerCard player={player} />
+                    <PlayerCard player={player} isLink={false} />
                 </CardContent>
             </Card>
         </div>

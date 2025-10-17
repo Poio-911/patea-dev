@@ -117,12 +117,13 @@
         "assignmentId": { "type": "string" },
         "playerId": { "type": "string" },
         "evaluatorId": { "type": "string" },
+        "matchId": { "type": "string" },
         "goals": { "type": "number" },
         "rating": { "type": "number" },
         "performanceTags": { "type": "array", "items": { "type": "string" } },
         "evaluatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["assignmentId", "playerId", "evaluatorId", "rating"]
+      "required": ["assignmentId", "playerId", "evaluatorId", "rating", "matchId"]
     },
     "evaluationAssignment": {
       "title": "Evaluation Assignment",
@@ -136,6 +137,19 @@
         "evaluationId": { "type": "string" }
       },
       "required": ["matchId", "evaluatorId", "subjectId", "status"]
+    },
+    "ovrHistory": {
+        "title": "OVR History",
+        "description": "Represents a single entry in a player's OVR progression history.",
+        "type": "object",
+        "properties": {
+            "date": { "type": "string", "format": "date-time" },
+            "oldOVR": { "type": "number" },
+            "newOVR": { "type": "number" },
+            "change": { "type": "number" },
+            "matchId": { "type": "string" }
+        },
+        "required": ["date", "oldOVR", "newOVR", "change", "matchId"]
     }
   },
   "auth": {
@@ -149,6 +163,10 @@
     "/players/{playerId}": {
       "schema": { "$ref": "#/entities/player" },
       "description": "Stores data for each player, linked to a group. PlayerId is the same as the user's UID for registered users."
+    },
+    "/players/{playerId}/ovrHistory/{historyId}": {
+        "schema": { "$ref": "#/entities/ovrHistory" },
+        "description": "Stores the OVR progression history for a player."
     },
     "/groups/{groupId}": {
       "schema": { "$ref": "#/entities/group" },
