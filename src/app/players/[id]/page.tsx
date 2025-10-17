@@ -2,7 +2,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { PlayerProfileView } from '@/components/player-profile-view';
+import PlayerProfileView from '@/components/player-profile-view';
 
 export default function PlayerDetailPage() {
   const { id: playerId } = useParams();

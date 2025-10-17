@@ -15,7 +15,7 @@ import { useAuth } from '@/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
-import { PlayerProfileView } from '@/components/player-profile-view';
+import PlayerProfileView from '@/components/player-profile-view';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
