@@ -26,9 +26,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Users, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Star, Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
+import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Star, Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import Link from 'next/link';
+import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 
 
 type MatchCardProps = {
@@ -209,7 +210,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     return;
                 }
                 
-                // For public matches, anyone can join. For private, they must be in the group.
                 const playerProfileRef = doc(firestore, 'players', user.uid);
                 const playerSnap = await getDoc(playerProfileRef);
 
@@ -218,7 +218,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     setIsJoining(false);
                     return;
                 }
-
+                
                 const playerProfile = playerSnap.data() as Player;
 
                 const playerPayload = { 
@@ -244,14 +244,14 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
     const renderPrimaryAction = () => {
         if (match.status !== 'upcoming') return null;
-
-        // Action for collaborative matches (public or private)
-        if (match.type === 'collaborative') {
-             if (isMatchFull && !isUserInMatch) {
-                return <Button variant="outline" size="sm" className="w-full" disabled>Partido Lleno</Button>
+    
+        // Show join/leave button for collaborative matches or public matches
+        if (match.type === 'collaborative' || match.isPublic) {
+            if (isMatchFull && !isUserInMatch) {
+                return <Button variant="outline" size="sm" className="w-full" disabled>Partido Lleno</Button>;
             }
             return (
-                 <Button variant={isUserInMatch ? 'secondary' : 'default'} size="sm" onClick={handleJoinOrLeaveMatch} disabled={isJoining} className="w-full">
+                <Button variant={isUserInMatch ? 'secondary' : 'default'} size="sm" onClick={handleJoinOrLeaveMatch} disabled={isJoining} className="w-full">
                     {isJoining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isUserInMatch ? <LogOut className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />)}
                     {isUserInMatch ? 'Darse de baja' : 'Apuntarse'}
                 </Button>
@@ -349,7 +349,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 
                 <div className="flex items-center justify-between">
                      <div className="flex items-center gap-2 text-lg font-bold">
-                        <Users className="h-5 w-5 text-muted-foreground" />
+                        <SoccerPlayerIcon className="h-5 w-5 text-muted-foreground" />
                         <span>{match.players.length} / {match.matchSize}</span>
                      </div>
                      <span className="text-sm text-muted-foreground">jugadores</span>

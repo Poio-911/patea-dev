@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, Users, Calendar, LogOut, Settings, Goal, Users2, ShieldQuestion, User, Globe } from 'lucide-react';
+import { LayoutDashboard, Calendar, LogOut, Settings, Goal, Users2, ShieldQuestion, User, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -35,11 +35,12 @@ import {
 import type { Player } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
+import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 
 
 const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
-  { href: '/players', label: 'Jugadores', icon: Users },
+  { href: '/players', label: 'Jugadores', icon: SoccerPlayerIcon },
   { href: '/matches', label: 'Partidos', icon: Calendar },
   { href: '/evaluations', label: 'Evaluaciones', icon: ShieldQuestion },
   { href: '/find-match', label: 'Buscar', icon: Globe },

@@ -5,7 +5,7 @@ import { useCollection } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Users, Star, Users2, Calendar, MapPin } from 'lucide-react';
+import { Star, Users2, Calendar, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Separator } from '@/components/ui/separator';
+import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
@@ -189,7 +190,7 @@ export default function DashboardPage() {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Users className="h-5 w-5 text-primary" />
+                        <SoccerPlayerIcon className="h-5 w-5 text-primary" />
                         Plantilla
                     </CardTitle>
                 </CardHeader>

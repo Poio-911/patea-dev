@@ -10,9 +10,10 @@ import { PageHeader } from '@/components/page-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ShieldQuestion, Calendar, Users, Edit } from 'lucide-react';
+import { Loader2, ShieldQuestion, Calendar, Edit } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 
 export default function EvaluationsPage() {
     const { user, loading: userLoading } = useUser();
@@ -92,7 +93,7 @@ export default function EvaluationsPage() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                 <Users className="h-4 w-4"/>
+                                 <SoccerPlayerIcon className="h-4 w-4"/>
                                  <span>{match.players.length} / {match.matchSize} Jugadores</span>
                                </div>
                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
