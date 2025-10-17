@@ -3,7 +3,7 @@
 
 import { useUser, useFirestore } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
-import { doc, collection, query, where } from 'firebase/firestore';
+import { doc, collection, query, where, setDoc, updateDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { Loader2, Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,8 +56,6 @@ export default function ProfilePage() {
 
     setIsUploading(true);
     
-    // We get the storage instance from the initialized firebase app, but we don't have it here.
-    // Let's assume we can get it from auth.app
     const storage = getStorage(auth.app);
     const fileExtension = file.name.split('.').pop();
     const fileName = `${user.uid}-${uuidv4()}.${fileExtension}`;
@@ -70,12 +68,9 @@ export default function ProfilePage() {
         const userDocRef = doc(firestore, 'users', user.uid);
         const playerDocRef = doc(firestore, 'players', user.uid);
 
-        // Batch updates are not available in client SDK like this, 
-        // but we can do individual updates or a transaction.
-        // For simplicity, we do individual updates.
         await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
-        await doc(userDocRef).set({ photoURL: newPhotoURL }, { merge: true });
-        await doc(playerDocRef).set({ photoUrl: newPhotoURL }, { merge: true });
+        await setDoc(userDocRef, { photoURL: newPhotoURL }, { merge: true });
+        await setDoc(playerDocRef, { photoUrl: newPhotoURL }, { merge: true });
 
 
         toast({
