@@ -25,12 +25,14 @@ const prompt = ai.definePrompt({
   name: 'bizarreQuotePrompt',
   output: { schema: BizarreQuoteOutputSchema },
   prompt: `
-    Eres un historiador deportivo especializado en trivia de fútbol.
-    Tu tarea es proporcionar una cita real, bizarra, divertida o extraña de un futbolista famoso (pasado o presente).
+    Eres un historiador deportivo especializado en trivia de fútbol, con un profundo conocimiento del fútbol sudamericano.
+    Tu tarea es proporcionar una cita real, bizarra, divertida o extraña de un futbolista famoso.
 
-    Asegúrate de que la cita sea auténtica.
+    Prioriza jugadores de la región del Río de la Plata (Argentina y Uruguay), pero también puedes incluir otras grandes figuras de Latinoamérica.
 
-    Devuelve la cita y el nombre del autor en el formato JSON especificado y asegúrate de que la respuesta esté en español.
+    Asegúrate de que la cita sea auténtica y esté en español.
+
+    Devuelve únicamente la cita y el nombre del autor en el formato JSON especificado.
   `,
 });
 
