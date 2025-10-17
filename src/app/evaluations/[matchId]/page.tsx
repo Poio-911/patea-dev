@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useFirestore, useUser, useCollection } from '@/firebase';
@@ -13,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, Save, Users, Check, ThumbsUp, BarChart, UserCheck, UserX, ShieldCheck } from 'lucide-react';
+import { Loader2, Save, Users, Check, ThumbsUp, BarChart, UserCheck, UserX, ShieldCheck, Goal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Slider } from '@/components/ui/slider';
 import { performanceTags } from '@/lib/data';
@@ -25,6 +26,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Link from 'next/link';
+import { Separator } from '@/components/ui/separator';
 
 const playerEvaluationSchema = z.object({
   assignmentId: z.string(),
@@ -37,6 +39,7 @@ const playerEvaluationSchema = z.object({
 });
 
 const evaluationSchema = z.object({
+  evaluatorGoals: z.coerce.number().min(0).max(20).default(0),
   evaluations: z.array(playerEvaluationSchema)
 });
 
@@ -72,7 +75,10 @@ export default function PerformEvaluationPage() {
 
   const form = useForm<EvaluationFormData>({
     resolver: zodResolver(evaluationSchema),
-    defaultValues: { evaluations: [] }
+    defaultValues: { 
+        evaluatorGoals: 0,
+        evaluations: [] 
+    }
   });
   const { fields, replace } = useFieldArray({ control: form.control, name: "evaluations" });
 
@@ -114,11 +120,12 @@ export default function PerformEvaluationPage() {
                 assignmentId: evaluation.assignmentId,
                 playerId: evaluation.subjectId,
                 evaluatorId: user.uid,
-                matchId: matchId as string, // Store matchId for easier querying
+                matchId: matchId as string,
                 goals: evaluation.goals,
                 rating: evaluation.rating,
                 performanceTags: evaluation.performanceTags || [],
                 evaluatedAt: new Date().toISOString(),
+                evaluatorGoalsReported: data.evaluatorGoals,
             };
             batch.set(evalRef, newEvaluation);
 
@@ -177,6 +184,31 @@ export default function PerformEvaluationPage() {
         ) : (
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Tu Rendimiento</CardTitle>
+                            <CardDescription>Antes de evaluar a tus compañeros, registra tu propia actuación.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <FormField
+                                control={form.control}
+                                name="evaluatorGoals"
+                                render={({ field }) => (
+                                    <FormItem className="max-w-xs">
+                                        <FormLabel>¿Cuántos goles marcaste en este partido?</FormLabel>
+                                        <div className="flex items-center gap-2">
+                                            <Goal className="h-5 w-5 text-muted-foreground" />
+                                            <FormControl>
+                                                <Input type="number" min="0" {...field} />
+                                            </FormControl>
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </CardContent>
+                    </Card>
+
                     <Card>
                         <CardHeader>
                             <CardTitle>Jugadores a Evaluar</CardTitle>

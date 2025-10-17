@@ -1,3 +1,4 @@
+
 import { DocumentData, DocumentReference } from "firebase/firestore";
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
@@ -88,6 +89,7 @@ export type Evaluation = {
     rating: number; // Scale 1-10
     performanceTags: string[];
     evaluatedAt: string;
+    evaluatorGoalsReported?: number; // How many goals the evaluator reported for themselves
 } & DocumentData;
 
 
