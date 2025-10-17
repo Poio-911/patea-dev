@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Users, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Star } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Star, Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import Link from 'next/link';
 
@@ -42,11 +42,15 @@ const statusConfig = {
     evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' },
 };
 
+const weatherIcons: Record<string, React.ElementType> = {
+    Sun, Cloud, Cloudy, CloudRain, Wind, Zap,
+};
 
-const InfoRow = ({ icon: Icon, text }: { icon: React.ElementType, text: string }) => (
+const InfoRow = ({ icon: Icon, text, children }: { icon: React.ElementType, text?: string, children?: React.ReactNode }) => (
     <div className="flex items-center gap-3 text-sm">
         <Icon className="h-4 w-4 text-muted-foreground" />
-        <span>{text}</span>
+        {text && <span>{text}</span>}
+        {children}
     </div>
 );
 
@@ -294,6 +298,8 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
              )}
         </>
     );
+    
+    const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
 
     return (
         <Card className="flex flex-col border-l-4" style={{borderLeftColor: `hsl(var(--${match.status === 'upcoming' ? 'primary' : 'card'}))`}}>
@@ -311,7 +317,12 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             <CardContent className="flex-grow space-y-3">
                 <InfoRow icon={Calendar} text={match.date ? format(new Date(match.date), 'E, d MMM, yyyy') : 'Fecha no definida'} />
                 <InfoRow icon={Clock} text={match.time} />
-                <InfoRow icon={MapPin} text={match.location} />
+                <InfoRow icon={MapPin}>
+                    <div className="flex items-center gap-2">
+                        <span>{match.location}</span>
+                        {WeatherIcon && <WeatherIcon className="h-4 w-4 text-blue-500" />}
+                    </div>
+                </InfoRow>
                 <InfoRow icon={Users} text={`${match.players.length} / ${match.matchSize} jugadores`} />
             </CardContent>
 
@@ -352,3 +363,4 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     );
 }
 
+    

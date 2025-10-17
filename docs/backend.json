@@ -71,7 +71,16 @@
             }
           }
         },
-        "teams": { "type": "array", "items": { "$ref": "#/entities/team" } }
+        "teams": { "type": "array", "items": { "$ref": "#/entities/team" } },
+        "weather": {
+            "type": "object",
+            "description": "Stores the weather forecast for the match.",
+            "properties": {
+                "description": { "type": "string" },
+                "icon": { "type": "string" },
+                "temperature": { "type": "number" }
+            }
+        }
       },
       "required": ["title", "date", "status", "ownerUid", "groupId", "type", "matchSize"]
     },
@@ -202,5 +211,6 @@
     }
   }
 }
+    
 
     

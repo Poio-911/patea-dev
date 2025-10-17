@@ -223,6 +223,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       groupId: user!.activeGroupId,
       players: selectedPlayersData.map(p => ({ uid: p.id, displayName: p.name, ovr: p.ovr, position: p.position, photoUrl: p.photoUrl || '' })),
       teams: teamGenerationResult.teams,
+      weather: weather || undefined,
     };
 
     await addDoc(collection(firestore!, 'matches'), newMatch);
@@ -238,6 +239,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       groupId: user!.activeGroupId,
       players: [], // Starts empty
       teams: [],
+      weather: weather || undefined,
     };
 
     await addDoc(collection(firestore!, 'matches'), newMatch);
@@ -438,3 +440,5 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     </Dialog>
   );
 }
+
+    

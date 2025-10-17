@@ -1,4 +1,5 @@
 
+
 import { DocumentData, DocumentReference } from "firebase/firestore";
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
@@ -54,6 +55,11 @@ export type Match = {
   status: MatchStatus;
   ownerUid: string;
   groupId: string;
+  weather?: {
+    description: string;
+    icon: string;
+    temperature: number;
+  };
 } & DocumentData;
 
 export type Team = {
@@ -112,4 +118,6 @@ export type SelfEvaluation = {
 export interface PlayerProfileViewProps {
     playerId: string;
 }
+    
+
     
