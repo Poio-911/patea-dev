@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, Users, Calendar, LogOut, Settings, Goal, Users2, User, ShieldQuestion } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, LogOut, Settings, Goal, Users2, ShieldQuestion } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -219,28 +219,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               </DropdownMenuContent>
             </DropdownMenu>
           </header>
-          <main className="flex-1 p-4 sm:p-6 pb-20 md:pb-6">{children}</main>
-
-          {isMobile && (
-            <nav className="fixed bottom-0 left-0 right-0 z-10 border-t bg-background/80 backdrop-blur-sm md:hidden">
-              <div className="grid h-16 grid-cols-5 items-center justify-center">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "flex flex-col items-center justify-center gap-1 text-muted-foreground transition-colors hover:text-primary",
-                      pathname.startsWith(item.href) && "text-primary"
-                    )}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    <span className="text-[10px] font-medium">{item.label}</span>
-                  </Link>
-                ))}
-              </div>
-            </nav>
-          )}
-
+          <main className="flex-1 p-4 sm:p-6">{children}</main>
         </SidebarInset>
       </div>
     </SidebarProvider>

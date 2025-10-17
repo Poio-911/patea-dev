@@ -193,7 +193,6 @@ const Sidebar = React.forwardRef<
     }
     
     // On mobile, the sidebar is always an off-canvas sheet.
-    // The new logic will hide the sidebar entirely on mobile by default.
     if (isMobile) {
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
