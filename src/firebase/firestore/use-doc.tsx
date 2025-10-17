@@ -25,8 +25,10 @@ export const useDoc = <T extends DocumentData>(
   useEffect(() => {
     if (!ref) {
       setLoading(false);
+      setData(null);
       return;
     }
+    setLoading(true);
     const unsubscribe = onSnapshot(
       ref,
       (docSnap) => {
@@ -49,7 +51,7 @@ export const useDoc = <T extends DocumentData>(
     );
 
     return () => unsubscribe();
-  }, [ref]);
+  }, [ref ? ref.path : '']);
 
   return { data, loading, error };
 };
