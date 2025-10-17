@@ -289,7 +289,7 @@ export default function GroupsPage() {
           <form onSubmit={createForm.handleSubmit(handleCreateGroup)}>
             <CardContent>
               <Input
-                {...register('name')}
+                {...createForm.register('name')}
                 placeholder="Nombre del grupo"
                 disabled={isCreating}
               />
