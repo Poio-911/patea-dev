@@ -207,65 +207,41 @@ export default function FindMatchPage() {
     
     // Search is completed
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-            <Card className="lg:col-span-1 h-full flex flex-col">
-                <CardHeader className="p-2 sm:p-4">
-                    <CardTitle className="text-lg">Partidos Encontrados</CardTitle>
-                    <CardDescription className="text-xs">Se encontraron {nearbyMatches.length} partidos en un radio de {searchRadius}km.</CardDescription>
+        <div className="space-y-4 lg:hidden">
+            <Card>
+                <CardHeader className="p-3">
+                    <CardTitle className="text-lg">Partidos Encontrados ({nearbyMatches.length})</CardTitle>
                 </CardHeader>
-                <CardContent className="flex-grow p-1 sm:p-2">
-                    <ScrollArea className="h-full">
-                        <div className="space-y-2 p-1">
-                            {nearbyMatches.length > 0 ? nearbyMatches.map((match) => (
-                               <div id={`match-card-${match.id}`} key={match.id}>
-                                 <CompactMatchCard
-                                    match={match}
-                                    onHover={setActiveMarker}
-                                    isActive={activeMarker === match.id}
-                                />
-                               </div>
-                            )) : (
-                                <Alert className="m-2">
-                                    <AlertTitle>Sin Resultados</AlertTitle>
-                                    <AlertDescription>
-                                        No se encontraron partidos públicos en esta área. Intenta aumentar el radio de búsqueda.
-                                    </AlertDescription>
-                                </Alert>
-                            )}
-                        </div>
-                    </ScrollArea>
+                <CardContent className="p-1 max-h-64 overflow-y-auto">
+                     <div className="space-y-2 p-1">
+                        {nearbyMatches.length > 0 ? nearbyMatches.map((match) => (
+                           <div id={`match-card-${match.id}`} key={match.id}>
+                             <CompactMatchCard
+                                match={match}
+                                onHover={setActiveMarker}
+                                isActive={activeMarker === match.id}
+                            />
+                           </div>
+                        )) : (
+                            <Alert className="m-2">
+                                <AlertTitle>Sin Resultados</AlertTitle>
+                                <AlertDescription>
+                                    No se encontraron partidos públicos en esta área. Intenta aumentar el radio de búsqueda.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                    </div>
                 </CardContent>
             </Card>
-             <div className="lg:col-span-2 h-full min-h-[400px] lg:min-h-0">
+            <div className="h-96 w-full">
                 <GoogleMap
                     mapContainerStyle={containerStyle}
                     center={userLocation || defaultCenter}
                     zoom={12}
-                    options={{
-                        styles: mapStyles,
-                        disableDefaultUI: true,
-                        zoomControl: true,
-                    }}
+                    options={{ styles: mapStyles, disableDefaultUI: true, zoomControl: true, }}
                 >
-                    {nearbyMatches.map((match) => (
-                        <MatchMarker
-                            key={match.id}
-                            match={match}
-                            activeMarker={activeMarker}
-                            handleMarkerClick={handleMarkerClick}
-                        />
-                    ))}
-                    {userLocation && (
-                         <MatchMarker
-                            match={{
-                                id: 'user-location',
-                                title: 'Tu Ubicación',
-                                location: userLocation
-                            } as any}
-                            activeMarker={activeMarker}
-                            handleMarkerClick={handleMarkerClick}
-                        />
-                    )}
+                     {nearbyMatches.map((match) => ( <MatchMarker key={match.id} match={match} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} /> ))}
+                    {userLocation && ( <MatchMarker match={{ id: 'user-location', title: 'Tu Ubicación', location: userLocation } as any} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} /> )}
                 </GoogleMap>
             </div>
         </div>
@@ -273,13 +249,78 @@ export default function FindMatchPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 h-[calc(100vh-8rem)] sm:h-[calc(100vh-10rem)]">
+    <div className="flex flex-col gap-4 h-full">
       <PageHeader
         title="Buscar Partido"
         description="Encuentra partidos públicos cerca de ti y únete."
       />
       <div className="flex-grow">
         {renderContent()}
+
+        {searchCompleted && (
+            <div className="hidden lg:grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+                <Card className="lg:col-span-1 h-full flex flex-col">
+                    <CardHeader className="p-4">
+                        <CardTitle className="text-lg">Partidos Encontrados</CardTitle>
+                        <CardDescription className="text-xs">Se encontraron {nearbyMatches.length} partidos en un radio de {searchRadius}km.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-grow p-2">
+                        <ScrollArea className="h-full">
+                            <div className="space-y-2 p-1">
+                                {nearbyMatches.length > 0 ? nearbyMatches.map((match) => (
+                                <div id={`match-card-${match.id}-desktop`} key={match.id}>
+                                    <CompactMatchCard
+                                        match={match}
+                                        onHover={setActiveMarker}
+                                        isActive={activeMarker === match.id}
+                                    />
+                                </div>
+                                )) : (
+                                    <Alert className="m-2">
+                                        <AlertTitle>Sin Resultados</AlertTitle>
+                                        <AlertDescription>
+                                            No se encontraron partidos públicos en esta área. Intenta aumentar el radio de búsqueda.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+                            </div>
+                        </ScrollArea>
+                    </CardContent>
+                </Card>
+                <div className="lg:col-span-2 h-full min-h-[400px] lg:min-h-0">
+                    <GoogleMap
+                        mapContainerStyle={containerStyle}
+                        center={userLocation || defaultCenter}
+                        zoom={12}
+                        options={{
+                            styles: mapStyles,
+                            disableDefaultUI: true,
+                            zoomControl: true,
+                        }}
+                    >
+                        {nearbyMatches.map((match) => (
+                            <MatchMarker
+                                key={match.id}
+                                match={match}
+                                activeMarker={activeMarker}
+                                handleMarkerClick={handleMarkerClick}
+                            />
+                        ))}
+                        {userLocation && (
+                            <MatchMarker
+                                match={{
+                                    id: 'user-location',
+                                    title: 'Tu Ubicación',
+                                    location: userLocation
+                                } as any}
+                                activeMarker={activeMarker}
+                                handleMarkerClick={handleMarkerClick}
+                            />
+                        )}
+                    </GoogleMap>
+                </div>
+            </div>
+        )}
       </div>
     </div>
   );
