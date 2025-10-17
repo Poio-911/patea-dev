@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, Users, Calendar, LogOut, Settings, Goal, Users2, ShieldQuestion, User } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, LogOut, Settings, Goal, Users2, ShieldQuestion, User, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -50,12 +50,6 @@ const positionColors: Record<Player['position'], string> = {
     MED: 'bg-green-500/80 text-white',
     DEF: 'bg-blue-500/80 text-white',
     POR: 'bg-orange-500/80 text-white',
-};
-const ovrColors: Record<Player['position'], string> = {
-    DEL: 'text-red-400',
-    MED: 'text-green-400',
-    DEF: 'text-blue-400',
-    POR: 'text-orange-400',
 };
 
 
@@ -173,7 +167,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                         <div className="text-right">
                             <p className="font-bold text-xs sm:text-sm truncate">{player.name}</p>
                         </div>
-                        <div className={cn("font-bold text-base sm:text-lg", ovrColors[player.position])}>
+                        <div className="font-bold text-base sm:text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent flex items-center gap-1">
+                            <Star className="h-4 w-4 text-primary" />
                             {player.ovr}
                         </div>
                         <Badge className={cn("text-xs", positionColors[player.position])}>{player.position}</Badge>
