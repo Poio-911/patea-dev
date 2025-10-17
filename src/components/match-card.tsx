@@ -150,7 +150,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             let finalTeams = match.teams;
             let matchUpdate: any = { status: 'completed' };
 
-            // Generate teams if it's a collaborative match being finished
+            // For collaborative matches, generate teams now. For manual, they already exist.
             if(match.type === 'collaborative' && isMatchFull) {
                 const selectedPlayersData = allPlayers.filter(p => match.players.some(mp => mp.uid === p.id));
                 const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
@@ -167,7 +167,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
             batch.update(matchRef, matchUpdate);
 
-            // Generate and save evaluation assignments
+            // Generate and save evaluation assignments for all match types
             const assignments = generateEvaluationAssignments({ ...match, teams: finalTeams }, allPlayers);
             assignments.forEach(assignment => {
                 const assignmentRef = doc(collection(firestore, `matches/${match.id}/assignments`));
@@ -296,54 +296,59 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         return null;
     }
 
-    const renderSecondaryActions = () => (
-        <div className="grid grid-cols-2 gap-2">
-            {user?.uid === match.ownerUid && match.status === 'upcoming' && match.type === 'collaborative' && isMatchFull && (
-                <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing} className="w-full">
-                    {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                    Finalizar
-                </Button>
-            )}
+    const renderSecondaryActions = () => {
+        const canFinishMatch = user?.uid === match.ownerUid && match.status === 'upcoming' &&
+            ((match.type === 'collaborative' && isMatchFull) || match.type === 'manual');
 
-            <MatchTeamsDialog match={match}>
-                <Button variant="outline" size="sm" className="w-full" disabled={!match.teams || match.teams.length === 0}>
-                    <Eye className="mr-2 h-4 w-4" />
-                    Equipos
-                </Button>
-            </MatchTeamsDialog>
-
-            {match.status === 'upcoming' && user?.uid === match.ownerUid && match.type === 'collaborative' && (
-                <InvitePlayerDialog 
-                    match={match} 
-                    availablePlayers={availablePlayersToInvite}
-                    disabled={isMatchFull} 
-                >
-                    <Button variant="outline" size="sm" className="w-full" disabled={isMatchFull}>
-                        <UserPlus className="mr-2 h-4 w-4" />
-                        Invitar
+        return (
+            <div className="grid grid-cols-2 gap-2">
+                {canFinishMatch && (
+                    <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing} className="w-full">
+                        {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                        Finalizar
                     </Button>
-                </InvitePlayerDialog>
-            )}
+                )}
 
-            {match.status === 'completed' && user?.uid === match.ownerUid && (
-                 <Button asChild variant="default" size="sm" className="w-full">
-                    <Link href={`/matches/${match.id}/evaluate`}>
-                        <Star className="mr-2 h-4 w-4" />
-                        Supervisar
-                    </Link>
-                </Button>
-             )}
+                <MatchTeamsDialog match={match}>
+                    <Button variant="outline" size="sm" className="w-full" disabled={!match.teams || match.teams.length === 0}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Equipos
+                    </Button>
+                </MatchTeamsDialog>
 
-            {match.status === 'evaluated' && user?.uid === match.ownerUid && (
-                <Button asChild variant="secondary" size="sm" className="w-full">
-                    <Link href={`/matches/${match.id}/evaluate`}>
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Evaluado
-                    </Link>
-                </Button>
-             )}
-        </div>
-    );
+                {match.status === 'upcoming' && user?.uid === match.ownerUid && match.type === 'collaborative' && (
+                    <InvitePlayerDialog 
+                        match={match} 
+                        availablePlayers={availablePlayersToInvite}
+                        disabled={isMatchFull} 
+                    >
+                        <Button variant="outline" size="sm" className="w-full" disabled={isMatchFull}>
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            Invitar
+                        </Button>
+                    </InvitePlayerDialog>
+                )}
+
+                {match.status === 'completed' && user?.uid === match.ownerUid && (
+                     <Button asChild variant="default" size="sm" className="w-full col-span-2">
+                        <Link href={`/matches/${match.id}/evaluate`}>
+                            <Star className="mr-2 h-4 w-4" />
+                            Supervisar Evaluaciones
+                        </Link>
+                    </Button>
+                 )}
+
+                {match.status === 'evaluated' && user?.uid === match.ownerUid && (
+                    <Button asChild variant="secondary" size="sm" className="w-full col-span-2">
+                        <Link href={`/matches/${match.id}/evaluate`}>
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Evaluado
+                        </Link>
+                    </Button>
+                 )}
+            </div>
+        );
+    }
     
     const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
 
@@ -427,3 +432,5 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         </Card>
     );
 }
+
+    
