@@ -5,7 +5,6 @@ import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
 import { doc, collection, query, where, orderBy } from 'firebase/firestore';
 import type { Player, Evaluation, Match } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { PlayerCard } from '@/components/player-card';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +12,9 @@ import { Loader2, BarChart2, Star, Goal } from 'lucide-react';
 import { format } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useMemo } from 'react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 type OvrHistory = {
     date: string;
@@ -21,6 +23,21 @@ type OvrHistory = {
     change: number;
     matchId: string;
 };
+
+const positionColors: Record<Player['position'], string> = {
+  DEL: 'text-red-400',
+  MED: 'text-green-400',
+  DEF: 'text-blue-400',
+  POR: 'text-orange-400',
+};
+
+const Stat = ({ label, value }: { label: string; value: number }) => (
+  <div className="flex items-center justify-between text-sm">
+    <span className="font-semibold text-muted-foreground">{label}</span>
+    <span className="font-bold">{value}</span>
+  </div>
+);
+
 
 export default function PlayerDetailPage() {
   const { id: playerId } = useParams();
@@ -120,7 +137,30 @@ export default function PlayerDetailPage() {
       />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1">
-            <PlayerCard player={player} isLink={false} />
+            <Card>
+                <CardContent className="pt-6 flex flex-col items-center gap-4">
+                    <Avatar className="h-32 w-32 border-4 border-primary/50">
+                        <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
+                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="text-center">
+                        <h2 className="text-2xl font-bold font-headline">{player.name}</h2>
+                        <div className="flex items-center justify-center gap-4 mt-1">
+                            <span className={cn("text-4xl font-bold", positionColors[player.position])}>{player.ovr}</span>
+                            <Badge variant="secondary" className="text-lg">{player.position}</Badge>
+                        </div>
+                    </div>
+                    <Separator />
+                     <div className="w-full grid grid-cols-2 gap-x-8 gap-y-3 px-4">
+                        <Stat label="RIT" value={player.pac} />
+                        <Stat label="TIR" value={player.sho} />
+                        <Stat label="PAS" value={player.pas} />
+                        <Stat label="REG" value={player.dri} />
+                        <Stat label="DEF" value={player.def} />
+                        <Stat label="FIS" value={player.phy} />
+                    </div>
+                </CardContent>
+            </Card>
         </div>
         <div className="lg:col-span-2">
           <Card>
