@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import { MarkerF, InfoWindowF } from '@react-google-maps/api';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 import type { Match, Player } from '@/lib/types';
 import { Button } from './ui/button';
@@ -14,12 +14,11 @@ import { Loader2, UserPlus, LogOut } from 'lucide-react';
 
 interface MatchMarkerProps {
   match: Match;
-  allPlayers: Player[];
   activeMarker: string | null;
   handleMarkerClick: (matchId: string) => void;
 }
 
-export function MatchMarker({ match, allPlayers, activeMarker, handleMarkerClick }: MatchMarkerProps) {
+export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMarkerProps) {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
@@ -38,43 +37,46 @@ export function MatchMarker({ match, allPlayers, activeMarker, handleMarkerClick
     if (!firestore || !user) return;
     setIsJoining(true);
 
-    const playerProfile = allPlayers?.find(p => p.id === user.uid);
-
-    if (!playerProfile && !isUserInMatch) {
-      toast({ variant: 'destructive', title: 'Error', description: 'No se encontró tu perfil de jugador en el grupo activo.' });
-      setIsJoining(false);
-      return;
-    }
-
-    const matchRef = doc(firestore, 'matches', match.id);
-
     try {
-      if (isUserInMatch) {
-        const playerToRemove = match.players.find((p: any) => p.uid === user.uid);
-        if (playerToRemove) {
-          await updateDoc(matchRef, {
-            players: arrayRemove(playerToRemove),
-          });
+        if (isUserInMatch) {
+            const playerToRemove = match.players.find((p: any) => p.uid === user.uid);
+            if (playerToRemove) {
+                await updateDoc(doc(firestore, 'matches', match.id), {
+                    players: arrayRemove(playerToRemove),
+                });
+            }
+            toast({ title: 'Te has dado de baja', description: `Ya no estás apuntado a "${match.title}".` });
+        } else {
+            if (isMatchFull) {
+                toast({ variant: 'destructive', title: 'Partido Lleno', description: 'No quedan plazas disponibles en este partido.' });
+                setIsJoining(false);
+                return;
+            }
+
+            // Fetch the user's own player profile directly, regardless of group
+            const playerRef = doc(firestore, 'players', user.uid);
+            const playerSnap = await getDoc(playerRef);
+
+            if (!playerSnap.exists()) {
+                 toast({ variant: 'destructive', title: 'Error', description: 'No se encontró tu perfil de jugador global.' });
+                 setIsJoining(false);
+                 return;
+            }
+            const playerProfile = playerSnap.data() as Player;
+
+             const playerPayload = {
+                uid: user.uid,
+                displayName: playerProfile!.name,
+                ovr: playerProfile!.ovr,
+                position: playerProfile!.position,
+                photoUrl: playerProfile!.photoUrl || '',
+              };
+
+            await updateDoc(doc(firestore, 'matches', match.id), {
+                players: arrayUnion(playerPayload),
+            });
+            toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${match.title}".` });
         }
-        toast({ title: 'Te has dado de baja', description: `Ya no estás apuntado a "${match.title}".` });
-      } else {
-        if (isMatchFull) {
-          toast({ variant: 'destructive', title: 'Partido Lleno', description: 'No quedan plazas disponibles en este partido.' });
-          setIsJoining(false);
-          return;
-        }
-         const playerPayload = {
-            uid: user.uid,
-            displayName: playerProfile!.name,
-            ovr: playerProfile!.ovr,
-            position: playerProfile!.position,
-            photoUrl: playerProfile!.photoUrl || '',
-          };
-        await updateDoc(matchRef, {
-          players: arrayUnion(playerPayload),
-        });
-        toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${match.title}".` });
-      }
     } catch (error) {
       console.error('Error joining/leaving match: ', error);
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo completar la operación.' });
@@ -92,6 +94,10 @@ export function MatchMarker({ match, allPlayers, activeMarker, handleMarkerClick
     <MarkerF
       position={{ lat: match.location.lat, lng: match.location.lng }}
       onClick={() => handleMarkerClick(match.id)}
+      icon={{
+        url: '/football.svg',
+        scaledSize: new window.google.maps.Size(32, 32),
+      }}
     >
       {activeMarker === match.id && (
         <InfoWindowF onCloseClick={() => handleMarkerClick(match.id)}>
