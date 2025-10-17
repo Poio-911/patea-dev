@@ -262,8 +262,8 @@ export default function FindMatchPage() {
                                 title: 'Tu Ubicación',
                                 location: userLocation
                             } as any}
-                            activeMarker={null}
-                            handleMarkerClick={() => {}}
+                            activeMarker={activeMarker}
+                            handleMarkerClick={handleMarkerClick}
                         />
                     )}
                 </GoogleMap>

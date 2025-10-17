@@ -142,8 +142,8 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
             </div>
         </InfoWindowF>
       )}
-       {isUserLocationMarker && (
-         <InfoWindowF>
+       {activeMarker === match.id && isUserLocationMarker && (
+         <InfoWindowF onCloseClick={() => handleMarkerClick(match.id)}>
            <div className='p-1'>
             <p className="font-bold text-base">Tu Ubicación</p>
            </div>
