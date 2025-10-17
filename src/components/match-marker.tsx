@@ -6,11 +6,11 @@ import { MarkerF, InfoWindowF } from '@react-google-maps/api';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { doc, updateDoc, arrayUnion, arrayRemove, getDoc, writeBatch, collection } from 'firebase/firestore';
-import { useFirestore, useUser } from '@/firebase';
+import { useDoc, useFirestore, useUser } from '@/firebase';
 import type { Match, Player, Notification } from '@/lib/types';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, LogOut, MapPin } from 'lucide-react';
+import { Loader2, UserPlus, LogOut, MapPin, Clock } from 'lucide-react';
 
 interface MatchMarkerProps {
   match: Match;
@@ -18,23 +18,31 @@ interface MatchMarkerProps {
   handleMarkerClick: (matchId: string) => void;
 }
 
-export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMarkerProps) {
+export function MatchMarker({ match: initialMatch, activeMarker, handleMarkerClick }: MatchMarkerProps) {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
   const [isJoining, setIsJoining] = useState(false);
+
+  const matchRef = useMemo(() => {
+    if (!firestore || !initialMatch?.id || initialMatch.id === 'user-location') return null;
+    return doc(firestore, 'matches', initialMatch.id);
+  }, [firestore, initialMatch?.id]);
+
+  const { data: match, loading: matchLoading } = useDoc<Match>(matchRef);
+  const currentMatch = match || initialMatch;
   
   const isUserInMatch = useMemo(() => {
-    if (!user || !match.players) return false;
-    return match.players.some((p: any) => p.uid === user.uid);
-  }, [match.players, user]);
+    if (!user || !currentMatch.playerUids) return false;
+    return currentMatch.playerUids.includes(user.uid);
+  }, [currentMatch.playerUids, user]);
 
   const isMatchFull = useMemo(() => {
-    if (!match.players) return false;
-    return match.players.length >= match.matchSize;
-  }, [match.players, match.matchSize]);
+    if (!currentMatch.players) return false;
+    return currentMatch.players.length >= currentMatch.matchSize;
+  }, [currentMatch.players, currentMatch.matchSize]);
 
-  const isUserLocationMarker = match.id === 'user-location';
+  const isUserLocationMarker = currentMatch.id === 'user-location';
   
   const icon = useMemo(() => {
     if (isUserLocationMarker) {
@@ -61,17 +69,18 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
     setIsJoining(true);
     
     const batch = writeBatch(firestore);
-    const matchRef = doc(firestore, 'matches', match.id);
+    const matchRef = doc(firestore, 'matches', currentMatch.id);
 
     try {
         if (isUserInMatch) {
-            const playerToRemove = match.players.find((p: any) => p.uid === user.uid);
+            const playerToRemove = currentMatch.players.find((p: any) => p.uid === user.uid);
             if (playerToRemove) {
                  batch.update(matchRef, {
                     players: arrayRemove(playerToRemove),
+                    playerUids: arrayRemove(user.uid),
                 });
             }
-            toast({ title: 'Te has dado de baja', description: `Ya no estás apuntado a "${match.title}".` });
+            toast({ title: 'Te has dado de baja', description: `Ya no estás apuntado a "${currentMatch.title}".` });
         } else {
             if (isMatchFull) {
                 toast({ variant: 'destructive', title: 'Partido Lleno', description: 'No quedan plazas disponibles en este partido.' });
@@ -83,7 +92,7 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
             const playerSnap = await getDoc(playerRef);
 
             if (!playerSnap.exists()) {
-                 toast({ variant: 'destructive', title: 'Error', description: 'No se encontró tu perfil de jugador global.' });
+                 toast({ variant: 'destructive', title: 'Error', description: 'No se encontró tu perfil de jugador.' });
                  setIsJoining(false);
                  return;
             }
@@ -99,15 +108,15 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
 
             batch.update(matchRef, {
                 players: arrayUnion(playerPayload),
+                playerUids: arrayUnion(user.uid),
             });
             
-            // Notify the organizer
-            if (match.ownerUid !== user.uid) {
-                const notificationRef = doc(collection(firestore, `users/${match.ownerUid}/notifications`));
+            if (currentMatch.ownerUid !== user.uid) {
+                const notificationRef = doc(collection(firestore, `users/${currentMatch.ownerUid}/notifications`));
                 const notification: Omit<Notification, 'id'> = {
                     type: 'new_joiner',
                     title: '¡Nuevo Jugador!',
-                    message: `${user.displayName} se ha apuntado a tu partido "${match.title}".`,
+                    message: `${user.displayName} se ha apuntado a tu partido "${currentMatch.title}".`,
                     link: `/matches`,
                     isRead: false,
                     createdAt: new Date().toISOString(),
@@ -115,7 +124,7 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
                 batch.set(notificationRef, notification);
             }
             
-            toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${match.title}".` });
+            toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${currentMatch.title}".` });
         }
         await batch.commit();
     } catch (error) {
@@ -126,51 +135,56 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
     }
   };
 
-  if (!match.location || typeof match.location.lat !== 'number' || typeof match.location.lng !== 'number') {
+  if (!currentMatch.location || typeof currentMatch.location.lat !== 'number' || typeof currentMatch.location.lng !== 'number') {
     return null;
   }
 
   return (
     <MarkerF
-      position={{ lat: match.location.lat, lng: match.location.lng }}
-      onClick={() => handleMarkerClick(match.id)}
+      position={{ lat: currentMatch.location.lat, lng: currentMatch.location.lng }}
+      onClick={() => handleMarkerClick(currentMatch.id)}
       icon={icon}
-      zIndex={isUserLocationMarker ? 10 : (activeMarker === match.id ? 5 : 1)}
+      zIndex={isUserLocationMarker ? 10 : (activeMarker === currentMatch.id ? 5 : 1)}
     >
-      {activeMarker === match.id && !isUserLocationMarker && (
-        <InfoWindowF onCloseClick={() => handleMarkerClick(match.id)}>
-            <div className="space-y-2 p-1">
-                <div className="space-y-1">
-                    <h3 className="font-bold text-base leading-tight">{match.title}</h3>
+      {activeMarker === currentMatch.id && !isUserLocationMarker && (
+        <InfoWindowF onCloseClick={() => handleMarkerClick(currentMatch.id)}>
+            <div className="space-y-2 p-1 w-60">
+                <h3 className="font-bold text-base leading-tight">{currentMatch.title}</h3>
+                <div className="space-y-1.5">
                      <div className="flex items-start gap-2 text-xs text-muted-foreground">
                         <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                        <span className="truncate">{match.location.address}</span>
+                        <span className="truncate">{currentMatch.location.address}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">{format(new Date(match.date), "d MMM, HH:mm'hs'", { locale: es })}</p>
+                     <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                        <span>{format(new Date(currentMatch.date), "EEEE d MMM, HH:mm'hs'", { locale: es })}</span>
+                    </div>
                 </div>
-                <div className='flex justify-between items-center pt-1'>
-                    <p className="text-sm font-semibold">Plazas: {match.players.length} / {match.matchSize}</p>
-                    <Button
-                        variant={isUserInMatch ? 'secondary' : 'default'}
-                        size="sm"
-                        onClick={handleJoinOrLeaveMatch}
-                        disabled={isJoining || (isMatchFull && !isUserInMatch)}
-                        className="h-8 text-xs"
-                    >
-                        {isJoining ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : isUserInMatch ? (
-                            <><LogOut className="mr-2 h-4 w-4" /> Darse de baja</>
-                        ) : (
-                        <><UserPlus className="mr-2 h-4 w-4" /> Apuntarse</>
-                        )}
-                    </Button>
+                <div className='flex justify-between items-center pt-2'>
+                    <p className="text-sm font-semibold">Plazas: {currentMatch.players.length} / {currentMatch.matchSize}</p>
+                    {user && (
+                         <Button
+                            variant={isUserInMatch ? 'secondary' : 'default'}
+                            size="sm"
+                            onClick={handleJoinOrLeaveMatch}
+                            disabled={isJoining || (isMatchFull && !isUserInMatch)}
+                            className="h-8 text-xs"
+                        >
+                            {isJoining ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : isUserInMatch ? (
+                                <><LogOut className="mr-2 h-4 w-4" /> Baja</>
+                            ) : (
+                            <><UserPlus className="mr-2 h-4 w-4" /> Apuntarse</>
+                            )}
+                        </Button>
+                    )}
                 </div>
             </div>
         </InfoWindowF>
       )}
-       {activeMarker === match.id && isUserLocationMarker && (
-         <InfoWindowF onCloseClick={() => handleMarkerClick(match.id)}>
+       {activeMarker === currentMatch.id && isUserLocationMarker && (
+         <InfoWindowF onCloseClick={() => handleMarkerClick(currentMatch.id)}>
            <div className='p-1'>
             <p className="font-bold text-base">Tu Ubicación</p>
            </div>
