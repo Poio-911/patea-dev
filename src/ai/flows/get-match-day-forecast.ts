@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow to get a weather forecast for a match day.
@@ -17,14 +18,14 @@ const GetMatchDayForecastInputSchema = z.object({
   location: z.string().describe('The location of the match (e.g., "Montevideo, Uruguay").'),
   date: z.string().describe('The date and time of the match in ISO 8601 format.'),
 });
-export type GetMatchDayForecastInput = z.infer<typeof GetMatchDayForecastInputSchema>;
+type GetMatchDayForecastInput = z.infer<typeof GetMatchDayForecastInputSchema>;
 
 const GetMatchDayForecastOutputSchema = z.object({
   description: z.string().describe('A concise, user-friendly description of the weather.'),
   icon: z.enum(['Sun', 'Cloud', 'Cloudy', 'CloudRain', 'CloudSnow', 'Wind', 'Zap']).describe('An icon name representing the weather condition.'),
   temperature: z.number().describe('The temperature in Celsius.'),
 });
-export type GetMatchDayForecastOutput = z.infer<typeof GetMatchDayForecastOutputSchema>;
+type GetMatchDayForecastOutput = z.infer<typeof GetMatchDayForecastOutputSchema>;
 
 
 // Define the schema for the raw weather data from the API
