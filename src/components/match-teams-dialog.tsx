@@ -49,7 +49,7 @@ const BalanceRating = ({ fairnessPercentage }: { fairnessPercentage: number }) =
 
 export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
   const teams = match.teams || [];
-  const fairnessPercentage = match.teams?.[0]?.balanceMetrics?.fairnessPercentage ?? 0;
+  const balanceMetrics = match.teams?.[0]?.balanceMetrics;
   
   return (
     <Dialog>
@@ -57,11 +57,16 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-background/80 backdrop-blur-sm">
         <DialogHeader>
           <DialogTitle>Equipos para "{match.title}"</DialogTitle>
+          <DialogDescription>Equipos generados por IA para un partido equilibrado.</DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-6">
-            {fairnessPercentage > 0 && (
-                <div className="flex justify-center">
-                    <BalanceRating fairnessPercentage={fairnessPercentage} />
+            {balanceMetrics && (
+                <div className="flex flex-col items-center justify-center gap-4 rounded-lg bg-muted/50 p-4">
+                    <BalanceRating fairnessPercentage={balanceMetrics.fairnessPercentage} />
+                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Scale className="h-4 w-4" />
+                        <span>Diferencia de OVR: {balanceMetrics.ovrDifference.toFixed(2)}</span>
+                    </div>
                 </div>
             )}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

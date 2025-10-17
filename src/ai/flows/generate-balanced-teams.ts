@@ -52,12 +52,12 @@ const GenerateBalancedTeamsOutputSchema = z.object({
     .object({
       ovrDifference: z
         .number()
-                .describe('The difference in overall rating between the best and worst teams.'),
+                .describe('The absolute difference in average OVR between the strongest and weakest teams.'),
       fairnessPercentage: z
         .number()
-        .describe('A percentage indicating how fair the team balance is.'),
+        .describe('A percentage from 0 to 100 indicating how fair the team balance is. 100 is perfectly balanced.'),
     })
-    .optional(),
+    .describe("Metrics describing how balanced the teams are."),
 });
 
 
@@ -89,7 +89,7 @@ Based on the players in each team, you must:
 3.  **Generate 2-3 tactical tags** that describe the team's characteristics (e.g., "Ataque Veloz", "Defensa Sólida", "Control del Mediocampo", "Sin Portero Fijo" if no 'POR' is present).
 4.  Try to minimize the difference in total OVR between the strongest and weakest teams.
 5.  Calculate the total and average OVR for each team.
-6.  Calculate balance metrics (OVR difference and fairness percentage).
+6.  Calculate balance metrics: the absolute difference in average OVR and a fairness percentage (100% is perfect balance, 0% is completely unbalanced).
 
 Ensure the response is valid JSON that strictly follows the provided output schema.
 `,
