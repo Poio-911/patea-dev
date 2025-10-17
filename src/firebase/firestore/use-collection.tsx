@@ -46,7 +46,7 @@ export const useCollection = <T extends DocumentData>(
       (err) => {
         console.error(`[useCollection] onSnapshot error:`, err);
         const permissionError = new FirestorePermissionError({
-            path: (query as any)._query.path.segments.join('/'),
+            path: (query as any)._query?.path?.segments?.join('/') || 'unknown path',
             operation: 'list',
         });
         errorEmitter.emit('permission-error', permissionError);

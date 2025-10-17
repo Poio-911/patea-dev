@@ -87,7 +87,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       unsubscribe();
     };
-  }, [auth, firestore]);
+  }, [auth, firestore, loading]);
 
   return (
     <UserContext.Provider value={{ user, loading }}>

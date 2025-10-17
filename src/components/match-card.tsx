@@ -107,7 +107,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         const assignments: Omit<EvaluationAssignment, 'id'>[] = [];
         const realPlayerUids = match.players
             .map(p => allPlayers.find(ap => ap.id === p.uid))
-            .filter(p => p && isRealUser(p))
+            .filter((p): p is Player => !!(p && isRealUser(p)))
             .map(p => p!.id);
 
         realPlayerUids.forEach(evaluatorId => {
