@@ -4,7 +4,7 @@ import { useCollection } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Users, Star, Users2, Calendar } from 'lucide-react';
+import { Users, Star, Users2, Calendar, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
@@ -13,10 +13,21 @@ import { useMemo } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { MatchCard } from '@/components/match-card';
 import type { Player, Match } from '@/lib/types';
 import { BizarreQuoteCard } from '@/components/bizarre-quote-card';
 import { NextMatchCard } from '@/components/next-match-card';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { Separator } from '@/components/ui/separator';
+
+const statusConfig: Record<Match['status'], { label: string; className: string }> = {
+    upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
+    active: { label: 'Activo', className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
+    completed: { label: 'Finalizado', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' },
+    evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' },
+};
+
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -101,14 +112,35 @@ export default function DashboardPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Partidos Recientes</CardTitle>
-                    <CardDescription>Los últimos partidos que se han jugado.</CardDescription>
+                    <CardDescription>Los últimos partidos que se han jugado en el grupo.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {recentMatches.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {recentMatches.map(match => (
-                                <MatchCard key={match.id} match={match} allPlayers={players || []} />
-                            ))}
+                        <div className="space-y-4">
+                            {recentMatches.map((match, index) => {
+                                const statusInfo = statusConfig[match.status];
+                                return (
+                                    <div key={match.id}>
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="font-semibold">{match.title}</p>
+                                                <div className="flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Calendar className="h-3.5 w-3.5" />
+                                                        <span>{format(new Date(match.date), "d MMM, yyyy", { locale: es })}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <MapPin className="h-3.5 w-3.5" />
+                                                        <span>{match.location}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <Badge variant="outline" className={cn("text-xs", statusInfo.className)}>{statusInfo.label}</Badge>
+                                        </div>
+                                        {index < recentMatches.length - 1 && <Separator className="mt-4" />}
+                                    </div>
+                                )
+                            })}
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center text-center border-2 border-dashed border-muted-foreground/30 rounded-xl p-12">
@@ -135,7 +167,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {top5Players.map((player, index) => (
+                  {top5Players.length > 0 ? top5Players.map((player, index) => (
                     <div key={player.id} className="flex items-center gap-4">
                       <div className="text-muted-foreground font-bold w-4">{index + 1}.</div>
                       <Avatar className="h-10 w-10 border-2 border-primary/50">
@@ -148,7 +180,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="text-lg font-bold text-primary">{player.ovr}</div>
                     </div>
-                  ))}
+                  )) : <p className="text-sm text-muted-foreground text-center py-4">Aún no hay jugadores en este grupo.</p>}
                 </div>
               </CardContent>
             </Card>

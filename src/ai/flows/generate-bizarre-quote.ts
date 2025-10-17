@@ -11,7 +11,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const BizarreQuoteOutputSchema = z.object({
-  quote: z.string().describe('A real, bizarre, or funny quote from a footballer.'),
+  quote: z.string().describe('A real, bizarre, or funny quote from a footballer, in Spanish.'),
   author: z.string().describe("The name of the footballer who said the quote."),
 });
 
@@ -25,12 +25,12 @@ const prompt = ai.definePrompt({
   name: 'bizarreQuotePrompt',
   output: { schema: BizarreQuoteOutputSchema },
   prompt: `
-    You are a sports historian specializing in football trivia.
-    Your task is to provide one real, bizarre, funny, or weird quote from a famous footballer (past or present).
+    Eres un historiador deportivo especializado en trivia de fútbol.
+    Tu tarea es proporcionar una cita real, bizarra, divertida o extraña de un futbolista famoso (pasado o presente).
 
-    Ensure the quote is authentic.
+    Asegúrate de que la cita sea auténtica.
 
-    Return the quote and the author's name in the specified JSON format.
+    Devuelve la cita y el nombre del autor en el formato JSON especificado y asegúrate de que la respuesta esté en español.
   `,
 });
 
