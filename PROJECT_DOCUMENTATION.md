@@ -70,6 +70,9 @@ A continuación se detallan las funcionalidades clave que hemos construido:
     - En la carta de cada jugador, un botón "Consejos IA" abre un diálogo.
     - Al activarlo, se llama a un flujo de IA (`suggestPlayerImprovements`) que analiza el historial de evaluaciones **reales** del jugador (calificaciones y etiquetas de rendimiento).
     - La IA devuelve 2-3 consejos concisos y personalizados en **español** para que el jugador pueda mejorar.
+- **Pronóstico del Clima**:
+    - Al crear un partido, la IA ahora busca y muestra automáticamente un pronóstico del tiempo para la fecha y ubicación del evento.
+    - El pronóstico incluye una descripción amigable y un ícono representativo (sol, nubes, lluvia, etc.).
 
 ---
 
@@ -84,6 +87,7 @@ La aplicación sigue una estructura moderna de Next.js con el App Router.
 │   ├── ai/                      # Lógica de Inteligencia Artificial con Genkit
 │   │   ├── flows/
 │   │   │   ├── generate-balanced-teams.ts
+│   │   │   ├── get-match-day-forecast.ts   <-- NUEVO
 │   │   │   └── suggest-player-improvements.ts
 │   │   └── genkit.ts            # Configuración global de Genkit
 │   │
@@ -163,7 +167,7 @@ La base de datos NoSQL en Firestore está estructurada en colecciones de alto ni
 
 - **`/matches/{matchId}`**
     - **Descripción**: Almacena los datos de cada partido.
-    - **Campos clave**: `title`, `date`, `status`, `type`, `matchSize`, `players` (array de jugadores apuntados), `teams` (array de equipos generados por IA), `ownerUid`, `groupId`.
+    - **Campos clave**: `title`, `date`, `status`, `type`, `matchSize`, `players` (array de jugadores apuntados), `teams` (array de equipos generados por IA), `ownerUid`, `groupId`, `weather` (**NUEVO**).
     - **Subcolección**: `/matches/{matchId}/assignments/{assignmentId}`
         - **Descripción**: Almacena las tareas de evaluación generadas al finalizar un partido (quién evalúa a quién).
         - **Campos clave**: `evaluatorId`, `subjectId`, `status`.
@@ -176,7 +180,10 @@ La base de datos NoSQL en Firestore está estructurada en colecciones de alto ni
 
 ## 5. Changelog (Historial de Cambios)
 
-*   **[Fecha Actual]**: Se realiza un análisis completo de la aplicación y se actualiza esta documentación para reflejar el estado actual y estable del proyecto después de resolver problemas de compilación.
+*   **[Fecha Actual]**: Se integra un **pronóstico del clima por IA** al programar un partido. Al introducir fecha y ubicación, la IA busca el clima y muestra una descripción con un ícono.
+*   **[Fecha Anterior]**: Se implementan varias mejoras de UI/UX. Se ajusta el tamaño de la fuente en el header para el OVR y la posición, se mejora el estilo y tamaño del menú de navegación inferior en móviles, y se restaura el efecto de fondo difuminado. Se ajusta la paleta de colores para una mayor coherencia visual.
+*   **[Fecha Anterior]**: Se mejora el **Dashboard**: se añade una tarjeta de video destacado con autoplay, se simplifica la lista de partidos recientes para que sea más legible y se ajusta la IA para que la frase célebre sea siempre en español y priorice a jugadores rioplatenses.
+*   **[Fecha Anterior]**: Se realiza un análisis completo de la aplicación y se actualiza esta documentación para reflejar el estado actual y estable del proyecto después de resolver problemas de compilación.
 *   **[Fecha Anterior]**: Se implementa la **página de detalle del jugador** (`/players/[id]`). Ahora las tarjetas de jugador son clickables y llevan a una página que muestra el historial de evaluaciones del jugador y un **gráfico con la progresión de su OVR**. Se añade la subcolección `ovrHistory` a la base de datos.
 *   **[Fecha Anterior]**: Se reestructura completamente el **sistema de evaluación**. Se crea una nueva página `/evaluations` donde los jugadores ven sus tareas pendientes. Las asignaciones ahora se guardan en la base de datos al finalizar un partido para mayor robustez. La página `/matches/[id]/evaluate` se convierte en un panel exclusivo para el organizador.
 *   **[Fecha Anterior]**: Se implementa la funcionalidad para **editar jugadores manuales**, completando el ciclo CRUD.
