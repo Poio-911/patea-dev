@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
-import type { Match, Player, EvaluationAssignment, Notification } from '@/lib/types';
+import { useState, useMemo, useEffect } from 'react';
+import type { Match, Player, EvaluationAssignment, Notification, UserProfile } from '@/lib/types';
 import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDoc } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -68,6 +68,35 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isFinishing, setIsFinishing] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
+    const [ownerName, setOwnerName] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchOwnerName = async () => {
+            if (!firestore) return;
+            // First, try to find the owner in the group's player list
+            const ownerInGroup = allPlayers.find(p => p.id === match.ownerUid);
+            if (ownerInGroup) {
+                setOwnerName(ownerInGroup.name);
+            } else {
+                // If not found (e.g., public match), fetch from the /users collection
+                try {
+                    const userDocRef = doc(firestore, 'users', match.ownerUid);
+                    const userDoc = await getDoc(userDocRef);
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data() as UserProfile;
+                        setOwnerName(userData.displayName || 'Organizador');
+                    } else {
+                        setOwnerName('Organizador');
+                    }
+                } catch {
+                    setOwnerName('Organizador');
+                }
+            }
+        };
+
+        fetchOwnerName();
+    }, [firestore, match.ownerUid, allPlayers]);
+
 
     const isUserInMatch = useMemo(() => {
         if (!user) return false;
@@ -82,11 +111,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         if (!allPlayers) return [];
         return allPlayers.filter(p => !match.playerUids.includes(p.id));
     }, [allPlayers, match.playerUids]);
-    
-    const ownerName = useMemo(() => {
-        const owner = allPlayers.find(p => p.id === match.ownerUid);
-        return owner?.name || 'Desconocido';
-    }, [allPlayers, match.ownerUid]);
 
 
     const currentStatus = statusConfig[match.status] || statusConfig.completed;
@@ -346,7 +370,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                             Evaluado
                         </Link>
                     </Button>
-                 )}
+                )}
             </div>
         );
     }
@@ -365,7 +389,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     </Badge>
                 </div>
                 <CardDescription className="flex items-center gap-2 text-xs text-foreground/80">
-                   <User className="h-3 w-3"/> Organizado por {ownerName}
+                   <User className="h-3 w-3"/> Organizado por {ownerName || 'Cargando...'}
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex-grow space-y-4 pt-4 p-4">

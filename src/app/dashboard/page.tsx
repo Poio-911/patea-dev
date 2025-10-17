@@ -5,7 +5,7 @@ import { useCollection } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, Users2, Calendar, MapPin } from 'lucide-react';
+import { Star, Users2, Calendar, MapPin, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
@@ -41,27 +41,21 @@ export default function DashboardPage() {
     return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
   }, [firestore, user?.activeGroupId]);
 
-  const matchesQuery = useMemo(() => {
-    if (!firestore || !user?.uid) return null;
-    // This query is more complex and cannot be done with a simple 'or' in Firestore.
-    // We will fetch both and merge them client-side. A server-side function would be more efficient for large scale.
-    if (!user.activeGroupId) {
-        return query(collection(firestore, 'matches'), where('players', 'array-contains', user.uid), orderBy('date', 'desc'));
-    }
+  const groupMatchesQuery = useMemo(() => {
+    if (!firestore || !user?.activeGroupId) return null;
     return query(collection(firestore, 'matches'), where('groupId', '==', user.activeGroupId), orderBy('date', 'desc'));
-  }, [firestore, user?.uid, user?.activeGroupId]);
-
+  }, [firestore, user?.activeGroupId]);
+  
   const joinedMatchesQuery = useMemo(() => {
     if (!firestore || !user?.uid) return null;
-    // Fetches matches the user has joined that are NOT in their active group.
     return query(
-        collection(firestore, 'matches'), 
-        where('players', 'array-contains', user.uid)
+        collection(firestore, 'matches'),
+        where('playerUids', 'array-contains', user.uid)
     );
   }, [firestore, user?.uid]);
 
 
-  const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(matchesQuery);
+  const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(groupMatchesQuery);
   const { data: joinedMatches, loading: joinedMatchesLoading } = useCollection<Match>(joinedMatchesQuery);
 
 
@@ -72,9 +66,11 @@ export default function DashboardPage() {
     
     const allMatchesMap = new Map<string, Match>();
     
-    groupMatches?.forEach(match => allMatchesMap.set(match.id, match));
-    joinedMatches?.forEach(match => {
-        // We only add the joined match if it's not already in the map (from the group query)
+    // Add all matches from the active group first
+    (groupMatches || []).forEach(match => allMatchesMap.set(match.id, match));
+
+    // Add joined matches (public or from other groups), avoiding duplicates
+    (joinedMatches || []).forEach(match => {
         if (!allMatchesMap.has(match.id)) {
             allMatchesMap.set(match.id, match);
         }
@@ -156,6 +152,9 @@ export default function DashboardPage() {
                         <div className="space-y-4">
                             {recentMatches.map((match, index) => {
                                 const statusInfo = statusConfig[match.status];
+                                const owner = allPlayers?.find(p => p.id === match.ownerUid)
+                                const ownerName = owner?.name || (match.ownerUid === user?.uid ? user.displayName : null) || 'Organizador';
+                                
                                 return (
                                     <div key={match.id}>
                                         <div className="flex justify-between items-start">
@@ -168,7 +167,11 @@ export default function DashboardPage() {
                                                     </div>
                                                     <div className="flex items-center gap-1.5">
                                                         <MapPin className="h-3.5 w-3.5" />
-                                                        <span>{match.location.address}</span>
+                                                        <span className="truncate max-w-xs">{match.location.address}</span>
+                                                    </div>
+                                                     <div className="flex items-center gap-1.5">
+                                                        <User className="h-3.5 w-3.5" />
+                                                        <span>{ownerName || 'Desconocido'}</span>
                                                     </div>
                                                 </div>
                                             </div>
