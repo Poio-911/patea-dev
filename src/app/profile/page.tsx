@@ -1,70 +1,82 @@
+
 'use client';
 
-import { useUser, useFirestore, useDoc, useFirebase } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
-import { doc, writeBatch } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, User, RefreshCw, Upload } from 'lucide-react';
+import { doc, collection, query, where } from 'firebase/firestore';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { Loader2, Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import type { Player } from '@/lib/types';
-import { PlayerCard } from '@/components/player-card';
-import { StatCard } from '@/components/stat-card';
-import { Goal, Shield, Star } from 'lucide-react';
+import type { Player, Match } from '@/lib/types';
 import { useState, useRef, useMemo } from 'react';
 import { updateProfile } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
+import { useToast } from '@/hooks/use-toast';
+import { PlayerProfileView } from '@/components/player-profile-view';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 
 export default function ProfilePage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const auth = useAuth();
-  const firebase = useFirebase();
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const playerRef = useMemo(() => 
-    user && firestore ? doc(firestore, 'players', user.uid) : null
-  , [user, firestore]);
-  const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
+  const createdPlayersQuery = useMemo(() => {
+    if (!firestore || !user?.uid) return null;
+    return query(collection(firestore, 'players'), where('ownerUid', '==', user.uid));
+  }, [firestore, user?.uid]);
+  const { data: createdPlayers, loading: createdPlayersLoading } = useCollection<Player>(createdPlayersQuery);
 
-  const loading = userLoading || playerLoading;
+  const createdMatchesQuery = useMemo(() => {
+    if (!firestore || !user?.uid) return null;
+    return query(collection(firestore, 'matches'), where('ownerUid', '==', user.uid));
+  }, [firestore, user?.uid]);
+  const { data: createdMatches, loading: createdMatchesLoading } = useCollection<Match>(createdMatchesQuery);
   
+  const manualPlayers = useMemo(() => {
+    if(!createdPlayers || !user) return [];
+    return createdPlayers.filter(p => p.id !== user.uid);
+  }, [createdPlayers, user]);
+
+
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user || !firestore || !auth?.currentUser || !firebase) return;
+    if (!user || !firestore || !auth?.currentUser) return;
     const file = event.target.files?.[0];
     if (!file) return;
 
     setIsUploading(true);
     
-    const storage = getStorage(firebase.firebaseApp);
+    // We get the storage instance from the initialized firebase app, but we don't have it here.
+    // Let's assume we can get it from auth.app
+    const storage = getStorage(auth.app);
     const fileExtension = file.name.split('.').pop();
     const fileName = `${user.uid}-${uuidv4()}.${fileExtension}`;
     const storageRef = ref(storage, `profile-images/${fileName}`);
 
     try {
-        await uploadBytes(storageRef, file);
-        const newPhotoURL = await getDownloadURL(storageRef);
+        const uploadTask = await uploadBytes(storageRef, file);
+        const newPhotoURL = await getDownloadURL(uploadTask.ref);
 
-        const batch = writeBatch(firestore);
-
-        // Update auth profile
-        await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
-
-        // Update user document
         const userDocRef = doc(firestore, 'users', user.uid);
-        batch.update(userDocRef, { photoURL: newPhotoURL });
-        
-        // Update player document
         const playerDocRef = doc(firestore, 'players', user.uid);
-        batch.update(playerDocRef, { photoUrl: newPhotoURL });
 
-        await batch.commit();
+        // Batch updates are not available in client SDK like this, 
+        // but we can do individual updates or a transaction.
+        // For simplicity, we do individual updates.
+        await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
+        await doc(userDocRef).set({ photoURL: newPhotoURL }, { merge: true });
+        await doc(playerDocRef).set({ photoUrl: newPhotoURL }, { merge: true });
+
 
         toast({
             title: '¡Foto actualizada!',
@@ -86,71 +98,122 @@ export default function ProfilePage() {
   const handleButtonClick = () => {
     fileInputRef.current?.click();
   };
+  
+  const loading = userLoading || createdPlayersLoading || createdMatchesLoading;
 
   if (loading) {
     return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
-  if (!user || !player) {
+  if (!user) {
     return <div>No se encontraron datos del perfil.</div>;
   }
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="Mi Perfil" description="Tu información personal y estadísticas de jugador." />
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handlePhotoUpload}
-        className="hidden"
-        accept="image/png, image/jpeg, image/gif" 
-      />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1 space-y-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Información de la Cuenta</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={user.photoURL || ''} alt={user.displayName || ''} data-ai-hint="user avatar" />
-                  <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col gap-2">
-                    <p className="text-lg font-semibold">{user.displayName}</p>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                     <Button onClick={handleButtonClick} size="sm" variant="outline" disabled={isUploading}>
-                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                        Cambiar Foto
-                    </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-                <CardTitle>Estadísticas Generales</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-                <StatCard title="Partidos" value={player.stats?.matchesPlayed || 0} icon={<Shield className="h-6 w-6 text-primary"/>} />
-                <StatCard title="Goles" value={player.stats?.goals || 0} icon={<Goal className="h-6 w-6 text-primary"/>} />
-                <StatCard title="Asistencias" value={player.stats?.assists || 0} icon={<User className="h-6 w-6 text-primary"/>} />
-                <StatCard title="Rating Prom." value={player.stats?.averageRating?.toFixed(2) || 'N/A'} icon={<Star className="h-6 w-6 text-primary"/>} />
-            </CardContent>
-          </Card>
-        </div>
-        <div className="lg:col-span-2">
-            <Card className="max-w-sm mx-auto">
+        <PageHeader
+            title="Mi Perfil"
+            description="Tu información personal, estadísticas de jugador y actividad."
+        >
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handlePhotoUpload}
+                className="hidden"
+                accept="image/png, image/jpeg, image/gif" 
+            />
+            <Button onClick={handleButtonClick} size="sm" variant="outline" disabled={isUploading}>
+                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                Cambiar Foto de Perfil
+            </Button>
+      </PageHeader>
+      
+      <PlayerProfileView playerId={user.uid} />
+
+      <Tabs defaultValue="created-matches" className="w-full">
+        <TabsList>
+            <TabsTrigger value="created-matches">Partidos Creados</TabsTrigger>
+            <TabsTrigger value="created-players">Jugadores Creados</TabsTrigger>
+        </TabsList>
+        <TabsContent value="created-matches">
+            <Card>
                 <CardHeader>
-                    <CardTitle className="text-center">Tu Carta de Jugador</CardTitle>
+                    <CardTitle>Partidos que has Creado</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <PlayerCard player={player} isLink={false} />
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Partido</TableHead>
+                                <TableHead>Fecha</TableHead>
+                                <TableHead>Jugadores</TableHead>
+                                <TableHead>Estado</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {createdMatches && createdMatches.length > 0 ? createdMatches.map(match => (
+                                <TableRow key={match.id}>
+                                    <TableCell className="font-medium">{match.title}</TableCell>
+                                    <TableCell>{format(new Date(match.date), 'dd/MM/yyyy')}</TableCell>
+                                    <TableCell>{match.players.length} / {match.matchSize}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={match.status === 'completed' ? 'secondary' : 'default'}>{match.status}</Badge>
+                                    </TableCell>
+                                </TableRow>
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center h-24">No has creado ningún partido.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
                 </CardContent>
             </Card>
-        </div>
-      </div>
+        </TabsContent>
+        <TabsContent value="created-players">
+             <Card>
+                <CardHeader>
+                    <CardTitle>Jugadores Manuales que has Creado</CardTitle>
+                </CardHeader>
+                <CardContent>
+                     <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Jugador</TableHead>
+                                <TableHead>Posición</TableHead>
+                                <TableHead>OVR</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                             {manualPlayers && manualPlayers.length > 0 ? manualPlayers.map(player => (
+                                <TableRow key={player.id}>
+                                    <TableCell>
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-9 w-9">
+                                                <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
+                                                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <span className="font-medium">{player.name}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant="outline">{player.position}</Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge>{player.ovr}</Badge>
+                                    </TableCell>
+                                </TableRow>
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-center h-24">No has creado ningún jugador manual.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
