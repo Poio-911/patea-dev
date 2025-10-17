@@ -34,7 +34,6 @@ import {
 import type { Player } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 
 const navItems = [
@@ -65,7 +64,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
-  const isMobile = useIsMobile();
 
   const playerRef = React.useMemo(() => {
     if (!firestore || !user?.uid) return null;
@@ -169,9 +167,9 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             </div>
 
             {player && (
-                <div className="flex items-center gap-2 sm:gap-4">
-                    <div className="text-right flex items-center gap-2">
-                        <p className="font-bold text-sm truncate">{isMobile ? user.displayName?.split(' ')[0] : player.name}</p>
+                <div className="hidden md:flex items-center gap-2 sm:gap-4">
+                    <div className="text-right">
+                        <p className="font-bold text-sm truncate">{player.name}</p>
                     </div>
                     <div className={cn("font-bold text-lg", ovrColors[player.position])}>
                         {player.ovr}
