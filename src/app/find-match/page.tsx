@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import Link from 'next/link';
 
 const containerStyle = {
   width: '100%',
@@ -281,5 +282,3 @@ export default function FindMatchPage() {
     </div>
   );
 }
-
-    
