@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import type { Match, Player, EvaluationAssignment } from '@/lib/types';
-import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection } from 'firebase/firestore';
+import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDoc } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -191,22 +191,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         if (!firestore || !user) return;
         setIsJoining(true);
         
-        const playerProfile = allPlayers?.find(p => p.id === user.uid);
-
-        if (!playerProfile) {
-            toast({ variant: 'destructive', title: 'Error', description: 'No se encontró tu perfil de jugador.' });
-            setIsJoining(false);
-            return;
-        }
-
         const matchRef = doc(firestore, 'matches', match.id);
-        const playerPayload = { 
-            uid: user.uid,
-            displayName: playerProfile.name,
-            ovr: playerProfile.ovr,
-            position: playerProfile.position,
-            photoUrl: playerProfile.photoUrl || ''
-        };
 
         try {
             if(isUserInMatch) {
@@ -223,6 +208,27 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     setIsJoining(false);
                     return;
                 }
+                
+                // For public matches, anyone can join. For private, they must be in the group.
+                const playerProfileRef = doc(firestore, 'players', user.uid);
+                const playerSnap = await getDoc(playerProfileRef);
+
+                if (!playerSnap.exists()) {
+                    toast({ variant: 'destructive', title: 'Error', description: 'No se encontró tu perfil de jugador.' });
+                    setIsJoining(false);
+                    return;
+                }
+
+                const playerProfile = playerSnap.data() as Player;
+
+                const playerPayload = { 
+                    uid: user.uid,
+                    displayName: playerProfile.name,
+                    ovr: playerProfile.ovr,
+                    position: playerProfile.position,
+                    photoUrl: playerProfile.photoUrl || ''
+                };
+                
                 await updateDoc(matchRef, {
                     players: arrayUnion(playerPayload)
                 });
@@ -239,6 +245,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     const renderPrimaryAction = () => {
         if (match.status !== 'upcoming') return null;
 
+        // Action for collaborative matches (public or private)
         if (match.type === 'collaborative') {
              if (isMatchFull && !isUserInMatch) {
                 return <Button variant="outline" size="sm" className="w-full" disabled>Partido Lleno</Button>
@@ -251,13 +258,12 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             );
         }
         
-        // For 'manual' matches, or if no other action is available
         return null;
     }
 
     const renderSecondaryActions = () => (
         <>
-            {user?.uid === match.ownerUid && match.status === 'upcoming' && isMatchFull && (
+            {user?.uid === match.ownerUid && match.status === 'upcoming' && match.type === 'collaborative' && isMatchFull && (
                 <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing} className="w-full">
                     {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
                     Finalizar
@@ -318,7 +324,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     </Badge>
                 </div>
                 <CardDescription>
-                     <Badge variant="secondary" className="font-semibold">{match.type === 'manual' ? 'Manual' : 'Colaborativo'}</Badge>
+                     <Badge variant="secondary" className="font-semibold">{match.type === 'manual' ? 'Manual' : match.isPublic ? 'Público' : 'Colaborativo'}</Badge>
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex-grow space-y-4 pt-6">
