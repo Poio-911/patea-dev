@@ -22,6 +22,8 @@ import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
+import { MatchDetailsDialog } from '@/components/match-details-dialog';
+
 
 const containerStyle = {
   width: '100%',
@@ -74,11 +76,11 @@ const CompactMatchCard = ({ match, onHover, isActive }: { match: Match, onHover:
                         <SoccerPlayerIcon className="h-4 w-4" />
                         <span>{match.players.length} / {match.matchSize}</span>
                     </div>
-                    <Button asChild variant="default" size="sm" className="h-7 px-2 text-xs">
-                        <Link href={`/matches`}>
+                    <MatchDetailsDialog match={match} allPlayers={[]}>
+                       <Button variant="default" size="sm" className="h-7 px-2 text-xs">
                            Ver Detalles
-                        </Link>
-                    </Button>
+                       </Button>
+                    </MatchDetailsDialog>
                 </div>
             </div>
         </Card>
@@ -207,33 +209,35 @@ export default function FindMatchPage() {
     
     // Search is completed
     return (
-        <div className="space-y-4 lg:hidden">
+        <div className="space-y-4">
             <Card>
-                <CardHeader className="p-3">
+                <CardHeader className="p-4 sm:p-6">
                     <CardTitle className="text-lg">Partidos Encontrados ({nearbyMatches.length})</CardTitle>
                 </CardHeader>
-                <CardContent className="p-1 max-h-64 overflow-y-auto">
-                     <div className="space-y-2 p-1">
-                        {nearbyMatches.length > 0 ? nearbyMatches.map((match) => (
-                           <div id={`match-card-${match.id}`} key={match.id}>
-                             <CompactMatchCard
-                                match={match}
-                                onHover={setActiveMarker}
-                                isActive={activeMarker === match.id}
-                            />
-                           </div>
-                        )) : (
-                            <Alert className="m-2">
-                                <AlertTitle>Sin Resultados</AlertTitle>
-                                <AlertDescription>
-                                    No se encontraron partidos públicos en esta área. Intenta aumentar el radio de búsqueda.
-                                </AlertDescription>
-                            </Alert>
-                        )}
-                    </div>
+                <CardContent className="p-2 sm:p-4">
+                    <ScrollArea className="h-full max-h-72">
+                        <div className="space-y-2 p-1">
+                            {nearbyMatches.length > 0 ? nearbyMatches.map((match) => (
+                            <div id={`match-card-${match.id}`} key={match.id}>
+                                <CompactMatchCard
+                                    match={match}
+                                    onHover={setActiveMarker}
+                                    isActive={activeMarker === match.id}
+                                />
+                            </div>
+                            )) : (
+                                <Alert className="m-2">
+                                    <AlertTitle>Sin Resultados</AlertTitle>
+                                    <AlertDescription>
+                                        No se encontraron partidos públicos en esta área. Intenta aumentar el radio de búsqueda.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                        </div>
+                    </ScrollArea>
                 </CardContent>
             </Card>
-            <div className="h-96 w-full">
+            <div className="h-96 w-full rounded-lg overflow-hidden">
                 <GoogleMap
                     mapContainerStyle={containerStyle}
                     center={userLocation || defaultCenter}
@@ -256,71 +260,6 @@ export default function FindMatchPage() {
       />
       <div className="flex-grow">
         {renderContent()}
-
-        {searchCompleted && (
-            <div className="hidden lg:grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-                <Card className="lg:col-span-1 h-full flex flex-col">
-                    <CardHeader className="p-4">
-                        <CardTitle className="text-lg">Partidos Encontrados</CardTitle>
-                        <CardDescription className="text-xs">Se encontraron {nearbyMatches.length} partidos en un radio de {searchRadius}km.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-grow p-2">
-                        <ScrollArea className="h-full">
-                            <div className="space-y-2 p-1">
-                                {nearbyMatches.length > 0 ? nearbyMatches.map((match) => (
-                                <div id={`match-card-${match.id}-desktop`} key={match.id}>
-                                    <CompactMatchCard
-                                        match={match}
-                                        onHover={setActiveMarker}
-                                        isActive={activeMarker === match.id}
-                                    />
-                                </div>
-                                )) : (
-                                    <Alert className="m-2">
-                                        <AlertTitle>Sin Resultados</AlertTitle>
-                                        <AlertDescription>
-                                            No se encontraron partidos públicos en esta área. Intenta aumentar el radio de búsqueda.
-                                        </AlertDescription>
-                                    </Alert>
-                                )}
-                            </div>
-                        </ScrollArea>
-                    </CardContent>
-                </Card>
-                <div className="lg:col-span-2 h-full min-h-[400px] lg:min-h-0">
-                    <GoogleMap
-                        mapContainerStyle={containerStyle}
-                        center={userLocation || defaultCenter}
-                        zoom={12}
-                        options={{
-                            styles: mapStyles,
-                            disableDefaultUI: true,
-                            zoomControl: true,
-                        }}
-                    >
-                        {nearbyMatches.map((match) => (
-                            <MatchMarker
-                                key={match.id}
-                                match={match}
-                                activeMarker={activeMarker}
-                                handleMarkerClick={handleMarkerClick}
-                            />
-                        ))}
-                        {userLocation && (
-                            <MatchMarker
-                                match={{
-                                    id: 'user-location',
-                                    title: 'Tu Ubicación',
-                                    location: userLocation
-                                } as any}
-                                activeMarker={activeMarker}
-                                handleMarkerClick={handleMarkerClick}
-                            />
-                        )}
-                    </GoogleMap>
-                </div>
-            </div>
-        )}
       </div>
     </div>
   );
