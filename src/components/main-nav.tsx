@@ -47,7 +47,7 @@ const navItems = [
 
 const positionColors: Record<Player['position'], string> = {
     DEL: 'bg-red-500/80 text-white',
-    MED: 'bg-green-500/80 text-white',
+    MED: 'bg-purple-500/80 text-white',
     DEF: 'bg-blue-500/80 text-white',
     POR: 'bg-orange-500/80 text-white',
 };
@@ -226,7 +226,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                         key={item.href} 
                         href={item.href} 
                         className={cn(
-                            "group inline-flex flex-col items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-accent-foreground",
+                            "group inline-flex flex-col items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary",
                             isActive && "text-primary"
                         )}
                     >
