@@ -88,7 +88,7 @@ export default function PlayersPage() {
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {players?.map((player) => (
           <PlayerCard key={player.id} player={player} />
         ))}
