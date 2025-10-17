@@ -24,7 +24,7 @@ type MatchTeamsDialogProps = {
 
 const positionBadgeStyles: Record<Player['position'], string> = {
   DEL: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
-  MED: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+  MED: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300',
   DEF: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
   POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
 };
@@ -38,10 +38,7 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Equipos para "{match.title}"</DialogTitle>
-          <DialogDescription>
-            Equipos generados por IA para un partido equilibrado.
-          </DialogDescription>
+          <DialogTitle>{match.title}</DialogTitle>
         </DialogHeader>
         <div className="py-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
