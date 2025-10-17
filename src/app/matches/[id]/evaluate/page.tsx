@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Loader2, Save, Users, Check, ThumbsUp, BarChart } from 'lucide-react';
@@ -55,15 +55,12 @@ export default function EvaluateMatchPage() {
   const { toast } = useToast();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [myAssignments, setMyAssignments] = useState<{ uid: string; displayName: string; photoUrl: string }[]>([]);
   const [isPageLoading, setIsPageLoading] = useState(true);
   
-  // We need player data to distinguish real from manual players
   const allGroupPlayersQuery = useMemo(() => 
     firestore && user?.activeGroupId ? query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId)) : null
   , [firestore, user?.activeGroupId]);
-  
   const { data: allGroupPlayers, loading: playersLoading } = useCollection<Player>(allGroupPlayersQuery);
 
   const matchRef = useMemo(() => firestore ? doc(firestore, 'matches', matchId as string) : null, [firestore, matchId]);
@@ -78,7 +75,6 @@ export default function EvaluateMatchPage() {
   });
   const { fields, replace } = useFieldArray({ control: form.control, name: "evaluations" });
 
-  // Helper to shuffle array
   const shuffleArray = <T,>(array: T[]): T[] => {
     let currentIndex = array.length, randomIndex;
     while (currentIndex !== 0) {
@@ -88,59 +84,58 @@ export default function EvaluateMatchPage() {
     }
     return array;
   };
+  
+  const hasUserSubmitted = useMemo(() => {
+    if(!user || !submittedEvaluations) return false;
+    return submittedEvaluations.some(e => e.evaluatedBy === user.uid);
+  }, [user, submittedEvaluations]);
 
   useEffect(() => {
-    if (match && user && !evalsLoading && !playersLoading && allGroupPlayers) {
+    if (match && user && !evalsLoading && !playersLoading && allGroupPlayers && !hasUserSubmitted) {
         const userIsParticipant = match.players.some(p => p.uid === user.uid);
+        const userPlayerProfile = allGroupPlayers.find(p => p.id === user.uid);
+        const isUserARealPlayer = userPlayerProfile ? isRealUser(userPlayerProfile) : false;
 
-        if (!userIsParticipant) {
+        if (!userIsParticipant || !isUserARealPlayer) {
             setIsPageLoading(false);
             return;
         }
 
         const generateAssignments = () => {
-            const newAssignments: Assignment[] = [];
+            const assignments: Assignment[] = [];
             (match.teams || []).forEach(team => {
                 const realPlayersInTeam = team.players.filter(p => {
                     const fullPlayer = allGroupPlayers.find(gp => gp.id === p.uid);
                     return fullPlayer && isRealUser(fullPlayer);
                 });
 
-                const allPlayersInTeam = team.players;
-
                 for (let i = 0; i < realPlayersInTeam.length; i++) {
                     const evaluator = realPlayersInTeam[i];
                     
-                    // Players to be evaluated can be anyone in the team
-                    const potentialTargets = shuffleArray([...allPlayersInTeam]);
+                    const potentialTargets = shuffleArray([...team.players]);
 
                     const playersToEvaluate = potentialTargets
-                        .filter(p => p.uid !== evaluator.uid) // Ensure no self-evaluation
-                        .slice(0, 2); // Take the first 2
+                        .filter(p => p.uid !== evaluator.uid)
+                        .slice(0, 2);
                     
-                    const assignment: Assignment = {
+                    assignments.push({
                         evaluatorId: evaluator.uid,
                         playersToEvaluate: playersToEvaluate.map(p => ({
                             uid: p.uid,
                             displayName: match.players.find(mp => mp.uid === p.uid)?.displayName || p.displayName,
                             photoUrl: match.players.find(mp => mp.uid === p.uid)?.photoUrl || ''
                         }))
-                    };
-                    newAssignments.push(assignment);
+                    });
                 }
             });
-            return newAssignments;
+            return assignments;
         };
         
         const allAssignments = generateAssignments();
-        setAssignments(allAssignments);
-
         const userAssignments = allAssignments.find(a => a.evaluatorId === user.uid)?.playersToEvaluate || [];
         setMyAssignments(userAssignments);
         
-        const hasUserSubmitted = (submittedEvaluations || []).some(e => e.evaluatedBy === user.uid);
-
-        if (userAssignments.length > 0 && !hasUserSubmitted) {
+        if (userAssignments.length > 0) {
             const initialFormValues = userAssignments.map(p => ({
                 playerId: p.uid,
                 displayName: p.displayName,
@@ -153,8 +148,10 @@ export default function EvaluateMatchPage() {
         }
 
         setIsPageLoading(false);
+    } else if (!matchLoading && !evalsLoading && !playersLoading) {
+      setIsPageLoading(false);
     }
-  }, [match, user, evalsLoading, playersLoading, allGroupPlayers, replace]);
+  }, [match, user, evalsLoading, playersLoading, allGroupPlayers, replace, hasUserSubmitted, matchLoading]);
 
   const onSubmit = async (data: EvaluationFormData) => {
     if (!firestore || !match || !user) return;
@@ -183,7 +180,7 @@ export default function EvaluateMatchPage() {
             title: '¡Evaluación Enviada!',
             description: 'Gracias por tu participación. Tus evaluaciones han sido guardadas.'
         });
-        form.reset();
+        // Let the useEffect handle the view change by updating `hasUserSubmitted` state via `submittedEvaluations` refetch.
         
     } catch (error: any) {
         toast({
@@ -212,12 +209,6 @@ export default function EvaluateMatchPage() {
 
   const evaluationProgress = totalPossibleEvaluators > 0 ? (completedEvaluatorsCount / totalPossibleEvaluators) * 100 : 0;
   
-  const hasUserSubmitted = useMemo(() => {
-    if(!user || !submittedEvaluations) return false;
-    return submittedEvaluations.some(e => e.evaluatedBy === user.uid);
-  }, [user, submittedEvaluations]);
-
-
   if (matchLoading || isPageLoading || evalsLoading || playersLoading) {
     return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
@@ -226,8 +217,10 @@ export default function EvaluateMatchPage() {
     return <div>Datos no encontrados.</div>;
   }
   
-  const isOwner = match.ownerUid === user.uid;
   const isParticipant = match.players.some(p => p.uid === user.uid);
+  if (!isParticipant) {
+    return <div>No participaste en este partido, por lo que no puedes evaluar.</div>;
+  }
   
   if (match.status === 'evaluated') {
     return (
@@ -242,15 +235,13 @@ export default function EvaluateMatchPage() {
         </div>
     )
   }
+  
+  const userPlayerProfile = allGroupPlayers?.find(p => p.id === user.uid);
+  const isUserARealPlayer = userPlayerProfile ? isRealUser(userPlayerProfile) : false;
 
-  if (!isParticipant) {
-    return <div>No participaste en este partido, por lo que no puedes evaluar.</div>;
-  }
-
-  const isUserRealPlayer = allGroupPlayers?.some(p => p.id === user.uid && isRealUser(p));
-
-  // OWNER VIEW
-  if (isOwner) {
+  // VIEW FOR ORGANIZER (if they are NOT a real player, otherwise they should evaluate)
+  const isOwner = match.ownerUid === user.uid;
+  if (isOwner && !isUserARealPlayer) {
     return (
         <div className="flex flex-col gap-8">
             <PageHeader
@@ -275,7 +266,7 @@ export default function EvaluateMatchPage() {
                         </AlertDescription>
                     </Alert>
                 </CardContent>
-                <CardFooter>
+                <CardContent>
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -290,13 +281,14 @@ export default function EvaluateMatchPage() {
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
-                </CardFooter>
+                </CardContent>
             </Card>
         </div>
     );
   }
 
-  if (!isUserRealPlayer) {
+  // VIEW FOR MANUAL PLAYERS (who can't evaluate)
+  if (!isUserARealPlayer) {
      return (
         <div className="flex flex-col gap-8">
             <PageHeader
@@ -314,7 +306,7 @@ export default function EvaluateMatchPage() {
     );
   }
 
-  // PLAYER VIEW
+  // VIEW FOR REAL PLAYERS (who can evaluate)
   return (
     <div className="flex flex-col gap-8">
         <PageHeader
@@ -466,3 +458,5 @@ export default function EvaluateMatchPage() {
     </div>
   );
 }
+
+    
