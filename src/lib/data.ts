@@ -1,3 +1,5 @@
+'use client';
+
 import { Player, Match } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 
@@ -42,4 +44,13 @@ export const mockEvaluations = [
     { performanceTags: ['Defensa sólida'], evaluatedBy: 'user-2', timestamp: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString() },
     { performanceTags: ['Mal partido'], evaluatedBy: 'user-4', timestamp: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString() },
     { performanceTags: ['Goleador', 'Liderazgo'], evaluatedBy: 'user-3', timestamp: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString() },
+];
+
+
+export const youtubeGoalHighlights = [
+  { videoId: '3vA-v9-d-c8', title: "Zidane's Volley vs Bayer Leverkusen" },
+  { videoId: 'WKeI73oVlT4', title: "Messi's Solo Goal vs Getafe" },
+  { videoId: 'P1_e_8e-nMY', title: "Roberto Carlos' 'Impossible' Goal" },
+  { videoId: '8V_3mrsI_b8', title: 'Ibrahimovic Bicycle Kick vs England' },
+  { videoId: 'jMu29G_bA_Y', title: 'Maradona Goal of the Century' },
 ];
