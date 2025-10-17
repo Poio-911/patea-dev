@@ -96,7 +96,7 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
       onClick={() => handleMarkerClick(match.id)}
       icon={{
         url: '/football.svg',
-        scaledSize: new window.google.maps.Size(32, 32),
+        scaledSize: new window.google.maps.Size(40, 40),
       }}
     >
       {activeMarker === match.id && (
