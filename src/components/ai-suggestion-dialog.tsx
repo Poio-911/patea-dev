@@ -30,15 +30,15 @@ export function AISuggestionDialog({ player, children }: AISuggestionDialogProps
   const { user } = useUser();
 
   const handleGenerate = () => {
-    if (!user?.activeGroupId) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'No hay un grupo activo seleccionado.',
-      });
-      return;
-    }
     startTransition(async () => {
+      if (!user?.activeGroupId) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'No hay un grupo activo seleccionado.',
+        });
+        return;
+      }
       setSuggestions([]); // Clear previous suggestions
       const result = await getPlayerImprovementSuggestionsAction(player.id, user.activeGroupId);
       if (result.error) {
