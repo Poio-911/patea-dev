@@ -71,8 +71,8 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
     const isUserInMatch = useMemo(() => {
         if (!user) return false;
-        return match.players.some(p => p.uid === user.uid);
-    }, [match.players, user]);
+        return match.playerUids.includes(user.uid);
+    }, [match.playerUids, user]);
 
     const isMatchFull = useMemo(() => {
         return match.players.length >= match.matchSize;
@@ -80,9 +80,8 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
     const availablePlayersToInvite = useMemo(() => {
         if (!allPlayers) return [];
-        const matchPlayerIds = match.players.map(p => p.uid);
-        return allPlayers.filter(p => !matchPlayerIds.includes(p.id));
-    }, [allPlayers, match.players]);
+        return allPlayers.filter(p => !match.playerUids.includes(p.id));
+    }, [allPlayers, match.playerUids]);
     
     const ownerName = useMemo(() => {
         const owner = allPlayers.find(p => p.id === match.ownerUid);
@@ -115,7 +114,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     
     const generateEvaluationAssignments = (match: Match, allPlayers: Player[]): Omit<EvaluationAssignment, 'id'>[] => {
         const assignments: Omit<EvaluationAssignment, 'id'>[] = [];
-        const matchPlayers = allPlayers.filter(p => match.players.some(mp => mp.uid === p.id));
+        const matchPlayers = allPlayers.filter(p => match.playerUids.includes(p.id));
         const realPlayerUids = matchPlayers.filter(isRealUser).map(p => p.id);
 
         realPlayerUids.forEach(evaluatorId => {
@@ -152,7 +151,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
             // For collaborative matches, generate teams now. For manual, they already exist.
             if(match.type === 'collaborative' && isMatchFull) {
-                const selectedPlayersData = allPlayers.filter(p => match.players.some(mp => mp.uid === p.id));
+                const selectedPlayersData = allPlayers.filter(p => match.playerUids.includes(p.id));
                 const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
                 
                 if ('error' in teamGenerationResult) {
