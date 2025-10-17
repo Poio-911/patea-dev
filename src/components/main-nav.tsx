@@ -155,31 +155,31 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           </SidebarFooter>
         </Sidebar>
         <SidebarInset className="bg-background pb-16 md:pb-0">
-          <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background/80 px-2 backdrop-blur-sm sm:h-16 sm:px-6">
+          <header className="sticky top-0 z-10 flex h-20 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
             <div className="flex items-center gap-2">
                 <SidebarTrigger className="md:hidden"/>
                 <GroupSwitcher />
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
                 {player && (
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex items-center gap-3 sm:gap-4">
                         <div className="text-right">
-                            <p className="font-bold text-xs sm:text-sm truncate">{player.name}</p>
+                            <p className="font-bold text-sm sm:text-base truncate">{player.name}</p>
                         </div>
-                        <div className="font-bold text-base sm:text-lg text-primary flex items-center gap-1">
+                        <div className="font-bold text-2xl sm:text-3xl text-primary flex items-center gap-1">
                             {player.ovr}
                         </div>
-                        <Badge className={cn("text-xs", positionColors[player.position])}>{player.position}</Badge>
+                        <Badge className={cn("text-sm", positionColors[player.position])}>{player.position}</Badge>
                     </div>
                 )}
                 
-                <Separator orientation="vertical" className="h-8 mx-1 sm:mx-2" />
+                <Separator orientation="vertical" className="h-10 mx-1 sm:mx-2" />
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                      <Avatar className="h-8 w-8 border">
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                      <Avatar className="h-10 w-10 border">
                           <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} data-ai-hint="user avatar" />
                           <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
                       </Avatar>
