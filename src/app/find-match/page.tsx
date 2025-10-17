@@ -21,7 +21,6 @@ import { useToast } from '@/hooks/use-toast';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import Link from 'next/link';
 import { MatchDetailsDialog } from '@/components/match-details-dialog';
 
 
@@ -59,25 +58,27 @@ const CompactMatchCard = ({ match, onHover, isActive }: { match: Match, onHover:
             onMouseEnter={() => onHover(match.id)}
             onMouseLeave={() => onHover(null)}
         >
-            <div className="p-3">
-                <h3 className="font-bold truncate">{match.title}</h3>
-                <div className="text-xs text-muted-foreground mt-2 space-y-1">
-                    <div className="flex items-center gap-2">
-                        <Calendar className="h-3 w-3" />
-                        <span>{format(new Date(match.date), "d MMM, yyyy", { locale: es })} - {match.time}hs</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <MapPin className="h-3 w-3" />
-                        <span className="truncate">{match.location.address}</span>
+            <div className="p-3 grid grid-cols-3 gap-2 items-center">
+                <div className="col-span-2 space-y-1">
+                    <h3 className="font-bold truncate">{match.title}</h3>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                        <div className="flex items-center gap-2">
+                            <Calendar className="h-3 w-3" />
+                            <span>{format(new Date(match.date), "d MMM, yyyy", { locale: es })} - {match.time}hs</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <MapPin className="h-3 w-3" />
+                            <span className="truncate">{match.location.address}</span>
+                        </div>
                     </div>
                 </div>
-                <div className="flex justify-between items-center mt-3">
-                    <div className="flex items-center gap-2 text-sm font-semibold">
+                <div className="col-span-1 flex flex-col items-end justify-between h-full gap-2">
+                     <div className="flex items-center gap-2 text-sm font-semibold">
                         <SoccerPlayerIcon className="h-4 w-4" />
                         <span>{match.players.length} / {match.matchSize}</span>
                     </div>
                     <MatchDetailsDialog match={match} allPlayers={[]}>
-                       <Button variant="default" size="sm" className="h-7 px-2 text-xs">
+                       <Button variant="default" size="sm" className="h-7 px-2 text-xs w-full">
                            Ver Detalles
                        </Button>
                     </MatchDetailsDialog>
@@ -211,10 +212,10 @@ export default function FindMatchPage() {
     return (
         <div className="space-y-4">
             <Card>
-                <CardHeader className="p-4 sm:p-6">
+                <CardHeader className="p-4">
                     <CardTitle className="text-lg">Partidos Encontrados ({nearbyMatches.length})</CardTitle>
                 </CardHeader>
-                <CardContent className="p-2 sm:p-4">
+                <CardContent className="p-2">
                     <ScrollArea className="h-full max-h-72">
                         <div className="space-y-2 p-1">
                             {nearbyMatches.length > 0 ? nearbyMatches.map((match) => (
