@@ -23,18 +23,13 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'https',
+        protocol: 'https'
         hostname: 'picsum.photos',
         port: '',
         pathname: '/**',
       },
     ],
   },
-  experimental: {
-    // This is to allow cross-origin requests in development,
-    // which is necessary for the Firebase Studio environment.
-    allowedDevOrigins: ["*"],
-  }
 };
 
 export default nextConfig;
