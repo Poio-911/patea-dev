@@ -149,10 +149,6 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
     }
 
-    if (teamGenerationResult.teams && teamGenerationResult.teams.length > 0 && teamGenerationResult.balanceMetrics) {
-        teamGenerationResult.teams[0].balanceMetrics = teamGenerationResult.balanceMetrics;
-    }
-
     const newMatch = {
         ...data,
         matchSize: selectedMatchSize,
@@ -355,3 +351,5 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     </Dialog>
   );
 }
+
+    
