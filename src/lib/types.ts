@@ -22,7 +22,7 @@ export type Player = {
   phy: number;
   photoUrl?: string;
   stats: PlayerStats;
-  ownerUid: string;
+  ownerUid: string; // The UID of the user who created this player
   groupId: string;
 } & DocumentData;
 

@@ -44,6 +44,9 @@ type EvaluationFormData = z.infer<typeof evaluationSchema>;
 // Types for assignments and status
 type Assignment = { evaluatorId: string; playersToEvaluate: { uid: string; displayName: string; photoUrl: string }[] };
 
+// Helper to determine if a player is a "real user"
+const isRealUser = (player: { uid: string, ownerUid?: string }) => player.uid === player.ownerUid;
+
 export default function EvaluateMatchPage() {
   const { id: matchId } = useParams();
   const firestore = useFirestore();
@@ -55,6 +58,11 @@ export default function EvaluateMatchPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [myAssignments, setMyAssignments] = useState<{ uid: string; displayName: string; photoUrl: string }[]>([]);
   const [isPageLoading, setIsPageLoading] = useState(true);
+  
+  // We need player data to distinguish real from manual players
+  const { data: allGroupPlayers, loading: playersLoading } = useCollection<Player>(
+      firestore && user?.activeGroupId ? query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId)) : null
+  );
 
   const matchRef = useMemo(() => firestore ? doc(firestore, 'matches', matchId as string) : null, [firestore, matchId]);
   const { data: match, loading: matchLoading } = useDoc<Match>(matchRef);
@@ -80,7 +88,7 @@ export default function EvaluateMatchPage() {
   };
 
   useEffect(() => {
-    if (match && user && !evalsLoading) {
+    if (match && user && !evalsLoading && !playersLoading && allGroupPlayers) {
         const userIsParticipant = match.players.some(p => p.uid === user.uid);
 
         if (!userIsParticipant) {
@@ -91,13 +99,22 @@ export default function EvaluateMatchPage() {
         const generateAssignments = () => {
             const newAssignments: Assignment[] = [];
             (match.teams || []).forEach(team => {
-                const shuffledPlayers = shuffleArray([...team.players]);
-                for (let i = 0; i < shuffledPlayers.length; i++) {
-                    const evaluator = shuffledPlayers[i];
-                    const playersToEvaluate = [
-                        shuffledPlayers[(i + 1) % shuffledPlayers.length],
-                        shuffledPlayers[(i + 2) % shuffledPlayers.length]
-                    ].filter(p => p.uid !== evaluator.uid); // Ensure no self-evaluation
+                const realPlayersInTeam = team.players.filter(p => {
+                    const fullPlayer = allGroupPlayers.find(gp => gp.id === p.uid);
+                    return fullPlayer && isRealUser({ uid: fullPlayer.id, ownerUid: fullPlayer.ownerUid });
+                });
+
+                const allPlayersInTeam = team.players;
+
+                for (let i = 0; i < realPlayersInTeam.length; i++) {
+                    const evaluator = realPlayersInTeam[i];
+                    
+                    // Players to be evaluated can be anyone in the team
+                    const potentialTargets = shuffleArray([...allPlayersInTeam]);
+
+                    const playersToEvaluate = potentialTargets
+                        .filter(p => p.uid !== evaluator.uid) // Ensure no self-evaluation
+                        .slice(0, 2); // Take the first 2
                     
                     const assignment: Assignment = {
                         evaluatorId: evaluator.uid,
@@ -135,7 +152,7 @@ export default function EvaluateMatchPage() {
 
         setIsPageLoading(false);
     }
-  }, [match, user, evalsLoading]);
+  }, [match, user, evalsLoading, playersLoading, allGroupPlayers]);
 
   const onSubmit = async (data: EvaluationFormData) => {
     if (!firestore || !match || !user) return;
@@ -145,7 +162,6 @@ export default function EvaluateMatchPage() {
         const batch = writeBatch(firestore);
         
         data.evaluations.forEach(evaluation => {
-            // Each evaluation gets a unique ID combining match, evaluator, and evaluated player
             const evalDocId = `${user.uid}_${evaluation.playerId}`;
             const evalRef = doc(firestore, 'matches', match.id, 'evaluations', evalDocId);
             const newEvaluation: Omit<Evaluation, 'id'> = {
@@ -165,7 +181,6 @@ export default function EvaluateMatchPage() {
             title: '¡Evaluación Enviada!',
             description: 'Gracias por tu participación. Tus evaluaciones han sido guardadas.'
         });
-        // We don't redirect, just show a success message
         form.reset();
         
     } catch (error: any) {
@@ -179,9 +194,21 @@ export default function EvaluateMatchPage() {
     }
   };
 
-  const totalPossibleEvaluations = assignments.length;
-  const completedEvaluations = (submittedEvaluations || []).length;
-  const evaluationProgress = totalPossibleEvaluations > 0 ? (completedEvaluations / totalPossibleEvaluations) * 100 : 0;
+  const totalPossibleEvaluators = useMemo(() => {
+    if (!match || !allGroupPlayers) return 0;
+    return match.players.filter(p => {
+        const fullPlayer = allGroupPlayers.find(gp => gp.id === p.uid);
+        return fullPlayer && isRealUser({ uid: fullPlayer.id, ownerUid: fullPlayer.ownerUid });
+    }).length;
+  }, [match, allGroupPlayers]);
+
+  const completedEvaluatorsCount = useMemo(() => {
+    if (!submittedEvaluations) return 0;
+    const uniqueEvaluators = new Set(submittedEvaluations.map(e => e.evaluatedBy));
+    return uniqueEvaluators.size;
+  }, [submittedEvaluations]);
+
+  const evaluationProgress = totalPossibleEvaluators > 0 ? (completedEvaluatorsCount / totalPossibleEvaluators) * 100 : 0;
   
   const hasUserSubmitted = useMemo(() => {
     if(!user || !submittedEvaluations) return false;
@@ -189,7 +216,7 @@ export default function EvaluateMatchPage() {
   }, [user, submittedEvaluations]);
 
 
-  if (matchLoading || isPageLoading || evalsLoading) {
+  if (matchLoading || isPageLoading || evalsLoading || playersLoading) {
     return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
@@ -218,6 +245,8 @@ export default function EvaluateMatchPage() {
     return <div>No participaste en este partido, por lo que no puedes evaluar.</div>;
   }
 
+  const isUserRealPlayer = allGroupPlayers?.some(p => p.id === user.uid && isRealUser(p));
+
   // OWNER VIEW
   if (isOwner) {
     return (
@@ -232,8 +261,8 @@ export default function EvaluateMatchPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex items-center gap-4">
-                        <span className="text-2xl font-bold text-primary">{completedEvaluations} / {totalPossibleEvaluations}</span>
-                        <span className="text-muted-foreground">evaluaciones completadas</span>
+                        <span className="text-2xl font-bold text-primary">{completedEvaluatorsCount} / {totalPossibleEvaluators}</span>
+                        <span className="text-muted-foreground">jugadores reales han evaluado</span>
                     </div>
                     <Progress value={evaluationProgress} />
                     <Alert>
@@ -265,6 +294,24 @@ export default function EvaluateMatchPage() {
     );
   }
 
+  if (!isUserRealPlayer) {
+     return (
+        <div className="flex flex-col gap-8">
+            <PageHeader
+                title={`Evaluar Jugadores: ${match.title}`}
+                description={`Estado de la evaluación del partido.`}
+            />
+            <Alert>
+                <ThumbsUp className="h-4 w-4" />
+                <AlertTitle>¡Gracias por participar!</AlertTitle>
+                <AlertDescription>
+                    Como jugador manual, puedes ser evaluado por tus compañeros. Los resultados se calcularán cuando el organizador cierre el proceso.
+                </AlertDescription>
+            </Alert>
+        </div>
+    );
+  }
+
   // PLAYER VIEW
   return (
     <div className="flex flex-col gap-8">
@@ -282,9 +329,9 @@ export default function EvaluateMatchPage() {
             </Alert>
         ) : myAssignments.length === 0 ? (
              <Alert variant="destructive">
-                <AlertTitle>Error</AlertTitle>
+                <AlertTitle>Sin Asignaciones</AlertTitle>
                 <AlertDescription>
-                    No se te han podido asignar jugadores para evaluar. Por favor, contacta con el organizador.
+                    No se te han asignado jugadores para evaluar, o todos los jugadores del equipo ya han sido evaluados por otros. ¡Gracias por tu disposición!
                 </AlertDescription>
             </Alert>
         ) : (
