@@ -1,11 +1,7 @@
 {
   "name": "Amateur Football Manager",
   "short_name": "AFM",
-  "description": "Organiza partidos, gestiona jugadores y genera equipos equilibrados.",
-  "start_url": "/dashboard",
-  "display": "standalone",
-  "background_color": "#E0F7FA",
-  "theme_color": "#29ABE2",
+  "description": "Organiza partidos, gestiona jugadores y genera equipos equilibrados con el poder de la IA.",
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
@@ -35,7 +31,8 @@
     {
       "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/icons/icon-384x384.png",
@@ -47,5 +44,9 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#18181b",
+  "theme_color": "#18181b"
 }
