@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader, MarkerF, InfoWindowF } from '@react-google-maps/api';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
@@ -52,7 +52,7 @@ export default function FindMatchPage() {
   const { data: publicMatches, loading: matchesLoading } = useCollection<Match>(publicMatchesQuery);
 
   const geocodeMatches = useCallback(async () => {
-    if (!publicMatches || typeof window.google === 'undefined') return;
+    if (!publicMatches || typeof window.google === 'undefined' || !isLoaded) return;
 
     const geocoder = new window.google.maps.Geocoder();
     const geocoded = await Promise.all(
@@ -77,13 +77,13 @@ export default function FindMatchPage() {
     );
 
     setGeocodedMatches(geocoded.filter(Boolean)); // Filter out nulls
-  }, [publicMatches]);
+  }, [publicMatches, isLoaded]);
 
-  useState(() => {
-    if (isLoaded) {
+  useEffect(() => {
+    if (isLoaded && publicMatches) {
       geocodeMatches();
     }
-  });
+  }, [isLoaded, publicMatches, geocodeMatches]);
 
   const handleMarkerClick = (matchId: string) => {
     setActiveMarker(activeMarker === matchId ? null : matchId);
