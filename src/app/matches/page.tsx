@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Users2, Calendar, Loader2 } from 'lucide-react';
 import { useCollection, useFirestore, useUser, useDoc } from '@/firebase';
-import { collection, query, where, orderBy, doc } from 'firebase/firestore';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { useMemo } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
@@ -22,12 +22,35 @@ export default function MatchesPage() {
       }, [firestore, user?.activeGroupId]);
     const { data: activeGroup } = useDoc<Group>(groupRef);
 
-    const playersQuery = useMemo(() => {
+    // Query for manually created players in the group
+    const manualPlayersQuery = useMemo(() => {
+        if (!firestore || !user?.activeGroupId) return null;
+        return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
+    }, [firestore, user?.activeGroupId]);
+
+    // Query for registered users who are members of the group
+    const memberPlayersQuery = useMemo(() => {
         if (!firestore || !activeGroup || !activeGroup.members || activeGroup.members.length === 0) return null;
         return query(collection(firestore, 'players'), where('__name__', 'in', activeGroup.members.slice(0, 30)));
     }, [firestore, activeGroup]);
 
-    const { data: players, loading: playersLoading } = useCollection<Player>(playersQuery);
+    const { data: manualPlayers, loading: manualLoading } = useCollection<Player>(manualPlayersQuery);
+    const { data: memberPlayers, loading: membersLoading } = useCollection<Player>(memberPlayersQuery);
+    
+    // Combine and deduplicate players
+    const allGroupPlayers = useMemo(() => {
+        const allPlayersMap = new Map<string, Player>();
+        
+        if (manualPlayers) {
+            manualPlayers.forEach(p => allPlayersMap.set(p.id, p));
+        }
+        if (memberPlayers) {
+            memberPlayers.forEach(p => allPlayersMap.set(p.id, p));
+        }
+        
+        return Array.from(allPlayersMap.values()).sort((a, b) => b.ovr - a.ovr);
+    }, [manualPlayers, memberPlayers]);
+
 
     const matchesQuery = useMemo(() => {
         if (!firestore || !user?.activeGroupId) {
@@ -38,7 +61,7 @@ export default function MatchesPage() {
     
     const { data: matches, loading: matchesLoading } = useCollection<Match>(matchesQuery);
 
-    const loading = userLoading || playersLoading || matchesLoading;
+    const loading = userLoading || manualLoading || membersLoading || matchesLoading;
 
     if (loading) {
         return (
@@ -49,8 +72,6 @@ export default function MatchesPage() {
         )
     }
     
-    const allGroupPlayers = players || [];
-
     return (
         <div className="flex flex-col gap-8">
             <PageHeader
