@@ -27,21 +27,18 @@ export default function MatchesPage() {
         if (!firestore || !user?.activeGroupId) return null;
         return query(collection(firestore, 'matches'), where('groupId', '==', user.activeGroupId), orderBy('date', 'desc'));
     }, [firestore, user?.activeGroupId]);
-
+    
+    // Query for matches where user is a player, but not necessarily in the active group
     const joinedMatchesQuery = useMemo(() => {
         if (!firestore || !user?.uid) return null;
-        // Fetches matches the user has joined.
-        // This is not perfectly efficient as array-contains can only check one field.
-        // A more robust solution for scale might involve a subcollection of players in a match or duplicated data.
         return query(
             collection(firestore, 'matches'),
-            where('players', 'array-contains', user.uid)
+            where('players', 'array-contains-any', [{uid: user.uid}])
         );
-    }, [firestore, user]);
+    }, [firestore, user?.uid]);
+
 
     const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(groupMatchesQuery);
-    // For now, we will query all matches and filter client side for joined matches outside the group.
-    // This is not optimal for performance at scale but works for this stage.
     const { data: allMatches, loading: allMatchesLoading } = useCollection<Match>(useMemo(() => firestore ? collection(firestore, 'matches') : null, [firestore]));
     
     // Client-side merge because Firestore 'or' queries are limited.

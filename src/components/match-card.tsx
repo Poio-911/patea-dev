@@ -26,7 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Star, Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
+import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Star, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User } from 'lucide-react';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import Link from 'next/link';
 import { SoccerPlayerIcon } from './icons/soccer-player-icon';
@@ -83,6 +83,12 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         const matchPlayerIds = match.players.map(p => p.uid);
         return allPlayers.filter(p => !matchPlayerIds.includes(p.id));
     }, [allPlayers, match.players]);
+    
+    const ownerName = useMemo(() => {
+        const owner = allPlayers.find(p => p.id === match.ownerUid);
+        return owner?.name || 'Desconocido';
+    }, [allPlayers, match.ownerUid]);
+
 
     const currentStatus = statusConfig[match.status] || statusConfig.completed;
 
@@ -164,11 +170,11 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             // Generate and save evaluation assignments
             const assignments = generateEvaluationAssignments({ ...match, teams: finalTeams }, allPlayers);
             assignments.forEach(assignment => {
-                const assignmentRef = doc(collection(firestore, 'matches', match.id, 'assignments'));
+                const assignmentRef = doc(collection(firestore, `matches/${match.id}/assignments`));
                 batch.set(assignmentRef, assignment);
 
                 // Create a notification for the evaluator
-                const notificationRef = doc(collection(firestore, 'users', assignment.evaluatorId, 'notifications'));
+                const notificationRef = doc(collection(firestore, `users/${assignment.evaluatorId}/notifications`));
                 const notification: Omit<Notification, 'id'> = {
                     type: 'evaluation_pending',
                     title: '¡Evaluación pendiente!',
@@ -247,16 +253,18 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 });
                 
                 // Notify the organizer
-                const notificationRef = doc(collection(firestore, 'users', match.ownerUid, 'notifications'));
-                const notification: Omit<Notification, 'id'> = {
-                    type: 'new_joiner',
-                    title: '¡Nuevo Jugador!',
-                    message: `${user.displayName} se ha apuntado a tu partido "${match.title}".`,
-                    link: `/matches/${match.id}`,
-                    isRead: false,
-                    createdAt: new Date().toISOString(),
-                };
-                batch.set(notificationRef, notification);
+                if (match.ownerUid !== user.uid) {
+                    const notificationRef = doc(collection(firestore, `users/${match.ownerUid}/notifications`));
+                    const notification: Omit<Notification, 'id'> = {
+                        type: 'new_joiner',
+                        title: '¡Nuevo Jugador!',
+                        message: `${user.displayName} se ha apuntado a tu partido "${match.title}".`,
+                        link: `/matches`,
+                        isRead: false,
+                        createdAt: new Date().toISOString(),
+                    };
+                    batch.set(notificationRef, notification);
+                }
 
                 toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${match.title}".` });
             }
@@ -289,7 +297,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     }
 
     const renderSecondaryActions = () => (
-        <>
+        <div className="grid grid-cols-2 gap-2">
             {user?.uid === match.ownerUid && match.status === 'upcoming' && match.type === 'collaborative' && isMatchFull && (
                 <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing} className="w-full">
                     {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
@@ -334,14 +342,14 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     </Link>
                 </Button>
              )}
-        </>
+        </div>
     );
     
     const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
 
     return (
         <Card className="flex flex-col overflow-hidden shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
-            <CardHeader className={cn('bg-gradient-to-br to-transparent', currentStatus.gradientClass)}>
+            <CardHeader className={cn('bg-gradient-to-br to-transparent p-4', currentStatus.gradientClass)}>
                 <div className="flex items-start justify-between gap-4">
                     <CardTitle className={cn("text-xl font-bold", currentStatus.neonClass)}>
                         {match.title}
@@ -350,12 +358,11 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                         {currentStatus.label}
                     </Badge>
                 </div>
-                <CardDescription>
-                     <Badge variant="secondary" className="font-semibold">{match.type === 'manual' ? 'Manual' : match.isPublic ? 'Público' : 'Colaborativo'}</Badge>
+                <CardDescription className="flex items-center gap-2 text-xs text-foreground/80">
+                   <User className="h-3 w-3"/> Organizado por {ownerName}
                 </CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow space-y-4 pt-6">
-
+            <CardContent className="flex-grow space-y-4 pt-4 p-4">
                 <div className="grid grid-cols-1 gap-y-3">
                     <InfoRow icon={Calendar} text={match.date ? format(new Date(match.date), 'E, d MMM, yyyy', { locale: es }) : 'Fecha no definida'} />
                     <InfoRow icon={Clock} text={match.time} />
@@ -385,7 +392,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             </CardContent>
 
             <CardFooter className="flex flex-col items-stretch gap-2 p-3 bg-muted/50 mt-auto">
-                 <div className="grid grid-cols-2 gap-2">
+                 <div className="space-y-2">
                     {renderPrimaryAction()}
                     {renderSecondaryActions()}
                  </div>

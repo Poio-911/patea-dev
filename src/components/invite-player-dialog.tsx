@@ -86,12 +86,13 @@ export function InvitePlayerDialog({
 
       // Create notifications for each invited player
       selectedPlayers.forEach(player => {
-        const notificationRef = doc(collection(firestore, 'users', player.id, 'notifications'));
+        if (player.id === user.uid) return; // Don't notify self
+        const notificationRef = doc(collection(firestore, `users/${player.id}/notifications`));
         const notification: Omit<Notification, 'id'> = {
             type: 'match_invite',
             title: '¡Has sido convocado!',
             message: `${user.displayName} te ha invitado al partido "${match.title}".`,
-            link: `/matches/${match.id}`,
+            link: `/matches`,
             isRead: false,
             createdAt: new Date().toISOString(),
         };
@@ -164,5 +165,3 @@ export function InvitePlayerDialog({
     </Dialog>
   );
 }
-
-    
