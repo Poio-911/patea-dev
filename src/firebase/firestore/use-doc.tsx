@@ -2,7 +2,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import {
-  doc,
   onSnapshot,
   DocumentReference,
   DocumentData,
@@ -53,8 +52,7 @@ export const useDoc = <T extends DocumentData>(
     );
 
     return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ref ? ref.path : '']);
+  }, [ref]);
 
   return { data, loading, error };
 };

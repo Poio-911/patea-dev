@@ -2,7 +2,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import {
-  collection,
   onSnapshot,
   Query,
   DocumentData,
@@ -60,8 +59,7 @@ export const useCollection = <T extends DocumentData>(
     return () => {
         unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query ? query.path : '']);
+  }, [query]);
 
   return { data, loading, error };
 };
