@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Shield, Users2, Shirt } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Shield, Users2, Shirt, Globe } from 'lucide-react';
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -34,6 +34,7 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { generateTeamsAction } from '@/lib/actions';
 import { Progress } from './ui/progress';
 import { getMatchDayForecast, GetMatchDayForecastOutput } from '@/ai/flows/get-match-day-forecast';
+import { Switch } from './ui/switch';
 
 const matchSchema = z.object({
   title: z.string().min(3, 'El título debe tener al menos 3 caracteres.'),
@@ -43,6 +44,7 @@ const matchSchema = z.object({
   type: z.enum(['manual', 'collaborative'], { required_error: 'El tipo es obligatorio.' }),
   matchSize: z.enum(['10', '14', '22'], { required_error: 'El tamaño es obligatorio.' }),
   players: z.array(z.string()),
+  isPublic: z.boolean().optional(),
 });
 
 type MatchFormData = z.infer<typeof matchSchema>;
@@ -77,6 +79,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       type: 'manual',
       matchSize: '10',
       players: [],
+      isPublic: false,
     },
   });
   
@@ -84,6 +87,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   const watchedDate = watch('date');
   const watchedLocation = watch('location');
   const watchedTime = watch('time');
+  const watchedType = watch('type');
 
   const selectedMatchSize = parseInt(form.watch('matchSize'), 10);
   const matchType = form.watch('type');
@@ -221,6 +225,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
 
     const newMatch = {
       ...data,
+      isPublic: false, // Manual matches can't be public
       matchSize: selectedMatchSize,
       date: data.date.toISOString(),
       status: 'upcoming' as const,
@@ -238,6 +243,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     if (!user?.uid || !user.activeGroupId) throw new Error("User not authenticated");
     const newMatch = {
       ...data,
+      isPublic: data.isPublic,
       matchSize: selectedMatchSize,
       date: data.date.toISOString(),
       status: 'upcoming' as const,
@@ -336,21 +342,18 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                         name="matchSize"
                         control={form.control}
                         render={({ field }) => (
-                            <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-wrap gap-4">
-                                <Label className={cn("flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground flex-1", field.value === '10' && "bg-primary text-primary-foreground border-primary-foreground/50")}>
+                             <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-wrap gap-4">
+                                <Label className={cn("flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground flex-1 has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50", field.value === '10' && "bg-primary text-primary-foreground border-primary-foreground/50")}>
                                     <Shirt className={cn("h-5 w-5 text-chart-1", field.value === '10' && "text-primary-foreground")} />
                                     <span className="font-bold text-sm">Fútbol 5</span>
-                                    <RadioGroupItem value="10" className="hidden" />
                                 </Label>
-                                <Label className={cn("flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground flex-1", field.value === '14' && "bg-primary text-primary-foreground border-primary-foreground/50")}>
+                                <Label className={cn("flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground flex-1 has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50", field.value === '14' && "bg-primary text-primary-foreground border-primary-foreground/50")}>
                                     <Shirt className={cn("h-5 w-5 text-chart-2", field.value === '14' && "text-primary-foreground")} />
                                     <span className="font-bold text-sm">Fútbol 7</span>
-                                    <RadioGroupItem value="14" className="hidden" />
                                 </Label>
-                                <Label className={cn("flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground flex-1", field.value === '22' && "bg-primary text-primary-foreground border-primary-foreground/50")}>
+                                <Label className={cn("flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground flex-1 has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50", field.value === '22' && "bg-primary text-primary-foreground border-primary-foreground/50")}>
                                     <Shirt className={cn("h-5 w-5 text-chart-3", field.value === '22' && "text-primary-foreground")} />
                                     <span className="font-bold text-sm">Fútbol 11</span>
-                                    <RadioGroupItem value="22" className="hidden" />
                                 </Label>
                             </RadioGroup>
                         )}
@@ -365,7 +368,9 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                         render={({ field }) => (
                             <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <Label className="flex gap-4 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
-                                    <RadioGroupItem value="manual" className="mt-1" />
+                                    <div className="flex-shrink-0 mt-1">
+                                        <RadioGroupItem value="manual" />
+                                    </div>
                                     <div className="flex flex-col gap-1">
                                         <div className="flex items-center gap-2 font-bold">
                                             <UserCheck className="h-5 w-5" />
@@ -375,7 +380,9 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                     </div>
                                 </Label>
                                 <Label className="flex gap-4 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
-                                    <RadioGroupItem value="collaborative" className="mt-1" />
+                                    <div className="flex-shrink-0 mt-1">
+                                        <RadioGroupItem value="collaborative" />
+                                    </div>
                                     <div className="flex flex-col gap-1">
                                          <div className="flex items-center gap-2 font-bold">
                                             <Users className="h-5 w-5" />
@@ -388,6 +395,30 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                         )}
                     />
                 </div>
+
+                {watchedType === 'collaborative' && (
+                  <Controller
+                    name="isPublic"
+                    control={form.control}
+                    render={({ field }) => (
+                      <div className="flex items-center space-x-4 rounded-md border p-4">
+                        <Globe />
+                        <div className="flex-1 space-y-1">
+                          <p className="text-sm font-medium leading-none">
+                            Hacer Partido Público
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Permite que jugadores fuera de tu grupo encuentren y se unan a este partido.
+                          </p>
+                        </div>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </div>
+                    )}
+                  />
+                )}
                 </div>
           </div>
           
@@ -467,3 +498,4 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   );
 }
 
+    

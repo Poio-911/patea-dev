@@ -58,6 +58,7 @@
         "status": { "type": "string", "enum": ["upcoming", "active", "completed", "evaluated"] },
         "ownerUid": { "type": "string" },
         "groupId": { "type": "string", "description": "The ID of the group this match belongs to." },
+        "isPublic": { "type": "boolean", "description": "Indicates if the match is open to players outside the group." },
         "players": {
           "type": "array",
           "items": {

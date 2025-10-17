@@ -56,6 +56,7 @@ export type Match = {
   status: MatchStatus;
   ownerUid: string;
   groupId: string;
+  isPublic?: boolean;
   weather?: {
     description: string;
     icon: string;
@@ -120,6 +121,8 @@ export type SelfEvaluation = {
 export interface PlayerProfileViewProps {
     playerId: string;
 }
+    
+
     
 
     
