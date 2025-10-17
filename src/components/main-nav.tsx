@@ -167,8 +167,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                         <div className="text-right">
                             <p className="font-bold text-xs sm:text-sm truncate">{player.name}</p>
                         </div>
-                        <div className="font-bold text-base sm:text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent flex items-center gap-1">
-                            <Star className="h-4 w-4 text-primary" />
+                        <div className="font-bold text-base sm:text-lg text-primary flex items-center gap-1">
                             {player.ovr}
                         </div>
                         <Badge className={cn("text-xs", positionColors[player.position])}>{player.position}</Badge>
