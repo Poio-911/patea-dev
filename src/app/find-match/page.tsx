@@ -57,9 +57,9 @@ const CompactMatchCard = ({ match, onHover, isActive }: { match: Match, onHover:
             onMouseEnter={() => onHover(match.id)}
             onMouseLeave={() => onHover(null)}
         >
-            <div className="p-4">
+            <div className="p-3">
                 <h3 className="font-bold truncate">{match.title}</h3>
-                <div className="text-xs text-muted-foreground mt-2 space-y-1.5">
+                <div className="text-xs text-muted-foreground mt-2 space-y-1">
                     <div className="flex items-center gap-2">
                         <Calendar className="h-3 w-3" />
                         <span>{format(new Date(match.date), "d MMM, yyyy", { locale: es })} - {match.time}hs</span>
@@ -74,7 +74,7 @@ const CompactMatchCard = ({ match, onHover, isActive }: { match: Match, onHover:
                         <SoccerPlayerIcon className="h-4 w-4" />
                         <span>{match.players.length} / {match.matchSize}</span>
                     </div>
-                    <Button asChild variant="default" size="sm" className="h-8 px-2 text-xs">
+                    <Button asChild variant="default" size="sm" className="h-7 px-2 text-xs">
                         <Link href={`/matches`}>
                            Ver Detalles
                         </Link>
@@ -209,13 +209,13 @@ export default function FindMatchPage() {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
             <Card className="lg:col-span-1 h-full flex flex-col">
-                <CardHeader>
-                    <CardTitle>Partidos Encontrados</CardTitle>
-                    <CardDescription>Se encontraron {nearbyMatches.length} partidos en un radio de {searchRadius}km.</CardDescription>
+                <CardHeader className="p-4">
+                    <CardTitle className="text-lg">Partidos Encontrados</CardTitle>
+                    <CardDescription className="text-xs">Se encontraron {nearbyMatches.length} partidos en un radio de {searchRadius}km.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex-grow p-2">
+                <CardContent className="flex-grow p-1">
                     <ScrollArea className="h-full">
-                        <div className="space-y-3 p-2">
+                        <div className="space-y-2 p-1">
                             {nearbyMatches.length > 0 ? nearbyMatches.map((match) => (
                                <div id={`match-card-${match.id}`} key={match.id}>
                                  <CompactMatchCard
@@ -236,7 +236,7 @@ export default function FindMatchPage() {
                     </ScrollArea>
                 </CardContent>
             </Card>
-             <div className="lg:col-span-2 h-full min-h-[300px] lg:min-h-0">
+             <div className="lg:col-span-2 h-full min-h-[400px] lg:min-h-0">
                 <GoogleMap
                     mapContainerStyle={containerStyle}
                     center={userLocation || defaultCenter}
@@ -273,12 +273,14 @@ export default function FindMatchPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 h-[calc(100vh-10rem)]">
+    <div className="flex flex-col gap-4 h-[calc(100vh-8rem)] sm:h-[calc(100vh-10rem)]">
       <PageHeader
         title="Buscar Partido"
         description="Encuentra partidos públicos cerca de ti y únete."
       />
-      {renderContent()}
+      <div className="flex-grow">
+        {renderContent()}
+      </div>
     </div>
   );
 }
