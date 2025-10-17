@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,7 +39,7 @@ const BalanceRating = ({ fairnessPercentage }: { fairnessPercentage: number }) =
             <Star
               key={i}
               className={cn(
-                'w-5 h-5', // Smaller stars
+                'w-5 h-5',
                 i < filledStars
                   ? 'text-yellow-400 fill-yellow-400'
                   : 'text-gray-300 dark:text-gray-600'
