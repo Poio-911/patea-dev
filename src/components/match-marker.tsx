@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { MarkerF, InfoWindowF, PinElement } from '@react-google-maps/api';
+import { MarkerF, InfoWindowF } from '@react-google-maps/api';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { doc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
@@ -11,7 +11,6 @@ import type { Match, Player } from '@/lib/types';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus, LogOut, MapPin } from 'lucide-react';
-import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 
 interface MatchMarkerProps {
   match: Match;
@@ -24,7 +23,7 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
   const { user } = useUser();
   const { toast } = useToast();
   const [isJoining, setIsJoining] = useState(false);
-  const [pinElement, setPinElement] = useState<PinElement | null>(null);
+  const [pinElement, setPinElement] = useState<google.maps.marker.PinElement | null>(null);
 
   const isUserInMatch = useMemo(() => {
     if (!user || !match.players) return false;
@@ -39,7 +38,7 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
   const isUserLocationMarker = match.id === 'user-location';
   
   useEffect(() => {
-    if (window.google) {
+    if (window.google && google.maps.marker) {
         const pin = new google.maps.marker.PinElement({
           background: 'hsl(var(--primary))',
           borderColor: 'hsl(var(--primary-foreground))',
@@ -109,7 +108,7 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
     <MarkerF
       position={{ lat: match.location.lat, lng: match.location.lng }}
       onClick={() => handleMarkerClick(match.id)}
-      icon={!isUserLocationMarker ? pinElement?.element : undefined}
+      icon={!isUserLocationMarker && pinElement ? pinElement.element : undefined}
       zIndex={isUserLocationMarker ? 10 : (activeMarker === match.id ? 5 : 1)}
     >
       {activeMarker === match.id && !isUserLocationMarker && (
