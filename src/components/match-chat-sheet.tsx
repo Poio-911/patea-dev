@@ -38,6 +38,8 @@ const chatSchema = z.object({
 type ChatFormData = z.infer<typeof chatSchema>;
 
 function ChatMessageItem({ message, isCurrentUser }: { message: ChatMessage; isCurrentUser: boolean }) {
+  const createdAtDate = message.createdAt ? new Date(message.createdAt) : new Date();
+
   return (
     <div className={cn('flex items-end gap-2', isCurrentUser && 'justify-end')}>
       {!isCurrentUser && (
@@ -57,7 +59,7 @@ function ChatMessageItem({ message, isCurrentUser }: { message: ChatMessage; isC
         {!isCurrentUser && <p className="font-semibold mb-1 text-xs">{message.senderName}</p>}
         <p className="break-words">{message.text}</p>
         <p className="mt-1 text-xs opacity-70">
-          {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true, locale: es })}
+          {formatDistanceToNow(createdAtDate, { addSuffix: true, locale: es })}
         </p>
       </div>
        {isCurrentUser && (
@@ -96,11 +98,11 @@ export function MatchChatSheet({ match, children }: MatchChatSheetProps) {
 
   const handleOpenChange = async (newOpenState: boolean) => {
     setOpen(newOpenState);
-    if (newOpenState && isPublicJoiner && !aiWelcomeMessage) {
+    if (newOpenState && isPublicJoiner && !aiWelcomeMessage && user?.displayName) {
         setIsAiLoading(true);
         try {
             const input: WelcomeMessageInput = {
-                playerName: user.displayName || 'jugador',
+                playerName: user.displayName,
                 matchTitle: match.title,
                 matchLocation: match.location.address
             };
@@ -124,7 +126,7 @@ export function MatchChatSheet({ match, children }: MatchChatSheetProps) {
         senderId: user.uid,
         senderName: user.displayName,
         senderPhotoUrl: user.photoURL,
-        createdAt: new Date().toISOString(),
+        createdAt: serverTimestamp(),
       });
       form.reset();
     } catch (error) {
@@ -142,7 +144,9 @@ export function MatchChatSheet({ match, children }: MatchChatSheetProps) {
   }, [messages, aiWelcomeMessage]);
 
   const renderContent = () => {
-    if (isPublicJoiner) {
+    const hasExistingMessages = messages && messages.length > 0;
+    
+    if (isPublicJoiner && !hasExistingMessages) {
         if(isAiLoading) {
             return (
                 <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
@@ -175,7 +179,7 @@ export function MatchChatSheet({ match, children }: MatchChatSheetProps) {
       );
     }
 
-    if (!messages || messages.length === 0) {
+    if (!hasExistingMessages && (!isPublicJoiner || !aiWelcomeMessage)) {
       return (
         <div className="flex justify-center items-center h-full text-center">
           <p className="text-sm text-muted-foreground">Aún no hay mensajes. <br/> ¡Sé el primero en saludar!</p>
