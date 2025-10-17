@@ -16,7 +16,6 @@ export default function MatchesPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
 
-    // Optimized Query: Fetch all players belonging to the active group in one go.
     const playersQuery = useMemo(() => {
         if (!firestore || !user?.activeGroupId) return null;
         return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
@@ -24,16 +23,47 @@ export default function MatchesPage() {
 
     const { data: allGroupPlayers, loading: playersLoading } = useCollection<Player>(playersQuery);
 
-    const matchesQuery = useMemo(() => {
-        if (!firestore || !user?.activeGroupId) {
-            return null;
-        }
+    const groupMatchesQuery = useMemo(() => {
+        if (!firestore || !user?.activeGroupId) return null;
         return query(collection(firestore, 'matches'), where('groupId', '==', user.activeGroupId), orderBy('date', 'desc'));
     }, [firestore, user?.activeGroupId]);
-    
-    const { data: matches, loading: matchesLoading } = useCollection<Match>(matchesQuery);
 
-    const loading = userLoading || playersLoading || matchesLoading;
+    const joinedMatchesQuery = useMemo(() => {
+        if (!firestore || !user?.uid) return null;
+        // Fetches public matches the user has joined that are NOT in their active group.
+        return query(
+            collection(firestore, 'matches'),
+            where('players', 'array-contains', { uid: user.uid, displayName: user.displayName, ovr: 0, position: 'MED', photoUrl: user.photoURL || '' }), // This is a limitation, we check by UID mainly
+            where('isPublic', '==', true)
+        );
+    }, [firestore, user]);
+
+    const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(groupMatchesQuery);
+    const { data: joinedMatches, loading: joinedMatchesLoading } = useCollection<Match>(groupMatchesQuery); // Re-use for now, will combine below
+    
+    // Client-side merge because Firestore 'or' queries are limited.
+    const matches = useMemo(() => {
+        if (!groupMatches && !joinedMatches) return null;
+        
+        const allMatchesMap = new Map<string, Match>();
+        
+        const safeGroupMatches = groupMatches || [];
+        const safeJoinedMatches = joinedMatches || [];
+
+        // Add all matches from the active group
+        safeGroupMatches.forEach(match => allMatchesMap.set(match.id, match));
+
+        // Add joined public matches, avoiding duplicates
+        safeJoinedMatches.forEach(match => {
+            if (user && match.players.some(p => p.uid === user.uid) && !allMatchesMap.has(match.id)) {
+                allMatchesMap.set(match.id, match);
+            }
+        });
+
+        return Array.from(allMatchesMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [groupMatches, joinedMatches, user]);
+
+    const loading = userLoading || playersLoading || groupMatchesLoading || joinedMatchesLoading;
     
     const sortedPlayers = useMemo(() => {
         if (!allGroupPlayers) return [];

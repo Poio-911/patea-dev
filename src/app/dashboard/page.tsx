@@ -42,14 +42,48 @@ export default function DashboardPage() {
   }, [firestore, user?.activeGroupId]);
 
   const matchesQuery = useMemo(() => {
-    if (!firestore || !user?.activeGroupId) return null;
+    if (!firestore || !user?.uid) return null;
+    // This query is more complex and cannot be done with a simple 'or' in Firestore.
+    // We will fetch both and merge them client-side. A server-side function would be more efficient for large scale.
+    if (!user.activeGroupId) {
+        return query(collection(firestore, 'matches'), where('players', 'array-contains', user.uid), orderBy('date', 'desc'));
+    }
     return query(collection(firestore, 'matches'), where('groupId', '==', user.activeGroupId), orderBy('date', 'desc'));
-  }, [firestore, user?.activeGroupId]);
+  }, [firestore, user?.uid, user?.activeGroupId]);
+
+  const joinedMatchesQuery = useMemo(() => {
+    if (!firestore || !user?.uid) return null;
+    // Fetches matches the user has joined that are NOT in their active group.
+    return query(
+        collection(firestore, 'matches'), 
+        where('players', 'array-contains', user.uid)
+    );
+  }, [firestore, user?.uid]);
+
+
+  const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(matchesQuery);
+  const { data: joinedMatches, loading: joinedMatchesLoading } = useCollection<Match>(joinedMatchesQuery);
+
 
   const { data: players, loading: playersLoading } = useCollection<Player>(playersQuery);
-  const { data: matches, loading: matchesLoading } = useCollection<Match>(matchesQuery);
+  
+  const matches = useMemo(() => {
+    if (!groupMatches && !joinedMatches) return null;
+    
+    const allMatchesMap = new Map<string, Match>();
+    
+    groupMatches?.forEach(match => allMatchesMap.set(match.id, match));
+    joinedMatches?.forEach(match => {
+        // We only add the joined match if it's not already in the map (from the group query)
+        if (!allMatchesMap.has(match.id)) {
+            allMatchesMap.set(match.id, match);
+        }
+    });
 
-  const loading = playersLoading || matchesLoading;
+    return Array.from(allMatchesMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [groupMatches, joinedMatches]);
+
+  const loading = playersLoading || groupMatchesLoading || joinedMatchesLoading;
 
   const { upcomingMatches, nextMatch, recentMatches } = useMemo(() => {
     if (!matches) return { upcomingMatches: [], nextMatch: null, recentMatches: [] };
