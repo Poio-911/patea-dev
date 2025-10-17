@@ -57,7 +57,6 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-background/80 backdrop-blur-sm">
         <DialogHeader>
           <DialogTitle>Equipos para "{match.title}"</DialogTitle>
-          <DialogDescription>Equipos generados por IA para un partido equilibrado.</DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-6">
             {balanceMetrics && (
@@ -87,14 +86,16 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
                         {team.players.map((player) => {
                             const matchPlayer = match.players.find(p => p.uid === player.uid);
                             return (
-                                <div key={player.uid} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted">
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarImage src={matchPlayer?.photoUrl} alt={player.displayName} data-ai-hint="player portrait" />
-                                        <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <p className="font-semibold text-sm">{player.displayName}</p>
-                                        <p className="text-xs text-muted-foreground">{player.position}</p>
+                                <div key={player.uid} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="h-8 w-8">
+                                            <AvatarImage src={matchPlayer?.photoUrl} alt={player.displayName} data-ai-hint="player portrait" />
+                                            <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="font-semibold text-sm">{player.displayName}</p>
+                                            <p className="text-xs text-muted-foreground">{player.position}</p>
+                                        </div>
                                     </div>
                                     <p className="ml-auto font-bold text-sm text-foreground/80">{player.ovr}</p>
                                 </div>

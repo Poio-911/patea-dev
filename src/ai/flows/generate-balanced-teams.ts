@@ -73,9 +73,9 @@ const prompt = ai.definePrompt({
   name: 'generateBalancedTeamsPrompt',
   input: {schema: GenerateBalancedTeamsInputSchema},
   output: {schema: GenerateBalancedTeamsOutputSchema},
-  prompt: `You are an expert sports team organizer, skilled at creating balanced teams for amateur football matches.
+  prompt: `You are an expert sports team organizer for amateur football in South America. You have a deep understanding of "rioplatense" (Argentinian/Uruguayan) football culture.
 
-Given a list of players with their positions and overall ratings (OVR), your task is to divide them into {{teamCount}} teams such that the teams are as balanced as possible.
+Given a list of players with their positions and overall ratings (OVR), your task is to divide them into {{teamCount}} teams that are as balanced as possible.
 
 Here's the player data:
 
@@ -84,7 +84,7 @@ Here's the player data:
 {{/each}}
 
 Based on the players in each team, you must:
-1.  **Create a cool, creative name** for each team (e.g., "Titanes Azules", "Furia Roja", "CF Leyendas"). Avoid generic names like "Equipo A".
+1.  **Create a cool, creative name for each team, with a colloquial and 'rioplatense' football style**. Examples: "Los Pibes del Potrero", "La Banda del Pato", "Atletas de Tablón", "El Resto del Mundo". Avoid generic names like "Equipo A".
 2.  **Suggest a tactical formation** based on the number of players (e.g., for a 5-a-side match, "1-2-1" or "2-1-1").
 3.  **Generate 2-3 tactical tags** that describe the team's characteristics (e.g., "Ataque Veloz", "Defensa Sólida", "Control del Mediocampo", "Sin Portero Fijo" if no 'POR' is present).
 4.  Try to minimize the difference in total OVR between the strongest and weakest teams.
