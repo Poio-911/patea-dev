@@ -1,6 +1,4 @@
 
-
-
 import { DocumentData, DocumentReference } from "firebase/firestore";
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
@@ -157,7 +155,7 @@ export type ChatMessage = {
     senderId: string;
     senderName: string;
     senderPhotoUrl: string;
-    createdAt: string; // ISO 8601 string
+    createdAt: any; // Can be a server timestamp
 } & DocumentData;
     
 export type UserProfile = {
@@ -168,8 +166,3 @@ export type UserProfile = {
   groups?: string[];
   activeGroupId?: string | null;
 };
-    
-
-    
-
-```
