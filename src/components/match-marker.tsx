@@ -25,13 +25,17 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
   const [isJoining, setIsJoining] = useState(false);
 
   const isUserInMatch = useMemo(() => {
-    if (!user) return false;
+    if (!user || !match.players) return false;
     return match.players.some((p: any) => p.uid === user.uid);
   }, [match.players, user]);
 
   const isMatchFull = useMemo(() => {
+    if (!match.players) return false;
     return match.players.length >= match.matchSize;
   }, [match.players, match.matchSize]);
+
+  const isUserLocationMarker = match.id === 'user-location';
+
 
   const handleJoinOrLeaveMatch = async () => {
     if (!firestore || !user) return;
@@ -53,7 +57,6 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
                 return;
             }
 
-            // Fetch the user's own player profile directly, regardless of group
             const playerRef = doc(firestore, 'players', user.uid);
             const playerSnap = await getDoc(playerRef);
 
@@ -85,27 +88,36 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
     }
   };
 
-  // Safety check to ensure we have valid coordinates before rendering the marker
   if (!match.location || typeof match.location.lat !== 'number' || typeof match.location.lng !== 'number') {
     return null;
+  }
+  
+  const iconConfig = isUserLocationMarker ? {
+    path: window.google.maps.SymbolPath.CIRCLE,
+    fillColor: 'hsl(var(--primary))',
+    fillOpacity: 1,
+    strokeColor: 'hsl(var(--primary-foreground))',
+    strokeWeight: 2,
+    scale: 8
+  } : {
+    path: 'M67,35.6c-51.3,0-93,41.7-93,93s41.7,93,93,93s93-41.7,93-93S118.3,35.6,67,35.6z M95,68.9L69.7,56v-6.7 c18.3,0.6,35.8,7.6,49.6,19.6H95z M125,74.4c8.3,8.9,14.3,19.4,17.9,31l-14.2,24.8l-20.9-3.2L88.8,94.2l7.6-19.9 C96.5,74.4,125,74.4,125,74.4z M82.7,97.9l18.3,31.8l-16.1,27.8H49.1L33,129.6l18.3-31.8H82.7z M64.3,56L39,68.9H14.6 c13.8-12.1,31.3-19,49.6-19.6V56z M37.5,74.4l7.6,19.9l-18.9,32.7l-20.8,3.2l-14.4-25c3.6-11.5,9.7-22,18.1-30.8 C9.1,74.4,37.5,74.4,37.5,74.4z M2.3,135.7l1.3,26.2l-6.7,4c-6.2-11.5-9.4-24.3-9.4-37.4c0-5.2,0.5-10.6,1.7-15.7L2.3,135.7z M6,166.9l22.9,14.6l12.6,22.3C24.2,198,9.3,186.2-0.4,170.6L6,166.9z M35.2,181.8l13.9-17.1h35.7l13.9,17.1l-13.9,24 c-5.9,1.4-11.8,2.1-17.9,2.2c-6.1,0-12-0.7-17.9-2.2L35.2,181.8z M92.5,203.6l12.6-22l22.9-14.6l6.3,3.7 C124.6,186.1,109.8,197.8,92.5,203.6z M130.3,161.9l1.3-26.2l13.2-22.8l0,0l0,0l0,0c1,5.1,1.6,10.3,1.7,15.6 c0,13.1-3.2,25.9-9.4,37.4L130.3,161.9z',
+    fillColor: 'hsl(var(--accent))',
+    fillOpacity: 1,
+    strokeWeight: 1.5,
+    strokeColor: 'hsl(var(--accent-foreground))',
+    rotation: 0,
+    scale: 0.15,
+    anchor: new window.google.maps.Point(65, 128),
   }
 
   return (
     <MarkerF
       position={{ lat: match.location.lat, lng: match.location.lng }}
       onClick={() => handleMarkerClick(match.id)}
-      icon={{
-        path: 'M67,35.6c-51.3,0-93,41.7-93,93s41.7,93,93,93s93-41.7,93-93S118.3,35.6,67,35.6z M95,68.9L69.7,56v-6.7 c18.3,0.6,35.8,7.6,49.6,19.6H95z M125,74.4c8.3,8.9,14.3,19.4,17.9,31l-14.2,24.8l-20.9-3.2L88.8,94.2l7.6-19.9 C96.5,74.4,125,74.4,125,74.4z M82.7,97.9l18.3,31.8l-16.1,27.8H49.1L33,129.6l18.3-31.8H82.7z M64.3,56L39,68.9H14.6 c13.8-12.1,31.3-19,49.6-19.6V56z M37.5,74.4l7.6,19.9l-18.9,32.7l-20.8,3.2l-14.4-25c3.6-11.5,9.7-22,18.1-30.8 C9.1,74.4,37.5,74.4,37.5,74.4z M2.3,135.7l1.3,26.2l-6.7,4c-6.2-11.5-9.4-24.3-9.4-37.4c0-5.2,0.5-10.6,1.7-15.7L2.3,135.7z M6,166.9l22.9,14.6l12.6,22.3C24.2,198,9.3,186.2-0.4,170.6L6,166.9z M35.2,181.8l13.9-17.1h35.7l13.9,17.1l-13.9,24 c-5.9,1.4-11.8,2.1-17.9,2.2c-6.1,0-12-0.7-17.9-2.2L35.2,181.8z M92.5,203.6l12.6-22l22.9-14.6l6.3,3.7 C124.6,186.1,109.8,197.8,92.5,203.6z M130.3,161.9l1.3-26.2l13.2-22.8l0,0l0,0l0,0c1,5.1,1.6,10.3,1.7,15.6 c0,13.1-3.2,25.9-9.4,37.4L130.3,161.9z',
-        fillColor: 'hsl(var(--primary))',
-        fillOpacity: 1,
-        strokeWeight: 1.5,
-        strokeColor: 'hsl(var(--primary-foreground))',
-        rotation: 0,
-        scale: 0.15,
-        anchor: new window.google.maps.Point(65, 128),
-      }}
+      icon={iconConfig}
+      zIndex={isUserLocationMarker ? 10 : (activeMarker === match.id ? 5 : 1)}
     >
-      {activeMarker === match.id && (
+      {activeMarker === match.id && !isUserLocationMarker && (
         <InfoWindowF onCloseClick={() => handleMarkerClick(match.id)}>
             <div className='p-2 w-64'>
                 <h3 className="font-bold text-lg">{match.title}</h3>
@@ -130,6 +142,15 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
             </div>
         </InfoWindowF>
       )}
+       {isUserLocationMarker && (
+         <InfoWindowF>
+           <div className='p-1'>
+            <p className="font-bold text-base">Tu Ubicación</p>
+           </div>
+         </InfoWindowF>
+       )}
     </MarkerF>
   );
 }
+
+    

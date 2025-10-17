@@ -1,24 +1,26 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, doc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
-import type { Match, Player } from '@/lib/types';
+import { collection, query, where } from 'firebase/firestore';
+import type { Match } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { Loader2, MapPin, Calendar, Clock, UserPlus, LogOut } from 'lucide-react';
+import { Loader2, MapPin, Calendar, Users, LocateFixed } from 'lucide-react';
 import { MatchMarker } from '@/components/match-marker';
 import { libraries } from '@/lib/google-maps';
 import { mapStyles } from '@/lib/map-styles';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
+import { Slider } from '@/components/ui/slider';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const containerStyle = {
   width: '100%',
@@ -31,27 +33,20 @@ const defaultCenter = {
   lng: -56.1645
 };
 
+// Function to calculate distance between two lat/lng points in km
+const getDistance = (pos1: { lat: number; lng: number }, pos2: { lat: number; lng: number }) => {
+  const R = 6371; // Radius of the Earth in km
+  const dLat = (pos2.lat - pos1.lat) * Math.PI / 180;
+  const dLng = (pos2.lng - pos1.lng) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(pos1.lat * Math.PI / 180) * Math.cos(pos2.lat * Math.PI / 180) *
+          Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
 
-const CompactMatchCard = ({ match, onHover, isActive, onJoinOrLeave }: { match: Match, onHover: (id: string | null) => void, isActive: boolean, onJoinOrLeave: (match: Match) => void }) => {
-    const { user } = useUser();
-    const [isJoining, setIsJoining] = useState(false);
 
-    const isUserInMatch = useMemo(() => {
-        if (!user) return false;
-        return match.players.some(p => p.uid === user.uid);
-    }, [match.players, user]);
-
-    const isMatchFull = useMemo(() => {
-        return match.players.length >= match.matchSize;
-    }, [match.players, match.matchSize]);
-
-    const handleAction = async (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setIsJoining(true);
-        await onJoinOrLeave(match);
-        setIsJoining(false);
-    }
-    
+const CompactMatchCard = ({ match, onHover, isActive }: { match: Match, onHover: (id: string | null) => void, isActive: boolean }) => {
     return (
         <Card
             className={cn(
@@ -78,14 +73,10 @@ const CompactMatchCard = ({ match, onHover, isActive, onJoinOrLeave }: { match: 
                         <SoccerPlayerIcon className="h-4 w-4" />
                         <span>{match.players.length} / {match.matchSize}</span>
                     </div>
-                    <Button
-                        variant={isUserInMatch ? 'secondary' : 'default'}
-                        size="sm"
-                        onClick={handleAction}
-                        disabled={isJoining || (isMatchFull && !isUserInMatch)}
-                        className="h-8 px-2 text-xs"
-                    >
-                        {isJoining ? <Loader2 className="h-4 w-4 animate-spin" /> : (isUserInMatch ? 'Darse de baja' : 'Apuntarse')}
+                    <Button asChild variant="default" size="sm" className="h-8 px-2 text-xs">
+                        <Link href={`/matches`}>
+                           Ver Detalles
+                        </Link>
                     </Button>
                 </div>
             </div>
@@ -95,9 +86,15 @@ const CompactMatchCard = ({ match, onHover, isActive, onJoinOrLeave }: { match: 
 
 export default function FindMatchPage() {
   const firestore = useFirestore();
-  const { user } = useUser();
   const { toast } = useToast();
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
+  
+  const [searchRadius, setSearchRadius] = useState(7); // Default 7km
+  const [isSearching, setIsSearching] = useState(false);
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [nearbyMatches, setNearbyMatches] = useState<Match[]>([]);
+  const [searchCompleted, setSearchCompleted] = useState(false);
+
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -114,17 +111,7 @@ export default function FindMatchPage() {
     );
   }, [firestore]);
 
-  const { data: publicMatches, loading: matchesLoading } = useCollection<Match>(publicMatchesQuery);
-
-  const validPublicMatches = useMemo(() => {
-    if (!publicMatches) return [];
-    return publicMatches.filter(match =>
-        match.location &&
-        typeof match.location === 'object' &&
-        'lat' in match.location && typeof match.location.lat === 'number' &&
-        'lng' in match.location && typeof match.location.lng === 'number'
-    ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [publicMatches]);
+  const { data: allPublicMatches, loading: matchesLoading } = useCollection<Match>(publicMatchesQuery);
 
   const handleMarkerClick = (matchId: string) => {
     setActiveMarker(activeMarker === matchId ? null : matchId);
@@ -134,84 +121,115 @@ export default function FindMatchPage() {
     }
   };
 
-  const handleJoinOrLeaveMatch = async (match: Match) => {
-    if (!firestore || !user) return;
+  const handleSearchNearby = useCallback(() => {
+    setIsSearching(true);
+    setSearchCompleted(false);
 
-    const isUserInMatch = match.players.some(p => p.uid === user.uid);
-    const isMatchFull = match.players.length >= match.matchSize;
-    const matchRef = doc(firestore, 'matches', match.id);
-
-    try {
-        if(isUserInMatch) {
-            const playerToRemove = match.players.find(p => p.uid === user.uid);
-            if (playerToRemove) {
-                await updateDoc(matchRef, { players: arrayRemove(playerToRemove) });
-            }
-            toast({ title: 'Te has dado de baja', description: `Ya no estás apuntado a "${match.title}".` });
-        } else {
-            if (isMatchFull) {
-                toast({ variant: 'destructive', title: 'Partido Lleno', description: 'No quedan plazas disponibles.' });
-                return;
-            }
-            
-            const playerProfileRef = doc(firestore, 'players', user.uid);
-            const playerSnap = await getDoc(playerProfileRef);
-
-            if (!playerSnap.exists()) {
-                toast({ variant: 'destructive', title: 'Error', description: 'No se encontró tu perfil de jugador.' });
-                return;
-            }
-            
-            const playerProfile = playerSnap.data() as Player;
-            const playerPayload = { 
-                uid: user.uid,
-                displayName: playerProfile.name,
-                ovr: playerProfile.ovr,
-                position: playerProfile.position,
-                photoUrl: playerProfile.photoUrl || ''
-            };
-            
-            await updateDoc(matchRef, { players: arrayUnion(playerPayload) });
-            toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${match.title}".` });
-        }
-    } catch (error) {
-      console.error("Error joining/leaving match: ", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo completar la operación.' });
+    if (!navigator.geolocation) {
+      toast({ variant: 'destructive', title: 'Error de Geolocalización', description: 'Tu navegador no soporta esta función.' });
+      setIsSearching(false);
+      return;
     }
-  };
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const currentUserLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        setUserLocation(currentUserLocation);
+        
+        if (allPublicMatches) {
+            const filteredMatches = allPublicMatches.filter(match => {
+                if (!match.location?.lat || !match.location?.lng) return false;
+                const distance = getDistance(currentUserLocation, match.location);
+                return distance <= searchRadius;
+            }).sort((a,b) => getDistance(currentUserLocation, a.location) - getDistance(currentUserLocation, b.location));
+
+            setNearbyMatches(filteredMatches);
+        }
+
+        setIsSearching(false);
+        setSearchCompleted(true);
+      },
+      (error) => {
+        toast({ variant: 'destructive', title: 'Error de Ubicación', description: 'No se pudo obtener tu ubicación. Asegúrate de haber dado los permisos necesarios.' });
+        setIsSearching(false);
+      }
+    );
+  }, [allPublicMatches, searchRadius, toast]);
+
 
   const loading = matchesLoading || !isLoaded;
 
-  return (
-    <div className="flex flex-col gap-8 h-[calc(100vh-10rem)]">
-      <PageHeader
-        title="Buscar Partido"
-        description="Encuentra partidos públicos cerca de ti y únete."
-      />
-      {loading ? (
+  const renderContent = () => {
+    if (loading) {
+      return (
         <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
         </div>
-      ) : (
+      )
+    }
+
+    if (!searchCompleted) {
+      return (
+        <Card className="max-w-lg mx-auto mt-8">
+            <CardHeader>
+                <CardTitle className="text-center">Encuentra Partidos Cerca Tuyo</CardTitle>
+                <CardDescription className="text-center">
+                    Ajusta el radio de búsqueda y presiona el botón para encontrar partidos públicos.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center gap-8">
+                <div className="w-full px-4">
+                    <div className="flex justify-between font-medium">
+                        <span>Radio de Búsqueda:</span>
+                        <span className="text-primary">{searchRadius} km</span>
+                    </div>
+                    <Slider
+                        value={[searchRadius]}
+                        onValueChange={(value) => setSearchRadius(value[0])}
+                        max={50}
+                        step={1}
+                        className="mt-2"
+                        disabled={isSearching}
+                    />
+                </div>
+                <Button onClick={handleSearchNearby} disabled={isSearching} size="lg">
+                    {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LocateFixed className="mr-2 h-5 w-5" />}
+                    {isSearching ? 'Buscando...' : 'Buscar Partidos Cercanos'}
+                </Button>
+            </CardContent>
+        </Card>
+      );
+    }
+    
+    // Search is completed
+    return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
             <Card className="lg:col-span-1 h-full flex flex-col">
                 <CardHeader>
-                    <CardTitle>Partidos Cercanos</CardTitle>
+                    <CardTitle>Partidos Encontrados</CardTitle>
+                    <CardDescription>Se encontraron {nearbyMatches.length} partidos en un radio de {searchRadius}km.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow p-2">
                     <ScrollArea className="h-full">
                         <div className="space-y-3 p-2">
-                            {validPublicMatches.length > 0 ? validPublicMatches.map((match) => (
+                            {nearbyMatches.length > 0 ? nearbyMatches.map((match) => (
                                <div id={`match-card-${match.id}`} key={match.id}>
                                  <CompactMatchCard
                                     match={match}
                                     onHover={setActiveMarker}
                                     isActive={activeMarker === match.id}
-                                    onJoinOrLeave={handleJoinOrLeaveMatch}
                                 />
                                </div>
                             )) : (
-                                <p className="text-muted-foreground text-sm p-4 text-center">No se encontraron partidos públicos por ahora.</p>
+                                <Alert className="m-2">
+                                    <AlertTitle>Sin Resultados</AlertTitle>
+                                    <AlertDescription>
+                                        No se encontraron partidos públicos en esta área. Intenta aumentar el radio de búsqueda.
+                                    </AlertDescription>
+                                </Alert>
                             )}
                         </div>
                     </ScrollArea>
@@ -220,7 +238,7 @@ export default function FindMatchPage() {
              <div className="lg:col-span-2 h-full min-h-[300px] lg:min-h-0">
                 <GoogleMap
                     mapContainerStyle={containerStyle}
-                    center={defaultCenter}
+                    center={userLocation || defaultCenter}
                     zoom={12}
                     options={{
                         styles: mapStyles,
@@ -228,7 +246,7 @@ export default function FindMatchPage() {
                         zoomControl: true,
                     }}
                 >
-                    {validPublicMatches?.map((match) => (
+                    {nearbyMatches.map((match) => (
                         <MatchMarker
                             key={match.id}
                             match={match}
@@ -236,10 +254,32 @@ export default function FindMatchPage() {
                             handleMarkerClick={handleMarkerClick}
                         />
                     ))}
+                    {userLocation && (
+                         <MatchMarker
+                            match={{
+                                id: 'user-location',
+                                title: 'Tu Ubicación',
+                                location: userLocation
+                            } as any}
+                            activeMarker={null}
+                            handleMarkerClick={() => {}}
+                        />
+                    )}
                 </GoogleMap>
             </div>
         </div>
-      )}
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-8 h-[calc(100vh-10rem)]">
+      <PageHeader
+        title="Buscar Partido"
+        description="Encuentra partidos públicos cerca de ti y únete."
+      />
+      {renderContent()}
     </div>
   );
 }
+
+    
