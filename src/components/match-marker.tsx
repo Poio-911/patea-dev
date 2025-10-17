@@ -11,6 +11,7 @@ import type { Match, Player } from '@/lib/types';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus, LogOut, MapPin } from 'lucide-react';
+import { KickerIconPath } from './icons/soccer-player-icon';
 
 interface MatchMarkerProps {
   match: Match;
@@ -23,7 +24,20 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
   const { user } = useUser();
   const { toast } = useToast();
   const [isJoining, setIsJoining] = useState(false);
-  const [pinElement, setPinElement] = useState<google.maps.marker.PinElement | null>(null);
+  const [primaryColor, setPrimaryColor] = useState('#29ABE2'); // Default primary color
+
+  useEffect(() => {
+    // On the client, read the CSS variable for the primary color
+    const color = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+    if (color) {
+        // HSL to HEX conversion or direct use if the browser supports it.
+        // For simplicity, we assume we can get a usable color.
+        // A full HSL parser would be more robust.
+        // Format is "217 91% 60%", we need "hsl(217, 91%, 60%)"
+        setPrimaryColor(`hsl(${color})`);
+    }
+  }, []);
+
 
   const isUserInMatch = useMemo(() => {
     if (!user || !match.players) return false;
@@ -37,16 +51,21 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
 
   const isUserLocationMarker = match.id === 'user-location';
   
-  useEffect(() => {
-    if (window.google && google.maps.marker) {
-        const pin = new google.maps.marker.PinElement({
-          background: 'hsl(var(--primary))',
-          borderColor: 'hsl(var(--primary-foreground))',
-          glyphColor: 'hsl(var(--primary-foreground))',
-        });
-        setPinElement(pin);
-    }
-  }, []);
+  const customIcon = useMemo(() => {
+    if (isUserLocationMarker) return undefined;
+    
+    // Create a data URL for the SVG to use as an icon
+    const svgString = `
+      <svg fill="${primaryColor}" height="32px" width="32px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 97.316 97.316" xml:space="preserve">
+        <path d="${KickerIconPath}"/>
+      </svg>
+    `;
+
+    return {
+      url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svgString)}`,
+      scaledSize: new window.google.maps.Size(32, 32),
+    };
+  }, [isUserLocationMarker, primaryColor]);
 
 
   const handleJoinOrLeaveMatch = async () => {
@@ -108,7 +127,7 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
     <MarkerF
       position={{ lat: match.location.lat, lng: match.location.lng }}
       onClick={() => handleMarkerClick(match.id)}
-      icon={!isUserLocationMarker && pinElement ? pinElement.element : undefined}
+      icon={customIcon}
       zIndex={isUserLocationMarker ? 10 : (activeMarker === match.id ? 5 : 1)}
     >
       {activeMarker === match.id && !isUserLocationMarker && (
