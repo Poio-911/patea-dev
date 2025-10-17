@@ -48,16 +48,20 @@ const WeatherApiDataSchema = z.object({
     }).optional(),
 });
 
+// Define the input schema for the tool, now including the API key
+const ToolInputSchema = GetMatchDayForecastInputSchema.extend({
+    apiKey: z.string().describe("The API key for the OpenWeather service."),
+});
+
 // Define the Genkit Tool to fetch weather data
 const getWeatherForecast = ai.defineTool(
   {
     name: 'getWeatherForecast',
     description: 'Returns the weather forecast for a given location and date.',
-    inputSchema: GetMatchDayForecastInputSchema,
+    inputSchema: ToolInputSchema,
     outputSchema: WeatherApiDataSchema,
   },
-  async ({ location, date }) => {
-    const apiKey = process.env.OPENWEATHER_API_KEY;
+  async ({ location, date, apiKey }) => {
     if (!apiKey) {
       throw new Error('OpenWeather API key is not configured.');
     }
@@ -100,6 +104,11 @@ const getMatchDayForecastFlow = ai.defineFlow(
     outputSchema: GetMatchDayForecastOutputSchema,
   },
   async (input) => {
+    const apiKey = process.env.OPENWEATHER_API_KEY;
+    if (!apiKey) {
+        throw new Error("OpenWeather API key is not set in environment variables.");
+    }
+      
     const { output } = await ai.generate({
         prompt: `
         You are a sports assistant. Based on the provided weather data, generate a very concise and friendly description of the match day weather. 
@@ -112,7 +121,7 @@ const getMatchDayForecastFlow = ai.defineFlow(
         - Extract the temperature in Celsius.
       `,
         context: {
-            weather: await getWeatherForecast(input),
+            weather: await getWeatherForecast({ ...input, apiKey }),
         },
         output: { schema: GetMatchDayForecastOutputSchema },
         model: 'googleai/gemini-2.5-flash',
