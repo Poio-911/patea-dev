@@ -186,7 +186,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                         <div className="flex items-center gap-3">
                             {player && (
                                 <div className="flex items-center gap-3">
-                                  <div className="text-right hidden sm:block">
+                                  <div className="text-right">
                                       <p className="font-bold text-sm truncate">{player.name}</p>
                                   </div>
                                   <Badge className={cn("px-3 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
@@ -252,12 +252,12 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           <main className="flex-1 p-4 sm:p-6">{children}</main>
           
           {/* Group Context Bar for Mobile */}
-          <div className="fixed bottom-16 left-0 right-0 z-20 border-t bg-primary/10 p-2 backdrop-blur-lg md:hidden">
+          <div className="fixed bottom-16 left-0 right-0 z-20 border-t bg-background/95 p-2 md:hidden">
             <div className="max-w-lg mx-auto flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                     <GroupSwitcher />
                 </div>
-                <Button asChild variant="secondary" size="sm">
+                <Button asChild variant="ghost" size="sm" className="text-primary hover:text-primary">
                     <Link href="/groups">
                       <Users2 className="mr-2 h-4 w-4" />
                       Gestionar
@@ -266,9 +266,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
+
           {/* Bottom Navigation for Mobile */}
-          <nav className="fixed bottom-0 left-0 right-0 z-20 border-t bg-background/80 p-2 backdrop-blur-lg md:hidden">
-            <div className="grid h-full max-w-lg grid-cols-5 mx-auto">
+          <nav className="fixed bottom-0 left-0 right-0 z-20 border-t bg-background/95 backdrop-blur-lg md:hidden">
+            <div className="grid h-16 max-w-lg grid-cols-5 mx-auto font-medium">
               {navItems.map((item) => {
                   const isActive = pathname.startsWith(item.href);
                   const isMatchIcon = item.label === 'Partidos';
@@ -277,14 +278,17 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                         key={item.href} 
                         href={item.href} 
                         className={cn(
-                            "group inline-flex flex-col items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary",
+                            "group inline-flex flex-col items-center justify-center px-1 text-muted-foreground transition-colors hover:text-primary",
                             isActive && "text-primary"
                         )}
                     >
-                        <div className={cn("rounded-full p-2 transition-colors", isActive && "bg-primary/10")}>
-                           <item.icon className={cn("h-6 w-6", isMatchIcon && "h-8 w-8")} />
+                        <div className={cn("rounded-full p-2 transition-colors", 
+                            isActive && isMatchIcon ? "bg-primary text-primary-foreground" : "",
+                            isActive && !isMatchIcon ? "bg-primary/10" : ""
+                        )}>
+                           <item.icon className={cn("h-6 w-6", isMatchIcon && isActive && "h-7 w-7")} />
                         </div>
-                        <span className="text-xs font-medium">{item.label}</span>
+                        <span className={cn("text-xs", isActive ? "font-bold" : "font-normal")}>{item.label}</span>
                     </Link>
                   )
                 })}
