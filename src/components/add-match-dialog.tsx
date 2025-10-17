@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Shield, Users2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Shield, Users2, Shirt } from 'lucide-react';
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -336,20 +336,20 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                         name="matchSize"
                         control={form.control}
                         render={({ field }) => (
-                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                <Label className="flex flex-col items-center justify-center gap-2 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
-                                    <Users className="h-6 w-6" />
-                                    <span className="font-bold">5 vs 5</span>
+                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-wrap gap-4">
+                                <Label className="flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50 flex-1">
+                                    <Shirt className="h-5 w-5" />
+                                    <span className="font-bold text-sm">Fútbol 5</span>
                                     <RadioGroupItem value="10" />
                                 </Label>
-                                <Label className="flex flex-col items-center justify-center gap-2 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
-                                    <Users2 className="h-6 w-6" />
-                                    <span className="font-bold">7 vs 7</span>
+                                <Label className="flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50 flex-1">
+                                    <Shirt className="h-5 w-5" />
+                                    <span className="font-bold text-sm">Fútbol 7</span>
                                     <RadioGroupItem value="14" />
                                 </Label>
-                                <Label className="flex flex-col items-center justify-center gap-2 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
-                                    <Shield className="h-6 w-6" />
-                                    <span className="font-bold">11 vs 11</span>
+                                <Label className="flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50 flex-1">
+                                    <Shirt className="h-5 w-5" />
+                                    <span className="font-bold text-sm">Fútbol 11</span>
                                     <RadioGroupItem value="22" />
                                 </Label>
                             </RadioGroup>
@@ -364,17 +364,17 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                         control={form.control}
                         render={({ field }) => (
                             <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <Label className="flex gap-4 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+                                <Label className="flex gap-4 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
                                     <RadioGroupItem value="manual" className="mt-1" />
                                     <div className="flex flex-col gap-1">
                                         <div className="flex items-center gap-2 font-bold">
                                             <UserCheck className="h-5 w-5" />
                                             <span>Manual</span>
                                         </div>
-                                        <span className="text-xs font-normal leading-tight">El organizador elige a todos los jugadores del partido.</span>
+                                        <span className="text-xs font-normal leading-tight">El organizador elige a todos los jugadores.</span>
                                     </div>
                                 </Label>
-                                <Label className="flex gap-4 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+                                <Label className="flex gap-4 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
                                     <RadioGroupItem value="collaborative" className="mt-1" />
                                     <div className="flex flex-col gap-1">
                                          <div className="flex items-center gap-2 font-bold">
