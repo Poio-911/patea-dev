@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Goal, Users2, ShieldQuestion, User } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings, Goal, Users2, ShieldQuestion, User, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -179,19 +179,21 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-4">
-                        {player && (
-                            <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3">
+                            {player && (
                                 <div className="text-right">
                                     <p className="font-bold text-sm truncate">{player.name}</p>
                                 </div>
-                                <Badge className={cn("px-3 py-1 text-base", positionBadgeStyles[player.position])}>
+                            )}
+                             {player && (
+                                <Badge className={cn("px-3 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
                                     <span className="font-bold">{player.ovr}</span>
                                     <span className="font-medium ml-1.5">{player.position}</span>
                                 </Badge>
-                            </div>
-                        )}
+                             )}
+                        </div>
                         
-                        <Separator orientation="vertical" className="h-10 mx-1 hidden sm:block" />
+                        <Separator orientation="vertical" className="h-10 mx-1" />
 
                         <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -231,8 +233,16 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                         </DropdownMenu>
                     </div>
                 </header>
-                <div className="flex h-12 items-center justify-center border-b bg-primary/10">
-                    <GroupSwitcher />
+                <div className="flex h-12 items-center justify-center border-b bg-primary/10 px-4">
+                    <div className="flex-1 flex justify-center">
+                        <GroupSwitcher />
+                    </div>
+                    <Button asChild variant="ghost" size="sm" className="bg-accent/80 text-accent-foreground hover:bg-accent">
+                        <Link href="/groups">
+                            Ir a Grupos
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
                 </div>
             </div>
 
