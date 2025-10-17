@@ -41,14 +41,15 @@ export function AISuggestionDialog({ player, children }: AISuggestionDialogProps
       }
       setSuggestions([]); // Clear previous suggestions
       const result = await getPlayerImprovementSuggestionsAction(player.id, user.activeGroupId);
-      if (result.error) {
+      
+      if ('error' in result) {
         toast({
           variant: 'destructive',
           title: 'Error de la IA',
           description: result.error,
         });
         setSuggestions([]);
-      } else if (result.suggestions) {
+      } else if ('suggestions' in result) {
         setSuggestions(result.suggestions);
       }
     });
