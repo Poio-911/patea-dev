@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Calendar as CalendarIcon, Loader2, PlusCircle, Search } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft } from 'lucide-react';
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -22,7 +22,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useFirestore, useUser } from '@/firebase';
 import { addDoc, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Player, MatchType, MatchSize } from '@/lib/types';
+import { Player } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
@@ -31,7 +31,7 @@ import { cn } from '@/lib/utils';
 import { Checkbox } from './ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { generateTeamsAction } from '@/lib/actions';
-import { Separator } from './ui/separator';
+import { Progress } from './ui/progress';
 
 const matchSchema = z.object({
   title: z.string().min(3, 'El título debe tener al menos 3 caracteres.'),
@@ -52,6 +52,7 @@ interface AddMatchDialogProps {
 
 export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   const [open, setOpen] = useState(false);
+  const [step, setStep] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const { user } = useUser();
   const firestore = useFirestore();
@@ -60,6 +61,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
 
   const form = useForm<MatchFormData>({
     resolver: zodResolver(matchSchema),
+    mode: 'onChange',
     defaultValues: {
       title: 'Partido Amistoso',
       time: '21:00',
@@ -69,20 +71,29 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       players: [],
     },
   });
+  
+  const { formState, trigger } = form;
 
   const selectedMatchSize = parseInt(form.watch('matchSize'), 10);
   const matchType = form.watch('type');
+  const selectedPlayersCount = form.watch('players').length;
 
   useEffect(() => {
-    form.reset({
-      ...form.getValues(),
-      players: [], 
-      title: 'Partido Amistoso',
-      time: '21:00',
-      location: 'Cancha Principal',
-    });
-    setSearchTerm('');
-  }, [matchType, selectedMatchSize, open, form]);
+    // Reset state when dialog is opened or closed
+    if (!open) {
+      setTimeout(() => {
+        form.reset();
+        setStep(1);
+        setSearchTerm('');
+      }, 200);
+    }
+  }, [open, form]);
+
+  useEffect(() => {
+    // Reset player selection when match type or size changes
+    form.setValue('players', []);
+  }, [matchType, selectedMatchSize, form]);
+
 
   const handlePlayerSelect = (playerId: string, checked: boolean) => {
     const currentPlayers = form.getValues('players');
@@ -98,14 +109,25 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         });
         return;
     }
-
-    form.setValue('players', newPlayers);
+    form.setValue('players', newPlayers, { shouldValidate: true });
   };
   
   const filteredPlayers = useMemo(() => {
     if (!allPlayers) return [];
     return allPlayers.filter(player => player.name.toLowerCase().includes(searchTerm.toLowerCase()));
   }, [allPlayers, searchTerm]);
+
+  const goToNextStep = async () => {
+    const fieldsToValidate: (keyof MatchFormData)[] = ['title', 'date', 'time', 'location', 'type', 'matchSize'];
+    const result = await trigger(fieldsToValidate);
+    if (result) {
+        if (matchType === 'collaborative') {
+            form.handleSubmit(onSubmit)();
+        } else {
+            setStep(2);
+        }
+    }
+  };
 
 
   const onSubmit = (data: MatchFormData) => {
@@ -142,22 +164,21 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
 
   const createManualMatch = async (data: MatchFormData) => {
     const selectedPlayersData = allPlayers.filter(p => data.players.includes(p.id));
-
     const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
-    
+
     if ('error' in teamGenerationResult) {
-        throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
+      throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
     }
 
     const newMatch = {
-        ...data,
-        matchSize: selectedMatchSize,
-        date: data.date.toISOString(),
-        status: 'upcoming',
-        ownerUid: user!.uid,
-        groupId: user!.activeGroupId,
-        players: selectedPlayersData.map(p => ({ uid: p.id, displayName: p.name, ovr: p.ovr, position: p.position, photoUrl: p.photoUrl || '' })),
-        teams: teamGenerationResult.teams,
+      ...data,
+      matchSize: selectedMatchSize,
+      date: data.date.toISOString(),
+      status: 'upcoming' as const,
+      ownerUid: user!.uid,
+      groupId: user!.activeGroupId,
+      players: selectedPlayersData.map(p => ({ uid: p.id, displayName: p.name, ovr: p.ovr, position: p.position, photoUrl: p.photoUrl || '' })),
+      teams: teamGenerationResult.teams,
     };
 
     await addDoc(collection(firestore!, 'matches'), newMatch);
@@ -168,7 +189,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       ...data,
       matchSize: selectedMatchSize,
       date: data.date.toISOString(),
-      status: 'upcoming',
+      status: 'upcoming' as const,
       ownerUid: user!.uid,
       groupId: user!.activeGroupId,
       players: [], // Starts empty
@@ -192,18 +213,17 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
           <DialogHeader>
             <DialogTitle>Programar Nuevo Partido</DialogTitle>
             <DialogDescription>
-              Introduce los detalles del partido y selecciona el tipo.
+              {step === 1 ? 'Introduce los detalles del partido y selecciona el tipo.' : 'Selecciona los jugadores para el partido.'}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-8 py-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Column 1: Match Details */}
+
+          <div className={cn("py-4 transition-all duration-300", step !== 1 && "hidden")}>
                 <div className="space-y-4">
                 <div>
                     <Label htmlFor="title">Título del Partido</Label>
                     <Input id="title" {...form.register('title')} />
-                    {form.formState.errors.title && <p className="text-xs text-destructive mt-1">{form.formState.errors.title.message}</p>}
-                    </div>
+                    {formState.errors.title && <p className="text-xs text-destructive mt-1">{formState.errors.title.message}</p>}
+                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -225,19 +245,19 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                 </Popover>
                             )}
                         />
-                        {form.formState.errors.date && <p className="text-xs text-destructive mt-1">{form.formState.errors.date.message}</p>}
+                        {formState.errors.date && <p className="text-xs text-destructive mt-1">{formState.errors.date.message}</p>}
                     </div>
                     <div>
                         <Label htmlFor="time">Hora</Label>
                         <Input id="time" {...form.register('time')} />
-                        {form.formState.errors.time && <p className="text-xs text-destructive mt-1">{form.formState.errors.time.message}</p>}
+                        {formState.errors.time && <p className="text-xs text-destructive mt-1">{formState.errors.time.message}</p>}
                     </div>
                 </div>
                 
                 <div>
                     <Label htmlFor="location">Ubicación</Label>
                     <Input id="location" {...form.register('location')} />
-                    {form.formState.errors.location && <p className="text-xs text-destructive mt-1">{form.formState.errors.location.message}</p>}
+                    {formState.errors.location && <p className="text-xs text-destructive mt-1">{formState.errors.location.message}</p>}
                 </div>
 
                 <div>
@@ -278,78 +298,81 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                         )}
                     />
                 </div>
-
                 </div>
-
-                {/* Column 2: Player Selection */}
-                {matchType === 'manual' && (
-                    <div className="space-y-4">
-                        <Label>Jugadores ({form.watch('players').length} / {selectedMatchSize})</Label>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Buscar jugador por nombre..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10"
-                            />
-                        </div>
-                        {allPlayers.length > 0 ? (
-                            <div className="max-h-[350px] md:max-h-full overflow-y-auto space-y-2 border p-2 rounded-md">
-                                {filteredPlayers.map(player => (
-                                    <div key={player.id} className="flex items-center space-x-3 rounded-md border p-3 hover:bg-accent/50 has-[:checked]:bg-accent">
-                                        <Checkbox
-                                            id={`player-${player.id}`}
-                                            onCheckedChange={(checked) => handlePlayerSelect(player.id, !!checked)}
-                                            checked={form.getValues('players').includes(player.id)}
-                                        />
-                                        <Avatar className="h-9 w-9">
-                                            <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
-                                            <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <Label htmlFor={`player-${player.id}`} className="flex-1 cursor-pointer">
-                                            <span className="font-semibold">{player.name}</span>
-                                            <span className="ml-2 text-xs text-muted-foreground">{player.position} - OVR: {player.ovr}</span>
-                                        </Label>
-                                    </div>
-                                ))}
-                                {filteredPlayers.length === 0 && (
-                                    <p className="p-4 text-center text-sm text-muted-foreground">
-                                        No se encontraron jugadores con ese nombre.
-                                    </p>
-                                )}
-                            </div>
-                        ) : (
-                            <Alert>
-                                <AlertDescription>
-                                    No hay jugadores en tu grupo activo. Añade jugadores desde la página de Jugadores.
-                                </AlertDescription>
-                            </Alert>
-                        )}
-                        {form.formState.errors.players && <p className="text-xs text-destructive mt-1">{form.formState.errors.players.message}</p>}
-                    </div>
-                )}
-                 {matchType === 'collaborative' && (
-                    <Alert>
-                        <AlertTitle>Partido Colaborativo</AlertTitle>
-                        <AlertDescription>
-                            Has seleccionado un partido colaborativo. Los jugadores podrán apuntarse ellos mismos.
-                            También podrás invitar jugadores manualmente una vez creado el partido.
-                        </AlertDescription>
-                    </Alert>
-                 )}
-            </div>
           </div>
+          
+          <div className={cn("py-4 transition-all duration-300", step !== 2 && "hidden")}>
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <Label>Jugadores ({selectedPlayersCount} / {selectedMatchSize})</Label>
+                        <Progress value={(selectedPlayersCount / selectedMatchSize) * 100} />
+                    </div>
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Buscar jugador por nombre..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10"
+                        />
+                    </div>
+                    {allPlayers.length > 0 ? (
+                        <div className="max-h-[350px] md:max-h-full overflow-y-auto space-y-2 border p-2 rounded-md">
+                            {filteredPlayers.map(player => (
+                                <div key={player.id} className="flex items-center space-x-3 rounded-md border p-3 hover:bg-accent/50 has-[:checked]:bg-accent">
+                                    <Checkbox
+                                        id={`player-${player.id}`}
+                                        onCheckedChange={(checked) => handlePlayerSelect(player.id, !!checked)}
+                                        checked={form.getValues('players').includes(player.id)}
+                                    />
+                                    <Avatar className="h-9 w-9">
+                                        <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
+                                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <Label htmlFor={`player-${player.id}`} className="flex-1 cursor-pointer">
+                                        <span className="font-semibold">{player.name}</span>
+                                        <span className="ml-2 text-xs text-muted-foreground">{player.position} - OVR: {player.ovr}</span>
+                                    </Label>
+                                </div>
+                            ))}
+                            {filteredPlayers.length === 0 && (
+                                <p className="p-4 text-center text-sm text-muted-foreground">
+                                    No se encontraron jugadores con ese nombre.
+                                </p>
+                            )}
+                        </div>
+                    ) : (
+                        <Alert>
+                            <AlertDescription>
+                                No hay jugadores en tu grupo activo. Añade jugadores desde la página de Jugadores.
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                    {formState.errors.players && <p className="text-xs text-destructive mt-1">{formState.errors.players.message}</p>}
+                </div>
+          </div>
+          
           <DialogFooter>
-            <Button type="submit" disabled={isPending}>
-                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isPending ? 'Programando...' : 'Programar Partido'}
-            </Button>
+            {step === 1 && (
+                 <Button type="button" onClick={goToNextStep}>
+                    {matchType === 'collaborative' ? 'Programar Partido' : 'Siguiente'}
+                 </Button>
+            )}
+            {step === 2 && (
+                <div className="flex w-full justify-between">
+                    <Button type="button" variant="outline" onClick={() => setStep(1)}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Volver
+                    </Button>
+                    <Button type="submit" disabled={isPending || selectedPlayersCount !== selectedMatchSize}>
+                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isPending ? 'Programando...' : 'Programar Partido'}
+                    </Button>
+                </div>
+            )}
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
 }
-
-    
