@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Player, Match } from './types';
@@ -48,9 +49,9 @@ export const mockEvaluations = [
 
 
 export const youtubeGoalHighlights = [
-  { videoId: 'dQw4w9WgXcQ', title: "Nacional vs Peñarol | Mejores Momentos | Apertura 2024" },
-  { videoId: 'Y_9t3_I4_2Q', title: "Golazo de Alan Medina | Liverpool vs Defensor Sporting" },
-  { videoId: 'fNFzfwLM72c', title: "Top 5 Goles de la Fecha | Campeonato Uruguayo" },
-  { videoId: 'o-YBDTqX_ZU', title: "Resumen: Wanderers vs Danubio | Goles y Jugadas" },
-  { videoId: 'r6y1a-1e62A', title: "Gol de último minuto | Cerro Largo vs Fénix" },
+  { videoId: 'Y_9t3_I4_2Q', title: 'Nacional vs Peñarol | Mejores Momentos | Apertura 2024' },
+  { videoId: 'abc123def45', title: 'Golazo de Alan Medina | Liverpool vs Defensor Sporting' },
+  { videoId: 'fNFzfwLM72c', title: 'Top 5 Goles de la Fecha | Campeonato Uruguayo' },
+  { videoId: 'o-YBDTqX_ZU', title: 'Resumen: Wanderers vs Danubio | Goles y Jugadas' },
+  { videoId: 'r6y1a-1e62A', title: 'Gol de último minuto | Cerro Largo vs Fénix' },
 ];
