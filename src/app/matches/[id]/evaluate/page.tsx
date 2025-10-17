@@ -60,9 +60,11 @@ export default function EvaluateMatchPage() {
   const [isPageLoading, setIsPageLoading] = useState(true);
   
   // We need player data to distinguish real from manual players
-  const { data: allGroupPlayers, loading: playersLoading } = useCollection<Player>(
-      firestore && user?.activeGroupId ? query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId)) : null
-  );
+  const allGroupPlayersQuery = useMemo(() => 
+    firestore && user?.activeGroupId ? query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId)) : null
+  , [firestore, user?.activeGroupId]);
+  
+  const { data: allGroupPlayers, loading: playersLoading } = useCollection<Player>(allGroupPlayersQuery);
 
   const matchRef = useMemo(() => firestore ? doc(firestore, 'matches', matchId as string) : null, [firestore, matchId]);
   const { data: match, loading: matchLoading } = useDoc<Match>(matchRef);
@@ -152,7 +154,7 @@ export default function EvaluateMatchPage() {
 
         setIsPageLoading(false);
     }
-  }, [match, user, evalsLoading, playersLoading, allGroupPlayers]);
+  }, [match, user, evalsLoading, playersLoading, allGroupPlayers, replace]);
 
   const onSubmit = async (data: EvaluationFormData) => {
     if (!firestore || !match || !user) return;
