@@ -36,10 +36,10 @@ type MatchCardProps = {
 };
 
 const statusConfig = {
-    upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
-    active: { label: 'Activo', className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
-    completed: { label: 'Finalizado', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' },
-    evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' },
+    upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300', neonClass: 'shadow-blue-500/50' },
+    active: { label: 'Activo', className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300', neonClass: 'shadow-green-500/50' },
+    completed: { label: 'Finalizado', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', neonClass: 'shadow-gray-500/50' },
+    evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300', neonClass: 'shadow-purple-500/50' },
 };
 
 const weatherIcons: Record<string, React.ElementType> = {
@@ -47,10 +47,12 @@ const weatherIcons: Record<string, React.ElementType> = {
 };
 
 const InfoRow = ({ icon: Icon, text, children }: { icon: React.ElementType, text?: string, children?: React.ReactNode }) => (
-    <div className="flex items-center gap-3 text-sm">
-        <Icon className="h-4 w-4 text-muted-foreground" />
-        {text && <span>{text}</span>}
-        {children}
+    <div className="flex items-center gap-4">
+        <Icon className="h-6 w-6 text-primary flex-shrink-0" />
+        <div className="text-sm">
+            {text && <span>{text}</span>}
+            {children}
+        </div>
     </div>
 );
 
@@ -305,37 +307,57 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
 
     return (
-        <Card className="flex flex-col border-l-4" style={{borderLeftColor: `hsl(var(--${match.status === 'upcoming' ? 'primary' : 'card'}))`}}>
+        <Card className="flex flex-col overflow-hidden shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
             <CardHeader>
                 <div className="flex items-start justify-between gap-4">
-                    <CardTitle className="line-clamp-2">{match.title}</CardTitle>
+                    <CardTitle className={cn("text-xl font-bold text-shadow-lg", currentStatus.neonClass)}>
+                        {match.title}
+                    </CardTitle>
                     <Badge variant="outline" className={cn("whitespace-nowrap uppercase text-xs", currentStatus.className)}>
                         {currentStatus.label}
                     </Badge>
                 </div>
                 <CardDescription>
-                     <Badge variant="secondary">{match.type === 'manual' ? 'Manual' : 'Colaborativo'}</Badge>
+                     <Badge variant="secondary" className="font-semibold">{match.type === 'manual' ? 'Manual' : 'Colaborativo'}</Badge>
                 </CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow space-y-3">
-                <InfoRow icon={Calendar} text={match.date ? format(new Date(match.date), 'E, d MMM, yyyy') : 'Fecha no definida'} />
-                <InfoRow icon={Clock} text={match.time} />
-                <InfoRow icon={MapPin}>
-                    <div className="flex items-center gap-2">
-                        <span>{match.location}</span>
-                        {WeatherIcon && <WeatherIcon className="h-4 w-4 text-blue-500" />}
+            <CardContent className="flex-grow space-y-4">
+
+                <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3">
+                    <InfoRow icon={Calendar} text={match.date ? format(new Date(match.date), 'E, d MMM, yyyy') : 'Fecha no definida'} />
+                    <InfoRow icon={Clock} text={match.time} />
+                    <InfoRow icon={MapPin} text={match.location} />
+                </div>
+                
+                {WeatherIcon && match.weather && (
+                    <div className="flex items-center gap-4 rounded-lg bg-muted/50 p-3">
+                        <WeatherIcon className="h-8 w-8 text-blue-400" />
+                        <div>
+                            <p className="font-semibold text-sm">{match.weather.description}</p>
+                            <p className="text-xs text-muted-foreground">{match.weather.temperature}°C</p>
+                        </div>
                     </div>
-                </InfoRow>
-                <InfoRow icon={Users} text={`${match.players.length} / ${match.matchSize} jugadores`} />
+                )}
+                
+                <Separator />
+                
+                <div className="flex items-center justify-between">
+                     <div className="flex items-center gap-2 text-lg font-bold">
+                        <Users className="h-5 w-5 text-muted-foreground" />
+                        <span>{match.players.length} / {match.matchSize}</span>
+                     </div>
+                     <span className="text-sm text-muted-foreground">jugadores</span>
+                </div>
+
             </CardContent>
 
-            <CardFooter className="flex flex-col items-stretch gap-2 p-4 bg-muted/50">
+            <CardFooter className="flex flex-col items-stretch gap-2 p-3 bg-muted/50 mt-auto">
                  <div className="grid grid-cols-2 gap-2">
                     {renderPrimaryAction()}
                     {renderSecondaryActions()}
                  </div>
 
-                 {user?.uid === match.ownerUid &&(
+                 {user?.uid === match.ownerUid && match.status !== 'evaluated' && (
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="sm" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive text-xs h-8 mt-2">
@@ -365,3 +387,4 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         </Card>
     );
 }
+
