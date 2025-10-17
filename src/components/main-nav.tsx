@@ -180,8 +180,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
                     <div className="flex items-center gap-2 sm:gap-4">
                         {player && (
-                            <div className="hidden sm:flex items-center gap-3">
-                                <div className="text-right">
+                            <div className="flex items-center gap-3">
+                                <div className="text-right hidden sm:block">
                                     <p className="font-bold text-base truncate">{player.name}</p>
                                 </div>
                                 <div className="font-bold text-2xl text-primary flex items-center gap-1">
