@@ -21,7 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LayoutDashboard, Users, Calendar, LogOut, Settings, Goal, Users2, User, ShieldQuestion } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { GroupSwitcher } from './group-switcher';
 import {
@@ -32,6 +32,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import type { Player } from '@/lib/types';
+import { doc } from 'firebase/firestore';
+import { Badge } from '@/components/ui/badge';
 
 
 const navItems = [
@@ -42,17 +45,39 @@ const navItems = [
   { href: '/groups', label: 'Grupos', icon: Users2 },
 ];
 
+const positionColors: Record<Player['position'], string> = {
+    DEL: 'bg-red-500/80 text-white',
+    MED: 'bg-green-500/80 text-white',
+    DEF: 'bg-blue-500/80 text-white',
+    POR: 'bg-orange-500/80 text-white',
+};
+const ovrColors: Record<Player['position'], string> = {
+    DEL: 'text-red-400',
+    MED: 'text-green-400',
+    DEF: 'text-blue-400',
+    POR: 'text-orange-400',
+};
+
+
 export function MainNav({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, loading } = useUser();
+  const { user, loading: userLoading } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
 
+  const playerRef = React.useMemo(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'players', user.uid);
+  }, [firestore, user?.uid]);
+  const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
+
+
   React.useEffect(() => {
-    if (!loading && !user && pathname !== '/' && pathname !== '/login' && pathname !== '/register') {
+    if (!userLoading && !user && pathname !== '/' && pathname !== '/login' && pathname !== '/register') {
       router.push('/login');
     }
-  }, [user, loading, pathname, router]);
+  }, [user, userLoading, pathname, router]);
 
   const handleLogout = async () => {
     if (auth) {
@@ -64,6 +89,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   if (pathname === '/' || pathname === '/login' || pathname === '/register') {
     return <>{children}</>;
   }
+
+  const loading = userLoading || playerLoading;
 
   if (loading) {
     return (
@@ -139,6 +166,22 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             <div className="flex-1">
                 <GroupSwitcher />
             </div>
+
+            {player && (
+                <div className="hidden items-center gap-4 md:flex">
+                    <div className="text-right">
+                        <p className="font-bold text-sm truncate">{player.name}</p>
+                        <p className="text-xs text-muted-foreground">Manager</p>
+                    </div>
+                    <div className={cn("font-bold text-lg", ovrColors[player.position])}>
+                        {player.ovr}
+                    </div>
+                    <Badge className={cn("text-xs", positionColors[player.position])}>{player.position}</Badge>
+                </div>
+            )}
+            
+            <Separator orientation="vertical" className="h-8 mx-2 hidden md:block" />
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
