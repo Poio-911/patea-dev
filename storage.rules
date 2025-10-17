@@ -1,11 +1,12 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Permite la lectura pública de todas las imágenes de perfil.
+    // Permite la lectura pública de las imágenes de perfil para que se muestren en la app.
     match /profile-images/{fileName} {
       allow read;
-      // Permite la escritura solo si el usuario está autenticado
-      // y el nombre del archivo que intenta subir comienza con su ID de usuario.
+      // Permite la escritura solo si el usuario está autenticado y el nombre del archivo
+      // comienza con su propio ID de usuario (uid). Esto evita que un usuario
+      // sobrescriba las imágenes de otro.
       allow write: if request.auth != null && fileName.startsWith(request.auth.uid);
     }
   }
