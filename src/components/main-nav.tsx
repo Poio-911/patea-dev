@@ -172,66 +172,70 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           </SidebarFooter>
         </Sidebar>
         <SidebarInset className="bg-background pb-16 md:pb-0">
-          <header className="sticky top-0 z-10 flex h-20 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-lg sm:px-6">
-            <div className="flex items-center gap-2">
-                <GroupSwitcher />
-            </div>
-
-            <div className="flex items-center gap-4">
-                <NotificationBell />
-
-                {player && (
-                    <div className="hidden sm:flex items-center gap-3 sm:gap-4">
-                        <div className="text-right">
-                            <p className="font-bold text-base sm:text-lg truncate">{player.name}</p>
-                        </div>
-                        <div className="font-bold text-2xl sm:text-3xl text-primary flex items-center gap-1">
-                            {player.ovr}
-                        </div>
-                        <Badge className={cn("text-sm", positionColors[player.position])}>{player.position}</Badge>
+           <div className="sticky top-0 z-10 flex flex-col bg-background/80 backdrop-blur-lg">
+                <header className="flex h-20 items-center justify-between border-b px-4 sm:px-6">
+                    <div className="flex items-center gap-2">
+                        <NotificationBell />
                     </div>
-                )}
-                
-                <Separator orientation="vertical" className="h-10 mx-1 sm:mx-2 hidden sm:block" />
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-12 w-12 rounded-full">
-                      <Avatar className="h-12 w-12 border">
-                          <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} data-ai-hint="user avatar" />
-                          <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
-                      </Avatar>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end" forceMount>
-                    <DropdownMenuLabel className="font-normal">
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{user.displayName}</p>
-                        <p className="text-xs leading-none text-muted-foreground">
-                          {user.email}
-                        </p>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                       <Link href="/profile">
-                        <User className="mr-2 h-4 w-4" />
-                        <span>Mi Perfil</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Ajustes</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Cerrar sesión</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    <div className="flex items-center gap-2 sm:gap-4">
+                        {player && (
+                            <div className="hidden sm:flex items-center gap-3">
+                                <div className="text-right">
+                                    <p className="font-bold text-base truncate">{player.name}</p>
+                                </div>
+                                <div className="font-bold text-2xl text-primary flex items-center gap-1">
+                                    {player.ovr}
+                                </div>
+                                <Badge className={cn("text-sm", positionColors[player.position])}>{player.position}</Badge>
+                            </div>
+                        )}
+                        
+                        <Separator orientation="vertical" className="h-10 mx-1 hidden sm:block" />
+
+                        <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="relative h-12 w-12 rounded-full">
+                            <Avatar className="h-12 w-12 border">
+                                <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} data-ai-hint="user avatar" />
+                                <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                            </Avatar>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56" align="end" forceMount>
+                            <DropdownMenuLabel className="font-normal">
+                            <div className="flex flex-col space-y-1">
+                                <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                                <p className="text-xs leading-none text-muted-foreground">
+                                {user.email}
+                                </p>
+                            </div>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild>
+                            <Link href="/profile">
+                                <User className="mr-2 h-4 w-4" />
+                                <span>Mi Perfil</span>
+                            </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                            <Settings className="mr-2 h-4 w-4" />
+                            <span>Ajustes</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={handleLogout}>
+                            <LogOut className="mr-2 h-4 w-4" />
+                            <span>Cerrar sesión</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                </header>
+                <div className="flex h-12 items-center justify-center border-b bg-primary/10">
+                    <GroupSwitcher />
+                </div>
             </div>
-          </header>
+
           <main className="flex-1 p-4 sm:p-6">{children}</main>
           
           {/* Bottom Navigation for Mobile */}
@@ -264,5 +268,3 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
-
-    
