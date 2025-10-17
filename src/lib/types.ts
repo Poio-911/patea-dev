@@ -81,6 +81,8 @@ export type Team = {
   }[];
   totalOVR: number;
   averageOVR: number;
+  suggestedFormation: string;
+  tags: string[];
   balanceMetrics?: {
     ovrDifference: number;
     fairnessPercentage: number;

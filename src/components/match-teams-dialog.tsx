@@ -14,8 +14,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import type { Match } from '@/lib/types';
-import { Star, Scale } from 'lucide-react';
+import { Star, Scale, ShieldCheck, Shirt } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from './ui/button';
 
 type MatchTeamsDialogProps = {
   match: Match;
@@ -48,18 +49,14 @@ const BalanceRating = ({ fairnessPercentage }: { fairnessPercentage: number }) =
 
 export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
   const teams = match.teams || [];
-  
   const fairnessPercentage = match.teams?.[0]?.balanceMetrics?.fairnessPercentage ?? 0;
   
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-background/80 backdrop-blur-sm">
         <DialogHeader>
           <DialogTitle>Equipos para "{match.title}"</DialogTitle>
-          <DialogDescription>
-            Equipos generados por IA para un partido equilibrado.
-          </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-6">
             {fairnessPercentage > 0 && (
@@ -68,33 +65,45 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
                 </div>
             )}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {teams.map((team) => (
-              <Card key={team.name}>
-                <CardHeader className="flex-row items-center justify-between">
-                  <CardTitle>{team.name}</CardTitle>
-                  <Badge variant="secondary">OVR Prom: {team.averageOVR.toFixed(1)}</Badge>
+            {teams.map((team, index) => (
+              <Card key={team.name} className={cn("overflow-hidden", index === 0 ? "border-primary" : "border-accent")}>
+                <CardHeader className={cn("flex-row items-center justify-between p-4", index === 0 ? "bg-primary/10" : "bg-accent/10")}>
+                    <div className="flex items-center gap-3">
+                         <Shirt className={cn("h-6 w-6", index === 0 ? 'text-primary' : 'text-accent')} />
+                        <CardTitle className="text-xl">{team.name}</CardTitle>
+                    </div>
+                  <Badge variant="outline" className={cn(index === 0 ? "border-primary text-primary" : "border-accent text-accent")}>
+                    <ShieldCheck className="mr-1.5 h-4 w-4"/>
+                    {team.averageOVR.toFixed(1)} OVR
+                  </Badge>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  {team.players.map((player) => {
-                    const matchPlayer = match.players.find(p => p.uid === player.uid);
-                    return (
-                        <div key={player.uid} className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                            <AvatarImage src={matchPlayer?.photoUrl} alt={player.displayName} data-ai-hint="player portrait" />
-                            <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <p className="font-semibold">{player.displayName}</p>
-                            <p className="text-xs text-muted-foreground">{player.position}</p>
-                        </div>
-                        <p className="ml-auto font-bold text-primary">{player.ovr}</p>
-                        </div>
-                    );
-                  })}
-                  <Separator className="my-4" />
-                  <div className="flex justify-between font-bold">
-                    <span>OVR Total</span>
-                    <span>{team.totalOVR}</span>
+                <CardContent className="p-4 space-y-3">
+                    <div className="space-y-2">
+                        {team.players.map((player) => {
+                            const matchPlayer = match.players.find(p => p.uid === player.uid);
+                            return (
+                                <div key={player.uid} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted">
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarImage src={matchPlayer?.photoUrl} alt={player.displayName} data-ai-hint="player portrait" />
+                                        <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className="font-semibold text-sm">{player.displayName}</p>
+                                        <p className="text-xs text-muted-foreground">{player.position}</p>
+                                    </div>
+                                    <p className="ml-auto font-bold text-sm text-foreground/80">{player.ovr}</p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                  <Separator />
+                  <div className="text-xs space-y-2">
+                    <div className='font-semibold'>Formación: {team.suggestedFormation || 'No definida'}</div>
+                    <div className="flex flex-wrap gap-1.5">
+                        {team.tags?.map(tag => (
+                            <Badge key={tag} variant="secondary">{tag}</Badge>
+                        ))}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
