@@ -7,17 +7,40 @@ export const mapStyles: google.maps.MapTypeStyle[] = [
     {
       featureType: "administrative.locality",
       elementType: "labels.text.fill",
-      stylers: [{ color: "#d59563" }],
+      stylers: [{ color: "hsl(var(--primary))" }],
     },
+    // Ocultar POIs no deportivos
     {
         featureType: "poi",
-        elementType: "labels.text.fill",
-        stylers: [{ "color": "#d59563" }]
+        elementType: "labels",
+        stylers: [{ visibility: "off" }]
     },
+    {
+        featureType: "poi.business",
+        stylers: [{ visibility: "off" }]
+    },
+    {
+        featureType: "poi.school",
+        stylers: [{ visibility: "off" }]
+    },
+    {
+        featureType: "poi.government",
+        stylers: [{ visibility: "off" }]
+    },
+    {
+        featureType: "poi.medical",
+        stylers: [{ visibility: "off" }]
+    },
+    // Mostrar y estilizar parques y complejos deportivos
     {
         featureType: "poi.park",
         elementType: "geometry",
         stylers: [{ "color": "#263c3f" }]
+    },
+    {
+        featureType: "poi.park",
+        elementType: "labels.text",
+        stylers: [{ visibility: "on" }]
     },
     {
         featureType: "poi.park",
@@ -27,7 +50,12 @@ export const mapStyles: google.maps.MapTypeStyle[] = [
     {
         featureType: "poi.sports_complex",
         elementType: "geometry",
-        stylers: [{ "color": "#3c763d" }] // Highlight sports complexes
+        stylers: [{ color: "hsl(var(--accent))" , "visibility": "on" }] // Use accent color for sports complexes
+    },
+    {
+        featureType: "poi.sports_complex",
+        elementType: "labels",
+        stylers: [{ visibility: "on" }]
     },
     {
         featureType: "road",
@@ -61,13 +89,7 @@ export const mapStyles: google.maps.MapTypeStyle[] = [
     },
     {
         featureType: "transit",
-        elementType: "geometry",
-        stylers: [{ "color": "#2f3948" }]
-    },
-    {
-        featureType: "transit.station",
-        elementType: "labels.text.fill",
-        stylers: [{ "color": "#d59563" }]
+        stylers: [{ visibility: "off" }]
     },
     {
         featureType: "water",
@@ -85,4 +107,3 @@ export const mapStyles: google.maps.MapTypeStyle[] = [
         stylers: [{ "color": "#17263c" }]
     },
 ];
-
