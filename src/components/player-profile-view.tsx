@@ -1,10 +1,9 @@
-
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
 import { doc, collection, query, where, orderBy, getDocs, collectionGroup } from 'firebase/firestore';
-import type { Player, Evaluation, Match, SelfEvaluation, OvrHistory } from '@/lib/types';
+import type { Player, Evaluation, Match, SelfEvaluation, OvrHistory, PlayerProfileViewProps } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -37,11 +36,7 @@ type MatchEvaluationSummary = {
     individualEvaluations: DetailedEvaluation[];
 };
 
-interface PlayerProfileViewProps {
-    playerId: string;
-}
-
-export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
+export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
   const firestore = useFirestore();
   const { user } = useUser();
   const [evaluatorProfiles, setEvaluatorProfiles] = useState<Record<string, {displayName: string, photoURL: string}>>({});
@@ -74,7 +69,7 @@ export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
   }, [firestore, playerId]);
   const { data: ovrHistory, loading: historyLoading } = useCollection<OvrHistory>(ovrHistoryQuery);
   
-  useEffect(() => {
+  React.useEffect(() => {
       async function fetchEvaluatorProfiles() {
         if (!peerEvaluations || !firestore) return;
         const evaluatorIds = [...new Set(peerEvaluations.map(ev => ev.evaluatorId).filter(id => id && !evaluatorProfiles[id]))];

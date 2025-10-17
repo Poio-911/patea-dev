@@ -109,4 +109,7 @@ export type SelfEvaluation = {
   reportedAt: string;
 } & DocumentData;
 
+export interface PlayerProfileViewProps {
+    playerId: string;
+}
     
