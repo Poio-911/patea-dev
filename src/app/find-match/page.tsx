@@ -209,11 +209,11 @@ export default function FindMatchPage() {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
             <Card className="lg:col-span-1 h-full flex flex-col">
-                <CardHeader className="p-4">
+                <CardHeader className="p-2 sm:p-4">
                     <CardTitle className="text-lg">Partidos Encontrados</CardTitle>
                     <CardDescription className="text-xs">Se encontraron {nearbyMatches.length} partidos en un radio de {searchRadius}km.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex-grow p-1">
+                <CardContent className="flex-grow p-1 sm:p-2">
                     <ScrollArea className="h-full">
                         <div className="space-y-2 p-1">
                             {nearbyMatches.length > 0 ? nearbyMatches.map((match) => (
