@@ -209,6 +209,19 @@
             "matchId": { "type": "string" }
         },
         "required": ["date", "oldOVR", "newOVR", "change", "matchId"]
+    },
+    "chatMessage": {
+      "title": "Chat Message",
+      "description": "Represents a single message in a match chat.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "senderPhotoUrl": { "type": "string", "format": "uri" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "senderId", "senderName", "createdAt"]
     }
   },
   "auth": {
@@ -250,6 +263,10 @@
      "/matches/{matchId}/selfEvaluations/{userId}": {
       "schema": { "$ref": "#/entities/selfEvaluation" },
       "description": "Stores a player's self-reported stats for a match."
+    },
+    "/matches/{matchId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/chatMessage" },
+      "description": "Stores chat messages for a specific match."
     },
     "/evaluations/{evaluationId}": {
         "schema": { "$ref": "#/entities/evaluation" },

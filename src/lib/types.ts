@@ -149,6 +149,15 @@ export type FcmToken = {
     token: string;
     createdAt: string;
 } & DocumentData;
+
+export type ChatMessage = {
+    id: string;
+    text: string;
+    senderId: string;
+    senderName: string;
+    senderPhotoUrl: string;
+    createdAt: string; // ISO 8601 string
+} & DocumentData;
     
 
     

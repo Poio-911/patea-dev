@@ -26,10 +26,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Star, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User } from 'lucide-react';
+import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Star, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User, MessageCircle } from 'lucide-react';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import Link from 'next/link';
 import { SoccerPlayerIcon } from './icons/soccer-player-icon';
+import { MatchChatSheet } from './match-chat-sheet';
 
 
 type MatchCardProps = {
@@ -352,6 +353,15 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                             Invitar
                         </Button>
                     </InvitePlayerDialog>
+                )}
+
+                {isUserInMatch && (
+                    <MatchChatSheet match={match}>
+                        <Button variant="outline" size="sm" className="w-full">
+                            <MessageCircle className="mr-2 h-4 w-4" />
+                            Chat
+                        </Button>
+                    </MatchChatSheet>
                 )}
 
                 {match.status === 'completed' && user?.uid === match.ownerUid && (
