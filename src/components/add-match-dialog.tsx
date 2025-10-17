@@ -37,8 +37,6 @@ import { getMatchDayForecast, GetMatchDayForecastOutput } from '@/ai/flows/get-m
 import { Switch } from './ui/switch';
 import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
-import { useJsApiLoader } from '@react-google-maps/api';
-import { libraries } from '@/lib/google-maps';
 
 
 const matchLocationSchema = z.object({
@@ -70,12 +68,6 @@ const weatherIcons: Record<string, React.ElementType> = {
 }
 
 const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: MatchLocation) => void }) => {
-    const { isLoaded } = useJsApiLoader({
-        id: 'google-map-script',
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-        libraries,
-    });
-
     const {
         ready,
         value,
@@ -85,7 +77,6 @@ const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: Matc
     } = usePlacesAutocomplete({
         requestOptions: { /* Define options here, like componentRestrictions */ },
         debounce: 300,
-        disabled: !isLoaded
     });
 
     const handleSelect = (description: string) => () => {
@@ -97,28 +88,28 @@ const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: Matc
             onSelectLocation({ address: description, lat, lng });
         });
     };
-
-    if (!isLoaded) return <Input placeholder="Cargando autocompletado..." disabled/>;
-
+    
     return (
         <Popover open={status === 'OK'}>
-            <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                    value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                    disabled={!ready}
-                    placeholder="Busca la dirección de la cancha..."
-                    className="pl-10"
-                />
-            </div>
+            <PopoverTrigger asChild>
+                <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        disabled={!ready}
+                        placeholder="Busca la dirección de la cancha..."
+                        className="pl-10"
+                    />
+                </div>
+            </PopoverTrigger>
             <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                 <Command>
                     <CommandList>
                         {status === 'OK' && (
                              <CommandGroup>
                                 {data.map(({ place_id, description }) => (
-                                    <CommandItem key={place_id} onSelect={handleSelect(description)}>
+                                    <CommandItem key={place_id} value={description} onSelect={handleSelect(description)}>
                                         {description}
                                     </CommandItem>
                                 ))}
