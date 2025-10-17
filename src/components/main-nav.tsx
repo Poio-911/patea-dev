@@ -177,7 +177,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
         </Sidebar>
         <SidebarInset className="bg-background pb-16 md:pb-0">
            <div className="sticky top-0 z-10 flex flex-col bg-background/80 backdrop-blur-lg">
-                <header className="flex h-20 items-center justify-between border-b px-4 sm:px-6">
+                <header className="flex h-16 items-center justify-between border-b px-4 sm:px-6">
                     <div className="flex items-center gap-2">
                         <NotificationBell />
                     </div>
@@ -185,16 +185,14 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                     <div className="flex items-center gap-2 sm:gap-4">
                         <div className="flex items-center gap-3">
                             {player && (
-                                <div className="text-right">
+                                <div className="text-right flex items-center gap-3">
                                     <p className="font-bold text-sm truncate">{player.name}</p>
+                                    <Badge className={cn("px-3 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
+                                      <span className="font-bold">{player.ovr}</span>
+                                      <span className="font-medium ml-1.5">{player.position}</span>
+                                    </Badge>
                                 </div>
                             )}
-                             {player && (
-                                <Badge className={cn("px-3 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
-                                    <span className="font-bold">{player.ovr}</span>
-                                    <span className="font-medium ml-1.5">{player.position}</span>
-                                </Badge>
-                             )}
                         </div>
                         
                         <Separator orientation="vertical" className="h-10 mx-1" />
@@ -208,7 +206,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                             </Avatar>
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-56" align="end" forceMount>
+                        <DropdownMenuContent className="w-64" align="end" forceMount>
                             <DropdownMenuLabel className="font-normal">
                             <div className="flex flex-col space-y-1">
                                 <p className="text-sm font-medium leading-none">{user.displayName}</p>
@@ -218,10 +216,20 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                             </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
+                             <div className="p-2">
+                                <GroupSwitcher />
+                            </div>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem asChild>
                             <Link href="/profile">
                                 <User className="mr-2 h-4 w-4" />
                                 <span>Mi Perfil</span>
+                            </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                            <Link href="/groups">
+                                <Users2 className="mr-2 h-4 w-4" />
+                                <span>Gestionar Grupos</span>
                             </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem>
@@ -237,17 +245,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                         </DropdownMenu>
                     </div>
                 </header>
-                <div className="flex h-12 items-center justify-center border-b bg-primary/10 px-4">
-                    <div className="flex-1 flex justify-center">
-                        <GroupSwitcher />
-                    </div>
-                    <Button asChild variant="ghost" size="sm" className="bg-accent/80 text-accent-foreground hover:bg-accent">
-                        <Link href="/groups">
-                            Ir a Grupos
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                        </Link>
-                    </Button>
-                </div>
             </div>
 
           <main className="flex-1 p-4 sm:p-6">{children}</main>
@@ -282,5 +279,3 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
-
-    
