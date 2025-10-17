@@ -94,6 +94,7 @@ export type Evaluation = {
     evaluatorId: string; // The user UID who submitted the evaluation
     matchId: string; // The ID of the match, added for easier querying
     rating: number; // Scale 1-10
+    goals?: number; // Goals scored by the evaluator in that match
     performanceTags: string[];
     evaluatedAt: string;
 } & DocumentData;
@@ -119,6 +120,8 @@ export type SelfEvaluation = {
 export interface PlayerProfileViewProps {
     playerId: string;
 }
+    
+
     
 
     

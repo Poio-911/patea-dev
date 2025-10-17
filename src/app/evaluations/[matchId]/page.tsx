@@ -108,8 +108,8 @@ export default function PerformEvaluationPage() {
     try {
         const batch = writeBatch(firestore);
 
-        // 1. Save self-evaluation (goals)
-        const selfEvalRef = doc(firestore, 'matches', matchId as string, 'selfEvaluations', user.uid);
+        // 1. Save self-evaluation for goals (this can be used for aggregated stats)
+        const selfEvalRef = doc(collection(firestore, 'matches', matchId as string, 'selfEvaluations'));
         const newSelfEvaluation: Omit<SelfEvaluation, 'id'> = {
             playerId: user.uid,
             matchId: matchId as string,
@@ -127,6 +127,7 @@ export default function PerformEvaluationPage() {
                 evaluatorId: user.uid,
                 matchId: matchId as string,
                 rating: evaluation.rating,
+                goals: data.evaluatorGoals, // Add goals to each evaluation document
                 performanceTags: evaluation.performanceTags || [],
                 evaluatedAt: new Date().toISOString(),
             };
@@ -326,3 +327,5 @@ export default function PerformEvaluationPage() {
     </div>
   );
 }
+
+    

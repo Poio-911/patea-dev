@@ -129,6 +129,7 @@
         "evaluatorId": { "type": "string" },
         "matchId": { "type": "string" },
         "rating": { "type": "number" },
+        "goals": { "type": "number" },
         "performanceTags": { "type": "array", "items": { "type": "string" } },
         "evaluatedAt": { "type": "string", "format": "date-time" }
       },
@@ -211,6 +212,5 @@
     }
   }
 }
-    
 
     

@@ -1,10 +1,10 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
-import { doc, collection, query, where, orderBy, getDocs, collectionGroup } from 'firebase/firestore';
-import type { Player, Evaluation, Match, SelfEvaluation, OvrHistory, PlayerProfileViewProps } from '@/lib/types';
+import { doc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import type { Player, Evaluation, Match, OvrHistory, PlayerProfileViewProps } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -40,97 +40,102 @@ type MatchEvaluationSummary = {
 
 export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [evaluatorProfiles, setEvaluatorProfiles] = useState<Record<string, {displayName: string, photoURL: string}>>({});
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
-  
+  const [isLoading, setIsLoading] = useState(true);
+
   const playerRef = useMemo(() => firestore && playerId ? doc(firestore, 'players', playerId) : null, [firestore, playerId]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
 
-  const peerEvaluationsQuery = useMemo(() => {
-    if (!firestore || !playerId) return null;
-    return query(collection(firestore, `evaluations`), where('playerId', '==', playerId));
-  }, [firestore, playerId]);
-  const { data: peerEvaluations, loading: peerEvalsLoading } = useCollection<Evaluation>(peerEvaluationsQuery);
-  
-  const selfEvaluationsQuery = useMemo(() => {
-      if (!firestore || !playerId) return null;
-      // This is less optimal, but necessary for collectionGroup query
-      return query(collectionGroup(firestore, 'selfEvaluations'), where('playerId', '==', playerId));
-  }, [firestore, playerId]);
-  const { data: selfEvaluations, loading: selfEvalsLoading } = useCollection<SelfEvaluation>(selfEvaluationsQuery);
-
-  const matchesQuery = useMemo(() => {
-    if (!firestore || !user?.activeGroupId) return null;
-    return query(collection(firestore, 'matches'), where('groupId', '==', user?.activeGroupId), where('status', '==', 'evaluated'));
-  }, [firestore, user?.activeGroupId]);
-  const { data: matches, loading: matchesLoading } = useCollection<Match>(matchesQuery);
-  
   const ovrHistoryQuery = useMemo(() => {
     if (!firestore || !playerId) return null;
     return query(collection(firestore, 'players', playerId, 'ovrHistory'), orderBy('date', 'asc'));
   }, [firestore, playerId]);
   const { data: ovrHistory, loading: historyLoading } = useCollection<OvrHistory>(ovrHistoryQuery);
   
-  React.useEffect(() => {
-      async function fetchEvaluatorProfiles() {
-        if (!peerEvaluations || !firestore) return;
-        const evaluatorIds = [...new Set(peerEvaluations.map(ev => ev.evaluatorId).filter(id => id && !evaluatorProfiles[id]))];
-        if (evaluatorIds.length === 0) return;
+  useEffect(() => {
+    async function fetchEvaluationData() {
+        if (!firestore || !playerId) return;
 
-        const usersRef = collection(firestore, "users");
-        const q = query(usersRef, where('uid', 'in', evaluatorIds));
-        const querySnapshot = await getDocs(q);
+        setIsLoading(true);
+        try {
+            // 1. Fetch all evaluations for the player
+            const evalsQuery = query(collection(firestore, 'evaluations'), where('playerId', '==', playerId));
+            const evalsSnapshot = await getDocs(evalsQuery);
+            const playerEvals = evalsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Evaluation));
+            setEvaluations(playerEvals);
 
-        const newProfiles: Record<string, {displayName: string, photoURL: string}> = {};
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            newProfiles[doc.id] = {
-                displayName: data.displayName || 'Anónimo',
-                photoURL: data.photoURL || '',
-            };
-        });
+            // 2. Get unique match and evaluator IDs
+            const matchIds = [...new Set(playerEvals.map(e => e.matchId))];
+            const evaluatorIds = [...new Set(playerEvals.map(e => e.evaluatorId))];
 
-        setEvaluatorProfiles(prev => ({...prev, ...newProfiles}));
-      }
-      fetchEvaluatorProfiles();
+            // 3. Fetch corresponding matches
+            if (matchIds.length > 0) {
+                const matchesQuery = query(collection(firestore, 'matches'), where('__name__', 'in', matchIds));
+                const matchesSnapshot = await getDocs(matchesQuery);
+                const fetchedMatches = matchesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match));
+                setMatches(fetchedMatches);
+            }
 
-  }, [peerEvaluations, firestore, evaluatorProfiles]);
-
+            // 4. Fetch evaluator profiles
+            if (evaluatorIds.length > 0) {
+                const usersQuery = query(collection(firestore, 'users'), where('uid', 'in', evaluatorIds));
+                const usersSnapshot = await getDocs(usersQuery);
+                const newProfiles: Record<string, {displayName: string, photoURL: string}> = {};
+                usersSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    newProfiles[doc.id] = {
+                        displayName: data.displayName || 'Anónimo',
+                        photoURL: data.photoURL || '',
+                    };
+                });
+                setEvaluatorProfiles(newProfiles);
+            }
+        } catch (error) {
+            console.error("Error fetching evaluation data:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    fetchEvaluationData();
+  }, [firestore, playerId]);
 
   const filteredEvaluationsByMatch = useMemo((): MatchEvaluationSummary[] => {
-    if (!peerEvaluations || !matches || !selfEvaluations) return [];
+    if (isLoading || evaluations.length === 0 || matches.length === 0) return [];
     
-    const evalsByMatch: Record<string, MatchEvaluationSummary> = {};
-    const selfEvalsByMatch = new Map(selfEvaluations.map(ev => [ev.matchId, ev]));
+    const evalsByMatch: Record<string, { match: Match; evaluations: DetailedEvaluation[] }> = {};
 
-    peerEvaluations.forEach(ev => {
-      const matchForEval = matches.find(m => m.id === ev.matchId);
-      if (matchForEval) {
-          if (!evalsByMatch[ev.matchId]) {
-              evalsByMatch[ev.matchId] = { 
-                  match: matchForEval, 
-                  avgRating: 0, 
-                  goals: selfEvalsByMatch.get(ev.matchId)?.goals || 0, 
-                  individualEvaluations: [] 
-              };
-          }
-          const detailedEval: DetailedEvaluation = {
-              ...ev,
-              evaluatorName: evaluatorProfiles[ev.evaluatorId]?.displayName || 'Cargando...',
-              evaluatorPhoto: evaluatorProfiles[ev.evaluatorId]?.photoURL || '',
-          };
-          evalsByMatch[ev.matchId].individualEvaluations.push(detailedEval);
-      }
+    evaluations.forEach(ev => {
+        const matchForEval = matches.find(m => m.id === ev.matchId);
+        if (matchForEval) {
+            if (!evalsByMatch[ev.matchId]) {
+                evalsByMatch[ev.matchId] = { match: matchForEval, evaluations: [] };
+            }
+            const detailedEval: DetailedEvaluation = {
+                ...ev,
+                evaluatorName: evaluatorProfiles[ev.evaluatorId]?.displayName || 'Cargando...',
+                evaluatorPhoto: evaluatorProfiles[ev.evaluatorId]?.photoURL || '',
+            };
+            evalsByMatch[ev.matchId].evaluations.push(detailedEval);
+        }
     });
 
     return Object.values(evalsByMatch).map(summary => {
-        const ratings = summary.individualEvaluations.map(ev => ev.rating);
-        summary.avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
-        return summary;
+        const ratings = summary.evaluations.map(ev => ev.rating);
+        const goals = summary.evaluations.reduce((sum, ev) => sum + (ev.goals || 0), 0); // Sum goals
+        const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+        
+        return {
+            match: summary.match,
+            avgRating,
+            goals,
+            individualEvaluations: summary.evaluations
+        };
     }).sort((a,b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime());
 
-  }, [peerEvaluations, matches, selfEvaluations, evaluatorProfiles]);
+  }, [evaluations, matches, evaluatorProfiles, isLoading]);
 
   const chartData = useMemo(() => {
     if (!ovrHistory) return [];
@@ -145,7 +150,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   }, [ovrHistory, player]);
 
 
-  const loading = playerLoading || peerEvalsLoading || matchesLoading || historyLoading || selfEvalsLoading;
+  const loading = playerLoading || historyLoading || isLoading;
 
   if (loading) {
     return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -337,3 +342,5 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     </div>
   );
 }
+
+    
