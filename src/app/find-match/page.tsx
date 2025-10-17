@@ -77,7 +77,7 @@ const CompactMatchCard = ({ match, onHover, isActive }: { match: Match, onHover:
                         <SoccerPlayerIcon className="h-4 w-4" />
                         <span>{match.players.length} / {match.matchSize}</span>
                     </div>
-                    <MatchDetailsDialog match={match} allPlayers={[]}>
+                    <MatchDetailsDialog match={match}>
                        <Button variant="default" size="sm" className="h-7 px-2 text-xs w-full">
                            Ver Detalles
                        </Button>
