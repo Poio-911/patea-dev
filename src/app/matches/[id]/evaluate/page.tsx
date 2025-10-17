@@ -1,7 +1,7 @@
 'use client';
 
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { doc, collection, query, where, writeBatch, runTransaction, getDocs } from 'firebase/firestore';
+import { doc, collection, query, writeBatch, runTransaction, getDocs, where } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
 import type { Match, Player, EvaluationAssignment, Evaluation } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
@@ -113,68 +113,74 @@ export default function EvaluateMatchPage() {
   const handleFinalizeEvaluation = async () => {
     if (!firestore || !match) return;
     setIsFinalizing(true);
-    
+
     try {
+        // 1. Fetch evaluations outside the transaction
+        const completedAssignmentIds = assignments?.filter(a => a.status === 'completed').map(a => a.id) || [];
+        if (completedAssignmentIds.length === 0) {
+            throw new Error("No hay evaluaciones completadas para procesar.");
+        }
+        const evaluationsQuery = query(collection(firestore, 'evaluations'), where('assignmentId', 'in', completedAssignmentIds));
+        const evaluationsSnapshot = await getDocs(evaluationsQuery);
+        const matchEvaluations = evaluationsSnapshot.docs.map(doc => doc.data() as Evaluation);
+
+        // 2. Group evaluations by player
+        const evaluationsByPlayer = matchEvaluations.reduce((acc, ev) => {
+            acc[ev.playerId] = acc[ev.playerId] || [];
+            acc[ev.playerId].push(ev);
+            return acc;
+        }, {} as Record<string, Evaluation[]>);
+
+        // 3. Run the transaction
         await runTransaction(firestore, async (transaction) => {
             const matchDoc = await transaction.get(matchRef!);
             if (!matchDoc.exists() || matchDoc.data().status === 'evaluated') {
                 throw new Error("Este partido ya ha sido evaluado o no existe.");
             }
 
-            // 1. Fetch all completed evaluations for this match
-            const completedAssignmentIds = assignments?.filter(a => a.status === 'completed').map(a => a.id) || [];
-            if (completedAssignmentIds.length === 0) {
-              throw new Error("No hay evaluaciones completadas para procesar.");
-            }
-
-            const evaluationsQuery = query(collection(firestore, 'evaluations'), where('assignmentId', 'in', completedAssignmentIds));
-            const evaluationsSnapshot = await getDocs(evaluationsQuery);
-            const matchEvaluations = evaluationsSnapshot.docs.map(doc => doc.data() as Evaluation);
-
-            // 2. Group evaluations by player
-            const evaluationsByPlayer = matchEvaluations.reduce((acc, ev) => {
-                acc[ev.playerId] = acc[ev.playerId] || [];
-                acc[ev.playerId].push(ev);
-                return acc;
-            }, {} as Record<string, Evaluation[]>);
-
-            // 3. Calculate and update each player
-            for (const playerId in evaluationsByPlayer) {
+            const playerIdsToUpdate = Object.keys(evaluationsByPlayer);
+            const playerDocs = new Map<string, Player>();
+            
+            // --- READ PHASE ---
+            for (const playerId of playerIdsToUpdate) {
                 const playerDocRef = doc(firestore, 'players', playerId);
                 const playerDoc = await transaction.get(playerDocRef);
-                if (!playerDoc.exists()) continue;
+                if (playerDoc.exists()) {
+                    playerDocs.set(playerId, playerDoc.data() as Player);
+                }
+            }
 
-                const player = playerDoc.data() as Player;
+            // --- WRITE PHASE ---
+            for (const playerId of playerIdsToUpdate) {
+                const player = playerDocs.get(playerId);
+                if (!player) continue;
+
                 const playerEvals = evaluationsByPlayer[playerId];
                 const totalRating = playerEvals.reduce((sum, ev) => sum + ev.rating, 0);
                 const avgRating = totalRating / playerEvals.length;
                 const totalGoals = playerEvals.reduce((sum, ev) => sum + ev.goals, 0);
 
-                // Calculate OVR change
                 const ovrChange = calculateOvrChange(player.ovr, avgRating);
                 const newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, player.ovr + ovrChange));
-                
-                // Calculate attribute changes
                 const attributeChanges = calculateAttributeChanges(player, avgRating, player.position);
 
-                // Update player stats
                 const newMatchesPlayed = (player.stats.matchesPlayed || 0) + 1;
                 const newTotalGoals = (player.stats.goals || 0) + totalGoals;
                 const newAvgRating = ((player.stats.averageRating || 0) * (player.stats.matchesPlayed || 0) + avgRating) / newMatchesPlayed;
                 
+                const playerDocRef = doc(firestore, 'players', playerId);
                 transaction.update(playerDocRef, {
                     ...attributeChanges,
                     ovr: newOvr,
                     stats: {
                         matchesPlayed: newMatchesPlayed,
                         goals: newTotalGoals,
-                        assists: player.stats.assists || 0, // Not implemented yet
+                        assists: player.stats.assists || 0,
                         averageRating: newAvgRating,
                     },
                 });
             }
 
-            // 4. Update match status
             transaction.update(matchRef!, { status: 'evaluated' });
         });
 
