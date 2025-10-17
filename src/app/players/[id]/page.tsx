@@ -3,7 +3,7 @@
 
 import { useParams } from 'next/navigation';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
-import { doc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { doc, collection, query, where, orderBy, getDocs, collectionGroup } from 'firebase/firestore';
 import type { Player, Evaluation, Match, SelfEvaluation, OvrHistory } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -340,4 +340,3 @@ export default function PlayerDetailPage() {
   );
 }
 
-    
