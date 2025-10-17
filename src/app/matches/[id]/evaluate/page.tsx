@@ -3,10 +3,10 @@
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
 import { doc, collection, query, where } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
-import type { Match, Player, Evaluation } from '@/lib/types';
+import type { Match, Player, EvaluationAssignment } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Loader2, Check, BarChart, UserCheck, UserX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -35,28 +35,33 @@ export default function EvaluateMatchPage() {
   const matchRef = useMemo(() => firestore ? doc(firestore, 'matches', matchId as string) : null, [firestore, matchId]);
   const { data: match, loading: matchLoading } = useDoc<Match>(matchRef);
 
-  const evaluationsRef = useMemo(() => firestore ? collection(firestore, 'matches', matchId as string, 'evaluations') : null, [firestore, matchId]);
-  const { data: submittedEvaluations, loading: evalsLoading } = useCollection<Evaluation>(evaluationsRef);
+  // CORRECTED: Query the 'assignments' subcollection to get the status of evaluations
+  const assignmentsQuery = useMemo(() => 
+      firestore ? collection(firestore, 'matches', matchId as string, 'assignments') : null, 
+  [firestore, matchId]);
+  const { data: assignments, loading: assignmentsLoading } = useCollection<EvaluationAssignment>(assignmentsQuery);
 
   useEffect(() => {
-    const loading = matchLoading || evalsLoading || playersLoading;
+    const loading = matchLoading || assignmentsLoading || playersLoading;
     if (!loading) {
       setIsPageLoading(false);
     }
-  }, [matchLoading, evalsLoading, playersLoading]);
+  }, [matchLoading, assignmentsLoading, playersLoading]);
 
   const realPlayersInMatch = useMemo(() => {
     if (!match || !allGroupPlayers) return [];
-    return match.players.filter(p => {
-        const fullPlayer = allGroupPlayers.find(gp => gp.id === p.uid);
-        return fullPlayer && isRealUser(fullPlayer);
-    });
+    const playerIdsInMatch = new Set(match.players.map(p => p.uid));
+    return allGroupPlayers.filter(p => playerIdsInMatch.has(p.id) && isRealUser(p));
   }, [match, allGroupPlayers]);
 
   const evaluatorsWhoHaveVoted = useMemo(() => {
-    if (!submittedEvaluations) return new Set();
-    return new Set(submittedEvaluations.map(e => e.evaluatedBy));
-  }, [submittedEvaluations]);
+    if (!assignments) return new Set();
+    // An evaluator has "voted" if at least one of their assignments for this match is completed.
+    const completedEvaluators = assignments
+        .filter(a => a.status === 'completed')
+        .map(a => a.evaluatorId);
+    return new Set(completedEvaluators);
+  }, [assignments]);
 
   const totalPossibleEvaluators = realPlayersInMatch.length;
   const completedEvaluatorsCount = evaluatorsWhoHaveVoted.size;
@@ -124,13 +129,13 @@ export default function EvaluateMatchPage() {
                 </Alert>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {realPlayersInMatch.map(player => (
-                        <div key={player.uid} className="flex items-center gap-3 p-2 rounded-md border">
+                        <div key={player.id} className="flex items-center gap-3 p-2 rounded-md border">
                             <Avatar className="h-8 w-8">
-                                <AvatarImage src={player.photoUrl} alt={player.displayName}/>
-                                <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
+                                <AvatarImage src={player.photoUrl} alt={player.name}/>
+                                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <span className="flex-1 font-medium">{player.displayName}</span>
-                            {evaluatorsWhoHaveVoted.has(player.uid) ? (
+                            <span className="flex-1 font-medium">{player.name}</span>
+                            {evaluatorsWhoHaveVoted.has(player.id) ? (
                                 <UserCheck className="h-5 w-5 text-green-500" />
                             ) : (
                                 <UserX className="h-5 w-5 text-red-500" />
@@ -140,7 +145,7 @@ export default function EvaluateMatchPage() {
                  </div>
 
             </CardContent>
-            <CardContent>
+            <CardFooter>
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
@@ -155,7 +160,7 @@ export default function EvaluateMatchPage() {
                         </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
-            </CardContent>
+            </CardFooter>
         </Card>
     </div>
   );
