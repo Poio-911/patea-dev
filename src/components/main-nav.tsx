@@ -38,13 +38,14 @@ import { Badge } from '@/components/ui/badge';
 import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 import { MatchIcon } from './icons/match-icon';
 import { FindMatchIcon } from './icons/find-match-icon';
+import { EvaluationIcon } from './icons/evaluation-icon';
 
 
 const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
   { href: '/players', label: 'Jugadores', icon: SoccerPlayerIcon },
   { href: '/matches', label: 'Partidos', icon: MatchIcon },
-  { href: '/evaluations', label: 'Evaluaciones', icon: ShieldQuestion },
+  { href: '/evaluations', label: 'Evaluaciones', icon: EvaluationIcon },
   { href: '/find-match', label: 'Buscar', icon: FindMatchIcon },
 ];
 
