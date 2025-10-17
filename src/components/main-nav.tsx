@@ -155,7 +155,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           </SidebarFooter>
         </Sidebar>
         <SidebarInset className="bg-background pb-16 md:pb-0">
-          <header className="sticky top-0 z-10 flex h-20 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
+          <header className="sticky top-0 z-10 flex h-20 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-lg sm:px-6">
             <div className="flex items-center gap-2">
                 <SidebarTrigger className="md:hidden"/>
                 <GroupSwitcher />
@@ -217,7 +217,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           <main className="flex-1 p-4 sm:p-6">{children}</main>
           
           {/* Bottom Navigation for Mobile */}
-          <nav className="fixed bottom-0 left-0 right-0 z-20 border-t bg-background/95 p-2 backdrop-blur-sm md:hidden">
+          <nav className="fixed bottom-0 left-0 right-0 z-20 border-t bg-background/80 p-2 backdrop-blur-lg md:hidden">
             <div className="grid h-full max-w-lg grid-cols-5 mx-auto">
               {navItems.map((item) => {
                   const isActive = pathname.startsWith(item.href);
