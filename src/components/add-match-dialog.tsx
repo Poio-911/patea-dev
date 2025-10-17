@@ -20,9 +20,9 @@ import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFirestore, useUser } from '@/firebase';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, writeBatch, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Player, MatchLocation } from '@/lib/types';
+import { Player, MatchLocation, Notification } from '@/lib/types';
 import { Alert, AlertDescription } from './ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
@@ -285,7 +285,10 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   };
 
   const createManualMatch = async (data: MatchFormData) => {
-    if (!user?.uid || !user.activeGroupId) throw new Error("User not authenticated");
+    if (!firestore || !user?.uid || !user.activeGroupId) throw new Error("User not authenticated");
+    
+    const batch = writeBatch(firestore);
+
     const selectedPlayersData = allPlayers.filter(p => data.players.includes(p.id));
     const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
 
@@ -296,9 +299,10 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         throw new Error('La respuesta de la IA no contiene equipos.');
     }
 
+    const newMatchRef = doc(collection(firestore, 'matches'));
     const newMatch = {
       ...data,
-      isPublic: false, // Manual matches can't be public
+      isPublic: false,
       matchSize: selectedMatchSize,
       date: data.date.toISOString(),
       status: 'upcoming' as const,
@@ -308,8 +312,24 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       teams: teamGenerationResult.teams,
       weather: weather || undefined,
     };
+    batch.set(newMatchRef, newMatch);
 
-    await addDoc(collection(firestore!, 'matches'), newMatch);
+    // Create notifications for each invited player
+    selectedPlayersData.forEach(player => {
+        if (player.id === user.uid) return; // Don't notify self
+        const notificationRef = doc(collection(firestore, `users/${player.id}/notifications`));
+        const notification: Omit<Notification, 'id'> = {
+            type: 'match_invite',
+            title: '¡Has sido convocado!',
+            message: `${user.displayName} te ha añadido al partido "${data.title}".`,
+            link: `/matches`,
+            isRead: false,
+            createdAt: new Date().toISOString(),
+        };
+        batch.set(notificationRef, notification);
+    });
+
+    await batch.commit();
   }
 
   const createCollaborativeMatch = async (data: MatchFormData) => {
