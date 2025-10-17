@@ -50,7 +50,6 @@ const getMatchDayForecastFlow = ai.defineFlow(
         - Extract the temperature in Celsius.
       `,
         output: { schema: GetMatchDayForecastOutputSchema },
-        model: 'googleai/gemini-pro',
     });
     return output!;
   }
