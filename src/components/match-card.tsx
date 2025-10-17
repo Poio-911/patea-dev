@@ -147,8 +147,11 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 const selectedPlayersData = allPlayers.filter(p => match.players.some(mp => mp.uid === p.id));
                 const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
                 
-                if ('error' in teamGenerationResult || !teamGenerationResult.teams) {
+                if ('error' in teamGenerationResult) {
                     throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
+                }
+                if (!teamGenerationResult.teams) {
+                    throw new Error('La respuesta de la IA no contiene equipos.');
                 }
                 finalTeams = teamGenerationResult.teams;
                 matchUpdate.teams = finalTeams;
@@ -362,5 +365,3 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         </Card>
     );
 }
-
-    
