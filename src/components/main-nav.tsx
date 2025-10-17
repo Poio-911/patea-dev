@@ -179,23 +179,24 @@ export function MainNav({ children }: { children: React.ReactNode }) {
            <div className="sticky top-0 z-10 flex flex-col bg-background/80 backdrop-blur-lg">
                 <header className="flex h-16 items-center justify-between border-b px-4 sm:px-6">
                     <div className="flex items-center gap-2">
+                        <div className="md:hidden">
+                            <SidebarTrigger />
+                        </div>
                         <NotificationBell />
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-4">
-                        <div className="hidden sm:flex items-center gap-3">
-                            {player && (
-                                <div className="flex items-center gap-3">
-                                  <div className="text-right">
-                                      <p className="font-bold text-sm truncate">{player.name}</p>
-                                  </div>
-                                  <Badge className={cn("px-3 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
-                                      <span className="font-bold">{player.ovr}</span>
-                                      <span className="font-medium ml-1.5">{player.position}</span>
-                                  </Badge>
+                        {player && (
+                            <div className="flex items-center gap-3">
+                                <div className="text-right hidden sm:block">
+                                    <p className="font-bold text-sm truncate">{player.name}</p>
                                 </div>
-                            )}
-                        </div>
+                                <Badge className={cn("px-2.5 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
+                                    <span className="font-bold">{player.ovr}</span>
+                                    <span className="font-medium ml-1.5">{player.position}</span>
+                                </Badge>
+                            </div>
+                        )}
                         
                         <Separator orientation="vertical" className="h-10 mx-1 hidden sm:block" />
 
