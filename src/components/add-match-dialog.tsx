@@ -70,7 +70,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     },
   });
 
-  const selectedMatchSize = parseInt(form.watch('matchSize') as MatchSize | string, 10);
+  const selectedMatchSize = parseInt(form.watch('matchSize'), 10);
   const matchType = form.watch('type');
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       location: 'Cancha Principal',
     });
     setSearchTerm('');
-  }, [matchType, selectedMatchSize, open]);
+  }, [matchType, selectedMatchSize, open, form]);
 
   const handlePlayerSelect = (playerId: string, checked: boolean) => {
     const currentPlayers = form.getValues('players');
