@@ -5,19 +5,7 @@ import type { User } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { doc, setDoc, getDoc, serverTimestamp, onSnapshot, FieldValue } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
-
-// This represents the data we store in the /users/{uid} document in Firestore.
-// It's separate from the Firebase Auth User object.
-export type UserProfile = {
-  uid: string;
-  email: string | null;
-  displayName: string | null;
-  photoURL: string | null;
-  groups?: string[];
-  activeGroupId?: string | null;
-  createdAt?: FieldValue;
-};
-
+import type { UserProfile } from '@/lib/types';
 
 const UserContext = createContext<{ user: UserProfile | null; loading: boolean }>({
   user: null,
@@ -45,7 +33,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         const unsubUser = onSnapshot(userRef, (userDoc) => {
           if (!userDoc.exists()) {
             // Create user profile if it doesn't exist
-            const newUserProfile: UserProfile = {
+            const newUserProfile: UserProfile & { createdAt: FieldValue } = {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
               displayName: firebaseUser.displayName,

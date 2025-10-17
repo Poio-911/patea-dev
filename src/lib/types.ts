@@ -1,5 +1,6 @@
 
 
+
 import { DocumentData, DocumentReference } from "firebase/firestore";
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
@@ -115,7 +116,7 @@ export type Evaluation = {
     assignmentId: string; // The ID of the assignment this evaluation fulfills
     playerId: string; // The player being evaluated
     evaluatorId: string; // The user UID who submitted the evaluation
-    matchId: string; // The ID of the match, added for easier querying
+    matchId: string; // The ID of the match, for easier querying
     rating: number; // Scale 1-10
     goals: number; // Goals scored by the evaluator in that match
     performanceTags: string[];
@@ -159,7 +160,16 @@ export type ChatMessage = {
     createdAt: string; // ISO 8601 string
 } & DocumentData;
     
-
+export type UserProfile = {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  groups?: string[];
+  activeGroupId?: string | null;
+};
     
 
     
+
+```
