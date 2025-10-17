@@ -37,17 +37,17 @@ type PlayerCardProps = {
 };
 
 const positionBackgrounds: Record<Player['position'], string> = {
-  DEL: 'bg-red-500/10',
-  MED: 'bg-green-500/10',
-  DEF: 'bg-blue-500/10',
-  POR: 'bg-orange-500/10',
+  DEL: 'bg-chart-1/10',
+  MED: 'bg-chart-2/10',
+  DEF: 'bg-chart-3/10',
+  POR: 'bg-chart-4/10',
 };
 
 const positionColors: Record<Player['position'], string> = {
-  DEL: 'text-red-400',
-  MED: 'text-green-400',
-  DEF: 'text-blue-400',
-  POR: 'text-orange-400',
+  DEL: 'text-chart-1',
+  MED: 'text-chart-2',
+  DEF: 'text-chart-3',
+  POR: 'text-chart-4',
 };
 
 const Stat = ({ label, value }: { label: string; value: number }) => (

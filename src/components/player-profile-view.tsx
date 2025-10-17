@@ -15,10 +15,10 @@ import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
 const positionColors: Record<Player['position'], string> = {
-  DEL: 'text-red-400',
-  MED: 'text-green-400',
-  DEF: 'text-blue-400',
-  POR: 'text-orange-400',
+  DEL: 'text-chart-1',
+  MED: 'text-chart-2',
+  DEF: 'text-chart-3',
+  POR: 'text-chart-4',
 };
 
 const Stat = ({ label, value }: { label: string; value: number }) => (
@@ -52,7 +52,8 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   const { data: peerEvaluations, loading: peerEvalsLoading } = useCollection<Evaluation>(peerEvaluationsQuery);
   
   const selfEvaluationsQuery = useMemo(() => {
-      if (!firestore) return null;
+      if (!firestore || !playerId) return null;
+      // This is less optimal, but necessary for collectionGroup query
       return query(collectionGroup(firestore, 'selfEvaluations'), where('playerId', '==', playerId));
   }, [firestore, playerId]);
   const { data: selfEvaluations, loading: selfEvalsLoading } = useCollection<SelfEvaluation>(selfEvaluationsQuery);
