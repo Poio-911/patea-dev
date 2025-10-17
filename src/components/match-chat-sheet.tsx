@@ -38,7 +38,16 @@ const chatSchema = z.object({
 type ChatFormData = z.infer<typeof chatSchema>;
 
 function ChatMessageItem({ message, isCurrentUser }: { message: ChatMessage; isCurrentUser: boolean }) {
-  const createdAtDate = message.createdAt ? new Date(message.createdAt) : new Date();
+  const createdAtDate = useMemo(() => {
+    if (!message.createdAt) {
+      return new Date();
+    }
+    // Firestore Timestamps need to be converted to JS Date objects
+    if (typeof message.createdAt.toDate === 'function') {
+      return message.createdAt.toDate();
+    }
+    return new Date(message.createdAt);
+  }, [message.createdAt]);
 
   return (
     <div className={cn('flex items-end gap-2', isCurrentUser && 'justify-end')}>
