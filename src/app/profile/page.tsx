@@ -12,7 +12,7 @@ import type { Player } from '@/lib/types';
 import { PlayerCard } from '@/components/player-card';
 import { StatCard } from '@/components/stat-card';
 import { Goal, Shield, Star } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { updateProfile } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -28,7 +28,9 @@ export default function ProfilePage() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const playerRef = user ? doc(firestore, 'players', user.uid) : null;
+  const playerRef = useMemo(() => 
+    user && firestore ? doc(firestore, 'players', user.uid) : null
+  , [user, firestore]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
 
   const loading = userLoading || playerLoading;
