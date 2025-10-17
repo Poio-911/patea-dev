@@ -12,7 +12,7 @@ import { MatchMarker } from '@/components/match-marker';
 import { libraries } from '@/lib/google-maps';
 import { mapStyles } from '@/lib/map-styles';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -194,25 +194,29 @@ export default function FindMatchPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-            <div className="lg:col-span-1 h-full flex flex-col gap-4">
-                <h2 className="text-xl font-bold">Partidos Cercanos</h2>
-                <ScrollArea className="flex-grow">
-                    <div className="space-y-3 pr-4">
-                        {validPublicMatches.length > 0 ? validPublicMatches.map((match) => (
-                           <div id={`match-card-${match.id}`} key={match.id}>
-                             <CompactMatchCard
-                                match={match}
-                                onHover={setActiveMarker}
-                                isActive={activeMarker === match.id}
-                                onJoinOrLeave={handleJoinOrLeaveMatch}
-                            />
-                           </div>
-                        )) : (
-                            <p className="text-muted-foreground text-sm p-4 text-center">No se encontraron partidos públicos por ahora.</p>
-                        )}
-                    </div>
-                </ScrollArea>
-            </div>
+            <Card className="lg:col-span-1 h-full flex flex-col">
+                <CardHeader>
+                    <CardTitle>Partidos Cercanos</CardTitle>
+                </CardHeader>
+                <CardContent className="flex-grow p-2">
+                    <ScrollArea className="h-full">
+                        <div className="space-y-3 p-2">
+                            {validPublicMatches.length > 0 ? validPublicMatches.map((match) => (
+                               <div id={`match-card-${match.id}`} key={match.id}>
+                                 <CompactMatchCard
+                                    match={match}
+                                    onHover={setActiveMarker}
+                                    isActive={activeMarker === match.id}
+                                    onJoinOrLeave={handleJoinOrLeaveMatch}
+                                />
+                               </div>
+                            )) : (
+                                <p className="text-muted-foreground text-sm p-4 text-center">No se encontraron partidos públicos por ahora.</p>
+                            )}
+                        </div>
+                    </ScrollArea>
+                </CardContent>
+            </Card>
              <div className="lg:col-span-2 h-full min-h-[300px] lg:min-h-0">
                 <GoogleMap
                     mapContainerStyle={containerStyle}
