@@ -1,10 +1,10 @@
 'use client';
 
-import { useUser, useFirestore, useDoc } from '@/firebase';
+import { useUser, useFirestore, useDoc, useFirebase } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
-import { doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { doc, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, User, RefreshCw } from 'lucide-react';
+import { Loader2, User, RefreshCw, Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -12,30 +12,43 @@ import type { Player } from '@/lib/types';
 import { PlayerCard } from '@/components/player-card';
 import { StatCard } from '@/components/stat-card';
 import { Goal, Shield, Star } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { updateProfile } from 'firebase/auth';
 import { useAuth } from '@/firebase';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { v4 as uuidv4 } from 'uuid';
+
 
 export default function ProfilePage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const auth = useAuth();
+  const firebase = useFirebase();
   const { toast } = useToast();
-  const [isUpdatingPhoto, setIsUpdatingPhoto] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const playerRef = user ? doc(firestore, 'players', user.uid) : null;
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
 
   const loading = userLoading || playerLoading;
   
-  const handleUpdatePhoto = async () => {
-    if (!user || !firestore || !auth?.currentUser) return;
-    setIsUpdatingPhoto(true);
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user || !firestore || !auth?.currentUser || !firebase) return;
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
     
-    const newPhotoSeed = Math.random().toString(36).substring(7);
-    const newPhotoURL = `https://picsum.photos/seed/${newPhotoSeed}/400/400`;
+    const storage = getStorage(firebase.firebaseApp);
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `${user.uid}-${uuidv4()}.${fileExtension}`;
+    const storageRef = ref(storage, `profile-images/${fileName}`);
 
     try {
+        await uploadBytes(storageRef, file);
+        const newPhotoURL = await getDownloadURL(storageRef);
+
         const batch = writeBatch(firestore);
 
         // Update auth profile
@@ -64,8 +77,12 @@ export default function ProfilePage() {
             description: 'No se pudo actualizar la foto de perfil.',
         });
     } finally {
-        setIsUpdatingPhoto(false);
+        setIsUploading(false);
     }
+  };
+
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
   };
 
   if (loading) {
@@ -79,7 +96,13 @@ export default function ProfilePage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader title="Mi Perfil" description="Tu información personal y estadísticas de jugador." />
-
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handlePhotoUpload}
+        className="hidden"
+        accept="image/png, image/jpeg, image/gif" 
+      />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 space-y-8">
           <Card>
@@ -95,8 +118,8 @@ export default function ProfilePage() {
                 <div className="flex flex-col gap-2">
                     <p className="text-lg font-semibold">{user.displayName}</p>
                     <p className="text-sm text-muted-foreground">{user.email}</p>
-                     <Button onClick={handleUpdatePhoto} size="sm" variant="outline" disabled={isUpdatingPhoto}>
-                        {isUpdatingPhoto ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                     <Button onClick={handleButtonClick} size="sm" variant="outline" disabled={isUploading}>
+                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                         Cambiar Foto
                     </Button>
                 </div>
