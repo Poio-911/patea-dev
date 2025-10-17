@@ -30,22 +30,23 @@ export async function generateTeamsAction(players: Player[]) {
 
   try {
     const result = await generateBalancedTeams(input);
+    if ('error' in result) {
+      throw new Error(result.error || 'La IA no pudo generar los equipos.');
+    }
     if (!result || !result.teams) {
       throw new Error('La respuesta de la IA no contiene equipos.');
     }
-    // Attach balance metrics to the first team for easier access
-    if (result.teams.length > 0 && result.balanceMetrics) {
-        // Ensure the player UIDs from the AI output match the original player IDs
-        result.teams.forEach(team => {
-            team.players.forEach(player => {
-                const originalPlayer = players.find(p => p.name === player.displayName && p.position === player.position);
-                if (originalPlayer) {
-                    player.uid = originalPlayer.id;
-                }
-            });
+    
+    // Ensure the player UIDs from the AI output match the original player IDs
+    result.teams.forEach(team => {
+        team.players.forEach(player => {
+            const originalPlayer = players.find(p => p.name === player.displayName && p.position === player.position);
+            if (originalPlayer) {
+                player.uid = originalPlayer.id;
+            }
         });
-        result.teams[0].balanceMetrics = result.balanceMetrics;
-    }
+    });
+
     return result;
   } catch (error) {
     console.error('Error generating teams:', error);
@@ -58,6 +59,7 @@ export async function getPlayerEvaluationsAction(playerId: string, groupId: stri
     const evaluations: Partial<Evaluation>[] = [];
     
     try {
+        // Use { cache: 'no-store' } to always fetch fresh data from the server
         const q = query(
             collection(firestore, 'evaluations'), 
             where('playerId', '==', playerId)
