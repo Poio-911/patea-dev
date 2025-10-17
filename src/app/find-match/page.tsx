@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
-import { GoogleMap, useJsApiLoader, Libraries } from '@react-google-maps/api';
+import { useState, useMemo } from 'react';
+import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { Match, Player } from '@/lib/types';
@@ -10,6 +10,8 @@ import { PageHeader } from '@/components/page-header';
 import { Loader2 } from 'lucide-react';
 import { MatchMarker } from '@/components/match-marker';
 import { useToast } from '@/hooks/use-toast';
+import { libraries } from '@/lib/google-maps';
+
 
 const containerStyle = {
   width: '100%',
@@ -22,13 +24,17 @@ const defaultCenter = {
   lng: -56.1645
 };
 
-const libraries: Libraries = ['places'];
-
 export default function FindMatchPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+    libraries,
+  });
 
   // It's useful to have all players from the user's active group to check their profile when joining a match
   const playersQuery = useMemo(() => {
@@ -37,12 +43,6 @@ export default function FindMatchPage() {
   }, [firestore, user?.activeGroupId]);
   const { data: allGroupPlayers } = useCollection<Player>(playersQuery);
 
-
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-    libraries,
-  });
 
   const publicMatchesQuery = useMemo(() => {
     if (!firestore) return null;
@@ -61,8 +61,8 @@ export default function FindMatchPage() {
     return publicMatches.filter(match => 
         match.location && 
         typeof match.location === 'object' && 
-        typeof match.location.lat === 'number' && 
-        typeof match.location.lng === 'number'
+        'lat' in match.location && typeof match.location.lat === 'number' &&
+        'lng' in match.location && typeof match.location.lng === 'number'
     );
   }, [publicMatches]);
 
@@ -70,10 +70,6 @@ export default function FindMatchPage() {
     setActiveMarker(activeMarker === matchId ? null : matchId);
   };
   
-  if (loadError) {
-    return <div>Error al cargar el mapa. Asegúrate de que la clave de API sea correcta y esté habilitada.</div>;
-  }
-
   const loading = matchesLoading || !isLoaded;
 
   return (
@@ -87,23 +83,21 @@ export default function FindMatchPage() {
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
         </div>
       ) : (
-        isLoaded && (
-          <GoogleMap
-            mapContainerStyle={containerStyle}
-            center={defaultCenter}
-            zoom={12}
-          >
-            {validPublicMatches?.map((match) => (
-              <MatchMarker
-                key={match.id}
-                match={match}
-                allPlayers={allGroupPlayers || []}
-                activeMarker={activeMarker}
-                handleMarkerClick={handleMarkerClick}
-              />
-            ))}
-          </GoogleMap>
-        )
+        <GoogleMap
+          mapContainerStyle={containerStyle}
+          center={defaultCenter}
+          zoom={12}
+        >
+          {validPublicMatches?.map((match) => (
+            <MatchMarker
+              key={match.id}
+              match={match}
+              allPlayers={allGroupPlayers || []}
+              activeMarker={activeMarker}
+              handleMarkerClick={handleMarkerClick}
+            />
+          ))}
+        </GoogleMap>
       )}
     </div>
   );

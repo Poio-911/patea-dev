@@ -37,6 +37,9 @@ import { getMatchDayForecast, GetMatchDayForecastOutput } from '@/ai/flows/get-m
 import { Switch } from './ui/switch';
 import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
+import { useJsApiLoader } from '@react-google-maps/api';
+import { libraries } from '@/lib/google-maps';
+
 
 const matchLocationSchema = z.object({
   address: z.string().min(5, 'La dirección debe tener al menos 5 caracteres.'),
@@ -67,6 +70,12 @@ const weatherIcons: Record<string, React.ElementType> = {
 }
 
 const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: MatchLocation) => void }) => {
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+        libraries,
+    });
+
     const {
         ready,
         value,
@@ -76,6 +85,7 @@ const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: Matc
     } = usePlacesAutocomplete({
         requestOptions: { /* Define options here, like componentRestrictions */ },
         debounce: 300,
+        disabled: !isLoaded
     });
 
     const handleSelect = (description: string) => () => {
@@ -87,6 +97,8 @@ const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: Matc
             onSelectLocation({ address: description, lat, lng });
         });
     };
+
+    if (!isLoaded) return <Input placeholder="Cargando autocompletado..." disabled/>;
 
     return (
         <Popover open={status === 'OK'}>
@@ -159,7 +171,14 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     // Reset state when dialog is opened or closed
     if (!open) {
       setTimeout(() => {
-        form.reset();
+        form.reset({
+          title: 'Partido Amistoso',
+          time: '21:00',
+          type: 'manual',
+          matchSize: '10',
+          players: [],
+          isPublic: false,
+        });
         setStep(1);
         setSearchTerm('');
         setWeather(null);

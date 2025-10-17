@@ -1,23 +1,35 @@
-import type { Metadata } from 'next';
+
+'use client'; // Required for hooks and context providers
+
+import { useMemo } from 'react';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { MainNav } from '@/components/main-nav';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { useJsApiLoader } from '@react-google-maps/api';
+import { libraries } from '@/lib/google-maps';
+import { Loader2 } from 'lucide-react';
 
-export const metadata: Metadata = {
-  title: 'Manager de Fútbol Amateur',
-  description: 'Organiza partidos, gestiona jugadores y genera equipos equilibrados.',
-};
+// metadata cannot be exported from a client component.
+// We can define it in a separate server component if needed, or handle it differently.
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+    libraries: libraries,
+  });
+
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        <title>Manager de Fútbol Amateur</title>
+        <meta name="description" content="Organiza partidos, gestiona jugadores y genera equipos equilibrados." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -32,7 +44,15 @@ export default function RootLayout({
       >
         <FirebaseClientProvider>
           <Toaster />
-          <MainNav>{children}</MainNav>
+          {isLoaded ? (
+             <MainNav>{children}</MainNav>
+          ) : loadError ? (
+            <div>Error al cargar Google Maps. Por favor, revisa la configuración de tu API Key.</div>
+          ) : (
+            <div className="flex h-screen w-full items-center justify-center">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </div>
+          )}
         </FirebaseClientProvider>
       </body>
     </html>
