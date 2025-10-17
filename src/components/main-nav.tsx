@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -110,7 +111,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
         <Sidebar
           variant="sidebar"
           collapsible="icon"
-          className="group-data-[variant=sidebar]:bg-sidebar group-data-[variant=sidebar]:text-sidebar-foreground hidden md:block"
+          className="hidden md:block"
         >
           <SidebarHeader className="p-4">
              <div className="flex items-center gap-3">
@@ -159,7 +160,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        <SidebarInset className="bg-background">
+        <SidebarInset className="bg-background pb-16 md:pb-0">
           <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background/80 px-2 backdrop-blur-sm sm:h-16 sm:px-6">
             <SidebarTrigger className="md:hidden"/>
             <div className="flex-1">
@@ -218,6 +219,22 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             </DropdownMenu>
           </header>
           <main className="flex-1 p-4 sm:p-6">{children}</main>
+          
+          {/* Bottom Navigation for Mobile */}
+          <nav className="fixed bottom-0 left-0 right-0 z-20 border-t bg-card p-2 md:hidden">
+            <div className="grid h-full max-w-lg grid-cols-5 mx-auto">
+              {navItems.map((item) => {
+                  const isActive = pathname.startsWith(item.href);
+                  return (
+                    <Link key={item.href} href={item.href} className="inline-flex flex-col items-center justify-center px-2 hover:bg-muted rounded-lg group">
+                        <item.icon className={cn("w-6 h-6 mb-1 text-muted-foreground group-hover:text-primary", isActive && "text-primary")} />
+                        <span className="sr-only">{item.label}</span>
+                    </Link>
+                  )
+                })}
+            </div>
+          </nav>
+
         </SidebarInset>
       </div>
     </SidebarProvider>
