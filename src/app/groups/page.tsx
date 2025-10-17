@@ -197,17 +197,10 @@ export default function GroupsPage() {
     <div className="flex flex-col gap-8">
       <PageHeader
         title="Mis Grupos"
-        description="Crea, únete y gestiona tus grupos de fútbol."
+        description="Gestiona tus grupos, únete a uno nuevo o crea el tuyo."
       />
 
-      <Card>
-        <CardHeader>
-            <CardTitle>Tus Grupos</CardTitle>
-            <CardDescription>
-                Selecciona un grupo para activarlo o copia el código para invitar a otros.
-            </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <div className="space-y-4">
             {groupsLoading ? (
                 <p>Cargando grupos...</p>
             ) : groups && groups.length > 0 ? (
@@ -244,8 +237,7 @@ export default function GroupsPage() {
                     </AlertDescription>
                 </Alert>
             )}
-        </CardContent>
-      </Card>
+        </div>
 
       <Separator />
 
