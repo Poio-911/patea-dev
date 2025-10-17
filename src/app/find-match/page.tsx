@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Libraries } from '@react-google-maps/api';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { Match, Player } from '@/lib/types';
@@ -22,6 +22,8 @@ const defaultCenter = {
   lng: -56.1645
 };
 
+const libraries: Libraries = ['places'];
+
 export default function FindMatchPage() {
   const firestore = useFirestore();
   const { user } = useUser();
@@ -39,7 +41,7 @@ export default function FindMatchPage() {
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-    libraries: ['places'],
+    libraries,
   });
 
   const publicMatchesQuery = useMemo(() => {
