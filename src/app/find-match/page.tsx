@@ -52,6 +52,17 @@ export default function FindMatchPage() {
   }, [firestore]);
 
   const { data: publicMatches, loading: matchesLoading } = useCollection<Match>(publicMatchesQuery);
+  
+  const validPublicMatches = useMemo(() => {
+    if (!publicMatches) return [];
+    // Filter out matches that don't have the correct location object structure
+    return publicMatches.filter(match => 
+        match.location && 
+        typeof match.location === 'object' && 
+        typeof match.location.lat === 'number' && 
+        typeof match.location.lng === 'number'
+    );
+  }, [publicMatches]);
 
   const handleMarkerClick = (matchId: string) => {
     setActiveMarker(activeMarker === matchId ? null : matchId);
@@ -80,7 +91,7 @@ export default function FindMatchPage() {
             center={defaultCenter}
             zoom={12}
           >
-            {publicMatches?.map((match) => (
+            {validPublicMatches?.map((match) => (
               <MatchMarker
                 key={match.id}
                 match={match}

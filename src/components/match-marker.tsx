@@ -83,6 +83,11 @@ export function MatchMarker({ match, allPlayers, activeMarker, handleMarkerClick
     }
   };
 
+  // Safety check to ensure we have valid coordinates before rendering the marker
+  if (!match.location || typeof match.location.lat !== 'number' || typeof match.location.lng !== 'number') {
+    return null;
+  }
+
   return (
     <MarkerF
       position={{ lat: match.location.lat, lng: match.location.lng }}
