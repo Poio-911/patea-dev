@@ -45,10 +45,9 @@ A continuación se detallan las funcionalidades clave que hemos construido:
 - **Finalización de Partidos**:
     - Para partidos colaborativos que están llenos, al finalizarlos se generan los equipos con la IA.
     - Cambia el estado del partido a `completed`.
-- **Evaluación de Partidos**:
-    - Tras finalizar un partido, el organizador puede evaluarlo.
-    - En la página de evaluación, se registran los goles y se asigna una calificación de rendimiento (1-10) a cada jugador.
-    - Al guardar la evaluación, un sistema de progresión calcula y actualiza el OVR y los atributos específicos de cada jugador, y el estado del partido cambia a `evaluated`.
+- **Evaluación de Partidos**: Este es un sistema de dos partes:
+    - **Evaluación por Pares**: Los jugadores evalúan a sus compañeros.
+    - **Supervisión del Organizador**: El organizador finaliza el proceso y calcula los nuevos OVR.
 
 ### e. Sistema de Evaluación por Pares
 - **Página de Evaluaciones (`/evaluations`)**:
@@ -56,13 +55,12 @@ A continuación se detallan las funcionalidades clave que hemos construido:
     - Muestra una lista de todos los partidos que el usuario tiene **pendientes por evaluar**.
 - **Asignaciones Automáticas**: Al finalizar un partido, el sistema genera y guarda en la base de datos las **asignaciones de evaluación** (cada jugador debe evaluar a ~2 compañeros de su mismo equipo).
 - **Página de Evaluación Individual (`/evaluations/[matchId]`)**:
-    - Al hacer clic en un partido pendiente, el usuario accede a un formulario para evaluar a los compañeros asignados.
+    - Al hacer clic en un partido pendiente, el usuario accede a un formulario para evaluar a los compañeros asignados (goles, rating 1-10, etiquetas).
     - Al enviar, la asignación se marca como "completada".
 - **Panel de Supervisión del Organizador (`/matches/[id]/evaluate`)**:
     - Página exclusiva para el organizador del partido.
     - Muestra en tiempo real qué jugadores ya han completado su evaluación y quiénes faltan.
-    - Permite al organizador **finalizar el proceso** y calcular los nuevos OVRs.
-
+    - Permite al organizador **finalizar el proceso** y calcular los nuevos OVRs. Al hacerlo, el estado del partido cambia a `evaluated`.
 
 ### f. Funcionalidades de Inteligencia Artificial (Genkit)
 - **Generación de Equipos Equilibrados**:
@@ -90,25 +88,23 @@ La aplicación sigue una estructura moderna de Next.js con el App Router.
 │   │   └── genkit.ts            # Configuración global de Genkit
 │   │
 │   ├── app/                     # Rutas y páginas de la aplicación
-│   │   ├── (auth)/              # Rutas de autenticación
-│   │   │   ├── login/page.tsx
-│   │   │   └── register/page.tsx
-│   │   ├── (main)/              # Rutas principales de la app
-│   │   │   ├── dashboard/page.tsx
-│   │   │   ├── evaluations/
-│   │   │   │   ├── [matchId]/page.tsx   # <-- NUEVO
-│   │   │   │   └── page.tsx             # <-- NUEVO
-│   │   │   ├── groups/page.tsx
-│   │   │   ├── matches/
-│   │   │   │   ├── [id]/evaluate/page.tsx # <-- Modificado (solo organizador)
-│   │   │   │   └── page.tsx
-│   │   │   ├── players/
-│   │   │   │   ├── [id]/page.tsx        # <-- NUEVO
-│   │   │   │   └── page.tsx
-│   │   │   ├── profile/page.tsx
-│   │   │   └── layout.tsx       # Layout principal con la barra lateral
+│   │   ├── (auth)/              # Rutas de autenticación (obsoleto, login/register están en raíz)
+│   │   ├── login/page.tsx
+│   │   ├── register/page.tsx
+│   │   ├── dashboard/page.tsx
+│   │   ├── evaluations/
+│   │   │   ├── [matchId]/page.tsx   # Página para que un jugador evalúe a sus compañeros
+│   │   │   └── page.tsx             # Bandeja de entrada de evaluaciones pendientes
+│   │   ├── groups/page.tsx
+│   │   ├── matches/
+│   │   │   ├── [id]/evaluate/page.tsx # Panel del organizador para supervisar y finalizar
+│   │   │   └── page.tsx
+│   │   ├── players/
+│   │   │   ├── [id]/page.tsx        # Página de detalle del jugador
+│   │   │   └── page.tsx
+│   │   ├── profile/page.tsx
 │   │   ├── globals.css          # Estilos globales y variables de tema (Tailwind)
-│   │   └── layout.tsx           # Layout raíz de la aplicación
+│   │   └── layout.tsx           # Layout raíz con el proveedor de Firebase
 │   │
 │   ├── components/              # Componentes reutilizables de React
 │   │   ├── ui/                  # Componentes de UI de ShadCN (Button, Card, etc.)
@@ -116,7 +112,7 @@ La aplicación sigue una estructura moderna de Next.js con el App Router.
 │   │   ├── add-player-dialog.tsx
 │   │   ├── edit-player-dialog.tsx
 │   │   ├── ai-suggestion-dialog.tsx
-│   │   ├── main-nav.tsx         # Barra de navegación y lateral
+│   │   ├── main-nav.tsx         # Barra de navegación principal y lateral
 │   │   ├── match-card.tsx
 │   │   ├── player-card.tsx
 │   │   └── ...
@@ -143,7 +139,7 @@ La aplicación sigue una estructura moderna de Next.js con el App Router.
 ├── next.config.ts               # Configuración de Next.js
 ├── tailwind.config.ts           # Configuración de Tailwind CSS
 ├── package.json
-└── PROJECT_DOCUMENTATION.md     # Este archivo
+└── PROJECT_DOCUMENTATION.md     # Este archivo (¡el que estás leyendo ahora!)
 ```
 
 ---
@@ -181,11 +177,11 @@ La base de datos NoSQL en Firestore está estructurada en colecciones de alto ni
 
 ## 5. Changelog (Historial de Cambios)
 
-*   **[Fecha Actual]**: Se implementa la **página de detalle del jugador** (`/players/[id]`). Ahora las tarjetas de jugador son clickables y llevan a una página que muestra el historial de evaluaciones del jugador y un **gráfico con la progresión de su OVR**. Se añade la subcolección `ovrHistory` a la base de datos.
+*   **[Fecha Actual]**: Se realiza un análisis completo de la aplicación y se actualiza esta documentación para reflejar el estado actual y estable del proyecto después de resolver problemas de compilación.
+*   **[Fecha Anterior]**: Se implementa la **página de detalle del jugador** (`/players/[id]`). Ahora las tarjetas de jugador son clickables y llevan a una página que muestra el historial de evaluaciones del jugador y un **gráfico con la progresión de su OVR**. Se añade la subcolección `ovrHistory` a la base de datos.
 *   **[Fecha Anterior]**: Se reestructura completamente el **sistema de evaluación**. Se crea una nueva página `/evaluations` donde los jugadores ven sus tareas pendientes. Las asignaciones ahora se guardan en la base de datos al finalizar un partido para mayor robustez. La página `/matches/[id]/evaluate` se convierte en un panel exclusivo para el organizador.
-*   **[Fecha Anterior]**: Se implementa la funcionalidad para **editar jugadores manuales**, completando el ciclo CRUD. Se añade un nuevo diálogo de edición y se integra en la `PlayerCard`.
-*   **[Fecha Anterior]**: Creación inicial de la documentación del proyecto.
+*   **[Fecha Anterior]**: Se implementa la funcionalidad para **editar jugadores manuales**, completando el ciclo CRUD.
 
 ---
 
-¡Felicidades por todo el progreso! Esta aplicación es ahora un sistema robusto y completo con funcionalidades avanzadas de IA.
+¡Felicidades por todo el progreso! A pesar de los obstáculos técnicos, la aplicación es ahora un sistema robusto y completo con funcionalidades avanzadas.
