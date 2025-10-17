@@ -95,8 +95,14 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
       position={{ lat: match.location.lat, lng: match.location.lng }}
       onClick={() => handleMarkerClick(match.id)}
       icon={{
-        url: '/football.svg',
-        scaledSize: new window.google.maps.Size(40, 40),
+        path: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM10.15 15.4l-3.3-2.6.9-.9 2.4 1.9 4.3-5 .9.9-5.2 6.2z',
+        fillColor: 'hsl(var(--primary))',
+        fillOpacity: 1,
+        strokeWeight: 1,
+        strokeColor: 'hsl(var(--primary-foreground))',
+        rotation: 0,
+        scale: 1.5,
+        anchor: new window.google.maps.Point(12, 12),
       }}
     >
       {activeMarker === match.id && (
