@@ -165,12 +165,12 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                 {player && (
                     <div className="flex items-center gap-3 sm:gap-4">
                         <div className="text-right">
-                            <p className="font-bold text-sm sm:text-base truncate">{player.name}</p>
+                            <p className="font-bold text-base sm:text-lg truncate">{player.name}</p>
                         </div>
-                        <div className="font-bold text-2xl sm:text-3xl text-primary flex items-center gap-1">
+                        <div className="font-bold text-3xl sm:text-4xl text-primary flex items-center gap-1">
                             {player.ovr}
                         </div>
-                        <Badge className={cn("text-sm", positionColors[player.position])}>{player.position}</Badge>
+                        <Badge className={cn("text-base", positionColors[player.position])}>{player.position}</Badge>
                     </div>
                 )}
                 
@@ -178,8 +178,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                      <Avatar className="h-10 w-10 border">
+                    <Button variant="ghost" className="relative h-12 w-12 rounded-full">
+                      <Avatar className="h-12 w-12 border">
                           <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} data-ai-hint="user avatar" />
                           <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
                       </Avatar>
@@ -217,14 +217,23 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           <main className="flex-1 p-4 sm:p-6">{children}</main>
           
           {/* Bottom Navigation for Mobile */}
-          <nav className="fixed bottom-0 left-0 right-0 z-20 border-t bg-background/80 p-1 backdrop-blur-sm md:hidden">
+          <nav className="fixed bottom-0 left-0 right-0 z-20 border-t bg-background/95 p-2 backdrop-blur-sm md:hidden">
             <div className="grid h-full max-w-lg grid-cols-5 mx-auto">
               {navItems.map((item) => {
                   const isActive = pathname.startsWith(item.href);
                   return (
-                    <Link key={item.href} href={item.href} className="inline-flex flex-col items-center justify-center px-2 py-1.5 hover:bg-muted rounded-lg group">
-                        <item.icon className={cn("w-6 h-6 mb-1 text-muted-foreground group-hover:text-primary", isActive && "text-primary")} />
-                        <span className={cn("text-[0.6rem] text-muted-foreground group-hover:text-primary", isActive && "font-semibold text-primary")}>{item.label}</span>
+                    <Link 
+                        key={item.href} 
+                        href={item.href} 
+                        className={cn(
+                            "group inline-flex flex-col items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-accent-foreground",
+                            isActive && "text-primary"
+                        )}
+                    >
+                        <div className={cn("rounded-full p-2 transition-colors", isActive && "bg-primary/10")}>
+                           <item.icon className="h-6 w-6" />
+                        </div>
+                        <span className="text-xs font-medium">{item.label}</span>
                     </Link>
                   )
                 })}
