@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Shield, Users2, Shirt, Globe } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Shield, Users2, Shirt, Globe, MapPin } from 'lucide-react';
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -22,8 +22,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useFirestore, useUser } from '@/firebase';
 import { addDoc, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Player } from '@/lib/types';
-import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Player, MatchLocation } from '@/lib/types';
+import { Alert, AlertDescription } from './ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
 import { format } from 'date-fns';
@@ -35,12 +35,20 @@ import { generateTeamsAction } from '@/lib/actions';
 import { Progress } from './ui/progress';
 import { getMatchDayForecast, GetMatchDayForecastOutput } from '@/ai/flows/get-match-day-forecast';
 import { Switch } from './ui/switch';
+import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
+
+const matchLocationSchema = z.object({
+  address: z.string().min(5, 'La dirección debe tener al menos 5 caracteres.'),
+  lat: z.number(),
+  lng: z.number(),
+});
 
 const matchSchema = z.object({
   title: z.string().min(3, 'El título debe tener al menos 3 caracteres.'),
   date: z.date({ required_error: 'La fecha es obligatoria.' }),
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:MM).'),
-  location: z.string().min(3, 'La ubicación es obligatoria.'),
+  location: matchLocationSchema,
   type: z.enum(['manual', 'collaborative'], { required_error: 'El tipo es obligatorio.' }),
   matchSize: z.enum(['10', '14', '22'], { required_error: 'El tamaño es obligatorio.' }),
   players: z.array(z.string()),
@@ -57,6 +65,61 @@ interface AddMatchDialogProps {
 const weatherIcons: Record<string, React.ElementType> = {
     Sun, Cloud, Cloudy, CloudRain, Wind, Zap
 }
+
+const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: MatchLocation) => void }) => {
+    const {
+        ready,
+        value,
+        suggestions: { status, data },
+        setValue,
+        clearSuggestions,
+    } = usePlacesAutocomplete({
+        requestOptions: { /* Define options here, like componentRestrictions */ },
+        debounce: 300,
+    });
+
+    const handleSelect = (description: string) => () => {
+        setValue(description, false);
+        clearSuggestions();
+
+        getGeocode({ address: description }).then((results) => {
+            const { lat, lng } = getLatLng(results[0]);
+            onSelectLocation({ address: description, lat, lng });
+        });
+    };
+
+    return (
+        <Popover open={status === 'OK'}>
+            <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    disabled={!ready}
+                    placeholder="Busca la dirección de la cancha..."
+                    className="pl-10"
+                />
+            </div>
+            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <Command>
+                    <CommandList>
+                        {status === 'OK' && (
+                             <CommandGroup>
+                                {data.map(({ place_id, description }) => (
+                                    <CommandItem key={place_id} onSelect={handleSelect(description)}>
+                                        {description}
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        )}
+                        {status === 'ZERO_RESULTS' && <CommandEmpty>No se encontraron resultados.</CommandEmpty>}
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
+};
+
 
 export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   const [open, setOpen] = useState(false);
@@ -75,7 +138,6 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     defaultValues: {
       title: 'Partido Amistoso',
       time: '21:00',
-      location: 'Cancha Principal',
       type: 'manual',
       matchSize: '10',
       players: [],
@@ -83,7 +145,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     },
   });
   
-  const { formState, trigger, watch } = form;
+  const { formState, trigger, watch, setValue } = form;
   const watchedDate = watch('date');
   const watchedLocation = watch('location');
   const watchedTime = watch('time');
@@ -108,7 +170,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   useEffect(() => {
     // Fetch weather when date or location changes
     const fetchWeather = async () => {
-        if (watchedDate && watchedLocation && watchedLocation.length > 2) {
+        if (watchedDate && watchedLocation?.address) {
             setIsFetchingWeather(true);
             setWeather(null);
             try {
@@ -117,7 +179,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 matchDateTime.setHours(hours, minutes);
 
                 const forecast = await getMatchDayForecast({
-                    location: watchedLocation,
+                    location: watchedLocation.address,
                     date: matchDateTime.toISOString(),
                 });
                 setWeather(forecast);
@@ -140,8 +202,8 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
 
   useEffect(() => {
     // Reset player selection when match type or size changes
-    form.setValue('players', []);
-  }, [matchType, selectedMatchSize, form]);
+    setValue('players', []);
+  }, [matchType, selectedMatchSize, setValue]);
 
 
   const handlePlayerSelect = (playerId: string, checked: boolean) => {
@@ -158,7 +220,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         });
         return;
     }
-    form.setValue('players', newPlayers, { shouldValidate: true });
+    setValue('players', newPlayers, { shouldValidate: true });
   };
   
   const filteredPlayers = useMemo(() => {
@@ -315,9 +377,9 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 </div>
                 
                 <div>
-                    <Label htmlFor="location">Ubicación</Label>
-                    <Input id="location" {...form.register('location')} placeholder="Ej: Montevideo, Uruguay" />
-                    {formState.errors.location && <p className="text-xs text-destructive mt-1">{formState.errors.location.message}</p>}
+                    <Label>Ubicación</Label>
+                    <LocationInput onSelectLocation={(location) => setValue('location', location, { shouldValidate: true })} />
+                    {formState.errors.location && <p className="text-xs text-destructive mt-1">{formState.errors.location.address?.message}</p>}
                 </div>
                 
                 <div className="p-3 bg-muted/50 rounded-lg min-h-[60px] flex items-center justify-center">
@@ -497,5 +559,3 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     </Dialog>
   );
 }
-
-    

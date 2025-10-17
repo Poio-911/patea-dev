@@ -11,10 +11,9 @@ import type { Match, Player } from '@/lib/types';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus, LogOut } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 
 interface MatchMarkerProps {
-  match: any; // Geocoded match with position
+  match: Match;
   allPlayers: Player[];
   activeMarker: string | null;
   handleMarkerClick: (matchId: string) => void;
@@ -86,15 +85,15 @@ export function MatchMarker({ match, allPlayers, activeMarker, handleMarkerClick
 
   return (
     <MarkerF
-      position={match.position}
+      position={{ lat: match.location.lat, lng: match.location.lng }}
       onClick={() => handleMarkerClick(match.id)}
     >
       {activeMarker === match.id && (
         <InfoWindowF onCloseClick={() => handleMarkerClick(match.id)}>
-            <div className='p-2'>
-                <h3 className="font-bold">{match.title}</h3>
+            <div className='p-2 w-64'>
+                <h3 className="font-bold text-lg">{match.title}</h3>
                 <p className="text-sm text-muted-foreground">{format(new Date(match.date), "d MMM, HH:mm'hs'", { locale: es })}</p>
-                <p className="text-sm text-muted-foreground">{match.location}</p>
+                <p className="text-sm text-muted-foreground truncate">{match.location.address}</p>
                 <p className="text-sm font-semibold mt-2">Plazas: {match.players.length} / {match.matchSize}</p>
                 <Button
                     variant={isUserInMatch ? 'secondary' : 'default'}

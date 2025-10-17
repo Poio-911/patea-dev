@@ -1,14 +1,15 @@
 
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { GoogleMap, useJsApiLoader, MarkerF, InfoWindowF } from '@react-google-maps/api';
+import { useState, useMemo, useCallback } from 'react';
+import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { Match, Player } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { Loader2, Compass } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { MatchMarker } from '@/components/match-marker';
+import { useToast } from '@/hooks/use-toast';
 
 const containerStyle = {
   width: '100%',
@@ -24,9 +25,10 @@ const defaultCenter = {
 export default function FindMatchPage() {
   const firestore = useFirestore();
   const { user } = useUser();
-  const [geocodedMatches, setGeocodedMatches] = useState<any[]>([]);
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
+  const { toast } = useToast();
 
+  // It's useful to have all players from the user's active group to check their profile when joining a match
   const playersQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
     return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
@@ -51,46 +53,12 @@ export default function FindMatchPage() {
 
   const { data: publicMatches, loading: matchesLoading } = useCollection<Match>(publicMatchesQuery);
 
-  const geocodeMatches = useCallback(async () => {
-    if (!publicMatches || typeof window.google === 'undefined' || !isLoaded) return;
-
-    const geocoder = new window.google.maps.Geocoder();
-    const geocoded = await Promise.all(
-      publicMatches.map(async (match) => {
-        try {
-          const response = await geocoder.geocode({ address: match.location });
-          if (response.results[0]) {
-            return {
-              ...match,
-              position: {
-                lat: response.results[0].geometry.location.lat(),
-                lng: response.results[0].geometry.location.lng(),
-              },
-            };
-          }
-        } catch (error) {
-          console.error(`Geocoding error for location "${match.location}":`, error);
-          return null; // Return null for matches that fail to geocode
-        }
-        return null;
-      })
-    );
-
-    setGeocodedMatches(geocoded.filter(Boolean)); // Filter out nulls
-  }, [publicMatches, isLoaded]);
-
-  useEffect(() => {
-    if (isLoaded && publicMatches) {
-      geocodeMatches();
-    }
-  }, [isLoaded, publicMatches, geocodeMatches]);
-
   const handleMarkerClick = (matchId: string) => {
     setActiveMarker(activeMarker === matchId ? null : matchId);
   };
   
   if (loadError) {
-    return <div>Error al cargar el mapa. Asegúrate de que la clave de API sea correcta.</div>;
+    return <div>Error al cargar el mapa. Asegúrate de que la clave de API sea correcta y esté habilitada.</div>;
   }
 
   const loading = matchesLoading || !isLoaded;
@@ -112,7 +80,7 @@ export default function FindMatchPage() {
             center={defaultCenter}
             zoom={12}
           >
-            {geocodedMatches.map((match) => (
+            {publicMatches?.map((match) => (
               <MatchMarker
                 key={match.id}
                 match={match}

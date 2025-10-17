@@ -43,12 +43,18 @@ export type MatchStatus = 'upcoming' | 'active' | 'completed' | 'evaluated';
 export type MatchType = 'manual' | 'collaborative';
 export type MatchSize = 10 | 14 | 22;
 
+export type MatchLocation = {
+    address: string;
+    lat: number;
+    lng: number;
+}
+
 export type Match = {
   id: string;
   title: string;
   date: string;
   time: string;
-  location: string;
+  location: MatchLocation;
   type: MatchType;
   matchSize: MatchSize;
   players: { uid: string; displayName: string; ovr: number; position: PlayerPosition; photoUrl: string }[];

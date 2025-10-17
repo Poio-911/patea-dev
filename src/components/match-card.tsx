@@ -322,10 +322,10 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             </CardHeader>
             <CardContent className="flex-grow space-y-4 pt-6">
 
-                <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3">
+                <div className="grid grid-cols-1 gap-y-3">
                     <InfoRow icon={Calendar} text={match.date ? format(new Date(match.date), 'E, d MMM, yyyy', { locale: es }) : 'Fecha no definida'} />
                     <InfoRow icon={Clock} text={match.time} />
-                    <InfoRow icon={MapPin} text={match.location} />
+                    <InfoRow icon={MapPin} text={match.location.address} />
                 </div>
                 
                 {WeatherIcon && match.weather && (
