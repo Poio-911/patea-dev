@@ -27,9 +27,10 @@ A continuación se detallan las funcionalidades clave que hemos construido:
 - **Grupo Activo**: Los usuarios pueden pertenecer a múltiples grupos y seleccionar cuál es su "grupo activo". Toda la información (jugadores, partidos) se muestra en el contexto del grupo activo.
 - **Panel de Control (`/dashboard`)**: Ofrece una vista rápida de las estadísticas del grupo activo, como el número de jugadores, próximos partidos, y el top de jugadores.
 
-### c. Gestión de Jugadores (CRUD)
+### c. Gestión de Jugadores (CRUD Completo)
 - **Añadir Jugadores**: Los organizadores pueden añadir "jugadores manuales" al grupo, definiendo su nombre, posición y atributos iniciales. Estos jugadores no son usuarios registrados.
 - **Visualización de Jugadores**: La página `/players` muestra todas las cartas de los jugadores del grupo activo.
+- **Edición de Jugadores Manuales**: Los organizadores pueden editar el nombre, la posición y los atributos de los jugadores manuales que han creado.
 - **Eliminación Segura de Jugadores**: Los organizadores pueden eliminar a los jugadores **manuales** que han creado. El sistema protege a los jugadores que son usuarios reales para evitar borrados accidentales.
 - **Actualización (Evolución) de Jugadores**: Las estadísticas y atributos de los jugadores se actualizan automáticamente después de cada partido evaluado.
 
@@ -90,6 +91,7 @@ La aplicación sigue una estructura moderna de Next.js con el App Router.
 │   │   ├── ui/                  # Componentes de UI de ShadCN (Button, Card, etc.)
 │   │   ├── add-match-dialog.tsx
 │   │   ├── add-player-dialog.tsx
+│   │   ├── edit-player-dialog.tsx # <-- NUEVO
 │   │   ├── ai-suggestion-dialog.tsx
 │   │   ├── main-nav.tsx         # Barra de navegación y lateral
 │   │   ├── match-card.tsx
@@ -150,7 +152,8 @@ La base de datos NoSQL en Firestore está estructurada en colecciones de alto ni
 
 ## 5. Changelog (Historial de Cambios)
 
-*   **[Fecha Actual]**: Creación inicial de la documentación del proyecto.
+*   **[Fecha Actual]**: Se implementa la funcionalidad para **editar jugadores manuales**, completando el ciclo CRUD. Se añade un nuevo diálogo de edición y se integra en la `PlayerCard`.
+*   **[Fecha Anterior]**: Creación inicial de la documentación del proyecto.
 
 ---
 
