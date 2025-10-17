@@ -54,14 +54,14 @@ const BalanceRating = ({ fairnessPercentage }: { fairnessPercentage: number }) =
 
 export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
   const teams = match.teams || [];
-  const balanceMetrics = match.teams?.[0]?.balanceMetrics;
+  const balanceMetrics = teams[0]?.balanceMetrics;
 
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-primary/10 backdrop-blur-lg rounded-lg">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-background/80 backdrop-blur-lg rounded-lg">
         <DialogHeader>
-          <DialogTitle className="text-center text-2xl font-bold text-card-foreground">{match.title}</DialogTitle>
+          <DialogTitle className="text-center text-2xl font-bold text-foreground">{match.title}</DialogTitle>
         </DialogHeader>
         <div className="py-4 space-y-4">
             {balanceMetrics && (
@@ -124,4 +124,3 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
     </Dialog>
   );
 }
-
