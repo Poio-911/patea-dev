@@ -16,14 +16,14 @@ const GetMatchDayForecastInputSchema = z.object({
   location: z.string().describe('The location of the match (e.g., "Montevideo, Uruguay").'),
   date: z.string().describe('The date and time of the match in ISO 8601 format.'),
 });
-type GetMatchDayForecastInput = z.infer<typeof GetMatchDayForecastInputSchema>;
+export type GetMatchDayForecastInput = z.infer<typeof GetMatchDayForecastInputSchema>;
 
 const GetMatchDayForecastOutputSchema = z.object({
   description: z.string().describe('A concise, user-friendly description of the weather in Spanish.'),
   icon: z.enum(['Sun', 'Cloud', 'Cloudy', 'CloudRain', 'CloudSnow', 'Wind', 'Zap']).describe('An icon name representing the weather condition.'),
   temperature: z.number().describe('The temperature in Celsius.'),
 });
-type GetMatchDayForecastOutput = z.infer<typeof GetMatchDayForecastOutputSchema>;
+export type GetMatchDayForecastOutput = z.infer<typeof GetMatchDayForecastOutputSchema>;
 
 
 // Define the main Genkit Flow
@@ -50,7 +50,7 @@ const getMatchDayForecastFlow = ai.defineFlow(
         - Extract the temperature in Celsius.
       `,
         output: { schema: GetMatchDayForecastOutputSchema },
-        model: 'googleai/gemini-2.5-flash',
+        model: 'googleai/gemini-pro',
     });
     return output!;
   }
