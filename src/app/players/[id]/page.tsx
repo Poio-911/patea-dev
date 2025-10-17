@@ -1,6 +1,7 @@
 
 'use client';
 
+import React from 'react';
 import { useParams } from 'next/navigation';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
 import { doc, collection, query, where, orderBy, getDocs, collectionGroup } from 'firebase/firestore';
