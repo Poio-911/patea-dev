@@ -15,7 +15,6 @@ import {
   SidebarTrigger,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LayoutDashboard, Users, Calendar, LogOut, Settings, Goal, Users2, User, ShieldQuestion } from 'lucide-react';
@@ -35,6 +34,7 @@ import {
 import type { Player } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 const navItems = [
@@ -65,6 +65,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
+  const isMobile = useIsMobile();
 
   const playerRef = React.useMemo(() => {
     if (!firestore || !user?.uid) return null;
@@ -111,7 +112,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
         <Sidebar
           variant="sidebar"
           collapsible="icon"
-          className="group-data-[variant=sidebar]:bg-sidebar group-data-[variant=sidebar]:text-sidebar-foreground"
+          className="group-data-[variant=sidebar]:bg-sidebar group-data-[variant=sidebar]:text-sidebar-foreground hidden md:block"
         >
           <SidebarHeader className="p-4">
              <div className="flex items-center gap-3">
@@ -169,8 +170,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
             {player && (
                 <div className="flex items-center gap-2 sm:gap-4">
-                    <div className="text-right hidden sm:block">
-                        <p className="font-bold text-sm truncate">{player.name}</p>
+                    <div className="text-right flex items-center gap-2">
+                        <p className="font-bold text-sm truncate">{isMobile ? user.displayName?.split(' ')[0] : player.name}</p>
                     </div>
                     <div className={cn("font-bold text-lg", ovrColors[player.position])}>
                         {player.ovr}
@@ -218,7 +219,28 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               </DropdownMenuContent>
             </DropdownMenu>
           </header>
-          <main className="flex-1 p-4 sm:p-6">{children}</main>
+          <main className="flex-1 p-4 sm:p-6 pb-20 md:pb-6">{children}</main>
+
+          {isMobile && (
+            <nav className="fixed bottom-0 left-0 right-0 z-10 border-t bg-background/80 backdrop-blur-sm md:hidden">
+              <div className="grid h-16 grid-cols-5 items-center justify-center">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-1 text-muted-foreground transition-colors hover:text-primary",
+                      pathname.startsWith(item.href) && "text-primary"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    <span className="text-[10px] font-medium">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </nav>
+          )}
+
         </SidebarInset>
       </div>
     </SidebarProvider>
