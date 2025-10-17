@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Goal, Users2, ShieldQuestion, User, ArrowRight } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings, Goal, Users2, ShieldQuestion, User, ArrowRight, BellRing } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -67,7 +67,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   // Initialize FCM logic
-  useFcm();
+  const { requestPermission } = useFcm();
 
   const playerRef = React.useMemo(() => {
     if (!firestore || !user?.uid) return null;
@@ -234,6 +234,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                                 <User className="mr-2 h-4 w-4" />
                                 <span>Mi Perfil</span>
                             </Link>
+                            </DropdownMenuItem>
+                             <DropdownMenuItem onClick={requestPermission}>
+                                <BellRing className="mr-2 h-4 w-4" />
+                                <span>Activar Notificaciones</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem>
                             <Settings className="mr-2 h-4 w-4" />

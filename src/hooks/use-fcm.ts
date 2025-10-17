@@ -13,46 +13,50 @@ export const useFcm = () => {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  useEffect(() => {
+  const requestPermission = async () => {
     if (typeof window === 'undefined' || !app || !user || !firestore) {
       return;
     }
-    
     const messaging = getMessaging(app);
 
-    const requestPermission = async () => {
-      try {
-        const permission = await Notification.requestPermission();
+    try {
+      const permission = await Notification.requestPermission();
 
-        if (permission === 'granted') {
-          console.log('Notification permission granted.');
-          
-          const currentToken = await getToken(messaging, {
-            vapidKey: 'YOUR_VAPID_KEY_HERE_FROM_FIREBASE_CONSOLE', // TODO: Replace with your VAPID key
-          });
+      if (permission === 'granted') {
+        console.log('Notification permission granted.');
+        toast({ title: '¡Notificaciones activadas!', description: 'Recibirás avisos importantes sobre los partidos.' });
+        
+        const currentToken = await getToken(messaging, {
+          vapidKey: 'YOUR_VAPID_KEY_HERE_FROM_FIREBASE_CONSOLE', // TODO: Replace with your VAPID key
+        });
 
-          if (currentToken) {
-            console.log('FCM Token:', currentToken);
-            // Save the token to Firestore
-            const tokenRef = doc(firestore, `users/${user.uid}/fcmTokens`, currentToken);
-            await setDoc(tokenRef, { 
-                token: currentToken,
-                createdAt: new Date().toISOString() 
-            }, { merge: true });
+        if (currentToken) {
+          console.log('FCM Token:', currentToken);
+          const tokenRef = doc(firestore, `users/${user.uid}/fcmTokens`, currentToken);
+          await setDoc(tokenRef, { 
+              token: currentToken,
+              createdAt: new Date().toISOString() 
+          }, { merge: true });
 
-          } else {
-            console.log('No registration token available. Request permission to generate one.');
-          }
         } else {
-          console.log('Unable to get permission to notify.');
+          console.log('No registration token available. Request permission to generate one.');
+          toast({ variant: 'destructive', title: 'Error de Token', description: 'No se pudo generar el token para notificaciones.' });
         }
-      } catch (err) {
-        console.error('An error occurred while retrieving token. ', err);
+      } else {
+        console.log('Unable to get permission to notify.');
+        toast({ variant: 'destructive', title: 'Permiso denegado', description: 'No se pudieron activar las notificaciones.' });
       }
-    };
-
-    requestPermission();
-
+    } catch (err) {
+      console.error('An error occurred while retrieving token. ', err);
+      toast({ variant: 'destructive', title: 'Error', description: 'Ocurrió un error al solicitar el permiso de notificaciones.' });
+    }
+  };
+  
+  useEffect(() => {
+    if (typeof window === 'undefined' || !app) {
+      return;
+    }
+    const messaging = getMessaging(app);
     const unsubscribe = onMessage(messaging, (payload) => {
       console.log('Message received. ', payload);
       toast({
@@ -64,9 +68,7 @@ export const useFcm = () => {
     return () => {
       unsubscribe();
     };
-  }, [app, user, firestore, toast]);
+  }, [app, toast]);
 
-  return null;
+  return { requestPermission };
 };
-
-    

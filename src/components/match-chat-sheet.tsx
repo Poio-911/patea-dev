@@ -83,9 +83,9 @@ export function MatchChatSheet({ match, children }: MatchChatSheetProps) {
   const isPublicJoiner = user?.groups && !user.groups.includes(match.groupId) && match.isPublic;
 
   const messagesQuery = useMemo(() => {
-    if (!firestore || !match.id) return null;
+    if (!firestore || !match.id || !open) return null;
     return query(collection(firestore, `matches/${match.id}/messages`), orderBy('createdAt', 'asc'));
-  }, [firestore, match.id]);
+  }, [firestore, match.id, open]);
 
   const { data: messages, loading: messagesLoading } = useCollection<ChatMessage>(messagesQuery);
 
@@ -216,4 +216,3 @@ export function MatchChatSheet({ match, children }: MatchChatSheetProps) {
     </Sheet>
   );
 }
-
