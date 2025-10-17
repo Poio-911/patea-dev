@@ -1,7 +1,7 @@
 'use client';
 
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { doc, writeBatch, collection, getDocs, updateDoc, getDoc, runTransaction, DocumentData, query, setDoc } from 'firebase/firestore';
+import { doc, writeBatch, collection, getDocs, updateDoc, getDoc, runTransaction, DocumentData, query, setDoc, where } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
 import type { Match, Player, PlayerPosition, Evaluation, Team } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
@@ -45,7 +45,7 @@ type EvaluationFormData = z.infer<typeof evaluationSchema>;
 type Assignment = { evaluatorId: string; playersToEvaluate: { uid: string; displayName: string; photoUrl: string }[] };
 
 // Helper to determine if a player is a "real user"
-const isRealUser = (player: { uid: string, ownerUid?: string }) => player.uid === player.ownerUid;
+const isRealUser = (player: { id: string, ownerUid?: string }) => player.id === player.ownerUid;
 
 export default function EvaluateMatchPage() {
   const { id: matchId } = useParams();
@@ -101,7 +101,7 @@ export default function EvaluateMatchPage() {
             (match.teams || []).forEach(team => {
                 const realPlayersInTeam = team.players.filter(p => {
                     const fullPlayer = allGroupPlayers.find(gp => gp.id === p.uid);
-                    return fullPlayer && isRealUser({ uid: fullPlayer.id, ownerUid: fullPlayer.ownerUid });
+                    return fullPlayer && isRealUser(fullPlayer);
                 });
 
                 const allPlayersInTeam = team.players;
@@ -198,7 +198,7 @@ export default function EvaluateMatchPage() {
     if (!match || !allGroupPlayers) return 0;
     return match.players.filter(p => {
         const fullPlayer = allGroupPlayers.find(gp => gp.id === p.uid);
-        return fullPlayer && isRealUser({ uid: fullPlayer.id, ownerUid: fullPlayer.ownerUid });
+        return fullPlayer && isRealUser(fullPlayer);
     }).length;
   }, [match, allGroupPlayers]);
 
