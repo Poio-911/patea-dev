@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import type { Match, Player, EvaluationAssignment, Notification } from '@/lib/types';
-import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDoc, addDoc } from 'firebase/firestore';
+import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDoc } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -135,7 +135,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
 
     const handleFinishMatch = async () => {
-        if (!firestore) return;
+        if (!firestore || !user) return;
         setIsFinishing(true);
         const batch = writeBatch(firestore);
         const matchRef = doc(firestore, 'matches', match.id);
@@ -166,6 +166,18 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             assignments.forEach(assignment => {
                 const assignmentRef = doc(collection(firestore, 'matches', match.id, 'assignments'));
                 batch.set(assignmentRef, assignment);
+
+                // Create a notification for the evaluator
+                const notificationRef = doc(collection(firestore, 'users', assignment.evaluatorId, 'notifications'));
+                const notification: Omit<Notification, 'id'> = {
+                    type: 'evaluation_pending',
+                    title: '¡Evaluación pendiente!',
+                    message: `Es hora de evaluar a tus compañeros del partido "${match.title}".`,
+                    link: `/evaluations/${match.id}`,
+                    isRead: false,
+                    createdAt: new Date().toISOString(),
+                };
+                batch.set(notificationRef, notification);
             });
            
             await batch.commit();
@@ -408,5 +420,3 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         </Card>
     );
 }
-
-    
