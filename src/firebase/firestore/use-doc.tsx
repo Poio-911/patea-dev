@@ -34,7 +34,8 @@ export const useDoc = <T extends DocumentData>(
       ref,
       (docSnap) => {
         if (docSnap.exists()) {
-          setData({ id: docSnap.id, ...docSnap.data() } as T);
+          const docData = { id: docSnap.id, ...docSnap.data() };
+          setData(docData as unknown as T);
         } else {
           setData(null);
         }
