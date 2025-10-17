@@ -141,7 +141,11 @@ export interface PlayerProfileViewProps {
     playerId: string;
 }
     
-
+export type FcmToken = {
+    id: string;
+    token: string;
+    createdAt: string;
+} & DocumentData;
     
 
     

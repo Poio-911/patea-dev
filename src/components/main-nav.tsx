@@ -40,6 +40,7 @@ import { MatchIcon } from './icons/match-icon';
 import { FindMatchIcon } from './icons/find-match-icon';
 import { EvaluationIcon } from './icons/evaluation-icon';
 import { NotificationBell } from './notification-bell';
+import { useFcm } from '@/hooks/use-fcm';
 
 
 const navItems = [
@@ -64,6 +65,9 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
+
+  // Initialize FCM logic
+  useFcm();
 
   const playerRef = React.useMemo(() => {
     if (!firestore || !user?.uid) return null;
@@ -278,3 +282,5 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+
+    

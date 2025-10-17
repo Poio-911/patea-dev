@@ -141,6 +141,16 @@
         },
         "required": ["type", "title", "message", "isRead", "createdAt"]
     },
+    "fcmToken": {
+      "title": "FCM Token",
+      "description": "Represents a Firebase Cloud Messaging token for a user's device.",
+      "type": "object",
+      "properties": {
+        "token": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["token", "createdAt"]
+    },
     "evaluation": {
       "title": "Evaluation",
       "description": "Stores a single player's evaluation for a specific match, submitted by another player.",
@@ -203,6 +213,10 @@
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/userProfile" },
       "description": "Stores public profiles for users."
+    },
+    "/users/{userId}/fcmTokens/{tokenId}": {
+      "schema": { "$ref": "#/entities/fcmToken" },
+      "description": "Stores FCM tokens for a user's devices."
     },
     "/users/{userId}/notifications/{notificationId}": {
         "schema": { "$ref": "#/entities/notification" },
