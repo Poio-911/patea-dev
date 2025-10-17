@@ -336,21 +336,21 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                         name="matchSize"
                         control={form.control}
                         render={({ field }) => (
-                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-wrap gap-4">
-                                <Label className="flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50 flex-1">
-                                    <Shirt className="h-5 w-5" />
+                            <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-wrap gap-4">
+                                <Label className={cn("flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground flex-1", field.value === '10' && "bg-primary text-primary-foreground border-primary-foreground/50")}>
+                                    <Shirt className={cn("h-5 w-5 text-chart-1", field.value === '10' && "text-primary-foreground")} />
                                     <span className="font-bold text-sm">Fútbol 5</span>
-                                    <RadioGroupItem value="10" />
+                                    <RadioGroupItem value="10" className="hidden" />
                                 </Label>
-                                <Label className="flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50 flex-1">
-                                    <Shirt className="h-5 w-5" />
+                                <Label className={cn("flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground flex-1", field.value === '14' && "bg-primary text-primary-foreground border-primary-foreground/50")}>
+                                    <Shirt className={cn("h-5 w-5 text-chart-2", field.value === '14' && "text-primary-foreground")} />
                                     <span className="font-bold text-sm">Fútbol 7</span>
-                                    <RadioGroupItem value="14" />
+                                    <RadioGroupItem value="14" className="hidden" />
                                 </Label>
-                                <Label className="flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50 flex-1">
-                                    <Shirt className="h-5 w-5" />
+                                <Label className={cn("flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground flex-1", field.value === '22' && "bg-primary text-primary-foreground border-primary-foreground/50")}>
+                                    <Shirt className={cn("h-5 w-5 text-chart-3", field.value === '22' && "text-primary-foreground")} />
                                     <span className="font-bold text-sm">Fútbol 11</span>
-                                    <RadioGroupItem value="22" />
+                                    <RadioGroupItem value="22" className="hidden" />
                                 </Label>
                             </RadioGroup>
                         )}
