@@ -41,10 +41,10 @@ const WeatherApiDataSchema = z.object({
         wind: z.object({
             speed: z.number(),
         }),
-    })),
+    })).optional(),
     city: z.object({
         name: z.string(),
-    }),
+    }).optional(),
 });
 
 // Define the Genkit Tool to fetch weather data
@@ -68,6 +68,10 @@ const getWeatherForecast = ai.defineTool(
     }
 
     const data = await response.json() as z.infer<typeof WeatherApiDataSchema>;
+
+    if (!data.list || data.list.length === 0) {
+        throw new Error('No forecasts found for the specified location.');
+    }
     
     // Find the closest forecast to the match date
     const matchDate = parseISO(date);
