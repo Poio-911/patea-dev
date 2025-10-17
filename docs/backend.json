@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "userProfile": {
@@ -118,12 +119,23 @@
         "playerId": { "type": "string" },
         "evaluatorId": { "type": "string" },
         "matchId": { "type": "string" },
-        "goals": { "type": "number" },
         "rating": { "type": "number" },
         "performanceTags": { "type": "array", "items": { "type": "string" } },
         "evaluatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["assignmentId", "playerId", "evaluatorId", "rating", "matchId"]
+    },
+     "selfEvaluation": {
+      "title": "Self Evaluation",
+      "description": "Stores a player's self-reported stats for a match (e.g., goals).",
+      "type": "object",
+      "properties": {
+        "playerId": { "type": "string" },
+        "matchId": { "type": "string" },
+        "goals": { "type": "number" },
+        "reportedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["playerId", "matchId", "goals", "reportedAt"]
     },
     "evaluationAssignment": {
       "title": "Evaluation Assignment",
@@ -180,9 +192,15 @@
       "schema": { "$ref": "#/entities/evaluationAssignment" },
       "description": "Stores all the evaluation assignments for a specific match."
     },
+     "/matches/{matchId}/selfEvaluations/{userId}": {
+      "schema": { "$ref": "#/entities/selfEvaluation" },
+      "description": "Stores a player's self-reported stats for a match."
+    },
     "/evaluations/{evaluationId}": {
         "schema": { "$ref": "#/entities/evaluation" },
         "description": "Stores all individual evaluation records across all matches."
     }
   }
 }
+
+    

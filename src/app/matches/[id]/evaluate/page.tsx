@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
 import { doc, collection, query, writeBatch, runTransaction, getDocs, where, addDoc } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
-import type { Match, Player, EvaluationAssignment, Evaluation, OvrHistory } from '@/lib/types';
+import type { Match, Player, EvaluationAssignment, Evaluation, OvrHistory, SelfEvaluation } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -115,17 +116,23 @@ export default function EvaluateMatchPage() {
     setIsFinalizing(true);
 
     try {
-        // 1. Fetch evaluations outside the transaction
+        // 1. Fetch peer and self evaluations outside the transaction
         const completedAssignmentIds = assignments?.filter(a => a.status === 'completed').map(a => a.id) || [];
         if (completedAssignmentIds.length === 0) {
             throw new Error("No hay evaluaciones completadas para procesar.");
         }
-        const evaluationsQuery = query(collection(firestore, 'evaluations'), where('assignmentId', 'in', completedAssignmentIds));
-        const evaluationsSnapshot = await getDocs(evaluationsQuery);
-        const matchEvaluations = evaluationsSnapshot.docs.map(doc => ({...doc.data(), id: doc.id} as Evaluation));
 
-        // 2. Group evaluations by player
-        const evaluationsByPlayer = matchEvaluations.reduce((acc, ev) => {
+        const peerEvalsQuery = query(collection(firestore, 'evaluations'), where('assignmentId', 'in', completedAssignmentIds));
+        const peerEvalsSnapshot = await getDocs(peerEvalsQuery);
+        const matchPeerEvals = peerEvalsSnapshot.docs.map(doc => ({...doc.data(), id: doc.id} as Evaluation));
+
+        const selfEvalsQuery = collection(firestore, 'matches', match.id, 'selfEvaluations');
+        const selfEvalsSnapshot = await getDocs(selfEvalsQuery);
+        const matchSelfEvals = selfEvalsSnapshot.docs.map(doc => ({...doc.data(), id: doc.id} as SelfEvaluation));
+        const selfEvalsByPlayerId = new Map(matchSelfEvals.map(ev => [ev.playerId, ev]));
+
+        // 2. Group peer evaluations by player
+        const peerEvalsByPlayer = matchPeerEvals.reduce((acc, ev) => {
             acc[ev.playerId] = acc[ev.playerId] || [];
             acc[ev.playerId].push(ev);
             return acc;
@@ -139,7 +146,7 @@ export default function EvaluateMatchPage() {
                 throw new Error("Este partido ya ha sido evaluado o no existe.");
             }
 
-            const playerIdsToUpdate = Object.keys(evaluationsByPlayer);
+            const playerIdsToUpdate = Object.keys(peerEvalsByPlayer);
             const playerDocs = new Map<string, Player>();
             
             // --- READ PHASE ---
@@ -156,17 +163,20 @@ export default function EvaluateMatchPage() {
                 const player = playerDocs.get(playerId);
                 if (!player) continue;
 
-                const playerEvals = evaluationsByPlayer[playerId];
-                const totalRating = playerEvals.reduce((sum, ev) => sum + ev.rating, 0);
-                const avgRating = totalRating / playerEvals.length;
-                const totalGoals = playerEvals.reduce((sum, ev) => sum + ev.goals, 0);
+                const playerPeerEvals = peerEvalsByPlayer[playerId];
+                const totalRating = playerPeerEvals.reduce((sum, ev) => sum + ev.rating, 0);
+                const avgRating = totalRating / playerPeerEvals.length;
+                
+                // Get goals from self-evaluation
+                const playerSelfEval = selfEvalsByPlayerId.get(playerId);
+                const goalsInMatch = playerSelfEval?.goals || 0;
 
                 const ovrChange = calculateOvrChange(player.ovr, avgRating);
                 const newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, player.ovr + ovrChange));
                 const attributeChanges = calculateAttributeChanges(player, avgRating, player.position);
 
                 const newMatchesPlayed = (player.stats.matchesPlayed || 0) + 1;
-                const newTotalGoals = (player.stats.goals || 0) + totalGoals;
+                const newTotalGoals = (player.stats.goals || 0) + goalsInMatch;
                 const newAvgRating = ((player.stats.averageRating || 0) * (player.stats.matchesPlayed || 0) + avgRating) / newMatchesPlayed;
                 
                 const playerDocRef = doc(firestore, 'players', playerId);
@@ -317,3 +327,5 @@ export default function EvaluateMatchPage() {
     </div>
   );
 }
+
+    

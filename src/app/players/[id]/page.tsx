@@ -4,7 +4,7 @@
 import { useParams } from 'next/navigation';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
 import { doc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
-import type { Player, Evaluation, Match } from '@/lib/types';
+import type { Player, Evaluation, Match, SelfEvaluation, OvrHistory } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,14 +17,6 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-
-type OvrHistory = {
-    date: string;
-    oldOVR: number;
-    newOVR: number;
-    change: number;
-    matchId: string;
-};
 
 const positionColors: Record<Player['position'], string> = {
   DEL: 'text-red-400',
@@ -44,7 +36,7 @@ type DetailedEvaluation = Evaluation & { evaluatorName?: string; evaluatorPhoto?
 type MatchEvaluationSummary = {
     match: Match;
     avgRating: number;
-    totalGoals: number;
+    goals: number;
     individualEvaluations: DetailedEvaluation[];
 };
 
@@ -53,15 +45,22 @@ export default function PlayerDetailPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const [evaluatorProfiles, setEvaluatorProfiles] = useState<Record<string, {displayName: string, photoURL: string}>>({});
-
+  
   const playerRef = useMemo(() => firestore && playerId ? doc(firestore, 'players', playerId as string) : null, [firestore, playerId]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
 
-  const evaluationsQuery = useMemo(() => {
+  const peerEvaluationsQuery = useMemo(() => {
     if (!firestore || !playerId) return null;
     return query(collection(firestore, `evaluations`), where('playerId', '==', playerId));
   }, [firestore, playerId]);
-  const { data: evaluations, loading: evaluationsLoading } = useCollection<Evaluation>(evaluationsQuery);
+  const { data: peerEvaluations, loading: peerEvalsLoading } = useCollection<Evaluation>(peerEvaluationsQuery);
+  
+  const selfEvaluationsQuery = useMemo(() => {
+      if (!firestore) return null;
+      // This is less optimal, but necessary for collectionGroup query
+      return query(collectionGroup(firestore, 'selfEvaluations'), where('playerId', '==', playerId));
+  }, [firestore, playerId]);
+  const { data: selfEvaluations, loading: selfEvalsLoading } = useCollection<SelfEvaluation>(selfEvaluationsQuery);
 
   const matchesQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
@@ -77,8 +76,8 @@ export default function PlayerDetailPage() {
   
   useEffect(() => {
       async function fetchEvaluatorProfiles() {
-        if (!evaluations || !firestore) return;
-        const evaluatorIds = [...new Set(evaluations.map(ev => ev.evaluatorId).filter(id => id && !evaluatorProfiles[id]))];
+        if (!peerEvaluations || !firestore) return;
+        const evaluatorIds = [...new Set(peerEvaluations.map(ev => ev.evaluatorId).filter(id => id && !evaluatorProfiles[id]))];
         if (evaluatorIds.length === 0) return;
 
         const usersRef = collection(firestore, "users");
@@ -98,22 +97,23 @@ export default function PlayerDetailPage() {
       }
       fetchEvaluatorProfiles();
 
-  }, [evaluations, firestore, evaluatorProfiles]);
+  }, [peerEvaluations, firestore, evaluatorProfiles]);
 
 
   const filteredEvaluationsByMatch = useMemo((): MatchEvaluationSummary[] => {
-    if (!evaluations || !matches) return [];
+    if (!peerEvaluations || !matches || !selfEvaluations) return [];
     
     const evalsByMatch: Record<string, MatchEvaluationSummary> = {};
+    const selfEvalsByMatch = new Map(selfEvaluations.map(ev => [ev.matchId, ev]));
 
-    evaluations.forEach(ev => {
+    peerEvaluations.forEach(ev => {
       const matchForEval = matches.find(m => m.id === ev.matchId);
       if (matchForEval) {
           if (!evalsByMatch[ev.matchId]) {
               evalsByMatch[ev.matchId] = { 
                   match: matchForEval, 
                   avgRating: 0, 
-                  totalGoals: 0, 
+                  goals: selfEvalsByMatch.get(ev.matchId)?.goals || 0, 
                   individualEvaluations: [] 
               };
           }
@@ -128,13 +128,11 @@ export default function PlayerDetailPage() {
 
     return Object.values(evalsByMatch).map(summary => {
         const ratings = summary.individualEvaluations.map(ev => ev.rating);
-        const goals = summary.individualEvaluations.map(ev => ev.goals);
         summary.avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
-        summary.totalGoals = goals.reduce((a, b) => a + b, 0);
         return summary;
     }).sort((a,b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime());
 
-  }, [evaluations, matches, evaluatorProfiles]);
+  }, [peerEvaluations, matches, selfEvaluations, evaluatorProfiles]);
 
   const chartData = useMemo(() => {
     if (!ovrHistory) return [];
@@ -149,7 +147,7 @@ export default function PlayerDetailPage() {
   }, [ovrHistory, player]);
 
 
-  const loading = playerLoading || evaluationsLoading || matchesLoading || historyLoading;
+  const loading = playerLoading || peerEvalsLoading || matchesLoading || historyLoading || selfEvalsLoading;
 
   if (loading) {
     return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -259,11 +257,11 @@ export default function PlayerDetailPage() {
                     <TableHead>Partido</TableHead>
                     <TableHead>Fecha</TableHead>
                     <TableHead className="text-center">Rating Prom.</TableHead>
-                    <TableHead className="text-center">Goles Totales</TableHead>
+                    <TableHead className="text-center">Goles</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, avgRating, totalGoals, individualEvaluations }) => (
+                {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, avgRating, goals, individualEvaluations }) => (
                     <AccordionItem value={match.id} key={match.id}>
                         <TableRow>
                             <TableCell>
@@ -278,7 +276,7 @@ export default function PlayerDetailPage() {
                             </TableCell>
                             <TableCell className="text-center">
                                 <Badge variant="outline" className="text-base">
-                                    <Goal className="mr-1 h-3 w-3" /> {totalGoals}
+                                    <Goal className="mr-1 h-3 w-3" /> {goals}
                                 </Badge>
                             </TableCell>
                         </TableRow>
@@ -292,7 +290,6 @@ export default function PlayerDetailPage() {
                                             <TableRow>
                                                 <TableHead>Evaluador</TableHead>
                                                 <TableHead className="text-center">Rating</TableHead>
-                                                <TableHead className="text-center">Goles</TableHead>
                                                 <TableHead>Etiquetas de Rendimiento</TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -311,7 +308,6 @@ export default function PlayerDetailPage() {
                                                     <TableCell className="text-center">
                                                         <Badge variant="secondary">{ev.rating}</Badge>
                                                     </TableCell>
-                                                    <TableCell className="text-center">{ev.goals}</TableCell>
                                                     <TableCell>
                                                         <div className="flex gap-1 flex-wrap">
                                                         {ev.performanceTags.length > 0 ? ev.performanceTags.map(tag => (

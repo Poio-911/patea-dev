@@ -2,19 +2,19 @@
 'use client';
 
 import { useFirestore, useUser, useCollection } from '@/firebase';
-import { doc, writeBatch, collection, query, where } from 'firebase/firestore';
+import { doc, writeBatch, collection, query, where, setDoc } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
-import type { Match, Player, EvaluationAssignment, Evaluation } from '@/lib/types';
+import type { Match, Player, EvaluationAssignment, Evaluation, SelfEvaluation } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, Save, Users, Check, ThumbsUp, BarChart, UserCheck, UserX, ShieldCheck, Goal } from 'lucide-react';
+import { Loader2, Save, ShieldCheck, Goal, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Slider } from '@/components/ui/slider';
 import { performanceTags } from '@/lib/data';
@@ -23,10 +23,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useState, useEffect, useMemo } from 'react';
-import { Progress } from '@/components/ui/progress';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Link from 'next/link';
-import { Separator } from '@/components/ui/separator';
 
 const playerEvaluationSchema = z.object({
   assignmentId: z.string(),
@@ -34,7 +31,6 @@ const playerEvaluationSchema = z.object({
   displayName: z.string(),
   photoUrl: z.string(),
   rating: z.coerce.number().min(1).max(10).default(5),
-  goals: z.coerce.number().min(0).max(20).default(0),
   performanceTags: z.array(z.string()).max(2, "No puedes seleccionar más de 2 etiquetas.").optional(),
 });
 
@@ -93,7 +89,6 @@ export default function PerformEvaluationPage() {
                 displayName: subject?.name || 'Jugador desconocido',
                 photoUrl: subject?.photoUrl || '',
                 rating: 5,
-                goals: 0,
                 performanceTags: []
             };
         });
@@ -112,24 +107,32 @@ export default function PerformEvaluationPage() {
     
     try {
         const batch = writeBatch(firestore);
+
+        // 1. Save self-evaluation (goals)
+        const selfEvalRef = doc(firestore, 'matches', matchId as string, 'selfEvaluations', user.uid);
+        const newSelfEvaluation: Omit<SelfEvaluation, 'id'> = {
+            playerId: user.uid,
+            matchId: matchId as string,
+            goals: data.evaluatorGoals,
+            reportedAt: new Date().toISOString(),
+        };
+        batch.set(selfEvalRef, newSelfEvaluation);
         
         for (const evaluation of data.evaluations) {
-            // 1. Create the new evaluation document
+            // 2. Create the peer evaluation document
             const evalRef = doc(collection(firestore, 'evaluations'));
             const newEvaluation: Omit<Evaluation, 'id'> = {
                 assignmentId: evaluation.assignmentId,
                 playerId: evaluation.subjectId,
                 evaluatorId: user.uid,
                 matchId: matchId as string,
-                goals: evaluation.goals,
                 rating: evaluation.rating,
                 performanceTags: evaluation.performanceTags || [],
                 evaluatedAt: new Date().toISOString(),
-                evaluatorGoalsReported: data.evaluatorGoals,
             };
             batch.set(evalRef, newEvaluation);
 
-            // 2. Update the assignment status to 'completed'
+            // 3. Update the assignment status to 'completed'
             const assignmentRef = doc(firestore, 'matches', matchId as string, 'assignments', evaluation.assignmentId);
             batch.update(assignmentRef, {
                 status: 'completed',
@@ -212,11 +215,11 @@ export default function PerformEvaluationPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Jugadores a Evaluar</CardTitle>
-                            <CardDescription>Asigna una calificación (1-10), goles y hasta 2 etiquetas a cada jugador.</CardDescription>
+                            <CardDescription>Asigna una calificación (1-10) y hasta 2 etiquetas a cada jugador.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
                         {fields.map((field, index) => (
-                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-4 items-start gap-6 border-b pb-6 last:border-b-0 last:pb-0">
+                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-3 items-start gap-6 border-b pb-6 last:border-b-0 last:pb-0">
                                 <div className="flex items-center gap-4 md:col-span-1">
                                     <Avatar className="h-12 w-12">
                                         <AvatarImage src={field.photoUrl} alt={field.displayName} data-ai-hint="player portrait" />
@@ -242,21 +245,6 @@ export default function PerformEvaluationPage() {
                                                     onValueChange={(value) => ratingField.onChange(value[0])}
                                                 />
                                                 <span className="text-xs text-muted-foreground">10</span>
-                                            </div>
-                                        </FormControl>
-                                    </FormItem>
-                                    )}
-                                />
-                                 <FormField
-                                    control={form.control}
-                                    name={`evaluations.${index}.goals`}
-                                    render={({ field: goalsField }) => (
-                                    <FormItem className="md:col-span-1">
-                                        <FormLabel>Goles</FormLabel>
-                                        <FormControl>
-                                            <div className="flex items-center gap-2">
-                                                <Goal className="h-5 w-5 text-muted-foreground" />
-                                                <Input type="number" min="0" {...goalsField} />
                                             </div>
                                         </FormControl>
                                     </FormItem>
