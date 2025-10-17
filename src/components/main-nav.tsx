@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Goal, Users2, ShieldQuestion, User, Globe } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings, Goal, Users2, ShieldQuestion, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -37,6 +37,7 @@ import { doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 import { MatchIcon } from './icons/match-icon';
+import { FindMatchIcon } from './icons/find-match-icon';
 
 
 const navItems = [
@@ -44,7 +45,7 @@ const navItems = [
   { href: '/players', label: 'Jugadores', icon: SoccerPlayerIcon },
   { href: '/matches', label: 'Partidos', icon: MatchIcon },
   { href: '/evaluations', label: 'Evaluaciones', icon: ShieldQuestion },
-  { href: '/find-match', label: 'Buscar', icon: Globe },
+  { href: '/find-match', label: 'Buscar', icon: FindMatchIcon },
 ];
 
 const positionColors: Record<Player['position'], string> = {
