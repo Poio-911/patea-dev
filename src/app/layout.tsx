@@ -30,6 +30,9 @@ export default function RootLayout({
       <head>
         <title>Manager de Fútbol Amateur</title>
         <meta name="description" content="Organiza partidos, gestiona jugadores y genera equipos equilibrados." />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#29ABE2" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
