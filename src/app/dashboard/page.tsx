@@ -2,14 +2,10 @@
 
 import { useCollection } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
-import { StatCard } from '@/components/stat-card';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Users, Goal, Star, Calendar, Users2 } from 'lucide-react';
+import { Users, Star, Users2, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
 import { useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { useUser } from '@/firebase';
@@ -17,6 +13,10 @@ import { useMemo } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { MatchCard } from '@/components/match-card';
+import type { Player, Match } from '@/lib/types';
+import { BizarreQuoteCard } from '@/components/bizarre-quote-card';
+import { NextMatchCard } from '@/components/next-match-card';
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -29,13 +29,35 @@ export default function DashboardPage() {
 
   const matchesQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
-    return query(collection(firestore, 'matches'), where('groupId', '==', user.activeGroupId), orderBy('date', 'desc'), limit(5));
+    return query(collection(firestore, 'matches'), where('groupId', '==', user.activeGroupId), orderBy('date', 'desc'));
   }, [firestore, user?.activeGroupId]);
 
-  const { data: players, loading: playersLoading } = useCollection(playersQuery);
-  const { data: matches, loading: matchesLoading } = useCollection(matchesQuery);
+  const { data: players, loading: playersLoading } = useCollection<Player>(playersQuery);
+  const { data: matches, loading: matchesLoading } = useCollection<Match>(matchesQuery);
 
   const loading = playersLoading || matchesLoading;
+
+  const { upcomingMatches, nextMatch, recentMatches } = useMemo(() => {
+    if (!matches) return { upcomingMatches: [], nextMatch: null, recentMatches: [] };
+    const now = new Date();
+    const upcoming = matches
+      .filter(m => m.status === 'upcoming' && new Date(m.date) >= now)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    const recent = matches.filter(m => m.status !== 'upcoming').slice(0, 5);
+
+    return {
+      upcomingMatches: upcoming,
+      nextMatch: upcoming[0] || null,
+      recentMatches: recent,
+    };
+  }, [matches]);
+
+  const top5Players = useMemo(() => {
+    if (!players) return [];
+    return [...players].sort((a, b) => b.ovr - a.ovr).slice(0, 5);
+  }, [players]);
+
 
   if (loading) {
     return <div>Cargando...</div>;
@@ -62,85 +84,87 @@ export default function DashboardPage() {
     )
   }
 
-  const topPlayer = players ? [...players].sort((a, b) => b.ovr - a.ovr)[0] : null;
-  const upcomingMatches = matches ? matches.filter(m => m.status === 'upcoming') : [];
-  const top5Players = players ? [...players].sort((a, b) => b.ovr - a.ovr).slice(0, 5) : [];
-
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
         title="Panel de control"
-        description="Bienvenido a tu Manager de Fútbol Amateur."
+        description="Un resumen de la actividad de tu grupo."
       />
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Jugadores Totales" value={players?.length || 0} icon={<Users className="h-6 w-6 text-primary" />} />
-        <StatCard title="Próximos Partidos" value={upcomingMatches.length} icon={<Calendar className="h-6 w-6 text-primary" />} />
-        <StatCard title="Mejor Jugador" value={topPlayer ? `${topPlayer.name} (${topPlayer.ovr})` : '-'} icon={<Star className="h-6 w-6 text-primary" />} />
-        <StatCard title="Formación por Defecto" value="4-3-3" icon={<Goal className="h-6 w-6 text-primary" />} />
-      </div>
+      
+      <BizarreQuoteCard />
 
       <div className="grid gap-8 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Partidos Recientes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Partido</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Estado</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {matches?.map((match) => (
-                  <TableRow key={match.id}>
-                    <TableCell className="font-medium">{match.title}</TableCell>
-                    <TableCell>{match.date ? format(new Date(match.date), 'dd MMM, yyyy') : 'N/A'}</TableCell>
-                    <TableCell>{match.type}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={match.status === 'completed' ? 'secondary' : 'default'}
-                        className={cn({
-                          'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300': match.status === 'upcoming',
-                          'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300': match.status === 'completed',
-                        })}
-                      >
-                        {match.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        {/* Main column */}
+        <div className="lg:col-span-2 space-y-8">
+            <NextMatchCard match={nextMatch} />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Mejores Jugadores</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {top5Players.map((player) => (
-                <div key={player.id} className="flex items-center gap-4">
-                  <Avatar className="h-10 w-10 border-2 border-primary/50">
-                    <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
-                    <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <p className="font-semibold">{player.name}</p>
-                    <p className="text-sm text-muted-foreground">{player.position}</p>
-                  </div>
-                  <div className="text-lg font-bold text-primary">{player.ovr}</div>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Partidos Recientes</CardTitle>
+                    <CardDescription>Los últimos partidos que se han jugado.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {recentMatches.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {recentMatches.map(match => (
+                                <MatchCard key={match.id} match={match} allPlayers={players || []} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center text-center border-2 border-dashed border-muted-foreground/30 rounded-xl p-12">
+                            <Calendar className="h-12 w-12 text-muted-foreground/50" />
+                            <h2 className="mt-4 text-xl font-semibold">Sin Partidos Recientes</h2>
+                            <p className="mt-2 text-sm text-muted-foreground">
+                                Aún no se ha completado ningún partido en este grupo.
+                            </p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+
+        {/* Side column */}
+        <div className="lg:col-span-1 space-y-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Star className="h-5 w-5 text-primary" />
+                    Mejores Jugadores
+                </CardTitle>
+                <CardDescription>El top 5 de jugadores por OVR en tu grupo.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {top5Players.map((player, index) => (
+                    <div key={player.id} className="flex items-center gap-4">
+                      <div className="text-muted-foreground font-bold w-4">{index + 1}.</div>
+                      <Avatar className="h-10 w-10 border-2 border-primary/50">
+                        <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
+                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="font-semibold">{player.name}</p>
+                        <p className="text-sm text-muted-foreground">{player.position}</p>
+                      </div>
+                      <div className="text-lg font-bold text-primary">{player.ovr}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5 text-primary" />
+                        Plantilla
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-4xl font-bold">{players?.length || 0}</div>
+                    <p className="text-xs text-muted-foreground">jugadores en el grupo</p>
+                </CardContent>
+            </Card>
+        </div>
       </div>
     </div>
   );
