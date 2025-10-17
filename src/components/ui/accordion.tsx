@@ -36,7 +36,7 @@ const AccordionTrigger = React.forwardRef<
     >
       {/* This allows the trigger to not contain the chevron, so it can be placed anywhere */}
       {children}
-      {/* <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" /> */}
+      <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
     </AccordionPrimitive.Trigger>
   </AccordionPrimitive.Header>
 ))

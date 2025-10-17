@@ -9,7 +9,7 @@ import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, BarChart2, Star, Goal, Users } from 'lucide-react';
+import { Loader2, BarChart2, Star, Goal } from 'lucide-react';
 import { format } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useState, useEffect, useMemo } from 'react';
@@ -57,7 +57,6 @@ export default function PlayerDetailPage() {
   
   const selfEvaluationsQuery = useMemo(() => {
       if (!firestore) return null;
-      // This is less optimal, but necessary for collectionGroup query
       return query(collectionGroup(firestore, 'selfEvaluations'), where('playerId', '==', playerId));
   }, [firestore, playerId]);
   const { data: selfEvaluations, loading: selfEvalsLoading } = useCollection<SelfEvaluation>(selfEvaluationsQuery);
@@ -249,21 +248,22 @@ export default function PlayerDetailPage() {
           <CardDescription>Rendimiento del jugador en los últimos partidos evaluados. Haz clic en un partido para ver el detalle.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Accordion type="single" collapsible className="w-full">
-            <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className='w-12'></TableHead>
-                    <TableHead>Partido</TableHead>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead className="text-center">Rating Prom.</TableHead>
-                    <TableHead className="text-center">Goles</TableHead>
-                  </TableRow>
-                </TableHeader>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className='w-12'></TableHead>
+                <TableHead>Partido</TableHead>
+                <TableHead>Fecha</TableHead>
+                <TableHead className="text-center">Rating Prom.</TableHead>
+                <TableHead className="text-center">Goles</TableHead>
+              </TableRow>
+            </TableHeader>
+            <Accordion type="single" asChild collapsible className="w-full">
                 <TableBody>
                 {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, avgRating, goals, individualEvaluations }) => (
-                    <AccordionItem value={match.id} key={match.id}>
-                        <TableRow>
+                    <AccordionItem value={match.id} key={match.id} asChild>
+                      <>
+                        <TableRow className="cursor-pointer">
                             <TableCell>
                                 <AccordionTrigger />
                             </TableCell>
@@ -281,8 +281,8 @@ export default function PlayerDetailPage() {
                             </TableCell>
                         </TableRow>
                         <AccordionContent asChild>
-                            <tr>
-                                <td colSpan={5} className="p-0">
+                            <TableRow>
+                                <TableCell colSpan={5} className="p-0">
                                   <div className="bg-muted/50 p-4">
                                       <h4 className="font-semibold text-md mb-2 ml-4">Detalle de evaluaciones:</h4>
                                       <Table>
@@ -320,9 +320,10 @@ export default function PlayerDetailPage() {
                                         </TableBody>
                                       </Table>
                                   </div>
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         </AccordionContent>
+                      </>
                     </AccordionItem>
                 )) : (
                     <TableRow>
@@ -332,8 +333,8 @@ export default function PlayerDetailPage() {
                     </TableRow>
                 )}
                 </TableBody>
-            </Table>
-           </Accordion>
+            </Accordion>
+          </Table>
         </CardContent>
       </Card>
     </div>
