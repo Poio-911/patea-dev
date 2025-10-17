@@ -49,14 +49,14 @@ const BalanceRating = ({ fairnessPercentage }: { fairnessPercentage: number }) =
 
 export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
   const teams = match.teams || [];
-  const balanceMetrics = match.teams?.[0]?.balanceMetrics;
+  const balanceMetrics = teams[0]?.balanceMetrics; // Assuming metrics are the same for all teams
   
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-background/80 backdrop-blur-sm">
         <DialogHeader>
-          <DialogTitle>Equipos para "{match.title}"</DialogTitle>
+          <DialogTitle className="text-center text-2xl font-bold">Equipos para "{match.title}"</DialogTitle>
         </DialogHeader>
         <div className="py-4 space-y-6">
             {balanceMetrics && (
@@ -76,7 +76,7 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
                          <Shirt className={cn("h-6 w-6", index === 0 ? 'text-primary' : 'text-accent')} />
                         <CardTitle className="text-xl">{team.name}</CardTitle>
                     </div>
-                  <Badge variant="outline" className={cn(index === 0 ? "border-primary text-primary" : "border-accent text-accent")}>
+                  <Badge variant="outline" className={cn("text-base", index === 0 ? "border-primary text-primary" : "border-accent text-accent")}>
                     <ShieldCheck className="mr-1.5 h-4 w-4"/>
                     {team.averageOVR.toFixed(1)} OVR
                   </Badge>
