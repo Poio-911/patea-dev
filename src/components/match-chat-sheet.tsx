@@ -187,6 +187,10 @@ export function MatchChatSheet({ match, children }: MatchChatSheetProps) {
       );
     }
 
+    if (!messages) {
+        return null;
+    }
+
     return messages.map((msg) => (
       <ChatMessageItem key={msg.id} message={msg} isCurrentUser={msg.senderId === user?.uid} />
     ));
