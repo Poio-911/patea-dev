@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -156,7 +157,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
         <SidebarInset className="bg-background pb-16 md:pb-0">
           <header className="sticky top-0 z-10 flex h-20 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-lg sm:px-6">
             <div className="flex items-center gap-2">
-                <SidebarTrigger className="md:hidden"/>
                 <GroupSwitcher />
             </div>
 
