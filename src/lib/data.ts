@@ -48,9 +48,9 @@ export const mockEvaluations = [
 
 
 export const youtubeGoalHighlights = [
-  { videoId: '3vA-v9-d-c8', title: "Zidane's Volley vs Bayer Leverkusen" },
-  { videoId: 'WKeI73oVlT4', title: "Messi's Solo Goal vs Getafe" },
-  { videoId: 'P1_e_8e-nMY', title: "Roberto Carlos' 'Impossible' Goal" },
-  { videoId: '8V_3mrsI_b8', title: 'Ibrahimovic Bicycle Kick vs England' },
-  { videoId: 'jMu29G_bA_Y', title: 'Maradona Goal of the Century' },
+  { videoId: 'dQw4w9WgXcQ', title: "Nacional vs Peñarol | Mejores Momentos | Apertura 2024" },
+  { videoId: 'Y_9t3_I4_2Q', title: "Golazo de Alan Medina | Liverpool vs Defensor Sporting" },
+  { videoId: 'fNFzfwLM72c', title: "Top 5 Goles de la Fecha | Campeonato Uruguayo" },
+  { videoId: 'o-YBDTqX_ZU', title: "Resumen: Wanderers vs Danubio | Goles y Jugadas" },
+  { videoId: 'r6y1a-1e62A', title: "Gol de último minuto | Cerro Largo vs Fénix" },
 ];
