@@ -44,7 +44,7 @@ export default function DashboardPage() {
       .filter(m => m.status === 'upcoming' && new Date(m.date) >= now)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
-    const recent = matches.filter(m => m.status !== 'upcoming').slice(0, 5);
+    const recent = matches.filter(m => m.status !== 'upcoming').slice(0, 2);
 
     return {
       upcomingMatches: upcoming,
