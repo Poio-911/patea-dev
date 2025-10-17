@@ -224,8 +224,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   const isActive = pathname.startsWith(item.href);
                   return (
                     <Link key={item.href} href={item.href} className="inline-flex flex-col items-center justify-center px-2 py-1.5 hover:bg-muted rounded-lg group">
-                        <item.icon className={cn("w-6 h-6 mb-1 text-muted-foreground group-hover:text-primary", isActive && "text-primary")} />
-                        <span className={cn("text-[0.6rem] text-muted-foreground group-hover:text-primary", isActive && "text-primary font-semibold")}>{item.label}</span>
+                        <div className={cn(isActive && 'bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent')}>
+                            <item.icon className={cn("w-6 h-6 mb-1 text-muted-foreground group-hover:text-primary", isActive && "text-transparent")} />
+                            <span className={cn("text-[0.6rem] text-muted-foreground group-hover:text-primary", isActive && "font-semibold text-transparent")}>{item.label}</span>
+                        </div>
                     </Link>
                   )
                 })}
