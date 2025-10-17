@@ -35,11 +35,11 @@ type MatchCardProps = {
   allPlayers: Player[];
 };
 
-const statusConfig = {
-    upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300', neonClass: 'shadow-blue-500/50' },
-    active: { label: 'Activo', className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300', neonClass: 'shadow-green-500/50' },
-    completed: { label: 'Finalizado', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', neonClass: 'shadow-gray-500/50' },
-    evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300', neonClass: 'shadow-purple-500/50' },
+const statusConfig: Record<MatchStatus, { label: string; className: string; neonClass: string; gradientClass: string }> = {
+    upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300', neonClass: 'text-shadow-[0_0_10px_hsl(var(--primary))]', gradientClass: 'from-blue-500/20' },
+    active: { label: 'Activo', className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300', neonClass: 'text-shadow-[0_0_10px_hsl(var(--accent))]', gradientClass: 'from-green-500/20' },
+    completed: { label: 'Finalizado', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', neonClass: 'text-shadow-[0_0_8px_hsl(var(--muted-foreground))]', gradientClass: 'from-gray-500/20' },
+    evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300', neonClass: 'text-shadow-[0_0_10px_hsl(var(--chart-2))]', gradientClass: 'from-purple-500/20' },
 };
 
 const weatherIcons: Record<string, React.ElementType> = {
@@ -107,16 +107,14 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     
     const generateEvaluationAssignments = (match: Match, allPlayers: Player[]): Omit<EvaluationAssignment, 'id'>[] => {
         const assignments: Omit<EvaluationAssignment, 'id'>[] = [];
-        const realPlayerUids = match.players
-            .map(p => allPlayers.find(ap => ap.id === p.uid))
-            .filter((p): p is Player => !!(p && isRealUser(p)))
-            .map(p => p!.id);
+        const matchPlayers = allPlayers.filter(p => match.players.some(mp => mp.uid === p.id));
+        const realPlayerUids = matchPlayers.filter(isRealUser).map(p => p.id);
 
         realPlayerUids.forEach(evaluatorId => {
             const team = match.teams.find(t => t.players.some(p => p.uid === evaluatorId));
             if (!team) return;
 
-            const teammates = team.players.filter(p => p.uid !== evaluatorId);
+            const teammates = team.players.filter(p => p.uid !== evaluatorId && realPlayerUids.includes(p.uid));
             // Shuffle teammates for random assignment
             const shuffledTeammates = teammates.sort(() => 0.5 - Math.random());
             const playersToEvaluate = shuffledTeammates.slice(0, 2);
@@ -308,9 +306,9 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
     return (
         <Card className="flex flex-col overflow-hidden shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
-            <CardHeader>
+            <CardHeader className={cn('bg-gradient-to-br to-transparent', currentStatus.gradientClass)}>
                 <div className="flex items-start justify-between gap-4">
-                    <CardTitle className={cn("text-xl font-bold text-shadow-lg", currentStatus.neonClass)}>
+                    <CardTitle className={cn("text-xl font-bold", currentStatus.neonClass)}>
                         {match.title}
                     </CardTitle>
                     <Badge variant="outline" className={cn("whitespace-nowrap uppercase text-xs", currentStatus.className)}>
@@ -321,7 +319,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                      <Badge variant="secondary" className="font-semibold">{match.type === 'manual' ? 'Manual' : 'Colaborativo'}</Badge>
                 </CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow space-y-4">
+            <CardContent className="flex-grow space-y-4 pt-6">
 
                 <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3">
                     <InfoRow icon={Calendar} text={match.date ? format(new Date(match.date), 'E, d MMM, yyyy') : 'Fecha no definida'} />
@@ -388,3 +386,4 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     );
 }
 
+    

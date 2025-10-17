@@ -27,6 +27,7 @@ import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Checkbox } from './ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -207,6 +208,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   };
 
   const createManualMatch = async (data: MatchFormData) => {
+    if (!user?.uid || !user.activeGroupId) throw new Error("User not authenticated");
     const selectedPlayersData = allPlayers.filter(p => data.players.includes(p.id));
     const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
 
@@ -219,8 +221,8 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       matchSize: selectedMatchSize,
       date: data.date.toISOString(),
       status: 'upcoming' as const,
-      ownerUid: user!.uid,
-      groupId: user!.activeGroupId,
+      ownerUid: user.uid,
+      groupId: user.activeGroupId,
       players: selectedPlayersData.map(p => ({ uid: p.id, displayName: p.name, ovr: p.ovr, position: p.position, photoUrl: p.photoUrl || '' })),
       teams: teamGenerationResult.teams,
       weather: weather || undefined,
@@ -230,13 +232,14 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   }
 
   const createCollaborativeMatch = async (data: MatchFormData) => {
+    if (!user?.uid || !user.activeGroupId) throw new Error("User not authenticated");
     const newMatch = {
       ...data,
       matchSize: selectedMatchSize,
       date: data.date.toISOString(),
       status: 'upcoming' as const,
-      ownerUid: user!.uid,
-      groupId: user!.activeGroupId,
+      ownerUid: user.uid,
+      groupId: user.activeGroupId,
       players: [], // Starts empty
       teams: [],
       weather: weather || undefined,
@@ -284,11 +287,11 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                     <PopoverTrigger asChild>
                                         <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
                                             <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {field.value ? format(field.value, 'PPP') : <span>Elige una fecha</span>}
+                                            {field.value ? format(field.value, 'PPP', { locale: es }) : <span>Elige una fecha</span>}
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0">
-                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={es} />
                                     </PopoverContent>
                                 </Popover>
                             )}
@@ -351,12 +354,16 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                         name="type"
                         control={form.control}
                         render={({ field }) => (
-                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4 mt-2">
-                                <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
-                                    <RadioGroupItem value="manual" /> Manual
+                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-2 gap-4 mt-2">
+                                <Label className="flex flex-col items-center justify-center gap-2 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+                                    <RadioGroupItem value="manual" />
+                                    <span>Manual</span>
+                                    <span className="text-xs text-center font-normal leading-tight">Eliges todos los jugadores y la IA crea los equipos.</span>
                                 </Label>
-                                <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
-                                    <RadioGroupItem value="collaborative" /> Colaborativo
+                                <Label className="flex flex-col items-center justify-center gap-2 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+                                    <RadioGroupItem value="collaborative" />
+                                     <span>Colaborativo</span>
+                                     <span className="text-xs text-center font-normal leading-tight">Los jugadores se apuntan y la IA crea equipos al finalizar.</span>
                                 </Label>
                             </RadioGroup>
                         )}
@@ -440,3 +447,5 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     </Dialog>
   );
 }
+
+    
