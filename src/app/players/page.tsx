@@ -1,25 +1,59 @@
 'use client';
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser, useDoc } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { PlayerCard } from '@/components/player-card';
 import { AddPlayerDialog } from '@/components/add-player-dialog';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { useMemo } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Users2, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import type { Group, Player } from '@/lib/types';
 
 export default function PlayersPage() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const playersQuery = useMemo(() => {
+  // 1. Get the active group document to know its members
+  const groupRef = useMemo(() => {
+    if (!firestore || !user?.activeGroupId) return null;
+    return doc(firestore, 'groups', user.activeGroupId);
+  }, [firestore, user?.activeGroupId]);
+  const { data: activeGroup } = useDoc<Group>(groupRef);
+  
+  // 2. Get players created manually in the group (owner is the user, but id is not)
+  const manualPlayersQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
     return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
   }, [firestore, user?.activeGroupId]);
 
-  const { data: players, loading } = useCollection(playersQuery);
+  // 3. Get players that are real users and members of the group
+  const memberPlayersQuery = useMemo(() => {
+    if (!firestore || !activeGroup || !activeGroup.members || activeGroup.members.length === 0) return null;
+    // Firestore 'in' query is limited to 30 elements, which is fine for this app's scale.
+    return query(collection(firestore, 'players'), where('__name__', 'in', activeGroup.members.slice(0, 30)));
+  }, [firestore, activeGroup]);
+
+  const { data: manualPlayers, loading: manualLoading } = useCollection<Player>(manualPlayersQuery);
+  const { data: memberPlayers, loading: membersLoading } = useCollection<Player>(memberPlayersQuery);
+  
+  const loading = manualLoading || membersLoading;
+
+  // 4. Combine and deduplicate the players
+  const players = useMemo(() => {
+    const allPlayersMap = new Map<string, Player>();
+    
+    if (manualPlayers) {
+      manualPlayers.forEach(p => allPlayersMap.set(p.id, p));
+    }
+    if (memberPlayers) {
+      memberPlayers.forEach(p => allPlayersMap.set(p.id, p));
+    }
+    
+    return Array.from(allPlayersMap.values()).sort((a, b) => b.ovr - a.ovr);
+  }, [manualPlayers, memberPlayers]);
+
 
   return (
     <div className="flex flex-col gap-8">

@@ -93,7 +93,7 @@ export default function RegisterPage() {
                 photoUrl: `https://picsum.photos/seed/${data.displayName}/400/400`,
                 stats: { matchesPlayed: 0, goals: 0, assists: 0, averageRating: 0 },
                 ownerUid: newUser.uid,
-                groupId: null,
+                groupId: '', // Set to empty string instead of null
             };
             batch.set(playerRef, newPlayer);
 
