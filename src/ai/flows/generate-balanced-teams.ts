@@ -33,7 +33,7 @@ export type GenerateBalancedTeamsInput = z.infer<typeof GenerateBalancedTeamsInp
 const GenerateBalancedTeamsOutputSchema = z.object({
   teams: z.array(
     z.object({
-      name: z.string().describe('The name of the team.'),
+      name: z.string().describe('A creative and cool name for the team (e.g., "Titanes Azules", "Furia Roja").'),
       players: z.array(
         z.object({
           uid: z.string().describe('The unique identifier of the player.'),
@@ -44,19 +44,22 @@ const GenerateBalancedTeamsOutputSchema = z.object({
       ),
       totalOVR: z.number().describe('The sum of all player OVRs.'),
       averageOVR: z.number().describe('The average team strength.'),
+      suggestedFormation: z.string().describe('A suggested tactical formation (e.g., 1-2-1 for 5-a-side).'),
+      tags: z.array(z.string()).describe('2-3 tactical tags describing the team (e.g., "Ataque Veloz", "Defensa Sólida", "Sin Portero Fijo").'),
     })
   ),
   balanceMetrics: z
     .object({
       ovrDifference: z
         .number()
-        .describe('The difference in overall rating between the best and worst teams.'),
+                .describe('The difference in overall rating between the best and worst teams.'),
       fairnessPercentage: z
         .number()
         .describe('A percentage indicating how fair the team balance is.'),
     })
     .optional(),
 });
+
 
 export type GenerateBalancedTeamsOutput = z.infer<typeof GenerateBalancedTeamsOutputSchema>;
 
@@ -70,7 +73,7 @@ const prompt = ai.definePrompt({
   name: 'generateBalancedTeamsPrompt',
   input: {schema: GenerateBalancedTeamsInputSchema},
   output: {schema: GenerateBalancedTeamsOutputSchema},
-  prompt: `You are an expert sports team organizer, skilled at creating balanced teams for football matches.
+  prompt: `You are an expert sports team organizer, skilled at creating balanced teams for amateur football matches.
 
 Given a list of players with their positions and overall ratings (OVR), your task is to divide them into {{teamCount}} teams such that the teams are as balanced as possible.
 
@@ -80,23 +83,15 @@ Here's the player data:
 - Name: {{this.displayName}}, Position: {{this.position}}, OVR: {{this.ovr}}
 {{/each}}
 
-Consider player positions when forming the teams.
+Based on the players in each team, you must:
+1.  **Create a cool, creative name** for each team (e.g., "Titanes Azules", "Furia Roja", "CF Leyendas"). Avoid generic names like "Equipo A".
+2.  **Suggest a tactical formation** based on the number of players (e.g., for a 5-a-side match, "1-2-1" or "2-1-1").
+3.  **Generate 2-3 tactical tags** that describe the team's characteristics (e.g., "Ataque Veloz", "Defensa Sólida", "Control del Mediocampo", "Sin Portero Fijo" if no 'POR' is present).
+4.  Try to minimize the difference in total OVR between the strongest and weakest teams.
+5.  Calculate the total and average OVR for each team.
+6.  Calculate balance metrics (OVR difference and fairness percentage).
 
-Ensure that each team has a mix of positions, if possible.
-
-Try to minimize the difference in total OVR between the strongest and weakest teams.
-
-Output the teams with the following information:
-- Team Name
-- List of Players (Name, Position, OVR)
-- Total Team OVR
-- Average Team OVR
-
-Also, calculate and output the following balance metrics:
-- OVR Difference (between the best and worst teams)
-- Fairness Percentage (higher is better, 100% is perfectly fair)
-
-Ensure the response is valid JSON.
+Ensure the response is valid JSON that strictly follows the provided output schema.
 `,
 });
 
