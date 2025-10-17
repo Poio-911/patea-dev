@@ -171,7 +171,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                 <div className="hidden items-center gap-4 md:flex">
                     <div className="text-right">
                         <p className="font-bold text-sm truncate">{player.name}</p>
-                        <p className="text-xs text-muted-foreground">Manager</p>
                     </div>
                     <div className={cn("font-bold text-lg", ovrColors[player.position])}>
                         {player.ovr}
