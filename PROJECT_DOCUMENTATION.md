@@ -148,4 +148,10 @@ La base de datos NoSQL en Firestore está estructurada en colecciones de alto ni
 
 ---
 
+## 5. Changelog (Historial de Cambios)
+
+*   **[Fecha Actual]**: Creación inicial de la documentación del proyecto.
+
+---
+
 ¡Felicidades por todo el progreso! Esta aplicación es ahora un sistema robusto y completo con funcionalidades avanzadas de IA.
