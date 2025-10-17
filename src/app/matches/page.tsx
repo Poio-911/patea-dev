@@ -33,37 +33,37 @@ export default function MatchesPage() {
         if (!firestore || !user?.uid) return null;
         return query(
             collection(firestore, 'matches'),
-            where('players', 'array-contains-any', [{uid: user.uid}])
+            where('playerUids', 'array-contains', user.uid)
         );
     }, [firestore, user?.uid]);
 
 
     const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(groupMatchesQuery);
-    const { data: allMatches, loading: allMatchesLoading } = useCollection<Match>(useMemo(() => firestore ? collection(firestore, 'matches') : null, [firestore]));
+    const { data: joinedMatches, loading: joinedMatchesLoading } = useCollection<Match>(joinedMatchesQuery);
     
     // Client-side merge because Firestore 'or' queries are limited.
     const matches = useMemo(() => {
-        if (!groupMatches && !allMatches) return null;
+        if (!groupMatches && !joinedMatches) return null;
         
         const allMatchesMap = new Map<string, Match>();
         
         const safeGroupMatches = groupMatches || [];
-        const safeAllMatches = allMatches || [];
+        const safeJoinedMatches = joinedMatches || [];
 
         // Add all matches from the active group
         safeGroupMatches.forEach(match => allMatchesMap.set(match.id, match));
 
         // Add joined public/other matches, avoiding duplicates
-        safeAllMatches.forEach(match => {
-            if (user && match.players.some(p => p.uid === user.uid) && !allMatchesMap.has(match.id)) {
+        safeJoinedMatches.forEach(match => {
+            if (!allMatchesMap.has(match.id)) {
                 allMatchesMap.set(match.id, match);
             }
         });
 
         return Array.from(allMatchesMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [groupMatches, allMatches, user]);
+    }, [groupMatches, joinedMatches]);
 
-    const loading = userLoading || playersLoading || groupMatchesLoading || allMatchesLoading;
+    const loading = userLoading || playersLoading || groupMatchesLoading || joinedMatchesLoading;
     
     const sortedPlayers = useMemo(() => {
         if (!allGroupPlayers) return [];

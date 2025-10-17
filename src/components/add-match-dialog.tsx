@@ -309,6 +309,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       ownerUid: user.uid,
       groupId: user.activeGroupId,
       players: selectedPlayersData.map(p => ({ uid: p.id, displayName: p.name, ovr: p.ovr, position: p.position, photoUrl: p.photoUrl || '' })),
+      playerUids: selectedPlayersData.map(p => p.id),
       teams: teamGenerationResult.teams,
       weather: weather || undefined,
     };
@@ -343,6 +344,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       ownerUid: user.uid,
       groupId: user.activeGroupId,
       players: [], // Starts empty
+      playerUids: [],
       teams: [],
       weather: weather || undefined,
     };
@@ -590,4 +592,3 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     </Dialog>
   );
 }
-    

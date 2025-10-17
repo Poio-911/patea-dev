@@ -58,6 +58,7 @@ export type Match = {
   type: MatchType;
   matchSize: MatchSize;
   players: { uid: string; displayName: string; ovr: number; position: PlayerPosition; photoUrl: string }[];
+  playerUids: string[]; // Added for simpler queries
   teams: Team[];
   status: MatchStatus;
   ownerUid: string;
@@ -146,8 +147,6 @@ export type FcmToken = {
     token: string;
     createdAt: string;
 } & DocumentData;
-    
-
     
 
     

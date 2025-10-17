@@ -79,6 +79,11 @@
             }
           }
         },
+        "playerUids": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "A simple array of player UIDs for efficient querying."
+        },
         "teams": { "type": "array", "items": { "$ref": "#/entities/team" } },
         "weather": {
             "type": "object",
@@ -252,5 +257,3 @@
     }
   }
 }
-
-    

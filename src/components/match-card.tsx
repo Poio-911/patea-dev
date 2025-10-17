@@ -218,7 +218,8 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 const playerToRemove = match.players.find(p => p.uid === user.uid);
                 if (playerToRemove) {
                     batch.update(matchRef, {
-                        players: arrayRemove(playerToRemove)
+                        players: arrayRemove(playerToRemove),
+                        playerUids: arrayRemove(user.uid)
                     });
                 }
                 toast({ title: 'Te has dado de baja', description: `Ya no estás apuntado a "${match.title}".` });
@@ -249,7 +250,8 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 };
                 
                 batch.update(matchRef, {
-                    players: arrayUnion(playerPayload)
+                    players: arrayUnion(playerPayload),
+                    playerUids: arrayUnion(user.uid)
                 });
                 
                 // Notify the organizer
@@ -432,5 +434,3 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         </Card>
     );
 }
-
-    
