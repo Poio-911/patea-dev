@@ -11,7 +11,6 @@ import type { Match, Player, Notification } from '@/lib/types';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus, LogOut, MapPin } from 'lucide-react';
-import { KickerIconPath } from './icons/soccer-player-icon';
 
 interface MatchMarkerProps {
   match: Match;
@@ -24,18 +23,7 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
   const { user } = useUser();
   const { toast } = useToast();
   const [isJoining, setIsJoining] = useState(false);
-  const [primaryColor, setPrimaryColor] = useState('#29ABE2'); // Default primary color
-
-  useEffect(() => {
-    // On the client, read the CSS variable for the primary color
-    if (typeof window !== 'undefined') {
-        const color = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
-        if (color) {
-            setPrimaryColor(`hsl(${color})`);
-        }
-    }
-  }, []);
-
+  
   const isUserInMatch = useMemo(() => {
     if (!user || !match.players) return false;
     return match.players.some((p: any) => p.uid === user.uid);
@@ -47,21 +35,29 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
   }, [match.players, match.matchSize]);
 
   const isUserLocationMarker = match.id === 'user-location';
-
-  const customIcon = useMemo(() => {
+  
+  const icon = useMemo(() => {
     if (isUserLocationMarker) {
-        // Default Google Maps icon for user location
-        return undefined;
+      return {
+        path: window.google.maps.SymbolPath.CIRCLE,
+        scale: 7,
+        fillColor: '#4285F4',
+        fillOpacity: 1,
+        strokeColor: 'white',
+        strokeWeight: 2,
+      };
     }
 
-    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 97.316 97.316" width="32px" height="32px" fill="${encodeURIComponent(primaryColor)}"><path d="${KickerIconPath}"/></svg>`;
-
     return {
-      url: `data:image/svg+xml;charset=UTF-8,${svgString}`,
-      scaledSize: new window.google.maps.Size(32, 32),
-      anchor: new window.google.maps.Point(16, 16),
+        path: 'M11,1.5C11,2.3284,10.3284,3,9.5,3S8,2.3284,8,1.5S8.6716,0,9.5,0S11,0.6716,11,1.5z M11,11c-0.5523,0-1,0.4477-1,1s0.4477,1,1,1s1-0.4477,1-1S11.5523,11,11,11z M12.84,6.09l-1.91-1.91l0,0C10.8399,4.0675,10.7041,4.0014,10.56,4H3.5C3.2239,4,3,4.2239,3,4.5S3.2239,5,3.5,5h2.7L3,11.3l0,0c-0.0138,0.066-0.0138,0.134,0,0.2c-0.058,0.2761,0.1189,0.547,0.395,0.605C3.6711,12.163,3.942,11.9861,4,11.71l0,0L5,10h2l-1.93,4.24l0,0C5.0228,14.3184,4.9986,14.4085,5,14.5c-0.0552,0.2761,0.1239,0.5448,0.4,0.6c0.2761,0.0552,0.5448-0.1239,0.6-0.4l0,0l4.7-9.38l1.44,1.48c0.211,0.1782,0.5264,0.1516,0.7046-0.0593C13.0037,6.5523,13.0018,6.2761,12.84,6.09z',
+        fillColor: 'hsl(var(--primary))',
+        fillOpacity: 1,
+        strokeWeight: 0,
+        rotation: 0,
+        scale: 2,
+        anchor: new google.maps.Point(7.5, 7.5),
     };
-  }, [isUserLocationMarker, primaryColor]);
+  }, [isUserLocationMarker]);
 
 
   const handleJoinOrLeaveMatch = async () => {
@@ -140,7 +136,7 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
     <MarkerF
       position={{ lat: match.location.lat, lng: match.location.lng }}
       onClick={() => handleMarkerClick(match.id)}
-      icon={customIcon}
+      icon={icon}
       zIndex={isUserLocationMarker ? 10 : (activeMarker === match.id ? 5 : 1)}
     >
       {activeMarker === match.id && !isUserLocationMarker && (
@@ -188,5 +184,4 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
     </MarkerF>
   );
 }
-
     
