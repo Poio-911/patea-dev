@@ -101,7 +101,7 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
         strokeWeight: 1.5,
         strokeColor: 'hsl(var(--primary-foreground))',
         rotation: 0,
-        scale: 0.25,
+        scale: 0.15,
         anchor: new window.google.maps.Point(65, 128),
       }}
     >
