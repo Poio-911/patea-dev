@@ -236,10 +236,11 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         }
     }
 
-
     const renderPrimaryAction = () => {
-        if (match.status === 'upcoming' && match.type === 'collaborative' && user?.uid !== match.ownerUid) {
-            if (isMatchFull && !isUserInMatch) {
+        if (match.status !== 'upcoming') return null;
+
+        if (match.type === 'collaborative') {
+             if (isMatchFull && !isUserInMatch) {
                 return <Button variant="outline" size="sm" className="w-full" disabled>Partido Lleno</Button>
             }
             return (
@@ -249,29 +250,20 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 </Button>
             );
         }
-        if (match.status === 'upcoming' && user?.uid === match.ownerUid) {
-            return (
-                <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing} className="w-full">
-                    {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                    Finalizar
-                </Button>
-            );
-        }
-        if (match.status === 'completed' && user?.uid === match.ownerUid) {
-             return (
-                <Button asChild variant="default" size="sm" className="w-full">
-                    <Link href={`/matches/${match.id}/evaluate`}>
-                        <Star className="mr-2 h-4 w-4" />
-                        Supervisar Evaluación
-                    </Link>
-                </Button>
-             );
-        }
+        
+        // For 'manual' matches, or if no other action is available
         return null;
     }
 
     const renderSecondaryActions = () => (
         <>
+            {user?.uid === match.ownerUid && match.status === 'upcoming' && isMatchFull && (
+                <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing} className="w-full">
+                    {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                    Finalizar
+                </Button>
+            )}
+
             <MatchTeamsDialog match={match}>
                 <Button variant="outline" size="sm" className="w-full" disabled={!match.teams || match.teams.length === 0}>
                     <Eye className="mr-2 h-4 w-4" />
@@ -291,6 +283,15 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     </Button>
                 </InvitePlayerDialog>
             )}
+
+            {match.status === 'completed' && user?.uid === match.ownerUid && (
+                 <Button asChild variant="default" size="sm" className="w-full">
+                    <Link href={`/matches/${match.id}/evaluate`}>
+                        <Star className="mr-2 h-4 w-4" />
+                        Supervisar
+                    </Link>
+                </Button>
+             )}
 
             {match.status === 'evaluated' && user?.uid === match.ownerUid && (
                 <Button asChild variant="secondary" size="sm" className="w-full">
