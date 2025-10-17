@@ -92,14 +92,14 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
     return null;
   }
   
-  // Use standard Google Maps pin for matches, customized with app's accent color
   const matchIconConfig = {
-      path: window.google.maps.SymbolPath.CIRCLE,
-      fillColor: 'hsl(var(--accent))',
-      fillOpacity: 0.9,
-      strokeColor: 'hsl(var(--card-foreground))',
-      strokeWeight: 1.5,
-      scale: 7
+      path: 'M57.418,21.295c0.931,0.253,1.888,0.381,2.845,0.381c4.876,0,9.175-3.289,10.453-7.998 c0.759-2.793,0.384-5.714-1.054-8.226C68.223,2.941,65.893,1.14,63.1,0.381C62.169,0.128,61.211,0,60.254,0 c-4.875,0-9.172,3.289-10.451,7.997C48.235,13.762,51.651,19.728,57.418,21.295z M59.083,58.702l4.782-17.602l0.098,0.162c0.484,0.798,0.959,2.318,1.017,3.25l0.512,8.287 c0.1,1.603,1.436,2.858,3.042,2.858l1.371-0.051c1.641-0.064,2.953-1.452,2.925-3.094l-0.177-10.144 c-0.021-1.239-0.446-3.092-0.967-4.217l-4.753-10.272c-0.013-0.027-0.032-0.052-0.046-0.079c-0.328-0.873-1.049-1.584-2.015-1.847 L48.63,21.542c-0.005-0.001-0.009-0.001-0.014-0.002l-0.555-0.15c-1.415-0.383-3.309,0.198-4.264,1.285l-18.64,21.215 c-0.56,0.637-0.785,1.429-0.618,2.173c0.167,0.744,0.709,1.365,1.487,1.701l2.065,0.894c0.426,0.185,0.897,0.278,1.4,0.278 c1.117,0,2.229-0.479,2.902-1.25l8.747-10.017l-4.221,15.538c-0.056,0.207-0.087,0.415-0.098,0.622l-6.478,25.147 c-0.686,2.663,0.915,5.416,3.568,6.136l0.339,0.092c0.425,0.116,0.862,0.174,1.299,0.174c2.256,0,4.226-1.527,4.789-3.714 l5.879-22.823l1.957,0.532l-8.523,31.374c-0.723,2.66,0.854,5.413,3.515,6.136l0.338,0.091c0.426,0.116,0.865,0.175,1.305,0.175 c2.254,0,4.241-1.517,4.831-3.689l9.441-34.754C59.083,58.705,59.083,58.704,59.083,58.702z M68.535,54.651L68.535,54.651v0.006 V54.651z M64.052,80.544c-4.624,0-8.385,3.762-8.385,8.386s3.762,8.386,8.385,8.386c4.624,0,8.386-3.762,8.386-8.386 S68.676,80.544,64.052,80.544z',
+      fillColor: 'hsl(var(--primary))',
+      fillOpacity: 1,
+      strokeWeight: 0,
+      rotation: 0,
+      scale: 0.5,
+      anchor: new window.google.maps.Point(48, 48),
   };
 
   return (
@@ -112,8 +112,8 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
     >
       {activeMarker === match.id && !isUserLocationMarker && (
         <InfoWindowF onCloseClick={() => handleMarkerClick(match.id)}>
-            <div className='p-2 w-64'>
-                <h3 className="font-bold text-lg">{match.title}</h3>
+            <div className="p-1 w-64 space-y-2">
+                <h3 className="font-bold text-lg leading-tight">{match.title}</h3>
                 <p className="text-sm text-muted-foreground">{format(new Date(match.date), "d MMM, HH:mm'hs'", { locale: es })}</p>
                 <p className="text-sm text-muted-foreground truncate">{match.location.address}</p>
                 <p className="text-sm font-semibold mt-2">Plazas: {match.players.length} / {match.matchSize}</p>
@@ -122,7 +122,7 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
                     size="sm"
                     onClick={handleJoinOrLeaveMatch}
                     disabled={isJoining || (isMatchFull && !isUserInMatch)}
-                    className="w-full mt-4"
+                    className="w-full mt-2"
                 >
                     {isJoining ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -148,5 +148,3 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
     </MarkerF>
   );
 }
-
-    
