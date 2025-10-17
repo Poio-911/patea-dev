@@ -168,8 +168,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             </div>
 
             {player && (
-                <div className="hidden items-center gap-4 md:flex">
-                    <div className="text-right">
+                <div className="flex items-center gap-2 sm:gap-4">
+                    <div className="text-right hidden sm:block">
                         <p className="font-bold text-sm truncate">{player.name}</p>
                     </div>
                     <div className={cn("font-bold text-lg", ovrColors[player.position])}>
