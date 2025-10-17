@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Separator } from '@/components/ui/separator';
-import { FootballNewsCard } from '@/components/football-news-card';
+
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
     upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
@@ -109,8 +109,7 @@ export default function DashboardPage() {
         {/* Main column */}
         <div className="lg:col-span-2 space-y-8">
             <NextMatchCard match={nextMatch} />
-            <FootballNewsCard />
-
+            
             <Card>
                 <CardHeader>
                     <CardTitle>Partidos Recientes</CardTitle>
@@ -203,5 +202,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
