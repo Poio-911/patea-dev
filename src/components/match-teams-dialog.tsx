@@ -9,7 +9,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle as UiCardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import type { Match, Player } from '@/lib/types';
@@ -54,18 +54,18 @@ const BalanceRating = ({ fairnessPercentage }: { fairnessPercentage: number }) =
 
 export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
   const teams = match.teams || [];
-  const balanceMetrics = teams[0]?.balanceMetrics;
+  const balanceMetrics = match.teams?.[0]?.balanceMetrics;
 
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-primary/5 backdrop-blur-lg">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-primary/10 backdrop-blur-lg rounded-lg">
         <DialogHeader>
-          <DialogTitle className="text-center text-2xl font-bold">Equipos para "{match.title}"</DialogTitle>
+          <DialogTitle className="text-center text-2xl font-bold text-card-foreground">{match.title}</DialogTitle>
         </DialogHeader>
         <div className="py-4 space-y-4">
             {balanceMetrics && (
-                <div className="flex flex-col items-center justify-center gap-2 rounded-lg bg-muted/50 p-3">
+                <div className="flex flex-col items-center justify-center gap-2 rounded-lg bg-background/50 p-3">
                     <BalanceRating fairnessPercentage={balanceMetrics.fairnessPercentage} />
                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Scale className="h-3 w-3" />
@@ -73,13 +73,13 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
                     </div>
                 </div>
             )}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {teams.map((team, index) => (
               <Card key={team.name} className={cn("overflow-hidden flex flex-col", index === 0 ? "border-primary" : "border-accent")}>
-                <CardHeader className={cn("flex-row items-center justify-between p-3", index === 0 ? "bg-primary/10" : "bg-accent/10")}>
+                <CardHeader className={cn("flex-row items-center justify-between p-3", index === 0 ? "bg-primary/20" : "bg-accent/20")}>
                     <div className="flex items-center gap-2">
                          <Shirt className={cn("h-5 w-5", index === 0 ? 'text-primary' : 'text-accent')} />
-                        <CardTitle className="text-base font-bold truncate">{team.name}</CardTitle>
+                        <UiCardTitle className="text-base font-bold truncate">{team.name}</UiCardTitle>
                     </div>
                   <Badge variant="outline" className={cn("text-sm", index === 0 ? "border-primary text-primary" : "border-accent text-accent")}>
                     <ShieldCheck className="mr-1 h-3 w-3"/>
@@ -91,7 +91,7 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
                         {team.players.map((player) => {
                             const matchPlayer = match.players.find(p => p.uid === player.uid);
                             return (
-                                <div key={player.uid} className="flex items-center justify-between p-1.5 rounded-md text-sm">
+                                <div key={player.uid} className="flex items-center justify-between p-1.5 rounded-md text-sm hover:bg-muted/50">
                                     <div className="flex items-center gap-2 truncate">
                                         <Avatar className="h-6 w-6">
                                             <AvatarImage src={matchPlayer?.photoUrl} alt={player.displayName} data-ai-hint="player portrait" />
@@ -107,7 +107,7 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
                         })}
                     </div>
                   <Separator className="my-2" />
-                  <div className="text-xs space-y-1">
+                  <div className="text-xs space-y-1 p-1">
                     <div className='font-semibold'>Formación: {team.suggestedFormation || 'No definida'}</div>
                     <div className="flex flex-wrap gap-1">
                         {team.tags?.map(tag => (
@@ -124,3 +124,4 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
     </Dialog>
   );
 }
+
