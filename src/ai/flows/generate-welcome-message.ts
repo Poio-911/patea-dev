@@ -11,14 +11,14 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-export const WelcomeMessageInputSchema = z.object({
+const WelcomeMessageInputSchema = z.object({
   playerName: z.string().describe('The name of the player who just joined.'),
   matchTitle: z.string().describe('The title of the match.'),
   matchLocation: z.string().describe('The address where the match will be played.'),
 });
 export type WelcomeMessageInput = z.infer<typeof WelcomeMessageInputSchema>;
 
-export const WelcomeMessageOutputSchema = z.object({
+const WelcomeMessageOutputSchema = z.object({
   welcomeMessage: z.string().describe('A warm, helpful welcome message in Spanish.'),
 });
 export type WelcomeMessageOutput = z.infer<typeof WelcomeMessageOutputSchema>;
