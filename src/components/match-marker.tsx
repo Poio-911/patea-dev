@@ -10,7 +10,7 @@ import { useFirestore, useUser } from '@/firebase';
 import type { Match, Player } from '@/lib/types';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, LogOut } from 'lucide-react';
+import { Loader2, UserPlus, LogOut, MapPin } from 'lucide-react';
 
 interface MatchMarkerProps {
   match: Match;
@@ -106,23 +106,26 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
     <MarkerF
       position={{ lat: match.location.lat, lng: match.location.lng }}
       onClick={() => handleMarkerClick(match.id)}
-      // Don't set icon for user location to use the default blue dot
       icon={!isUserLocationMarker ? matchIconConfig : undefined}
       zIndex={isUserLocationMarker ? 10 : (activeMarker === match.id ? 5 : 1)}
     >
       {activeMarker === match.id && !isUserLocationMarker && (
         <InfoWindowF onCloseClick={() => handleMarkerClick(match.id)}>
-            <div className="p-1 w-64 space-y-2">
-                <h3 className="font-bold text-lg leading-tight">{match.title}</h3>
+            <div className="p-1 w-64 space-y-1">
+                <h3 className="font-bold text-base leading-tight">{match.title}</h3>
+                <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                    <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                    <span className="truncate">{match.location.address}</span>
+                </div>
                 <p className="text-sm text-muted-foreground">{format(new Date(match.date), "d MMM, HH:mm'hs'", { locale: es })}</p>
-                <p className="text-sm text-muted-foreground truncate">{match.location.address}</p>
-                <p className="text-sm font-semibold mt-2">Plazas: {match.players.length} / {match.matchSize}</p>
+                
+                <p className="text-sm font-semibold pt-1">Plazas: {match.players.length} / {match.matchSize}</p>
                 <Button
                     variant={isUserInMatch ? 'secondary' : 'default'}
                     size="sm"
                     onClick={handleJoinOrLeaveMatch}
                     disabled={isJoining || (isMatchFull && !isUserInMatch)}
-                    className="w-full mt-2"
+                    className="w-full mt-1"
                 >
                     {isJoining ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -148,3 +151,5 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
     </MarkerF>
   );
 }
+
+    

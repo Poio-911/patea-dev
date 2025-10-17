@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Shield, Users2, Shirt, Globe, MapPin } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Shield, Users2, Shirt, Globe } from 'lucide-react';
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -37,6 +37,7 @@ import { getMatchDayForecast, GetMatchDayForecastOutput } from '@/ai/flows/get-m
 import { Switch } from './ui/switch';
 import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
+import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 
 
 const matchLocationSchema = z.object({
@@ -93,7 +94,7 @@ const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: Matc
         <Popover open={status === 'OK'}>
             <PopoverTrigger asChild>
                 <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <SoccerPlayerIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         value={value}
                         onChange={(e) => setValue(e.target.value)}
@@ -569,3 +570,5 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     </Dialog>
   );
 }
+
+    
