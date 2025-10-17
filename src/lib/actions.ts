@@ -3,6 +3,7 @@
 
 import { generateBalancedTeams, GenerateBalancedTeamsInput } from '@/ai/flows/generate-balanced-teams';
 import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/flows/suggest-player-improvements';
+import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-match-day-forecast';
 import { Player, Evaluation } from './types';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
@@ -118,5 +119,15 @@ export async function getPlayerImprovementSuggestionsAction(playerId: string, gr
     } catch (error) {
         console.error('Error getting player improvement suggestions:', error);
         return { error: 'No se pudieron obtener las sugerencias de la IA.' };
+    }
+}
+
+export async function getWeatherForecastAction(input: GetMatchDayForecastInput) {
+    try {
+        const result = await getMatchDayForecast(input);
+        return result;
+    } catch (error) {
+        console.error('Error getting weather forecast:', error);
+        return { error: 'No se pudo obtener el pronóstico del tiempo.' };
     }
 }

@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -32,6 +32,7 @@ import { Checkbox } from './ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { generateTeamsAction } from '@/lib/actions';
 import { Progress } from './ui/progress';
+import { getMatchDayForecast, GetMatchDayForecastOutput } from '@/ai/flows/get-match-day-forecast';
 
 const matchSchema = z.object({
   title: z.string().min(3, 'El título debe tener al menos 3 caracteres.'),
@@ -50,10 +51,16 @@ interface AddMatchDialogProps {
   disabled?: boolean;
 }
 
+const weatherIcons: Record<string, React.ElementType> = {
+    Sun, Cloud, Cloudy, CloudRain, Wind, Zap
+}
+
 export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [weather, setWeather] = useState<GetMatchDayForecastOutput | null>(null);
+  const [isFetchingWeather, setIsFetchingWeather] = useState(false);
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -72,7 +79,10 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     },
   });
   
-  const { formState, trigger } = form;
+  const { formState, trigger, watch } = form;
+  const watchedDate = watch('date');
+  const watchedLocation = watch('location');
+  const watchedTime = watch('time');
 
   const selectedMatchSize = parseInt(form.watch('matchSize'), 10);
   const matchType = form.watch('type');
@@ -85,9 +95,43 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         form.reset();
         setStep(1);
         setSearchTerm('');
+        setWeather(null);
       }, 200);
     }
   }, [open, form]);
+
+  useEffect(() => {
+    // Fetch weather when date or location changes
+    const fetchWeather = async () => {
+        if (watchedDate && watchedLocation && watchedLocation.length > 2) {
+            setIsFetchingWeather(true);
+            setWeather(null);
+            try {
+                const [hours, minutes] = watchedTime.split(':').map(Number);
+                const matchDateTime = new Date(watchedDate);
+                matchDateTime.setHours(hours, minutes);
+
+                const forecast = await getMatchDayForecast({
+                    location: watchedLocation,
+                    date: matchDateTime.toISOString(),
+                });
+                setWeather(forecast);
+            } catch (error) {
+                console.error("Failed to fetch weather", error);
+                setWeather(null); // Clear previous weather on error
+            } finally {
+                setIsFetchingWeather(false);
+            }
+        }
+    };
+    
+    const debounceTimeout = setTimeout(() => {
+        fetchWeather();
+    }, 1000); // Debounce to avoid excessive API calls
+
+    return () => clearTimeout(debounceTimeout);
+  }, [watchedDate, watchedLocation, watchedTime]);
+
 
   useEffect(() => {
     // Reset player selection when match type or size changes
@@ -199,6 +243,8 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     await addDoc(collection(firestore!, 'matches'), newMatch);
   }
 
+  const WeatherIcon = weather ? weatherIcons[weather.icon] : null;
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -225,7 +271,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                     {formState.errors.title && <p className="text-xs text-destructive mt-1">{formState.errors.title.message}</p>}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <Label>Fecha</Label>
                         <Controller
@@ -256,8 +302,24 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 
                 <div>
                     <Label htmlFor="location">Ubicación</Label>
-                    <Input id="location" {...form.register('location')} />
+                    <Input id="location" {...form.register('location')} placeholder="Ej: Montevideo, Uruguay" />
                     {formState.errors.location && <p className="text-xs text-destructive mt-1">{formState.errors.location.message}</p>}
+                </div>
+                
+                <div className="p-3 bg-muted/50 rounded-lg min-h-[60px] flex items-center justify-center">
+                    {isFetchingWeather ? (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Consultando el pronóstico...</span>
+                        </div>
+                    ) : weather && WeatherIcon ? (
+                        <div className="flex items-center gap-3 text-sm">
+                            <WeatherIcon className="h-6 w-6 text-primary"/>
+                            <p className="font-medium">{weather.description}</p>
+                        </div>
+                    ) : (
+                        <p className="text-sm text-muted-foreground text-center">Introduce una fecha y ubicación para ver el pronóstico.</p>
+                    )}
                 </div>
 
                 <div>
