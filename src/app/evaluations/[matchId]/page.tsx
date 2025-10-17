@@ -1,19 +1,19 @@
 'use client';
 
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { doc, writeBatch, collection, query, where } from 'firebase/firestore';
+import { doc, writeBatch, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
-import type { Match, Player, PlayerPosition, Evaluation } from '@/lib/types';
+import type { Match, Player, EvaluationAssignment, Evaluation } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, Save, Users, Check, ThumbsUp, BarChart } from 'lucide-react';
+import { Loader2, Save, Users, Check, ThumbsUp, BarChart, UserCheck, UserX, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Slider } from '@/components/ui/slider';
 import { performanceTags } from '@/lib/data';
@@ -22,9 +22,12 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useState, useEffect, useMemo } from 'react';
+import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const playerEvaluationSchema = z.object({
-  playerId: z.string(),
+  assignmentId: z.string(),
+  subjectId: z.string(),
   displayName: z.string(),
   photoUrl: z.string(),
   goals: z.coerce.number().min(0).max(20).default(0),
@@ -38,9 +41,6 @@ const evaluationSchema = z.object({
 
 type EvaluationFormData = z.infer<typeof evaluationSchema>;
 
-// Helper to determine if a player is a "real user"
-const isRealUser = (player: Player) => player.id === player.ownerUid;
-
 export default function PerformEvaluationPage() {
   const { matchId } = useParams();
   const firestore = useFirestore();
@@ -50,15 +50,24 @@ export default function PerformEvaluationPage() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
-  const [assignments, setAssignments] = useState<{ uid: string; displayName: string; photoUrl: string }[]>([]);
 
-  const matchRef = useMemo(() => firestore ? doc(firestore, 'matches', matchId as string) : null, [firestore, matchId]);
-  const { data: match, loading: matchLoading } = useDoc<Match>(matchRef);
-  
+  // Get all players in the group to get subject details (photo, name)
   const allGroupPlayersQuery = useMemo(() => 
-    firestore && match?.groupId ? query(collection(firestore, 'players'), where('groupId', '==', match.groupId)) : null
-  , [firestore, match]);
+    firestore && user?.activeGroupId ? query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId)) : null
+  , [firestore, user?.activeGroupId]);
   const { data: allGroupPlayers, loading: playersLoading } = useCollection<Player>(allGroupPlayersQuery);
+  
+  // Get this user's pending assignments for this specific match
+  const userAssignmentsQuery = useMemo(() => {
+      if (!firestore || !user?.uid || !matchId) return null;
+      return query(
+          collection(firestore, 'matches', matchId as string, 'assignments'),
+          where('evaluatorId', '==', user.uid),
+          where('status', '==', 'pending')
+      );
+  }, [firestore, user, matchId]);
+  const { data: assignments, loading: assignmentsLoading } = useCollection<EvaluationAssignment>(userAssignmentsQuery);
+
 
   const form = useForm<EvaluationFormData>({
     resolver: zodResolver(evaluationSchema),
@@ -67,73 +76,57 @@ export default function PerformEvaluationPage() {
   const { fields, replace } = useFieldArray({ control: form.control, name: "evaluations" });
 
   useEffect(() => {
-    if (match && user && allGroupPlayers) {
-      const userTeam = match.teams.find(team => team.players.some(p => p.uid === user.uid));
-      if (!userTeam) {
-        setIsPageLoading(false);
-        return;
+    if (assignments && allGroupPlayers) {
+      if (assignments.length > 0) {
+        const initialFormValues = assignments.map(assignment => {
+            const subject = allGroupPlayers.find(p => p.id === assignment.subjectId);
+            return {
+                assignmentId: assignment.id,
+                subjectId: assignment.subjectId,
+                displayName: subject?.name || 'Jugador desconocido',
+                photoUrl: subject?.photoUrl || '',
+                goals: 0,
+                rating: 5,
+                performanceTags: []
+            };
+        });
+        replace(initialFormValues);
       }
-      
-      const realPlayersInTeam = userTeam.players.filter(p => {
-          const fullPlayer = allGroupPlayers.find(gp => gp.id === p.uid);
-          return fullPlayer && isRealUser(fullPlayer);
-      });
-
-      const playersToEvaluate = userTeam.players
-        .filter(p => p.uid !== user.uid) // Can't evaluate self
-        .map(p => ({
-          uid: p.uid,
-          displayName: p.displayName,
-          photoUrl: allGroupPlayers.find(gp => gp.id === p.uid)?.photoUrl || ''
-        }));
-      
-      // Simple assignment: evaluate up to 2 other players in your team
-      // A more robust system would be needed for fairness in all cases.
-      const assigned = playersToEvaluate.slice(0, 2); 
-      setAssignments(assigned);
-
-      const initialFormValues = assigned.map(p => ({
-          playerId: p.uid,
-          displayName: p.displayName,
-          photoUrl: p.photoUrl,
-          goals: 0,
-          rating: 5,
-          performanceTags: []
-      }));
-      replace(initialFormValues);
       setIsPageLoading(false);
-
-    } else if (!matchLoading && !playersLoading) {
-      setIsPageLoading(false);
+    } else if (!assignmentsLoading && !playersLoading) {
+        setIsPageLoading(false);
     }
-  }, [match, user, allGroupPlayers, replace, matchLoading, playersLoading]);
+  }, [assignments, allGroupPlayers, replace, assignmentsLoading, playersLoading]);
 
 
   const onSubmit = async (data: EvaluationFormData) => {
-    if (!firestore || !match || !user) return;
+    if (!firestore || !user || !matchId) return;
     setIsSubmitting(true);
     
     try {
         const batch = writeBatch(firestore);
         
-        data.evaluations.forEach(evaluation => {
-            // A unique ID for an evaluation document can be who evaluated it.
-            const evalRef = doc(firestore, 'matches', match.id, 'evaluations', user.uid);
+        for (const evaluation of data.evaluations) {
+            // 1. Create the new evaluation document
+            const evalRef = doc(collection(firestore, 'evaluations'));
             const newEvaluation: Omit<Evaluation, 'id'> = {
-                playerId: evaluation.playerId,
+                assignmentId: evaluation.assignmentId,
+                playerId: evaluation.subjectId,
+                evaluatorId: user.uid,
                 goals: evaluation.goals,
                 rating: evaluation.rating,
                 performanceTags: evaluation.performanceTags || [],
-                evaluatedBy: user.uid,
                 evaluatedAt: new Date().toISOString(),
             };
-            // Note: This logic assumes one user evaluates one other player.
-            // If a user evaluates multiple players, we'd need a different doc ID strategy, like a sub-collection per player.
-            // For now, we are overwriting to keep it simple, assuming one doc per evaluator.
-            // Let's refine this to store evaluations of multiple players
-             const specificEvalRef = doc(collection(firestore, 'matches', match.id, 'evaluations'));
-             batch.set(specificEvalRef, newEvaluation);
-        });
+            batch.set(evalRef, newEvaluation);
+
+            // 2. Update the assignment status to 'completed'
+            const assignmentRef = doc(firestore, 'matches', matchId as string, 'assignments', evaluation.assignmentId);
+            batch.update(assignmentRef, {
+                status: 'completed',
+                evaluationId: evalRef.id
+            });
+        }
 
         await batch.commit();
         
@@ -154,25 +147,29 @@ export default function PerformEvaluationPage() {
     }
   };
   
-  if (isPageLoading || matchLoading) {
+  if (isPageLoading || assignmentsLoading || playersLoading) {
     return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
-  if (!match || !user) {
+  if (!user) {
     return <div>Datos no encontrados.</div>;
   }
 
   return (
     <div className="flex flex-col gap-8">
         <PageHeader
-            title={`Evaluar Partido: ${match.title}`}
+            title={`Evaluar Partido`}
             description={`Evalúa el rendimiento de tus compañeros de equipo asignados.`}
         />
-        {assignments.length === 0 ? (
+        {fields.length === 0 ? (
              <Alert variant="default">
-                <AlertTitle>Sin Asignaciones</AlertTitle>
+                <ShieldCheck className="h-4 w-4" />
+                <AlertTitle>Sin Evaluaciones Pendientes</AlertTitle>
                 <AlertDescription>
-                    No se te han asignado jugadores para evaluar en este partido, o ya has completado tu evaluación. ¡Gracias!
+                    No tienes jugadores asignados para evaluar en este partido, o ya has completado tu evaluación. ¡Gracias!
+                    <Button asChild variant="link" className="p-0 h-auto ml-1">
+                        <Link href="/evaluations">Volver a mis evaluaciones</Link>
+                    </Button>
                 </AlertDescription>
             </Alert>
         ) : (

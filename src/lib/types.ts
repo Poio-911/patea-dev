@@ -72,10 +72,21 @@ export type Group = {
 
 export type Evaluation = {
     id: string;
+    assignmentId: string; // The ID of the assignment this evaluation fulfills
     playerId: string; // The player being evaluated
+    evaluatorId: string; // The user UID who submitted the evaluation
     goals: number;
     rating: number; // Scale 1-10
     performanceTags: string[];
-    evaluatedBy: string; // The user UID who submitted the evaluation
     evaluatedAt: string;
+} & DocumentData;
+
+
+export type EvaluationAssignment = {
+    id: string;
+    matchId: string;
+    evaluatorId: string; // Who has to do the evaluation
+    subjectId: string; // Who is being evaluated
+    status: 'pending' | 'completed';
+    evaluationId?: string; // The ID of the resulting evaluation doc
 } & DocumentData;

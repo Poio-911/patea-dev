@@ -108,6 +108,34 @@
         "members": { "type": "array", "items": { "type": "string" }, "description": "List of user UIDs who are members of this group." }
       },
       "required": ["name", "ownerUid", "inviteCode"]
+    },
+    "evaluation": {
+      "title": "Evaluation",
+      "description": "Stores a single player's evaluation for a specific match, submitted by another player.",
+      "type": "object",
+      "properties": {
+        "assignmentId": { "type": "string" },
+        "playerId": { "type": "string" },
+        "evaluatorId": { "type": "string" },
+        "goals": { "type": "number" },
+        "rating": { "type": "number" },
+        "performanceTags": { "type": "array", "items": { "type": "string" } },
+        "evaluatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["assignmentId", "playerId", "evaluatorId", "rating"]
+    },
+    "evaluationAssignment": {
+      "title": "Evaluation Assignment",
+      "description": "Represents a task for a player to evaluate a teammate in a match.",
+      "type": "object",
+      "properties": {
+        "matchId": { "type": "string" },
+        "evaluatorId": { "type": "string" },
+        "subjectId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed"] },
+        "evaluationId": { "type": "string" }
+      },
+      "required": ["matchId", "evaluatorId", "subjectId", "status"]
     }
   },
   "auth": {
@@ -122,13 +150,21 @@
       "schema": { "$ref": "#/entities/player" },
       "description": "Stores data for each player, linked to a group. PlayerId is the same as the user's UID for registered users."
     },
+    "/groups/{groupId}": {
+      "schema": { "$ref": "#/entities/group" },
+      "description": "Stores data for each user group."
+    },
     "/matches/{matchId}": {
       "schema": { "$ref": "#/entities/match" },
       "description": "Stores data for each match, linked to a group."
     },
-    "/groups/{groupId}": {
-      "schema": { "$ref": "#/entities/group" },
-      "description": "Stores data for each user group."
+    "/matches/{matchId}/assignments/{assignmentId}": {
+      "schema": { "$ref": "#/entities/evaluationAssignment" },
+      "description": "Stores all the evaluation assignments for a specific match."
+    },
+    "/evaluations/{evaluationId}": {
+        "schema": { "$ref": "#/entities/evaluation" },
+        "description": "Stores all individual evaluation records across all matches."
     }
   }
 }
