@@ -10,8 +10,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import fetch from 'node-fetch';
-import { differenceInHours, parseISO } from 'date-fns';
 
 // Define the input and output schemas for our main flow
 const GetMatchDayForecastInputSchema = z.object({
@@ -21,79 +19,11 @@ const GetMatchDayForecastInputSchema = z.object({
 type GetMatchDayForecastInput = z.infer<typeof GetMatchDayForecastInputSchema>;
 
 const GetMatchDayForecastOutputSchema = z.object({
-  description: z.string().describe('A concise, user-friendly description of the weather.'),
+  description: z.string().describe('A concise, user-friendly description of the weather in Spanish.'),
   icon: z.enum(['Sun', 'Cloud', 'Cloudy', 'CloudRain', 'CloudSnow', 'Wind', 'Zap']).describe('An icon name representing the weather condition.'),
   temperature: z.number().describe('The temperature in Celsius.'),
 });
 type GetMatchDayForecastOutput = z.infer<typeof GetMatchDayForecastOutputSchema>;
-
-
-// Define the schema for the raw weather data from the API
-const WeatherApiDataSchema = z.object({
-    list: z.array(z.object({
-        dt_txt: z.string(),
-        main: z.object({
-            temp: z.number(),
-        }),
-        weather: z.array(z.object({
-            main: z.string(),
-            description: z.string(),
-        })),
-        wind: z.object({
-            speed: z.number(),
-        }),
-    })).optional(),
-    city: z.object({
-        name: z.string(),
-    }).optional(),
-});
-
-// Define the input schema for the tool, now including the API key
-const ToolInputSchema = GetMatchDayForecastInputSchema.extend({
-    apiKey: z.string().describe("The API key for the OpenWeather service."),
-});
-
-// Define the Genkit Tool to fetch weather data
-const getWeatherForecast = ai.defineTool(
-  {
-    name: 'getWeatherForecast',
-    description: 'Returns the weather forecast for a given location and date.',
-    inputSchema: ToolInputSchema,
-    outputSchema: WeatherApiDataSchema,
-  },
-  async ({ location, date, apiKey }) => {
-    if (!apiKey) {
-      throw new Error('OpenWeather API key is not configured.');
-    }
-    const url = `https://api.openweathermap.org/data/2.5/forecast?q=${location}&appid=${apiKey}&units=metric&lang=es`;
-    
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch weather data: ${response.statusText}`);
-    }
-
-    const data = await response.json() as z.infer<typeof WeatherApiDataSchema>;
-
-    if (!data.list || data.list.length === 0) {
-        throw new Error('No forecasts found for the specified location.');
-    }
-    
-    // Find the closest forecast to the match date
-    const matchDate = parseISO(date);
-    const closestForecast = data.list.reduce((prev, curr) => {
-        const currDate = parseISO(curr.dt_txt);
-        const prevDiff = Math.abs(differenceInHours(prev ? parseISO(prev.dt_txt) : new Date(0), matchDate));
-        const currDiff = Math.abs(differenceInHours(currDate, matchDate));
-        return currDiff < prevDiff ? curr : prev;
-    });
-    
-    // Return only the most relevant part of the data
-    return {
-        list: [closestForecast],
-        city: data.city,
-    };
-  }
-);
 
 
 // Define the main Genkit Flow
@@ -103,26 +33,22 @@ const getMatchDayForecastFlow = ai.defineFlow(
     inputSchema: GetMatchDayForecastInputSchema,
     outputSchema: GetMatchDayForecastOutputSchema,
   },
-  async (input) => {
-    const apiKey = process.env.OPENWEATHER_API_KEY;
-    if (!apiKey) {
-        throw new Error("OpenWeather API key is not set in environment variables.");
-    }
+  async ({location, date}) => {
       
     const { output } = await ai.generate({
         prompt: `
-        You are a sports assistant. Based on the provided weather data, generate a very concise and friendly description of the match day weather. 
-        Also, select the most appropriate icon and extract the temperature.
+        You are a helpful sports assistant. Your task is to provide a weather forecast for a specific location and date.
+        Search for the weather forecast for the following location and date:
+        Location: ${location}
+        Date: ${date}
 
-        Weather Data: {{weather}}
+        Based on the forecast, generate a very concise and friendly description in SPANISH.
+        Also, select the most appropriate icon from the provided list and extract the temperature in Celsius.
 
         - The description should be short and easy to read (e.g., "Noche clara, 18°C, poco viento.").
         - Choose one of these icons based on the weather condition: 'Sun', 'Cloud', 'Cloudy', 'CloudRain', 'CloudSnow', 'Wind', 'Zap'.
         - Extract the temperature in Celsius.
       `,
-        context: {
-            weather: await getWeatherForecast({ ...input, apiKey }),
-        },
         output: { schema: GetMatchDayForecastOutputSchema },
         model: 'googleai/gemini-2.5-flash',
     });
