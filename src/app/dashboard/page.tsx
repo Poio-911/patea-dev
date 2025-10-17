@@ -152,7 +152,7 @@ export default function DashboardPage() {
                         <div className="space-y-4">
                             {recentMatches.map((match, index) => {
                                 const statusInfo = statusConfig[match.status];
-                                const owner = allPlayers?.find(p => p.id === match.ownerUid)
+                                const owner = players?.find(p => p.id === match.ownerUid)
                                 const ownerName = owner?.name || (match.ownerUid === user?.uid ? user.displayName : null) || 'Organizador';
                                 
                                 return (
