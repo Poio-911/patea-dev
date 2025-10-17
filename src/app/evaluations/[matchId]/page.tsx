@@ -326,5 +326,3 @@ export default function PerformEvaluationPage() {
     </div>
   );
 }
-
-    
