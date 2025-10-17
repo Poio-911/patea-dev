@@ -1,20 +1,22 @@
+
 'use client';
 
 import { useParams } from 'next/navigation';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
-import { doc, collection, query, where, orderBy } from 'firebase/firestore';
+import { doc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import type { Player, Evaluation, Match } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, BarChart2, Star, Goal } from 'lucide-react';
+import { Loader2, BarChart2, Star, Goal, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 type OvrHistory = {
     date: string;
@@ -38,73 +40,101 @@ const Stat = ({ label, value }: { label: string; value: number }) => (
   </div>
 );
 
+type DetailedEvaluation = Evaluation & { evaluatorName?: string; evaluatorPhoto?: string };
+type MatchEvaluationSummary = {
+    match: Match;
+    avgRating: number;
+    totalGoals: number;
+    individualEvaluations: DetailedEvaluation[];
+};
 
 export default function PlayerDetailPage() {
   const { id: playerId } = useParams();
   const firestore = useFirestore();
   const { user } = useUser();
+  const [evaluatorProfiles, setEvaluatorProfiles] = useState<Record<string, {displayName: string, photoURL: string}>>({});
 
   const playerRef = useMemo(() => firestore && playerId ? doc(firestore, 'players', playerId as string) : null, [firestore, playerId]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
 
-  // Fetch evaluations for this player
   const evaluationsQuery = useMemo(() => {
-    if (!firestore || !playerId || !user?.activeGroupId) return null;
-    return query(
-      collection(firestore, `evaluations`),
-      where('playerId', '==', playerId),
-      // We can't query by groupId directly on evaluations, so we'll filter later
-    );
-  }, [firestore, playerId, user?.activeGroupId]);
+    if (!firestore || !playerId) return null;
+    return query(collection(firestore, `evaluations`), where('playerId', '==', playerId));
+  }, [firestore, playerId]);
   const { data: evaluations, loading: evaluationsLoading } = useCollection<Evaluation>(evaluationsQuery);
 
-  // Fetch all matches from the group to correlate evaluations
   const matchesQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
-    return query(
-      collection(firestore, 'matches'),
-      where('groupId', '==', user?.activeGroupId),
-      where('status', '==', 'evaluated')
-    );
+    return query(collection(firestore, 'matches'), where('groupId', '==', user?.activeGroupId), where('status', '==', 'evaluated'));
   }, [firestore, user?.activeGroupId]);
   const { data: matches, loading: matchesLoading } = useCollection<Match>(matchesQuery);
   
-  // Fetch OVR progression history
   const ovrHistoryQuery = useMemo(() => {
     if (!firestore || !playerId) return null;
     return query(collection(firestore, 'players', playerId as string, 'ovrHistory'), orderBy('date', 'asc'));
   }, [firestore, playerId]);
   const { data: ovrHistory, loading: historyLoading } = useCollection<OvrHistory>(ovrHistoryQuery);
+  
+  useEffect(() => {
+      async function fetchEvaluatorProfiles() {
+        if (!evaluations || !firestore) return;
+        const evaluatorIds = [...new Set(evaluations.map(ev => ev.evaluatorId).filter(id => id && !evaluatorProfiles[id]))];
+        if (evaluatorIds.length === 0) return;
+
+        const usersRef = collection(firestore, "users");
+        const q = query(usersRef, where('uid', 'in', evaluatorIds));
+        const querySnapshot = await getDocs(q);
+
+        const newProfiles: Record<string, {displayName: string, photoURL: string}> = {};
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            newProfiles[doc.id] = {
+                displayName: data.displayName || 'Anónimo',
+                photoURL: data.photoURL || '',
+            };
+        });
+
+        setEvaluatorProfiles(prev => ({...prev, ...newProfiles}));
+      }
+      fetchEvaluatorProfiles();
+
+  }, [evaluations, firestore, evaluatorProfiles]);
 
 
-  const filteredEvaluations = useMemo(() => {
+  const filteredEvaluationsByMatch = useMemo((): MatchEvaluationSummary[] => {
     if (!evaluations || !matches) return [];
-    const matchIdsInGroup = new Set(matches.map(m => m.id));
     
-    const evalsByMatch: Record<string, { ratings: number[], goals: number }> = {};
+    const evalsByMatch: Record<string, MatchEvaluationSummary> = {};
 
     evaluations.forEach(ev => {
       const matchForEval = matches.find(m => m.id === ev.matchId);
       if (matchForEval) {
           if (!evalsByMatch[ev.matchId]) {
-              evalsByMatch[ev.matchId] = { ratings: [], goals: 0 };
+              evalsByMatch[ev.matchId] = { 
+                  match: matchForEval, 
+                  avgRating: 0, 
+                  totalGoals: 0, 
+                  individualEvaluations: [] 
+              };
           }
-          evalsByMatch[ev.matchId].ratings.push(ev.rating);
-          evalsByMatch[ev.matchId].goals += ev.goals;
+          const detailedEval: DetailedEvaluation = {
+              ...ev,
+              evaluatorName: evaluatorProfiles[ev.evaluatorId]?.displayName || 'Cargando...',
+              evaluatorPhoto: evaluatorProfiles[ev.evaluatorId]?.photoURL || '',
+          };
+          evalsByMatch[ev.matchId].individualEvaluations.push(detailedEval);
       }
     });
 
-    return Object.entries(evalsByMatch).map(([matchId, data]) => {
-        const match = matches.find(m => m.id === matchId)!;
-        const avgRating = data.ratings.reduce((a, b) => a + b, 0) / data.ratings.length;
-        return {
-            match,
-            avgRating,
-            goals: data.goals,
-        }
+    return Object.values(evalsByMatch).map(summary => {
+        const ratings = summary.individualEvaluations.map(ev => ev.rating);
+        const goals = summary.individualEvaluations.map(ev => ev.goals);
+        summary.avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+        summary.totalGoals = goals.reduce((a, b) => a + b, 0);
+        return summary;
     }).sort((a,b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime());
 
-  }, [evaluations, matches]);
+  }, [evaluations, matches, evaluatorProfiles]);
 
   const chartData = useMemo(() => {
     if (!ovrHistory) return [];
@@ -218,46 +248,100 @@ export default function PlayerDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle>Historial de Evaluaciones</CardTitle>
-          <CardDescription>Rendimiento del jugador en los últimos partidos evaluados.</CardDescription>
+          <CardDescription>Rendimiento del jugador en los últimos partidos evaluados. Haz clic en un partido para ver el detalle.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Partido</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead className="text-center">Rating Prom.</TableHead>
-                <TableHead className="text-center">Goles</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredEvaluations.map(({ match, avgRating, goals }) => (
-                <TableRow key={match.id}>
-                  <TableCell className="font-medium">{match.title}</TableCell>
-                  <TableCell>{format(new Date(match.date), 'dd MMM, yyyy')}</TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'} className="text-base">
-                      <Star className="mr-1 h-3 w-3" /> {avgRating.toFixed(2)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                     <Badge variant="outline" className="text-base">
-                        <Goal className="mr-1 h-3 w-3" /> {goals}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-               {filteredEvaluations.length === 0 && (
-                 <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
-                        Este jugador aún no tiene evaluaciones registradas.
-                    </TableCell>
-                 </TableRow>
-               )}
-            </TableBody>
-          </Table>
+          <Accordion type="single" collapsible className="w-full">
+            <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className='w-12'></TableHead>
+                    <TableHead>Partido</TableHead>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead className="text-center">Rating Prom.</TableHead>
+                    <TableHead className="text-center">Goles Totales</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, avgRating, totalGoals, individualEvaluations }) => (
+                    <AccordionItem value={match.id} key={match.id}>
+                        <TableRow>
+                            <TableCell>
+                                <AccordionTrigger />
+                            </TableCell>
+                            <TableCell className="font-medium">{match.title}</TableCell>
+                            <TableCell>{format(new Date(match.date), 'dd MMM, yyyy')}</TableCell>
+                            <TableCell className="text-center">
+                                <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'} className="text-base">
+                                <Star className="mr-1 h-3 w-3" /> {avgRating.toFixed(2)}
+                                </Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                                <Badge variant="outline" className="text-base">
+                                    <Goal className="mr-1 h-3 w-3" /> {totalGoals}
+                                </Badge>
+                            </TableCell>
+                        </TableRow>
+                        <AccordionContent asChild>
+                            <tr>
+                                <td colSpan={5} className="p-0">
+                                  <div className="bg-muted/50 p-4">
+                                      <h4 className="font-semibold text-md mb-2 ml-4">Detalle de evaluaciones:</h4>
+                                      <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Evaluador</TableHead>
+                                                <TableHead className="text-center">Rating</TableHead>
+                                                <TableHead className="text-center">Goles</TableHead>
+                                                <TableHead>Etiquetas de Rendimiento</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {individualEvaluations.map(ev => (
+                                                <TableRow key={ev.id} className="bg-background">
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-2">
+                                                            <Avatar className="h-8 w-8">
+                                                                <AvatarImage src={ev.evaluatorPhoto} alt={ev.evaluatorName} />
+                                                                <AvatarFallback>{ev.evaluatorName?.charAt(0)}</AvatarFallback>
+                                                            </Avatar>
+                                                            <span>{ev.evaluatorName}</span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <Badge variant="secondary">{ev.rating}</Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-center">{ev.goals}</TableCell>
+                                                    <TableCell>
+                                                        <div className="flex gap-1 flex-wrap">
+                                                        {ev.performanceTags.length > 0 ? ev.performanceTags.map(tag => (
+                                                            <Badge key={tag} variant="outline">{tag}</Badge>
+                                                        )) : <span className="text-muted-foreground text-xs">Sin etiquetas</span>}
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                      </Table>
+                                  </div>
+                                </td>
+                            </tr>
+                        </AccordionContent>
+                    </AccordionItem>
+                )) : (
+                    <TableRow>
+                        <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
+                            Este jugador aún no tiene evaluaciones registradas.
+                        </TableCell>
+                    </TableRow>
+                )}
+                </TableBody>
+            </Table>
+           </Accordion>
         </CardContent>
       </Card>
     </div>
   );
 }
+
+    

@@ -34,6 +34,7 @@ const playerEvaluationSchema = z.object({
   displayName: z.string(),
   photoUrl: z.string(),
   rating: z.coerce.number().min(1).max(10).default(5),
+  goals: z.coerce.number().min(0).max(20).default(0),
   performanceTags: z.array(z.string()).max(2, "No puedes seleccionar más de 2 etiquetas.").optional(),
 });
 
@@ -92,6 +93,7 @@ export default function PerformEvaluationPage() {
                 displayName: subject?.name || 'Jugador desconocido',
                 photoUrl: subject?.photoUrl || '',
                 rating: 5,
+                goals: 0,
                 performanceTags: []
             };
         });
@@ -119,7 +121,7 @@ export default function PerformEvaluationPage() {
                 playerId: evaluation.subjectId,
                 evaluatorId: user.uid,
                 matchId: matchId as string,
-                goals: 0, // Set to 0 as it's no longer asked for the subject
+                goals: evaluation.goals,
                 rating: evaluation.rating,
                 performanceTags: evaluation.performanceTags || [],
                 evaluatedAt: new Date().toISOString(),
@@ -210,100 +212,115 @@ export default function PerformEvaluationPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Jugadores a Evaluar</CardTitle>
-                            <CardDescription>Asigna una calificación (1-10) y hasta 2 etiquetas de rendimiento a cada jugador.</CardDescription>
+                            <CardDescription>Asigna una calificación (1-10), goles y hasta 2 etiquetas a cada jugador.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
                         {fields.map((field, index) => (
-                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-3 items-start gap-4 border-b pb-4">
-                            <div className="flex items-center gap-4">
-                                <Avatar className="h-12 w-12">
-                                    <AvatarImage src={field.photoUrl} alt={field.displayName} data-ai-hint="player portrait" />
-                                    <AvatarFallback>{field.displayName.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <p className="font-semibold">{field.displayName}</p>
-                            </div>
-                            
-                            <FormField
-                                control={form.control}
-                                name={`evaluations.${index}.rating`}
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Rating: {field.value}</FormLabel>
-                                    <FormControl>
-                                        <div className="flex items-center gap-2 pt-2">
-                                            <span className="text-xs text-muted-foreground">1</span>
-                                            <Slider
-                                                min={1}
-                                                max={10}
-                                                step={1}
-                                                defaultValue={[field.value]}
-                                                onValueChange={(value) => field.onChange(value[0])}
-                                            />
-                                            <span className="text-xs text-muted-foreground">10</span>
-                                        </div>
-                                    </FormControl>
-                                </FormItem>
-                                )}
-                            />
-
-                            <Controller
-                                control={form.control}
-                                name={`evaluations.${index}.performanceTags`}
-                                render={({ field, fieldState }) => (
-                                    <FormItem className="flex flex-col">
-                                        <FormLabel>Etiquetas (Opcional)</FormLabel>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <FormControl>
-                                                    <Button variant="outline" role="combobox" className={cn("w-full justify-between", !field.value?.length && "text-muted-foreground")}>
-                                                        <span className="truncate">
-                                                            {field.value?.length ? field.value.join(', ') : "Seleccionar etiquetas"}
-                                                        </span>
-                                                    </Button>
-                                                </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-[200px] p-0" align="start">
-                                                <Command>
-                                                    <CommandInput placeholder="Buscar etiqueta..." />
-                                                    <CommandList>
-                                                        <CommandEmpty>No se encontró la etiqueta.</CommandEmpty>
-                                                        <CommandGroup>
-                                                            {performanceTags.map((tag) => {
-                                                                const isSelected = field.value?.includes(tag);
-                                                                return (
-                                                                    <CommandItem
-                                                                        key={tag}
-                                                                        onSelect={() => {
-                                                                            const currentValue = field.value || [];
-                                                                            if (isSelected) {
-                                                                                field.onChange(currentValue.filter((t: string) => t !== tag));
-                                                                            } else if (currentValue.length < 2) {
-                                                                                field.onChange([...currentValue, tag]);
-                                                                            } else {
-                                                                                toast({
-                                                                                    variant: 'destructive',
-                                                                                    title: 'Límite alcanzado',
-                                                                                    description: 'Solo puedes seleccionar hasta 2 etiquetas.'
-                                                                                });
-                                                                            }
-                                                                        }}
-                                                                    >
-                                                                        <div className={cn("mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary", isSelected ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible")}>
-                                                                            <Check className={cn("h-4 w-4")} />
-                                                                        </div>
-                                                                        {tag}
-                                                                    </CommandItem>
-                                                                )
-                                                            })}
-                                                        </CommandGroup>
-                                                    </CommandList>
-                                                </Command>
-                                            </PopoverContent>
-                                        </Popover>
-                                        <FormMessage>{fieldState.error?.message}</FormMessage>
+                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-4 items-start gap-6 border-b pb-6 last:border-b-0 last:pb-0">
+                                <div className="flex items-center gap-4 md:col-span-1">
+                                    <Avatar className="h-12 w-12">
+                                        <AvatarImage src={field.photoUrl} alt={field.displayName} data-ai-hint="player portrait" />
+                                        <AvatarFallback>{field.displayName.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <p className="font-semibold">{field.displayName}</p>
+                                </div>
+                                
+                                <FormField
+                                    control={form.control}
+                                    name={`evaluations.${index}.rating`}
+                                    render={({ field: ratingField }) => (
+                                    <FormItem className="md:col-span-1">
+                                        <FormLabel>Rating: {ratingField.value}</FormLabel>
+                                        <FormControl>
+                                            <div className="flex items-center gap-2 pt-2">
+                                                <span className="text-xs text-muted-foreground">1</span>
+                                                <Slider
+                                                    min={1}
+                                                    max={10}
+                                                    step={1}
+                                                    defaultValue={[ratingField.value]}
+                                                    onValueChange={(value) => ratingField.onChange(value[0])}
+                                                />
+                                                <span className="text-xs text-muted-foreground">10</span>
+                                            </div>
+                                        </FormControl>
                                     </FormItem>
-                                )}
-                            />
+                                    )}
+                                />
+                                 <FormField
+                                    control={form.control}
+                                    name={`evaluations.${index}.goals`}
+                                    render={({ field: goalsField }) => (
+                                    <FormItem className="md:col-span-1">
+                                        <FormLabel>Goles</FormLabel>
+                                        <FormControl>
+                                            <div className="flex items-center gap-2">
+                                                <Goal className="h-5 w-5 text-muted-foreground" />
+                                                <Input type="number" min="0" {...goalsField} />
+                                            </div>
+                                        </FormControl>
+                                    </FormItem>
+                                    )}
+                                />
+
+                                <Controller
+                                    control={form.control}
+                                    name={`evaluations.${index}.performanceTags`}
+                                    render={({ field: tagsField, fieldState }) => (
+                                        <FormItem className="flex flex-col md:col-span-1">
+                                            <FormLabel>Etiquetas (Opcional)</FormLabel>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <FormControl>
+                                                        <Button variant="outline" role="combobox" className={cn("w-full justify-between", !tagsField.value?.length && "text-muted-foreground")}>
+                                                            <span className="truncate">
+                                                                {tagsField.value?.length ? tagsField.value.join(', ') : "Seleccionar etiquetas"}
+                                                            </span>
+                                                        </Button>
+                                                    </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-[200px] p-0" align="start">
+                                                    <Command>
+                                                        <CommandInput placeholder="Buscar etiqueta..." />
+                                                        <CommandList>
+                                                            <CommandEmpty>No se encontró la etiqueta.</CommandEmpty>
+                                                            <CommandGroup>
+                                                                {performanceTags.map((tag) => {
+                                                                    const isSelected = tagsField.value?.includes(tag);
+                                                                    return (
+                                                                        <CommandItem
+                                                                            key={tag}
+                                                                            onSelect={() => {
+                                                                                const currentValue = tagsField.value || [];
+                                                                                if (isSelected) {
+                                                                                    tagsField.onChange(currentValue.filter((t: string) => t !== tag));
+                                                                                } else if (currentValue.length < 2) {
+                                                                                    tagsField.onChange([...currentValue, tag]);
+                                                                                } else {
+                                                                                    toast({
+                                                                                        variant: 'destructive',
+                                                                                        title: 'Límite alcanzado',
+                                                                                        description: 'Solo puedes seleccionar hasta 2 etiquetas.'
+                                                                                    });
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            <div className={cn("mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary", isSelected ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible")}>
+                                                                                <Check className={cn("h-4 w-4")} />
+                                                                            </div>
+                                                                            {tag}
+                                                                        </CommandItem>
+                                                                    )
+                                                                })}
+                                                            </CommandGroup>
+                                                        </CommandList>
+                                                    </Command>
+                                                </PopoverContent>
+                                            </Popover>
+                                            <FormMessage>{fieldState.error?.message}</FormMessage>
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
                         ))}
                         </CardContent>
@@ -321,3 +338,5 @@ export default function PerformEvaluationPage() {
     </div>
   );
 }
+
+    
