@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Shield, Users2 } from 'lucide-react';
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -330,34 +330,40 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                     )}
                 </div>
 
-                <div>
+                <div className="space-y-2">
                     <Label>Tamaño del Partido</Label>
                     <Controller
                         name="matchSize"
                         control={form.control}
                         render={({ field }) => (
-                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-wrap gap-4 mt-2">
-                                <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
-                                    <RadioGroupItem value="10" /> 5 vs 5
+                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <Label className="flex flex-col items-center justify-center gap-2 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+                                    <Users className="h-6 w-6" />
+                                    <span className="font-bold">5 vs 5</span>
+                                    <RadioGroupItem value="10" />
                                 </Label>
-                                <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
-                                    <RadioGroupItem value="14" /> 7 vs 7
+                                <Label className="flex flex-col items-center justify-center gap-2 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+                                    <Users2 className="h-6 w-6" />
+                                    <span className="font-bold">7 vs 7</span>
+                                    <RadioGroupItem value="14" />
                                 </Label>
-                                <Label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
-                                    <RadioGroupItem value="22" /> 11 vs 11
+                                <Label className="flex flex-col items-center justify-center gap-2 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
+                                    <Shield className="h-6 w-6" />
+                                    <span className="font-bold">11 vs 11</span>
+                                    <RadioGroupItem value="22" />
                                 </Label>
                             </RadioGroup>
                         )}
                     />
                 </div>
                 
-                <div>
+                <div className="space-y-2">
                     <Label>Tipo de Partido</Label>
                      <Controller
                         name="type"
                         control={form.control}
                         render={({ field }) => (
-                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <Label className="flex gap-4 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
                                     <RadioGroupItem value="manual" className="mt-1" />
                                     <div className="flex flex-col gap-1">
