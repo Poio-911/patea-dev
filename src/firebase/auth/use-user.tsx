@@ -1,16 +1,25 @@
+
 'use client';
 import { useEffect, useState, createContext, useContext } from 'react';
 import type { User } from 'firebase/auth';
 import { useAuth } from '@/firebase';
-import { doc, setDoc, getDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, onSnapshot, FieldValue } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 
-export interface UserData extends User {
+// This represents the data we store in the /users/{uid} document in Firestore.
+// It's separate from the Firebase Auth User object.
+export type UserProfile = {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
   groups?: string[];
-  activeGroupId?: string;
-}
+  activeGroupId?: string | null;
+  createdAt?: FieldValue;
+};
 
-const UserContext = createContext<{ user: UserData | null; loading: boolean }>({
+
+const UserContext = createContext<{ user: UserProfile | null; loading: boolean }>({
   user: null,
   loading: true,
 });
@@ -20,7 +29,7 @@ export const useUser = () => useContext(UserContext);
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const auth = useAuth();
   const firestore = useFirestore();
-  const [user, setUser] = useState<UserData | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,7 +45,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         const unsubUser = onSnapshot(userRef, (userDoc) => {
           if (!userDoc.exists()) {
             // Create user profile if it doesn't exist
-            const newUserProfile = {
+            const newUserProfile: UserProfile = {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
               displayName: firebaseUser.displayName,
@@ -47,7 +56,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             };
             setDoc(userRef, newUserProfile)
               .then(() => {
-                setUser(newUserProfile as UserData);
+                setUser(newUserProfile);
               })
               .catch(e => {
                 console.error("[useUser] Error creating user profile:", e);
@@ -56,7 +65,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                 setLoading(false);
               });
           } else {
-             const userData = userDoc.data() as UserData;
+             const userData = userDoc.data() as UserProfile;
              setUser(userData);
              setLoading(false);
           }

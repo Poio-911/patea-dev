@@ -18,6 +18,7 @@ export type OvrHistory = {
   newOVR: number;
   change: number;
   matchId: string;
+  attributeChanges?: Partial<Pick<Player, 'pac' | 'sho' | 'pas' | 'dri' | 'def' | 'phy'>>;
 };
 
 export type Player = {
