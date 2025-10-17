@@ -5,9 +5,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { MarkerF, InfoWindowF } from '@react-google-maps/api';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { doc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, arrayRemove, getDoc, writeBatch, collection } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
-import type { Match, Player } from '@/lib/types';
+import type { Match, Player, Notification } from '@/lib/types';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus, LogOut, MapPin } from 'lucide-react';
@@ -28,16 +28,13 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
 
   useEffect(() => {
     // On the client, read the CSS variable for the primary color
-    const color = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
-    if (color) {
-        // HSL to HEX conversion or direct use if the browser supports it.
-        // For simplicity, we assume we can get a usable color.
-        // A full HSL parser would be more robust.
-        // Format is "217 91% 60%", we need "hsl(217, 91%, 60%)"
-        setPrimaryColor(`hsl(${color})`);
+    if (typeof window !== 'undefined') {
+        const color = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+        if (color) {
+            setPrimaryColor(`hsl(${color})`);
+        }
     }
   }, []);
-
 
   const isUserInMatch = useMemo(() => {
     if (!user || !match.players) return false;
@@ -50,20 +47,19 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
   }, [match.players, match.matchSize]);
 
   const isUserLocationMarker = match.id === 'user-location';
-  
+
   const customIcon = useMemo(() => {
-    if (isUserLocationMarker) return undefined;
-    
-    // Create a data URL for the SVG to use as an icon
-    const svgString = `
-      <svg fill="${primaryColor}" height="32px" width="32px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 97.316 97.316" xml:space="preserve">
-        <path d="${KickerIconPath}"/>
-      </svg>
-    `;
+    if (isUserLocationMarker) {
+        // Default Google Maps icon for user location
+        return undefined;
+    }
+
+    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 97.316 97.316" width="32px" height="32px" fill="${encodeURIComponent(primaryColor)}"><path d="${KickerIconPath}"/></svg>`;
 
     return {
-      url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svgString)}`,
+      url: `data:image/svg+xml;charset=UTF-8,${svgString}`,
       scaledSize: new window.google.maps.Size(32, 32),
+      anchor: new window.google.maps.Point(16, 16),
     };
   }, [isUserLocationMarker, primaryColor]);
 
@@ -71,12 +67,15 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
   const handleJoinOrLeaveMatch = async () => {
     if (!firestore || !user) return;
     setIsJoining(true);
+    
+    const batch = writeBatch(firestore);
+    const matchRef = doc(firestore, 'matches', match.id);
 
     try {
         if (isUserInMatch) {
             const playerToRemove = match.players.find((p: any) => p.uid === user.uid);
             if (playerToRemove) {
-                await updateDoc(doc(firestore, 'matches', match.id), {
+                 batch.update(matchRef, {
                     players: arrayRemove(playerToRemove),
                 });
             }
@@ -106,11 +105,25 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
                 photoUrl: playerProfile!.photoUrl || '',
               };
 
-            await updateDoc(doc(firestore, 'matches', match.id), {
+            batch.update(matchRef, {
                 players: arrayUnion(playerPayload),
             });
+            
+            // Notify the organizer
+            const notificationRef = doc(collection(firestore, 'users', match.ownerUid, 'notifications'));
+            const notification: Omit<Notification, 'id'> = {
+                type: 'new_joiner',
+                title: '¡Nuevo Jugador!',
+                message: `${user.displayName} se ha apuntado a tu partido "${match.title}".`,
+                link: `/matches/${match.id}`,
+                isRead: false,
+                createdAt: new Date().toISOString(),
+            };
+            batch.set(notificationRef, notification);
+            
             toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${match.title}".` });
         }
+        await batch.commit();
     } catch (error) {
       console.error('Error joining/leaving match: ', error);
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo completar la operación.' });
@@ -175,3 +188,5 @@ export function MatchMarker({ match, activeMarker, handleMarkerClick }: MatchMar
     </MarkerF>
   );
 }
+
+    

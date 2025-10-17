@@ -12,9 +12,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useState, useTransition } from 'react';
-import { useFirestore } from '@/firebase';
-import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
-import type { Match, Player } from '@/lib/types';
+import { useFirestore, useUser } from '@/firebase';
+import { doc, updateDoc, arrayUnion, writeBatch, collection } from 'firebase/firestore';
+import type { Match, Player, Notification } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
@@ -39,6 +39,7 @@ export function InvitePlayerDialog({
   const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
   const [isPending, startTransition] = useTransition();
   const firestore = useFirestore();
+  const { user } = useUser();
   const { toast } = useToast();
 
   const spotsAvailable = match.matchSize - match.players.length;
@@ -61,14 +62,16 @@ export function InvitePlayerDialog({
   };
 
   const handleInvite = () => {
-    if (!firestore) return;
+    if (!firestore || !user) return;
     if (selectedPlayers.length === 0) {
       toast({ variant: 'destructive', title: 'Ningún jugador seleccionado' });
       return;
     }
 
     startTransition(async () => {
+      const batch = writeBatch(firestore);
       const matchRef = doc(firestore, 'matches', match.id);
+
       const playersToInvite = selectedPlayers.map(p => ({
         uid: p.id,
         displayName: p.name,
@@ -77,13 +80,29 @@ export function InvitePlayerDialog({
         photoUrl: p.photoUrl || ''
       }));
 
+      batch.update(matchRef, {
+        players: arrayUnion(...playersToInvite),
+      });
+
+      // Create notifications for each invited player
+      selectedPlayers.forEach(player => {
+        const notificationRef = doc(collection(firestore, 'users', player.id, 'notifications'));
+        const notification: Omit<Notification, 'id'> = {
+            type: 'match_invite',
+            title: '¡Has sido convocado!',
+            message: `${user.displayName} te ha invitado al partido "${match.title}".`,
+            link: `/matches/${match.id}`,
+            isRead: false,
+            createdAt: new Date().toISOString(),
+        };
+        batch.set(notificationRef, notification);
+      });
+
       try {
-        await updateDoc(matchRef, {
-          players: arrayUnion(...playersToInvite),
-        });
+        await batch.commit();
         toast({
           title: 'Jugadores invitados',
-          description: `${selectedPlayers.length} jugador(es) han sido añadidos al partido.`,
+          description: `${selectedPlayers.length} jugador(es) han sido añadidos y notificados.`,
         });
         setSelectedPlayers([]);
         setOpen(false);
@@ -145,3 +164,5 @@ export function InvitePlayerDialog({
     </Dialog>
   );
 }
+
+    

@@ -94,6 +94,19 @@ export type Group = {
     members: string[];
 } & DocumentData;
 
+export type NotificationType = 'match_invite' | 'new_joiner' | 'evaluation_pending' | 'match_update';
+
+export type Notification = {
+    id: string;
+    type: NotificationType;
+    title: string;
+    message: string;
+    link: string;
+    isRead: boolean;
+    createdAt: string; // ISO 8601 string
+} & DocumentData;
+
+
 export type Evaluation = {
     id: string;
     assignmentId: string; // The ID of the assignment this evaluation fulfills
@@ -127,6 +140,8 @@ export type SelfEvaluation = {
 export interface PlayerProfileViewProps {
     playerId: string;
 }
+    
+
     
 
     

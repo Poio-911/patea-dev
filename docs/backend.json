@@ -127,6 +127,20 @@
       },
       "required": ["name", "ownerUid", "inviteCode"]
     },
+    "notification": {
+        "title": "Notification",
+        "description": "Represents a user notification.",
+        "type": "object",
+        "properties": {
+            "type": { "type": "string", "enum": ["match_invite", "new_joiner", "evaluation_pending", "match_update"] },
+            "title": { "type": "string" },
+            "message": { "type": "string" },
+            "link": { "type": "string", "format": "uri-reference" },
+            "isRead": { "type": "boolean" },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["type", "title", "message", "isRead", "createdAt"]
+    },
     "evaluation": {
       "title": "Evaluation",
       "description": "Stores a single player's evaluation for a specific match, submitted by another player.",
@@ -190,6 +204,10 @@
       "schema": { "$ref": "#/entities/userProfile" },
       "description": "Stores public profiles for users."
     },
+    "/users/{userId}/notifications/{notificationId}": {
+        "schema": { "$ref": "#/entities/notification" },
+        "description": "Stores notifications for a specific user."
+    },
     "/players/{playerId}": {
       "schema": { "$ref": "#/entities/player" },
       "description": "Stores data for each player, linked to a group. PlayerId is the same as the user's UID for registered users."
@@ -220,3 +238,5 @@
     }
   }
 }
+
+    

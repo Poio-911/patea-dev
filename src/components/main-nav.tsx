@@ -39,6 +39,7 @@ import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 import { MatchIcon } from './icons/match-icon';
 import { FindMatchIcon } from './icons/find-match-icon';
 import { EvaluationIcon } from './icons/evaluation-icon';
+import { NotificationBell } from './notification-bell';
 
 
 const navItems = [
@@ -177,8 +178,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex items-center gap-4">
+                <NotificationBell />
+
                 {player && (
-                    <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="hidden sm:flex items-center gap-3 sm:gap-4">
                         <div className="text-right">
                             <p className="font-bold text-base sm:text-lg truncate">{player.name}</p>
                         </div>
@@ -189,7 +192,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                     </div>
                 )}
                 
-                <Separator orientation="vertical" className="h-10 mx-1 sm:mx-2" />
+                <Separator orientation="vertical" className="h-10 mx-1 sm:mx-2 hidden sm:block" />
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -261,3 +264,5 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+
+    

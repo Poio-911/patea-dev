@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { Match, Player, EvaluationAssignment } from '@/lib/types';
-import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDoc } from 'firebase/firestore';
+import type { Match, Player, EvaluationAssignment, Notification } from '@/lib/types';
+import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDoc, addDoc } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -192,13 +192,14 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         if (!firestore || !user) return;
         setIsJoining(true);
         
+        const batch = writeBatch(firestore);
         const matchRef = doc(firestore, 'matches', match.id);
 
         try {
             if(isUserInMatch) {
                 const playerToRemove = match.players.find(p => p.uid === user.uid);
                 if (playerToRemove) {
-                    await updateDoc(matchRef, {
+                    batch.update(matchRef, {
                         players: arrayRemove(playerToRemove)
                     });
                 }
@@ -229,11 +230,25 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     photoUrl: playerProfile.photoUrl || ''
                 };
                 
-                await updateDoc(matchRef, {
+                batch.update(matchRef, {
                     players: arrayUnion(playerPayload)
                 });
+                
+                // Notify the organizer
+                const notificationRef = doc(collection(firestore, 'users', match.ownerUid, 'notifications'));
+                const notification: Omit<Notification, 'id'> = {
+                    type: 'new_joiner',
+                    title: '¡Nuevo Jugador!',
+                    message: `${user.displayName} se ha apuntado a tu partido "${match.title}".`,
+                    link: `/matches/${match.id}`,
+                    isRead: false,
+                    createdAt: new Date().toISOString(),
+                };
+                batch.set(notificationRef, notification);
+
                 toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${match.title}".` });
             }
+            await batch.commit();
         } catch (error) {
             console.error("Error joining/leaving match: ", error);
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo completar la operación.' });
@@ -393,3 +408,5 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         </Card>
     );
 }
+
+    
