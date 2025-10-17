@@ -3,54 +3,26 @@
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Users2, Calendar, Loader2 } from 'lucide-react';
-import { useCollection, useFirestore, useUser, useDoc } from '@/firebase';
-import { collection, query, where, doc, orderBy } from 'firebase/firestore';
+import { useCollection, useFirestore, useUser } from '@/firebase';
+import { collection, query, where, orderBy } from 'firebase/firestore';
 import { useMemo } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { AddMatchDialog } from '@/components/add-match-dialog';
-import type { Match, Player, Group } from '@/lib/types';
+import type { Match, Player } from '@/lib/types';
 import { MatchCard } from '@/components/match-card';
 
 export default function MatchesPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
 
-    const groupRef = useMemo(() => {
-        if (!firestore || !user?.activeGroupId) return null;
-        return doc(firestore, 'groups', user.activeGroupId);
-      }, [firestore, user?.activeGroupId]);
-    const { data: activeGroup } = useDoc<Group>(groupRef);
-
-    // Query for manually created players in the group
-    const manualPlayersQuery = useMemo(() => {
+    // Optimized Query: Fetch all players belonging to the active group in one go.
+    const playersQuery = useMemo(() => {
         if (!firestore || !user?.activeGroupId) return null;
         return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
     }, [firestore, user?.activeGroupId]);
 
-    // Query for registered users who are members of the group
-    const memberPlayersQuery = useMemo(() => {
-        if (!firestore || !activeGroup || !activeGroup.members || activeGroup.members.length === 0) return null;
-        return query(collection(firestore, 'players'), where('__name__', 'in', activeGroup.members.slice(0, 30)));
-    }, [firestore, activeGroup]);
-
-    const { data: manualPlayers, loading: manualLoading } = useCollection<Player>(manualPlayersQuery);
-    const { data: memberPlayers, loading: membersLoading } = useCollection<Player>(memberPlayersQuery);
-    
-    // Combine and deduplicate players
-    const allGroupPlayers = useMemo(() => {
-        const allPlayersMap = new Map<string, Player>();
-        
-        if (manualPlayers) {
-            manualPlayers.forEach(p => allPlayersMap.set(p.id, p));
-        }
-        if (memberPlayers) {
-            memberPlayers.forEach(p => allPlayersMap.set(p.id, p));
-        }
-        
-        return Array.from(allPlayersMap.values()).sort((a, b) => b.ovr - a.ovr);
-    }, [manualPlayers, memberPlayers]);
-
+    const { data: allGroupPlayers, loading: playersLoading } = useCollection<Player>(playersQuery);
 
     const matchesQuery = useMemo(() => {
         if (!firestore || !user?.activeGroupId) {
@@ -61,7 +33,12 @@ export default function MatchesPage() {
     
     const { data: matches, loading: matchesLoading } = useCollection<Match>(matchesQuery);
 
-    const loading = userLoading || manualLoading || membersLoading || matchesLoading;
+    const loading = userLoading || playersLoading || matchesLoading;
+    
+    const sortedPlayers = useMemo(() => {
+        if (!allGroupPlayers) return [];
+        return [...allGroupPlayers].sort((a, b) => b.ovr - a.ovr);
+      }, [allGroupPlayers]);
 
     if (loading) {
         return (
@@ -78,7 +55,7 @@ export default function MatchesPage() {
                 title="Partidos"
                 description="Programa, visualiza y gestiona todos tus partidos."
             >
-                <AddMatchDialog allPlayers={allGroupPlayers} disabled={!user?.activeGroupId} />
+                <AddMatchDialog allPlayers={sortedPlayers} disabled={!user?.activeGroupId} />
             </PageHeader>
 
             {!user?.activeGroupId && (
@@ -107,7 +84,7 @@ export default function MatchesPage() {
             {user?.activeGroupId && matches && matches.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {matches.map((match) => (
-                        <MatchCard key={match.id} match={match} allPlayers={allGroupPlayers} />
+                        <MatchCard key={match.id} match={match} allPlayers={sortedPlayers} />
                     ))}
                 </div>
             )}

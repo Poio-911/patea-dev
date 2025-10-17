@@ -1,58 +1,34 @@
 'use client';
-import { useCollection, useFirestore, useUser, useDoc } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { PlayerCard } from '@/components/player-card';
 import { AddPlayerDialog } from '@/components/add-player-dialog';
-import { collection, query, where, doc } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { useMemo } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Users2, Users } from 'lucide-react';
+import { Users2, Users, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import type { Group, Player } from '@/lib/types';
+import type { Player } from '@/lib/types';
 
 export default function PlayersPage() {
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
 
-  // 1. Get the active group document to know its members
-  const groupRef = useMemo(() => {
-    if (!firestore || !user?.activeGroupId) return null;
-    return doc(firestore, 'groups', user.activeGroupId);
-  }, [firestore, user?.activeGroupId]);
-  const { data: activeGroup } = useDoc<Group>(groupRef);
-  
-  // 2. Get players created manually in the group (owner is the user, but id is not)
-  const manualPlayersQuery = useMemo(() => {
+  // Optimized Query: Fetch all players belonging to the active group in one go.
+  const playersQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
     return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
   }, [firestore, user?.activeGroupId]);
 
-  // 3. Get players that are real users and members of the group
-  const memberPlayersQuery = useMemo(() => {
-    if (!firestore || !activeGroup || !activeGroup.members || activeGroup.members.length === 0) return null;
-    // Firestore 'in' query is limited to 30 elements, which is fine for this app's scale.
-    return query(collection(firestore, 'players'), where('__name__', 'in', activeGroup.members.slice(0, 30)));
-  }, [firestore, activeGroup]);
+  const { data: players, loading: playersLoading } = useCollection<Player>(playersQuery);
 
-  const { data: manualPlayers, loading: manualLoading } = useCollection<Player>(manualPlayersQuery);
-  const { data: memberPlayers, loading: membersLoading } = useCollection<Player>(memberPlayersQuery);
+  const loading = userLoading || playersLoading;
   
-  const loading = manualLoading || membersLoading;
-
-  // 4. Combine and deduplicate the players
-  const players = useMemo(() => {
-    const allPlayersMap = new Map<string, Player>();
-    
-    if (manualPlayers) {
-      manualPlayers.forEach(p => allPlayersMap.set(p.id, p));
-    }
-    if (memberPlayers) {
-      memberPlayers.forEach(p => allPlayersMap.set(p.id, p));
-    }
-    
-    return Array.from(allPlayersMap.values()).sort((a, b) => b.ovr - a.ovr);
-  }, [manualPlayers, memberPlayers]);
+  const sortedPlayers = useMemo(() => {
+    if (!players) return [];
+    return [...players].sort((a, b) => b.ovr - a.ovr);
+  }, [players]);
 
 
   return (
@@ -63,7 +39,12 @@ export default function PlayersPage() {
       >
         <AddPlayerDialog />
       </PageHeader>
-       {loading && <p>Cargando jugadores...</p>}
+       {loading && (
+          <div className="flex items-center justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-4 text-muted-foreground">Cargando jugadores...</p>
+          </div>
+       )}
 
        {!loading && !user?.activeGroupId && (
          <Alert>
@@ -78,7 +59,7 @@ export default function PlayersPage() {
          </Alert>
        )}
 
-      {!loading && user?.activeGroupId && players?.length === 0 && (
+      {!loading && user?.activeGroupId && sortedPlayers?.length === 0 && (
         <Alert>
             <Users className="h-4 w-4" />
             <AlertTitle>No hay jugadores en este grupo</AlertTitle>
@@ -88,8 +69,8 @@ export default function PlayersPage() {
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {players?.map((player) => (
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        {sortedPlayers?.map((player) => (
           <PlayerCard key={player.id} player={player} />
         ))}
       </div>
