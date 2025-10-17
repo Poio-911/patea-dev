@@ -50,11 +50,11 @@ const navItems = [
   { href: '/find-match', label: 'Buscar', icon: FindMatchIcon },
 ];
 
-const positionColors: Record<Player['position'], string> = {
-    DEL: 'bg-red-500/80 text-white',
-    MED: 'bg-purple-500/80 text-white',
-    DEF: 'bg-blue-500/80 text-white',
-    POR: 'bg-orange-500/80 text-white',
+const positionBadgeStyles: Record<Player['position'], string> = {
+  DEL: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+  MED: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300',
+  DEF: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
+  POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
 };
 
 
@@ -181,13 +181,13 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                     <div className="flex items-center gap-2 sm:gap-4">
                         {player && (
                             <div className="flex items-center gap-3">
-                                <div className="text-right hidden sm:block">
-                                    <p className="font-bold text-base truncate">{player.name}</p>
+                                <div className="text-right">
+                                    <p className="font-bold text-sm truncate">{player.name}</p>
                                 </div>
-                                <div className="font-bold text-2xl text-primary flex items-center gap-1">
-                                    {player.ovr}
-                                </div>
-                                <Badge className={cn("text-sm", positionColors[player.position])}>{player.position}</Badge>
+                                <Badge className={cn("px-3 py-1 text-base", positionBadgeStyles[player.position])}>
+                                    <span className="font-bold">{player.ovr}</span>
+                                    <span className="font-medium ml-1.5">{player.position}</span>
+                                </Badge>
                             </div>
                         )}
                         
