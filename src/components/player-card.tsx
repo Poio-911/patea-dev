@@ -36,11 +36,18 @@ type PlayerCardProps = {
   isLink?: boolean;
 };
 
+const positionBackgrounds: Record<Player['position'], string> = {
+  DEL: 'bg-red-500/10',
+  MED: 'bg-green-500/10',
+  DEF: 'bg-blue-500/10',
+  POR: 'bg-orange-500/10',
+};
+
 const positionColors: Record<Player['position'], string> = {
-  DEL: 'from-red-500 to-red-700',
-  MED: 'from-green-500 to-green-700',
-  DEF: 'from-blue-500 to-blue-700',
-  POR: 'from-orange-500 to-orange-700',
+  DEL: 'text-red-400',
+  MED: 'text-green-400',
+  DEF: 'text-blue-400',
+  POR: 'text-orange-400',
 };
 
 const Stat = ({ label, value }: { label: string; value: number }) => (
@@ -87,18 +94,18 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
 
   const CardContentComponent = () => (
     <Card className="overflow-hidden border-2 shadow-lg transition-transform hover:scale-105 hover:shadow-xl border-border h-full flex flex-col">
-       <div className={cn("relative p-4 text-white bg-gradient-to-br", positionColors[player.position])}>
+       <div className={cn("relative p-4 text-card-foreground", positionBackgrounds[player.position])}>
             <div className="flex items-start justify-between">
-                <div className="flex flex-col">
-                    <div className="text-4xl font-bold">{player.ovr}</div>
-                    <div className="text-md font-semibold">{player.position}</div>
+                <div className="flex items-baseline gap-2">
+                    <div className={cn("text-4xl font-bold", positionColors[player.position])}>{player.ovr}</div>
+                    <div className={cn("px-2 py-1 text-xs font-bold rounded-md", positionBackgrounds[player.position], positionColors[player.position])}>{player.position}</div>
                 </div>
 
                 {(canEdit || canDelete) && (
                      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-white/20">
                                     <MoreVertical size={18} />
                                 </Button>
                             </DropdownMenuTrigger>
@@ -140,7 +147,7 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
         </div>
 
       <CardContent className="p-4 text-center bg-card flex-grow flex flex-col">
-        <Avatar className="mx-auto -mt-16 h-24 w-24 border-4 border-background">
+        <Avatar className="mx-auto -mt-12 h-24 w-24 border-4 border-background">
           <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
           <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
         </Avatar>
