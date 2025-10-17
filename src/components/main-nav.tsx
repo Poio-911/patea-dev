@@ -234,6 +234,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             <div className="grid h-full max-w-lg grid-cols-5 mx-auto">
               {navItems.map((item) => {
                   const isActive = pathname.startsWith(item.href);
+                  const isMatchIcon = item.label === 'Partidos';
                   return (
                     <Link 
                         key={item.href} 
@@ -244,7 +245,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                         )}
                     >
                         <div className={cn("rounded-full p-2 transition-colors", isActive && "bg-primary/10")}>
-                           <item.icon className="h-6 w-6" />
+                           <item.icon className={cn("h-6 w-6", isMatchIcon && "h-8 w-8")} />
                         </div>
                         <span className="text-xs font-medium">{item.label}</span>
                     </Link>
