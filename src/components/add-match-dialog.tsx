@@ -145,10 +145,11 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
 
     const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
     
-    if (teamGenerationResult.error || !teamGenerationResult.teams) {
+    if ('error' in teamGenerationResult) {
         throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
     }
-    if (teamGenerationResult.teams.length > 0 && teamGenerationResult.balanceMetrics) {
+
+    if (teamGenerationResult.teams && teamGenerationResult.teams.length > 0 && teamGenerationResult.balanceMetrics) {
         teamGenerationResult.teams[0].balanceMetrics = teamGenerationResult.balanceMetrics;
     }
 
