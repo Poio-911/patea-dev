@@ -175,7 +175,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        <SidebarInset className="bg-background pb-32 md:pb-0">
+        <SidebarInset className="bg-background pb-16 md:pb-0">
            <div className="sticky top-0 z-10 flex flex-col bg-background/80 backdrop-blur-lg">
                 <header className="flex h-16 items-center justify-between border-b px-4 sm:px-6">
                     <div className="flex items-center gap-2">
@@ -183,7 +183,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-4">
-                        <div className="flex items-center gap-3">
+                        <div className="hidden sm:flex items-center gap-3">
                             {player && (
                                 <div className="flex items-center gap-3">
                                   <div className="text-right">
@@ -218,16 +218,16 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                             </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                             <div className="p-2 md:hidden">
+                             <div className="p-2">
                                 <GroupSwitcher />
                             </div>
-                             <DropdownMenuItem asChild className="md:hidden">
+                             <DropdownMenuItem asChild>
                                 <Link href="/groups">
                                     <Users2 className="mr-2 h-4 w-4" />
                                     <span>Gestionar Grupos</span>
                                 </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator className="md:hidden" />
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem asChild>
                             <Link href="/profile">
                                 <User className="mr-2 h-4 w-4" />
@@ -251,47 +251,25 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
           <main className="flex-1 p-4 sm:p-6">{children}</main>
           
-          {/* Group Context Bar for Mobile */}
-          <div className="fixed bottom-16 left-0 right-0 z-20 border-t bg-background/95 p-2 md:hidden">
-            <div className="max-w-lg mx-auto flex items-center justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                    <GroupSwitcher />
-                </div>
-                <Button asChild variant="ghost" size="sm" className="text-primary hover:text-primary">
-                    <Link href="/groups">
-                      <Users2 className="mr-2 h-4 w-4" />
-                      Gestionar
-                    </Link>
-                </Button>
-            </div>
-          </div>
-
-
           {/* Bottom Navigation for Mobile */}
           <nav className="fixed bottom-0 left-0 right-0 z-20 border-t bg-background/95 backdrop-blur-lg md:hidden">
-            <div className="grid h-16 max-w-lg grid-cols-5 mx-auto font-medium">
+            <div className="mx-auto grid h-16 max-w-lg grid-cols-5 font-medium">
               {navItems.map((item) => {
-                  const isActive = pathname.startsWith(item.href);
-                  const isMatchIcon = item.label === 'Partidos';
-                  return (
-                    <Link 
-                        key={item.href} 
-                        href={item.href} 
-                        className={cn(
-                            "group inline-flex flex-col items-center justify-center px-1 text-muted-foreground transition-colors hover:text-primary",
-                            isActive && "text-primary"
-                        )}
-                    >
-                        <div className={cn("rounded-full p-2 transition-colors", 
-                            isActive && isMatchIcon ? "bg-primary text-primary-foreground" : "",
-                            isActive && !isMatchIcon ? "bg-primary/10" : ""
-                        )}>
-                           <item.icon className={cn("h-6 w-6", isMatchIcon && isActive && "h-7 w-7")} />
-                        </div>
-                        <span className={cn("text-xs", isActive ? "font-bold" : "font-normal")}>{item.label}</span>
-                    </Link>
-                  )
-                })}
+                const isActive = pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      'group inline-flex flex-col items-center justify-center px-1 text-muted-foreground transition-colors hover:text-primary',
+                      isActive && 'text-primary'
+                    )}
+                  >
+                    <item.icon className="h-6 w-6" />
+                    <span className="text-xs">{item.label}</span>
+                  </Link>
+                );
+              })}
             </div>
           </nav>
 

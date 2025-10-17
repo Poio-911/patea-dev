@@ -96,9 +96,9 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
     <Card className="overflow-hidden border-2 shadow-lg transition-transform hover:scale-105 hover:shadow-xl border-border h-full flex flex-col">
        <div className={cn("relative p-4 text-card-foreground", positionBackgrounds[player.position])}>
             <div className="flex items-start justify-between">
-                <div className="flex flex-col items-start">
-                    <div className={cn("text-4xl font-bold leading-none", positionColors[player.position])}>{player.ovr}</div>
-                    <div className={cn("px-2 py-0.5 text-xs font-bold rounded-md bg-card/80 mt-1", positionColors[player.position])}>{player.position}</div>
+                <div className="flex items-center gap-2">
+                    <div className={cn("text-5xl font-bold leading-none", positionColors[player.position])}>{player.ovr}</div>
+                    <div className={cn("px-2 py-0.5 text-sm font-bold rounded-md bg-card/80", positionColors[player.position])}>{player.position}</div>
                 </div>
 
                 {(canEdit || canDelete) && (
