@@ -17,10 +17,10 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LayoutDashboard, LogOut, Settings, Goal, Users2, User, BellRing, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Separator } from './ui/separator';
+import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { GroupSwitcher } from './group-switcher';
+import { GroupSwitcher } from '@/components/group-switcher';
 import {
   DropdownMenu,
   DropdownMenuContent,
