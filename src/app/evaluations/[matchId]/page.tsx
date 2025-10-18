@@ -127,7 +127,8 @@ export default function PerformEvaluationPage() {
         evaluations: [] 
     }
   });
-  const { fields, replace, control, getValues, setValue } = useFieldArray({ control: form.control, name: "evaluations" });
+  const { control, getValues, setValue } = form;
+  const { fields, replace } = useFieldArray({ control: form.control, name: "evaluations" });
 
   useEffect(() => {
     const initializeFormAndTags = async () => {
@@ -392,5 +393,3 @@ export default function PerformEvaluationPage() {
     </div>
   );
 }
-
-    
