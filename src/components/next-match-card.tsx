@@ -44,7 +44,7 @@ export function NextMatchCard({ match }: NextMatchCardProps) {
            <h3 className="text-xl font-bold">{match.title}</h3>
            <InfoRow icon={Calendar} text={match.date ? format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es }) : 'Fecha no definida'} />
            <InfoRow icon={Clock} text={`${match.time} hs`} />
-           <InfoRow icon={MapPin} text={match.location.address} />
+           <InfoRow icon={MapPin} text={match.location.name} />
       </div>
       <div className="flex justify-center items-center">
           <Button asChild size="lg">
