@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -57,7 +56,17 @@ const matchSchema = z.object({
   matchSize: z.enum(['10', '14', '22'], { required_error: 'El tamaño es obligatorio.' }),
   players: z.array(z.string()),
   isPublic: z.boolean().optional(),
+}).refine(data => {
+    if (data.type === 'manual') {
+        const minPlayers = Math.ceil(parseInt(data.matchSize) / 2);
+        return data.players.length >= minPlayers;
+    }
+    return true;
+}, {
+    message: "Para partidos manuales, debes seleccionar al menos la mitad de los jugadores.",
+    path: ['players'],
 });
+
 
 type MatchFormData = z.infer<typeof matchSchema>;
 
@@ -171,11 +180,12 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     },
   });
   
-  const { formState, trigger, watch, setValue } = form;
+  const { formState, trigger, watch, setValue, getValues } = form;
   const watchedDate = watch('date');
   const watchedLocation = watch('location');
   const watchedTime = watch('time');
   const watchedType = watch('type');
+  const watchedPlayers = watch('players');
 
   const selectedMatchSize = parseInt(form.watch('matchSize'), 10);
   const matchType = form.watch('type');
@@ -280,11 +290,6 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       return;
     }
     
-    if (data.type === 'manual' && data.players.length !== selectedMatchSize) {
-      toast({ variant: 'destructive', title: 'Error de jugadores', description: `Debes seleccionar exactamente ${selectedMatchSize} jugadores.` });
-      return;
-    }
-
     startTransition(async () => {
         try {
             if (data.type === 'manual') {
@@ -312,13 +317,15 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     const batch = writeBatch(firestore);
 
     const selectedPlayersData = allPlayers.filter(p => data.players.includes(p.id));
-    const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
-
-    if ('error' in teamGenerationResult) {
-        throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
-    }
-    if (!teamGenerationResult.teams) {
-        throw new Error('La respuesta de la IA no contiene equipos.');
+    
+    let finalTeams = [];
+    // Only generate teams if the match is full
+    if (selectedPlayersData.length === selectedMatchSize) {
+        const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
+        if ('error' in teamGenerationResult) {
+            throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
+        }
+        finalTeams = teamGenerationResult.teams || [];
     }
 
     const newMatchRef = doc(collection(firestore, 'matches'));
@@ -332,7 +339,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       groupId: user.activeGroupId,
       players: selectedPlayersData.map(p => ({ uid: p.id, displayName: p.name, ovr: p.ovr, position: p.position, photoUrl: p.photoUrl || '' })),
       playerUids: selectedPlayersData.map(p => p.id),
-      teams: teamGenerationResult.teams,
+      teams: finalTeams,
       weather: weather || undefined,
     };
     batch.set(newMatchRef, newMatch);
@@ -606,7 +613,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Volver
                     </Button>
-                    <Button type="submit" disabled={isPending || selectedPlayersCount !== selectedMatchSize}>
+                    <Button type="submit" disabled={isPending || (watchedType === 'manual' && watchedPlayers.length < selectedMatchSize / 2)}>
                         {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isPending ? 'Programando...' : 'Programar Partido'}
                     </Button>
@@ -618,5 +625,3 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     </Dialog>
   );
 }
-
-    

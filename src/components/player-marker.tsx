@@ -3,9 +3,12 @@
 
 import { useState } from 'react';
 import { MarkerF, InfoWindowF } from '@react-google-maps/api';
-import type { AvailablePlayer } from '@/lib/types';
+import type { AvailablePlayer, Match } from '@/lib/types';
 import { Button } from './ui/button';
 import { UserPlus } from 'lucide-react';
+import { useUser, useFirestore, useCollection } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import { InvitePlayerDialog } from './invite-player-dialog'; 
 
 interface PlayerMarkerProps {
   player: AvailablePlayer;
@@ -14,6 +17,19 @@ interface PlayerMarkerProps {
 }
 
 export function PlayerMarker({ player, activeMarker, handleMarkerClick }: PlayerMarkerProps) {
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const incompleteMatchesQuery = firestore && user?.uid ? query(
+    collection(firestore, 'matches'),
+    where('ownerUid', '==', user.uid),
+    where('status', '==', 'upcoming'),
+    // where('isFull', '==', false) // We'll filter client-side for now
+  ) : null;
+
+  const { data: userMatches } = useCollection<Match>(incompleteMatchesQuery);
+
+  const availableMatchesForInvite = userMatches?.filter(m => m.players.length < m.matchSize) || [];
   
   const icon = {
     url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
@@ -37,17 +53,24 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
       zIndex={activeMarker === player.uid ? 5 : 1}
     >
       {activeMarker === player.uid && (
-        <InfoWindowF onCloseClick={() => handleMarkerClick(player.uid)}>
+        <InfoWindowF onCloseClick={() => handleMarkerClick('')}>
             <div className="space-y-2 p-1 w-60">
                 <h3 className="font-bold text-base leading-tight">{player.displayName}</h3>
                 <div className="flex items-center justify-between">
                     <span className="font-semibold text-sm">OVR: {player.ovr}</span>
                     <span className="font-semibold text-sm">{player.position}</span>
                 </div>
-                <Button size="sm" className="w-full h-8 text-xs">
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Invitar a Partido
-                </Button>
+                
+                <InvitePlayerDialog 
+                  playerToInvite={player} 
+                  userMatches={availableMatchesForInvite}
+                >
+                  <Button size="sm" className="w-full h-8 text-xs" disabled={!user || availableMatchesForInvite.length === 0}>
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Invitar a Partido
+                  </Button>
+                </InvitePlayerDialog>
+
             </div>
         </InfoWindowF>
       )}

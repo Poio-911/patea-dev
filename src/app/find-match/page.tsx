@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
-import type { Match, AvailablePlayer } from '@/lib/types';
+import type { Match, AvailablePlayer, Player } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Loader2, MapPin, Calendar, Users, LocateFixed, Search } from 'lucide-react';
 import { MatchMarker } from '@/components/match-marker';
@@ -26,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlayerMarker } from '@/components/player-marker';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { InvitePlayerDialog } from '@/components/invite-player-dialog';
 
 
 const containerStyle = {
@@ -92,7 +92,8 @@ const CompactMatchCard = ({ match, onHover, isActive }: { match: Match, onHover:
     )
 }
 
-const CompactPlayerCard = ({ player, onHover, isActive }: { player: AvailablePlayer, onHover: (id: string | null) => void, isActive: boolean }) => {
+const CompactPlayerCard = ({ player, onHover, isActive, userMatches }: { player: AvailablePlayer, onHover: (id: string | null) => void, isActive: boolean, userMatches: Match[] }) => {
+    const { user } = useUser();
     return (
         <Card
             className={cn(
@@ -112,8 +113,18 @@ const CompactPlayerCard = ({ player, onHover, isActive }: { player: AvailablePla
                     <div className="text-xs text-muted-foreground">Disponible desde {format(new Date(player.availableSince), "dd/MM")}</div>
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                    <Badge>{player.ovr}</Badge>
-                    <Badge variant="outline">{player.position}</Badge>
+                     <InvitePlayerDialog 
+                        playerToInvite={player}
+                        userMatches={userMatches}
+                     >
+                        <Button variant="default" size="sm" className="h-7 px-2 text-xs w-full" disabled={!user || userMatches.length === 0}>
+                            Invitar
+                        </Button>
+                    </InvitePlayerDialog>
+                    <div className='flex gap-1'>
+                      <Badge>{player.ovr}</Badge>
+                      <Badge variant="outline">{player.position}</Badge>
+                    </div>
                 </div>
             </div>
         </Card>
@@ -121,6 +132,7 @@ const CompactPlayerCard = ({ player, onHover, isActive }: { player: AvailablePla
 }
 
 export default function FindMatchPage() {
+  const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
@@ -154,6 +166,15 @@ export default function FindMatchPage() {
     return collection(firestore, 'availablePlayers');
   }, [firestore]);
   const { data: availablePlayers, loading: playersLoading } = useCollection<AvailablePlayer>(availablePlayersQuery);
+
+  const incompleteMatchesQuery = firestore && user?.uid ? query(
+    collection(firestore, 'matches'),
+    where('ownerUid', '==', user.uid),
+    where('status', '==', 'upcoming'),
+  ) : null;
+  const { data: userMatches } = useCollection<Match>(incompleteMatchesQuery);
+
+  const availableMatchesForInvite = userMatches?.filter(m => m.players.length < m.matchSize) || [];
 
 
   const handleMarkerClick = (id: string) => {
@@ -318,6 +339,7 @@ export default function FindMatchPage() {
                                         player={player}
                                         onHover={setActiveMarker}
                                         isActive={activeMarker === player.uid}
+                                        userMatches={availableMatchesForInvite}
                                     />
                                 </div>
                                 )) : (
