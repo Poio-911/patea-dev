@@ -54,31 +54,43 @@ const calculateOvrChange = (currentOvr: number, avgRating: number): number => {
     return finalDelta;
 };
 
-const calculateAttributeChanges = (currentAttrs: Player, avgRating: number, position: string) => {
-    const intensity = (avgRating - OVR_PROGRESSION.BASELINE_RATING) * 0.2; // Smaller scale for attributes
-    const changes: Partial<Pick<Player, 'pac' | 'sho' | 'pas' | 'dri' | 'def' | 'phy'>> = {};
+const calculateAttributeChanges = (currentAttrs: Player, avgRating: number, position: string, tags: Evaluation['performanceTags'] = []) => {
+    let attributeEffects: Record<string, number> = {};
 
-    const positionPriorities = {
-        DEL: { primary: 'sho', secondary: ['pac', 'dri'] },
-        MED: { primary: 'pas', secondary: ['dri', 'sho'] },
-        DEF: { primary: 'def', secondary: ['phy', 'pas'] },
-        POR: { primary: 'def', secondary: ['phy', 'pas'] }, // Placeholder for now
-    };
-
-    const priorities = positionPriorities[position as keyof typeof positionPriorities] || positionPriorities.DEF;
-
-    changes[priorities.primary as keyof typeof changes] = (currentAttrs[priorities.primary as keyof Player] as number) + intensity * 2;
-    priorities.secondary.forEach(attr => {
-        changes[attr as keyof typeof changes] = (currentAttrs[attr as keyof Player] as number) + intensity;
-    });
-
-    // Ensure all attributes stay within bounds
-    for (const key in changes) {
-        const attrKey = key as keyof typeof changes;
-        changes[attrKey] = Math.round(Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, changes[attrKey]!)));
+    // Method 1: Based on Tags
+    if (tags && tags.length > 0) {
+        tags.forEach(tag => {
+            tag.effects?.forEach(effect => {
+                attributeEffects[effect.attribute] = (attributeEffects[effect.attribute] || 0) + effect.change;
+            });
+        });
+    }
+    // Method 2: Based on Rating (fallback or primary)
+    else {
+        const intensity = (avgRating - OVR_PROGRESSION.BASELINE_RATING) * 0.2;
+        const positionPriorities = {
+            DEL: { primary: 'sho', secondary: ['pac', 'dri'] },
+            MED: { primary: 'pas', secondary: ['dri', 'sho'] },
+            DEF: { primary: 'def', secondary: ['phy', 'pas'] },
+            POR: { primary: 'def', secondary: ['phy', 'pas'] },
+        };
+        const priorities = positionPriorities[position as keyof typeof positionPriorities] || positionPriorities.DEF;
+        attributeEffects[priorities.primary] = (attributeEffects[priorities.primary] || 0) + intensity * 2;
+        priorities.secondary.forEach(attr => {
+            attributeEffects[attr] = (attributeEffects[attr] || 0) + intensity;
+        });
     }
     
-    return changes;
+    const newAttributes = { ...currentAttrs };
+    for (const attr in attributeEffects) {
+        const key = attr as keyof Player;
+        if (typeof newAttributes[key] === 'number') {
+            (newAttributes[key] as number) += attributeEffects[attr];
+            newAttributes[key] = Math.round(Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, newAttributes[key] as number)));
+        }
+    }
+
+    return newAttributes;
 };
 
 export default function EvaluateMatchPage() {
@@ -116,7 +128,6 @@ export default function EvaluateMatchPage() {
     setIsFinalizing(true);
 
     try {
-        // 1. Fetch peer and self evaluations outside the transaction
         const completedAssignmentIds = assignments?.filter(a => a.status === 'completed').map(a => a.id) || [];
         if (completedAssignmentIds.length === 0) {
             throw new Error("No hay evaluaciones completadas para procesar.");
@@ -131,14 +142,12 @@ export default function EvaluateMatchPage() {
         const matchSelfEvals = selfEvalsSnapshot.docs.map(doc => ({...doc.data(), id: doc.id} as SelfEvaluation));
         const selfEvalsByPlayerId = new Map(matchSelfEvals.map(ev => [ev.playerId, ev]));
 
-        // 2. Group peer evaluations by player
         const peerEvalsByPlayer = matchPeerEvals.reduce((acc, ev) => {
             acc[ev.playerId] = acc[ev.playerId] || [];
             acc[ev.playerId].push(ev);
             return acc;
         }, {} as Record<string, Evaluation[]>);
 
-        // 3. Run the transaction
         await runTransaction(firestore, async (transaction) => {
             if (!matchRef) return;
             const matchDoc = await transaction.get(matchRef);
@@ -149,7 +158,6 @@ export default function EvaluateMatchPage() {
             const playerIdsToUpdate = Object.keys(peerEvalsByPlayer);
             const playerDocs = new Map<string, Player>();
             
-            // --- READ PHASE ---
             for (const playerId of playerIdsToUpdate) {
                 const playerDocRef = doc(firestore, 'players', playerId);
                 const playerDoc = await transaction.get(playerDocRef);
@@ -158,30 +166,40 @@ export default function EvaluateMatchPage() {
                 }
             }
 
-            // --- WRITE PHASE ---
             for (const playerId of playerIdsToUpdate) {
                 const player = playerDocs.get(playerId);
                 if (!player) continue;
 
                 const playerPeerEvals = peerEvalsByPlayer[playerId];
-                const totalRating = playerPeerEvals.reduce((sum, ev) => sum + ev.rating, 0);
-                const avgRating = totalRating / playerPeerEvals.length;
+                const pointBasedEvals = playerPeerEvals.filter(ev => ev.rating !== undefined);
+                const tagBasedEvals = playerPeerEvals.filter(ev => ev.performanceTags !== undefined);
+
+                // --- Calculate attribute changes from tags ---
+                let combinedTags = tagBasedEvals.flatMap(ev => ev.performanceTags || []);
+                const updatedAttributes = calculateAttributeChanges(player, 0, player.position, combinedTags);
                 
-                // Get goals from self-evaluation
+                // --- Calculate OVR change from points ---
+                const totalRating = pointBasedEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0);
+                const avgRating = pointBasedEvals.length > 0 ? totalRating / pointBasedEvals.length : OVR_PROGRESSION.BASELINE_RATING;
+                const ovrChange = calculateOvrChange(player.ovr, avgRating);
+                
+                // Recalculate OVR based on new attributes and add point-based change
+                let newOvr = Math.round((updatedAttributes.pac + updatedAttributes.sho + updatedAttributes.pas + updatedAttributes.dri + updatedAttributes.def + updatedAttributes.phy) / 6);
+                newOvr += ovrChange;
+                newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, newOvr));
+
                 const playerSelfEval = selfEvalsByPlayerId.get(playerId);
                 const goalsInMatch = playerSelfEval?.goals || 0;
 
-                const ovrChange = calculateOvrChange(player.ovr, avgRating);
-                const newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, player.ovr + ovrChange));
-                const attributeChanges = calculateAttributeChanges(player, avgRating, player.position);
-
                 const newMatchesPlayed = (player.stats.matchesPlayed || 0) + 1;
                 const newTotalGoals = (player.stats.goals || 0) + goalsInMatch;
-                const newAvgRating = ((player.stats.averageRating || 0) * (player.stats.matchesPlayed || 0) + avgRating) / newMatchesPlayed;
+                const newAvgRating = pointBasedEvals.length > 0
+                    ? ((player.stats.averageRating || 0) * (player.stats.matchesPlayed || 0) + avgRating) / newMatchesPlayed
+                    : player.stats.averageRating;
                 
                 const playerDocRef = doc(firestore, 'players', playerId);
                 transaction.update(playerDocRef, {
-                    ...attributeChanges,
+                    ...updatedAttributes,
                     ovr: newOvr,
                     stats: {
                         matchesPlayed: newMatchesPlayed,
@@ -191,13 +209,12 @@ export default function EvaluateMatchPage() {
                     },
                 });
 
-                // Create OVR history record
                 const historyRef = doc(collection(firestore, 'players', playerId, 'ovrHistory'));
                 const historyEntry: Omit<OvrHistory, 'id'> = {
                     date: new Date().toISOString(),
                     oldOVR: player.ovr,
                     newOVR: newOvr,
-                    change: ovrChange,
+                    change: newOvr - player.ovr,
                     matchId: match.id,
                 };
                 transaction.set(historyRef, historyEntry);
@@ -223,7 +240,6 @@ export default function EvaluateMatchPage() {
         setIsFinalizing(false);
     }
   };
-
 
   const realPlayersInMatch = useMemo(() => {
     if (!match || !allGroupPlayers) return [];
