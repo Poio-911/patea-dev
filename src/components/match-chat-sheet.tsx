@@ -25,7 +25,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, Send, Bot } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { generateWelcomeMessage, WelcomeMessageInput } from '@/ai/flows/generate-welcome-message';
 
 interface MatchChatSheetProps {
   match: Match;
@@ -109,20 +108,11 @@ export function MatchChatSheet({ match, children }: MatchChatSheetProps) {
     setOpen(newOpenState);
     if (newOpenState && isPublicJoiner && !aiWelcomeMessage && user?.displayName) {
         setIsAiLoading(true);
-        try {
-            const input: WelcomeMessageInput = {
-                playerName: user.displayName,
-                matchTitle: match.title,
-                matchLocation: match.location.address
-            };
-            const result = await generateWelcomeMessage(input);
-            setAiWelcomeMessage(result.welcomeMessage);
-        } catch (error) {
-            console.error("Error generating AI welcome message:", error);
-            setAiWelcomeMessage("¡Bienvenido al partido! Por favor, coordina con el organizador cualquier detalle sobre costos o reglas.");
-        } finally {
-            setIsAiLoading(false);
-        }
+        // This is a placeholder for a more complex AI logic if needed in the future
+        setTimeout(() => {
+             setAiWelcomeMessage(`¡Bienvenido al partido ${match.title}, ${user.displayName}! Por favor, coordina con el organizador cualquier detalle sobre costos o reglas.`);
+             setIsAiLoading(false);
+        }, 1000);
     }
   }
 
