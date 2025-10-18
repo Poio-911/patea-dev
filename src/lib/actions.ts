@@ -9,6 +9,9 @@ import { Player, Evaluation } from './types';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getFirestore, doc, updateDoc, writeBatch } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+
 
 // NOTE: This is a simplified client-side Firebase usage in a Server Action.
 // This is NOT best practice. For robust server-side logic, use the Firebase Admin SDK.
@@ -53,6 +56,16 @@ export async function uploadProfileImageAction(formData: FormData) {
 
     } catch (error: any) {
         console.error("Error en la Server Action de subida:", error);
+         // Emit a more specific error if possible, otherwise a generic one
+        const permissionError = new FirestorePermissionError({
+            path: `profile-images/ for user ${formData.get('userId')}`,
+            operation: 'create', // or 'update'
+            requestResourceData: {
+                fileName: `profile-images/${formData.get('userId')}-...`,
+                contentType: (formData.get('file') as File)?.type,
+            },
+        });
+        errorEmitter.emit('permission-error', permissionError);
         return { error: 'No se pudo subir la imagen desde el servidor. ' + (error.message || 'Error desconocido.') };
     }
 }
