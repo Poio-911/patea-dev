@@ -64,6 +64,7 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
                 <InvitePlayerDialog 
                   playerToInvite={player} 
                   userMatches={availableMatchesForInvite}
+                  match={null}
                 >
                   <Button size="sm" className="w-full h-8 text-xs" disabled={!user || availableMatchesForInvite.length === 0}>
                       <UserPlus className="mr-2 h-4 w-4" />
