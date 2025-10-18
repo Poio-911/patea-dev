@@ -6,73 +6,75 @@ import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/
 import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-match-day-forecast';
 import { generateEvaluationTags, GenerateEvaluationTagsInput } from '@/ai/flows/generate-evaluation-tags';
 import { Player, Evaluation } from './types';
-import { collection, doc, getDoc, getDocs, query, where, updateDoc, writeBatch } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getAuth, updateProfile } from 'firebase/auth';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
+// Use Firebase Admin SDK for server-side operations
+import * as admin from 'firebase-admin';
+import { getFirestore as getAdminFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getStorage as getAdminStorage } from 'firebase-admin/storage';
+import { firebaseConfig } from '@/firebase/config';
 
-// Helper to get firestore instance on the server
-function getFirestoreInstance() {
-    return initializeFirebase().firestore;
+// Helper to initialize Firebase Admin SDK safely
+function initializeAdminApp() {
+    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
+      ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+      : undefined;
+
+    if (admin.apps.length > 0) {
+        return admin.app();
+    }
+    
+    return admin.initializeApp({
+        credential: serviceAccount ? admin.credential.cert(serviceAccount) : undefined,
+        storageBucket: firebaseConfig.storageBucket,
+    });
 }
 
 export async function uploadProfileImageAction(formData: FormData) {
-    const { firestore, auth } = initializeFirebase();
-    const file = formData.get('file') as File;
-    const userId = formData.get('userId') as string;
-
-    if (!file || !userId) {
-        return { error: 'Faltan datos para subir la imagen.' };
-    }
-
-    const storage = getStorage();
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${userId}-${crypto.randomUUID()}.${fileExtension}`;
-    const storageRef = ref(storage, `profile-images/${fileName}`);
-
     try {
-        const buffer = await file.arrayBuffer();
-        const uploadTask = await uploadBytes(storageRef, buffer, { contentType: file.type });
-        const newPhotoURL = await getDownloadURL(uploadTask.ref);
-
-        const batch = writeBatch(firestore);
+        const app = initializeAdminApp();
+        const firestore = getAdminFirestore(app);
+        const storage = getAdminStorage(app);
         
-        const userDocRef = doc(firestore, 'users', userId);
-        const playerDocRef = doc(firestore, 'players', userId);
+        const file = formData.get('file') as File;
+        const userId = formData.get('userId') as string;
 
-        const updates = { photoURL: newPhotoURL };
-        const playerUpdates = { photoUrl: newPhotoURL };
+        if (!file || !userId) {
+            return { error: 'Faltan datos para subir la imagen.' };
+        }
 
-        batch.update(userDocRef, updates);
-        batch.update(playerDocRef, playerUpdates);
+        const fileExtension = file.name.split('.').pop();
+        const fileName = `${userId}-${crypto.randomUUID()}.${fileExtension}`;
+        const filePath = `profile-images/${fileName}`;
 
-        batch.commit().catch(async (serverError) => {
-             // Since it's a batch, we can't be 100% sure which write failed.
-             // We'll create errors for both possibilities. The developer overlay
-             // will show which path was actually denied.
-            const userPermissionError = new FirestorePermissionError({
-                path: userDocRef.path,
-                operation: 'update',
-                requestResourceData: updates,
-            });
-            errorEmitter.emit('permission-error', userPermissionError);
+        const buffer = Buffer.from(await file.arrayBuffer());
+        
+        const bucket = storage.bucket();
+        const fileUpload = bucket.file(filePath);
 
-            const playerPermissionError = new FirestorePermissionError({
-                path: playerDocRef.path,
-                operation: 'update',
-                requestResourceData: playerUpdates,
-            });
-            errorEmitter.emit('permission-error', playerPermissionError);
+        await fileUpload.save(buffer, {
+            metadata: {
+                contentType: file.type,
+            },
         });
+        
+        // Make the file public to get a URL
+        await fileUpload.makePublic();
+        const newPhotoURL = fileUpload.publicUrl();
+
+        // Update Firestore documents
+        const userDocRef = firestore.collection('users').doc(userId);
+        const playerDocRef = firestore.collection('players').doc(userId);
+
+        const batch = firestore.batch();
+        batch.update(userDocRef, { photoURL: newPhotoURL });
+        batch.update(playerDocRef, { photoUrl: newPhotoURL });
+        await batch.commit();
 
         return { newPhotoURL };
 
     } catch (error: any) {
-        console.error("Error en la Server Action de subida:", error);
-        return { error: 'No se pudo subir la imagen desde el servidor. ' + error.message };
+        console.error("Error en la Server Action de subida (Admin):", error);
+        return { error: 'No se pudo subir la imagen desde el servidor. ' + (error.message || 'Error desconocido.') };
     }
 }
 
@@ -101,7 +103,6 @@ export async function generateTeamsAction(players: Player[]) {
       throw new Error('La respuesta de la IA no contiene equipos.');
     }
     
-    // Ensure the player UIDs from the AI output match the original player IDs
     result.teams.forEach(team => {
         team.players.forEach(player => {
             const originalPlayer = players.find(p => p.name === player.displayName && p.position === player.position);
@@ -119,19 +120,15 @@ export async function generateTeamsAction(players: Player[]) {
 }
 
 export async function getPlayerEvaluationsAction(playerId: string, groupId: string): Promise<Partial<Evaluation>[]> {
-    const firestore = getFirestoreInstance();
+    const firestore = getAdminFirestore(initializeAdminApp());
     const evaluations: Partial<Evaluation>[] = [];
     
     try {
-        // Use { cache: 'no-store' } to always fetch fresh data from the server
-        const q = query(
-            collection(firestore, 'evaluations'), 
-            where('playerId', '==', playerId)
-        );
-        const querySnapshot = await getDocs(q);
+        const q = firestore.collection('evaluations').where('playerId', '==', playerId);
+        const querySnapshot = await q.get();
 
-        const matchesQuery = query(collection(firestore, 'matches'), where('groupId', '==', groupId));
-        const matchesSnapshot = await getDocs(matchesQuery);
+        const matchesQuery = firestore.collection('matches').where('groupId', '==', groupId);
+        const matchesSnapshot = await matchesQuery.get();
         const groupMatchIds = new Set(matchesSnapshot.docs.map(doc => doc.id));
 
         querySnapshot.forEach(doc => {
@@ -151,13 +148,13 @@ export async function getPlayerEvaluationsAction(playerId: string, groupId: stri
 
 
 export async function getPlayerImprovementSuggestionsAction(playerId: string, groupId: string) {
-    const firestore = getFirestoreInstance();
+    const firestore = getAdminFirestore(initializeAdminApp());
 
     try {
-        const playerDocRef = doc(firestore, 'players', playerId);
-        const playerDocSnap = await getDoc(playerDocRef);
+        const playerDocRef = firestore.collection('players').doc(playerId);
+        const playerDocSnap = await playerDocRef.get();
 
-        if (!playerDocSnap.exists()) {
+        if (!playerDocSnap.exists) {
             return { error: 'No se pudo encontrar al jugador.' };
         }
         const player = playerDocSnap.data() as Player;
