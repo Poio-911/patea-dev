@@ -7,13 +7,11 @@ import { usePathname } from 'next/navigation';
 import {
   SidebarProvider,
   Sidebar,
-  SidebarHeader,
   SidebarContent,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarTrigger,
-  SidebarFooter,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -112,7 +110,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
       <div className="flex h-screen w-full flex-col">
           <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-lg sm:px-6">
               <div className="flex items-center gap-2">
-                  <div className="md:hidden">
+                  <div className="hidden md:block">
                       <SidebarTrigger />
                   </div>
                   <NotificationBell />
