@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
@@ -7,7 +6,7 @@ import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { Match, AvailablePlayer, Player } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { Loader2, MapPin, Calendar, Users, LocateFixed, Search, SlidersHorizontal } from 'lucide-react';
+import { Loader2, MapPin, Calendar, Users, LocateFixed, Search, SlidersHorizontal, Sparkles } from 'lucide-react';
 import { MatchMarker } from '@/components/match-marker';
 import { libraries } from '@/lib/google-maps';
 import { mapStyles } from '@/lib/map-styles';
@@ -423,7 +422,7 @@ export default function FindMatchPage() {
                         {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
                         {isSearching ? 'Buscando...' : 'Buscar Jugadores'}
                     </Button>
-                    <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
+                     <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
                 </div>
             </CardContent>
         </Card>
@@ -521,5 +520,3 @@ export default function FindMatchPage() {
     </div>
   );
 }
-
-    
