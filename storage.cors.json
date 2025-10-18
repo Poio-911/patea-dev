@@ -1,11 +1,28 @@
+
 [
   {
     "origin": [
       "http://localhost:3000",
       "https://studio--mil-disculpis.us-central1.hosted.app"
     ],
-    "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    "responseHeader": ["Content-Type", "Authorization", "Content-Length", "User-Agent"],
+    "method": [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE",
+      "OPTIONS"
+    ],
+    "responseHeader": [
+      "Content-Type",
+      "Authorization",
+      "Content-Length",
+      "User-Agent",
+      "X-Goog-Resumable",
+      "X-Goog-Upload-Command",
+      "X-Goog-Upload-Offset",
+      "X-Goog-Upload-Protocol",
+      "x-firebase-gmpid"
+    ],
     "maxAgeSeconds": 3600
   }
 ]
