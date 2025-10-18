@@ -143,7 +143,8 @@ export default function FindMatchPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [nearbyMatches, setNearbyMatches] = useState<Match[]>([]);
-  const [searchCompleted, setSearchCompleted] = useState(false);
+  const [matchSearchCompleted, setMatchSearchCompleted] = useState(false);
+  const [playerSearchCompleted, setPlayerSearchCompleted] = useState(false);
 
 
   const { isLoaded } = useJsApiLoader({
@@ -194,7 +195,7 @@ export default function FindMatchPage() {
 
   const handleSearchNearby = useCallback(() => {
     setIsSearching(true);
-    setSearchCompleted(false);
+    setMatchSearchCompleted(false);
 
     if (!navigator.geolocation) {
       toast({ variant: 'destructive', title: 'Error de Geolocalización', description: 'Tu navegador no soporta esta función.' });
@@ -221,7 +222,7 @@ export default function FindMatchPage() {
         }
 
         setIsSearching(false);
-        setSearchCompleted(true);
+        setMatchSearchCompleted(true);
       },
       (error) => {
         toast({ variant: 'destructive', title: 'Error de Ubicación', description: 'No se pudo obtener tu ubicación. Asegúrate de haber dado los permisos necesarios.' });
@@ -234,7 +235,7 @@ export default function FindMatchPage() {
   const loading = matchesLoading || playersLoading || !isLoaded;
 
   const renderFindMatches = () => {
-    if (loading && !searchCompleted) {
+    if (loading && !matchSearchCompleted) {
       return (
         <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -242,7 +243,7 @@ export default function FindMatchPage() {
       )
     }
 
-    if (!searchCompleted) {
+    if (!matchSearchCompleted) {
       return (
         <Card className="max-w-lg mx-auto mt-8">
             <CardHeader>
@@ -323,13 +324,33 @@ export default function FindMatchPage() {
   }
 
   const renderFindPlayers = () => {
-    if (loading) {
+    if (loading && !playerSearchCompleted) {
       return (
         <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
         </div>
       );
     }
+
+    if (!playerSearchCompleted) {
+        return (
+            <Card className="max-w-lg mx-auto mt-8">
+                <CardHeader>
+                    <CardTitle className="text-center">Encontrá Jugadores Libres</CardTitle>
+                    <CardDescription className="text-center">
+                        Busca jugadores disponibles para unirse a tus partidos.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center gap-8">
+                    <Button onClick={() => setPlayerSearchCompleted(true)} size="lg">
+                        <Search className="mr-2 h-5 w-5" />
+                        Buscar Jugadores Libres
+                    </Button>
+                </CardContent>
+            </Card>
+        );
+    }
+
     return (
         <div className="flex flex-col h-full gap-4">
             <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={availablePlayers || []} />
@@ -416,5 +437,7 @@ export default function FindMatchPage() {
 }
 
 
+
+    
 
     
