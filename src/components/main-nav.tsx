@@ -12,13 +12,12 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarInset,
   SidebarTrigger,
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Goal, Users2, ShieldQuestion, User, ArrowRight, BellRing } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings, Goal, Users2, User, BellRing } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -175,108 +174,108 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        <div className="flex flex-1 flex-col">
-           <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-lg sm:px-6">
-              <div className="flex items-center gap-2">
-                <div className="hidden md:block">
-                  <SidebarTrigger />
+
+        <div className="flex flex-1 flex-col h-full">
+            <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-lg sm:px-6">
+                <div className="flex items-center gap-2">
+                    <div className="md:hidden">
+                        <SidebarTrigger />
+                    </div>
+                    <NotificationBell />
                 </div>
-                <NotificationBell />
-              </div>
 
-              <div className="flex items-center gap-2 sm:gap-4">
-                  {player && (
-                      <div className="flex items-center gap-3">
-                          <div className="text-right">
-                              <p className="font-bold text-sm truncate">{player.name}</p>
-                          </div>
-                          <Badge className={cn("px-2.5 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
-                              <span className="font-bold">{player.ovr}</span>
-                              <span className="font-medium ml-1.5">{player.position}</span>
-                          </Badge>
-                      </div>
-                  )}
-                  
-                  <Separator orientation="vertical" className="h-10 mx-1 hidden sm:block" />
-
-                  <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="relative h-12 w-12 rounded-full">
-                      <Avatar className="h-12 w-12 border">
-                          <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} data-ai-hint="user avatar" />
-                          <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
-                      </Avatar>
-                      </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-64" align="end" forceMount>
-                      <DropdownMenuLabel className="font-normal">
-                      <div className="flex flex-col space-y-1">
-                          <p className="text-sm font-medium leading-none">{user.displayName}</p>
-                          <p className="text-xs leading-none text-muted-foreground">
-                          {user.email}
-                          </p>
-                      </div>
-                      </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                        <div className="p-2">
-                          <GroupSwitcher />
-                      </div>
-                        <DropdownMenuItem asChild>
-                          <Link href="/groups">
-                              <Users2 className="mr-2 h-4 w-4" />
-                              <span>Gestionar Grupos</span>
-                          </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                      <Link href="/profile">
-                          <User className="mr-2 h-4 w-4" />
-                          <span>Mi Perfil</span>
-                      </Link>
-                      </DropdownMenuItem>
-                        <DropdownMenuItem onClick={requestPermission}>
-                          <BellRing className="mr-2 h-4 w-4" />
-                          <span>Activar Notificaciones</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Ajustes</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleLogout}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Cerrar sesión</span>
-                      </DropdownMenuItem>
-                  </DropdownMenuContent>
-                  </DropdownMenu>
-              </div>
-          </header>
-
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-20 md:pb-6">{children}</main>
-          
-          {/* Bottom Navigation for Mobile */}
-          <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t backdrop-blur-xl bg-card/80 md:hidden">
-            <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
-              {navItems.map((item) => {
-                const isActive = pathname.startsWith(item.href);
-                const isMatchIcon = item.href === '/matches';
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      'group inline-flex flex-col items-center justify-center px-1 text-muted-foreground transition-colors hover:text-primary',
-                      isActive && 'text-primary'
+                <div className="flex items-center gap-2 sm:gap-4">
+                    {player && (
+                        <div className="flex items-center gap-3">
+                            <div className="text-right">
+                                <p className="font-bold text-sm truncate">{player.name}</p>
+                            </div>
+                            <Badge className={cn("px-2.5 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
+                                <span className="font-bold">{player.ovr}</span>
+                                <span className="font-medium ml-1.5">{player.position}</span>
+                            </Badge>
+                        </div>
                     )}
-                  >
-                    <item.icon className={cn("h-6 w-6", isMatchIcon && "h-7 w-7")} />
-                    <span className="text-xs">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </nav>
+                    
+                    <Separator orientation="vertical" className="h-10 mx-1 hidden sm:block" />
 
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="relative h-12 w-12 rounded-full">
+                                <Avatar className="h-12 w-12 border">
+                                    <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} data-ai-hint="user avatar" />
+                                    <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                                </Avatar>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-64" align="end" forceMount>
+                            <DropdownMenuLabel className="font-normal">
+                                <div className="flex flex-col space-y-1">
+                                    <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                                    <p className="text-xs leading-none text-muted-foreground">
+                                        {user.email}
+                                    </p>
+                                </div>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <div className="p-2">
+                                <GroupSwitcher />
+                            </div>
+                            <DropdownMenuItem asChild>
+                                <Link href="/groups">
+                                    <Users2 className="mr-2 h-4 w-4" />
+                                    <span>Gestionar Grupos</span>
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild>
+                                <Link href="/profile">
+                                    <User className="mr-2 h-4 w-4" />
+                                    <span>Mi Perfil</span>
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={requestPermission}>
+                                <BellRing className="mr-2 h-4 w-4" />
+                                <span>Activar Notificaciones</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <Settings className="mr-2 h-4 w-4" />
+                                <span>Ajustes</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={handleLogout}>
+                                <LogOut className="mr-2 h-4 w-4" />
+                                <span>Cerrar sesión</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </header>
+
+            <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
+            
+            {/* Bottom Navigation for Mobile */}
+            <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t backdrop-blur-xl bg-card/80 md:hidden">
+                <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
+                {navItems.map((item) => {
+                    const isActive = pathname.startsWith(item.href);
+                    const isMatchIcon = item.href === '/matches';
+                    return (
+                    <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                        'group inline-flex flex-col items-center justify-center px-1 text-muted-foreground transition-colors hover:text-primary',
+                        isActive && 'text-primary'
+                        )}
+                    >
+                        <item.icon className={cn("h-6 w-6", isMatchIcon && "h-7 w-7")} />
+                        <span className="text-xs">{item.label}</span>
+                    </Link>
+                    );
+                })}
+                </div>
+            </nav>
         </div>
       </div>
     </SidebarProvider>

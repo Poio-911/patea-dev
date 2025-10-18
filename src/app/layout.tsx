@@ -11,9 +11,6 @@ import { libraries } from '@/lib/google-maps';
 import { Loader2 } from 'lucide-react';
 import { MainNav } from '@/components/main-nav';
 
-// metadata cannot be exported from a client component.
-// We can define it in a separate server component if needed, or handle it differently.
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,7 +27,7 @@ export default function RootLayout({
       <head>
         <title>Amateur Football Manager</title>
         <meta name="description" content="Organiza partidos, gestiona jugadores y genera equipos equilibrados." />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#ffffff" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
