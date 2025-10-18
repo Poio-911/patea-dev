@@ -261,6 +261,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             <div className="mx-auto grid h-16 max-w-lg grid-cols-5 font-medium">
               {navItems.map((item) => {
                 const isActive = pathname.startsWith(item.href);
+                const isMatchIcon = item.href === '/matches';
                 return (
                   <Link
                     key={item.href}
@@ -270,7 +271,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                       isActive && 'text-primary'
                     )}
                   >
-                    <item.icon className="h-6 w-6" />
+                    <item.icon className={cn("h-6 w-6", isMatchIcon && "h-7 w-7")} />
                     <span className="text-xs">{item.label}</span>
                   </Link>
                 );
