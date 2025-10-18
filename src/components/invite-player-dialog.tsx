@@ -28,15 +28,21 @@ import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
 
 type InvitePlayerDialogProps = {
-  playerToInvite: AvailablePlayer;
+  playerToInvite: AvailablePlayer | null;
   userMatches: Match[];
   children: React.ReactNode;
+  match?: Match | null;
+  availablePlayers?: Player[];
+  disabled?: boolean;
 };
 
 export function InvitePlayerDialog({
   playerToInvite,
   userMatches,
   children,
+  match,
+  availablePlayers,
+  disabled,
 }: InvitePlayerDialogProps) {
   const [open, setOpen] = useState(false);
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
@@ -46,7 +52,7 @@ export function InvitePlayerDialog({
   const { toast } = useToast();
 
   const handleInvite = () => {
-    if (!firestore || !user || !selectedMatchId) {
+    if (!firestore || !user || !selectedMatchId || !playerToInvite) {
         toast({ variant: 'destructive', title: 'Error', description: 'Selecciona un partido para invitar.' });
         return;
     }
@@ -113,12 +119,16 @@ export function InvitePlayerDialog({
     });
   };
 
+  if (disabled) {
+    return <div className="w-full">{children}</div>;
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Invitar a {playerToInvite.displayName}</DialogTitle>
+          <DialogTitle>Invitar a {playerToInvite?.displayName}</DialogTitle>
           <DialogDescription>
             Selecciona uno de tus partidos incompletos para enviarle una invitación.
           </DialogDescription>
@@ -132,9 +142,9 @@ export function InvitePlayerDialog({
                         <SelectValue placeholder="Elige un partido..." />
                     </SelectTrigger>
                     <SelectContent>
-                        {userMatches.map(match => (
-                            <SelectItem key={match.id} value={match.id}>
-                                {match.title} ({match.players.length}/{match.matchSize})
+                        {userMatches.map(matchItem => (
+                            <SelectItem key={matchItem.id} value={matchItem.id}>
+                                {matchItem.title} ({matchItem.players.length}/{matchItem.matchSize})
                             </SelectItem>
                         ))}
                     </SelectContent>
@@ -142,7 +152,7 @@ export function InvitePlayerDialog({
             </div>
           ) : (
             <Alert>
-                <AlertDescription>No tienes partidos manuales o privados que necesiten jugadores. Crea uno para poder invitar.</AlertDescription>
+                <AlertDescription>No tienes partidos que necesiten jugadores. Crea uno para poder invitar.</AlertDescription>
             </Alert>
           )}
         </div>
@@ -157,3 +167,4 @@ export function InvitePlayerDialog({
     </Dialog>
   );
 }
+

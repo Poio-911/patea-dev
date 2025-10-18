@@ -31,6 +31,7 @@ import { InvitePlayerDialog } from './invite-player-dialog';
 import Link from 'next/link';
 import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 import { MatchChatSheet } from './match-chat-sheet';
+import { MatchDetailsDialog } from './match-details-dialog';
 
 
 type MatchCardProps = {
@@ -328,6 +329,13 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
         return (
             <div className="grid grid-cols-2 gap-2">
+                <MatchDetailsDialog match={match}>
+                    <Button variant="outline" size="sm" className="w-full">
+                        <Eye className="mr-2 h-4 w-4" />
+                        Ver Detalles
+                    </Button>
+                </MatchDetailsDialog>
+                
                 {canFinishMatch && (
                     <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing} className="w-full">
                         {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
@@ -335,15 +343,19 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     </Button>
                 )}
 
-                <MatchTeamsDialog match={match}>
-                    <Button variant="outline" size="sm" className="w-full" disabled={!match.teams || match.teams.length === 0}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Equipos
-                    </Button>
-                </MatchTeamsDialog>
+                {(match.teams && match.teams.length > 0) && (
+                    <MatchTeamsDialog match={match}>
+                        <Button variant="outline" size="sm" className="w-full">
+                            <Eye className="mr-2 h-4 w-4" />
+                            Ver Equipos
+                        </Button>
+                    </MatchTeamsDialog>
+                )}
 
                 {match.status === 'upcoming' && user?.uid === match.ownerUid && match.type === 'collaborative' && (
                     <InvitePlayerDialog 
+                        playerToInvite={null} 
+                        userMatches={[]}
                         match={match} 
                         availablePlayers={availablePlayersToInvite}
                         disabled={isMatchFull} 
@@ -406,7 +418,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 <div className="grid grid-cols-1 gap-y-3">
                     <InfoRow icon={Calendar} text={match.date ? format(new Date(match.date), 'E, d MMM, yyyy', { locale: es }) : 'Fecha no definida'} />
                     <InfoRow icon={Clock} text={match.time} />
-                    <InfoRow icon={MapPin} text={match.location.address} />
+                    <InfoRow icon={MapPin} text={match.location.name} />
                 </div>
                 
                 {WeatherIcon && match.weather && (
@@ -467,3 +479,4 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         </Card>
     );
 }
+
