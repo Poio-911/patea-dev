@@ -147,8 +147,8 @@ export function FindBestFitDialog({
             {recommendedPlayer && recommendationReason && (
                 <Card className="bg-gradient-to-br from-primary/10 to-transparent">
                     <CardContent className="p-4 space-y-3">
-                         <p className="text-sm text-center font-semibold bg-primary/20 text-primary-foreground rounded-full px-3 py-1 -mt-6 mx-auto w-fit-content">&ldquo;{recommendationReason}&rdquo;</p>
-                         <div className="flex gap-3 items-center">
+                         <p className="text-sm text-center italic text-foreground/80 border-l-4 border-primary pl-3">&ldquo;{recommendationReason}&rdquo;</p>
+                         <div className="flex gap-3 items-center pt-2">
                             <Avatar className="h-16 w-16 border-2 border-primary">
                                 <AvatarImage src={recommendedPlayer.photoUrl} alt={recommendedPlayer.displayName} />
                                 <AvatarFallback>{recommendedPlayer.displayName.charAt(0)}</AvatarFallback>
