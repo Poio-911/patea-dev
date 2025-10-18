@@ -507,17 +507,20 @@ export default function FindMatchPage() {
                         Buscar Jugadores
                     </TabsTrigger>
                 </TabsList>
-                <div className="w-full sm:w-auto">
-                     <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
-                </div>
             </div>
             <TabsContent value="find-matches" className="flex-grow mt-4">
                 {renderFindMatches()}
             </TabsContent>
             <TabsContent value="find-players" className="flex-grow mt-4">
+                 <div className="mb-4">
+                    <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
+                 </div>
                 {renderFindPlayers()}
             </TabsContent>
         </Tabs>
     </div>
   );
 }
+
+
+    
