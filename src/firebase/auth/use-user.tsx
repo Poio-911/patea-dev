@@ -3,9 +3,9 @@
 import { useEffect, useState, createContext, useContext } from 'react';
 import type { User } from 'firebase/auth';
 import { useAuth } from '@/firebase';
-import { doc, setDoc, getDoc, serverTimestamp, onSnapshot, FieldValue } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, onSnapshot, FieldValue, updateDoc, getFirestore } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
-import type { UserProfile } from '@/lib/types';
+import type { UserProfile, Player } from '@/lib/types';
 
 const UserContext = createContext<{ user: UserProfile | null; loading: boolean }>({
   user: null,
@@ -30,9 +30,33 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       if (firebaseUser) {
         const userRef = doc(firestore, 'users', firebaseUser.uid);
         
-        const unsubUser = onSnapshot(userRef, (userDoc) => {
-          if (!userDoc.exists()) {
-            // Create user profile if it doesn't exist
+        const unsubUser = onSnapshot(userRef, async (userDoc) => {
+          if (userDoc.exists()) {
+             const userData = userDoc.data() as UserProfile;
+             
+             // --- DATA REPAIR LOGIC ---
+             // This logic checks if the player document is missing a groupId and repairs it.
+             if (userData.activeGroupId) {
+                const playerRef = doc(firestore, 'players', firebaseUser.uid);
+                try {
+                    const playerDoc = await getDoc(playerRef);
+                    if (playerDoc.exists()) {
+                        const playerData = playerDoc.data() as Player;
+                        if (!playerData.groupId) {
+                            console.log(`Repairing player profile for ${userData.displayName}: setting groupId to ${userData.activeGroupId}`);
+                            await updateDoc(playerRef, { groupId: userData.activeGroupId });
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to repair player data:", e);
+                }
+             }
+             // --- END REPAIR LOGIC ---
+
+             setUser(userData);
+             setLoading(false);
+          } else {
+            // This part is now primarily for brand new users after registration.
             const newUserProfile: UserProfile & { createdAt: FieldValue } = {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
@@ -52,10 +76,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
               .finally(() => {
                 setLoading(false);
               });
-          } else {
-             const userData = userDoc.data() as UserProfile;
-             setUser(userData);
-             setLoading(false);
           }
         }, (error) => {
           console.error("[useUser] Error listening to user document:", error);
