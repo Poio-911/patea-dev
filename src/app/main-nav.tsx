@@ -17,10 +17,10 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LayoutDashboard, LogOut, Settings, Goal, Users2, User, BellRing, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Separator } from './ui/separator';
+import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { GroupSwitcher } from './group-switcher';
+import { GroupSwitcher } from '@/components/group-switcher';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,13 +32,13 @@ import {
 import type { Player } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
-import { SoccerPlayerIcon } from './icons/soccer-player-icon';
-import { MatchIcon } from './icons/match-icon';
-import { FindMatchIcon } from './icons/find-match-icon';
-import { EvaluationIcon } from './icons/evaluation-icon';
-import { NotificationBell } from './notification-bell';
+import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
+import { MatchIcon } from '@/components/icons/match-icon';
+import { FindMatchIcon } from '@/components/icons/find-match-icon';
+import { EvaluationIcon } from '@/components/icons/evaluation-icon';
+import { NotificationBell } from '@/components/notification-bell';
 import { useFcm } from '@/hooks/use-fcm';
-import { HelpDialog } from './help-dialog';
+import { HelpDialog } from '@/components/help-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { isToday, parseISO } from 'date-fns';
 
@@ -92,7 +92,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             setTimeout(() => {
                  toast({
                     title: `👋 ¡Hola de nuevo, ${user.displayName?.split(' ')[0]}!`,
-                    description: "Recordá que podés pulsar el icono de ayuda (?) si tenés dudas.",
+                    description: "Recuerda que puedes pulsar el icono de ayuda (?) si tienes dudas.",
                     duration: 5000,
                  });
             }, 2000);
