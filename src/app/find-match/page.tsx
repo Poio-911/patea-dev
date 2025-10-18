@@ -7,14 +7,14 @@ import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { Match, AvailablePlayer, Player } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { Loader2, MapPin, Calendar, Users, LocateFixed, Search } from 'lucide-react';
+import { Loader2, MapPin, Calendar, Users, LocateFixed, Search, SlidersHorizontal } from 'lucide-react';
 import { MatchMarker } from '@/components/match-marker';
 import { libraries } from '@/lib/google-maps';
 import { mapStyles } from '@/lib/map-styles';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +28,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { InvitePlayerDialog } from '@/components/invite-player-dialog';
 import { FindBestFitDialog } from '@/components/find-best-fit-dialog';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarPicker } from '@/components/ui/calendar';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 
 const containerStyle = {
@@ -139,13 +144,22 @@ export default function FindMatchPage() {
   const { toast } = useToast();
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
   
-  const [searchRadius, setSearchRadius] = useState(7); // Default 7km
-  const [isSearching, setIsSearching] = useState(false);
+  // -- Common State --
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
-  const [nearbyMatches, setNearbyMatches] = useState<Match[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  
+  // -- Find Matches State --
+  const [searchRadius, setSearchRadius] = useState(7);
+  const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
   const [matchSearchCompleted, setMatchSearchCompleted] = useState(false);
-  const [playerSearchCompleted, setPlayerSearchCompleted] = useState(false);
+  const [matchDateFilter, setMatchDateFilter] = useState<Date | undefined>();
+  const [matchSizeFilter, setMatchSizeFilter] = useState<string[]>([]);
 
+  // -- Find Players State --
+  const [filteredPlayers, setFilteredPlayers] = useState<AvailablePlayer[]>([]);
+  const [playerSearchCompleted, setPlayerSearchCompleted] = useState(false);
+  const [playerPositionFilter, setPlayerPositionFilter] = useState<string[]>([]);
+  const [playerOvrFilter, setPlayerOvrFilter] = useState<[number, number]>([40, 99]);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -168,7 +182,7 @@ export default function FindMatchPage() {
     if(!firestore) return null;
     return collection(firestore, 'availablePlayers');
   }, [firestore]);
-  const { data: availablePlayers, loading: playersLoading } = useCollection<AvailablePlayer>(availablePlayersQuery);
+  const { data: allAvailablePlayers, loading: playersLoading } = useCollection<AvailablePlayer>(availablePlayersQuery);
 
   const userMatchesQuery = useMemo(() => 
     firestore && user?.uid ? query(
@@ -193,6 +207,29 @@ export default function FindMatchPage() {
     }
   };
 
+  const applyMatchFilters = useCallback((matches: Match[], location: { lat: number; lng: number }) => {
+    return matches.filter(match => {
+        if (!match.location?.lat || !match.location?.lng) return false;
+        
+        const distance = getDistance(location, match.location);
+        if (distance > searchRadius) return false;
+        
+        if (matchDateFilter && !isSameDay(new Date(match.date), matchDateFilter)) return false;
+
+        if (matchSizeFilter.length > 0 && !matchSizeFilter.includes(String(match.matchSize))) return false;
+
+        return true;
+    }).sort((a,b) => getDistance(location, a.location) - getDistance(location, b.location));
+  }, [searchRadius, matchDateFilter, matchSizeFilter]);
+
+  const applyPlayerFilters = useCallback((players: AvailablePlayer[]) => {
+      return players.filter(player => {
+          if (playerPositionFilter.length > 0 && !playerPositionFilter.includes(player.position)) return false;
+          if (player.ovr < playerOvrFilter[0] || player.ovr > playerOvrFilter[1]) return false;
+          return true;
+      });
+  }, [playerPositionFilter, playerOvrFilter]);
+
   const handleSearchNearby = useCallback(() => {
     setIsSearching(true);
     setMatchSearchCompleted(false);
@@ -212,13 +249,8 @@ export default function FindMatchPage() {
         setUserLocation(currentUserLocation);
         
         if (allPublicMatches) {
-            const filteredMatches = allPublicMatches.filter(match => {
-                if (!match.location?.lat || !match.location?.lng) return false;
-                const distance = getDistance(currentUserLocation, match.location);
-                return distance <= searchRadius;
-            }).sort((a,b) => getDistance(currentUserLocation, a.location) - getDistance(currentUserLocation, b.location));
-
-            setNearbyMatches(filteredMatches);
+            const filtered = applyMatchFilters(allPublicMatches, currentUserLocation);
+            setFilteredMatches(filtered);
         }
 
         setIsSearching(false);
@@ -229,7 +261,17 @@ export default function FindMatchPage() {
         setIsSearching(false);
       }
     );
-  }, [allPublicMatches, searchRadius, toast]);
+  }, [allPublicMatches, applyMatchFilters, toast]);
+
+  const handleSearchPlayers = useCallback(() => {
+      setIsSearching(true);
+      if (allAvailablePlayers) {
+          const filtered = applyPlayerFilters(allAvailablePlayers);
+          setFilteredPlayers(filtered);
+      }
+      setPlayerSearchCompleted(true);
+      setIsSearching(false);
+  }, [allAvailablePlayers, applyPlayerFilters]);
 
 
   const loading = matchesLoading || playersLoading || !isLoaded;
@@ -245,27 +287,44 @@ export default function FindMatchPage() {
 
     if (!matchSearchCompleted) {
       return (
-        <Card className="max-w-lg mx-auto mt-8">
+        <Card className="max-w-xl mx-auto mt-8">
             <CardHeader>
                 <CardTitle className="text-center">Encontrá Partidos Cerca Tuyo</CardTitle>
                 <CardDescription className="text-center">
-                    Ajusta el radio de búsqueda y dale al botón para encontrar partidos públicos.
+                    Ajusta los filtros y dale al botón para encontrar partidos públicos.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col items-center gap-8">
-                <div className="w-full px-4">
-                    <div className="flex justify-between font-medium">
-                        <span>Radio de Búsqueda:</span>
-                        <span className="text-primary">{searchRadius} km</span>
+            <CardContent className="flex flex-col items-center gap-6">
+                <div className="w-full px-4 space-y-6">
+                    <div>
+                        <div className="flex justify-between font-medium mb-1">
+                            <Label>Radio de Búsqueda:</Label>
+                            <span className="text-primary">{searchRadius} km</span>
+                        </div>
+                        <Slider value={[searchRadius]} onValueChange={(value) => setSearchRadius(value[0])} max={50} step={1} disabled={isSearching} />
                     </div>
-                    <Slider
-                        value={[searchRadius]}
-                        onValueChange={(value) => setSearchRadius(value[0])}
-                        max={50}
-                        step={1}
-                        className="mt-2"
-                        disabled={isSearching}
-                    />
+                    <div>
+                      <Label className="font-medium">Fecha del Partido</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal mt-1', !matchDateFilter && 'text-muted-foreground')}>
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {matchDateFilter ? format(matchDateFilter, 'PPP', { locale: es }) : <span>Cualquier fecha</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <CalendarPicker mode="single" selected={matchDateFilter} onSelect={setMatchDateFilter} initialFocus locale={es} />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                     <div>
+                        <Label className="font-medium">Tamaño del Partido</Label>
+                        <ToggleGroup type="multiple" value={matchSizeFilter} onValueChange={setMatchSizeFilter} variant="outline" className="justify-start mt-1">
+                            <ToggleGroupItem value="10">Fútbol 5</ToggleGroupItem>
+                            <ToggleGroupItem value="14">Fútbol 7</ToggleGroupItem>
+                            <ToggleGroupItem value="22">Fútbol 11</ToggleGroupItem>
+                        </ToggleGroup>
+                    </div>
                 </div>
                 <Button onClick={handleSearchNearby} disabled={isSearching} size="lg">
                     {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LocateFixed className="mr-2 h-5 w-5" />}
@@ -282,12 +341,12 @@ export default function FindMatchPage() {
             <div className="lg:col-span-1 h-full flex flex-col gap-4">
                 <Card>
                     <CardHeader className="p-4">
-                        <CardTitle className="text-lg">Partidos Encontrados ({nearbyMatches.length})</CardTitle>
+                        <CardTitle className="text-lg">Partidos Encontrados ({filteredMatches.length})</CardTitle>
                     </CardHeader>
                     <CardContent className="p-2">
                         <ScrollArea className="h-full max-h-[60vh] lg:max-h-full">
                             <div className="space-y-2 p-1">
-                                {nearbyMatches.length > 0 ? nearbyMatches.map((match) => (
+                                {filteredMatches.length > 0 ? filteredMatches.map((match) => (
                                 <div id={`match-card-${match.id}`} key={match.id}>
                                     <CompactMatchCard
                                         match={match}
@@ -299,7 +358,7 @@ export default function FindMatchPage() {
                                     <Alert className="m-2">
                                         <AlertTitle>Sin Resultados</AlertTitle>
                                         <AlertDescription>
-                                            No se encontraron partidos públicos en esta área. Intenta aumentar el radio de búsqueda.
+                                            No se encontraron partidos con esos filtros. Intenta ampliar tu búsqueda.
                                         </AlertDescription>
                                     </Alert>
                                 )}
@@ -315,7 +374,7 @@ export default function FindMatchPage() {
                     zoom={12}
                     options={{ styles: mapStyles, disableDefaultUI: true, zoomControl: true, }}
                 >
-                     {nearbyMatches.map((match) => ( <MatchMarker key={match.id} match={match} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} /> ))}
+                     {filteredMatches.map((match) => ( <MatchMarker key={match.id} match={match} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} /> ))}
                     {userLocation && ( <MatchMarker match={{ id: 'user-location', title: 'Tu Ubicación', location: userLocation } as any} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} /> )}
                 </GoogleMap>
             </div>
@@ -334,17 +393,35 @@ export default function FindMatchPage() {
 
     if (!playerSearchCompleted) {
         return (
-            <Card className="max-w-lg mx-auto mt-8">
+            <Card className="max-w-xl mx-auto mt-8">
                 <CardHeader>
                     <CardTitle className="text-center">Encontrá Jugadores Libres</CardTitle>
                     <CardDescription className="text-center">
-                        Busca jugadores disponibles para unirse a tus partidos.
+                        Ajusta los filtros para encontrar el jugador que te falta.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center gap-8">
-                    <Button onClick={() => setPlayerSearchCompleted(true)} size="lg">
+                <CardContent className="flex flex-col items-center gap-6">
+                    <div className="w-full px-4 space-y-6">
+                         <div>
+                            <Label className="font-medium">Posición</Label>
+                            <ToggleGroup type="multiple" value={playerPositionFilter} onValueChange={setPlayerPositionFilter} variant="outline" className="justify-start mt-1 flex-wrap">
+                                <ToggleGroupItem value="POR">POR</ToggleGroupItem>
+                                <ToggleGroupItem value="DEF">DEF</ToggleGroupItem>
+                                <ToggleGroupItem value="MED">MED</ToggleGroupItem>
+                                <ToggleGroupItem value="DEL">DEL</ToggleGroupItem>
+                            </ToggleGroup>
+                        </div>
+                         <div>
+                            <div className="flex justify-between font-medium mb-1">
+                                <Label>Rango de OVR:</Label>
+                                <span className="text-primary">{playerOvrFilter[0]} - {playerOvrFilter[1]}</span>
+                            </div>
+                            <Slider value={playerOvrFilter} onValueChange={(value) => setPlayerOvrFilter(value as [number, number])} min={40} max={99} step={1} disabled={isSearching} />
+                        </div>
+                    </div>
+                    <Button onClick={handleSearchPlayers} size="lg">
                         <Search className="mr-2 h-5 w-5" />
-                        Buscar Jugadores Libres
+                        Buscar Jugadores
                     </Button>
                 </CardContent>
             </Card>
@@ -353,17 +430,20 @@ export default function FindMatchPage() {
 
     return (
         <div className="flex flex-col h-full gap-4">
-            <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={availablePlayers || []} />
+            <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-grow">
                 <div className="lg:col-span-1 h-full flex flex-col gap-4">
                     <Card>
-                        <CardHeader className="p-4">
-                            <CardTitle className="text-lg">Jugadores Disponibles ({availablePlayers?.length || 0})</CardTitle>
+                        <CardHeader className="p-4 flex-row items-center justify-between">
+                            <CardTitle className="text-lg">Jugadores Encontrados ({filteredPlayers?.length || 0})</CardTitle>
+                             <Button variant="ghost" size="icon" onClick={() => setPlayerSearchCompleted(false)}>
+                                <SlidersHorizontal className="h-4 w-4" />
+                            </Button>
                         </CardHeader>
                         <CardContent className="p-2">
                             <ScrollArea className="h-full max-h-[60vh] lg:max-h-full">
                                 <div className="space-y-2 p-1">
-                                    {availablePlayers && availablePlayers.length > 0 ? availablePlayers.map((player) => (
+                                    {filteredPlayers && filteredPlayers.length > 0 ? filteredPlayers.map((player) => (
                                     <div id={`player-card-${player.uid}`} key={player.uid}>
                                         <CompactPlayerCard
                                             player={player}
@@ -374,9 +454,9 @@ export default function FindMatchPage() {
                                     </div>
                                     )) : (
                                         <Alert className="m-2">
-                                            <AlertTitle>Nadie disponible</AlertTitle>
+                                            <AlertTitle>Sin resultados</AlertTitle>
                                             <AlertDescription>
-                                                Actualmente no hay jugadores buscando partido.
+                                                No hay jugadores que coincidan con tus filtros.
                                             </AlertDescription>
                                         </Alert>
                                     )}
@@ -393,7 +473,7 @@ export default function FindMatchPage() {
                             zoom={12}
                             options={{ styles: mapStyles, disableDefaultUI: true, zoomControl: true }}
                         >
-                            {availablePlayers?.map(player => (
+                            {filteredPlayers?.map(player => (
                                 <PlayerMarker key={player.uid} player={player} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} />
                             ))}
                         </GoogleMap>
@@ -435,9 +515,3 @@ export default function FindMatchPage() {
     </div>
   );
 }
-
-
-
-    
-
-    
