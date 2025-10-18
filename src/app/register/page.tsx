@@ -49,7 +49,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.push('/dashboard');
+      router.push('/dashboard?new_user=true');
     }
   }, [user, loading, router]);
 

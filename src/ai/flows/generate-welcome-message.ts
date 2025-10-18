@@ -1,67 +1,68 @@
+
 'use server';
 
 /**
- * @fileOverview A flow to generate a welcome message for a player joining a public match.
+ * @fileOverview A flow to generate a friendly welcome and onboarding message for new users.
  *
- * - generateWelcomeMessage - A function that returns a welcome message.
- * - WelcomeMessageInput - The input type for the generateWelcomeMessage function.
- * - WelcomeMessageOutput - The return type for the generateWelcomeMessage function.
+ * - generateOnboardingMessage - A function that returns a structured welcome message.
+ * - OnboardingMessageOutput - The return type for the function.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-const WelcomeMessageInputSchema = z.object({
-  playerName: z.string().describe('The name of the player who just joined.'),
-  matchTitle: z.string().describe('The title of the match.'),
-  matchLocation: z.string().describe('The address where the match will be played.'),
+const OnboardingMessageSchema = z.object({
+  title: z.string().describe('Un título de bienvenida cálido y enérgico.'),
+  introduction: z.string().describe('Un párrafo corto introductorio que le da la bienvenida al usuario a la app.'),
+  sections: z.array(
+    z.object({
+      header: z.string().describe('El título de una sección que explica una característica clave.'),
+      content: z.string().describe('La explicación detallada pero concisa de esa característica.'),
+      icon: z.enum(['groups', 'players', 'matches', 'evaluations', 'find']).describe('Un ícono representativo para la sección.'),
+    })
+  ).length(5).describe('Una lista de 5 secciones, cada una explicando una funcionalidad principal de la app.'),
+  conclusion: z.string().describe('Un párrafo final que anima al usuario a empezar a explorar.'),
 });
-export type WelcomeMessageInput = z.infer<typeof WelcomeMessageInputSchema>;
 
-const WelcomeMessageOutputSchema = z.object({
-  welcomeMessage: z.string().describe('A warm, helpful welcome message in Spanish.'),
-});
-export type WelcomeMessageOutput = z.infer<typeof WelcomeMessageOutputSchema>;
+export type OnboardingMessageOutput = z.infer<typeof OnboardingMessageSchema>;
 
-export async function generateWelcomeMessage(input: WelcomeMessageInput): Promise<WelcomeMessageOutput> {
-  return generateWelcomeMessageFlow(input);
+export async function generateOnboardingMessage(): Promise<OnboardingMessageOutput> {
+  return generateOnboardingMessageFlow();
 }
 
 const prompt = ai.definePrompt({
-  name: 'generateWelcomeMessagePrompt',
-  input: { schema: WelcomeMessageInputSchema },
-  output: { schema: WelcomeMessageOutputSchema },
+  name: 'generateOnboardingMessagePrompt',
+  output: { schema: OnboardingMessageSchema },
   prompt: `
-    Eres el organizador virtual de un partido de fútbol amateur. Tu tarea es dar la bienvenida a un nuevo jugador que se ha unido a un partido público.
-    Sé amable, claro y proporciona información útil. El mensaje debe estar en español.
+    Eres un guía experto y amigable para una aplicación de gestión de fútbol amateur llamada "Amateur Football Manager".
+    Tu tarea es generar un mensaje de bienvenida completo y estructurado para un nuevo usuario que acaba de registrarse.
+    El tono debe ser entusiasta, claro y motivador. El idioma es español.
 
-    Datos del partido:
-    - Nombre del jugador: {{{playerName}}}
-    - Título del partido: {{{matchTitle}}}
-    - Ubicación: {{{matchLocation}}}
+    El mensaje debe estructurarse de la siguiente manera:
+    1.  **title**: Un título de bienvenida potente, como "¡Bienvenido a la cancha, crack!".
+    2.  **introduction**: Un breve párrafo de bienvenida que explique el propósito de la app.
+    3.  **sections**: Exactamente 5 secciones, cada una explicando una de las siguientes características clave:
+        -   **Grupos**: La base social de la app, donde creas o te unes a equipos de amigos.
+        -   **Jugadores**: Cómo añadir y gestionar la plantilla de tu grupo.
+        -   **Partidos**: La diferencia entre partidos "manuales" (privados) y "colaborativos" (abiertos para que la gente se apunte).
+        -   **Evaluaciones**: El sistema para calificar el rendimiento y ver la evolución de los jugadores.
+        -   **Buscar Oportunidades**: El "mercado de fichajes" para encontrar partidos públicos o jugadores libres.
+    4.  **conclusion**: Un mensaje final que invite al usuario a explorar y empezar a organizar su primer partido.
 
-    Crea un mensaje de bienvenida que incluya:
-    1. Un saludo cálido y personal al jugador.
-    2. Confirmación de que se ha unido al partido correcto.
-    3. La dirección del partido.
-    4. Un recordatorio amigable de que debe consultar al organizador sobre el costo del alquiler de la cancha o cualquier otro detalle.
-    5. Anima al jugador a presentarse en el chat.
+    Para cada sección, asigna un ícono de la siguiente lista: 'groups', 'players', 'matches', 'evaluations', 'find'.
 
-    Ejemplo de tono y estructura:
-    "¡Bienvenido, {{{playerName}}}! Ya estás dentro del partido '{{{matchTitle}}}'. Nos vemos en {{{matchLocation}}}. No te olvides de coordinar con el organizador el pago de la cancha. ¡Preséntate en el chat y que ruede la pelota!"
-
-    Ahora, genera un nuevo mensaje con la misma estructura y tono.
+    Asegúrate de que la explicación de cada característica sea fácil de entender para alguien que nunca ha usado la aplicación.
+    El resultado debe ser un JSON válido que siga estrictamente el esquema de salida.
   `,
 });
 
-const generateWelcomeMessageFlow = ai.defineFlow(
+const generateOnboardingMessageFlow = ai.defineFlow(
   {
-    name: 'generateWelcomeMessageFlow',
-    inputSchema: WelcomeMessageInputSchema,
-    outputSchema: WelcomeMessageOutputSchema,
+    name: 'generateOnboardingMessageFlow',
+    outputSchema: OnboardingMessageSchema,
   },
-  async (input) => {
-    const { output } = await prompt(input);
+  async () => {
+    const { output } = await prompt();
     return output!;
   }
 );

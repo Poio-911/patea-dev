@@ -7,6 +7,7 @@ import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/
 import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-match-day-forecast';
 import { generateEvaluationTags, GenerateEvaluationTagsInput } from '@/ai/flows/generate-evaluation-tags';
 import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-fit-player';
+import { generateOnboardingMessage } from '@/ai/flows/generate-welcome-message';
 import { Player, Evaluation } from './types';
 import { getFirestore, doc, collection, getDocs, where } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
@@ -155,5 +156,16 @@ export async function findBestFitPlayerAction(input: FindBestFitPlayerInput) {
         // This will catch JSON parsing errors or other exceptions from the flow
         // and return a controlled error message to the client.
         return { error: 'La IA no pudo encontrar un jugador adecuado. La respuesta no fue válida. Intenta de nuevo.' };
+    }
+}
+
+
+export async function generateWelcomeMessageAction() {
+    try {
+        const result = await generateOnboardingMessage();
+        return result;
+    } catch (error: any) {
+        console.error('Error generating welcome message:', error);
+        return { error: 'No se pudo generar el mensaje de bienvenida.' };
     }
 }

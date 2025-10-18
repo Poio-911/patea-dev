@@ -1,6 +1,7 @@
 
 'use client';
 
+import { Suspense } from 'react';
 import { useCollection } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -21,7 +22,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Separator } from '@/components/ui/separator';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
-
+import { WelcomeDialog } from '@/components/welcome-dialog';
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
     upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
@@ -30,8 +31,7 @@ const statusConfig: Record<Match['status'], { label: string; className: string }
     evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' },
 };
 
-
-export default function DashboardPage() {
+function DashboardContent() {
   const { user } = useUser();
   const firestore = useFirestore();
 
@@ -128,6 +128,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8">
+      <WelcomeDialog />
       <PageHeader
         title="Panel de control"
         description="Un resumen de la actividad de tu grupo."
@@ -244,4 +245,13 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
+
+
+export default function DashboardPage() {
+    return (
+        <Suspense fallback={<div>Cargando...</div>}>
+            <DashboardContent />
+        </Suspense>
+    )
 }
