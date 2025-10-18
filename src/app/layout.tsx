@@ -5,7 +5,6 @@ import { useMemo } from 'react';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
-import { MainNav } from '@/components/main-nav';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { libraries } from '@/lib/google-maps';
@@ -43,13 +42,13 @@ export default function RootLayout({
       </head>
       <body
         className={cn(
-          'min-h-screen bg-background font-body antialiased'
+          'h-screen bg-background font-body antialiased'
         )}
       >
         <FirebaseClientProvider>
           <Toaster />
           {isLoaded ? (
-             <MainNav>{children}</MainNav>
+             children
           ) : loadError ? (
             <div>Error al cargar Google Maps. Por favor, revisa la configuración de tu API Key.</div>
           ) : (
@@ -62,3 +61,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+    
