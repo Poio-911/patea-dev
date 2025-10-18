@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { WandSparkles, MoreVertical, Trash2, Pencil } from 'lucide-react';
 import type { Player } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { AISuggestionDialog } from './ai-suggestion-dialog';
 import { EditPlayerDialog } from './edit-player-dialog';
 import {
   DropdownMenu,
@@ -29,6 +28,7 @@ import { useFirestore, useUser } from '@/firebase';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import React from 'react';
+import { Badge } from './ui/badge';
 
 
 type PlayerCardProps = {
@@ -97,8 +97,7 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
        <div className={cn("relative p-4 text-card-foreground", positionBackgrounds[player.position])}>
             <div className="flex items-start justify-between">
                 <div>
-                    <div className={cn("text-4xl font-bold leading-none", positionColors[player.position])}>{player.ovr}</div>
-                    <div className={cn("mt-1 px-2 py-0.5 text-xs font-bold rounded-md bg-card/80 inline-block", positionColors[player.position])}>{player.position}</div>
+                    <div className={cn("text-3xl font-bold leading-none", positionColors[player.position])}>{player.ovr}</div>
                 </div>
 
                 {(canEdit || canDelete) && (
@@ -151,7 +150,10 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
           <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
           <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
         </Avatar>
-        <h3 className="mt-2 text-xl font-bold font-headline truncate">{player.name}</h3>
+        <div className="mt-2 text-center">
+            <h3 className="text-xl font-bold font-headline truncate">{player.name}</h3>
+            <Badge variant="secondary" className={cn("mt-1", positionColors[player.position])}>{player.position}</Badge>
+        </div>
         
         <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 flex-grow">
           <Stat label="RIT" value={player.pac} />
@@ -161,13 +163,6 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
           <Stat label="DEF" value={player.def} />
           <Stat label="FIS" value={player.phy} />
         </div>
-
-        <AISuggestionDialog player={player}>
-          <Button variant="outline" size="sm" className="mt-6 w-full">
-            <WandSparkles className="mr-2 h-4 w-4" />
-            Consejos IA
-          </Button>
-        </AISuggestionDialog>
       </CardContent>
     </Card>
   );
