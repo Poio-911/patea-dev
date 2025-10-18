@@ -4,7 +4,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
 import { doc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
-import type { Player, Evaluation, Match, OvrHistory, PlayerProfileViewProps } from '@/lib/types';
+import type { Player, Evaluation, Match, OvrHistory } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,11 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+
+type PlayerProfileViewProps = {
+  playerId: string;
+  isUploading?: boolean;
+};
 
 const positionColors: Record<Player['position'], string> = {
   DEL: 'text-chart-1',
@@ -38,7 +43,7 @@ type MatchEvaluationSummary = {
     individualEvaluations: DetailedEvaluation[];
 };
 
-export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
+export default function PlayerProfileView({ playerId, isUploading }: PlayerProfileViewProps) {
   const firestore = useFirestore();
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
@@ -166,10 +171,17 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
         <div className="lg:col-span-1">
             <Card>
                 <CardContent className="pt-6 flex flex-col items-center gap-4">
-                    <Avatar className="h-32 w-32 border-4 border-primary/50">
-                        <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
-                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                        <Avatar className="h-32 w-32 border-4 border-primary/50">
+                            <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
+                            <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        {isUploading && (
+                            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                                <Loader2 className="h-8 w-8 animate-spin text-white" />
+                            </div>
+                        )}
+                    </div>
                     <div className="text-center">
                         <h2 className="text-2xl font-bold font-headline">{player.name}</h2>
                         <div className="flex items-center justify-center gap-4 mt-1">

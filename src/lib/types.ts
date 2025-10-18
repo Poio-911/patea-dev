@@ -1,4 +1,5 @@
 
+
 import { DocumentData, DocumentReference } from "firebase/firestore";
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
@@ -141,9 +142,10 @@ export type SelfEvaluation = {
   reportedAt: string;
 } & DocumentData;
 
-export interface PlayerProfileViewProps {
+export type PlayerProfileViewProps = {
     playerId: string;
-}
+    isUploading?: boolean;
+};
     
 export type FcmToken = {
     id: string;

@@ -70,8 +70,8 @@ export default function ProfilePage() {
         const playerDocRef = doc(firestore, 'players', user.uid);
 
         await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
-        await setDoc(userDocRef, { photoURL: newPhotoURL }, { merge: true });
-        await setDoc(playerDocRef, { photoUrl: newPhotoURL }, { merge: true });
+        await updateDoc(userDocRef, { photoURL: newPhotoURL });
+        await updateDoc(playerDocRef, { photoUrl: newPhotoURL });
 
 
         toast({
@@ -120,11 +120,11 @@ export default function ProfilePage() {
             />
             <Button onClick={handleButtonClick} size="sm" variant="outline" disabled={isUploading}>
                 {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                Cambiar Foto de Perfil
+                {isUploading ? "Subiendo..." : "Cambiar Foto"}
             </Button>
       </PageHeader>
       
-      <PlayerProfileView playerId={user.uid} />
+      <PlayerProfileView playerId={user.uid} isUploading={isUploading} />
 
       <Tabs defaultValue="created-matches" className="w-full">
         <TabsList>
