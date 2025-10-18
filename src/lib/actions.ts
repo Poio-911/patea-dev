@@ -1,4 +1,3 @@
-
 // @ts-nocheck
 'use server';
 
@@ -149,9 +148,16 @@ export async function generateTagsAction(input: GenerateEvaluationTagsInput) {
 export async function findBestFitPlayerAction(input: FindBestFitPlayerInput) {
     try {
         const result = await findBestFitPlayer(input);
+        if ('error' in result) {
+            throw new Error(result.error);
+        }
         return result;
     } catch (error: any) {
         console.error('Error finding best fit player:', error);
-        return { error: 'La IA no pudo procesar la solicitud. La respuesta del modelo podría ser inválida. Por favor, inténtalo de nuevo.' };
+        // This is a safeguard against invalid JSON responses from the LLM
+        if (error instanceof SyntaxError || error.message.includes('Unexpected token')) {
+             return { error: 'La IA devolvió una respuesta inesperada. Por favor, inténtalo de nuevo.' };
+        }
+        return { error: error.message || 'La IA no pudo procesar la solicitud en este momento.' };
     }
 }
