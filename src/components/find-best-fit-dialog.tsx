@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -109,7 +110,7 @@ export function FindBestFitDialog({
         <DialogHeader>
           <DialogTitle>Asistente de Fichajes IA</DialogTitle>
           <DialogDescription>
-            Selecciona uno de tus partidos incompletos y la IA te recomendará al mejor jugador disponible para equilibrar el equipo.
+            Selecciona uno de tus partidos incompletos y la IA te recomendará los mejores jugadores para equilibrar el equipo.
           </DialogDescription>
         </DialogHeader>
         <div className="flex-grow py-4 space-y-4 overflow-y-hidden">
@@ -169,6 +170,8 @@ export function FindBestFitDialog({
                                     <InvitePlayerDialog 
                                         playerToInvite={player}
                                         userMatches={selectedMatch ? [selectedMatch] : []}
+                                        match={selectedMatch}
+                                        disabled={!selectedMatch}
                                     >
                                         <Button>
                                             <Send className="mr-2 h-4 w-4" />

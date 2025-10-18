@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { MarkerF, InfoWindowF } from '@react-google-maps/api';
-import type { AvailablePlayer, Match } from '@/lib/types';
+import { MarkerF, InfoWindowF } from '@google-maps/api';
+import type { AvailablePlayer, Match, Invitation } from '@/lib/types';
 import { Button } from './ui/button';
 import { UserPlus } from 'lucide-react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
@@ -21,11 +21,13 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const incompleteMatchesQuery = firestore && user?.uid ? query(
-    collection(firestore, 'matches'),
-    where('ownerUid', '==', user.uid),
-    where('status', '==', 'upcoming'),
-  ) : null;
+  const incompleteMatchesQuery = useMemo(() => 
+    firestore && user?.uid ? query(
+        collection(firestore, 'matches'),
+        where('ownerUid', '==', user.uid),
+        where('status', '==', 'upcoming'),
+    ) : null,
+  [firestore, user?.uid]);
 
   const { data: userMatches } = useCollection<Match>(incompleteMatchesQuery);
 
@@ -40,13 +42,13 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
       position={player.location}
       onClick={() => handleMarkerClick(player.uid)}
       icon={{
-        path: 'M8 3C8.82843 3 9.5 2.32843 9.5 1.5C9.5 0.671573 8.82843 0 8 0C7.17157 0 6.5 0.671573 6.5 1.5C6.5 2.32843 7.17157 3 8 3ZM12 4V2H14V4C14 5.10457 13.1045 6 12 6H10.5454L10.9897 16H8.98773L8.76557 11H7.23421L7.01193 16H5.00995L5.42014 6.77308L3.29995 9.6L1.69995 8.4L4.99995 4H12Z',
+        path: 'M8 3C8.82843 3 9.5 2.32843 9.5 1.5C9.5 0.671573 8.82843 0 8 0C7.17157 0 6.5 0.671573 6.5 1.5C6.5 2.32843 7.17158 3 8 3ZM12 4V2H14V4C14 5.10457 13.1045 6 12 6H10.5454L10.9897 16H8.98773L8.76557 11H7.23421L7.01193 16H5.00995L5.42014 6.77308L3.29995 9.6L1.69995 8.4L4.99995 4H12Z',
         fillColor: '#FBBF24',
         fillOpacity: 1,
         strokeWeight: 0,
         rotation: 0,
         scale: 1.5,
-        anchor: new google.maps.Point(8, 8),
+        anchor: new window.google.maps.Point(8, 8),
       }}
       zIndex={activeMarker === player.uid ? 5 : 1}
     >
