@@ -53,7 +53,7 @@ const navItems = [
 
 const positionBadgeStyles: Record<Player['position'], string> = {
   DEL: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
-  MED: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300',
+  MED: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
   DEF: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
   POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
 };
@@ -255,7 +255,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           <main className="flex-1 p-4 sm:p-6">{children}</main>
           
           {/* Bottom Navigation for Mobile */}
-          <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t border-white/20 bg-black/30 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
+          <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/80 backdrop-blur-xl pb-[env(safe-area-inset-bottom)] md:hidden">
             <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
               {navItems.map((item) => {
                 const isActive = pathname.startsWith(item.href);

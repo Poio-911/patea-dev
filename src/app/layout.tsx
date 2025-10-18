@@ -32,7 +32,7 @@ export default function RootLayout({
         <meta name="description" content="Organiza partidos, gestiona jugadores y genera equipos equilibrados." />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#18181b" />
+        <meta name="theme-color" content="#ffffff" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -43,7 +43,7 @@ export default function RootLayout({
       </head>
       <body
         className={cn(
-          'min-h-screen bg-background font-body antialiased'
+          'min-h-screen bg-gradient-to-br from-cyan-50 via-blue-100 to-purple-100 font-body antialiased'
         )}
       >
         <FirebaseClientProvider>
