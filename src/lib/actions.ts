@@ -10,6 +10,9 @@ import { collection, doc, getDoc, getDocs, query, where, updateDoc, writeBatch }
 import { initializeFirebase } from '@/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth, updateProfile } from 'firebase/auth';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+
 
 // Helper to get firestore instance on the server
 function getFirestoreInstance() {
@@ -37,17 +40,36 @@ export async function uploadProfileImageAction(formData: FormData) {
 
         const batch = writeBatch(firestore);
         
-        // Update Firestore user document
         const userDocRef = doc(firestore, 'users', userId);
-        batch.update(userDocRef, { photoURL: newPhotoURL });
-
-        // Update Firestore player document
         const playerDocRef = doc(firestore, 'players', userId);
-        batch.update(playerDocRef, { photoUrl: newPhotoURL });
 
-        await batch.commit();
+        const updates = { photoURL: newPhotoURL };
+        const playerUpdates = { photoUrl: newPhotoURL };
+
+        batch.update(userDocRef, updates);
+        batch.update(playerDocRef, playerUpdates);
+
+        batch.commit().catch(async (serverError) => {
+             // Since it's a batch, we can't be 100% sure which write failed.
+             // We'll create errors for both possibilities. The developer overlay
+             // will show which path was actually denied.
+            const userPermissionError = new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'update',
+                requestResourceData: updates,
+            });
+            errorEmitter.emit('permission-error', userPermissionError);
+
+            const playerPermissionError = new FirestorePermissionError({
+                path: playerDocRef.path,
+                operation: 'update',
+                requestResourceData: playerUpdates,
+            });
+            errorEmitter.emit('permission-error', playerPermissionError);
+        });
 
         return { newPhotoURL };
+
     } catch (error: any) {
         console.error("Error en la Server Action de subida:", error);
         return { error: 'No se pudo subir la imagen desde el servidor. ' + error.message };
