@@ -108,176 +108,106 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
 
   return (
-    <SidebarProvider>
-      <div className="flex h-screen w-full overflow-hidden">
-        <Sidebar
-          variant="sidebar"
-          collapsible="icon"
-          className="hidden md:block"
-        >
-          <SidebarHeader className="p-4">
-             <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                    <Goal className="h-6 w-6" />
+    <div className="flex h-screen w-full flex-col">
+        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-lg sm:px-6">
+            <div className="flex items-center gap-2">
+                <div className="md:hidden">
+                    <SidebarTrigger />
                 </div>
-                <div className="duration-200 group-data-[collapsible=icon]:opacity-0">
-                    <h2 className="font-headline text-lg font-semibold">AFM</h2>
-                    <p className="text-xs text-sidebar-foreground/70">Fútbol Amateur</p>
-                </div>
-             </div>
-          </SidebarHeader>
-          <SidebarContent className="p-2">
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith(item.href)}
-                    tooltip={item.label}
-                  >
-                    <Link href={item.href}>
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith('/groups')}
-                    tooltip="Grupos"
-                  >
-                    <Link href="/groups">
-                      <Users2 />
-                      <span>Grupos</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarContent>
-          <SidebarFooter className="p-2">
-            <Separator className="my-2 bg-sidebar-border" />
-            <SidebarMenu>
-                <SidebarMenuItem>
-                    <SidebarMenuButton tooltip="Ajustes">
-                        <Settings />
-                        <span>Ajustes</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton tooltip="Cerrar sesión" onClick={handleLogout}>
-                        <LogOut />
-                        <span>Cerrar sesión</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarFooter>
-        </Sidebar>
+                <NotificationBell />
+            </div>
 
-        <div className="flex flex-1 flex-col h-full">
-            <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-lg sm:px-6">
-                <div className="flex items-center gap-2">
-                    <div className="md:hidden">
-                        <SidebarTrigger />
-                    </div>
-                    <NotificationBell />
-                </div>
-
-                <div className="flex items-center gap-2 sm:gap-4">
-                    {player && (
-                        <div className="flex items-center gap-3">
-                            <div className="text-right">
-                                <p className="font-bold text-sm truncate">{player.name}</p>
-                            </div>
-                            <Badge className={cn("px-2.5 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
-                                <span className="font-bold">{player.ovr}</span>
-                                <span className="font-medium ml-1.5">{player.position}</span>
-                            </Badge>
+            <div className="flex items-center gap-2 sm:gap-4">
+                {player && (
+                    <div className="flex items-center gap-3">
+                        <div className="text-right">
+                            <p className="font-bold text-sm truncate">{player.name}</p>
                         </div>
-                    )}
-                    
-                    <Separator orientation="vertical" className="h-10 mx-1 hidden sm:block" />
+                        <Badge className={cn("px-2.5 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
+                            <span className="font-bold">{player.ovr}</span>
+                            <span className="font-medium ml-1.5">{player.position}</span>
+                        </Badge>
+                    </div>
+                )}
+                
+                <Separator orientation="vertical" className="h-10 mx-1 hidden sm:block" />
 
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="relative h-12 w-12 rounded-full">
-                                <Avatar className="h-12 w-12 border">
-                                    <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} data-ai-hint="user avatar" />
-                                    <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
-                                </Avatar>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-64" align="end" forceMount>
-                            <DropdownMenuLabel className="font-normal">
-                                <div className="flex flex-col space-y-1">
-                                    <p className="text-sm font-medium leading-none">{user.displayName}</p>
-                                    <p className="text-xs leading-none text-muted-foreground">
-                                        {user.email}
-                                    </p>
-                                </div>
-                            </DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <div className="p-2">
-                                <GroupSwitcher />
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="relative h-12 w-12 rounded-full">
+                            <Avatar className="h-12 w-12 border">
+                                <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} data-ai-hint="user avatar" />
+                                <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                            </Avatar>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-64" align="end" forceMount>
+                        <DropdownMenuLabel className="font-normal">
+                            <div className="flex flex-col space-y-1">
+                                <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                                <p className="text-xs leading-none text-muted-foreground">
+                                    {user.email}
+                                </p>
                             </div>
-                            <DropdownMenuItem asChild>
-                                <Link href="/groups">
-                                    <Users2 className="mr-2 h-4 w-4" />
-                                    <span>Gestionar Grupos</span>
-                                </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem asChild>
-                                <Link href="/profile">
-                                    <User className="mr-2 h-4 w-4" />
-                                    <span>Mi Perfil</span>
-                                </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={requestPermission}>
-                                <BellRing className="mr-2 h-4 w-4" />
-                                <span>Activar Notificaciones</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                                <Settings className="mr-2 h-4 w-4" />
-                                <span>Ajustes</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={handleLogout}>
-                                <LogOut className="mr-2 h-4 w-4" />
-                                <span>Cerrar sesión</span>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-            </header>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <div className="p-2">
+                            <GroupSwitcher />
+                        </div>
+                        <DropdownMenuItem asChild>
+                            <Link href="/groups">
+                                <Users2 className="mr-2 h-4 w-4" />
+                                <span>Gestionar Grupos</span>
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                            <Link href="/profile">
+                                <User className="mr-2 h-4 w-4" />
+                                <span>Mi Perfil</span>
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={requestPermission}>
+                            <BellRing className="mr-2 h-4 w-4" />
+                            <span>Activar Notificaciones</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                            <Settings className="mr-2 h-4 w-4" />
+                            <span>Ajustes</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleLogout}>
+                            <LogOut className="mr-2 h-4 w-4" />
+                            <span>Cerrar sesión</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        </header>
 
-            <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
-            
-            {/* Bottom Navigation for Mobile */}
-            <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t backdrop-blur-xl bg-card/80 md:hidden">
-                <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
-                {navItems.map((item) => {
-                    const isActive = pathname.startsWith(item.href);
-                    const isMatchIcon = item.href === '/matches';
-                    return (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                        'group inline-flex flex-col items-center justify-center px-1 text-muted-foreground transition-colors hover:text-primary',
-                        isActive && 'text-primary'
-                        )}
-                    >
-                        <item.icon className={cn("h-6 w-6", isMatchIcon && "h-7 w-7")} />
-                        <span className="text-xs">{item.label}</span>
-                    </Link>
-                    );
-                })}
-                </div>
-            </nav>
-        </div>
-      </div>
-    </SidebarProvider>
+        <main className="flex-1 overflow-y-auto p-4 pb-20 sm:p-6 md:pb-6">{children}</main>
+        
+        <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t backdrop-blur-xl bg-card/95 md:hidden">
+            <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
+            {navItems.map((item) => {
+                const isActive = pathname.startsWith(item.href);
+                const isMatchIcon = item.href === '/matches';
+                return (
+                <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                    'group inline-flex flex-col items-center justify-center px-1 text-muted-foreground transition-colors hover:text-primary',
+                    isActive && 'text-primary'
+                    )}
+                >
+                    <item.icon className={cn("h-6 w-6", isMatchIcon && "h-7 w-7")} />
+                    <span className="text-xs">{item.label}</span>
+                </Link>
+                );
+            })}
+            </div>
+        </nav>
+    </div>
   );
 }
