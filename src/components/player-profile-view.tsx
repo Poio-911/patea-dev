@@ -128,8 +128,8 @@ export default function PlayerProfileView({ playerId, isUploading }: PlayerProfi
     });
 
     return Object.values(evalsByMatch).map(summary => {
-        const ratings = summary.evaluations.map(ev => ev.rating);
-        const goals = summary.evaluations.reduce((sum, ev) => sum + (ev.goals || 0), 0); // Sum goals
+        const ratings = summary.evaluations.map(ev => ev.rating).filter((r): r is number => r !== undefined);
+        const goals = summary.evaluations.reduce((sum, ev) => sum + (ev.goals || 0), 0);
         const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
         
         return {
@@ -325,8 +325,8 @@ export default function PlayerProfileView({ playerId, isUploading }: PlayerProfi
                                                             </TableCell>
                                                             <TableCell>
                                                                 <div className="flex gap-1 flex-wrap">
-                                                                {ev.performanceTags.length > 0 ? ev.performanceTags.map(tag => (
-                                                                    <Badge key={tag} variant="outline">{tag}</Badge>
+                                                                {ev.performanceTags && ev.performanceTags.length > 0 ? ev.performanceTags.map(tag => (
+                                                                    <Badge key={tag.id} variant="outline">{tag.name}</Badge>
                                                                 )) : <span className="text-muted-foreground text-xs">Sin etiquetas</span>}
                                                                 </div>
                                                             </TableCell>
