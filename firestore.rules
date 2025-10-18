@@ -1,207 +1,238 @@
 /**
- * @fileOverview Firestore Security Rules for the application.
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a strict user-ownership and group-based access model,
+ *              allowing users to manage their own profiles, players, groups, and matches within those groups.
+ *              It prioritizes secure data access, ensuring that only authorized users can read or modify data.
  *
- * Core Philosophy:
- * This ruleset enforces a user-ownership model for user-specific data,
- * and a group-ownership model for shared resources like matches and players.
- * It prioritizes secure access control while allowing flexible data structures
- * for rapid prototyping.
+ * @dataStructure
+ * - /users/{userId}: Stores public user profiles. Each user can only manage their own profile.
+ * - /users/{userId}/fcmTokens/{tokenId}: Stores FCM tokens for a user's devices. Only the user can manage their tokens.
+ * - /users/{userId}/notifications/{notificationId}: Stores notifications for a specific user. Only the user can access their own notifications.
+ * - /players/{playerId}: Stores player data. Each player is owned by a user and belongs to a group.
+ * - /players/{playerId}/ovrHistory/{historyId}: Stores the OVR progression history for a player. Only the player's owner can access this history.
+ * - /groups/{groupId}: Stores group data. Each group has an owner, and only members can access group details.
+ * - /matches/{matchId}: Stores match data. Each match belongs to a group, and only group members can create and manage matches.
+ * - /matches/{matchId}/assignments/{assignmentId}: Stores evaluation assignments for a specific match. Only group members can manage assignments.
+ * - /matches/{matchId}/selfEvaluations/{userId}: Stores self-reported stats for a match. Only the user can create their own self-evaluation.
+ * - /matches/{matchId}/messages/{messageId}: Stores chat messages for a specific match. Only group members can post messages.
+ * - /evaluations/{evaluationId}: Stores individual evaluation records.
  *
- * Data Structure:
- * - `/users/{userId}`: Public user profiles, accessible to anyone, but only
- *   creatable by the user themselves.
- * - `/users/{userId}/fcmTokens/{tokenId}`: FCM tokens for a user, accessible only to the user.
- * - `/users/{userId}/notifications/{notificationId}`: Notifications for a user, accessible only to the user.
- * - `/players/{playerId}`: Player profiles, owned by a user and associated with a group.
- * - `/players/{playerId}/ovrHistory/{historyId}`: OVR history for a player, accessible only to the player's owner.
- * - `/groups/{groupId}`: Group data, with ownership and membership control.
- * - `/matches/{matchId}`: Match data, associated with a group and owned by a user.
- * - `/matches/{matchId}/assignments/{assignmentId}`: Evaluation assignments for a match.
- * - `/matches/{matchId}/selfEvaluations/{userId}`: Self-evaluations for a match.
- * - `/matches/{matchId}/messages/{messageId}`: Chat messages for a match.
- * - `/evaluations/{evaluationId}`: Individual evaluation records.
+ * @keySecurityDecisions
+ * - User data is strictly controlled by the user themselves using the isOwner(userId) function.
+ * - Group membership is required to create and manage matches.
+ * - Users can only create their own self-evaluations.
+ * - Public listing of user profiles is disallowed.
  *
- * Key Security Decisions:
- * - User listing is generally disallowed to protect privacy.
- * - Public read access is granted only where explicitly intended (e.g., user profiles).
- * - Data validation is minimized in this prototyping phase, focusing on authorization.
+ * @denormalizationForAuthorization
+ * - Player and Match documents both contain `ownerUid` and `groupId` fields for efficient authorization checks,
+ *   avoiding costly `get()` calls to other collections.
  *
- * Denormalization for Authorization:
- * - Player documents contain `ownerUid` and `groupId` fields to simplify access control for players and related data.
- * - Match documents also contain `ownerUid` and `groupId` fields for similar reasons.
+ * @structuralSegregation
+ * - User-specific data (FCM tokens, notifications) is stored in subcollections under the `/users/{userId}` path,
+ *   ensuring privacy and efficient access control.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows read access to user profiles, but only allows a user to create their own profile.
-     * @path /users/{userId}
-     * @allow (get, list): if true
-     * @allow (create): if request.auth.uid == userId
-     * @deny (update): if true
-     * @deny (delete): if true
-     * @principle Public read, owner-only create. Enforces identity on create.
+     * @description Checks if the request is made by a signed-in user.
      */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user is the owner of the resource.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the authenticated user is the owner of the resource and the resource exists.
+     */
+    function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Allows access to a group if the user is a member.
+     */
+    function isGroupMember(groupId) {
+      return isSignedIn() && get(/databases/$(database)/documents/groups/$(groupId)).data.members.hasAny([request.auth.uid]);
+    }
+
+    /**
+     * @description Allows access to a group if the user is the owner.
+     */
+    function isGroupOwner(groupId) {
+      return isSignedIn() && get(/databases/$(database)/documents/groups/$(groupId)).data.ownerUid == request.auth.uid;
+    }
+
     match /users/{userId} {
-      allow get, list: if true;
+      /**
+       * @description Manages user profiles, allowing users to read and write their own profiles.
+       * @path /users/{userId}
+       * @allow (create) User with UID 'user123' creates a profile with the same UID.
+       * @deny (create) User with UID 'user123' tries to create a profile with UID 'user456'.
+       * @principle Enforces document ownership for writes, restricts access to a user's own data.
+       */
+      allow get: if isOwner(userId);
+      allow list: if false;
       allow create: if isOwner(userId);
-      allow update: if false;
-      allow delete: if false;
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
-    /**
-     * @description Allows a user to manage their own FCM tokens.
-     * @path /users/{userId}/fcmTokens/{tokenId}
-     * @allow (get, list, create, update, delete): if isOwner(userId)
-     * @deny (create): if request.resource.data.uid != userId;
-     * @deny (update): if request.resource.data.uid != resource.data.uid;
-     * @principle Owner-only access to FCM tokens.
-     */
     match /users/{userId}/fcmTokens/{tokenId} {
-      allow get, list, create, update, delete: if isOwner(userId);
+      /**
+       * @description Manages FCM tokens for users, allowing users to manage their own tokens.
+       * @path /users/{userId}/fcmTokens/{tokenId}
+       * @allow (create) User with UID 'user123' creates a new FCM token under their UID.
+       * @deny (delete) User with UID 'user123' tries to delete a token under UID 'user456'.
+       * @principle Enforces document ownership for writes, restricts access to a user's own data tree.
+       */
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
-    /**
-     * @description Allows a user to manage their own notifications.
-     * @path /users/{userId}/notifications/{notificationId}
-     * @allow (get, list, create, update, delete): if isOwner(userId)
-     * @principle Owner-only access to notifications.
-     */
-    match /users/{userId}/notifications/{notificationId} {
-        allow get, list, create, update, delete: if isOwner(userId);
-    }
+        match /users/{userId}/notifications/{notificationId} {
+            /**
+             * @description Manages user notifications, allowing users to manage their own notifications.
+             * @path /users/{userId}/notifications/{notificationId}
+             * @allow (create) User with UID 'user123' creates a new notification under their UID.
+             * @deny (delete) User with UID 'user123' tries to delete a notification under UID 'user456'.
+             * @principle Enforces document ownership for writes, restricts access to a user's own data tree.
+             */
+            allow get: if isOwner(userId);
+            allow list: if isOwner(userId);
+            allow create: if isOwner(userId);
+            allow update: if isExistingOwner(userId);
+            allow delete: if isExistingOwner(userId);
+        }
 
-    /**
-     * @description Allows a user to create, read, update, and delete their own player profile.
-     * @path /players/{playerId}
-     * @allow (get, list): if true
-     * @allow (create): if request.auth.uid == request.resource.data.ownerUid
-     * @allow (update, delete): if resource.data.ownerUid == request.auth.uid
-     * @principle Owner-only writes, public reads.
-     */
     match /players/{playerId} {
-      allow get, list: if true;
-      allow create: if request.auth.uid == request.resource.data.ownerUid;
-      allow update: if isExistingOwner(resource.data.ownerUid);
-      allow delete: if isExistingOwner(resource.data.ownerUid);
+      /**
+       * @description Manages player data, allowing the owner to read, create, update, and delete their players.
+       * @path /players/{playerId}
+       * @allow (create) User with UID 'user123' creates a player profile with ownerUid 'user123'.
+       * @deny (update) User with UID 'user123' tries to update a player profile where resource.data.ownerUid != 'user123'.
+       * @principle Enforces document ownership for writes.
+       */
+      allow get: if true;
+      allow list: if true;
+      allow create: if request.resource.data.ownerUid == request.auth.uid;
+      allow update: if resource.data.ownerUid == request.auth.uid;
+      allow delete: if resource.data.ownerUid == request.auth.uid;
     }
 
-    /**
-     * @description Allows access to OVR history only for the player's owner.
-     * @path /players/{playerId}/ovrHistory/{historyId}
-     * @allow (get, list, create, update, delete): if get(/databases/$(database)/documents/players/$(playerId)).data.ownerUid == request.auth.uid
-     * @principle Owner-only access.
-     */
     match /players/{playerId}/ovrHistory/{historyId} {
-        allow get, list, create, update, delete: if get(/databases/$(database)/documents/players/$(playerId)).data.ownerUid == request.auth.uid;
-    }
-
-    /**
-     * @description Allows a group owner to manage the group. Members can read group details.
-     * @path /groups/{groupId}
-     * @allow (get, list): if true
-     * @allow (create): if request.auth.uid == request.resource.data.ownerUid
-     * @allow (update, delete): if resource.data.ownerUid == request.auth.uid
-     * @principle Owner-only writes, public reads.
-     */
-    match /groups/{groupId} {
-      allow get, list: if true;
-      allow create: if request.auth.uid == request.resource.data.ownerUid;
-      allow update: if isExistingOwner(resource.data.ownerUid);
-      allow delete: if isExistingOwner(resource.data.ownerUid);
-    }
-
-    /**
-     * @description Allows a match owner to manage the match, and group members to view it.
-     * @path /matches/{matchId}
-     * @allow (get, list): if true
-     * @allow (create): if request.auth.uid == request.resource.data.ownerUid
-     * @allow (update, delete): if resource.data.ownerUid == request.auth.uid
-     * @principle Owner-only writes, public reads.
-     */
-    match /matches/{matchId} {
-      allow get, list: if true;
-      allow create: if request.auth.uid == request.resource.data.ownerUid;
-      allow update: if isExistingOwner(resource.data.ownerUid);
-      allow delete: if isExistingOwner(resource.data.ownerUid);
-    }
-
-    /**
-     * @description Allows a user to manage their own evaluation assignments for a match.
-     * @path /matches/{matchId}/assignments/{assignmentId}
-     * @allow (get, list, create, update, delete): if request.auth.uid == request.resource.data.evaluatorId
-     * @principle Owner-only access.
-     */
-    match /matches/{matchId}/assignments/{assignmentId} {
-        allow get, list, create, update, delete: if request.auth.uid == request.resource.data.evaluatorId;
-    }
-
-     /**
-      * @description Allows a user to create/update their own self-evaluation for a specific match.
-      * @path /matches/{matchId}/selfEvaluations/{userId}
-      * @allow (get, list): if true
-      * @allow (create, update): if request.auth.uid == userId
-      * @allow delete: if false;
-      * @principle Owner-only access.
-      */
-     match /matches/{matchId}/selfEvaluations/{userId} {
-        allow get, list: if true;
-        allow create, update: if request.auth.uid == userId;
-        allow delete: if false;
-    }
-
-    /**
-     * @description Allows group members to create chat messages, and anyone to read them.
-     * @path /matches/{matchId}/messages/{messageId}
-     * @allow (get, list): if true
-     * @allow (create): if isSignedIn()
-     * @allow update, delete: if false
-     * @principle Public read, signed-in user writes.
-     */
-    match /matches/{matchId}/messages/{messageId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
+       /**
+        * @description Manages the OVR history of a player, only allowing the player's owner to manage it.
+        * @path /players/{playerId}/ovrHistory/{historyId}
+        * @allow (create) User with UID 'user123' creates an OVR history entry for player 'player456' they own.
+        * @deny (delete) User with UID 'user123' tries to delete an OVR history entry for player 'player789' they don't own.
+        * @principle Enforces document ownership for writes, restricts access to a user's own data.
+        */
+      allow get: if get(/databases/$(database)/documents/players/$(playerId)).data.ownerUid == request.auth.uid;
+      allow list: if get(/databases/$(database)/documents/players/$(playerId)).data.ownerUid == request.auth.uid;
+      allow create: if get(/databases/$(database)/documents/players/$(playerId)).data.ownerUid == request.auth.uid;
       allow update: if false;
       allow delete: if false;
     }
 
-    /**
-     * @description Allows anyone to read an evaluation, but only allows the evaluator to create it.
-     * @path /evaluations/{evaluationId}
-     * @allow get, list: if true
-     * @allow create: if request.auth.uid == request.resource.data.evaluatorId
-     * @allow update, delete: if false
-     * @principle Public read, owner-only create.
-     */
+    match /groups/{groupId} {
+      /**
+       * @description Manages group data, allowing the group owner and members to read group details.
+       * @path /groups/{groupId}
+       * @allow (get) User with UID 'user123' who is a member of the group can read the group's data.
+       * @deny (create) User with UID 'user123' tries to create a group without being authenticated.
+       * @principle Restricts group access to members and owners.
+       */
+      allow get: if isGroupMember(groupId);
+      allow list: if false;
+      allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isGroupOwner(groupId);
+      allow delete: if isGroupOwner(groupId);
+    }
+
+    match /matches/{matchId} {
+      /**
+       * @description Manages match data, allowing group members to read and write match details.
+       * @path /matches/{matchId}
+       * @allow (create) User with UID 'user123' who is a member of the group can create a match.
+       * @deny (update) User with UID 'user123' tries to update a match without being a member of the group.
+       * @principle Restricts match access to group members.
+       */
+      allow get: if isGroupMember(resource.data.groupId);
+      allow list: if isGroupMember(resource.data.groupId);
+      allow create: if isGroupMember(request.resource.data.groupId) && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isGroupMember(resource.data.groupId);
+      allow delete: if isGroupMember(resource.data.groupId);
+    }
+
+    match /matches/{matchId}/assignments/{assignmentId} {
+      /**
+       * @description Manages evaluation assignments for a match, allowing group members to manage assignments.
+       * @path /matches/{matchId}/assignments/{assignmentId}
+       * @allow (create) User who is a member of the group can create a new assignment for the match.
+       * @deny (delete) User who is not a member of the group tries to delete an assignment.
+       * @principle Restricts assignment access to group members.
+       */
+      allow get: if isGroupMember(get(/databases/$(database)/documents/matches/$(matchId)).data.groupId);
+      allow list: if isGroupMember(get(/databases/$(database)/documents/matches/$(matchId)).data.groupId);
+      allow create: if isGroupMember(get(/databases/$(database)/documents/matches/$(matchId)).data.groupId);
+      allow update: if isGroupMember(get(/databases/$(database)/documents/matches/$(matchId)).data.groupId);
+      allow delete: if isGroupMember(get(/databases/$(database)/documents/matches/$(matchId)).data.groupId);
+    }
+
+        match /matches/{matchId}/selfEvaluations/{userId} {
+            /**
+             * @description Manages self-reported match stats, allowing users to manage their own data.
+             * @path /matches/{matchId}/selfEvaluations/{userId}
+             * @allow (create) User with UID 'user123' creates their self-evaluation.
+             * @deny (update) User with UID 'user123' tries to update another user's self-evaluation.
+             * @principle Enforces document ownership for writes, restricts access to a user's own data.
+             */
+            allow get: if isOwner(userId);
+            allow list: if false;
+            allow create: if isOwner(userId);
+            allow update: if isExistingOwner(userId);
+            allow delete: if isExistingOwner(userId);
+        }
+
+    match /matches/{matchId}/messages/{messageId} {
+      /**
+       * @description Manages chat messages for a match, allowing group members to post messages.
+       * @path /matches/{matchId}/messages/{messageId}
+       * @allow (create) User who is a member of the group can create a new chat message.
+       * @deny (delete) User who is not a member of the group tries to delete a chat message.
+       * @principle Restricts chat message access to group members.
+       */
+      allow get: if isGroupMember(get(/databases/$(database)/documents/matches/$(matchId)).data.groupId);
+      allow list: if isGroupMember(get(/databases/$(database)/documents/matches/$(matchId)).data.groupId);
+      allow create: if isGroupMember(get(/databases/$(database)/documents/matches/$(matchId)).data.groupId);
+      allow update: if false;
+      allow delete: if false;
+    }
+
     match /evaluations/{evaluationId} {
-        allow get, list: if true;
-        allow create: if request.auth.uid == request.resource.data.evaluatorId;
+        /**
+         * @description Manages individual evaluation records.
+         * @path /evaluations/{evaluationId}
+         * @allow (get) No specific read access restrictions at this level.
+         * @deny (create) No public creation allowed.
+         * @principle Restricts write access to prevent unauthorized data modification.
+         */
+        allow get: if true;
+        allow list: if false;
+        allow create: if false;
         allow update: if false;
         allow delete: if false;
     }
-
-    /**
-     * @description Placeholder for unimplemented rules. Prevents accidental open access.
-     * @path /unsecured/{document}
-     * @allow get, list, create, update, delete: if false
-     * @principle Explicit denial.
-     */
-    match /unsecured/{document} {
-      allow get, list, create, update, delete: if false;
-    }
-  }
-
-  // Helper functions
-  function isSignedIn() {
-    return request.auth != null;
-  }
-
-  function isOwner(userId) {
-    return request.auth.uid == userId;
-  }
-
-  function isExistingOwner(ownerUid) {
-      return isSignedIn() && request.auth.uid == ownerUid && resource != null;
   }
 }

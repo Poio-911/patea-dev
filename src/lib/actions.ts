@@ -6,34 +6,24 @@ import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/
 import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-match-day-forecast';
 import { generateEvaluationTags, GenerateEvaluationTagsInput } from '@/ai/flows/generate-evaluation-tags';
 import { Player, Evaluation } from './types';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getFirestore, doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { initializeFirebase } from '@/firebase';
 
-// Use Firebase Admin SDK for server-side operations
-import * as admin from 'firebase-admin';
-import { getFirestore as getAdminFirestore, FieldValue } from 'firebase-admin/firestore';
-import { getStorage as getAdminStorage } from 'firebase-admin/storage';
-import { firebaseConfig } from '@/firebase/config';
-
-// Helper to initialize Firebase Admin SDK safely
-function initializeAdminApp() {
-    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
-      ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-      : undefined;
-
-    if (admin.apps.length > 0) {
-        return admin.app();
-    }
-    
-    return admin.initializeApp({
-        credential: serviceAccount ? admin.credential.cert(serviceAccount) : undefined,
-        storageBucket: firebaseConfig.storageBucket,
-    });
+// NOTE: This is a simplified client-side Firebase usage in a Server Action.
+// This is NOT best practice. For robust server-side logic, use the Firebase Admin SDK.
+// We are using this approach to quickly prototype and avoid Admin SDK setup complexities.
+function getClientFirebase() {
+    const { firebaseApp } = initializeFirebase();
+    const firestore = getFirestore(firebaseApp);
+    const storage = getStorage(firebaseApp);
+    return { firestore, storage };
 }
+
 
 export async function uploadProfileImageAction(formData: FormData) {
     try {
-        const app = initializeAdminApp();
-        const firestore = getAdminFirestore(app);
-        const storage = getAdminStorage(app);
+        const { firestore, storage } = getClientFirebase();
         
         const file = formData.get('file') as File;
         const userId = formData.get('userId') as string;
@@ -46,26 +36,15 @@ export async function uploadProfileImageAction(formData: FormData) {
         const fileName = `${userId}-${crypto.randomUUID()}.${fileExtension}`;
         const filePath = `profile-images/${fileName}`;
 
-        const buffer = Buffer.from(await file.arrayBuffer());
-        
-        const bucket = storage.bucket();
-        const fileUpload = bucket.file(filePath);
-
-        await fileUpload.save(buffer, {
-            metadata: {
-                contentType: file.type,
-            },
-        });
-        
-        // Make the file public to get a URL
-        await fileUpload.makePublic();
-        const newPhotoURL = fileUpload.publicUrl();
+        const storageRef = ref(storage, filePath);
+        await uploadBytes(storageRef, file);
+        const newPhotoURL = await getDownloadURL(storageRef);
 
         // Update Firestore documents
-        const userDocRef = firestore.collection('users').doc(userId);
-        const playerDocRef = firestore.collection('players').doc(userId);
+        const userDocRef = doc(firestore, 'users', userId);
+        const playerDocRef = doc(firestore, 'players', userId);
 
-        const batch = firestore.batch();
+        const batch = writeBatch(firestore);
         batch.update(userDocRef, { photoURL: newPhotoURL });
         batch.update(playerDocRef, { photoUrl: newPhotoURL });
         await batch.commit();
@@ -73,7 +52,7 @@ export async function uploadProfileImageAction(formData: FormData) {
         return { newPhotoURL };
 
     } catch (error: any) {
-        console.error("Error en la Server Action de subida (Admin):", error);
+        console.error("Error en la Server Action de subida:", error);
         return { error: 'No se pudo subir la imagen desde el servidor. ' + (error.message || 'Error desconocido.') };
     }
 }
@@ -120,9 +99,11 @@ export async function generateTeamsAction(players: Player[]) {
 }
 
 export async function getPlayerEvaluationsAction(playerId: string, groupId: string): Promise<Partial<Evaluation>[]> {
-    const firestore = getAdminFirestore(initializeAdminApp());
+    const { firestore } = getClientFirebase();
     const evaluations: Partial<Evaluation>[] = [];
     
+    // This is a simplified example and would be inefficient in a real app.
+    // A better approach would be to query evaluations directly if rules allow.
     try {
         const q = firestore.collection('evaluations').where('playerId', '==', playerId);
         const querySnapshot = await q.get();
@@ -148,10 +129,10 @@ export async function getPlayerEvaluationsAction(playerId: string, groupId: stri
 
 
 export async function getPlayerImprovementSuggestionsAction(playerId: string, groupId: string) {
-    const firestore = getAdminFirestore(initializeAdminApp());
+    const { firestore } = getClientFirebase();
 
     try {
-        const playerDocRef = firestore.collection('players').doc(playerId);
+        const playerDocRef = doc(firestore, 'players', playerId);
         const playerDocSnap = await playerDocRef.get();
 
         if (!playerDocSnap.exists) {
