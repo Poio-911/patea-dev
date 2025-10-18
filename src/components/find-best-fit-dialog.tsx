@@ -69,7 +69,7 @@ export function FindBestFitDialog({
       
       const result = await findBestFitPlayerAction({ match: selectedMatch, availablePlayers: simpleAvailablePlayers });
 
-      if (result.error) {
+      if ('error' in result) {
         toast({ variant: 'destructive', title: 'Error de la IA', description: result.error });
       } else if (result.playerId && result.reason) {
         const foundPlayer = availablePlayers.find(p => p.uid === result.playerId);
