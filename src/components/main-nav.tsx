@@ -107,7 +107,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <div className="relative flex h-screen w-full flex-col">
-          <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background/90 px-4 backdrop-blur-lg sm:px-6">
+          <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background/70 px-4 backdrop-blur-lg sm:px-6">
               <div className="flex items-center gap-2">
                   <div className="hidden md:block">
                       <SidebarTrigger />
@@ -185,7 +185,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
           <main className="flex-1 overflow-y-auto p-4 pb-20 md:p-6">{children}</main>
           
-          <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/90 backdrop-blur-lg md:hidden">
+          <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg md:hidden">
               <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
               {navItems.map((item) => {
                   const isActive = pathname.startsWith(item.href);
