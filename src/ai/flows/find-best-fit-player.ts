@@ -2,16 +2,15 @@
 'use server';
 
 /**
- * @fileOverview An AI flow to find the best available player to fit an incomplete match.
+ * @fileOverview An AI flow to find the best available players to fit an incomplete match.
  *
- * - findBestFitPlayer - A function that returns the best player and a reason.
+ * - findBestFitPlayer - A function that returns the best players and reasons.
  * - FindBestFitPlayerInput - The input type for the findBestFitPlayer function.
  * - FindBestFitPlayerOutput - The return type for the findBestFitPlayer function.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import type { Match, AvailablePlayer } from '@/lib/types';
 
 const PlayerSchema = z.object({
     uid: z.string(),
@@ -33,9 +32,13 @@ const FindBestFitPlayerInputSchema = z.object({
 });
 export type FindBestFitPlayerInput = z.infer<typeof FindBestFitPlayerInputSchema>;
 
+const RecommendedPlayerSchema = z.object({
+    playerId: z.string().describe("El UID del jugador recomendado."),
+    reason: z.string().describe("Una justificación corta, en español y en tono de 'manager', de por qué este jugador es un fichaje ideal."),
+});
+
 const FindBestFitPlayerOutputSchema = z.object({
-  playerId: z.string().describe("El UID del jugador recomendado."),
-  reason: z.string().describe("Una justificación corta, en español y en tono de 'manager', de por qué este jugador es el fichaje ideal."),
+  recommendations: z.array(RecommendedPlayerSchema).describe("Una lista de jugadores recomendados para completar el partido.")
 });
 export type FindBestFitPlayerOutput = z.infer<typeof FindBestFitPlayerOutputSchema>;
 
@@ -51,25 +54,28 @@ const prompt = ai.definePrompt({
   output: { schema: FindBestFitPlayerOutputSchema },
   prompt: `
     Eres un director deportivo experto en fútbol amateur del Río de la Plata, con un ojo clínico para fichajes.
-    Tu tarea es analizar un partido incompleto y una lista de jugadores libres para recomendar el mejor fichaje posible.
+    Tu tarea es analizar un partido incompleto y una lista de jugadores libres para recomendar los mejores fichajes posibles.
 
     DATOS DEL PARTIDO INCOMPLETO:
     - Título: {{{match.title}}}
     - Jugadores necesarios: {{{match.matchSize}}}
-    - Jugadores actuales: {{#each match.players}} {{this.displayName}} ({{this.position}}, OVR {{this.ovr}}){{/each}}
+    - Jugadores actuales: {{match.players.length}}
+    - Plazas a cubrir: {{{subtract match.matchSize match.players.length}}}
+    - Plantilla actual: {{#each match.players}} {{this.displayName}} ({{this.position}}, OVR {{this.ovr}}){{/each}}
 
     JUGADORES DISPONIBLES EN EL MERCADO:
     {{#each availablePlayers}}
     - UID: {{this.uid}}, Nombre: {{this.displayName}}, Posición: {{this.position}}, OVR: {{this.ovr}}
     {{/each}}
 
-    Basado en esto, tu objetivo es elegir UN solo jugador de la lista de disponibles.
-    Tu criterio principal debe ser:
-    1.  **Cubrir Posiciones Faltantes:** Si al equipo le falta un defensa, un delantero, o sobre todo un portero ('POR'), prioriza fichar a un jugador en esa posición.
-    2.  **Equilibrio de OVR:** El jugador elegido debe mejorar al equipo pero sin desbalancear drásticamente el OVR promedio. Evita recomendar un jugador con un OVR muy por encima o muy por debajo del promedio del equipo actual.
-    3.  **No recomendar si no hay opciones:** Si ninguno de los jugadores disponibles mejora la situación o si no hay jugadores, responde con un error.
+    Basado en esto, tu objetivo es elegir hasta {{{subtract match.matchSize match.players.length}}} jugadores de la lista de disponibles para recomendar.
+    Tus criterios principales deben ser:
+    1.  **Cubrir Posiciones Faltantes:** Si al equipo le falta un defensa, un delantero, o sobre todo un portero ('POR'), prioriza fichar jugadores en esas posiciones.
+    2.  **Equilibrio de OVR:** Los jugadores elegidos deben mejorar al equipo pero sin desbalancear drásticamente el OVR promedio. Evita recomendar jugadores con un OVR muy por encima o muy por debajo del promedio del equipo actual.
+    3.  **Calidad sobre Cantidad:** Es mejor recomendar menos jugadores pero que sean los correctos, a rellenar por rellenar.
+    4.  **Si no hay jugadores disponibles o ninguno encaja, devuelve una lista de recomendaciones vacía.**
 
-    Devuelve el UID del jugador recomendado y una razón corta, ingeniosa y en tono de manager, explicando por qué es la elección correcta.
+    Para cada jugador que recomiendes, devuelve su UID y una razón corta, ingeniosa y en tono de manager, explicando por qué es la elección correcta.
     Ejemplo de razón: "Necesitábamos garra en el medio y este jugador es un tractorcito. Va a equilibrar el mediocampo."
     Otro ejemplo: "Es un delantero rápido que nos puede dar la chispa que falta arriba sin romper la armonía del equipo."
 
@@ -86,9 +92,11 @@ const findBestFitPlayerFlow = ai.defineFlow(
   },
   async (input) => {
     if (input.availablePlayers.length === 0) {
-      throw new Error("No hay jugadores disponibles en el mercado para recomendar.");
+        return { recommendations: [] };
     }
     const { output } = await prompt(input);
     return output!;
   }
 );
+
+    

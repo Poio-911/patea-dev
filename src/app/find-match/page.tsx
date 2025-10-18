@@ -418,8 +418,8 @@ export default function FindMatchPage() {
                         <Slider value={playerOvrFilter} onValueChange={(value) => setPlayerOvrFilter(value as [number, number])} min={40} max={99} step={1} disabled={isSearching} />
                     </div>
                 </div>
-                <div className="flex items-center justify-center gap-4">
-                    <Button onClick={applyPlayerFilters} size="lg" disabled={isSearching}>
+                <div className="w-full px-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <Button onClick={applyPlayerFilters} size="lg" disabled={isSearching} className="w-full sm:w-auto">
                         {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
                         {isSearching ? 'Buscando...' : 'Buscar Jugadores'}
                     </Button>
@@ -521,3 +521,5 @@ export default function FindMatchPage() {
     </div>
   );
 }
+
+    
