@@ -15,13 +15,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import type { Player, Match } from '@/lib/types';
-import { BizarreQuoteCard } from '@/components/bizarre-quote-card';
 import { NextMatchCard } from '@/components/next-match-card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Separator } from '@/components/ui/separator';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
+import { GroupSummaryCard } from '@/components/group-summary-card';
 
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
@@ -135,7 +135,7 @@ export default function DashboardPage() {
         description="Un resumen de la actividad de tu grupo."
       />
       
-      <BizarreQuoteCard />
+      <GroupSummaryCard players={players || []} matches={matches || []} />
 
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Main column */}
