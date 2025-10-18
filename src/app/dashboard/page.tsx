@@ -80,20 +80,18 @@ export default function DashboardPage() {
 
   const loading = playersLoading || groupMatchesLoading || joinedMatchesLoading;
 
-  const { upcomingMatches, nextMatch, recentMatches } = useMemo(() => {
-    if (!matches) return { upcomingMatches: [], nextMatch: null, recentMatches: [] };
-    const now = new Date();
+  const { nextMatch, recentMatches } = useMemo(() => {
+    if (!matches) return { nextMatch: null, recentMatches: [] };
     
     const upcoming = matches
-        .filter(m => m.status === 'upcoming' && new Date(m.date) >= now)
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      .filter(m => m.status === 'upcoming')
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
     const recent = matches.filter(m => m.status !== 'upcoming').slice(0, 2);
 
     return {
-        upcomingMatches: upcoming,
-        nextMatch: upcoming[0] || null,
-        recentMatches: recent,
+      nextMatch: upcoming[0] || null,
+      recentMatches: recent,
     };
   }, [matches]);
 
@@ -247,5 +245,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
