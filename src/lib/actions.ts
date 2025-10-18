@@ -150,8 +150,10 @@ export async function findBestFitPlayerAction(input: FindBestFitPlayerInput) {
     try {
         const result = await findBestFitPlayer(input);
         return result;
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error finding best fit player:', error);
-        return { error: 'La IA no pudo encontrar un jugador adecuado.' };
+        // This will catch JSON parsing errors or other exceptions from the flow
+        // and return a controlled error message to the client.
+        return { error: 'La IA no pudo encontrar un jugador adecuado. La respuesta no fue válida. Intenta de nuevo.' };
     }
 }
