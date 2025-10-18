@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { MarkerF, InfoWindowF } from '@google-maps/api';
+import { MarkerF, InfoWindowF } from '@react-google-maps/api';
 import type { AvailablePlayer, Match, Invitation } from '@/lib/types';
 import { Button } from './ui/button';
 import { UserPlus } from 'lucide-react';
