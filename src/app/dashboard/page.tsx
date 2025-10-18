@@ -83,16 +83,17 @@ export default function DashboardPage() {
   const { upcomingMatches, nextMatch, recentMatches } = useMemo(() => {
     if (!matches) return { upcomingMatches: [], nextMatch: null, recentMatches: [] };
     const now = new Date();
+    
     const upcoming = matches
-      .filter(m => m.status === 'upcoming' && new Date(m.date) >= now)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        .filter(m => m.status === 'upcoming' && new Date(m.date) >= now)
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
     const recent = matches.filter(m => m.status !== 'upcoming').slice(0, 2);
 
     return {
-      upcomingMatches: upcoming,
-      nextMatch: upcoming[0] || null,
-      recentMatches: recent,
+        upcomingMatches: upcoming,
+        nextMatch: upcoming[0] || null,
+        recentMatches: recent,
     };
   }, [matches]);
 
@@ -138,7 +139,14 @@ export default function DashboardPage() {
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Main column */}
         <div className="lg:col-span-2 space-y-8">
-            <NextMatchCard match={nextMatch} />
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-primary">Próximo Partido</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <NextMatchCard match={nextMatch} />
+                </CardContent>
+            </Card>
             
             <Card>
                 <CardHeader>
