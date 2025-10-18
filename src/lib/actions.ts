@@ -4,6 +4,7 @@
 import { generateBalancedTeams, GenerateBalancedTeamsInput } from '@/ai/flows/generate-balanced-teams';
 import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/flows/suggest-player-improvements';
 import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-match-day-forecast';
+import { generateEvaluationTags, GenerateEvaluationTagsInput } from '@/ai/flows/generate-evaluation-tags';
 import { Player, Evaluation } from './types';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
@@ -129,5 +130,15 @@ export async function getWeatherForecastAction(input: GetMatchDayForecastInput) 
     } catch (error) {
         console.error('Error getting weather forecast:', error);
         return { error: 'No se pudo obtener el pronóstico del tiempo.' };
+    }
+}
+
+export async function generateTagsAction(input: GenerateEvaluationTagsInput) {
+    try {
+        const result = await generateEvaluationTags(input);
+        return result;
+    } catch (error) {
+        console.error('Error generating evaluation tags:', error);
+        return { error: 'No se pudieron generar las etiquetas de evaluación.' };
     }
 }

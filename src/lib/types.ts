@@ -1,5 +1,6 @@
 
 
+
 import { DocumentData, DocumentReference } from "firebase/firestore";
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
@@ -118,9 +119,13 @@ export type Evaluation = {
     playerId: string; // The player being evaluated
     evaluatorId: string; // The user UID who submitted the evaluation
     matchId: string; // The ID of the match, for easier querying
-    rating: number; // Scale 1-10
+    rating?: number; // Scale 1-10
     goals: number; // Goals scored by the evaluator in that match
-    performanceTags: string[];
+    performanceTags?: {
+        id: string;
+        name: string;
+        effects: { attribute: string; change: number }[];
+    }[];
     evaluatedAt: string;
 } & DocumentData;
 
