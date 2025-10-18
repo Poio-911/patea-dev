@@ -19,7 +19,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { uploadProfileImageAction } from '@/lib/actions';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 
 
@@ -50,27 +50,33 @@ export default function ProfilePage() {
 
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user || !auth?.currentUser) return;
+    if (!user || !auth?.currentUser || !firestore) return;
     const file = event.target.files?.[0];
     if (!file) return;
 
     setIsUploading(true);
     
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('userId', user.uid);
-
     try {
-        const result = await uploadProfileImageAction(formData);
+        const { firebaseApp } = initializeFirebase();
+        const storage = getStorage(firebaseApp);
 
-        if (result.error) {
-            throw new Error(result.error);
-        }
+        const fileExtension = file.name.split('.').pop();
+        const fileName = `${user.uid}-${crypto.randomUUID()}.${fileExtension}`;
+        const filePath = `profile-images/${user.uid}/${fileName}`;
         
-        if (result.newPhotoURL) {
-            // Also update the auth user profile on the client
-            await updateProfile(auth.currentUser, { photoURL: result.newPhotoURL });
-        }
+        const storageRef = ref(storage, filePath);
+        const uploadResult = await uploadBytes(storageRef, file);
+        const newPhotoURL = await getDownloadURL(uploadResult.ref);
+
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const playerDocRef = doc(firestore, 'players', user.uid);
+
+        const batch = writeBatch(firestore);
+        batch.update(userDocRef, { photoURL: newPhotoURL });
+        batch.update(playerDocRef, { photoUrl: newPhotoURL });
+        await batch.commit();
+
+        await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
 
         toast({
             title: '¡Foto actualizada!',
@@ -81,7 +87,7 @@ export default function ProfilePage() {
         console.error('Error updating photo:', error);
         toast({
             variant: 'destructive',
-            title: 'Error',
+            title: 'Error al subir la imagen',
             description: error.message || 'No se pudo actualizar la foto de perfil.',
         });
     } finally {
@@ -211,3 +217,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    

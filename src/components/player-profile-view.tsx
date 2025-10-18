@@ -15,8 +15,6 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -70,14 +68,7 @@ export default function PlayerProfileView({ playerId, isUploading }: PlayerProfi
         try {
             // 1. Fetch all evaluations for the player
             const evalsQuery = query(collection(firestore, 'evaluations'), where('playerId', '==', playerId));
-            const evalsSnapshot = await getDocs(evalsQuery).catch(err => {
-                const permError = new FirestorePermissionError({
-                    path: 'evaluations',
-                    operation: 'list',
-                });
-                errorEmitter.emit('permission-error', permError);
-                throw err;
-            });
+            const evalsSnapshot = await getDocs(evalsQuery)
 
             const playerEvals = evalsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Evaluation));
             setEvaluations(playerEvals);
@@ -364,3 +355,5 @@ export default function PlayerProfileView({ playerId, isUploading }: PlayerProfi
     </div>
   );
 }
+
+    

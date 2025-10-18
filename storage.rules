@@ -1,15 +1,19 @@
+
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Reglas para las imágenes de perfil
-    match /profile-images/{userId}/{fileName} {
-      // Cualquier usuario autenticado puede leer las imágenes de perfil
-      allow read: if request.auth != null;
-      
-      // Solo el propietario de la cuenta puede subir una imagen de perfil
-      // La imagen debe empezar con el UID del usuario.
+    // Allow public read access to all files.
+    match /{allPaths=**} {
+      allow read;
+    }
+    
+    // Allow authenticated users to write to the 'profile-images' folder.
+    // The file name must start with their user ID.
+    match /profile-images/{userId}/{allPaths=**} {
       allow write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
+
+    

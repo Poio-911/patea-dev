@@ -1,3 +1,4 @@
+
 // @ts-nocheck
 'use server';
 
@@ -7,15 +8,12 @@ import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-ma
 import { generateEvaluationTags, GenerateEvaluationTagsInput } from '@/ai/flows/generate-evaluation-tags';
 import { Player, Evaluation } from './types';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getFirestore, doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc, writeBatch, collection, getDocs, where } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 
-// NOTE: This is a simplified client-side Firebase usage in a Server Action.
-// This is NOT best practice. For robust server-side logic, use the Firebase Admin SDK.
-// We are using this approach to quickly prototype and avoid Admin SDK setup complexities.
+// This approach uses the Client SDK on the server, which is not standard.
+// For robust applications, using the Firebase Admin SDK is the recommended practice.
 function getClientFirebase() {
     const { firebaseApp } = initializeFirebase();
     const firestore = getFirestore(firebaseApp);
@@ -37,13 +35,12 @@ export async function uploadProfileImageAction(formData: FormData) {
 
         const fileExtension = file.name.split('.').pop();
         const fileName = `${userId}-${crypto.randomUUID()}.${fileExtension}`;
-        const filePath = `profile-images/${fileName}`;
+        const filePath = `profile-images/${userId}/${fileName}`;
 
         const storageRef = ref(storage, filePath);
         await uploadBytes(storageRef, file);
         const newPhotoURL = await getDownloadURL(storageRef);
 
-        // Update Firestore documents
         const userDocRef = doc(firestore, 'users', userId);
         const playerDocRef = doc(firestore, 'players', userId);
 
@@ -56,16 +53,6 @@ export async function uploadProfileImageAction(formData: FormData) {
 
     } catch (error: any) {
         console.error("Error en la Server Action de subida:", error);
-         // Emit a more specific error if possible, otherwise a generic one
-        const permissionError = new FirestorePermissionError({
-            path: `profile-images/ for user ${formData.get('userId')}`,
-            operation: 'create', // or 'update'
-            requestResourceData: {
-                fileName: `profile-images/${formData.get('userId')}-...`,
-                contentType: (formData.get('file') as File)?.type,
-            },
-        });
-        errorEmitter.emit('permission-error', permissionError);
         return { error: 'No se pudo subir la imagen desde el servidor. ' + (error.message || 'Error desconocido.') };
     }
 }
@@ -118,11 +105,11 @@ export async function getPlayerEvaluationsAction(playerId: string, groupId: stri
     // This is a simplified example and would be inefficient in a real app.
     // A better approach would be to query evaluations directly if rules allow.
     try {
-        const q = firestore.collection('evaluations').where('playerId', '==', playerId);
-        const querySnapshot = await q.get();
+        const q = collection(firestore, 'evaluations');
+        const querySnapshot = await getDocs(query(q, where('playerId', '==', playerId)));
 
-        const matchesQuery = firestore.collection('matches').where('groupId', '==', groupId);
-        const matchesSnapshot = await matchesQuery.get();
+        const matchesQuery = collection(firestore, 'matches');
+        const matchesSnapshot = await getDocs(query(matchesQuery, where('groupId', '==', groupId)));
         const groupMatchIds = new Set(matchesSnapshot.docs.map(doc => doc.id));
 
         querySnapshot.forEach(doc => {
@@ -146,7 +133,7 @@ export async function getPlayerImprovementSuggestionsAction(playerId: string, gr
 
     try {
         const playerDocRef = doc(firestore, 'players', playerId);
-        const playerDocSnap = await playerDocRef.get();
+        const playerDocSnap = await getDoc(playerDocRef);
 
         if (!playerDocSnap.exists) {
             return { error: 'No se pudo encontrar al jugador.' };
@@ -195,3 +182,5 @@ export async function generateTagsAction(input: GenerateEvaluationTagsInput) {
         return { error: 'No se pudieron generar las etiquetas de evaluación.' };
     }
 }
+
+    
