@@ -257,8 +257,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           <main className="flex-1 p-4 sm:p-6">{children}</main>
           
           {/* Bottom Navigation for Mobile */}
-          <nav className="fixed bottom-0 left-0 right-0 z-20 border-t bg-background/95 backdrop-blur-lg md:hidden">
-            <div className="mx-auto grid h-16 max-w-lg grid-cols-5 font-medium">
+          <nav className="fixed bottom-0 left-0 right-0 z-20 border-t bg-background/95 backdrop-blur-lg md:hidden h-16 pb-[env(safe-area-inset-bottom)]">
+            <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
               {navItems.map((item) => {
                 const isActive = pathname.startsWith(item.href);
                 const isMatchIcon = item.href === '/matches';
