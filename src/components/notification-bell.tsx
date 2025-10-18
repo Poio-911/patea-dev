@@ -11,21 +11,38 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Button } from './ui/button';
-import { Bell, CheckCheck } from 'lucide-react';
+import { Bell, CheckCheck, FileSignature, UserPlus, Info } from 'lucide-react';
 import type { Notification } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Avatar, AvatarFallback } from './ui/avatar';
+import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 
 
 const notificationIcons: Record<Notification['type'], React.ElementType> = {
-    match_invite: ({...props}) => <Avatar {...props}><AvatarImage src="/icons/jersey.png" className="bg-blue-500" /></Avatar>,
-    new_joiner: ({...props}) => <Avatar {...props}><AvatarImage src="/icons/whistle.png" className="bg-green-500" /></Avatar>,
-    evaluation_pending: ({...props}) => <Avatar {...props}><AvatarImage src="/icons/clipboard.png" className="bg-yellow-500" /></Avatar>,
-    match_update: ({...props}) => <Avatar {...props}><AvatarImage src="/icons/stadium.png" className="bg-purple-500" /></Avatar>,
+    match_invite: (props) => <SoccerPlayerIcon {...props} />,
+    new_joiner: (props) => <UserPlus {...props} />,
+    evaluation_pending: (props) => <FileSignature {...props} />,
+    match_update: (props) => <Info {...props} />,
+};
+
+const IconWrapper = ({ type, ...props }: { type: Notification['type'] }) => {
+    const Icon = notificationIcons[type];
+    return (
+        <Avatar {...props}>
+            <AvatarFallback className={cn(
+                "bg-transparent text-foreground",
+                type === 'match_invite' && 'bg-blue-500/20 text-blue-500',
+                type === 'new_joiner' && 'bg-green-500/20 text-green-500',
+                type === 'evaluation_pending' && 'bg-yellow-500/20 text-yellow-500',
+                type === 'match_update' && 'bg-purple-500/20 text-purple-500',
+            )}>
+                <Icon className="h-4 w-4" />
+            </AvatarFallback>
+        </Avatar>
+    );
 };
 
 export function NotificationBell() {
@@ -69,7 +86,7 @@ export function NotificationBell() {
             }, 2000);
             return () => clearTimeout(timer);
         }
-    }, [isOpen, unreadCount]);
+    }, [isOpen, unreadCount, firestore, user, notifications]);
 
     return (
         <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -100,28 +117,25 @@ export function NotificationBell() {
                         <div className="p-4 text-center text-sm text-muted-foreground">Cargando...</div>
                     ) : notifications && notifications.length > 0 ? (
                         <div className="divide-y">
-                            {notifications.map(notification => {
-                                const Icon = notificationIcons[notification.type];
-                                return (
-                                    <Link key={notification.id} href={notification.link} className="block hover:bg-accent/50" onClick={() => setIsOpen(false)}>
-                                        <div className={cn("flex items-start gap-3 p-4", !notification.isRead && "bg-primary/10")}>
-                                            <div className="mt-1">
-                                                <Icon className="h-8 w-8" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className="font-semibold text-sm leading-tight">{notification.title}</p>
-                                                <p className="text-xs text-muted-foreground">{notification.message}</p>
-                                                <p className="text-xs text-muted-foreground/80 mt-1">
-                                                    {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true, locale: es })}
-                                                </p>
-                                            </div>
-                                            {!notification.isRead && (
-                                                <div className="h-2 w-2 rounded-full bg-primary mt-1" />
-                                            )}
+                            {notifications.map(notification => (
+                                <Link key={notification.id} href={notification.link} className="block hover:bg-accent/50" onClick={() => setIsOpen(false)}>
+                                    <div className={cn("flex items-start gap-3 p-4", !notification.isRead && "bg-primary/10")}>
+                                        <div className="mt-1">
+                                            <IconWrapper type={notification.type} className="h-8 w-8" />
                                         </div>
-                                    </Link>
-                                )
-                            })}
+                                        <div className="flex-1">
+                                            <p className="font-semibold text-sm leading-tight">{notification.title}</p>
+                                            <p className="text-xs text-muted-foreground">{notification.message}</p>
+                                            <p className="text-xs text-muted-foreground/80 mt-1">
+                                                {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true, locale: es })}
+                                            </p>
+                                        </div>
+                                        {!notification.isRead && (
+                                            <div className="h-2 w-2 rounded-full bg-primary mt-1" />
+                                        )}
+                                    </div>
+                                </Link>
+                            ))}
                         </div>
                     ) : (
                         <p className="p-8 text-center text-sm text-muted-foreground">No tienes notificaciones.</p>
@@ -136,5 +150,3 @@ export function NotificationBell() {
         </Popover>
     )
 }
-
-    
