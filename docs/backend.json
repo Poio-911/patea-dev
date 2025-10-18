@@ -44,6 +44,27 @@
       },
       "required": ["name", "position", "ovr", "ownerUid"]
     },
+    "availablePlayer": {
+      "title": "Available Player",
+      "description": "Represents a player who is available to be invited to matches.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoUrl": { "type": "string", "format": "uri" },
+        "position": { "type": "string", "enum": ["DEL", "MED", "DEF", "POR"] },
+        "ovr": { "type": "number" },
+        "location": {
+            "type": "object",
+            "properties": {
+                "lat": { "type": "number" },
+                "lng": { "type": "number" }
+            }
+        },
+        "availableSince": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "position", "ovr", "location"]
+    },
     "match": {
       "title": "Match",
       "description": "Represents a football match.",
@@ -249,6 +270,10 @@
     "/players/{playerId}/ovrHistory/{historyId}": {
         "schema": { "$ref": "#/entities/ovrHistory" },
         "description": "Stores the OVR progression history for a player."
+    },
+    "/availablePlayers/{playerId}": {
+      "schema": { "$ref": "#/entities/availablePlayer" },
+      "description": "Stores players who have marked themselves as available for matches."
     },
     "/groups/{groupId}": {
       "schema": { "$ref": "#/entities/group" },

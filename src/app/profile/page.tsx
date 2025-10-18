@@ -5,7 +5,7 @@ import { useUser, useFirestore, initializeFirebase } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { doc, collection, query, where, writeBatch } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { Loader2, Upload } from 'lucide-react';
+import { Loader2, Upload, Settings, UserRound, CaseSensitive } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Player, Match } from '@/lib/types';
@@ -21,6 +21,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 
 export default function ProfilePage() {
@@ -30,6 +32,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isAvailable, setIsAvailable] = useState(false);
 
   const createdPlayersQuery = useMemo(() => {
     if (!firestore || !user?.uid) return null;
@@ -98,6 +101,15 @@ export default function ProfilePage() {
   const handleButtonClick = () => {
     fileInputRef.current?.click();
   };
+
+  const handleAvailabilityChange = (checked: boolean) => {
+    // TODO: Implement logic to update Firestore /availablePlayers collection
+    setIsAvailable(checked);
+    toast({
+      title: `Disponibilidad ${checked ? 'Activada' : 'Desactivada'}`,
+      description: checked ? 'Ahora aparecerás en la lista de jugadores libres.' : 'Ya no eres visible para otros organizadores.',
+    });
+  };
   
   const loading = userLoading || createdPlayersLoading || createdMatchesLoading;
 
@@ -128,92 +140,122 @@ export default function ProfilePage() {
             </Button>
       </PageHeader>
       
-      <PlayerProfileView playerId={user.uid} isUploading={isUploading} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-3">
+             <PlayerProfileView playerId={user.uid} isUploading={isUploading} />
+        </div>
 
-      <Tabs defaultValue="created-matches" className="w-full">
-        <TabsList>
-            <TabsTrigger value="created-matches">Partidos Creados</TabsTrigger>
-            <TabsTrigger value="created-players">Jugadores Creados</TabsTrigger>
-        </TabsList>
-        <TabsContent value="created-matches">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Partidos que has Creado</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Partido</TableHead>
-                                <TableHead>Fecha</TableHead>
-                                <TableHead>Jugadores</TableHead>
-                                <TableHead>Estado</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {createdMatches && createdMatches.length > 0 ? createdMatches.map(match => (
-                                <TableRow key={match.id}>
-                                    <TableCell className="font-medium">{match.title}</TableCell>
-                                    <TableCell>{format(new Date(match.date), 'dd/MM/yyyy', { locale: es })}</TableCell>
-                                    <TableCell>{match.players.length} / {match.matchSize}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={match.status === 'completed' ? 'secondary' : 'default'}>{match.status}</Badge>
-                                    </TableCell>
-                                </TableRow>
-                            )) : (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="text-center h-24">No has creado ningún partido.</TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </TabsContent>
-        <TabsContent value="created-players">
-             <Card>
-                <CardHeader>
-                    <CardTitle>Jugadores Manuales que has Creado</CardTitle>
-                </CardHeader>
-                <CardContent>
-                     <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Jugador</TableHead>
-                                <TableHead>Posición</TableHead>
-                                <TableHead>OVR</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                             {manualPlayers && manualPlayers.length > 0 ? manualPlayers.map(player => (
-                                <TableRow key={player.id}>
-                                    <TableCell>
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="h-9 w-9">
-                                                <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
-                                                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <span className="font-medium">{player.name}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline">{player.position}</Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge>{player.ovr}</Badge>
-                                    </TableCell>
-                                </TableRow>
-                            )) : (
-                                <TableRow>
-                                    <TableCell colSpan={3} className="text-center h-24">No has creado ningún jugador manual.</TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </TabsContent>
-      </Tabs>
+        <Card className="lg:col-span-3">
+            <CardHeader>
+                <CardTitle>Configuración de Jugador</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 <div className="flex items-center space-x-4 rounded-md border p-4">
+                    <UserRound className="h-6 w-6"/>
+                    <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium leading-none">
+                            Disponible para Partidos
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            Permite que otros organizadores te encuentren y te inviten a sus partidos.
+                        </p>
+                    </div>
+                    <Switch
+                        checked={isAvailable}
+                        onCheckedChange={handleAvailabilityChange}
+                        aria-label="Disponibilidad para partidos"
+                    />
+                </div>
+            </CardContent>
+        </Card>
+
+        <div className="lg:col-span-3">
+            <Tabs defaultValue="created-matches" className="w-full">
+                <TabsList>
+                    <TabsTrigger value="created-matches">Partidos Creados</TabsTrigger>
+                    <TabsTrigger value="created-players">Jugadores Creados</TabsTrigger>
+                </TabsList>
+                <TabsContent value="created-matches">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Partidos que has Creado</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Partido</TableHead>
+                                        <TableHead>Fecha</TableHead>
+                                        <TableHead>Jugadores</TableHead>
+                                        <TableHead>Estado</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {createdMatches && createdMatches.length > 0 ? createdMatches.map(match => (
+                                        <TableRow key={match.id}>
+                                            <TableCell className="font-medium">{match.title}</TableCell>
+                                            <TableCell>{format(new Date(match.date), 'dd/MM/yyyy', { locale: es })}</TableCell>
+                                            <TableCell>{match.players.length} / {match.matchSize}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={match.status === 'completed' ? 'secondary' : 'default'}>{match.status}</Badge>
+                                            </TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="text-center h-24">No has creado ningún partido.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="created-players">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Jugadores Manuales que has Creado</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Jugador</TableHead>
+                                        <TableHead>Posición</TableHead>
+                                        <TableHead>OVR</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {manualPlayers && manualPlayers.length > 0 ? manualPlayers.map(player => (
+                                        <TableRow key={player.id}>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="h-9 w-9">
+                                                        <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
+                                                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                                    </Avatar>
+                                                    <span className="font-medium">{player.name}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline">{player.position}</Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge>{player.ovr}</Badge>
+                                            </TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={3} className="text-center h-24">No has creado ningún jugador manual.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+        </div>
+      </div>
     </div>
   );
 }

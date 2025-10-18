@@ -7,7 +7,7 @@ import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { Match } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { Loader2, MapPin, Calendar, Users, LocateFixed } from 'lucide-react';
+import { Loader2, MapPin, Calendar, Users, LocateFixed, Search } from 'lucide-react';
 import { MatchMarker } from '@/components/match-marker';
 import { libraries } from '@/lib/google-maps';
 import { mapStyles } from '@/lib/map-styles';
@@ -22,6 +22,8 @@ import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { MatchDetailsDialog } from '@/components/match-details-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PlayerMarkerIcon } from '@/components/icons/player-marker-icon';
 
 
 const containerStyle = {
@@ -166,7 +168,7 @@ export default function FindMatchPage() {
 
   const loading = matchesLoading || !isLoaded;
 
-  const renderContent = () => {
+  const renderFindMatches = () => {
     if (loading) {
       return (
         <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted">
@@ -210,35 +212,37 @@ export default function FindMatchPage() {
     
     // Search is completed
     return (
-        <div className="space-y-4">
-            <Card>
-                <CardHeader className="p-4">
-                    <CardTitle className="text-lg">Partidos Encontrados ({nearbyMatches.length})</CardTitle>
-                </CardHeader>
-                <CardContent className="p-2">
-                    <ScrollArea className="h-full max-h-72">
-                        <div className="space-y-2 p-1">
-                            {nearbyMatches.length > 0 ? nearbyMatches.map((match) => (
-                            <div id={`match-card-${match.id}`} key={match.id}>
-                                <CompactMatchCard
-                                    match={match}
-                                    onHover={setActiveMarker}
-                                    isActive={activeMarker === match.id}
-                                />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
+            <div className="lg:col-span-1 h-full flex flex-col gap-4">
+                <Card>
+                    <CardHeader className="p-4">
+                        <CardTitle className="text-lg">Partidos Encontrados ({nearbyMatches.length})</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-2">
+                        <ScrollArea className="h-full max-h-[60vh] lg:max-h-full">
+                            <div className="space-y-2 p-1">
+                                {nearbyMatches.length > 0 ? nearbyMatches.map((match) => (
+                                <div id={`match-card-${match.id}`} key={match.id}>
+                                    <CompactMatchCard
+                                        match={match}
+                                        onHover={setActiveMarker}
+                                        isActive={activeMarker === match.id}
+                                    />
+                                </div>
+                                )) : (
+                                    <Alert className="m-2">
+                                        <AlertTitle>Sin Resultados</AlertTitle>
+                                        <AlertDescription>
+                                            No se encontraron partidos públicos en esta área. Intenta aumentar el radio de búsqueda.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
                             </div>
-                            )) : (
-                                <Alert className="m-2">
-                                    <AlertTitle>Sin Resultados</AlertTitle>
-                                    <AlertDescription>
-                                        No se encontraron partidos públicos en esta área. Intenta aumentar el radio de búsqueda.
-                                    </AlertDescription>
-                                </Alert>
-                            )}
-                        </div>
-                    </ScrollArea>
-                </CardContent>
-            </Card>
-            <div className="h-96 w-full rounded-lg overflow-hidden">
+                        </ScrollArea>
+                    </CardContent>
+                </Card>
+            </div>
+            <div className="lg:col-span-2 h-[400px] lg:h-full w-full rounded-lg overflow-hidden">
                 <GoogleMap
                     mapContainerStyle={containerStyle}
                     center={userLocation || defaultCenter}
@@ -253,15 +257,69 @@ export default function FindMatchPage() {
     );
   }
 
+  const renderFindPlayers = () => {
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
+            <div className="lg:col-span-1 h-full flex flex-col gap-4">
+                 <Card>
+                    <CardHeader className="p-4">
+                        <CardTitle className="text-lg">Filtros de Búsqueda</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                       <Alert>
+                        <AlertTitle>En desarrollo</AlertTitle>
+                        <AlertDescription>
+                            Esta sección está en construcción. ¡Pronto podrás buscar jugadores libres!
+                        </AlertDescription>
+                       </Alert>
+                    </CardContent>
+                </Card>
+            </div>
+            <div className="lg:col-span-2 h-[400px] lg:h-full w-full rounded-lg overflow-hidden">
+                {isLoaded ? (
+                    <GoogleMap
+                        mapContainerStyle={containerStyle}
+                        center={defaultCenter}
+                        zoom={12}
+                        options={{ styles: mapStyles, disableDefaultUI: true, zoomControl: true }}
+                    >
+                        {/* Player markers will go here */}
+                        <PlayerMarkerIcon className="text-yellow-400" />
+                    </GoogleMap>
+                ) : (
+                     <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted">
+                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-4 h-full">
       <PageHeader
-        title="Buscar Partido"
-        description="Encuentra partidos públicos cerca de ti y únete."
+        title="Encontrar Oportunidades"
+        description="Busca partidos públicos o jugadores libres para completar tu equipo."
       />
-      <div className="flex-grow">
-        {renderContent()}
-      </div>
+      <Tabs defaultValue="find-matches" className="flex flex-col flex-grow">
+        <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="find-matches">
+                <Search className="mr-2 h-4 w-4"/>
+                Buscar Partidos
+            </TabsTrigger>
+            <TabsTrigger value="find-players">
+                <Users className="mr-2 h-4 w-4"/>
+                Buscar Jugadores
+            </TabsTrigger>
+        </TabsList>
+        <TabsContent value="find-matches" className="flex-grow">
+            {renderFindMatches()}
+        </TabsContent>
+        <TabsContent value="find-players" className="flex-grow">
+            {renderFindPlayers()}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
