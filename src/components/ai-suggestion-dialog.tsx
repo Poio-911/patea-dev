@@ -46,7 +46,7 @@ export function AISuggestionDialog({ player, children }: AISuggestionDialogProps
       if ('error' in result) {
         toast({
           variant: 'destructive',
-          title: 'Error de la IA',
+          title: 'Error del Asistente',
           description: result.error,
         });
         setSuggestions([]);
@@ -61,18 +61,18 @@ export function AISuggestionDialog({ player, children }: AISuggestionDialogProps
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Sugerencias de rendimiento de IA para {player.name}</DialogTitle>
+          <DialogTitle>Consejos para {player.name}</DialogTitle>
           <DialogDescription>
-            Obtén comentarios personalizados para ayudar a {player.name} a mejorar su juego.
+            Recibí comentarios personalizados para ayudar a {player.name} a mejorar su juego.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4">
           {!suggestions.length && !isPending && (
              <Alert>
                 <WandSparkles className="h-4 w-4" />
-                <AlertTitle>¡Listo para analizar!</AlertTitle>
+                <AlertTitle>¡Listo para el análisis!</AlertTitle>
                 <AlertDescription>
-                    Haz clic en el botón de abajo para generar sugerencias de la IA basadas en los datos de rendimiento reales de {player.name}.
+                    Hacé clic en el botón para que nuestro asistente analice los datos de rendimiento y te dé un par de piques.
                 </AlertDescription>
             </Alert>
           )}
@@ -80,13 +80,13 @@ export function AISuggestionDialog({ player, children }: AISuggestionDialogProps
           {isPending && (
             <div className="flex items-center justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="ml-4 text-muted-foreground">La IA está analizando el rendimiento...</p>
+              <p className="ml-4 text-muted-foreground">Analizando rendimiento...</p>
             </div>
           )}
 
           {suggestions.length > 0 && (
             <div className="space-y-2">
-                <h3 className="font-semibold">Aquí tienes algunas sugerencias:</h3>
+                <h3 className="font-semibold">Un par de consejos para el crack:</h3>
                 <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground bg-secondary/50 p-4 rounded-md">
                     {suggestions.map((suggestion, index) => (
                         <li key={index}>{suggestion}</li>
@@ -100,12 +100,12 @@ export function AISuggestionDialog({ player, children }: AISuggestionDialogProps
           {isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generando...
+              Analizando...
             </>
           ) : (
             <>
               <WandSparkles className="mr-2 h-4 w-4" />
-              Generar Sugerencias
+              Pedir Consejo
             </>
           )}
         </Button>
@@ -113,3 +113,5 @@ export function AISuggestionDialog({ player, children }: AISuggestionDialogProps
     </Dialog>
   );
 }
+
+    

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -73,7 +74,7 @@ export function AddPlayerDialog() {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Debes seleccionar un grupo activo para añadir un jugador.',
+        description: 'Tenés que seleccionar un grupo activo para añadir un jugador.',
       });
       return;
     }
@@ -91,7 +92,7 @@ export function AddPlayerDialog() {
         stats: { matchesPlayed: 0, goals: 0, assists: 0, averageRating: 0 },
         photoUrl: `https://picsum.photos/seed/${data.name}/400/400`,
       });
-      toast({ title: 'Éxito', description: 'Jugador añadido correctamente.' });
+      toast({ title: '¡Jugador Agregado!', description: 'El jugador se sumó al plantel.' });
       setOpen(false);
       reset();
     } catch (error) {
@@ -109,7 +110,7 @@ export function AddPlayerDialog() {
       <DialogTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Añadir Jugador
+          Agregar Jugador
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
@@ -117,15 +118,15 @@ export function AddPlayerDialog() {
             <Alert variant="destructive">
                 <AlertTitle>No hay grupo activo</AlertTitle>
                 <AlertDescription>
-                    Por favor, selecciona o crea un grupo antes de añadir un jugador.
+                    Por favor, seleccioná o creá un grupo antes de agregar un jugador.
                 </AlertDescription>
             </Alert>
         ) : (
             <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
-                <DialogTitle>Añadir Nuevo Jugador</DialogTitle>
+                <DialogTitle>Agregar un Jugador Manual</DialogTitle>
                 <DialogDescription>
-                Introduce los detalles del nuevo jugador. Haz clic en guardar cuando hayas terminado.
+                Meté los datos del nuevo jugador. Hacé clic en guardar cuando termines.
                 </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -147,13 +148,13 @@ export function AddPlayerDialog() {
                     render={({ field }) => (
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Selecciona una posición" />
+                        <SelectValue placeholder="Seleccioná una posición" />
                         </SelectTrigger>
                         <SelectContent>
                         <SelectItem value="DEL">DEL (Delantero)</SelectItem>
-                        <SelectItem value="MED">MED (Centrocampista)</SelectItem>
+                        <SelectItem value="MED">MED (Volante)</SelectItem>
                         <SelectItem value="DEF">DEF (Defensa)</SelectItem>
-                        <SelectItem value="POR">POR (Portero)</SelectItem>
+                        <SelectItem value="POR">POR (Arquero)</SelectItem>
                         </SelectContent>
                     </Select>
                     )}
@@ -163,7 +164,7 @@ export function AddPlayerDialog() {
 
                 <div className="grid grid-cols-2 gap-4">
                 <div className="grid grid-cols-2 items-center gap-2">
-                    <Label htmlFor="pac">PAC</Label>
+                    <Label htmlFor="pac">RIT</Label>
                     <Input id="pac" type="number" {...register('pac')} />
                 </div>
                 <div className="grid grid-cols-2 items-center gap-2">
@@ -197,3 +198,5 @@ export function AddPlayerDialog() {
     </Dialog>
   );
 }
+
+    

@@ -49,7 +49,7 @@ export function FindBestFitDialog({
 
   const handleFindPlayer = () => {
     if (!selectedMatchId) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Selecciona un partido para buscar.' });
+      toast({ variant: 'destructive', title: 'Error', description: 'Seleccioná un partido para buscar.' });
       return;
     }
     const selectedMatch = userMatches.find(m => m.id === selectedMatchId);
@@ -71,7 +71,7 @@ export function FindBestFitDialog({
       const result = await findBestFitPlayerAction({ match: selectedMatch, availablePlayers: simpleAvailablePlayers });
 
       if ('error' in result) {
-        toast({ variant: 'destructive', title: 'Error de la IA', description: result.error });
+        toast({ variant: 'destructive', title: 'Error del Asistente', description: result.error });
       } else if (result.recommendations && result.recommendations.length > 0) {
         const foundPlayers: RecommendedPlayer[] = result.recommendations.map(rec => {
             const playerDetails = availablePlayers.find(p => p.uid === rec.playerId);
@@ -80,12 +80,12 @@ export function FindBestFitDialog({
 
         if (foundPlayers.length > 0) {
             setRecommendedPlayers(foundPlayers);
-            toast({ title: '¡Fichajes recomendados!', description: `La IA ha encontrado ${foundPlayers.length} jugador(es) para tu equipo.` });
+            toast({ title: '¡Fichajes recomendados!', description: `Encontramos ${foundPlayers.length} jugador(es) para tu equipo.` });
         } else {
-             toast({ variant: 'destructive', title: 'Error', description: 'La IA recomendó jugadores que ya no están disponibles.' });
+             toast({ variant: 'destructive', title: 'Error', description: 'El asistente recomendó jugadores que ya no están disponibles.' });
         }
       } else {
-         toast({ title: 'Sin suerte esta vez', description: 'La IA no encontró jugadores adecuados en el mercado.' });
+         toast({ title: 'Sin suerte esta vez', description: 'No se encontraron jugadores adecuados en el mercado.' });
       }
     });
   };
@@ -108,9 +108,9 @@ export function FindBestFitDialog({
       </DialogTrigger>
       <DialogContent className="max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Asistente de Fichajes IA</DialogTitle>
+          <DialogTitle>Asistente de Fichajes</DialogTitle>
           <DialogDescription>
-            Selecciona uno de tus partidos incompletos y la IA te recomendará los mejores jugadores para equilibrar el equipo.
+            Seleccioná uno de tus partidos y el asistente te recomendará los mejores jugadores para completar el cuadro.
           </DialogDescription>
         </DialogHeader>
         <div className="flex-grow py-4 space-y-4 overflow-y-hidden">
@@ -120,7 +120,7 @@ export function FindBestFitDialog({
               <div className="flex gap-2">
                 <Select onValueChange={setSelectedMatchId} value={selectedMatchId || ''}>
                   <SelectTrigger id="match-select">
-                    <SelectValue placeholder="Elige un partido..." />
+                    <SelectValue placeholder="Elegí un partido..." />
                   </SelectTrigger>
                   <SelectContent>
                     {userMatches.map(match => (
@@ -137,7 +137,7 @@ export function FindBestFitDialog({
             </div>
           ) : (
             <Alert>
-              <AlertDescription>No tienes partidos que necesiten jugadores. Crea uno para poder usar el asistente.</AlertDescription>
+              <AlertDescription>No tenés partidos que necesiten jugadores. Creá uno para poder usar el asistente.</AlertDescription>
             </Alert>
           )}
 
@@ -147,8 +147,8 @@ export function FindBestFitDialog({
                     {isPending && (
                         <div className="flex flex-col items-center justify-center h-40 gap-4 text-center border-2 border-dashed rounded-lg">
                             <Sparkles className="h-10 w-10 text-amber-500 animate-pulse" />
-                            <p className="font-semibold">La IA está analizando el mercado...</p>
-                            <p className="text-sm text-muted-foreground">Buscando los mejores jugadores para tu partido.</p>
+                            <p className="font-semibold">Buscando en el mercado de pases...</p>
+                            <p className="text-sm text-muted-foreground">Encontrando a los mejores jugadores para tu partido.</p>
                         </div>
                     )}
                     {recommendedPlayers.length > 0 && recommendedPlayers.map(player => (
@@ -184,7 +184,7 @@ export function FindBestFitDialog({
                     ))}
                     {!isPending && recommendedPlayers.length === 0 && selectedMatchId && (
                         <div className="flex flex-col items-center justify-center h-40 gap-4 text-center border-2 border-dashed rounded-lg">
-                            <p className="text-sm text-muted-foreground">Presiona el botón de búsqueda para encontrar una recomendación.</p>
+                            <p className="text-sm text-muted-foreground">Pulsá el botón de búsqueda para recibir una recomendación.</p>
                         </div>
                     )}
                 </div>
@@ -195,3 +195,5 @@ export function FindBestFitDialog({
     </Dialog>
   );
 }
+
+    

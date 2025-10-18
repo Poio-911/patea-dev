@@ -1,3 +1,4 @@
+
 'use client';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
@@ -34,8 +35,8 @@ export default function PlayersPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        title="Jugadores"
-        description="Gestiona la plantilla de tu equipo y las estadísticas de los jugadores."
+        title="Plantel"
+        description="Gestioná la plantilla de tu equipo y las estadísticas de los jugadores."
       >
         <AddPlayerDialog />
       </PageHeader>
@@ -51,7 +52,7 @@ export default function PlayersPage() {
             <Users2 className="h-4 w-4" />
             <AlertTitle>No hay grupo activo</AlertTitle>
             <AlertDescription>
-                No tienes un grupo activo seleccionado. Por favor, crea o únete a un grupo para ver a tus jugadores.
+                No tenés un grupo activo seleccionado. Por favor, creá o unite a un grupo para ver a tus jugadores.
                 <Button asChild variant="link" className="p-0 h-auto ml-1">
                     <Link href="/groups">Ir a la página de grupos</Link>
                 </Button>
@@ -64,7 +65,7 @@ export default function PlayersPage() {
             <Users className="h-4 w-4" />
             <AlertTitle>No hay jugadores en este grupo</AlertTitle>
             <AlertDescription>
-                Aún no has añadido ningún jugador a este grupo. ¡Empieza por añadir el primero!
+                Todavía no agregaste ningún jugador a este grupo. ¡Empezá por sumar al primero!
             </AlertDescription>
         </Alert>
       )}
@@ -77,3 +78,5 @@ export default function PlayersPage() {
     </div>
   );
 }
+
+    

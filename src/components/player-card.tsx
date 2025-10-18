@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -76,8 +77,8 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
     try {
         await deleteDoc(doc(firestore, 'players', player.id));
         toast({
-            title: "Jugador eliminado",
-            description: `${player.name} ha sido eliminado de tu grupo.`
+            title: "Jugador borrado",
+            description: `${player.name} fue eliminado de tu plantel.`
         });
         setIsAlertOpen(false);
     } catch (error) {
@@ -128,15 +129,15 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
                         </DropdownMenu>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                            <AlertDialogTitle>¿Estás seguro de que quieres eliminar a {player.name}?</AlertDialogTitle>
+                            <AlertDialogTitle>¿Seguro que querés borrar a {player.name}?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Se eliminará permanentemente al jugador y sus datos.
+                                Esta acción no se puede deshacer. Vas a borrar al jugador para siempre.
                             </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                             <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
                             <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                                {isDeleting ? "Eliminando..." : "Sí, eliminar"}
+                                {isDeleting ? "Borrando..." : "Sí, borrar"}
                             </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
@@ -177,3 +178,5 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
 
   return <CardContentComponent />;
 }
+
+    

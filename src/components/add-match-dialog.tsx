@@ -130,7 +130,7 @@ const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: Matc
                         value={value}
                         onChange={(e) => setValue(e.target.value)}
                         disabled={!ready}
-                        placeholder="Busca la dirección de la cancha..."
+                        placeholder="Buscá la dirección de la cancha..."
                         className="pl-10"
                         autoComplete="off"
                     />
@@ -260,7 +260,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         toast({
             variant: 'destructive',
             title: 'Límite de jugadores alcanzado',
-            description: `No puedes seleccionar más de ${selectedMatchSize} jugadores para este tipo de partido.`
+            description: `No podés seleccionar más de ${selectedMatchSize} jugadores.`
         });
         return;
     }
@@ -287,7 +287,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
 
   const onSubmit = (data: MatchFormData) => {
     if (!user || !firestore || !user.activeGroupId) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Debes tener un grupo activo.' });
+      toast({ variant: 'destructive', title: 'Error', description: 'Tenés que tener un grupo activo.' });
       return;
     }
     
@@ -299,13 +299,13 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
               await createCollaborativeMatch(data);
             }
             
-            toast({ title: 'Éxito', description: 'Partido programado correctamente.' });
+            toast({ title: '¡Listo!', description: 'Partido armado correctamente.' });
             setOpen(false);
         } catch (error: any) {
             console.error('Error al crear el partido:', error);
             toast({
                 variant: 'destructive',
-                title: 'Error al crear partido',
+                title: 'Error al armar el partido',
                 description: error.message || 'No se pudo programar el partido.',
             });
         }
@@ -324,7 +324,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     if (selectedPlayersData.length === selectedMatchSize) {
         const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
         if ('error' in teamGenerationResult) {
-            throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
+            throw new Error(teamGenerationResult.error || 'No se pudieron generar los equipos.');
         }
         finalTeams = teamGenerationResult.teams || [];
     }
@@ -351,8 +351,8 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         const notificationRef = doc(collection(firestore, `users/${player.id}/notifications`));
         const notification: Omit<Notification, 'id'> = {
             type: 'match_invite',
-            title: '¡Has sido convocado!',
-            message: `${user.displayName} te ha añadido al partido "${data.title}".`,
+            title: '¡Te convocaron!',
+            message: `${user.displayName} te sumó al partido "${data.title}".`,
             link: `/matches`,
             isRead: false,
             createdAt: new Date().toISOString(),
@@ -390,15 +390,15 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       <DialogTrigger asChild>
         <Button disabled={disabled}>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Programar Partido
+          Armar Partido
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <DialogHeader>
-            <DialogTitle>Programar Nuevo Partido</DialogTitle>
+            <DialogTitle>Armar un Partido Nuevo</DialogTitle>
             <DialogDescription>
-              {step === 1 ? 'Introduce los detalles del partido y selecciona el tipo.' : 'Selecciona los jugadores para el partido.'}
+              {step === 1 ? 'Meté los detalles del partido y elegí cómo se arma.' : 'Elegí los jugadores para el partido.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -421,7 +421,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                     <PopoverTrigger asChild>
                                         <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
                                             <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {field.value ? format(field.value, 'PPP', { locale: es }) : <span>Elige una fecha</span>}
+                                            {field.value ? format(field.value, 'PPP', { locale: es }) : <span>Elegí una fecha</span>}
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0">
@@ -449,7 +449,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                     {isFetchingWeather ? (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Consultando el pronóstico...</span>
+                            <span>Viendo el pronóstico...</span>
                         </div>
                     ) : weather && WeatherIcon ? (
                         <div className="flex items-center gap-3 text-sm">
@@ -457,7 +457,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                             <p className="font-medium">{weather.description}</p>
                         </div>
                     ) : (
-                        <p className="text-sm text-muted-foreground text-center">Introduce una fecha y ubicación para ver el pronóstico.</p>
+                        <p className="text-sm text-muted-foreground text-center">Poné fecha y lugar para ver el pronóstico del tiempo.</p>
                     )}
                 </div>
 
@@ -536,7 +536,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                             Hacer Partido Público
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Permite que jugadores fuera de tu grupo encuentren y se unan a este partido.
+                            Permite que jugadores de afuera de tu grupo lo encuentren y se sumen.
                           </p>
                         </div>
                         <Switch
@@ -594,7 +594,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                     ) : (
                         <Alert>
                             <AlertDescription>
-                                No hay jugadores en tu grupo activo. Añade jugadores desde la página de Jugadores.
+                                No hay jugadores en tu grupo. Andá a la página de Jugadores para agregar.
                             </AlertDescription>
                         </Alert>
                     )}
@@ -605,7 +605,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
           <DialogFooter>
             {step === 1 && (
                  <Button type="button" onClick={goToNextStep}>
-                    {matchType === 'collaborative' ? 'Programar Partido' : 'Siguiente'}
+                    {matchType === 'collaborative' ? 'Armar Partido' : 'Siguiente'}
                  </Button>
             )}
             {step === 2 && (
@@ -616,7 +616,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                     </Button>
                     <Button type="submit" disabled={isPending || (watchedType === 'manual' && watchedPlayers.length < selectedMatchSize / 2)}>
                         {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {isPending ? 'Programando...' : 'Programar Partido'}
+                        {isPending ? 'Armando...' : 'Armar Partido'}
                     </Button>
                 </div>
             )}
@@ -626,3 +626,5 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     </Dialog>
   );
 }
+
+    

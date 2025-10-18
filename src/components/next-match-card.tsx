@@ -24,9 +24,9 @@ export function NextMatchCard({ match }: NextMatchCardProps) {
     return (
         <div className="flex flex-col items-center justify-center text-center border-2 border-dashed border-muted-foreground/30 rounded-xl p-12 h-full">
             <Calendar className="h-12 w-12 text-muted-foreground/50" />
-            <h2 className="mt-4 text-xl font-semibold">No hay partidos próximos</h2>
+            <h2 className="mt-4 text-xl font-semibold">No hay fútbol a la vista</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-                Programa un nuevo partido para empezar a jugar.
+                Armá un nuevo partido para que empiece a rodar la pelota.
             </p>
             <Button asChild variant="default" className="mt-4">
                 <Link href="/matches">
@@ -57,3 +57,5 @@ export function NextMatchCard({ match }: NextMatchCardProps) {
     </div>
   );
 }
+
+    

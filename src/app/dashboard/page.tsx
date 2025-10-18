@@ -109,16 +109,16 @@ function DashboardContent() {
     return (
         <div className="flex flex-col gap-8">
              <PageHeader
-                title="Panel de control"
-                description="Bienvenido a tu Manager de Fútbol Amateur."
+                title="El Vestuario"
+                description="Bienvenido a tu vestuario virtual."
             />
             <Alert>
                 <Users2 className="h-4 w-4" />
-                <AlertTitle>¡Bienvenido!</AlertTitle>
+                <AlertTitle>¡Bienvenido, Capitán!</AlertTitle>
                 <AlertDescription>
-                    Parece que eres nuevo por aquí. Para empezar, crea tu primer grupo o únete a uno existente.
+                    Parece que es tu primera vez acá. Para arrancar, armá tu primer grupo o metete en uno que ya exista.
                     <Button asChild variant="link" className="p-0 h-auto ml-1">
-                        <Link href="/groups">Gestionar Grupos</Link>
+                        <Link href="/groups">Ir a Grupos</Link>
                     </Button>
                 </AlertDescription>
             </Alert>
@@ -130,8 +130,8 @@ function DashboardContent() {
     <div className="flex flex-col gap-8">
       <WelcomeDialog />
       <PageHeader
-        title="Panel de control"
-        description="Un resumen de la actividad de tu grupo."
+        title="El Vestuario"
+        description="Un pantallazo de cómo está el cuadro."
       />
       
 
@@ -140,7 +140,7 @@ function DashboardContent() {
         <div className="lg:col-span-2 space-y-8">
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-primary">Próximo Partido</CardTitle>
+                    <CardTitle className="text-primary">Se Juega</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <NextMatchCard match={nextMatch} />
@@ -149,8 +149,8 @@ function DashboardContent() {
             
             <Card>
                 <CardHeader>
-                    <CardTitle>Partidos Recientes</CardTitle>
-                    <CardDescription>Los últimos partidos que se han jugado en el grupo.</CardDescription>
+                    <CardTitle>Partidos Anteriores</CardTitle>
+                    <CardDescription>Los últimos resultados del grupo.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {recentMatches.length > 0 ? (
@@ -190,7 +190,7 @@ function DashboardContent() {
                     ) : (
                         <div className="flex flex-col items-center justify-center text-center border-2 border-dashed border-muted-foreground/30 rounded-xl p-12">
                             <Calendar className="h-12 w-12 text-muted-foreground/50" />
-                            <h2 className="mt-4 text-xl font-semibold">Sin Partidos Recientes</h2>
+                            <h2 className="mt-4 text-xl font-semibold">Sin Partidos Anteriores</h2>
                             <p className="mt-2 text-sm text-muted-foreground">
                                 Aún no se ha completado ningún partido en este grupo.
                             </p>
@@ -206,9 +206,9 @@ function DashboardContent() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Star className="h-5 w-5 text-primary" />
-                    Mejores Jugadores
+                    Los Cracks del Grupo
                 </CardTitle>
-                <CardDescription>El top 5 de jugadores por OVR en tu grupo.</CardDescription>
+                <CardDescription>El Top 5 de jugadores por OVR.</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -233,7 +233,7 @@ function DashboardContent() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <SoccerPlayerIcon className="h-5 w-5 text-primary" />
-                        Plantilla
+                        Plantel
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -255,3 +255,5 @@ export default function DashboardPage() {
         </Suspense>
     )
 }
+
+    

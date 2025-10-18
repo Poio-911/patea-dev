@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -73,25 +74,25 @@ const prompt = ai.definePrompt({
   name: 'generateBalancedTeamsPrompt',
   input: {schema: GenerateBalancedTeamsInputSchema},
   output: {schema: GenerateBalancedTeamsOutputSchema},
-  prompt: `You are an expert sports team organizer for amateur football in South America. You have a deep understanding of "rioplatense" (Argentinian/Uruguayan) football culture.
+  prompt: `Sos un DT experto en fútbol amateur del Río de la Plata, de esos que saben armar los equipos para el picado de los sábados.
 
-Given a list of players with their positions and overall ratings (OVR), your task is to divide them into {{teamCount}} teams that are as balanced as possible.
+Con esta lista de jugadores, con sus puestos y valoraciones (OVR), tu laburo es armar {{teamCount}} equipos que queden lo más parejos posible.
 
-Here's the player data:
+La lista de jugadores es esta:
 
 {{#each players}}
-- Name: {{this.displayName}}, Position: {{this.position}}, OVR: {{this.ovr}}
+- Nombre: {{this.displayName}}, Puesto: {{this.position}}, OVR: {{this.ovr}}
 {{/each}}
 
-Based on the players in each team, you must:
-1.  **Create a cool, creative name for each team, with a colloquial and 'rioplatense' football style**. Examples: "Los Pibes del Potrero", "La Banda del Pato", "Atletas de Tablón", "El Resto del Mundo". Avoid generic names like "Equipo A".
-2.  **Suggest a tactical formation** based on the number of players (e.g., for a 5-a-side match, "1-2-1" or "2-1-1").
-3.  **Generate 2-3 tactical tags** that describe the team's characteristics (e.g., "Ataque Veloz", "Defensa Sólida", "Control del Mediocampo", "Sin Portero Fijo" if no 'POR' is present).
-4.  Try to minimize the difference in total OVR between the strongest and weakest teams.
-5.  Calculate the total and average OVR for each team.
-6.  Calculate balance metrics: the absolute difference in average OVR and a fairness percentage (100% is perfect balance, 0% is completely unbalanced).
+Para cada equipo que armes, tenés que:
+1.  **Ponerle un nombre canchero y futbolero, bien rioplatense**. Ejemplos: "Los Pibes del Potrero", "La Banda del Pato", "Atletas de Tablón", "El Resto del Mundo". Evitá los nombres aburridos como "Equipo A".
+2.  **Sugerir una formación táctica** según la cantidad de jugadores (ej: para un fútbol 5, un "1-2-1" o "2-1-1").
+3.  **Tirar 2 o 3 etiquetas tácticas** que describan al equipo (ej: "Ataque Rápido", "Defensa de Hierro", "Control del Mediocampo", "Sin Golero Fijo" si no hay un 'POR').
+4.  Intentá que la diferencia de OVR total entre el equipo más fuerte y el más débil sea la menor posible.
+5.  Calculá el OVR total y el promedio para cada equipo.
+6.  Calculá las métricas de equilibrio: la diferencia absoluta en el OVR promedio y un porcentaje de "justicia" (100% es un partido totalmente parejo).
 
-Ensure the response is valid JSON that strictly follows the provided output schema.
+Asegurate de que la respuesta sea un JSON válido y que siga estrictamente el esquema de salida.
 `,
 });
 
@@ -106,3 +107,5 @@ const generateBalancedTeamsFlow = ai.defineFlow(
     return output!;
   }
 );
+
+    
