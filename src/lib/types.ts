@@ -1,5 +1,4 @@
 
-
 import { DocumentData, DocumentReference } from "firebase/firestore";
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
@@ -122,6 +121,16 @@ export type Notification = {
     link: string;
     isRead: boolean;
     createdAt: string; // ISO 8601 string
+} & DocumentData;
+
+export type Invitation = {
+    id: string;
+    playerId: string;
+    playerName: string;
+    playerOvr: number;
+    playerPhotoUrl: string;
+    status: 'pending' | 'accepted' | 'declined';
+    createdAt: string;
 } & DocumentData;
 
 

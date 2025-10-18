@@ -4,7 +4,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, doc, getDoc } from 'firebase/firestore';
 import type { Match, AvailablePlayer, Player } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Loader2, MapPin, Calendar, Users, LocateFixed, Search, SlidersHorizontal, Sparkles } from 'lucide-react';
@@ -33,6 +33,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 const containerStyle = {
@@ -99,7 +100,7 @@ const CompactMatchCard = ({ match, onHover, isActive }: { match: Match, onHover:
     )
 }
 
-const CompactPlayerCard = ({ player, onHover, isActive, userMatches }: { player: AvailablePlayer, onHover: (id: string | null) => void, isActive: boolean, userMatches: Match[] }) => {
+const CompactPlayerCard = ({ player, onHover, isActive, userMatches, selectedMatchForInvite }: { player: AvailablePlayer, onHover: (id: string | null) => void, isActive: boolean, userMatches: Match[], selectedMatchForInvite: Match | null }) => {
     const { user } = useUser();
     return (
         <Card
@@ -120,11 +121,12 @@ const CompactPlayerCard = ({ player, onHover, isActive, userMatches }: { player:
                     <div className="text-xs text-muted-foreground">Disponible desde {format(new Date(player.availableSince), "dd/MM")}</div>
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                     <InvitePlayerDialog 
+                     <InvitePlayerDialog
                         playerToInvite={player}
                         userMatches={userMatches}
+                        match={selectedMatchForInvite}
                      >
-                        <Button variant="default" size="sm" className="h-7 px-2 text-xs w-full" disabled={!user || userMatches.length === 0}>
+                        <Button variant="default" size="sm" className="h-7 px-2 text-xs w-full" disabled={!user || !selectedMatchForInvite}>
                             Invitar
                         </Button>
                     </InvitePlayerDialog>
@@ -139,15 +141,15 @@ const CompactPlayerCard = ({ player, onHover, isActive, userMatches }: { player:
 }
 
 export default function FindMatchPage() {
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
-  
+
   // -- Common State --
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [isSearching, setIsSearching] = useState(false);
-  
+
   // -- Find Matches State --
   const [searchRadius, setSearchRadius] = useState(7);
   const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
@@ -156,6 +158,7 @@ export default function FindMatchPage() {
   const [matchSizeFilter, setMatchSizeFilter] = useState<string[]>([]);
 
   // -- Find Players State --
+  const [playerSearchMatchId, setPlayerSearchMatchId] = useState<string | null>(null);
   const [filteredPlayers, setFilteredPlayers] = useState<AvailablePlayer[]>([]);
   const [playerSearchCompleted, setPlayerSearchCompleted] = useState(false);
   const [playerPositionFilter, setPlayerPositionFilter] = useState<string[]>([]);
@@ -177,6 +180,13 @@ export default function FindMatchPage() {
   }, [firestore]);
 
   const { data: allPublicMatches, loading: matchesLoading } = useCollection<Match>(publicMatchesQuery);
+  
+  const groupPlayersQuery = useMemo(() => {
+    if (!firestore || !user?.activeGroupId) return null;
+    return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
+  }, [firestore, user?.activeGroupId]);
+  const { data: groupPlayers } = useCollection<Player>(groupPlayersQuery);
+  const groupPlayerIds = useMemo(() => new Set(groupPlayers?.map(p => p.id) || []), [groupPlayers]);
 
   const availablePlayersQuery = useMemo(() => {
     if(!firestore) return null;
@@ -184,19 +194,24 @@ export default function FindMatchPage() {
   }, [firestore]);
   const { data: allAvailablePlayers, loading: playersLoading } = useCollection<AvailablePlayer>(availablePlayersQuery);
 
-  const userMatchesQuery = useMemo(() => 
+  const userMatchesQuery = useMemo(() =>
     firestore && user?.uid ? query(
         collection(firestore, 'matches'),
         where('ownerUid', '==', user.uid),
         where('status', '==', 'upcoming'),
-    ) : null, 
+    ) : null,
   [firestore, user?.uid]);
-  
+
   const { data: userMatchesData } = useCollection<Match>(userMatchesQuery);
 
-  const availableMatchesForInvite = useMemo(() => 
+  const availableMatchesForInvite = useMemo(() =>
       userMatchesData?.filter(m => m.players.length < m.matchSize) || [],
   [userMatchesData]);
+
+  const selectedMatchForInvite = useMemo(() => {
+    if (!playerSearchMatchId) return null;
+    return availableMatchesForInvite.find(m => m.id === playerSearchMatchId) || null;
+  }, [playerSearchMatchId, availableMatchesForInvite]);
 
 
   const handleMarkerClick = (id: string) => {
@@ -209,36 +224,51 @@ export default function FindMatchPage() {
 
   const applyMatchFilters = useCallback(() => {
     if (!allPublicMatches || !userLocation) return;
-    
+
     const filtered = allPublicMatches.filter(match => {
         if (!match.location?.lat || !match.location?.lng) return false;
-        
+
         const distance = getDistance(userLocation, match.location);
         if (distance > searchRadius) return false;
-        
+
         if (matchDateFilter && !isSameDay(new Date(match.date), matchDateFilter)) return false;
 
         if (matchSizeFilter.length > 0 && !matchSizeFilter.includes(String(match.matchSize))) return false;
 
         return true;
     }).sort((a,b) => getDistance(userLocation, a.location) - getDistance(userLocation, b.location));
-    
+
     setFilteredMatches(filtered);
     setMatchSearchCompleted(true);
   }, [allPublicMatches, userLocation, searchRadius, matchDateFilter, matchSizeFilter]);
 
 
-  const applyPlayerFilters = useCallback(() => {
-      if (!allAvailablePlayers) return;
-      const filtered = allAvailablePlayers.filter(player => {
-          if (player.uid === user?.uid) return false; // Exclude the current user from results
-          if (playerPositionFilter.length > 0 && !playerPositionFilter.includes(player.position)) return false;
-          if (player.ovr < playerOvrFilter[0] || player.ovr > playerOvrFilter[1]) return false;
-          return true;
-      });
-      setFilteredPlayers(filtered);
-      setPlayerSearchCompleted(true);
-  }, [allAvailablePlayers, playerPositionFilter, playerOvrFilter, user?.uid]);
+  const applyPlayerFilters = useCallback(async () => {
+    if (!allAvailablePlayers || !playerSearchMatchId || !firestore) return;
+    
+    // Fetch the selected match to know which players are already in it.
+    const matchRef = doc(firestore, 'matches', playerSearchMatchId);
+    const matchSnap = await getDoc(matchRef);
+    if (!matchSnap.exists()) {
+        toast({variant: 'destructive', title: 'Error', description: 'No se pudo encontrar el partido seleccionado.'});
+        return;
+    }
+    const selectedMatch = matchSnap.data() as Match;
+    const playerUidsInMatch = new Set(selectedMatch.playerUids || []);
+
+
+    const filtered = allAvailablePlayers.filter(player => {
+        if (player.uid === user?.uid) return false; // Exclude self
+        if (groupPlayerIds.has(player.uid)) return false; // Exclude players from the same group
+        if (playerUidsInMatch.has(player.uid)) return false; // Exclude players already in the match
+        if (playerPositionFilter.length > 0 && !playerPositionFilter.includes(player.position)) return false;
+        if (player.ovr < playerOvrFilter[0] || player.ovr > playerOvrFilter[1]) return false;
+        return true;
+    });
+    setFilteredPlayers(filtered);
+    setPlayerSearchCompleted(true);
+  }, [allAvailablePlayers, playerPositionFilter, playerOvrFilter, user?.uid, playerSearchMatchId, firestore, groupPlayerIds, toast]);
+
 
   const handleSearchNearby = useCallback(() => {
     setIsSearching(true);
@@ -264,7 +294,7 @@ export default function FindMatchPage() {
       }
     );
   }, [toast]);
-  
+
   useEffect(() => {
     if (userLocation) {
         applyMatchFilters();
@@ -272,7 +302,7 @@ export default function FindMatchPage() {
   }, [userLocation, applyMatchFilters]);
 
 
-  const loading = matchesLoading || playersLoading || !isLoaded;
+  const loading = userLoading || matchesLoading || playersLoading || !isLoaded;
 
   const renderFindMatches = () => {
     if (loading && !matchSearchCompleted) {
@@ -332,7 +362,7 @@ export default function FindMatchPage() {
         </Card>
       );
     }
-    
+
     // Search is completed
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
@@ -391,18 +421,37 @@ export default function FindMatchPage() {
         </div>
       );
     }
-    
+
     const initialView = (
         <Card className="max-w-xl mx-auto mt-8">
             <CardHeader>
                 <CardTitle className="text-center">Encontrá Jugadores Libres</CardTitle>
                 <CardDescription className="text-center">
-                    Ajusta los filtros para encontrar el jugador que te falta.
+                    Selecciona un partido y ajusta los filtros para encontrar el jugador que te falta.
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-6">
                  <div className="w-full px-4 space-y-6">
-                    <div>
+                     <div>
+                        <Label htmlFor='match-select-player-search'>Partido a completar</Label>
+                        <Select onValueChange={setPlayerSearchMatchId} value={playerSearchMatchId || ''}>
+                          <SelectTrigger id="match-select-player-search" className='mt-1'>
+                            <SelectValue placeholder="Elige un partido..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableMatchesForInvite.length > 0 ? (
+                                availableMatchesForInvite.map(match => (
+                                  <SelectItem key={match.id} value={match.id}>
+                                    {match.title} ({match.players.length}/{match.matchSize})
+                                  </SelectItem>
+                                ))
+                            ) : (
+                                <div className="p-4 text-center text-sm text-muted-foreground">No tienes partidos que necesiten jugadores.</div>
+                            )}
+                          </SelectContent>
+                        </Select>
+                    </div>
+                    <div className={cn(!playerSearchMatchId && "opacity-50 pointer-events-none")}>
                         <Label className="font-medium">Posición</Label>
                         <ToggleGroup type="multiple" value={playerPositionFilter} onValueChange={setPlayerPositionFilter} variant="outline" className="justify-start mt-1 flex-wrap">
                             <ToggleGroupItem value="POR">POR</ToggleGroupItem>
@@ -411,16 +460,16 @@ export default function FindMatchPage() {
                             <ToggleGroupItem value="DEL">DEL</ToggleGroupItem>
                         </ToggleGroup>
                     </div>
-                    <div>
+                    <div className={cn(!playerSearchMatchId && "opacity-50 pointer-events-none")}>
                         <div className="flex justify-between font-medium mb-1">
                             <Label>Rango de OVR:</Label>
                             <span className="text-primary">{playerOvrFilter[0]} - {playerOvrFilter[1]}</span>
                         </div>
-                        <Slider value={playerOvrFilter} onValueChange={(value) => setPlayerOvrFilter(value as [number, number])} min={40} max={99} step={1} disabled={isSearching} />
+                        <Slider value={playerOvrFilter} onValueChange={(value) => setPlayerOvrFilter(value as [number, number])} min={40} max={99} step={1} />
                     </div>
                 </div>
                 <div className="w-full px-4 flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <Button onClick={applyPlayerFilters} size="lg" disabled={isSearching} className="w-full sm:w-auto">
+                    <Button onClick={applyPlayerFilters} size="lg" disabled={isSearching || !playerSearchMatchId} className="w-full sm:w-auto">
                         {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
                         {isSearching ? 'Buscando...' : 'Buscar Jugadores'}
                     </Button>
@@ -455,13 +504,14 @@ export default function FindMatchPage() {
                                             onHover={setActiveMarker}
                                             isActive={activeMarker === player.uid}
                                             userMatches={availableMatchesForInvite}
+                                            selectedMatchForInvite={selectedMatchForInvite}
                                         />
                                     </div>
                                     )) : (
                                         <Alert className="m-2">
                                             <AlertTitle>Sin resultados</AlertTitle>
                                             <AlertDescription>
-                                                No hay jugadores que coincidan con tus filtros.
+                                                No hay jugadores que coincidan con tus filtros. Prueba cambiando los criterios.
                                             </AlertDescription>
                                         </Alert>
                                     )}

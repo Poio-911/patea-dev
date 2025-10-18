@@ -169,6 +169,20 @@
         },
         "required": ["type", "title", "message", "isRead", "createdAt"]
     },
+     "invitation": {
+      "title": "Invitation",
+      "description": "Represents an invitation for a player to join a match.",
+      "type": "object",
+      "properties": {
+        "playerId": { "type": "string" },
+        "playerName": { "type": "string" },
+        "playerOvr": { "type": "number" },
+        "playerPhotoUrl": { "type": "string", "format": "uri" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "declined"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["playerId", "status", "createdAt"]
+    },
     "fcmToken": {
       "title": "FCM Token",
       "description": "Represents a Firebase Cloud Messaging token for a user's device.",
@@ -294,6 +308,10 @@
     "/matches/{matchId}/messages/{messageId}": {
       "schema": { "$ref": "#/entities/chatMessage" },
       "description": "Stores chat messages for a specific match."
+    },
+    "/matches/{matchId}/invitations/{invitationId}": {
+      "schema": { "$ref": "#/entities/invitation" },
+      "description": "Stores invitations for players to join this match."
     },
     "/evaluations/{evaluationId}": {
         "schema": { "$ref": "#/entities/evaluation" },
