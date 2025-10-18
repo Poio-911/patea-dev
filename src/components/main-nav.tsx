@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Goal, Users2, User, BellRing } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings, Goal, Users2, User, BellRing, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from './ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -39,6 +39,8 @@ import { EvaluationIcon } from './icons/evaluation-icon';
 import { NotificationBell } from './notification-bell';
 import { useFcm } from '@/hooks/use-fcm';
 import { HelpDialog } from './help-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { isToday, parseISO } from 'date-fns';
 
 
 const navItems = [
@@ -63,6 +65,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
 
   const { requestPermission } = useFcm();
 
@@ -78,6 +81,24 @@ export function MainNav({ children }: { children: React.ReactNode }) {
       router.push('/login');
     }
   }, [user, userLoading, pathname, router]);
+  
+  React.useEffect(() => {
+    if (user) {
+        const lastLoginStr = localStorage.getItem('lastDailyLogin');
+        const today = new Date();
+        
+        if (!lastLoginStr || !isToday(parseISO(lastLoginStr))) {
+            localStorage.setItem('lastDailyLogin', today.toISOString());
+            setTimeout(() => {
+                 toast({
+                    title: `👋 ¡Hola de nuevo, ${user.displayName?.split(' ')[0]}!`,
+                    description: "Recuerda que puedes pulsar el icono de ayuda (?) si tienes dudas.",
+                    duration: 5000,
+                 });
+            }, 2000);
+        }
+    }
+  }, [user, toast]);
 
   const handleLogout = async () => {
     if (auth) {
