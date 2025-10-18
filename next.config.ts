@@ -3,10 +3,8 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
-  experimental: {
-    // This is to allow cross-origin requests from the development environment.
-    allowedDevOrigins: ["https://6000-firebase-studio-1760642712316.cluster-thle3dudhffpwss7zs5hxaeu2o.cloudworkstations.dev"],
-  },
+  // This is to allow cross-origin requests from the development environment.
+  allowedDevOrigins: ["https://6000-firebase-studio-1760642712316.cluster-thle3dudhffpwss7zs5hxaeu2o.cloudworkstations.dev"],
   async headers() {
     return [
       {
