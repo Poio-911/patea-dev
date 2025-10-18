@@ -61,7 +61,12 @@
   body {
     @apply bg-background text-foreground;
     min-height: 100svh;
+    background-image: linear-gradient(to top, #f3f4f6, #ffffff);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  .dark body {
+    background-image: linear-gradient(to top, hsl(222 47% 11%), hsl(222 47% 14%));
   }
 }

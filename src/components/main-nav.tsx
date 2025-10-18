@@ -63,7 +63,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const firestore = useFirestore();
   const router = useRouter();
 
-  // Initialize FCM logic
   const { requestPermission } = useFcm();
 
   const playerRef = React.useMemo(() => {
@@ -184,7 +183,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto p-4 pb-20 sm:p-6 md:pb-6">{children}</main>
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-20">{children}</main>
           
           <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t backdrop-blur-xl bg-card/95 md:hidden">
               <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
