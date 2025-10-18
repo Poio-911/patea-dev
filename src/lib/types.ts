@@ -1,4 +1,5 @@
 
+
 import { DocumentData, DocumentReference } from "firebase/firestore";
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
@@ -35,6 +36,19 @@ export type Player = {
   stats: PlayerStats;
   ownerUid: string; // The UID of the user who created this player
   groupId: string;
+} & DocumentData;
+
+export type AvailablePlayer = {
+  uid: string;
+  displayName: string;
+  photoUrl: string;
+  position: PlayerPosition;
+  ovr: number;
+  location: {
+    lat: number;
+    lng: number;
+  };
+  availableSince: string;
 } & DocumentData;
 
 
@@ -174,5 +188,3 @@ export type UserProfile = {
   groups?: string[];
   activeGroupId?: string | null;
 };
-
-    

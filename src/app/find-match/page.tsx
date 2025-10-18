@@ -5,7 +5,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
-import type { Match } from '@/lib/types';
+import type { Match, AvailablePlayer } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Loader2, MapPin, Calendar, Users, LocateFixed, Search } from 'lucide-react';
 import { MatchMarker } from '@/components/match-marker';
@@ -23,7 +23,9 @@ import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { MatchDetailsDialog } from '@/components/match-details-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlayerMarkerIcon } from '@/components/icons/player-marker-icon';
+import { PlayerMarker } from '@/components/player-marker';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 
 const containerStyle = {
@@ -70,7 +72,7 @@ const CompactMatchCard = ({ match, onHover, isActive }: { match: Match, onHover:
                         </div>
                         <div className="flex items-center gap-2">
                             <MapPin className="h-3 w-3" />
-                            <span className="truncate">{match.location.address}</span>
+                            <span className="truncate">{match.location.name}</span>
                         </div>
                     </div>
                 </div>
@@ -84,6 +86,34 @@ const CompactMatchCard = ({ match, onHover, isActive }: { match: Match, onHover:
                            Ver Detalles
                        </Button>
                     </MatchDetailsDialog>
+                </div>
+            </div>
+        </Card>
+    )
+}
+
+const CompactPlayerCard = ({ player, onHover, isActive }: { player: AvailablePlayer, onHover: (id: string | null) => void, isActive: boolean }) => {
+    return (
+        <Card
+            className={cn(
+                "cursor-pointer transition-all duration-200",
+                isActive ? "border-primary shadow-lg" : "hover:border-muted-foreground/50"
+            )}
+            onMouseEnter={() => onHover(player.uid)}
+            onMouseLeave={() => onHover(null)}
+        >
+            <div className="p-3 flex gap-3 items-center">
+                <Avatar className="h-12 w-12 border">
+                    <AvatarImage src={player.photoUrl} alt={player.displayName} />
+                    <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                    <h3 className="font-bold">{player.displayName}</h3>
+                    <div className="text-xs text-muted-foreground">Disponible desde {format(new Date(player.availableSince), "dd/MM")}</div>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                    <Badge>{player.ovr}</Badge>
+                    <Badge variant="outline">{player.position}</Badge>
                 </div>
             </div>
         </Card>
@@ -119,9 +149,16 @@ export default function FindMatchPage() {
 
   const { data: allPublicMatches, loading: matchesLoading } = useCollection<Match>(publicMatchesQuery);
 
-  const handleMarkerClick = (matchId: string) => {
-    setActiveMarker(activeMarker === matchId ? null : matchId);
-     const element = document.getElementById(`match-card-${matchId}`);
+  const availablePlayersQuery = useMemo(() => {
+    if(!firestore) return null;
+    return collection(firestore, 'availablePlayers');
+  }, [firestore]);
+  const { data: availablePlayers, loading: playersLoading } = useCollection<AvailablePlayer>(availablePlayersQuery);
+
+
+  const handleMarkerClick = (id: string) => {
+    setActiveMarker(activeMarker === id ? null : id);
+     const element = document.getElementById(`match-card-${id}`) || document.getElementById(`player-card-${id}`);
     if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -166,10 +203,10 @@ export default function FindMatchPage() {
   }, [allPublicMatches, searchRadius, toast]);
 
 
-  const loading = matchesLoading || !isLoaded;
+  const loading = matchesLoading || playersLoading || !isLoaded;
 
   const renderFindMatches = () => {
-    if (loading) {
+    if (loading && !searchCompleted) {
       return (
         <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -258,20 +295,41 @@ export default function FindMatchPage() {
   }
 
   const renderFindPlayers = () => {
+    if (loading) {
+      return (
+        <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      );
+    }
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
             <div className="lg:col-span-1 h-full flex flex-col gap-4">
                  <Card>
                     <CardHeader className="p-4">
-                        <CardTitle className="text-lg">Filtros de Búsqueda</CardTitle>
+                        <CardTitle className="text-lg">Jugadores Disponibles ({availablePlayers?.length || 0})</CardTitle>
                     </CardHeader>
-                    <CardContent className="p-4">
-                       <Alert>
-                        <AlertTitle>En desarrollo</AlertTitle>
-                        <AlertDescription>
-                            Esta sección está en construcción. ¡Pronto podrás buscar jugadores libres!
-                        </AlertDescription>
-                       </Alert>
+                     <CardContent className="p-2">
+                        <ScrollArea className="h-full max-h-[60vh] lg:max-h-full">
+                            <div className="space-y-2 p-1">
+                                {availablePlayers && availablePlayers.length > 0 ? availablePlayers.map((player) => (
+                                <div id={`player-card-${player.uid}`} key={player.uid}>
+                                    <CompactPlayerCard
+                                        player={player}
+                                        onHover={setActiveMarker}
+                                        isActive={activeMarker === player.uid}
+                                    />
+                                </div>
+                                )) : (
+                                    <Alert className="m-2">
+                                        <AlertTitle>Nadie disponible</AlertTitle>
+                                        <AlertDescription>
+                                            Actualmente no hay jugadores buscando partido.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+                            </div>
+                        </ScrollArea>
                     </CardContent>
                 </Card>
             </div>
@@ -283,8 +341,9 @@ export default function FindMatchPage() {
                         zoom={12}
                         options={{ styles: mapStyles, disableDefaultUI: true, zoomControl: true }}
                     >
-                        {/* Player markers will go here */}
-                        <PlayerMarkerIcon className="text-yellow-400" />
+                         {availablePlayers?.map(player => (
+                            <PlayerMarker key={player.uid} player={player} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} />
+                         ))}
                     </GoogleMap>
                 ) : (
                      <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted">
