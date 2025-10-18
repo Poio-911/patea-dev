@@ -7,7 +7,7 @@ import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-ma
 import { generateEvaluationTags, GenerateEvaluationTagsInput } from '@/ai/flows/generate-evaluation-tags';
 import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-fit-player';
 import { Player, Evaluation } from './types';
-import { getFirestore, doc, collection, getDocs, where } from 'firebase/firestore';
+import { getFirestore, doc, collection, getDocs, where, query } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 
 
@@ -145,7 +145,7 @@ export async function generateTagsAction(input: GenerateEvaluationTagsInput) {
     }
 }
 
-export async function findBestFitPlayerAction(input: FindBestFitPlayerInput) {
+export async function findBestFitPlayerAction(input: Omit<FindBestFitPlayerInput, 'spotsToFill'>) {
     try {
         const result = await findBestFitPlayer(input);
         if ('error' in result) {

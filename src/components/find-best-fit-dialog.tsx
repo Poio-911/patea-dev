@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useState, useTransition } from 'react';
-import type { AvailablePlayer, Match, Player } from '@/lib/types';
+import type { AvailablePlayer, Match } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, Send, UserSearch } from 'lucide-react';
 import {
@@ -193,5 +193,3 @@ export function FindBestFitDialog({
     </Dialog>
   );
 }
-
-    
