@@ -7,10 +7,10 @@
     --background: 204 10% 95.5%; /* Light grayish-blue */
     --foreground: 222.2 47.4% 11.2%;
     
-    --card: 210 40% 98% / 0.7; /* Semi-transparent white */
+    --card: 210 40% 98%; /* Solid White */
     --card-foreground: 222.2 47.4% 11.2%;
     
-    --popover: 210 40% 98% / 0.8; /* Semi-transparent white for popovers */
+    --popover: 210 40% 98%; /* Solid White for popovers */
     --popover-foreground: 222.2 47.4% 11.2%;
     
     --primary: 195 90% 45%; /* Vibrant Blue from original spec */
@@ -42,9 +42,9 @@
   .dark {
     --background: 222 47% 11%;
     --foreground: 210 40% 98%;
-    --card: 224 71% 4% / 0.7;
+    --card: 224 71% 4%;
     --card-foreground: 210 40% 98%;
-    --popover: 224 71% 4% / 0.8;
+    --popover: 224 71% 4%;
     --popover-foreground: 210 40% 98%;
     --primary: 158 44% 52%;
     --primary-foreground: 0 0% 100%;
