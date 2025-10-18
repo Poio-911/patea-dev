@@ -268,7 +268,7 @@ export default function FindMatchPage() {
     if (userLocation) {
         applyMatchFilters();
     }
-  }, [userLocation, applyMatchFilters])
+  }, [userLocation, applyMatchFilters]);
 
 
   const loading = matchesLoading || playersLoading || !isLoaded;
@@ -418,10 +418,13 @@ export default function FindMatchPage() {
                         <Slider value={playerOvrFilter} onValueChange={(value) => setPlayerOvrFilter(value as [number, number])} min={40} max={99} step={1} disabled={isSearching} />
                     </div>
                 </div>
-                <Button onClick={applyPlayerFilters} size="lg" disabled={isSearching}>
-                    {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
-                    {isSearching ? 'Buscando...' : 'Buscar Jugadores'}
-                </Button>
+                <div className="flex items-center justify-center gap-4">
+                    <Button onClick={applyPlayerFilters} size="lg" disabled={isSearching}>
+                        {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
+                        {isSearching ? 'Buscando...' : 'Buscar Jugadores'}
+                    </Button>
+                    <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
+                </div>
             </CardContent>
         </Card>
     );
@@ -512,15 +515,9 @@ export default function FindMatchPage() {
                 {renderFindMatches()}
             </TabsContent>
             <TabsContent value="find-players" className="flex-grow mt-4">
-                 <div className="mb-4">
-                    <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
-                 </div>
                 {renderFindPlayers()}
             </TabsContent>
         </Tabs>
     </div>
   );
 }
-
-
-    
