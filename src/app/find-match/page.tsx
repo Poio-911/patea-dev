@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
@@ -509,6 +510,9 @@ export default function FindMatchPage() {
                         Buscar Jugadores
                     </TabsTrigger>
                 </TabsList>
+                 <div className="hidden"> {/* Placeholder for now */}
+                    <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
+                 </div>
             </div>
             <TabsContent value="find-matches" className="flex-grow mt-4">
                 {renderFindMatches()}
@@ -520,3 +524,4 @@ export default function FindMatchPage() {
     </div>
   );
 }
+
