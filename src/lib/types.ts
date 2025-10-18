@@ -1,6 +1,4 @@
 
-
-
 import { DocumentData, DocumentReference } from "firebase/firestore";
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
@@ -124,6 +122,7 @@ export type Evaluation = {
     performanceTags?: {
         id: string;
         name: string;
+        description: string;
         effects: { attribute: string; change: number }[];
     }[];
     evaluatedAt: string;
@@ -175,3 +174,5 @@ export type UserProfile = {
   groups?: string[];
   activeGroupId?: string | null;
 };
+
+    

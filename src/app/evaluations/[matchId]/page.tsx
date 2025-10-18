@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useFirestore, useUser, useCollection } from '@/firebase';
@@ -32,6 +33,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 const performanceTagSchema = z.object({
   id: z.string(),
   name: z.string(),
+  description: z.string(),
   effects: z.array(z.object({
     attribute: z.string(),
     change: z.number(),
@@ -390,3 +392,5 @@ export default function PerformEvaluationPage() {
     </div>
   );
 }
+
+    
