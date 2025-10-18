@@ -22,16 +22,16 @@ import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 
 
 const notificationIcons: Record<Notification['type'], React.ElementType> = {
-    match_invite: (props) => <SoccerPlayerIcon {...props} />,
-    new_joiner: (props) => <UserPlus {...props} />,
-    evaluation_pending: (props) => <FileSignature {...props} />,
-    match_update: (props) => <Info {...props} />,
+    match_invite: SoccerPlayerIcon,
+    new_joiner: UserPlus,
+    evaluation_pending: FileSignature,
+    match_update: Info,
 };
 
-const IconWrapper = ({ type, ...props }: { type: Notification['type'] }) => {
+const IconWrapper = ({ type, className, ...props }: { type: Notification['type'], className?: string }) => {
     const Icon = notificationIcons[type];
     return (
-        <Avatar {...props}>
+        <Avatar {...props} className={cn(className)}>
             <AvatarFallback className={cn(
                 "bg-transparent text-foreground",
                 type === 'match_invite' && 'bg-blue-500/20 text-blue-500',
