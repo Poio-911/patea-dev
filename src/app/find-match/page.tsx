@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
@@ -26,6 +27,7 @@ import { PlayerMarker } from '@/components/player-marker';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { InvitePlayerDialog } from '@/components/invite-player-dialog';
+import { FindBestFitDialog } from '@/components/find-best-fit-dialog';
 
 
 const containerStyle = {
@@ -167,14 +169,19 @@ export default function FindMatchPage() {
   }, [firestore]);
   const { data: availablePlayers, loading: playersLoading } = useCollection<AvailablePlayer>(availablePlayersQuery);
 
-  const incompleteMatchesQuery = firestore && user?.uid ? query(
-    collection(firestore, 'matches'),
-    where('ownerUid', '==', user.uid),
-    where('status', '==', 'upcoming'),
-  ) : null;
-  const { data: userMatches } = useCollection<Match>(incompleteMatchesQuery);
+  const userMatchesQuery = useMemo(() => 
+    firestore && user?.uid ? query(
+        collection(firestore, 'matches'),
+        where('ownerUid', '==', user.uid),
+        where('status', '==', 'upcoming'),
+    ) : null, 
+  [firestore, user?.uid]);
+  
+  const { data: userMatchesData } = useCollection<Match>(userMatchesQuery);
 
-  const availableMatchesForInvite = userMatches?.filter(m => m.players.length < m.matchSize) || [];
+  const availableMatchesForInvite = useMemo(() => 
+      userMatchesData?.filter(m => m.players.length < m.matchSize) || [],
+  [userMatchesData]);
 
 
   const handleMarkerClick = (id: string) => {
@@ -324,54 +331,57 @@ export default function FindMatchPage() {
       );
     }
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
-            <div className="lg:col-span-1 h-full flex flex-col gap-4">
-                 <Card>
-                    <CardHeader className="p-4">
-                        <CardTitle className="text-lg">Jugadores Disponibles ({availablePlayers?.length || 0})</CardTitle>
-                    </CardHeader>
-                     <CardContent className="p-2">
-                        <ScrollArea className="h-full max-h-[60vh] lg:max-h-full">
-                            <div className="space-y-2 p-1">
-                                {availablePlayers && availablePlayers.length > 0 ? availablePlayers.map((player) => (
-                                <div id={`player-card-${player.uid}`} key={player.uid}>
-                                    <CompactPlayerCard
-                                        player={player}
-                                        onHover={setActiveMarker}
-                                        isActive={activeMarker === player.uid}
-                                        userMatches={availableMatchesForInvite}
-                                    />
+        <div className="flex flex-col h-full gap-4">
+            <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={availablePlayers || []} />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-grow">
+                <div className="lg:col-span-1 h-full flex flex-col gap-4">
+                    <Card>
+                        <CardHeader className="p-4">
+                            <CardTitle className="text-lg">Jugadores Disponibles ({availablePlayers?.length || 0})</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-2">
+                            <ScrollArea className="h-full max-h-[60vh] lg:max-h-full">
+                                <div className="space-y-2 p-1">
+                                    {availablePlayers && availablePlayers.length > 0 ? availablePlayers.map((player) => (
+                                    <div id={`player-card-${player.uid}`} key={player.uid}>
+                                        <CompactPlayerCard
+                                            player={player}
+                                            onHover={setActiveMarker}
+                                            isActive={activeMarker === player.uid}
+                                            userMatches={availableMatchesForInvite}
+                                        />
+                                    </div>
+                                    )) : (
+                                        <Alert className="m-2">
+                                            <AlertTitle>Nadie disponible</AlertTitle>
+                                            <AlertDescription>
+                                                Actualmente no hay jugadores buscando partido.
+                                            </AlertDescription>
+                                        </Alert>
+                                    )}
                                 </div>
-                                )) : (
-                                    <Alert className="m-2">
-                                        <AlertTitle>Nadie disponible</AlertTitle>
-                                        <AlertDescription>
-                                            Actualmente no hay jugadores buscando partido.
-                                        </AlertDescription>
-                                    </Alert>
-                                )}
-                            </div>
-                        </ScrollArea>
-                    </CardContent>
-                </Card>
-            </div>
-            <div className="lg:col-span-2 h-[400px] lg:h-full w-full rounded-lg overflow-hidden">
-                {isLoaded ? (
-                    <GoogleMap
-                        mapContainerStyle={containerStyle}
-                        center={defaultCenter}
-                        zoom={12}
-                        options={{ styles: mapStyles, disableDefaultUI: true, zoomControl: true }}
-                    >
-                         {availablePlayers?.map(player => (
-                            <PlayerMarker key={player.uid} player={player} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} />
-                         ))}
-                    </GoogleMap>
-                ) : (
-                     <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted">
-                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                    </div>
-                )}
+                            </ScrollArea>
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="lg:col-span-2 h-[400px] lg:h-full w-full rounded-lg overflow-hidden">
+                    {isLoaded ? (
+                        <GoogleMap
+                            mapContainerStyle={containerStyle}
+                            center={defaultCenter}
+                            zoom={12}
+                            options={{ styles: mapStyles, disableDefaultUI: true, zoomControl: true }}
+                        >
+                            {availablePlayers?.map(player => (
+                                <PlayerMarker key={player.uid} player={player} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} />
+                            ))}
+                        </GoogleMap>
+                    ) : (
+                        <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted">
+                            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -404,3 +414,4 @@ export default function FindMatchPage() {
     </div>
   );
 }
+
