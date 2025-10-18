@@ -63,33 +63,27 @@ const TagCheckbox = ({ tag, isChecked, onCheckedChange }: { tag: z.infer<typeof 
     const positiveEffects = tag.effects.filter(e => e.change > 0);
     const negativeEffects = tag.effects.filter(e => e.change < 0);
     return (
-        <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <div className={cn("flex items-start gap-3 rounded-lg border p-3 transition-colors", isChecked ? "bg-primary/10 border-primary" : "hover:bg-accent/50")}>
-                        <Checkbox checked={isChecked} onCheckedChange={onCheckedChange} id={`tag-${tag.id}`} className="mt-1" />
-                        <label htmlFor={`tag-${tag.id}`} className="w-full cursor-pointer">
-                            <p className="font-semibold">{tag.name}</p>
-                            <p className="text-xs text-muted-foreground">{tag.description}</p>
-                        </label>
-                    </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                    <div className="space-y-1">
-                        {positiveEffects.length > 0 && positiveEffects.map(effect => (
-                            <div key={effect.attribute} className="flex items-center gap-2 text-xs font-medium text-green-500">
-                                <Plus size={12}/> {effect.attribute.toUpperCase()}: +{effect.change}
-                            </div>
-                        ))}
-                        {negativeEffects.length > 0 && negativeEffects.map(effect => (
-                            <div key={effect.attribute} className="flex items-center gap-2 text-xs font-medium text-red-500">
-                                <Minus size={12}/> {effect.attribute.toUpperCase()}: {effect.change}
-                            </div>
-                        ))}
-                    </div>
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
+        <div className={cn("flex items-start gap-3 rounded-lg border p-3 transition-colors", isChecked ? "bg-primary/10 border-primary" : "hover:bg-accent/50")}>
+            <Checkbox checked={isChecked} onCheckedChange={onCheckedChange} id={`tag-${tag.id}`} className="mt-1" />
+            <label htmlFor={`tag-${tag.id}`} className="w-full cursor-pointer space-y-2">
+                <div>
+                    <p className="font-semibold">{tag.name}</p>
+                    <p className="text-xs text-muted-foreground">{tag.description}</p>
+                </div>
+                <div className="flex flex-wrap gap-x-3 gap-y-1">
+                    {positiveEffects.length > 0 && positiveEffects.map(effect => (
+                        <div key={effect.attribute} className="flex items-center gap-1 text-xs font-medium text-green-600">
+                            <Plus size={12}/> {effect.attribute.toUpperCase()}: +{effect.change}
+                        </div>
+                    ))}
+                    {negativeEffects.length > 0 && negativeEffects.map(effect => (
+                        <div key={effect.attribute} className="flex items-center gap-1 text-xs font-medium text-red-600">
+                            <Minus size={12}/> {effect.attribute.toUpperCase()}: {effect.change}
+                        </div>
+                    ))}
+                </div>
+            </label>
+        </div>
     )
 }
 
@@ -314,7 +308,7 @@ export default function PerformEvaluationPage() {
                                     control={control}
                                     render={({ field: typeField }) => (
                                         <Tabs value={typeField.value} onValueChange={typeField.onChange} className="w-full">
-                                            <TabsList className="grid w-full grid-cols-2">
+                                            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
                                                 <TabsTrigger value="points">Evaluar por Puntos</TabsTrigger>
                                                 <TabsTrigger value="tags">Evaluar por Etiquetas (IA)</TabsTrigger>
                                             </TabsList>
