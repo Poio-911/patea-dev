@@ -207,11 +207,13 @@ export default function FindMatchPage() {
     }
   };
 
-  const applyMatchFilters = useCallback((matches: Match[], location: { lat: number; lng: number }) => {
-    return matches.filter(match => {
+  const applyMatchFilters = useCallback(() => {
+    if (!allPublicMatches || !userLocation) return;
+    
+    const filtered = allPublicMatches.filter(match => {
         if (!match.location?.lat || !match.location?.lng) return false;
         
-        const distance = getDistance(location, match.location);
+        const distance = getDistance(userLocation, match.location);
         if (distance > searchRadius) return false;
         
         if (matchDateFilter && !isSameDay(new Date(match.date), matchDateFilter)) return false;
@@ -219,20 +221,26 @@ export default function FindMatchPage() {
         if (matchSizeFilter.length > 0 && !matchSizeFilter.includes(String(match.matchSize))) return false;
 
         return true;
-    }).sort((a,b) => getDistance(location, a.location) - getDistance(location, b.location));
-  }, [searchRadius, matchDateFilter, matchSizeFilter]);
+    }).sort((a,b) => getDistance(userLocation, a.location) - getDistance(userLocation, b.location));
+    
+    setFilteredMatches(filtered);
+    setMatchSearchCompleted(true);
+  }, [allPublicMatches, userLocation, searchRadius, matchDateFilter, matchSizeFilter]);
 
-  const applyPlayerFilters = useCallback((players: AvailablePlayer[]) => {
-      return players.filter(player => {
+
+  const applyPlayerFilters = useCallback(() => {
+      if (!allAvailablePlayers) return;
+      const filtered = allAvailablePlayers.filter(player => {
           if (playerPositionFilter.length > 0 && !playerPositionFilter.includes(player.position)) return false;
           if (player.ovr < playerOvrFilter[0] || player.ovr > playerOvrFilter[1]) return false;
           return true;
       });
-  }, [playerPositionFilter, playerOvrFilter]);
+      setFilteredPlayers(filtered);
+      setPlayerSearchCompleted(true);
+  }, [allAvailablePlayers, playerPositionFilter, playerOvrFilter]);
 
   const handleSearchNearby = useCallback(() => {
     setIsSearching(true);
-    setMatchSearchCompleted(false);
 
     if (!navigator.geolocation) {
       toast({ variant: 'destructive', title: 'Error de Geolocalización', description: 'Tu navegador no soporta esta función.' });
@@ -247,31 +255,20 @@ export default function FindMatchPage() {
           lng: position.coords.longitude,
         };
         setUserLocation(currentUserLocation);
-        
-        if (allPublicMatches) {
-            const filtered = applyMatchFilters(allPublicMatches, currentUserLocation);
-            setFilteredMatches(filtered);
-        }
-
         setIsSearching(false);
-        setMatchSearchCompleted(true);
       },
       (error) => {
         toast({ variant: 'destructive', title: 'Error de Ubicación', description: 'No se pudo obtener tu ubicación. Asegúrate de haber dado los permisos necesarios.' });
         setIsSearching(false);
       }
     );
-  }, [allPublicMatches, applyMatchFilters, toast]);
-
-  const handleSearchPlayers = useCallback(() => {
-      setIsSearching(true);
-      if (allAvailablePlayers) {
-          const filtered = applyPlayerFilters(allAvailablePlayers);
-          setFilteredPlayers(filtered);
-      }
-      setPlayerSearchCompleted(true);
-      setIsSearching(false);
-  }, [allAvailablePlayers, applyPlayerFilters]);
+  }, [toast]);
+  
+  useEffect(() => {
+    if (userLocation) {
+        applyMatchFilters();
+    }
+  }, [userLocation, applyMatchFilters])
 
 
   const loading = matchesLoading || playersLoading || !isLoaded;
@@ -340,8 +337,11 @@ export default function FindMatchPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
             <div className="lg:col-span-1 h-full flex flex-col gap-4">
                 <Card>
-                    <CardHeader className="p-4">
+                    <CardHeader className="p-4 flex-row items-center justify-between">
                         <CardTitle className="text-lg">Partidos Encontrados ({filteredMatches.length})</CardTitle>
+                        <Button variant="ghost" size="icon" onClick={() => setMatchSearchCompleted(false)}>
+                            <SlidersHorizontal className="h-4 w-4" />
+                        </Button>
                     </CardHeader>
                     <CardContent className="p-2">
                         <ScrollArea className="h-full max-h-[60vh] lg:max-h-full">
@@ -390,47 +390,50 @@ export default function FindMatchPage() {
         </div>
       );
     }
+    
+    const initialView = (
+        <Card className="max-w-xl mx-auto mt-8">
+            <CardHeader>
+                <CardTitle className="text-center">Encontrá Jugadores Libres</CardTitle>
+                <CardDescription className="text-center">
+                    Ajusta los filtros para encontrar el jugador que te falta.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center gap-6">
+                 <div className="w-full px-4 space-y-6">
+                    <div>
+                        <Label className="font-medium">Posición</Label>
+                        <ToggleGroup type="multiple" value={playerPositionFilter} onValueChange={setPlayerPositionFilter} variant="outline" className="justify-start mt-1 flex-wrap">
+                            <ToggleGroupItem value="POR">POR</ToggleGroupItem>
+                            <ToggleGroupItem value="DEF">DEF</ToggleGroupItem>
+                            <ToggleGroupItem value="MED">MED</ToggleGroupItem>
+                            <ToggleGroupItem value="DEL">DEL</ToggleGroupItem>
+                        </ToggleGroup>
+                    </div>
+                    <div>
+                        <div className="flex justify-between font-medium mb-1">
+                            <Label>Rango de OVR:</Label>
+                            <span className="text-primary">{playerOvrFilter[0]} - {playerOvrFilter[1]}</span>
+                        </div>
+                        <Slider value={playerOvrFilter} onValueChange={(value) => setPlayerOvrFilter(value as [number, number])} min={40} max={99} step={1} disabled={isSearching} />
+                    </div>
+                </div>
+                 <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
+                <Button onClick={applyPlayerFilters} size="lg" disabled={isSearching}>
+                    {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
+                    {isSearching ? 'Buscando...' : 'Buscar Jugadores'}
+                </Button>
+            </CardContent>
+        </Card>
+    );
 
     if (!playerSearchCompleted) {
-        return (
-            <Card className="max-w-xl mx-auto mt-8">
-                <CardHeader>
-                    <CardTitle className="text-center">Encontrá Jugadores Libres</CardTitle>
-                    <CardDescription className="text-center">
-                        Ajusta los filtros para encontrar el jugador que te falta.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center gap-6">
-                    <div className="w-full px-4 space-y-6">
-                         <div>
-                            <Label className="font-medium">Posición</Label>
-                            <ToggleGroup type="multiple" value={playerPositionFilter} onValueChange={setPlayerPositionFilter} variant="outline" className="justify-start mt-1 flex-wrap">
-                                <ToggleGroupItem value="POR">POR</ToggleGroupItem>
-                                <ToggleGroupItem value="DEF">DEF</ToggleGroupItem>
-                                <ToggleGroupItem value="MED">MED</ToggleGroupItem>
-                                <ToggleGroupItem value="DEL">DEL</ToggleGroupItem>
-                            </ToggleGroup>
-                        </div>
-                         <div>
-                            <div className="flex justify-between font-medium mb-1">
-                                <Label>Rango de OVR:</Label>
-                                <span className="text-primary">{playerOvrFilter[0]} - {playerOvrFilter[1]}</span>
-                            </div>
-                            <Slider value={playerOvrFilter} onValueChange={(value) => setPlayerOvrFilter(value as [number, number])} min={40} max={99} step={1} disabled={isSearching} />
-                        </div>
-                    </div>
-                    <Button onClick={handleSearchPlayers} size="lg">
-                        <Search className="mr-2 h-5 w-5" />
-                        Buscar Jugadores
-                    </Button>
-                </CardContent>
-            </Card>
-        );
+        return initialView;
     }
 
     return (
         <div className="flex flex-col h-full gap-4">
-            <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
+             <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-grow">
                 <div className="lg:col-span-1 h-full flex flex-col gap-4">
                     <Card>
@@ -515,3 +518,5 @@ export default function FindMatchPage() {
     </div>
   );
 }
+
+    
