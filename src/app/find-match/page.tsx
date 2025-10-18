@@ -231,13 +231,14 @@ export default function FindMatchPage() {
   const applyPlayerFilters = useCallback(() => {
       if (!allAvailablePlayers) return;
       const filtered = allAvailablePlayers.filter(player => {
+          if (player.uid === user?.uid) return false; // Exclude the current user from results
           if (playerPositionFilter.length > 0 && !playerPositionFilter.includes(player.position)) return false;
           if (player.ovr < playerOvrFilter[0] || player.ovr > playerOvrFilter[1]) return false;
           return true;
       });
       setFilteredPlayers(filtered);
       setPlayerSearchCompleted(true);
-  }, [allAvailablePlayers, playerPositionFilter, playerOvrFilter]);
+  }, [allAvailablePlayers, playerPositionFilter, playerOvrFilter, user?.uid]);
 
   const handleSearchNearby = useCallback(() => {
     setIsSearching(true);
@@ -510,9 +511,6 @@ export default function FindMatchPage() {
                         Buscar Jugadores
                     </TabsTrigger>
                 </TabsList>
-                 <div className="hidden"> {/* Placeholder for now */}
-                    <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
-                 </div>
             </div>
             <TabsContent value="find-matches" className="flex-grow mt-4">
                 {renderFindMatches()}
@@ -524,4 +522,3 @@ export default function FindMatchPage() {
     </div>
   );
 }
-
