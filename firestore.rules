@@ -1,100 +1,11 @@
-rules_version = '2';
 
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check if a user is authenticated
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    // Helper function to get group data
-    function getGroup(groupId) {
-      return get(/databases/$(database)/documents/groups/$(groupId)).data;
-    }
-
-    // Helper function to check if user is a member of a group
-    function isGroupMember(groupId) {
-      return request.auth.uid in getGroup(groupId).members;
-    }
-
-    // Users can only read/update their own profile
-    match /users/{userId} {
-      allow read, update, delete: if isAuthenticated() && request.auth.uid == userId;
-      allow create: if isAuthenticated();
-    }
-    
-    // Notifications are private to each user
-    match /users/{userId}/notifications/{notificationId} {
-        allow read, write: if isAuthenticated() && request.auth.uid == userId;
-    }
-
-    // Groups can be read by their members. Only owner can delete.
-    // Anyone can create a group.
-    match /groups/{groupId} {
-      allow read: if isAuthenticated() && isGroupMember(groupId);
-      allow create: if isAuthenticated();
-      // Allow member to join (update) or owner to modify
-      allow update: if isAuthenticated() && (isGroupMember(groupId) || request.auth.uid == resource.data.ownerUid);
-      allow delete: if isAuthenticated() && request.auth.uid == resource.data.ownerUid;
-    }
-
-    // Players can be read by group members.
-    // Write access is controlled.
-    match /players/{playerId} {
-      // Allow read if user is member of the player's group
-      allow read: if isAuthenticated() && isGroupMember(resource.data.groupId);
-      
-      // Allow any authenticated user to create a player (will be assigned to a group)
-      allow create: if isAuthenticated();
-
-      // Only the owner of the player entry can update/delete it
-      allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.ownerUid;
-    }
-
-    // OVR history can be read by group members. Only server/owner can write.
-    match /players/{playerId}/ovrHistory/{historyId} {
-        allow read: if isAuthenticated() && isGroupMember(get(/databases/$(database)/documents/players/$(playerId)).data.groupId);
-        allow write: if isAuthenticated(); // Simplified for now
-    }
-    
-    // Matches can be read by group members or if public.
-    // Write access is controlled.
-    match /matches/{matchId} {
-        // Read is allowed if user is in the group OR if the match is public
-        allow read: if isAuthenticated() && (isGroupMember(resource.data.groupId) || resource.data.isPublic == true);
-        
-        // Anyone authenticated can create a match
-        allow create: if isAuthenticated();
-        
-        // Update is allowed for the owner or any member of the group (for joining/leaving)
-        allow update: if isAuthenticated() && isGroupMember(resource.data.groupId);
-        
-        // Only the owner can delete
-        allow delete: if isAuthenticated() && request.auth.uid == resource.data.ownerUid;
-    }
-
-    // Subcollections of matches
-    match /matches/{matchId}/{subcollection}/{docId} {
-        // Get the match document
-        function getMatch() {
-          return get(/databases/$(database)/documents/matches/$(matchId)).data;
-        }
-        // Check if user is a player in the match
-        function isPlayerInMatch() {
-            return request.auth.uid in getMatch().playerUids;
-        }
-
-        // Assignments, SelfEvals, Messages can be read by any player in the match
-        // and created/updated under specific conditions
-        allow read: if isAuthenticated() && isPlayerInMatch();
-        allow write: if isAuthenticated() && isPlayerInMatch();
-    }
-    
-    // Evaluations are created by authenticated users.
-    // Reading them is more restricted, but let's allow read for any authenticated user for now to unblock.
-    match /evaluations/{evaluationId} {
-        allow read, create: if isAuthenticated();
+    // Regla predeterminada: permitir lectura y escritura a cualquier usuario autenticado.
+    // Esto es útil para el desarrollo rápido, pero debe ser refinado para producción.
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }

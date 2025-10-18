@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useUser, useFirestore } from '@/firebase';
+import { useUser, useFirestore, initializeFirebase } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
-import { doc, collection, query, where, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, collection, query, where, writeBatch } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { Loader2, Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -217,5 +217,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    

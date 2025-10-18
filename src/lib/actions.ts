@@ -7,8 +7,7 @@ import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/
 import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-match-day-forecast';
 import { generateEvaluationTags, GenerateEvaluationTagsInput } from '@/ai/flows/generate-evaluation-tags';
 import { Player, Evaluation } from './types';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getFirestore, doc, updateDoc, writeBatch, collection, getDocs, where } from 'firebase/firestore';
+import { getFirestore, doc, collection, getDocs, where } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 
 
@@ -17,44 +16,7 @@ import { initializeFirebase } from '@/firebase';
 function getClientFirebase() {
     const { firebaseApp } = initializeFirebase();
     const firestore = getFirestore(firebaseApp);
-    const storage = getStorage(firebaseApp);
-    return { firestore, storage };
-}
-
-
-export async function uploadProfileImageAction(formData: FormData) {
-    try {
-        const { firestore, storage } = getClientFirebase();
-        
-        const file = formData.get('file') as File;
-        const userId = formData.get('userId') as string;
-
-        if (!file || !userId) {
-            return { error: 'Faltan datos para subir la imagen.' };
-        }
-
-        const fileExtension = file.name.split('.').pop();
-        const fileName = `${userId}-${crypto.randomUUID()}.${fileExtension}`;
-        const filePath = `profile-images/${userId}/${fileName}`;
-
-        const storageRef = ref(storage, filePath);
-        await uploadBytes(storageRef, file);
-        const newPhotoURL = await getDownloadURL(storageRef);
-
-        const userDocRef = doc(firestore, 'users', userId);
-        const playerDocRef = doc(firestore, 'players', userId);
-
-        const batch = writeBatch(firestore);
-        batch.update(userDocRef, { photoURL: newPhotoURL });
-        batch.update(playerDocRef, { photoUrl: newPhotoURL });
-        await batch.commit();
-
-        return { newPhotoURL };
-
-    } catch (error: any) {
-        console.error("Error en la Server Action de subida:", error);
-        return { error: 'No se pudo subir la imagen desde el servidor. ' + (error.message || 'Error desconocido.') };
-    }
+    return { firestore };
 }
 
 
@@ -182,5 +144,3 @@ export async function generateTagsAction(input: GenerateEvaluationTagsInput) {
         return { error: 'No se pudieron generar las etiquetas de evaluación.' };
     }
 }
-
-    
