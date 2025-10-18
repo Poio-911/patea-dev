@@ -38,6 +38,7 @@ import { FindMatchIcon } from './icons/find-match-icon';
 import { EvaluationIcon } from './icons/evaluation-icon';
 import { NotificationBell } from './notification-bell';
 import { useFcm } from '@/hooks/use-fcm';
+import { HelpDialog } from './help-dialog';
 
 
 const navItems = [
@@ -112,6 +113,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   <div className="hidden md:block">
                       <SidebarTrigger />
                   </div>
+                  <HelpDialog />
                   <NotificationBell />
               </div>
 
