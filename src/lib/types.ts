@@ -43,9 +43,11 @@ export type MatchType = 'manual' | 'collaborative';
 export type MatchSize = 10 | 14 | 22;
 
 export type MatchLocation = {
+    name: string;
     address: string;
     lat: number;
     lng: number;
+    placeId: string;
 }
 
 export type Match = {

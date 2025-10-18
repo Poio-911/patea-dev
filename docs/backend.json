@@ -55,9 +55,11 @@
         "location": {
             "type": "object",
             "properties": {
+                "name": { "type": "string" },
                 "address": { "type": "string" },
                 "lat": { "type": "number" },
-                "lng": { "type": "number" }
+                "lng": { "type": "number" },
+                "placeId": { "type": "string" }
             }
         },
         "type": { "type": "string", "enum": ["manual", "collaborative"] },

@@ -17,12 +17,13 @@ import {
 } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, Clock, MapPin, Users, Info, Loader2, UserPlus, LogOut } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Info, Loader2, UserPlus, LogOut, Navigation } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { ScrollArea } from './ui/scroll-area';
 import { Button } from './ui/button';
+import Link from 'next/link';
 
 interface MatchDetailsDialogProps {
   match: Match;
@@ -137,6 +138,8 @@ export function MatchDetailsDialog({ match: initialMatch, children }: MatchDetai
 
 
   const statusInfo = statusConfig[currentMatch.status];
+  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentMatch.location.address)}&query_place_id=${currentMatch.location.placeId}`;
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -148,18 +151,31 @@ export function MatchDetailsDialog({ match: initialMatch, children }: MatchDetai
         </DialogHeader>
         <div className="flex-grow overflow-y-auto -mx-6 px-6 py-4 border-y">
             <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-3">
-                        <Calendar className="h-5 w-5 text-primary" />
-                        <span className="font-medium">{format(new Date(currentMatch.date), "EEEE, d 'de' MMMM", { locale: es })}</span>
+                <div className="p-4 rounded-lg bg-muted/50 border">
+                    <h3 className="font-bold text-lg">{currentMatch.location.name}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{currentMatch.location.address}</p>
+                     <Button asChild size="sm" className="mt-3">
+                        <Link href={googleMapsUrl} target="_blank" rel="noopener noreferrer">
+                            <Navigation className="mr-2 h-4 w-4" />
+                            Ir en Google Maps
+                        </Link>
+                    </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3 p-3 rounded-lg border">
+                        <Calendar className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                            <p className="text-sm text-muted-foreground">Fecha</p>
+                            <p className="font-bold">{format(new Date(currentMatch.date), "EEEE, d 'de' MMMM", { locale: es })}</p>
+                        </div>
                     </div>
-                     <div className="flex items-center gap-3">
-                        <Clock className="h-5 w-5 text-primary" />
-                        <span className="font-medium">{currentMatch.time} hs</span>
-                    </div>
-                     <div className="flex items-center gap-3 sm:col-span-2">
-                        <MapPin className="h-5 w-5 text-primary" />
-                        <span className="font-medium">{currentMatch.location.address}</span>
+                     <div className="flex items-center gap-3 p-3 rounded-lg border">
+                        <Clock className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                            <p className="text-sm text-muted-foreground">Hora</p>
+                            <p className="font-bold">{currentMatch.time} hs</p>
+                        </div>
                     </div>
                 </div>
 

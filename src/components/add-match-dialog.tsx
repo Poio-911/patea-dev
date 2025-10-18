@@ -41,9 +41,11 @@ import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 
 
 const matchLocationSchema = z.object({
+  name: z.string(),
   address: z.string().min(5, 'La dirección debe tener al menos 5 caracteres.'),
   lat: z.number(),
   lng: z.number(),
+  placeId: z.string(),
 });
 
 const matchSchema = z.object({
@@ -80,18 +82,30 @@ const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: Matc
         debounce: 300,
     });
 
-    const handleSelect = (description: string) => () => {
-        setValue(description, false);
+    const handleSelect = async (suggestion: google.maps.places.AutocompletePrediction) => {
+        setValue(suggestion.description, false);
         clearSuggestions();
 
-        getGeocode({ address: description }).then((results) => {
+        try {
+            const results = await getGeocode({ placeId: suggestion.place_id });
             const { lat, lng } = getLatLng(results[0]);
-            onSelectLocation({ address: description, lat, lng });
-        });
+            
+            const placeName = suggestion.structured_formatting.main_text;
+
+            onSelectLocation({ 
+                name: placeName,
+                address: suggestion.description, 
+                lat, 
+                lng,
+                placeId: suggestion.place_id
+            });
+        } catch (error) {
+            console.error("Error getting geocode: ", error);
+        }
     };
     
     return (
-        <Popover open={status === 'OK'}>
+        <Popover open={status === 'OK' && value.length > 2}>
             <PopoverTrigger asChild>
                 <div className="relative">
                     <SoccerPlayerIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -101,6 +115,7 @@ const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: Matc
                         disabled={!ready}
                         placeholder="Busca la dirección de la cancha..."
                         className="pl-10"
+                        autoComplete="off"
                     />
                 </div>
             </PopoverTrigger>
@@ -109,9 +124,9 @@ const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: Matc
                     <CommandList>
                         {status === 'OK' && (
                              <CommandGroup>
-                                {data.map(({ place_id, description }) => (
-                                    <CommandItem key={place_id} value={description} onSelect={handleSelect(description)}>
-                                        {description}
+                                {data.map((suggestion) => (
+                                    <CommandItem key={suggestion.place_id} value={suggestion.description} onSelect={() => handleSelect(suggestion)}>
+                                        {suggestion.description}
                                     </CommandItem>
                                 ))}
                             </CommandGroup>
