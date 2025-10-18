@@ -3,8 +3,57 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Bot, Loader2 } from 'lucide-react';
-import { generateGroupSummary, GroupSummaryInput, GroupSummaryOutput } from '@/ai/flows/generate-group-summary';
 import type { Player, Match } from '@/lib/types';
+
+interface GroupSummaryInput {
+  playerCount: number;
+  upcomingMatchesCount: number;
+  topPlayer?: { name: string; ovr: number };
+}
+
+interface GroupSummaryOutput {
+  summary: string;
+  author: string;
+}
+
+// Generates the summary on the client-side to avoid server action loops.
+function generateSummary(input: GroupSummaryInput): GroupSummaryOutput {
+  const { playerCount, upcomingMatchesCount, topPlayer } = input;
+
+  if (playerCount === 0) {
+    return {
+      summary: 'El grupo está listo para nuevos talentos. ¡Añade jugadores para empezar la acción!',
+      author: 'El Director Deportivo',
+    };
+  }
+  
+  if (upcomingMatchesCount === 0) {
+    return {
+      summary: `Con ${playerCount} cracks en la plantilla, el mercado de pases está que arde, pero la hinchada pide fútbol. ¿Cuándo vuelve a rodar la pelota?`,
+      author: 'Crónicas de Vestuario',
+    };
+  }
+
+  if (upcomingMatchesCount > 2) {
+      return {
+          summary: `La agenda está cargada. Con ${upcomingMatchesCount} partidos en el horizonte, el DT deberá rotar la plantilla para mantener la frescura.`,
+          author: 'Pizarra Táctica',
+      }
+  }
+
+  if (topPlayer) {
+    return {
+      summary: `Todos los ojos están puestos en ${topPlayer.name}, la figura del equipo con ${topPlayer.ovr} de OVR. ¿Podrá mantener el nivel y llevar al equipo a la gloria?`,
+      author: 'El Analista de AFM',
+    };
+  }
+
+  return {
+    summary: 'El equipo se prepara para los próximos desafíos, la estrategia es clave para la victoria.',
+    author: 'El Entrenador',
+  };
+}
+
 
 interface GroupSummaryCardProps {
   players: Player[];
@@ -15,7 +64,7 @@ export function GroupSummaryCard({ players, matches }: GroupSummaryCardProps) {
   const [summaryData, setSummaryData] = useState<GroupSummaryOutput | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const analysisInput = useMemo((): GroupSummaryInput | null => {
+  const analysisInput = useMemo((): GroupSummaryInput => {
     if (!players || players.length === 0) {
       return {
         playerCount: 0,
@@ -24,7 +73,7 @@ export function GroupSummaryCard({ players, matches }: GroupSummaryCardProps) {
     }
     
     const upcomingMatchesCount = matches.filter(m => m.status === 'upcoming').length;
-    const topPlayer = players.sort((a, b) => b.ovr - a.ovr)[0];
+    const topPlayer = [...players].sort((a, b) => b.ovr - a.ovr)[0];
 
     return {
       playerCount: players.length,
@@ -35,15 +84,14 @@ export function GroupSummaryCard({ players, matches }: GroupSummaryCardProps) {
 
 
   useEffect(() => {
-    const getSummary = async () => {
-      if (!analysisInput) return;
+    const getSummary = () => {
       setLoading(true);
       try {
-        const result = await generateGroupSummary(analysisInput);
+        const result = generateSummary(analysisInput);
         setSummaryData(result);
       } catch (error) {
-        console.error("Failed to fetch group summary:", error);
-        setSummaryData({ summary: 'No se pudo cargar el análisis del grupo. Inténtalo de nuevo más tarde.', author: 'Error del Sistema' });
+        console.error("Failed to generate group summary:", error);
+        setSummaryData({ summary: 'No se pudo cargar el análisis del grupo.', author: 'Error del Sistema' });
       } finally {
         setLoading(false);
       }
