@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -11,7 +12,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-export const GroupSummaryInputSchema = z.object({
+const GroupSummaryInputSchema = z.object({
   playerCount: z.number().describe('El número total de jugadores en el grupo.'),
   upcomingMatchesCount: z.number().describe('El número de partidos programados para el futuro.'),
   topPlayer: z.object({
@@ -22,7 +23,7 @@ export const GroupSummaryInputSchema = z.object({
 
 export type GroupSummaryInput = z.infer<typeof GroupSummaryInputSchema>;
 
-export const GroupSummaryOutputSchema = z.object({
+const GroupSummaryOutputSchema = z.object({
   summary: z.string().describe('Un resumen corto, ingenioso y en tono periodístico sobre la actualidad del grupo, en español.'),
   author: z.string().describe("La firma del 'periodista' o la fuente de la noticia (ej: 'El Analista de AFM', 'Pizarra Táctica')."),
 });
