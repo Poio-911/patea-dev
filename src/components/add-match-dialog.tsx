@@ -459,17 +459,20 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                         name="matchSize"
                         control={form.control}
                         render={({ field }) => (
-                             <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-wrap gap-4">
-                                <Label className={cn("flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground flex-1 has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50", field.value === '10' && "bg-primary text-primary-foreground border-primary-foreground/50")}>
-                                    <SoccerPlayerIcon className={cn("h-5 w-5 text-muted-foreground", field.value === '10' && "text-primary-foreground")} />
+                            <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-3 gap-2">
+                                <Label className="group flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
+                                    <RadioGroupItem value="10" className="sr-only" />
+                                    <SoccerPlayerIcon className="h-5 w-5 text-muted-foreground group-hover:text-accent-foreground group-has-[:checked]:text-primary-foreground" />
                                     <span className="font-bold text-sm">Fútbol 5</span>
                                 </Label>
-                                <Label className={cn("flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground flex-1 has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50", field.value === '14' && "bg-primary text-primary-foreground border-primary-foreground/50")}>
-                                    <SoccerPlayerIcon className={cn("h-5 w-5 text-muted-foreground", field.value === '14' && "text-primary-foreground")} />
+                                <Label className="group flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
+                                    <RadioGroupItem value="14" className="sr-only" />
+                                    <SoccerPlayerIcon className="h-5 w-5 text-muted-foreground group-hover:text-accent-foreground group-has-[:checked]:text-primary-foreground" />
                                     <span className="font-bold text-sm">Fútbol 7</span>
                                 </Label>
-                                <Label className={cn("flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground flex-1 has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50", field.value === '22' && "bg-primary text-primary-foreground border-primary-foreground/50")}>
-                                    <SoccerPlayerIcon className={cn("h-5 w-5 text-muted-foreground", field.value === '22' && "text-primary-foreground")} />
+                                <Label className="group flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
+                                    <RadioGroupItem value="22" className="sr-only" />
+                                    <SoccerPlayerIcon className="h-5 w-5 text-muted-foreground group-hover:text-accent-foreground group-has-[:checked]:text-primary-foreground" />
                                     <span className="font-bold text-sm">Fútbol 11</span>
                                 </Label>
                             </RadioGroup>
@@ -567,9 +570,10 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                         <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
                                         <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
-                                    <Label htmlFor={`player-${player.id}`} className="flex-1 cursor-pointer">
+                                    <Label htmlFor={`player-${player.id}`} className="flex-1 cursor-pointer flex items-center gap-2">
                                         <span className="font-semibold">{player.name}</span>
-                                        <span className={cn("ml-2 text-xs font-semibold", positionColors[player.position])}>{player.position}</span>
+                                        <SoccerPlayerIcon className={cn("h-4 w-4", positionColors[player.position])} />
+                                        <span className={cn("text-xs font-semibold", positionColors[player.position])}>{player.position}</span>
                                     </Label>
                                 </div>
                             ))}
@@ -614,3 +618,5 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     </Dialog>
   );
 }
+
+    
