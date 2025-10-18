@@ -1,7 +1,6 @@
 
 'use client'; // Required for hooks and context providers
 
-import { useMemo } from 'react';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
