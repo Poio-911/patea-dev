@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Shield, Users2, Shirt, Globe } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Globe } from 'lucide-react';
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -69,6 +69,13 @@ interface AddMatchDialogProps {
 const weatherIcons: Record<string, React.ElementType> = {
     Sun, Cloud, Cloudy, CloudRain, Wind, Zap
 }
+
+const positionColors: Record<Player['position'], string> = {
+  DEL: 'text-chart-1',
+  MED: 'text-chart-2',
+  DEF: 'text-chart-3',
+  POR: 'text-chart-4',
+};
 
 const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: MatchLocation) => void }) => {
     const {
@@ -454,15 +461,15 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                         render={({ field }) => (
                              <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-wrap gap-4">
                                 <Label className={cn("flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground flex-1 has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50", field.value === '10' && "bg-primary text-primary-foreground border-primary-foreground/50")}>
-                                    <Shirt className={cn("h-5 w-5 text-chart-1", field.value === '10' && "text-primary-foreground")} />
+                                    <SoccerPlayerIcon className={cn("h-5 w-5 text-muted-foreground", field.value === '10' && "text-primary-foreground")} />
                                     <span className="font-bold text-sm">Fútbol 5</span>
                                 </Label>
                                 <Label className={cn("flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground flex-1 has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50", field.value === '14' && "bg-primary text-primary-foreground border-primary-foreground/50")}>
-                                    <Shirt className={cn("h-5 w-5 text-chart-2", field.value === '14' && "text-primary-foreground")} />
+                                    <SoccerPlayerIcon className={cn("h-5 w-5 text-muted-foreground", field.value === '14' && "text-primary-foreground")} />
                                     <span className="font-bold text-sm">Fútbol 7</span>
                                 </Label>
                                 <Label className={cn("flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground flex-1 has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50", field.value === '22' && "bg-primary text-primary-foreground border-primary-foreground/50")}>
-                                    <Shirt className={cn("h-5 w-5 text-chart-3", field.value === '22' && "text-primary-foreground")} />
+                                    <SoccerPlayerIcon className={cn("h-5 w-5 text-muted-foreground", field.value === '22' && "text-primary-foreground")} />
                                     <span className="font-bold text-sm">Fútbol 11</span>
                                 </Label>
                             </RadioGroup>
@@ -562,7 +569,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                     </Avatar>
                                     <Label htmlFor={`player-${player.id}`} className="flex-1 cursor-pointer">
                                         <span className="font-semibold">{player.name}</span>
-                                        <span className="ml-2 text-xs">{player.position} - OVR: {player.ovr}</span>
+                                        <span className={cn("ml-2 text-xs font-semibold", positionColors[player.position])}>{player.position}</span>
                                     </Label>
                                 </div>
                             ))}
