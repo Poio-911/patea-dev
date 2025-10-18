@@ -9,6 +9,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { libraries } from '@/lib/google-maps';
 import { Loader2 } from 'lucide-react';
+import { MainNav } from '@/components/main-nav';
 
 // metadata cannot be exported from a client component.
 // We can define it in a separate server component if needed, or handle it differently.
@@ -42,13 +43,13 @@ export default function RootLayout({
       </head>
       <body
         className={cn(
-          'h-screen bg-background font-body antialiased'
+          'min-h-[100svh] bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 font-body antialiased'
         )}
       >
         <FirebaseClientProvider>
           <Toaster />
           {isLoaded ? (
-             children
+             <MainNav>{children}</MainNav>
           ) : loadError ? (
             <div>Error al cargar Google Maps. Por favor, revisa la configuración de tu API Key.</div>
           ) : (
@@ -61,5 +62,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-    
