@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
@@ -418,7 +418,6 @@ export default function FindMatchPage() {
                         <Slider value={playerOvrFilter} onValueChange={(value) => setPlayerOvrFilter(value as [number, number])} min={40} max={99} step={1} disabled={isSearching} />
                     </div>
                 </div>
-                 <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
                 <Button onClick={applyPlayerFilters} size="lg" disabled={isSearching}>
                     {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
                     {isSearching ? 'Buscando...' : 'Buscar Jugadores'}
@@ -433,8 +432,7 @@ export default function FindMatchPage() {
 
     return (
         <div className="flex flex-col h-full gap-4">
-             <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-grow">
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-grow">
                 <div className="lg:col-span-1 h-full flex flex-col gap-4">
                     <Card>
                         <CardHeader className="p-4 flex-row items-center justify-between">
@@ -493,30 +491,33 @@ export default function FindMatchPage() {
 
   return (
     <div className="flex flex-col gap-4 h-full">
-      <PageHeader
-        title="Buscar Partidos y Jugadores"
-        description="Encontrá partidos públicos o jugadores libres para completar tu equipo."
-      />
-      <Tabs defaultValue="find-matches" className="flex flex-col flex-grow">
-        <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="find-matches">
-                <Search className="mr-2 h-4 w-4"/>
-                Buscar Partidos
-            </TabsTrigger>
-            <TabsTrigger value="find-players">
-                <Users className="mr-2 h-4 w-4"/>
-                Buscar Jugadores
-            </TabsTrigger>
-        </TabsList>
-        <TabsContent value="find-matches" className="flex-grow">
-            {renderFindMatches()}
-        </TabsContent>
-        <TabsContent value="find-players" className="flex-grow">
-            {renderFindPlayers()}
-        </TabsContent>
-      </Tabs>
+        <PageHeader
+            title="Buscar Partidos y Jugadores"
+            description="Encontrá partidos públicos o jugadores libres para completar tu equipo."
+        />
+        <Tabs defaultValue="find-matches" className="flex flex-col flex-grow">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                 <TabsList className="grid w-full grid-cols-2 sm:w-auto">
+                    <TabsTrigger value="find-matches">
+                        <Search className="mr-2 h-4 w-4"/>
+                        Buscar Partidos
+                    </TabsTrigger>
+                    <TabsTrigger value="find-players">
+                        <Users className="mr-2 h-4 w-4"/>
+                        Buscar Jugadores
+                    </TabsTrigger>
+                </TabsList>
+                <div className="w-full sm:w-auto">
+                     <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
+                </div>
+            </div>
+            <TabsContent value="find-matches" className="flex-grow mt-4">
+                {renderFindMatches()}
+            </TabsContent>
+            <TabsContent value="find-players" className="flex-grow mt-4">
+                {renderFindPlayers()}
+            </TabsContent>
+        </Tabs>
     </div>
   );
 }
-
-    
