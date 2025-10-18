@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useFirestore, useUser } from '@/firebase';
 import { addDoc, collection, writeBatch, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Player, MatchLocation, Notification } from '@/lib/types';
+import { Player, MatchLocation, Notification, Team } from '@/lib/types';
 import { Alert, AlertDescription } from './ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
@@ -318,7 +319,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
 
     const selectedPlayersData = allPlayers.filter(p => data.players.includes(p.id));
     
-    let finalTeams = [];
+    let finalTeams: Team[] = [];
     // Only generate teams if the match is full
     if (selectedPlayersData.length === selectedMatchSize) {
         const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
