@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useFirestore } from '@/firebase';
@@ -17,6 +18,9 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { writeBatch, collection, doc } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { nanoid } from 'nanoid';
+import type { Group } from '@/lib/types';
+
 
 const registerSchema = z.object({
     displayName: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
@@ -65,19 +69,29 @@ export default function RegisterPage() {
                 photoURL: `https://picsum.photos/seed/${data.displayName}/400/400`
             });
 
-            // 2. Create user document in /users
+            // 2. Create the user's first group
+            const newGroupRef = doc(collection(firestore, 'groups'));
+            const newGroup: Omit<Group, 'id'> = {
+              name: `Grupo de ${data.displayName}`,
+              ownerUid: newUser.uid,
+              inviteCode: nanoid(8),
+              members: [newUser.uid],
+            };
+            batch.set(newGroupRef, newGroup);
+
+            // 3. Create user document in /users and set the new group as active
             const userRef = doc(firestore, 'users', newUser.uid);
             const newUserProfile = {
               uid: newUser.uid,
               email: newUser.email,
               displayName: data.displayName,
               photoURL: `https://picsum.photos/seed/${data.displayName}/400/400`,
-              groups: [],
-              activeGroupId: null,
+              groups: [newGroupRef.id],
+              activeGroupId: newGroupRef.id,
             };
             batch.set(userRef, newUserProfile);
 
-            // 3. Create player document in /players
+            // 4. Create player document in /players and associate it with the new group
             const playerRef = doc(firestore, 'players', newUser.uid); // Use user UID as player ID
             const baseStat = 50;
             const newPlayer = {
@@ -93,7 +107,7 @@ export default function RegisterPage() {
                 photoUrl: `https://picsum.photos/seed/${data.displayName}/400/400`,
                 stats: { matchesPlayed: 0, goals: 0, assists: 0, averageRating: 0 },
                 ownerUid: newUser.uid,
-                groupId: '', // Set to empty string instead of null
+                groupId: newGroupRef.id, // Associate player with the newly created group
             };
             batch.set(playerRef, newPlayer);
 
