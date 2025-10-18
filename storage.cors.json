@@ -1,8 +1,11 @@
 [
   {
-    "origin": ["*"],
+    "origin": [
+      "http://localhost:3000",
+      "https://studio--mil-disculpis.us-central1.hosted.app"
+    ],
     "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    "responseHeader": ["Content-Type", "Authorization"],
+    "responseHeader": ["Content-Type", "Authorization", "Content-Length", "User-Agent"],
     "maxAgeSeconds": 3600
   }
 ]
