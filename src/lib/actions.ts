@@ -6,12 +6,52 @@ import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/
 import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-match-day-forecast';
 import { generateEvaluationTags, GenerateEvaluationTagsInput } from '@/ai/flows/generate-evaluation-tags';
 import { Player, Evaluation } from './types';
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, updateDoc, writeBatch } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getAuth, updateProfile } from 'firebase/auth';
 
 // Helper to get firestore instance on the server
 function getFirestoreInstance() {
     return initializeFirebase().firestore;
+}
+
+export async function uploadProfileImageAction(formData: FormData) {
+    const { firestore, auth } = initializeFirebase();
+    const file = formData.get('file') as File;
+    const userId = formData.get('userId') as string;
+
+    if (!file || !userId) {
+        return { error: 'Faltan datos para subir la imagen.' };
+    }
+
+    const storage = getStorage();
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `${userId}-${crypto.randomUUID()}.${fileExtension}`;
+    const storageRef = ref(storage, `profile-images/${fileName}`);
+
+    try {
+        const buffer = await file.arrayBuffer();
+        const uploadTask = await uploadBytes(storageRef, buffer, { contentType: file.type });
+        const newPhotoURL = await getDownloadURL(uploadTask.ref);
+
+        const batch = writeBatch(firestore);
+        
+        // Update Firestore user document
+        const userDocRef = doc(firestore, 'users', userId);
+        batch.update(userDocRef, { photoURL: newPhotoURL });
+
+        // Update Firestore player document
+        const playerDocRef = doc(firestore, 'players', userId);
+        batch.update(playerDocRef, { photoUrl: newPhotoURL });
+
+        await batch.commit();
+
+        return { newPhotoURL };
+    } catch (error: any) {
+        console.error("Error en la Server Action de subida:", error);
+        return { error: 'No se pudo subir la imagen desde el servidor. ' + error.message };
+    }
 }
 
 

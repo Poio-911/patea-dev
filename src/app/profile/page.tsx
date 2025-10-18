@@ -10,10 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Player, Match } from '@/lib/types';
 import { useState, useRef, useMemo } from 'react';
-import { updateProfile } from 'firebase/auth';
 import { useAuth } from '@/firebase';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
 import PlayerProfileView from '@/components/player-profile-view';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -22,6 +19,8 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { uploadProfileImageAction } from '@/lib/actions';
+import { updateProfile } from 'firebase/auth';
 
 
 export default function ProfilePage() {
@@ -51,40 +50,39 @@ export default function ProfilePage() {
 
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user || !firestore || !auth?.currentUser) return;
+    if (!user || !auth?.currentUser) return;
     const file = event.target.files?.[0];
     if (!file) return;
 
     setIsUploading(true);
     
-    const storage = getStorage(auth.app);
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${user.uid}-${uuidv4()}.${fileExtension}`;
-    const storageRef = ref(storage, `profile-images/${fileName}`);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('userId', user.uid);
 
     try {
-        const uploadTask = await uploadBytes(storageRef, file);
-        const newPhotoURL = await getDownloadURL(uploadTask.ref);
+        const result = await uploadProfileImageAction(formData);
 
-        const userDocRef = doc(firestore, 'users', user.uid);
-        const playerDocRef = doc(firestore, 'players', user.uid);
-
-        await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
-        await updateDoc(userDocRef, { photoURL: newPhotoURL });
-        await updateDoc(playerDocRef, { photoUrl: newPhotoURL });
-
+        if (result.error) {
+            throw new Error(result.error);
+        }
+        
+        if (result.newPhotoURL) {
+            // Also update the auth user profile on the client
+            await updateProfile(auth.currentUser, { photoURL: result.newPhotoURL });
+        }
 
         toast({
             title: '¡Foto actualizada!',
             description: 'Tu foto de perfil ha cambiado.'
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error updating photo:', error);
         toast({
             variant: 'destructive',
             title: 'Error',
-            description: 'No se pudo actualizar la foto de perfil.',
+            description: error.message || 'No se pudo actualizar la foto de perfil.',
         });
     } finally {
         setIsUploading(false);
