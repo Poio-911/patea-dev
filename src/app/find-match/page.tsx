@@ -246,9 +246,9 @@ export default function FindMatchPage() {
       return (
         <Card className="max-w-lg mx-auto mt-8">
             <CardHeader>
-                <CardTitle className="text-center">Encuentra Partidos Cerca Tuyo</CardTitle>
+                <CardTitle className="text-center">Encontrá Partidos Cerca Tuyo</CardTitle>
                 <CardDescription className="text-center">
-                    Ajusta el radio de búsqueda y presiona el botón para encontrar partidos públicos.
+                    Ajusta el radio de búsqueda y dale al botón para encontrar partidos públicos.
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-8">
@@ -390,8 +390,8 @@ export default function FindMatchPage() {
   return (
     <div className="flex flex-col gap-4 h-full">
       <PageHeader
-        title="Encontrar Oportunidades"
-        description="Busca partidos públicos o jugadores libres para completar tu equipo."
+        title="Buscar Partidos y Jugadores"
+        description="Encontrá partidos públicos o jugadores libres para completar tu equipo."
       />
       <Tabs defaultValue="find-matches" className="flex flex-col flex-grow">
         <TabsList className="grid w-full grid-cols-2">
@@ -415,3 +415,6 @@ export default function FindMatchPage() {
   );
 }
 
+
+
+    
