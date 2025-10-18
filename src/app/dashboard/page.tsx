@@ -21,7 +21,6 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Separator } from '@/components/ui/separator';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
-import { FakeAdCard } from '@/components/fake-ad-card';
 
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
@@ -135,7 +134,6 @@ export default function DashboardPage() {
         description="Un resumen de la actividad de tu grupo."
       />
       
-      <FakeAdCard />
 
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Main column */}
