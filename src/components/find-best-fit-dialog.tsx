@@ -8,11 +8,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useState, useTransition } from 'react';
-import { useUser } from '@/firebase';
 import type { AvailablePlayer, Match } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, Send, UserSearch } from 'lucide-react';
@@ -24,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from './ui/label';
-import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Alert, AlertDescription } from './ui/alert';
 import { findBestFitPlayerAction } from '@/lib/actions';
 import { Card, CardContent } from './ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
@@ -61,7 +59,15 @@ export function FindBestFitDialog({
     startTransition(async () => {
       setRecommendedPlayer(null);
       setRecommendationReason('');
-      const result = await findBestFitPlayerAction({ match: selectedMatch, availablePlayers });
+      
+      const simpleAvailablePlayers = availablePlayers.map(p => ({
+          uid: p.uid,
+          displayName: p.displayName,
+          ovr: p.ovr,
+          position: p.position,
+      }))
+      
+      const result = await findBestFitPlayerAction({ match: selectedMatch, availablePlayers: simpleAvailablePlayers });
 
       if (result.error) {
         toast({ variant: 'destructive', title: 'Error de la IA', description: result.error });

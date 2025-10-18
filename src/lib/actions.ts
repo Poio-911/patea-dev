@@ -6,6 +6,7 @@ import { generateBalancedTeams, GenerateBalancedTeamsInput } from '@/ai/flows/ge
 import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/flows/suggest-player-improvements';
 import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-match-day-forecast';
 import { generateEvaluationTags, GenerateEvaluationTagsInput } from '@/ai/flows/generate-evaluation-tags';
+import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-fit-player';
 import { Player, Evaluation } from './types';
 import { getFirestore, doc, collection, getDocs, where } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
@@ -142,5 +143,15 @@ export async function generateTagsAction(input: GenerateEvaluationTagsInput) {
     } catch (error) {
         console.error('Error generating evaluation tags:', error);
         return { error: 'No se pudieron generar las etiquetas de evaluación.' };
+    }
+}
+
+export async function findBestFitPlayerAction(input: FindBestFitPlayerInput) {
+    try {
+        const result = await findBestFitPlayer(input);
+        return result;
+    } catch (error) {
+        console.error('Error finding best fit player:', error);
+        return { error: 'La IA no pudo encontrar un jugador adecuado.' };
     }
 }
