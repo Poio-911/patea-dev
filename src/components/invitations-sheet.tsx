@@ -45,7 +45,6 @@ export function InvitationsSheet() {
     if (!firestore || !user) return;
     setProcessingId(invitation.id);
     
-    // Extract matchId from the invitation's document path
     const matchId = invitation.matchId;
     if (!matchId) {
         toast({ variant: 'destructive', title: 'Error', description: 'ID de partido no válido en la invitación.' });
@@ -135,8 +134,6 @@ export function InvitationsSheet() {
                 <div className="space-y-4 py-4">
                 {invitations.map(invitation => {
                     const isProcessing = processingId === invitation.id;
-                    const matchId = invitation.id.split('/invitations/')[0].split('/').pop();
-
                     return (
                         <Card key={invitation.id}>
                             <CardHeader>
