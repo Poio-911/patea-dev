@@ -162,17 +162,17 @@ function DashboardContent() {
                                 
                                 return (
                                     <div key={match.id}>
-                                        <div className="flex justify-between items-start">
-                                            <div>
+                                        <div className="flex justify-between items-start gap-4">
+                                            <div className="flex-1">
                                                 <p className="font-semibold">{match.title}</p>
-                                                <div className="flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
+                                                <div className="flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
                                                     <div className="flex items-center gap-1.5">
                                                         <Calendar className="h-3.5 w-3.5" />
                                                         <span>{format(new Date(match.date), "d MMM, yyyy", { locale: es })}</span>
                                                     </div>
                                                     <div className="flex items-center gap-1.5">
                                                         <MapPin className="h-3.5 w-3.5" />
-                                                        <span className="truncate max-w-xs">{match.location.name}</span>
+                                                        <span>{match.location.name}</span>
                                                     </div>
                                                      <div className="flex items-center gap-1.5">
                                                         <User className="h-3.5 w-3.5" />
@@ -180,7 +180,7 @@ function DashboardContent() {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <Badge variant="outline" className={cn("text-xs", statusInfo.className)}>{statusInfo.label}</Badge>
+                                            <Badge variant="outline" className={cn("text-xs shrink-0", statusInfo.className)}>{statusInfo.label}</Badge>
                                         </div>
                                         {index < recentMatches.length - 1 && <Separator className="mt-4" />}
                                     </div>
@@ -255,5 +255,3 @@ export default function DashboardPage() {
         </Suspense>
     )
 }
-
-    
