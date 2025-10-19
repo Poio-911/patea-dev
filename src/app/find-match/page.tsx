@@ -13,7 +13,7 @@ import { MatchMarker } from '@/components/match-marker';
 import { libraries } from '@/lib/google-maps';
 import { mapStyles } from '@/lib/map-styles';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { format, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -35,7 +35,6 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DialogFooter } from '@/components/ui/dialog';
 
 
 const containerStyle = {
@@ -311,14 +310,14 @@ export default function FindMatchPage() {
 
     if (!matchSearchCompleted) {
       return (
-        <Card className="h-full flex flex-col">
+        <Card>
             <CardHeader>
                 <CardTitle className="text-center">Encontrá Partidos Cerca Tuyo</CardTitle>
                 <CardDescription className="text-center">
                     Ajusta los filtros y dale al botón para encontrar partidos públicos.
                 </CardDescription>
             </CardHeader>
-             <CardContent className="flex-grow overflow-y-auto p-4 md:p-6">
+             <CardContent className="p-4 md:p-6">
                 <div className="w-full space-y-6">
                     <div>
                         <div className="flex justify-between font-medium mb-1">
@@ -351,12 +350,12 @@ export default function FindMatchPage() {
                     </div>
                 </div>
             </CardContent>
-            <DialogFooter className="mt-auto p-4 border-t">
+            <CardFooter className="p-4 border-t">
                 <Button onClick={handleSearchNearby} disabled={isSearching} size="lg" className="w-full">
                     {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LocateFixed className="mr-2 h-5 w-5" />}
                     {isSearching ? 'Buscando...' : 'Buscar Partidos Cercanos'}
                 </Button>
-            </DialogFooter>
+            </CardFooter>
         </Card>
       );
     }
@@ -421,14 +420,14 @@ export default function FindMatchPage() {
     }
 
     const initialView = (
-        <Card className="h-full flex flex-col">
+        <Card>
             <CardHeader>
                 <CardTitle className="text-center">Encontrá Jugadores Libres</CardTitle>
                 <CardDescription className="text-center">
                     Selecciona un partido y ajusta los filtros para encontrar el jugador que te falta.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow overflow-y-auto p-4 md:p-6">
+            <CardContent className="p-4 md:p-6">
                 <div className="w-full space-y-6">
                     <div>
                         <Label htmlFor='match-select-player-search'>Partido a completar</Label>
@@ -467,7 +466,7 @@ export default function FindMatchPage() {
                     </div>
                 </div>
             </CardContent>
-             <DialogFooter className="mt-auto p-4 border-t">
+             <CardFooter className="p-4 border-t">
                 <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-4">
                     <Button onClick={applyPlayerFilters} size="lg" disabled={isSearching || !playerSearchMatchId} className="w-full sm:w-auto">
                         {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
@@ -475,7 +474,7 @@ export default function FindMatchPage() {
                     </Button>
                      <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
                 </div>
-            </DialogFooter>
+            </CardFooter>
         </Card>
     );
 
