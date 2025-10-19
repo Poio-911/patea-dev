@@ -35,6 +35,7 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DialogFooter } from '@/components/ui/dialog';
 
 
 const containerStyle = {
@@ -317,8 +318,8 @@ export default function FindMatchPage() {
                     Ajusta los filtros y dale al botón para encontrar partidos públicos.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow overflow-y-auto">
-                <div className="w-full px-1 space-y-6">
+             <CardContent className="flex-grow overflow-y-auto p-4 md:p-6">
+                <div className="w-full space-y-6">
                     <div>
                         <div className="flex justify-between font-medium mb-1">
                             <Label>Radio de Búsqueda:</Label>
@@ -427,8 +428,8 @@ export default function FindMatchPage() {
                     Selecciona un partido y ajusta los filtros para encontrar el jugador que te falta.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow overflow-y-auto">
-                <div className="w-full px-1 space-y-6">
+            <CardContent className="flex-grow overflow-y-auto p-4 md:p-6">
+                <div className="w-full space-y-6">
                     <div>
                         <Label htmlFor='match-select-player-search'>Partido a completar</Label>
                         <Select onValueChange={setPlayerSearchMatchId} value={playerSearchMatchId || ''}>
