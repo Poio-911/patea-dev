@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -50,7 +51,7 @@ export function NextMatchCard({ match }: NextMatchCardProps) {
            <InfoRow icon={Navigation}>
                 <Button asChild variant="link" className="p-0 h-auto -ml-1 text-sm">
                     <Link href={googleMapsUrl} target="_blank" rel="noopener noreferrer">
-                       Ir a la cancha en Google Maps
+                       Ir a la cancha
                     </Link>
                 </Button>
            </InfoRow>

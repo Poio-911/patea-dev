@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
@@ -125,6 +126,7 @@ const CompactPlayerCard = ({ player, onHover, isActive, userMatches, selectedMat
                         playerToInvite={player}
                         userMatches={userMatches}
                         match={selectedMatchForInvite}
+                        availablePlayers={null}
                      >
                         <Button variant="default" size="sm" className="h-7 px-2 text-xs w-full" disabled={!user || !selectedMatchForInvite}>
                             Invitar
@@ -323,7 +325,7 @@ export default function FindMatchPage() {
                         Ajusta los filtros y dale al botón para encontrar partidos públicos.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center gap-6">
+                <CardContent className="flex flex-col items-center gap-6 pb-20">
                     <div className="w-full px-4 space-y-6">
                         <div>
                             <div className="flex justify-between font-medium mb-1">
@@ -378,7 +380,7 @@ export default function FindMatchPage() {
                     </CardHeader>
                     <CardContent className="p-2">
                         <ScrollArea className="h-[calc(100vh-20rem)] lg:h-full">
-                            <div className="space-y-2 p-1 pb-20">
+                            <div className="space-y-2 p-1">
                                 {filteredMatches.length > 0 ? filteredMatches.map((match) => (
                                 <div id={`match-card-${match.id}`} key={match.id}>
                                     <CompactMatchCard
@@ -433,7 +435,7 @@ export default function FindMatchPage() {
                         Selecciona un partido y ajusta los filtros para encontrar el jugador que te falta.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center gap-6">
+                <CardContent className="flex flex-col items-center gap-6 pb-20">
                      <div className="w-full px-4 space-y-6">
                          <div>
                             <Label htmlFor='match-select-player-search'>Partido a completar</Label>
@@ -499,7 +501,7 @@ export default function FindMatchPage() {
                     </CardHeader>
                     <CardContent className="p-2">
                         <ScrollArea className="h-[calc(100vh-20rem)] lg:h-full">
-                            <div className="space-y-2 p-1 pb-20">
+                            <div className="space-y-2 p-1">
                                 {filteredPlayers && filteredPlayers.length > 0 ? filteredPlayers.map((player) => (
                                 <div id={`player-card-${player.uid}`} key={player.uid}>
                                     <CompactPlayerCard
