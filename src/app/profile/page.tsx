@@ -6,7 +6,7 @@ import { useUser, useFirestore, initializeFirebase } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { doc, collection, query, where, writeBatch } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { Loader2, Upload, Settings, UserRound, CaseSensitive } from 'lucide-react';
+import { Upload, Settings, UserRound, CaseSensitive, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Player, Match, AvailablePlayer } from '@/lib/types';
@@ -26,6 +26,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { SetAvailabilityDialog } from '@/components/set-availability-dialog';
+import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 
 
 export default function ProfilePage() {
