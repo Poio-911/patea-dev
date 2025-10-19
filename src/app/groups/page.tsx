@@ -284,7 +284,8 @@ export default function GroupsPage() {
             transaction.delete(groupRef);
 
             // Update user's activeGroupId if it was the deleted one
-            if (user.activeGroupId === deletingGroupId) {
+            const userDoc = await transaction.get(doc(firestore, 'users', user.uid));
+            if (userDoc.exists() && userDoc.data().activeGroupId === deletingGroupId) {
                 const userRef = doc(firestore, 'users', user.uid);
                 const remainingGroups = groups?.filter(g => g.id !== deletingGroupId);
                 const newActiveGroupId = remainingGroups && remainingGroups.length > 0 ? remainingGroups[0].id : null;
@@ -301,7 +302,7 @@ export default function GroupsPage() {
         setIsDeleting(false);
     }
   };
-  
+
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
@@ -335,7 +336,7 @@ export default function GroupsPage() {
                                                 </DropdownMenuItem>
                                                 <DropdownMenuSeparator />
                                                 <AlertDialogTrigger asChild>
-                                                    <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                                    <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive">
                                                         <Trash2 className="mr-2 h-4 w-4" /> Eliminar Grupo
                                                     </DropdownMenuItem>
                                                 </AlertDialogTrigger>
