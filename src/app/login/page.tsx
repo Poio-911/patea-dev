@@ -120,12 +120,7 @@ export default function LoginPage() {
                         name="password"
                         render={({ field }) => (
                             <FormItem>
-                                <div className="flex items-center justify-between">
-                                    <FormLabel>Contraseña</FormLabel>
-                                    <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
-                                        ¿Olvidaste tu contraseña?
-                                    </Link>
-                                </div>
+                                <FormLabel>Contraseña</FormLabel>
                                 <FormControl>
                                     <Input type="password" placeholder="********" {...field} />
                                 </FormControl>
@@ -138,6 +133,11 @@ export default function LoginPage() {
                     </Button>
                 </form>
             </Form>
+            <div className="mt-4 text-center">
+                <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+                    ¿Olvidaste tu contraseña?
+                </Link>
+            </div>
             <Separator className="my-6" />
             <Button onClick={handleGoogleLogin} variant="outline" className="w-full" disabled={isGoogleLoading}>
                 {isGoogleLoading ? 'Cargando...' : 'Continuar con Google'}
