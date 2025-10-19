@@ -315,51 +315,53 @@ export default function FindMatchPage() {
 
     if (!matchSearchCompleted) {
       return (
-        <Card className="max-w-xl mx-auto mt-8">
-            <CardHeader>
-                <CardTitle className="text-center">Encontrá Partidos Cerca Tuyo</CardTitle>
-                <CardDescription className="text-center">
-                    Ajusta los filtros y dale al botón para encontrar partidos públicos.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center gap-6">
-                <div className="w-full px-4 space-y-6">
-                    <div>
-                        <div className="flex justify-between font-medium mb-1">
-                            <Label>Radio de Búsqueda:</Label>
-                            <span className="text-primary">{searchRadius} km</span>
+        <ScrollArea className="h-full">
+            <Card className="max-w-xl mx-auto">
+                <CardHeader>
+                    <CardTitle className="text-center">Encontrá Partidos Cerca Tuyo</CardTitle>
+                    <CardDescription className="text-center">
+                        Ajusta los filtros y dale al botón para encontrar partidos públicos.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center gap-6">
+                    <div className="w-full px-4 space-y-6">
+                        <div>
+                            <div className="flex justify-between font-medium mb-1">
+                                <Label>Radio de Búsqueda:</Label>
+                                <span className="text-primary">{searchRadius} km</span>
+                            </div>
+                            <Slider value={[searchRadius]} onValueChange={(value) => setSearchRadius(value[0])} max={50} step={1} disabled={isSearching} />
                         </div>
-                        <Slider value={[searchRadius]} onValueChange={(value) => setSearchRadius(value[0])} max={50} step={1} disabled={isSearching} />
+                        <div>
+                          <Label className="font-medium">Fecha del Partido</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal mt-1', !matchDateFilter && 'text-muted-foreground')}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {matchDateFilter ? format(matchDateFilter, 'PPP', { locale: es }) : <span>Cualquier fecha</span>}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <CalendarPicker mode="single" selected={matchDateFilter} onSelect={setMatchDateFilter} initialFocus locale={es} />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                         <div>
+                            <Label className="font-medium">Tamaño del Partido</Label>
+                            <ToggleGroup type="multiple" value={matchSizeFilter} onValueChange={setMatchSizeFilter} variant="outline" className="justify-start mt-1">
+                                <ToggleGroupItem value="10">Fútbol 5</ToggleGroupItem>
+                                <ToggleGroupItem value="14">Fútbol 7</ToggleGroupItem>
+                                <ToggleGroupItem value="22">Fútbol 11</ToggleGroupItem>
+                            </ToggleGroup>
+                        </div>
                     </div>
-                    <div>
-                      <Label className="font-medium">Fecha del Partido</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal mt-1', !matchDateFilter && 'text-muted-foreground')}>
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {matchDateFilter ? format(matchDateFilter, 'PPP', { locale: es }) : <span>Cualquier fecha</span>}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <CalendarPicker mode="single" selected={matchDateFilter} onSelect={setMatchDateFilter} initialFocus locale={es} />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                     <div>
-                        <Label className="font-medium">Tamaño del Partido</Label>
-                        <ToggleGroup type="multiple" value={matchSizeFilter} onValueChange={setMatchSizeFilter} variant="outline" className="justify-start mt-1">
-                            <ToggleGroupItem value="10">Fútbol 5</ToggleGroupItem>
-                            <ToggleGroupItem value="14">Fútbol 7</ToggleGroupItem>
-                            <ToggleGroupItem value="22">Fútbol 11</ToggleGroupItem>
-                        </ToggleGroup>
-                    </div>
-                </div>
-                <Button onClick={handleSearchNearby} disabled={isSearching} size="lg">
-                    {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LocateFixed className="mr-2 h-5 w-5" />}
-                    {isSearching ? 'Buscando...' : 'Buscar Partidos Cercanos'}
-                </Button>
-            </CardContent>
-        </Card>
+                    <Button onClick={handleSearchNearby} disabled={isSearching} size="lg">
+                        {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LocateFixed className="mr-2 h-5 w-5" />}
+                        {isSearching ? 'Buscando...' : 'Buscar Partidos Cercanos'}
+                    </Button>
+                </CardContent>
+            </Card>
+        </ScrollArea>
       );
     }
 
@@ -375,7 +377,7 @@ export default function FindMatchPage() {
                         </Button>
                     </CardHeader>
                     <CardContent className="p-2">
-                        <ScrollArea className="h-full max-h-[60vh] lg:max-h-full">
+                        <ScrollArea className="h-[calc(100vh-20rem)] lg:h-full">
                             <div className="space-y-2 p-1">
                                 {filteredMatches.length > 0 ? filteredMatches.map((match) => (
                                 <div id={`match-card-${match.id}`} key={match.id}>
@@ -423,60 +425,62 @@ export default function FindMatchPage() {
     }
 
     const initialView = (
-        <Card className="max-w-xl mx-auto mt-8">
-            <CardHeader>
-                <CardTitle className="text-center">Encontrá Jugadores Libres</CardTitle>
-                <CardDescription className="text-center">
-                    Selecciona un partido y ajusta los filtros para encontrar el jugador que te falta.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center gap-6">
-                 <div className="w-full px-4 space-y-6">
-                     <div>
-                        <Label htmlFor='match-select-player-search'>Partido a completar</Label>
-                        <Select onValueChange={setPlayerSearchMatchId} value={playerSearchMatchId || ''}>
-                          <SelectTrigger id="match-select-player-search" className='mt-1'>
-                            <SelectValue placeholder="Elige un partido..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableMatchesForInvite.length > 0 ? (
-                                availableMatchesForInvite.map(match => (
-                                  <SelectItem key={match.id} value={match.id}>
-                                    {match.title} ({match.players.length}/{match.matchSize})
-                                  </SelectItem>
-                                ))
-                            ) : (
-                                <div className="p-4 text-center text-sm text-muted-foreground">No tienes partidos que necesiten jugadores.</div>
-                            )}
-                          </SelectContent>
-                        </Select>
-                    </div>
-                    <div className={cn(!playerSearchMatchId && "opacity-50 pointer-events-none")}>
-                        <Label className="font-medium">Posición</Label>
-                        <ToggleGroup type="multiple" value={playerPositionFilter} onValueChange={setPlayerPositionFilter} variant="outline" className="justify-start mt-1 flex-wrap">
-                            <ToggleGroupItem value="POR">POR</ToggleGroupItem>
-                            <ToggleGroupItem value="DEF">DEF</ToggleGroupItem>
-                            <ToggleGroupItem value="MED">MED</ToggleGroupItem>
-                            <ToggleGroupItem value="DEL">DEL</ToggleGroupItem>
-                        </ToggleGroup>
-                    </div>
-                    <div className={cn(!playerSearchMatchId && "opacity-50 pointer-events-none")}>
-                        <div className="flex justify-between font-medium mb-1">
-                            <Label>Rango de OVR:</Label>
-                            <span className="text-primary">{playerOvrFilter[0]} - {playerOvrFilter[1]}</span>
+        <ScrollArea className="h-full">
+            <Card className="max-w-xl mx-auto">
+                <CardHeader>
+                    <CardTitle className="text-center">Encontrá Jugadores Libres</CardTitle>
+                    <CardDescription className="text-center">
+                        Selecciona un partido y ajusta los filtros para encontrar el jugador que te falta.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center gap-6">
+                     <div className="w-full px-4 space-y-6">
+                         <div>
+                            <Label htmlFor='match-select-player-search'>Partido a completar</Label>
+                            <Select onValueChange={setPlayerSearchMatchId} value={playerSearchMatchId || ''}>
+                              <SelectTrigger id="match-select-player-search" className='mt-1'>
+                                <SelectValue placeholder="Elige un partido..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableMatchesForInvite.length > 0 ? (
+                                    availableMatchesForInvite.map(match => (
+                                      <SelectItem key={match.id} value={match.id}>
+                                        {match.title} ({match.players.length}/{match.matchSize})
+                                      </SelectItem>
+                                    ))
+                                ) : (
+                                    <div className="p-4 text-center text-sm text-muted-foreground">No tienes partidos que necesiten jugadores.</div>
+                                )}
+                              </SelectContent>
+                            </Select>
                         </div>
-                        <Slider value={playerOvrFilter} onValueChange={(value) => setPlayerOvrFilter(value as [number, number])} min={40} max={99} step={1} />
+                        <div className={cn(!playerSearchMatchId && "opacity-50 pointer-events-none")}>
+                            <Label className="font-medium">Posición</Label>
+                            <ToggleGroup type="multiple" value={playerPositionFilter} onValueChange={setPlayerPositionFilter} variant="outline" className="justify-start mt-1 flex-wrap">
+                                <ToggleGroupItem value="POR">POR</ToggleGroupItem>
+                                <ToggleGroupItem value="DEF">DEF</ToggleGroupItem>
+                                <ToggleGroupItem value="MED">MED</ToggleGroupItem>
+                                <ToggleGroupItem value="DEL">DEL</ToggleGroupItem>
+                            </ToggleGroup>
+                        </div>
+                        <div className={cn(!playerSearchMatchId && "opacity-50 pointer-events-none")}>
+                            <div className="flex justify-between font-medium mb-1">
+                                <Label>Rango de OVR:</Label>
+                                <span className="text-primary">{playerOvrFilter[0]} - {playerOvrFilter[1]}</span>
+                            </div>
+                            <Slider value={playerOvrFilter} onValueChange={(value) => setPlayerOvrFilter(value as [number, number])} min={40} max={99} step={1} />
+                        </div>
                     </div>
-                </div>
-                <div className="w-full px-4 flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <Button onClick={applyPlayerFilters} size="lg" disabled={isSearching || !playerSearchMatchId} className="w-full sm:w-auto">
-                        {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
-                        {isSearching ? 'Buscando...' : 'Buscar Jugadores'}
-                    </Button>
-                     <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
-                </div>
-            </CardContent>
-        </Card>
+                    <div className="w-full px-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <Button onClick={applyPlayerFilters} size="lg" disabled={isSearching || !playerSearchMatchId} className="w-full sm:w-auto">
+                            {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
+                            {isSearching ? 'Buscando...' : 'Buscar Jugadores'}
+                        </Button>
+                         <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
+                    </div>
+                </CardContent>
+            </Card>
+        </ScrollArea>
     );
 
     if (!playerSearchCompleted) {
@@ -484,60 +488,58 @@ export default function FindMatchPage() {
     }
 
     return (
-        <div className="flex flex-col h-full gap-4">
-             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-grow">
-                <div className="lg:col-span-1 h-full flex flex-col gap-4">
-                    <Card>
-                        <CardHeader className="p-4 flex-row items-center justify-between">
-                            <CardTitle className="text-lg">Jugadores Encontrados ({filteredPlayers?.length || 0})</CardTitle>
-                             <Button variant="ghost" size="icon" onClick={() => setPlayerSearchCompleted(false)}>
-                                <SlidersHorizontal className="h-4 w-4" />
-                            </Button>
-                        </CardHeader>
-                        <CardContent className="p-2">
-                            <ScrollArea className="h-full max-h-[60vh] lg:max-h-full">
-                                <div className="space-y-2 p-1">
-                                    {filteredPlayers && filteredPlayers.length > 0 ? filteredPlayers.map((player) => (
-                                    <div id={`player-card-${player.uid}`} key={player.uid}>
-                                        <CompactPlayerCard
-                                            player={player}
-                                            onHover={setActiveMarker}
-                                            isActive={activeMarker === player.uid}
-                                            userMatches={availableMatchesForInvite}
-                                            selectedMatchForInvite={selectedMatchForInvite}
-                                        />
-                                    </div>
-                                    )) : (
-                                        <Alert className="m-2">
-                                            <AlertTitle>Sin resultados</AlertTitle>
-                                            <AlertDescription>
-                                                No hay jugadores que coincidan con tus filtros. Prueba cambiando los criterios.
-                                            </AlertDescription>
-                                        </Alert>
-                                    )}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
+            <div className="lg:col-span-1 h-full flex flex-col gap-4">
+                <Card>
+                    <CardHeader className="p-4 flex-row items-center justify-between">
+                        <CardTitle className="text-lg">Jugadores Encontrados ({filteredPlayers?.length || 0})</CardTitle>
+                         <Button variant="ghost" size="icon" onClick={() => setPlayerSearchCompleted(false)}>
+                            <SlidersHorizontal className="h-4 w-4" />
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="p-2">
+                        <ScrollArea className="h-[calc(100vh-20rem)] lg:h-full">
+                            <div className="space-y-2 p-1">
+                                {filteredPlayers && filteredPlayers.length > 0 ? filteredPlayers.map((player) => (
+                                <div id={`player-card-${player.uid}`} key={player.uid}>
+                                    <CompactPlayerCard
+                                        player={player}
+                                        onHover={setActiveMarker}
+                                        isActive={activeMarker === player.uid}
+                                        userMatches={availableMatchesForInvite}
+                                        selectedMatchForInvite={selectedMatchForInvite}
+                                    />
                                 </div>
-                            </ScrollArea>
-                        </CardContent>
-                    </Card>
-                </div>
-                <div className="lg:col-span-2 h-[400px] lg:h-full w-full rounded-lg overflow-hidden">
-                    {isLoaded ? (
-                        <GoogleMap
-                            mapContainerStyle={containerStyle}
-                            center={defaultCenter}
-                            zoom={12}
-                            options={{ styles: mapStyles, disableDefaultUI: true, zoomControl: true }}
-                        >
-                            {filteredPlayers?.map(player => (
-                                <PlayerMarker key={player.uid} player={player} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} />
-                            ))}
-                        </GoogleMap>
-                    ) : (
-                        <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted">
-                            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                        </div>
-                    )}
-                </div>
+                                )) : (
+                                    <Alert className="m-2">
+                                        <AlertTitle>Sin resultados</AlertTitle>
+                                        <AlertDescription>
+                                            No hay jugadores que coincidan con tus filtros. Prueba cambiando los criterios.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+                            </div>
+                        </ScrollArea>
+                    </CardContent>
+                </Card>
+            </div>
+            <div className="lg:col-span-2 h-[400px] lg:h-full w-full rounded-lg overflow-hidden">
+                {isLoaded ? (
+                    <GoogleMap
+                        mapContainerStyle={containerStyle}
+                        center={defaultCenter}
+                        zoom={12}
+                        options={{ styles: mapStyles, disableDefaultUI: true, zoomControl: true }}
+                    >
+                        {filteredPlayers?.map(player => (
+                            <PlayerMarker key={player.uid} player={player} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} />
+                        ))}
+                    </GoogleMap>
+                ) : (
+                    <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted">
+                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                    </div>
+                )}
             </div>
         </div>
     );
