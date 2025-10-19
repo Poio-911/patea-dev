@@ -14,10 +14,7 @@ import { getFirestore as getAdminFirestore, FieldValue } from 'firebase-admin/fi
 import { initializeApp, getApps, App as AdminApp } from 'firebase-admin/app';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getStorage as getAdminStorage } from 'firebase-admin/storage';
-import { getFirestore, doc, collection, getDocs, where, query, getDoc, writeBatch, updateDoc, increment } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase';
-import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { getAuth, updateProfile } from 'firebase/auth';
+
 
 let adminApp: AdminApp;
 if (!getApps().length) {
@@ -29,18 +26,6 @@ if (!getApps().length) {
 const adminDb = getAdminFirestore(adminApp);
 const adminAuth = getAdminAuth(adminApp);
 const adminStorage = getAdminStorage(adminApp).bucket('mil-disculpis.appspot.com');
-
-
-// This approach uses the Client SDK on the server, which is not standard.
-// For robust applications, using the Firebase Admin SDK is the recommended practice.
-function getClientFirebase() {
-    const { firebaseApp } = initializeFirebase();
-    const firestore = getFirestore(firebaseApp);
-    const auth = getAuth(firebaseApp);
-    const storage = getStorage(firebaseApp);
-    return { firestore, auth, storage };
-}
-
 
 export async function generateTeamsAction(players: Player[]) {
   if (!players || players.length < 2) {
@@ -189,7 +174,6 @@ export async function generatePlayerCardImageAction(userId: string) {
             return { error: "Primero debes subir una foto de perfil." };
         }
         
-        // This check was too broad. Now it only checks for the placeholder domain.
         if (player.photoUrl.includes('picsum.photos')) {
             return { error: "La generación de imágenes no funciona con fotos de marcador de posición. Por favor, sube una foto tuya real." };
         }
@@ -223,7 +207,7 @@ export async function generatePlayerCardImageAction(userId: string) {
 
         const availablePlayerRef = adminDb.doc(`availablePlayers/${userId}`);
         const availablePlayerSnap = await availablePlayerRef.get();
-        if (availablePlayerSnap.exists()) {
+        if (availablePlayerSnap.exists) {
             batch.update(availablePlayerRef, { photoUrl: newPhotoURL });
         }
 
