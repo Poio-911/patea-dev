@@ -23,6 +23,70 @@ import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 
+interface InvitationCardProps {
+    invitation: Invitation;
+    onAction: (invitation: Invitation, accepted: boolean) => void;
+    isProcessing: boolean;
+}
+
+function InvitationCard({ invitation, onAction, isProcessing }: InvitationCardProps) {
+    const firestore = useFirestore();
+    const [matchInfo, setMatchInfo] = useState<{ title: string; date: string | null }>({
+        title: invitation.matchTitle || 'Cargando...',
+        date: invitation.matchDate || null,
+    });
+    const [isLoadingInfo, setIsLoadingInfo] = useState(false);
+
+    useEffect(() => {
+        const fetchMatchInfoIfNeeded = async () => {
+            if ((!invitation.matchTitle || !invitation.matchDate) && invitation.matchId && firestore) {
+                setIsLoadingInfo(true);
+                try {
+                    const matchRef = doc(firestore, 'matches', invitation.matchId);
+                    const matchSnap = await getDoc(matchRef);
+                    if (matchSnap.exists()) {
+                        const matchData = matchSnap.data() as Match;
+                        setMatchInfo({
+                            title: matchData.title,
+                            date: matchData.date,
+                        });
+                    } else {
+                         setMatchInfo({ title: 'Partido no encontrado', date: null });
+                    }
+                } catch (error) {
+                    console.error("Error fetching match info for old invitation:", error);
+                    setMatchInfo({ title: 'Error al cargar partido', date: null });
+                } finally {
+                    setIsLoadingInfo(false);
+                }
+            }
+        };
+
+        fetchMatchInfoIfNeeded();
+    }, [invitation, firestore]);
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>{isLoadingInfo ? <Loader2 className="h-4 w-4 animate-spin"/> : matchInfo.title}</CardTitle>
+                <CardDescription>
+                    {matchInfo.date ? format(new Date(matchInfo.date), "EEEE, d 'de' MMMM, yyyy", { locale: es }) : "Fecha no disponible"}
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-center justify-end gap-2">
+                <Button size="sm" variant="destructive" onClick={() => onAction(invitation, false)} disabled={isProcessing}>
+                    {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : <X className="h-4 w-4" />}
+                    <span className="ml-2">Rechazar</span>
+                </Button>
+                <Button size="sm" variant="default" onClick={() => onAction(invitation, true)} disabled={isProcessing}>
+                    {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Check className="h-4 w-4" />}
+                    <span className="ml-2">Aceptar</span>
+                </Button>
+            </CardContent>
+        </Card>
+    );
+}
+
 export function InvitationsSheet() {
   const { user } = useUser();
   const firestore = useFirestore();
@@ -52,6 +116,7 @@ export function InvitationsSheet() {
         return;
     }
     
+    // The path to an invitation is inside its match document.
     const invitationRef = doc(firestore, 'matches', matchId, 'invitations', invitation.id);
 
     try {
@@ -132,29 +197,14 @@ export function InvitationsSheet() {
           ) : hasInvitations ? (
             <ScrollArea className="h-full pr-4">
                 <div className="space-y-4 py-4">
-                {invitations.map(invitation => {
-                    const isProcessing = processingId === invitation.id;
-                    return (
-                        <Card key={invitation.id}>
-                            <CardHeader>
-                                <CardTitle>{invitation.matchTitle}</CardTitle>
-                                <CardDescription>
-                                    {invitation.matchDate ? format(new Date(invitation.matchDate), "EEEE, d 'de' MMMM, yyyy", { locale: es }) : "Fecha no disponible"}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex items-center justify-end gap-2">
-                                <Button size="sm" variant="destructive" onClick={() => handleInvitation(invitation, false)} disabled={isProcessing}>
-                                    {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : <X className="h-4 w-4" />}
-                                    <span className="ml-2">Rechazar</span>
-                                </Button>
-                                <Button size="sm" variant="default" onClick={() => handleInvitation(invitation, true)} disabled={isProcessing}>
-                                    {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Check className="h-4 w-4" />}
-                                    <span className="ml-2">Aceptar</span>
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    )
-                })}
+                {invitations.map(invitation => (
+                    <InvitationCard
+                        key={invitation.id}
+                        invitation={invitation}
+                        onAction={handleInvitation}
+                        isProcessing={processingId === invitation.id}
+                    />
+                ))}
                 </div>
             </ScrollArea>
           ) : (
