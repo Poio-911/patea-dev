@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Goal, Users2, User, BellRing, HelpCircle, CheckCircle } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings, Users2, User, BellRing, HelpCircle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -122,7 +122,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <Goal className="h-12 w-12 animate-spin text-primary" />
+        <SoccerPlayerIcon className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }

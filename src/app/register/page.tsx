@@ -5,7 +5,6 @@ import { useUser, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Goal } from 'lucide-react';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { useForm, Controller } from 'react-hook-form';
@@ -20,6 +19,7 @@ import { writeBatch, collection, doc } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { nanoid } from 'nanoid';
 import type { Group } from '@/lib/types';
+import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 
 
 const registerSchema = z.object({
@@ -131,7 +131,7 @@ export default function RegisterPage() {
   if (loading || user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <Goal className="h-12 w-12 animate-spin text-primary" />
+        <SoccerPlayerIcon className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
@@ -141,7 +141,7 @@ export default function RegisterPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
             <div className="flex justify-center items-center gap-4 mb-4">
-                <Goal className="h-12 w-12 text-primary" />
+                <SoccerPlayerIcon className="h-12 w-12 text-primary" />
                 <div>
                     <CardTitle className="text-3xl font-bold font-headline">Crear Cuenta en Pateá</CardTitle>
                     <CardDescription>Armá tu perfil para empezar a jugar.</CardDescription>

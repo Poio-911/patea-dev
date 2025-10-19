@@ -5,7 +5,6 @@ import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Goal } from 'lucide-react';
 import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { useForm } from 'react-hook-form';
@@ -17,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
+import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 
 const loginSchema = z.object({
     email: z.string().email('Por favor, introduce un correo electrónico válido.'),
@@ -80,7 +80,7 @@ export default function LoginPage() {
   if (loading || user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <Goal className="h-12 w-12 animate-spin text-primary" />
+        <SoccerPlayerIcon className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
@@ -88,13 +88,13 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-             <div className="flex justify-center items-center gap-4 mb-4">
-                <Goal className="h-12 w-12 text-primary" />
-                <div>
-                    <CardTitle className="text-3xl font-bold font-headline">Pateá</CardTitle>
-                    <CardDescription>Inicia sesión para continuar</CardDescription>
-                </div>
+        <CardHeader className="text-center space-y-4">
+            <div className="flex justify-center items-center gap-4">
+                <SoccerPlayerIcon className="h-16 w-16 text-primary" />
+            </div>
+            <div className='space-y-1'>
+                <CardTitle className="text-5xl font-bold font-headline">Pateá</CardTitle>
+                <CardDescription>Inicia sesión para continuar</CardDescription>
             </div>
         </CardHeader>
         <CardContent>
