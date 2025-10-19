@@ -424,7 +424,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 <div className="grid grid-cols-1 gap-y-3">
                     <InfoRow icon={Calendar} text={match.date ? format(new Date(match.date), 'E, d MMM, yyyy', { locale: es }) : 'Fecha no definida'} />
                     <InfoRow icon={Clock} text={match.time} />
-                    <InfoRow icon={MapPin} text={match.location.name} />
+                    <InfoRow icon={MapPin} text={match.location.name || match.location.address} />
                 </div>
                 
                 {WeatherIcon && match.weather && (
