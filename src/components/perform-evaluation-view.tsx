@@ -410,5 +410,3 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
     </div>
   )
 }
-
-    

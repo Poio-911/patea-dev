@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useParams } from 'next/navigation';
 import PerformEvaluationView from '@/components/perform-evaluation-view';
+import { useParams } from 'next/navigation';
 
 export default function PerformEvaluationPage() {
   const { matchId } = useParams();

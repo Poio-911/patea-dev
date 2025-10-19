@@ -151,7 +151,7 @@ A continuación se detallan las funcionalidades clave que hemos construido:
         -   **Descripción**: Almacena las tareas de evaluación generadas al finalizar un partido (quién evalúa a quién).
     -   **Subcolección: `/matches/{matchId}/invitations/{invitationId}`**
         -   **Descripción**: Aquí se guardan todas las invitaciones enviadas a jugadores para unirse a este partido específico. Cada documento contiene el ID del jugador invitado y el estado de la invitación (pendiente, aceptada, rechazada).
-    -   **Subcolección: `/matches/{matchId}/selfEvaluations/{userId}`**
+    -   **Subcolelección: `/matches/{matchId}/selfEvaluations/{userId}`**
         -   **Descripción**: Guarda el auto-reporte de estadísticas de un jugador para ese partido (ej: goles).
     -   **Subcolección: `/matches/{matchId}/messages/{messageId}`**
         -   **Descripción**: Contiene todos los mensajes del chat asociado a este partido.
