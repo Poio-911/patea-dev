@@ -6,11 +6,11 @@ export async function generatePlayerCardImage(photoDataUri: string): Promise<str
         model: 'googleai/gemini-2.5-flash-image-preview',
         prompt: [
           { media: { url: photoDataUri, contentType: 'image/jpeg' } },
-          { text: 'Generate a professional studio portrait of the same person from the reference image. Preserve the person’s distinct facial features, expression, and skin tone, so it’s clearly the same individual — but recreate the portrait naturally, not by copying the photo directly. The person should be facing forward with arms crossed, in a confident, professional posture as if posing for a corporate or studio headshot. Use soft, balanced studio lighting, sharp focus, and photorealistic quality. The background must be completely transparent (alpha channel). Export the image as a high-resolution PNG with transparent background.' },
+          { text: 'Create a professional studio portrait of the same person from the reference image. Recreate their facial structure, skin tone, and expression so it clearly represents the same individual, but as a natural reinterpretation, not a direct copy. The person should be facing forward with arms crossed, wearing a random modern football (soccer) jersey (any color or design). Use soft studio lighting, realistic shadows on the person only, and no visible background. Render with an actual transparent background (alpha channel) — not simulated transparency — and export as a real PNG with alpha channel. There must be no white, gray, black, or colored background, and no shadows extending outside the person. The final output must be a high-resolution PNG with a real transparent background.' },
         ],
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
-          negativePrompt: 'blurry, distorted face, disfigured, bad lighting, low quality, duplicate, unnatural proportions, cartoon, overexposed, watermark, compression artifacts, background, shadows, jpeg artifacts'
+          negativePrompt: 'solid background, fake transparency, white background, black background, gray background, colored backdrop, halo, glow, frame, floor, shadow on background, border, watermark, text, blur, low quality'
         },
     });
 
