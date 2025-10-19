@@ -133,12 +133,15 @@ export default function LoginPage() {
                     </Button>
                 </form>
             </Form>
-            <div className="mt-4 text-center">
-                <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+            
+            <div className="mt-4 text-center text-sm">
+                <Link href="/forgot-password" className="font-medium text-primary hover:underline">
                     ¿Olvidaste tu contraseña?
                 </Link>
             </div>
+
             <Separator className="my-6" />
+
             <Button onClick={handleGoogleLogin} variant="outline" className="w-full" disabled={isGoogleLoading}>
                 {isGoogleLoading ? 'Cargando...' : 'Continuar con Google'}
             </Button>
