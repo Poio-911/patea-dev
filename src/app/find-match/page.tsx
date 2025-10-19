@@ -113,14 +113,14 @@ const CompactPlayerCard = ({ player, onHover, isActive, userMatches, selectedMat
                 </Avatar>
                 <div className="flex-1">
                     <h3 className="font-bold">{player.displayName}</h3>
-                    <div className="text-xs text-muted-foreground">Disponible desde {format(new Date(player.availableSince), "dd/MM")}</div>
+                    <div className="text-xs text-muted-foreground">Disponible</div>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                      <InvitePlayerDialog
                         playerToInvite={player}
                         userMatches={userMatches}
                         match={selectedMatchForInvite}
-                        availablePlayers={null}
+                        availablePlayers={[]}
                      >
                         <Button variant="default" size="sm" className="h-7 px-2 text-xs w-full" disabled={!user || !selectedMatchForInvite}>
                             Invitar
@@ -311,53 +311,53 @@ export default function FindMatchPage() {
 
     if (!matchSearchCompleted) {
       return (
-        <ScrollArea className="h-full">
-            <Card className="max-w-xl mx-auto">
-                <CardHeader>
-                    <CardTitle className="text-center">Encontrá Partidos Cerca Tuyo</CardTitle>
-                    <CardDescription className="text-center">
-                        Ajusta los filtros y dale al botón para encontrar partidos públicos.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center gap-6 pb-20">
-                    <div className="w-full px-4 space-y-6">
-                        <div>
-                            <div className="flex justify-between font-medium mb-1">
-                                <Label>Radio de Búsqueda:</Label>
-                                <span className="text-primary">{searchRadius} km</span>
-                            </div>
-                            <Slider value={[searchRadius]} onValueChange={(value) => setSearchRadius(value[0])} max={50} step={1} disabled={isSearching} />
+        <Card className="max-w-xl mx-auto h-full flex flex-col">
+            <CardHeader>
+                <CardTitle className="text-center">Encontrá Partidos Cerca Tuyo</CardTitle>
+                <CardDescription className="text-center">
+                    Ajusta los filtros y dale al botón para encontrar partidos públicos.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center gap-6 flex-grow overflow-y-auto pb-24">
+                <div className="w-full px-4 space-y-6">
+                    <div>
+                        <div className="flex justify-between font-medium mb-1">
+                            <Label>Radio de Búsqueda:</Label>
+                            <span className="text-primary">{searchRadius} km</span>
                         </div>
-                        <div>
-                          <Label className="font-medium">Fecha del Partido</Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal mt-1', !matchDateFilter && 'text-muted-foreground')}>
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {matchDateFilter ? format(matchDateFilter, 'PPP', { locale: es }) : <span>Cualquier fecha</span>}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                              <CalendarPicker mode="single" selected={matchDateFilter} onSelect={setMatchDateFilter} initialFocus locale={es} />
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                         <div>
-                            <Label className="font-medium">Tamaño del Partido</Label>
-                            <ToggleGroup type="multiple" value={matchSizeFilter} onValueChange={setMatchSizeFilter} variant="outline" className="justify-start mt-1">
-                                <ToggleGroupItem value="10">Fútbol 5</ToggleGroupItem>
-                                <ToggleGroupItem value="14">Fútbol 7</ToggleGroupItem>
-                                <ToggleGroupItem value="22">Fútbol 11</ToggleGroupItem>
-                            </ToggleGroup>
-                        </div>
+                        <Slider value={[searchRadius]} onValueChange={(value) => setSearchRadius(value[0])} max={50} step={1} disabled={isSearching} />
                     </div>
-                    <Button onClick={handleSearchNearby} disabled={isSearching} size="lg">
-                        {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LocateFixed className="mr-2 h-5 w-5" />}
-                        {isSearching ? 'Buscando...' : 'Buscar Partidos Cercanos'}
-                    </Button>
-                </CardContent>
-            </Card>
-        </ScrollArea>
+                    <div>
+                      <Label className="font-medium">Fecha del Partido</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal mt-1', !matchDateFilter && 'text-muted-foreground')}>
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {matchDateFilter ? format(matchDateFilter, 'PPP', { locale: es }) : <span>Cualquier fecha</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <CalendarPicker mode="single" selected={matchDateFilter} onSelect={setMatchDateFilter} initialFocus locale={es} />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                     <div>
+                        <Label className="font-medium">Tamaño del Partido</Label>
+                        <ToggleGroup type="multiple" value={matchSizeFilter} onValueChange={setMatchSizeFilter} variant="outline" className="justify-start mt-1">
+                            <ToggleGroupItem value="10">Fútbol 5</ToggleGroupItem>
+                            <ToggleGroupItem value="14">Fútbol 7</ToggleGroupItem>
+                            <ToggleGroupItem value="22">Fútbol 11</ToggleGroupItem>
+                        </ToggleGroup>
+                    </div>
+                </div>
+            </CardContent>
+            <CardContent className="mt-auto p-4 border-t">
+                <Button onClick={handleSearchNearby} disabled={isSearching} size="lg" className="w-full">
+                    {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LocateFixed className="mr-2 h-5 w-5" />}
+                    {isSearching ? 'Buscando...' : 'Buscar Partidos Cercanos'}
+                </Button>
+            </CardContent>
+        </Card>
       );
     }
 
@@ -421,62 +421,62 @@ export default function FindMatchPage() {
     }
 
     const initialView = (
-        <ScrollArea className="h-full">
-            <Card className="max-w-xl mx-auto">
-                <CardHeader>
-                    <CardTitle className="text-center">Encontrá Jugadores Libres</CardTitle>
-                    <CardDescription className="text-center">
-                        Selecciona un partido y ajusta los filtros para encontrar el jugador que te falta.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center gap-6 pb-20">
-                     <div className="w-full px-4 space-y-6">
-                         <div>
-                            <Label htmlFor='match-select-player-search'>Partido a completar</Label>
-                            <Select onValueChange={setPlayerSearchMatchId} value={playerSearchMatchId || ''}>
-                              <SelectTrigger id="match-select-player-search" className='mt-1'>
-                                <SelectValue placeholder="Elige un partido..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {availableMatchesForInvite.length > 0 ? (
-                                    availableMatchesForInvite.map(match => (
-                                      <SelectItem key={match.id} value={match.id}>
-                                        {match.title} ({match.players.length}/{match.matchSize})
-                                      </SelectItem>
-                                    ))
-                                ) : (
-                                    <div className="p-4 text-center text-sm text-muted-foreground">No tienes partidos que necesiten jugadores.</div>
-                                )}
-                              </SelectContent>
-                            </Select>
-                        </div>
-                        <div className={cn(!playerSearchMatchId && "opacity-50 pointer-events-none")}>
-                            <Label className="font-medium">Posición</Label>
-                            <ToggleGroup type="multiple" value={playerPositionFilter} onValueChange={setPlayerPositionFilter} variant="outline" className="justify-start mt-1 flex-wrap">
-                                <ToggleGroupItem value="POR">POR</ToggleGroupItem>
-                                <ToggleGroupItem value="DEF">DEF</ToggleGroupItem>
-                                <ToggleGroupItem value="MED">MED</ToggleGroupItem>
-                                <ToggleGroupItem value="DEL">DEL</ToggleGroupItem>
-                            </ToggleGroup>
-                        </div>
-                        <div className={cn(!playerSearchMatchId && "opacity-50 pointer-events-none")}>
-                            <div className="flex justify-between font-medium mb-1">
-                                <Label>Rango de OVR:</Label>
-                                <span className="text-primary">{playerOvrFilter[0]} - {playerOvrFilter[1]}</span>
-                            </div>
-                            <Slider value={playerOvrFilter} onValueChange={(value) => setPlayerOvrFilter(value as [number, number])} min={40} max={99} step={1} />
-                        </div>
+        <Card className="max-w-xl mx-auto h-full flex flex-col">
+            <CardHeader>
+                <CardTitle className="text-center">Encontrá Jugadores Libres</CardTitle>
+                <CardDescription className="text-center">
+                    Selecciona un partido y ajusta los filtros para encontrar el jugador que te falta.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow overflow-y-auto flex flex-col items-center gap-6 pb-24">
+                 <div className="w-full px-4 space-y-6">
+                     <div>
+                        <Label htmlFor='match-select-player-search'>Partido a completar</Label>
+                        <Select onValueChange={setPlayerSearchMatchId} value={playerSearchMatchId || ''}>
+                          <SelectTrigger id="match-select-player-search" className='mt-1'>
+                            <SelectValue placeholder="Elige un partido..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableMatchesForInvite.length > 0 ? (
+                                availableMatchesForInvite.map(match => (
+                                  <SelectItem key={match.id} value={match.id}>
+                                    {match.title} ({match.players.length}/{match.matchSize})
+                                  </SelectItem>
+                                ))
+                            ) : (
+                                <div className="p-4 text-center text-sm text-muted-foreground">No tienes partidos que necesiten jugadores.</div>
+                            )}
+                          </SelectContent>
+                        </Select>
                     </div>
-                    <div className="w-full px-4 flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <Button onClick={applyPlayerFilters} size="lg" disabled={isSearching || !playerSearchMatchId} className="w-full sm:w-auto">
-                            {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
-                            {isSearching ? 'Buscando...' : 'Buscar Jugadores'}
-                        </Button>
-                         <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
+                    <div className={cn(!playerSearchMatchId && "opacity-50 pointer-events-none")}>
+                        <Label className="font-medium">Posición</Label>
+                        <ToggleGroup type="multiple" value={playerPositionFilter} onValueChange={setPlayerPositionFilter} variant="outline" className="justify-start mt-1 flex-wrap">
+                            <ToggleGroupItem value="POR">POR</ToggleGroupItem>
+                            <ToggleGroupItem value="DEF">DEF</ToggleGroupItem>
+                            <ToggleGroupItem value="MED">MED</ToggleGroupItem>
+                            <ToggleGroupItem value="DEL">DEL</ToggleGroupItem>
+                        </ToggleGroup>
                     </div>
-                </CardContent>
-            </Card>
-        </ScrollArea>
+                    <div className={cn(!playerSearchMatchId && "opacity-50 pointer-events-none")}>
+                        <div className="flex justify-between font-medium mb-1">
+                            <Label>Rango de OVR:</Label>
+                            <span className="text-primary">{playerOvrFilter[0]} - {playerOvrFilter[1]}</span>
+                        </div>
+                        <Slider value={playerOvrFilter} onValueChange={(value) => setPlayerOvrFilter(value as [number, number])} min={40} max={99} step={1} />
+                    </div>
+                </div>
+            </CardContent>
+             <CardContent className="mt-auto p-4 border-t">
+                <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <Button onClick={applyPlayerFilters} size="lg" disabled={isSearching || !playerSearchMatchId} className="w-full sm:w-auto">
+                        {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
+                        {isSearching ? 'Buscando...' : 'Buscar Jugadores'}
+                    </Button>
+                     <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
+                </div>
+            </CardContent>
+        </Card>
     );
 
     if (!playerSearchCompleted) {
@@ -570,4 +570,3 @@ export default function FindMatchPage() {
     </div>
   );
 }
-

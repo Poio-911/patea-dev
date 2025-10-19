@@ -3,20 +3,20 @@
 'use client';
 
 import { Suspense } from 'react';
-import { useCollection } from '@/firebase';
+import { useCollection, useDoc } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, Users2, Calendar, MapPin, User, Navigation } from 'lucide-react';
+import { Star, Users2, Calendar, MapPin, User, UserRound, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirestore } from '@/firebase';
-import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, doc } from 'firebase/firestore';
 import { useUser } from '@/firebase';
 import { useMemo } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import type { Player, Match } from '@/lib/types';
+import type { Player, Match, AvailablePlayer } from '@/lib/types';
 import { NextMatchCard } from '@/components/next-match-card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -24,6 +24,7 @@ import { es } from 'date-fns/locale';
 import { Separator } from '@/components/ui/separator';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { WelcomeDialog } from '@/components/welcome-dialog';
+import { SetAvailabilityDialog } from '@/components/set-availability-dialog';
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
     upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
@@ -53,6 +54,12 @@ function DashboardContent() {
         where('playerUids', 'array-contains', user.uid)
     );
   }, [firestore, user?.uid]);
+  
+  const playerRef = useMemo(() => firestore && user?.uid ? doc(firestore, 'players', user.uid) : null, [firestore, user?.uid]);
+  const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
+
+  const availablePlayerRef = useMemo(() => firestore && user?.uid ? doc(firestore, 'availablePlayers', user.uid) : null, [firestore, user?.uid]);
+  const { data: availablePlayerData, loading: availablePlayerLoading } = useDoc<AvailablePlayer>(availablePlayerRef);
 
 
   const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(groupMatchesQuery);
@@ -79,7 +86,7 @@ function DashboardContent() {
     return Array.from(allMatchesMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [groupMatches, joinedMatches]);
 
-  const loading = playersLoading || groupMatchesLoading || joinedMatchesLoading;
+  const loading = playersLoading || groupMatchesLoading || joinedMatchesLoading || playerLoading || availablePlayerLoading;
 
   const { nextMatch, recentMatches } = useMemo(() => {
     if (!matches) return { nextMatch: null, recentMatches: [] };
@@ -199,6 +206,25 @@ function DashboardContent() {
 
         {/* Side column */}
         <div className="lg:col-span-1 space-y-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Eye className="h-5 w-5 text-primary" />
+                        Visibilidad Pública
+                    </CardTitle>
+                    <CardDescription>
+                        {availablePlayerData ? 'Estás visible en el mercado de pases.' : 'No estás visible para otros grupos.'}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                   <SetAvailabilityDialog player={player} availability={availablePlayerData?.availability || {}}>
+                     <Button className="w-full">
+                       <UserRound className="mr-2 h-4 w-4" />
+                       Ajustar Disponibilidad
+                     </Button>
+                   </SetAvailabilityDialog>
+                </CardContent>
+            </Card>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

@@ -1,4 +1,5 @@
 
+
 import { DocumentData, DocumentReference } from "firebase/firestore";
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
@@ -37,6 +38,13 @@ export type Player = {
   groupId: string;
 } & DocumentData;
 
+export type DayOfWeek = 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes' | 'sabado' | 'domingo';
+export type TimeOfDay = 'mañana' | 'tarde' | 'noche';
+
+export type Availability = {
+    [key in DayOfWeek]?: TimeOfDay[];
+};
+
 export type AvailablePlayer = {
   uid: string;
   displayName: string;
@@ -47,7 +55,7 @@ export type AvailablePlayer = {
     lat: number;
     lng: number;
   };
-  availableSince: string;
+  availability: Availability;
 } & DocumentData;
 
 
@@ -83,7 +91,6 @@ export type Match = {
     icon: string;
     temperature: number;
   };
-  invitations?: Invitation[];
 } & DocumentData;
 
 export type Team = {

@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import { useUser, useFirestore, initializeFirebase } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
-import { doc, collection, query, where, writeBatch, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, collection, query, where, writeBatch } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { Loader2, Upload, Settings, UserRound, CaseSensitive } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +25,7 @@ import { updateProfile } from 'firebase/auth';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useDoc } from '@/firebase/firestore/use-doc';
+import { SetAvailabilityDialog } from '@/components/set-availability-dialog';
 
 
 export default function ProfilePage() {
@@ -38,15 +40,7 @@ export default function ProfilePage() {
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
 
   const availablePlayerRef = useMemo(() => firestore && user?.uid ? doc(firestore, 'availablePlayers', user.uid) : null, [firestore, user?.uid]);
-  const { data: availablePlayerData } = useDoc<AvailablePlayer>(availablePlayerRef);
-  
-  const [isAvailable, setIsAvailable] = useState(!!availablePlayerData);
-  const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(false);
-
-
-  useEffect(() => {
-    setIsAvailable(!!availablePlayerData);
-  }, [availablePlayerData]);
+  const { data: availablePlayerData, loading: availablePlayerLoading } = useDoc<AvailablePlayer>(availablePlayerRef);
 
 
   const createdPlayersQuery = useMemo(() => {
@@ -116,58 +110,8 @@ export default function ProfilePage() {
   const handleButtonClick = () => {
     fileInputRef.current?.click();
   };
-
-  const handleAvailabilityChange = async (checked: boolean) => {
-    if (!firestore || !user || !player) {
-        toast({ variant: "destructive", title: "Error", description: "No se pudo actualizar la disponibilidad." });
-        return;
-    }
-    setIsAvailabilityLoading(true);
-    const availablePlayerDocRef = doc(firestore, 'availablePlayers', user.uid);
-    try {
-        if (checked) {
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const { latitude, longitude } = position.coords;
-                    const newAvailablePlayer: AvailablePlayer = {
-                        uid: user.uid,
-                        displayName: player.name,
-                        photoUrl: player.photoUrl || '',
-                        position: player.position,
-                        ovr: player.ovr,
-                        location: { lat: latitude, lng: longitude },
-                        availableSince: new Date().toISOString(),
-                    };
-                    await setDoc(availablePlayerDocRef, newAvailablePlayer);
-                    setIsAvailable(true);
-                    toast({
-                        title: '¡Ahora estás disponible!',
-                        description: 'Aparecerás en el mercado de fichajes para otros organizadores.',
-                    });
-                    setIsAvailabilityLoading(false);
-                },
-                (error) => {
-                    toast({ variant: 'destructive', title: 'Error de ubicación', description: 'No se pudo obtener tu ubicación. Por favor, activa los permisos en tu navegador.' });
-                    setIsAvailabilityLoading(false);
-                }
-            );
-        } else {
-            await deleteDoc(availablePlayerDocRef);
-            setIsAvailable(false);
-            toast({
-                title: 'Ya no estás disponible',
-                description: 'Has sido eliminado del mercado de fichajes.',
-            });
-            setIsAvailabilityLoading(false);
-        }
-    } catch (error) {
-        console.error("Error updating availability:", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar tu estado de disponibilidad.' });
-        setIsAvailabilityLoading(false);
-    }
-  };
   
-  const loading = userLoading || createdPlayersLoading || createdMatchesLoading || playerLoading;
+  const loading = userLoading || createdPlayersLoading || createdMatchesLoading || playerLoading || availablePlayerLoading;
 
   if (loading) {
     return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -205,24 +149,13 @@ export default function ProfilePage() {
             <CardHeader>
                 <CardTitle>Configuración de Jugador</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-                 <div className="flex items-center space-x-4 rounded-md border p-4">
-                    <UserRound className="h-6 w-6"/>
-                    <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium leading-none">
-                            Disponible para Partidos
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                            Permite que otros organizadores te encuentren y te inviten a sus partidos.
-                        </p>
-                    </div>
-                    <Switch
-                        checked={isAvailable}
-                        onCheckedChange={handleAvailabilityChange}
-                        disabled={isAvailabilityLoading}
-                        aria-label="Disponibilidad para partidos"
-                    />
-                </div>
+            <CardContent>
+                <SetAvailabilityDialog player={player} availability={availablePlayerData?.availability || {}}>
+                    <Button variant="outline">
+                        <UserRound className="mr-2 h-4 w-4" />
+                        Configurar mi disponibilidad para partidos
+                    </Button>
+                </SetAvailabilityDialog>
             </CardContent>
         </Card>
 
