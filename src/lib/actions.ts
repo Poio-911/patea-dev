@@ -85,6 +85,7 @@ export async function getPlayerEvaluationsAction(playerId: string, groupId: stri
     const evaluations: Partial<Evaluation>[] = [];
     
     try {
+        if (!playerId || !groupId) return [];
         const evalsSnapshot = await adminDb.collection('evaluations').where('playerId', '==', playerId).get();
         const matchesSnapshot = await adminDb.collection('matches').where('groupId', '==', groupId).get();
         const groupMatchIds = new Set(matchesSnapshot.docs.map(doc => doc.id));
@@ -186,7 +187,8 @@ export async function generatePlayerCardImageAction(userId: string) {
         if (!player.photoUrl) {
             return { error: "Primero debes subir una foto de perfil." };
         }
-
+        
+        // This check was too broad. Now it only checks for the placeholder domain.
         if (player.photoUrl.includes('picsum.photos')) {
             return { error: "La generación de imágenes no funciona con fotos de marcador de posición. Por favor, sube una foto tuya real." };
         }
