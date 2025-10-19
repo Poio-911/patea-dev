@@ -183,7 +183,7 @@ export default function ProfilePage() {
                             </Button>
                             <Button onClick={handleGenerateAICard} size="sm" variant="default" disabled={isGenerating || credits <= 0} className="w-full">
                                 {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                Generar con IA ({credits})
+                                Transformar Foto (IA) ({credits})
                             </Button>
                         </div>
                    </div>
