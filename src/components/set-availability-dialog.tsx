@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -82,7 +83,7 @@ export function SetAvailabilityDialog({ player, availability, children }: SetAva
         isAvailable: Object.keys(availability).length > 0,
         availability: availability || {}
     });
-  }, [availability, form]);
+  }, [availability, form, open]);
 
 
   const onSubmit = async (data: AvailabilityFormData) => {
@@ -120,7 +121,7 @@ export function SetAvailabilityDialog({ player, availability, children }: SetAva
             );
         } else {
             await deleteDoc(availablePlayerDocRef);
-            toast({ title: 'Ya no estás disponible', description: 'Has sido eliminado de la lista de jugadores libres.' });
+            toast({ title: 'Ya no estás visible', description: 'Has sido eliminado de la lista de jugadores libres.' });
             setOpen(false);
             setIsSubmitting(false);
         }
@@ -216,3 +217,5 @@ export function SetAvailabilityDialog({ player, availability, children }: SetAva
     </Dialog>
   );
 }
+
+    
