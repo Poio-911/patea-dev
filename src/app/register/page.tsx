@@ -143,8 +143,8 @@ export default function RegisterPage() {
             <div className="flex justify-center items-center gap-4 mb-4">
                 <Goal className="h-12 w-12 text-primary" />
                 <div>
-                    <CardTitle className="text-3xl font-bold font-headline">Crear Cuenta</CardTitle>
-                    <CardDescription>Únete al manager de fútbol definitivo.</CardDescription>
+                    <CardTitle className="text-3xl font-bold font-headline">Crear Cuenta en Pateá</CardTitle>
+                    <CardDescription>Armá tu perfil para empezar a jugar.</CardDescription>
                 </div>
             </div>
         </CardHeader>

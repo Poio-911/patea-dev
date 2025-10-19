@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser } from '@/firebase';
@@ -91,7 +92,7 @@ export default function LoginPage() {
              <div className="flex justify-center items-center gap-4 mb-4">
                 <Goal className="h-12 w-12 text-primary" />
                 <div>
-                    <CardTitle className="text-3xl font-bold font-headline">Manager de Fútbol</CardTitle>
+                    <CardTitle className="text-3xl font-bold font-headline">Pateá</CardTitle>
                     <CardDescription>Inicia sesión para continuar</CardDescription>
                 </div>
             </div>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser } from '@/firebase';
@@ -31,10 +32,10 @@ export default function HomePage() {
       <div className="mx-auto flex w-full max-w-md flex-col items-center justify-center space-y-6 text-center">
         <div className="flex items-center gap-4">
           <Goal className="h-16 w-16 text-primary" />
-          <h1 className="text-4xl font-bold font-headline">Manager de Fútbol Amateur</h1>
+          <h1 className="text-4xl font-bold font-headline">Pateá</h1>
         </div>
         <p className="text-lg text-muted-foreground">
-          Organiza partidos, gestiona tus jugadores y genera equipos equilibrados con el poder de la IA.
+          Una app para organizar los partidos entre amigos: armás equipos, anotás los resultados y llevás la cuenta de quién juega bien y quién se hace el lesionado.
         </p>
         <div className="flex w-full flex-col gap-4 sm:flex-row">
             <Button asChild size="lg" className="w-full">
