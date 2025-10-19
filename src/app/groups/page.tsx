@@ -33,7 +33,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Users, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Loader2, Users, MoreVertical, Edit, Trash2, Copy, Share2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
@@ -56,6 +56,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
+import Link from 'next/link';
 
 const createGroupSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
@@ -72,6 +74,108 @@ const editGroupSchema = z.object({
 type CreateGroupForm = z.infer<typeof createGroupSchema>;
 type JoinGroupForm = z.infer<typeof joinGroupSchema>;
 type EditGroupForm = z.infer<typeof editGroupSchema>;
+
+function GroupCard({ group, user, playerCounts, onSetActive, onEdit, onDelete }: { group: Group, user: any, playerCounts: Record<string, number>, onSetActive: (id: string) => void, onEdit: (group: Group) => void, onDelete: (id: string) => void }) {
+  const { toast } = useToast();
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(group.inviteCode);
+    toast({
+      title: '¡Copiado!',
+      description: 'El código de invitación se ha copiado al portapapeles.',
+    });
+  };
+  
+  const handleShareWhatsApp = () => {
+    const message = `¡Che, te invito a unirte a nuestro grupo de fútbol "${group.name}" en Pateá! Usa este código para entrar: ${group.inviteCode}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+  
+  return (
+      <Card
+        className={cn("flex flex-col", {
+          "border-primary ring-2 ring-primary": user?.activeGroupId === group.id
+        })}
+      >
+        <CardHeader className="flex-row items-start justify-between">
+          <div>
+            <CardTitle>{group.name}</CardTitle>
+            <CardDescription>Propietario: {group.ownerUid === user?.uid ? 'Tú' : 'Otro'}</CardDescription>
+          </div>
+          {group.ownerUid === user?.uid && (
+            <AlertDialog>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical size={16} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onEdit(group)}>
+                    <Edit className="mr-2 h-4 w-4" /> Editar Nombre
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem
+                      onSelect={e => e.preventDefault()}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" /> Eliminar Grupo
+                    </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Seguro que querés borrar "{group.name}"?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta acción es irreversible. Se borrarán todos los jugadores y partidos asociados a este grupo.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => onDelete('')}>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => { onDelete(group.id); }}
+                    className="bg-destructive hover:bg-destructive/90"
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? 'Borrando...' : 'Sí, borrar'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </CardHeader>
+        <CardContent className="flex-grow">
+          <p className="text-sm text-muted-foreground">Jugadores: {playerCounts[group.id] || 0}</p>
+          <div className="mt-4">
+            <Label className="text-xs font-semibold">Código de Invitación</Label>
+            <div className="flex items-center gap-2 mt-1">
+              <Input readOnly value={group.inviteCode} className="h-9 bg-muted" />
+              <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleCopyCode}>
+                <Copy size={16} />
+              </Button>
+            </div>
+             <Button variant="whatsapp" className="w-full mt-2" onClick={handleShareWhatsApp}>
+              <WhatsAppIcon className="mr-2 h-4 w-4" />
+              Compartir por WhatsApp
+            </Button>
+          </div>
+        </CardContent>
+        <CardFooter>
+          {user?.activeGroupId !== group.id && (
+            <Button variant="outline" className="w-full" onClick={() => onSetActive(group.id)}>
+              Activar Grupo
+            </Button>
+          )}
+        </CardFooter>
+      </Card>
+  )
+
+}
+
 
 export default function GroupsPage() {
   const { user } = useUser();
@@ -255,6 +359,10 @@ export default function GroupsPage() {
     }
   };
 
+  const handleDeleteTrigger = (groupId: string) => {
+    setDeletingGroupId(groupId);
+  };
+
   const handleDeleteGroup = async () => {
     if (!firestore || !user || !deletingGroupId) return;
     setIsDeleting(true);
@@ -313,75 +421,15 @@ export default function GroupsPage() {
         ) : groups && groups.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {groups.map(group => (
-              <Card
+              <GroupCard
                 key={group.id}
-                className={cn("flex flex-col", {
-                  "border-primary ring-2 ring-primary": user?.activeGroupId === group.id
-                })}
-              >
-                <CardHeader className="flex-row items-start justify-between">
-                  <div>
-                    <CardTitle>{group.name}</CardTitle>
-                    <CardDescription>Propietario: {group.ownerUid === user?.uid ? 'Tú' : 'Otro'}</CardDescription>
-                  </div>
-                  {group.ownerUid === user?.uid && (
-                    <AlertDialog>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical size={16} />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditGroup(group)}>
-                            <Edit className="mr-2 h-4 w-4" /> Editar Nombre
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem
-                              onSelect={e => e.preventDefault()}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" /> Eliminar Grupo
-                            </DropdownMenuItem>
-                          </AlertDialogTrigger>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>¿Seguro que querés borrar "{group.name}"?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Esta acción es irreversible. Se borrarán todos los jugadores y partidos asociados a este grupo.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel onClick={() => setDeletingGroupId(null)}>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => { setDeletingGroupId(group.id); handleDeleteGroup(); }}
-                            className="bg-destructive hover:bg-destructive/90"
-                          >
-                            {isDeleting ? 'Borrando...' : 'Sí, borrar'}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  <p className="text-sm text-muted-foreground">Jugadores: {playerCounts[group.id] || 0}</p>
-                  <div className="mt-4">
-                    <p className="text-xs font-semibold">Código de Invitación:</p>
-                    <Input readOnly value={group.inviteCode} className="mt-1 h-8 bg-muted" />
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  {user?.activeGroupId !== group.id && (
-                    <Button variant="outline" className="w-full" onClick={() => handleSetActiveGroup(group.id)}>
-                      Activar Grupo
-                    </Button>
-                  )}
-                </CardFooter>
-              </Card>
+                group={group}
+                user={user}
+                playerCounts={playerCounts}
+                onSetActive={handleSetActiveGroup}
+                onEdit={handleEditGroup}
+                onDelete={handleDeleteTrigger}
+              />
             ))}
           </div>
         ) : (
@@ -394,6 +442,29 @@ export default function GroupsPage() {
           </Alert>
         )}
       </div>
+      
+       {deletingGroupId && (
+        <AlertDialog open={!!deletingGroupId} onOpenChange={(open) => !open && setDeletingGroupId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Seguro que querés borrar el grupo?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta acción es irreversible. Se borrarán todos los jugadores y partidos asociados a este grupo.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setDeletingGroupId(null)}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteGroup}
+                className="bg-destructive hover:bg-destructive/90"
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Borrando...' : 'Sí, borrar'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
 
       <AlertDialog open={!!editingGroupId} onOpenChange={(open) => !open && setEditingGroupId(null)}>
         <AlertDialogContent>
