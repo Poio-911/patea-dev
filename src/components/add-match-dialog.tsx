@@ -320,7 +320,6 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     const selectedPlayersData = allPlayers.filter(p => data.players.includes(p.id));
     
     let finalTeams: Team[] = [];
-    // Only generate teams if the match is full
     if (selectedPlayersData.length === selectedMatchSize) {
         const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
         if ('error' in teamGenerationResult) {
@@ -345,9 +344,8 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     };
     batch.set(newMatchRef, newMatch);
 
-    // Create notifications for each invited player
     selectedPlayersData.forEach(player => {
-        if (player.id === user.uid) return; // Don't notify self
+        if (player.id === user.uid) return; 
         const notificationRef = doc(collection(firestore, `users/${player.id}/notifications`));
         const notification: Omit<Notification, 'id'> = {
             type: 'match_invite',
@@ -373,7 +371,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       status: 'upcoming' as const,
       ownerUid: user.uid,
       groupId: user.activeGroupId,
-      players: [], // Starts empty
+      players: [], 
       playerUids: [],
       teams: [],
       weather: weather || undefined,
@@ -626,5 +624,3 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     </Dialog>
   );
 }
-
-    

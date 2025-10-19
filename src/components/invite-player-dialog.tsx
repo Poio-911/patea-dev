@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { useState, useTransition, useMemo } from 'react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, updateDoc, arrayUnion, writeBatch, collection, getDoc, setDoc } from 'firebase/firestore';
-import type { AvailablePlayer, Match, Player, Invitation } from '@/lib/types';
+import type { AvailablePlayer, Match, Player, Invitation, Notification } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send } from 'lucide-react';
 import {
@@ -68,14 +68,12 @@ export function InvitePlayerDialog({
           return;
       }
 
-      // Check if player is already in the match
       if (selectedMatchData.playerUids.includes(playerToInvite.uid)) {
           toast({ variant: 'default', title: 'Jugador ya en el partido', description: `${playerToInvite.displayName} ya está en la lista.` });
           setOpen(false);
           return;
       }
 
-      // Create an invitation document instead of directly adding the player
       const invitationRef = doc(collection(firestore, `matches/${finalSelectedMatchId}/invitations`));
       const newInvitation: Omit<Invitation, 'id'> = {
           playerId: playerToInvite.uid,
@@ -87,8 +85,6 @@ export function InvitePlayerDialog({
       };
       batch.set(invitationRef, newInvitation);
 
-
-      // Notification for the invited player
       const notificationRef = doc(collection(firestore, `users/${playerToInvite.uid}/notifications`));
       const notification: Omit<Notification, 'id'> = {
         type: 'match_invite',
