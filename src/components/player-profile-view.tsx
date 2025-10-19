@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef, useTransition } from 'react';
@@ -75,13 +76,13 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   const { data: availablePlayerData, loading: availablePlayerLoading } = useDoc<AvailablePlayer>(availablePlayerRef);
 
   const createdPlayersQuery = useMemo(() => {
-    if (!firestore || !isCurrentUserProfile) return null;
+    if (!firestore || !isCurrentUserProfile || !playerId) return null;
     return query(collection(firestore, 'players'), where('ownerUid', '==', playerId));
   }, [firestore, playerId, isCurrentUserProfile]);
   const { data: createdPlayers, loading: createdPlayersLoading } = useCollection<Player>(createdPlayersQuery);
 
   const createdMatchesQuery = useMemo(() => {
-    if (!firestore || !isCurrentUserProfile) return null;
+    if (!firestore || !isCurrentUserProfile || !playerId) return null;
     return query(collection(firestore, 'matches'), where('ownerUid', '==', playerId));
   }, [firestore, playerId, isCurrentUserProfile]);
   const { data: createdMatches, loading: createdMatchesLoading } = useCollection<Match>(createdMatchesQuery);
@@ -263,7 +264,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     fileInputRef.current?.click();
   };
 
-  const loading = playerLoading || historyLoading || isLoading || (isCurrentUserProfile && (createdMatchesLoading || createdPlayersLoading));
+  const loading = playerLoading || historyLoading || isLoading || (isCurrentUserProfile && (createdMatchesLoading || createdPlayersLoading || availablePlayerLoading));
   const credits = player?.cardGenerationCredits === undefined ? 2 : player.cardGenerationCredits;
 
 
@@ -281,7 +282,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
             <Card className="lg:col-span-1">
                 <CardContent className="pt-6">
                     <div className="flex flex-col sm:flex-row items-center gap-6">
-                        <div className="relative">
+                         <div className="relative">
                             <Avatar className="h-32 w-32 border-4 border-primary/50">
                                 <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
                                 <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
