@@ -301,7 +301,7 @@ export default function GroupsPage() {
         setIsDeleting(false);
     }
   };
-
+  
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
