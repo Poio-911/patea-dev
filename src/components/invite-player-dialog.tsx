@@ -77,10 +77,10 @@ export function InvitePlayerDialog({
       // Create an invitation document instead of directly adding the player
       const invitationRef = doc(collection(firestore, `matches/${finalSelectedMatchId}/invitations`));
       const newInvitation: Omit<Invitation, 'id'> = {
+          matchId: selectedMatchData.id,
+          matchTitle: selectedMatchData.title,
+          matchDate: selectedMatchData.date,
           playerId: playerToInvite.uid,
-          playerName: playerToInvite.displayName,
-          playerOvr: playerToInvite.ovr,
-          playerPhotoUrl: playerToInvite.photoUrl || '',
           status: 'pending',
           createdAt: new Date().toISOString()
       };

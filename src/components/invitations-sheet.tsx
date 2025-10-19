@@ -45,10 +45,8 @@ export function InvitationsSheet() {
     if (!firestore || !user) return;
     setProcessingId(invitation.id);
     
-    const batch = writeBatch(firestore);
-    
     // Extract matchId from the invitation's document path
-    const matchId = invitation.id.split('/invitations/')[0].split('/').pop();
+    const matchId = invitation.matchId;
     if (!matchId) {
         toast({ variant: 'destructive', title: 'Error', description: 'ID de partido no válido en la invitación.' });
         setProcessingId(null);
@@ -58,6 +56,7 @@ export function InvitationsSheet() {
     const invitationRef = doc(firestore, 'matches', matchId, 'invitations', invitation.id);
 
     try {
+        const batch = writeBatch(firestore);
         if (accepted) {
             const matchRef = doc(firestore, 'matches', matchId);
             const playerRef = doc(firestore, 'players', user.uid);
@@ -143,7 +142,7 @@ export function InvitationsSheet() {
                             <CardHeader>
                                 <CardTitle>{invitation.matchTitle}</CardTitle>
                                 <CardDescription>
-                                    {format(new Date(invitation.matchDate), "EEEE, d 'de' MMMM, yyyy", { locale: es })}
+                                    {invitation.matchDate ? format(new Date(invitation.matchDate), "EEEE, d 'de' MMMM, yyyy", { locale: es }) : "Fecha no disponible"}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="flex items-center justify-end gap-2">
