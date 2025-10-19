@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -58,6 +59,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import Link from 'next/link';
+import { Label } from '@/components/ui/label';
 
 const createGroupSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
