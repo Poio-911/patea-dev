@@ -177,7 +177,7 @@ export async function generatePlayerCardImageAction(userId: string) {
         }
 
         const player = playerSnap.data() as Player;
-        const credits = player.cardGenerationCredits === undefined ? 2 : player.cardGenerationCredits;
+        const credits = player.cardGenerationCredits ?? 2;
 
         if (credits <= 0) {
             return { error: "No te quedan créditos para generar imágenes." };
@@ -230,6 +230,6 @@ export async function generatePlayerCardImageAction(userId: string) {
         return { success: true, newPhotoURL };
     } catch (error: any) {
         console.error("Error generating player card image:", error);
-        return { error: "La IA no pudo generar la imagen. Inténtalo más tarde." };
+        return { error: error.message || "La IA no pudo generar la imagen. Inténtalo más tarde." };
     }
 }
