@@ -83,11 +83,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
 
   React.useEffect(() => {
-    const allowedPaths = ['/', '/login', '/register', '/forgot-password'];
-    if (!userLoading && !user && !allowedPaths.includes(pathname)) {
+    if (!userLoading && !user) {
       router.push('/login');
     }
-  }, [user, userLoading, pathname, router]);
+  }, [user, userLoading, router]);
   
   React.useEffect(() => {
     if (user) {
@@ -114,13 +113,9 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     }
   };
 
-  if (pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password') {
-    return <>{children}</>;
-  }
-
   const loading = userLoading || playerLoading || availablePlayerLoading;
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
@@ -128,11 +123,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     );
   }
   
-  if (!user) {
-    return null; // o un esqueleto de carga
-  }
-
-
   return (
     <SidebarProvider>
       <div className="relative flex h-screen w-full flex-col">

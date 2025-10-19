@@ -9,6 +9,9 @@ import { useJsApiLoader } from '@react-google-maps/api';
 import { libraries } from '@/lib/google-maps';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { MainNav } from '@/components/main-nav';
+import { usePathname } from 'next/navigation';
+
+const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password'];
 
 export default function RootLayout({
   children,
@@ -20,6 +23,9 @@ export default function RootLayout({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
     libraries: libraries,
   });
+  const pathname = usePathname();
+  const isPublicPage = PUBLIC_PATHS.includes(pathname);
+
 
   return (
     <html lang="es" suppressHydrationWarning>
@@ -45,7 +51,11 @@ export default function RootLayout({
         <FirebaseClientProvider>
           <Toaster />
           {isLoaded ? (
-             <MainNav>{children}</MainNav>
+            isPublicPage ? (
+              children
+            ) : (
+              <MainNav>{children}</MainNav>
+            )
           ) : loadError ? (
             <div>Error al cargar Google Maps. Por favor, revisa la configuración de tu API Key.</div>
           ) : (
