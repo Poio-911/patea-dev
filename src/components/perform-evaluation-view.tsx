@@ -84,7 +84,7 @@ const TagCheckbox = ({ tag, isChecked, onCheckedChange }: { tag: PerformanceTag,
     )
 }
 
-export const PerformEvaluationView = ({ matchId }: { matchId: string }) => {
+export default function PerformEvaluationView({ matchId }: { matchId: string }) {
   const firestore = useFirestore();
   const { user } = useUser();
   const router = useRouter();

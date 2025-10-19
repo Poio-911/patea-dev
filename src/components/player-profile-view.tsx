@@ -355,5 +355,3 @@ export default function PlayerProfileView({ playerId, isUploading }: PlayerProfi
     </div>
   );
 }
-
-    
