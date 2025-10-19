@@ -26,6 +26,8 @@ import {
 } from '@/components/ui/select';
 import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 type InvitePlayerDialogProps = {
   playerToInvite: AvailablePlayer | null;
@@ -67,14 +69,12 @@ export function InvitePlayerDialog({
           return;
       }
       
-      // Check if player is already in match
       if (selectedMatchData.playerUids.includes(playerToInvite.uid)) {
           toast({ variant: 'default', title: 'Jugador ya en el partido', description: `${playerToInvite.displayName} ya está en la lista.` });
           setOpen(false);
           return;
       }
       
-      // Create an invitation document instead of directly adding the player
       const invitationRef = doc(collection(firestore, `matches/${finalSelectedMatchId}/invitations`));
       const newInvitation: Omit<Invitation, 'id'> = {
           matchId: selectedMatchData.id,
@@ -86,7 +86,6 @@ export function InvitePlayerDialog({
       };
       batch.set(invitationRef, newInvitation);
 
-      // Create a notification for the invited player
       const notificationRef = doc(collection(firestore, `users/${playerToInvite.uid}/notifications`));
       const notification: Omit<Notification, 'id'> = {
         type: 'match_invite',
@@ -107,10 +106,15 @@ export function InvitePlayerDialog({
         setOpen(false);
       } catch (error) {
         console.error('Error inviting player: ', error);
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: invitationRef.path,
+            operation: 'create',
+            requestResourceData: newInvitation
+        }));
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: 'No se pudo enviar la invitación.',
+          title: 'Error de Permisos',
+          description: 'No tienes permiso para enviar invitaciones en este partido.',
         });
       }
     });

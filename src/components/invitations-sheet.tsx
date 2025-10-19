@@ -22,6 +22,8 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 interface InvitationCardProps {
     invitation: Invitation;
@@ -116,7 +118,6 @@ export function InvitationsSheet() {
         return;
     }
     
-    // The path to an invitation is inside its match document.
     const invitationRef = doc(firestore, 'matches', matchId, 'invitations', invitation.id);
 
     try {
@@ -161,7 +162,12 @@ export function InvitationsSheet() {
 
     } catch (error: any) {
         console.error("Error handling invitation:", error);
-        toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudo procesar la invitación.' });
+         errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: invitationRef.path,
+            operation: 'update',
+            requestResourceData: { status: accepted ? 'accepted' : 'declined' }
+        }));
+        toast({ variant: 'destructive', title: 'Error de Permisos', description: 'No se pudo procesar la invitación. Contacta al organizador.' });
     } finally {
         setProcessingId(null);
     }
