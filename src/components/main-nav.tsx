@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Goal, Users2, User, BellRing, HelpCircle } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings, Goal, Users2, User, BellRing, HelpCircle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -29,7 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import type { Player } from '@/lib/types';
+import type { Player, AvailablePlayer } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { SoccerPlayerIcon } from './icons/soccer-player-icon';
@@ -75,6 +75,12 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   }, [firestore, user?.uid]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
 
+  const availablePlayerRef = React.useMemo(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'availablePlayers', user.uid);
+  }, [firestore, user?.uid]);
+  const { data: availablePlayerData, loading: availablePlayerLoading } = useDoc<AvailablePlayer>(availablePlayerRef);
+
 
   React.useEffect(() => {
     if (!userLoading && !user && pathname !== '/' && pathname !== '/login' && pathname !== '/register') {
@@ -111,7 +117,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  const loading = userLoading || playerLoading;
+  const loading = userLoading || playerLoading || availablePlayerLoading;
 
   if (loading) {
     return (
@@ -206,7 +212,19 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto p-4 pt-20 pb-20 md:p-6 md:pt-22 md:pb-16">{children}</main>
+          {availablePlayerData && (
+            <div className="fixed top-16 left-0 right-0 z-10 h-8 bg-gradient-to-r from-green-500/80 to-emerald-600/80 text-white flex items-center justify-center shadow-md animate-in fade-in-0 slide-in-from-top-2 duration-500">
+                <CheckCircle className="mr-2 h-4 w-4" />
+                <p className="text-xs font-semibold">Estás visible en el mercado de pases</p>
+            </div>
+          )}
+
+          <main className={cn(
+            "flex-1 overflow-y-auto p-4 pt-20 pb-20 md:p-6 md:pt-22 md:pb-16",
+            availablePlayerData && "pt-[104px]" // Adjust main content padding when the banner is visible
+          )}>
+            {children}
+          </main>
           
           <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg">
               <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
