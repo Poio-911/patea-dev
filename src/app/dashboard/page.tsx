@@ -28,6 +28,7 @@ import { SetAvailabilityDialog } from '@/components/set-availability-dialog';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
+import { MateIcon } from '@/components/icons/mate-icon';
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
     upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
@@ -157,16 +158,19 @@ function DashboardContent() {
   };
 
   if (loading) {
-    return <div>Cargando...</div>;
+    return <div className="flex justify-center items-center h-full"><SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" /></div>;
   }
   
   if (!user?.activeGroupId) {
     return (
         <div className="flex flex-col gap-8">
-             <PageHeader
-                title="El Vestuario"
-                description="Bienvenido a tu vestuario virtual."
-            />
+             <div className="flex items-center gap-3">
+                <MateIcon className="h-8 w-8" />
+                <PageHeader
+                    title="El Vestuario"
+                    description="Bienvenido a tu vestuario virtual."
+                />
+             </div>
             <Alert>
                 <Users2 className="h-4 w-4" />
                 <AlertTitle>¡Bienvenido, Capitán!</AlertTitle>
@@ -184,10 +188,13 @@ function DashboardContent() {
   return (
     <div className="flex flex-col gap-8">
       <WelcomeDialog />
-      <PageHeader
-        title="El Vestuario"
-        description="Un pantallazo de cómo está el cuadro."
-      />
+      <div className="flex items-center gap-3">
+        <MateIcon className="h-8 w-8 text-primary" />
+        <PageHeader
+            title="El Vestuario"
+            description="Un pantallazo de cómo está el cuadro."
+        />
+      </div>
 
       <Card>
         <CardHeader>
@@ -210,7 +217,7 @@ function DashboardContent() {
                 <Label htmlFor="availability-switch" className="font-medium">
                     {isToggling ? 'Actualizando...' : (availablePlayerData ? 'Visible' : 'Oculto')}
                 </Label>
-                 {isToggling && <Loader2 className="h-4 w-4 animate-spin" />}
+                 {isToggling && <SoccerPlayerIcon className="h-5 w-5 color-cycle-animation" />}
             </div>
             <SetAvailabilityDialog player={player} availability={availablePlayerData?.availability || {}}>
                 <Button variant="outline">
@@ -332,7 +339,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
     return (
-        <Suspense fallback={<div>Cargando...</div>}>
+        <Suspense fallback={<div className="flex justify-center items-center h-full"><SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" /></div>}>
             <DashboardContent />
         </Suspense>
     )
