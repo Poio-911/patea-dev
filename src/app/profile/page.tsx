@@ -1,11 +1,9 @@
 
-
 'use client';
 
-import { useUser, useFirestore, initializeFirebase } from '@/firebase';
+import { useUser, useFirestore, initializeFirebase, useCollection, useDoc } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { doc, collection, query, where, writeBatch, getDoc, increment, updateDoc } from 'firebase/firestore';
-import { useCollection, useDoc } from '@/firebase/firestore/use-collection';
 import { Upload, Settings, UserRound, CaseSensitive, Loader2, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
