@@ -23,7 +23,6 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 217 91% 60%;
-    --radius: 0.5rem;
     --chart-1: 340 82% 61%;
     --chart-2: 158 44% 46%;
     --chart-3: 217 91% 60%;
@@ -68,5 +67,17 @@
 
   .dark body {
     background-image: linear-gradient(to top, hsl(222 47% 11%), hsl(222 47% 14%));
+  }
+}
+
+@layer utilities {
+  @keyframes color-cycle {
+    0%, 100% { color: hsl(var(--primary)); }
+    25% { color: hsl(var(--chart-1)); }
+    50% { color: hsl(var(--chart-2)); }
+    75% { color: hsl(var(--chart-4)); }
+  }
+  .color-cycle-animation {
+    animation: color-cycle 4s ease-in-out infinite;
   }
 }

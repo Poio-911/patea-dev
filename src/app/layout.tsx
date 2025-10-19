@@ -7,7 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { libraries } from '@/lib/google-maps';
-import { Loader2 } from 'lucide-react';
+import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { MainNav } from '@/components/main-nav';
 
 export default function RootLayout({
@@ -50,7 +50,7 @@ export default function RootLayout({
             <div>Error al cargar Google Maps. Por favor, revisa la configuración de tu API Key.</div>
           ) : (
             <div className="flex h-screen w-full items-center justify-center">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
             </div>
           )}
         </FirebaseClientProvider>

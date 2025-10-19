@@ -122,7 +122,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <SoccerPlayerIcon className="h-12 w-12 animate-spin text-primary" />
+        <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
       </div>
     );
   }

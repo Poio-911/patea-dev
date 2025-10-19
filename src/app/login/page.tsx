@@ -80,7 +80,7 @@ export default function LoginPage() {
   if (loading || user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <SoccerPlayerIcon className="h-12 w-12 animate-spin text-primary" />
+        <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
       </div>
     );
   }
@@ -88,14 +88,16 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center space-y-4">
-            <div className="flex justify-center items-center gap-4">
+        <CardHeader className="text-center">
+          <div className="flex w-full flex-col items-center justify-center gap-4">
+            <div className="flex items-center gap-4">
                 <SoccerPlayerIcon className="h-16 w-16 text-primary" />
+                <h1 className="text-6xl font-bold font-headline">Pateá</h1>
             </div>
-            <div className='space-y-1'>
-                <CardTitle className="text-5xl font-bold font-headline">Pateá</CardTitle>
-                <CardDescription>Inicia sesión para continuar</CardDescription>
-            </div>
+            <p className="text-muted-foreground text-center">
+                Inicia sesión para organizar los partidos con tus amigos.
+            </p>
+          </div>
         </CardHeader>
         <CardContent>
             <Form {...form}>

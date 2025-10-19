@@ -131,7 +131,7 @@ export default function RegisterPage() {
   if (loading || user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <SoccerPlayerIcon className="h-12 w-12 animate-spin text-primary" />
+        <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
       </div>
     );
   }
@@ -140,12 +140,14 @@ export default function RegisterPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-            <div className="flex justify-center items-center gap-4 mb-4">
-                <SoccerPlayerIcon className="h-12 w-12 text-primary" />
-                <div>
-                    <CardTitle className="text-3xl font-bold font-headline">Crear Cuenta en Pateá</CardTitle>
-                    <CardDescription>Armá tu perfil para empezar a jugar.</CardDescription>
+            <div className="flex w-full flex-col items-center justify-center gap-2 mb-4">
+                <div className="flex items-center gap-4">
+                    <SoccerPlayerIcon className="h-12 w-12 text-primary" />
+                    <h1 className="text-5xl font-bold font-headline">Pateá</h1>
                 </div>
+                 <p className="text-muted-foreground">
+                    Armá tu perfil para empezar a jugar.
+                </p>
             </div>
         </CardHeader>
         <CardContent>
