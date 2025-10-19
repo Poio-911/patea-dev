@@ -172,7 +172,7 @@ function DashboardContent() {
                                                     </div>
                                                     <div className="flex items-center gap-1.5">
                                                         <MapPin className="h-3.5 w-3.5" />
-                                                        <span>{match.location.name}</span>
+                                                        <span className="truncate max-w-xs">{match.location.name}</span>
                                                     </div>
                                                      <div className="flex items-center gap-1.5">
                                                         <User className="h-3.5 w-3.5" />
