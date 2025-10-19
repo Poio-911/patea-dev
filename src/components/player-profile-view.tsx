@@ -3,7 +3,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
+import { useDoc, useCollection, useFirestore } from '@/firebase';
 import { doc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import type { Player, Evaluation, Match, OvrHistory } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -19,7 +19,6 @@ import { Separator } from '@/components/ui/separator';
 
 type PlayerProfileViewProps = {
   playerId: string;
-  isUploading?: boolean;
 };
 
 const positionColors: Record<Player['position'], string> = {
@@ -44,7 +43,7 @@ type MatchEvaluationSummary = {
     individualEvaluations: DetailedEvaluation[];
 };
 
-export default function PlayerProfileView({ playerId, isUploading }: PlayerProfileViewProps) {
+export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
   const firestore = useFirestore();
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
@@ -172,17 +171,6 @@ export default function PlayerProfileView({ playerId, isUploading }: PlayerProfi
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1">
             <div className="flex flex-col items-center gap-4">
-                <div className="relative">
-                    <Avatar className="h-32 w-32 border-4 border-primary/50">
-                        <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
-                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    {isUploading && (
-                        <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                            <Loader2 className="h-8 w-8 animate-spin text-white" />
-                        </div>
-                    )}
-                </div>
                 <div className="text-center">
                     <h2 className="text-2xl font-bold font-headline">{player.name}</h2>
                     <div className="flex items-center justify-center gap-4 mt-1">

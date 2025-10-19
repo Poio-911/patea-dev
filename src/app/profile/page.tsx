@@ -4,8 +4,8 @@
 
 import { useUser, useFirestore, initializeFirebase } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
-import { doc, collection, query, where, writeBatch } from 'firebase/firestore';
-import { useCollection } from '@/firebase/firestore/use-collection';
+import { doc, collection, query, where, writeBatch, getDoc, increment, updateDoc } from 'firebase/firestore';
+import { useCollection, useDoc } from '@/firebase/firestore/use-collection';
 import { Upload, Settings, UserRound, CaseSensitive, Loader2, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,12 +24,10 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { useDoc } from '@/firebase/firestore/use-doc';
 import { SetAvailabilityDialog } from '@/components/set-availability-dialog';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { generatePlayerCardImageAction } from '@/lib/actions';
 import { Separator } from '@/components/ui/separator';
-
 
 export default function ProfilePage() {
   const { user, loading: userLoading } = useUser();
@@ -45,7 +43,6 @@ export default function ProfilePage() {
 
   const availablePlayerRef = useMemo(() => firestore && user?.uid ? doc(firestore, 'availablePlayers', user.uid) : null, [firestore, user?.uid]);
   const { data: availablePlayerData, loading: availablePlayerLoading } = useDoc<AvailablePlayer>(availablePlayerRef);
-
 
   const createdPlayersQuery = useMemo(() => {
     if (!firestore || !user?.uid) return null;
@@ -142,14 +139,13 @@ export default function ProfilePage() {
   
   const loading = userLoading || createdPlayersLoading || createdMatchesLoading || playerLoading || availablePlayerLoading;
   
-  // FIX: Assign 2 credits if the field is missing or undefined for existing users
   const credits = player?.cardGenerationCredits === undefined ? 2 : player.cardGenerationCredits;
 
   if (loading) {
     return <div className="flex justify-center items-center h-full"><SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" /></div>;
   }
 
-  if (!user) {
+  if (!user || !player) {
     return <div>No se encontraron datos del perfil.</div>;
   }
 
@@ -160,30 +156,43 @@ export default function ProfilePage() {
             description="Tu información personal, estadísticas de jugador y actividad."
         />
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-3">
              <Card>
                 <CardContent className="pt-6">
-                    <PlayerProfileView playerId={user.uid} isUploading={isUploading || isGenerating} />
+                   <div className="flex flex-col sm:flex-row items-center gap-6">
+                        <div className="relative">
+                            <Avatar className="h-32 w-32 border-4 border-primary/50">
+                                <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
+                                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            {(isUploading || isGenerating) && (
+                                <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                                    <Loader2 className="h-8 w-8 animate-spin text-white" />
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex flex-col gap-2 w-full sm:w-auto">
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                onChange={handlePhotoUpload}
+                                className="hidden"
+                                accept="image/png, image/jpeg, image/gif" 
+                            />
+                            <Button onClick={handleButtonClick} size="sm" variant="outline" disabled={isUploading || isGenerating} className="w-full">
+                                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                                {isUploading ? "Subiendo..." : "Cambiar Foto"}
+                            </Button>
+                            <Button onClick={handleGenerateAICard} size="sm" variant="default" disabled={isGenerating || credits <= 0} className="w-full">
+                                {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                                Generar con IA ({credits})
+                            </Button>
+                        </div>
+                   </div>
+                   <div className='mt-6'>
+                     <PlayerProfileView playerId={user.uid} />
+                   </div>
                 </CardContent>
-                <Separator/>
-                <CardFooter className="flex-col sm:flex-row gap-2 p-4">
-                     <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handlePhotoUpload}
-                        className="hidden"
-                        accept="image/png, image/jpeg, image/gif" 
-                    />
-                    <Button onClick={handleButtonClick} size="sm" variant="outline" disabled={isUploading || isGenerating} className="w-full sm:w-auto">
-                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                        {isUploading ? "Subiendo..." : "Cambiar Foto"}
-                    </Button>
-                    <Button onClick={handleGenerateAICard} size="sm" variant="default" disabled={isGenerating || credits <= 0} className="w-full sm:w-auto">
-                        {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                        Generar Foto con IA ({credits})
-                    </Button>
-                </CardFooter>
              </Card>
         </div>
 
@@ -287,9 +296,6 @@ export default function ProfilePage() {
                 </TabsContent>
             </Tabs>
         </div>
-      </div>
     </div>
   );
 }
-
-
