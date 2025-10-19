@@ -47,7 +47,7 @@ A continuación se detallan las funcionalidades clave que hemos construido:
 ### f. Gestión de Partidos e Invitaciones
 - **Creación de Partidos**: Manual (el DT elige) o Colaborativo (los jugadores se apuntan). Los partidos colaborativos pueden ser públicos.
 - **Invitaciones a Jugadores**: Los organizadores pueden invitar a jugadores de fuera de su grupo a partidos públicos. El jugador invitado recibe una notificación y puede aceptar o rechazar.
-- **Bandeja de Invitaciones**: Un panel centralizado donde los jugadores ven y gestionan todas sus invitaciones a partidos.
+- **Bandeja de Invitaciones**: Un panel centralizado donde los jugadores ven y gestionan todas sus invitaciones a partidos pendientes.
 
 ### g. Sistema de Evaluación por Pares
 - **Evaluación por Puntos o Etiquetas (IA)**: Al evaluar, se puede elegir entre un sistema de puntuación tradicional (1-10) o un sistema dinámico de etiquetas generadas por IA que afectan directamente a los atributos.
@@ -75,7 +75,7 @@ A continuación se detallan las funcionalidades clave que hemos construido:
 ├── src/
 │   ├── ai/
 │   │   ├── flows/
-│   │   │   ├── find-best-fit-player.ts      # <-- NUEVO
+│   │   │   ├── find-best-fit-player.ts
 │   │   │   ├── generate-balanced-teams.ts
 │   │   │   ├── generate-evaluation-tags.ts
 │   │   │   └── ...
@@ -86,7 +86,7 @@ A continuación se detallan las funcionalidades clave que hemos construido:
 │   │   ├── evaluations/
 │   │   │   ├── [matchId]/page.tsx
 │   │   │   └── page.tsx
-│   │   ├── find-match/page.tsx           # <-- NUEVO
+│   │   ├── find-match/page.tsx
 │   │   ├── groups/page.tsx
 │   │   ├── matches/
 │   │   │   ├── [id]/evaluate/page.tsx
@@ -101,17 +101,17 @@ A continuación se detallan las funcionalidades clave que hemos construido:
 │   │   ├── add-match-dialog.tsx
 │   │   ├── add-player-dialog.tsx
 │   │   ├── edit-player-dialog.tsx
-│   │   ├── find-best-fit-dialog.tsx      # <-- NUEVO
-│   │   ├── invitations-sheet.tsx         # <-- NUEVO
+│   │   ├── find-best-fit-dialog.tsx
+│   │   ├── invitations-sheet.tsx
 │   │   ├── main-nav.tsx
 │   │   ├── match-card.tsx
-│   │   ├── match-chat-sheet.tsx          # <-- NUEVO
-│   │   ├── match-details-dialog.tsx      # <-- NUEVO
-│   │   ├── match-marker.tsx              # <-- NUEVO
+│   │   ├── match-chat-sheet.tsx
+│   │   ├── match-details-dialog.tsx
+│   │   ├── match-marker.tsx
 │   │   ├── player-card.tsx
-│   │   ├── player-marker.tsx             # <-- NUEVO
-│   │   ├── notification-bell.tsx         # <-- NUEVO
-│   │   ├── set-availability-dialog.tsx   # <-- NUEVO
+│   │   ├── player-marker.tsx
+│   │   ├── notification-bell.tsx
+│   │   ├── set-availability-dialog.tsx
 │   │   └── ...
 │   │
 │   ├── firebase/
@@ -134,34 +134,37 @@ A continuación se detallan las funcionalidades clave que hemos construido:
 
 ## 4. Estructura de la Base de Datos (Firestore)
 
-- **`/users/{userId}`**: Perfil público del usuario.
-  - **Subcolección**: `/users/{userId}/notifications/{notificationId}`: Almacena notificaciones personales.
+-   **`/users/{userId}`**: Almacena el perfil público de cada usuario registrado.
+    -   **Subcolección: `/users/{userId}/notifications/{notificationId}`**
+        -   **Descripción**: Almacena notificaciones personales y en tiempo real para cada usuario (invitaciones a partidos, nuevos jugadores, etc.).
 
-- **`/groups/{groupId}`**: Información de cada grupo.
+-   **`/groups/{groupId}`**: Contiene la información de cada grupo de usuarios (nombre, código de invitación, miembros).
 
-- **`/players/{playerId}`**: Carta y estadísticas de cada jugador.
-  - **Subcolección**: `/players/{playerId}/ovrHistory/{historyId}`: Historial de progresión de OVR.
+-   **`/players/{playerId}`**: La "carta" de cada jugador, con sus atributos (OVR, PAC, SHO, etc.) y estadísticas.
+    -   **Subcolección: `/players/{playerId}/ovrHistory/{historyId}`**
+        -   **Descripción**: Guarda un registro de cada cambio en el OVR del jugador, permitiendo visualizar su progresión.
 
-- **`/availablePlayers/{playerId}`**: Almacena jugadores que han activado su visibilidad pública, incluyendo su ubicación y horarios disponibles.
+-   **`/availablePlayers/{playerId}`**: Una colección separada que almacena solo a los jugadores que han activado su "visibilidad pública". Contiene su ubicación y disponibilidad horaria para ser encontrados por otros organizadores.
 
-- **`/matches/{matchId}`**: Datos de cada partido.
-  - **Subcolección**: `/matches/{matchId}/assignments/{assignmentId}`: Tareas de evaluación.
-  - **Subcolección**: `/matches/{matchId}/invitations/{invitationId}`: Invitaciones enviadas para este partido.
-  - **Subcolelección**: `/matches/{matchId}/selfEvaluations/{userId}`: Auto-reporte de goles.
-  - **Subcolección**: `/matches/{matchId}/messages/{messageId}`: Chat del partido.
+-   **`/matches/{matchId}`**: Contiene todos los datos de un partido específico.
+    -   **Subcolección: `/matches/{matchId}/assignments/{assignmentId}`**
+        -   **Descripción**: Almacena las tareas de evaluación generadas al finalizar un partido (quién evalúa a quién).
+    -   **Subcolección: `/matches/{matchId}/invitations/{invitationId}`**
+        -   **Descripción**: Aquí se guardan todas las invitaciones enviadas a jugadores para unirse a este partido específico. Cada documento contiene el ID del jugador invitado y el estado de la invitación (pendiente, aceptada, rechazada).
+    -   **Subcolección: `/matches/{matchId}/selfEvaluations/{userId}`**
+        -   **Descripción**: Guarda el auto-reporte de estadísticas de un jugador para ese partido (ej: goles).
+    -   **Subcolección: `/matches/{matchId}/messages/{messageId}`**
+        -   **Descripción**: Contiene todos los mensajes del chat asociado a este partido.
 
-- **`/evaluations/{evaluationId}`**: Registros de evaluaciones completadas.
+-   **`/evaluations/{evaluationId}`**: Colección principal que almacena todos los registros de evaluaciones completadas de todos los partidos, para facilitar la consulta del historial de un jugador.
 
 ---
 
 ## 5. Changelog (Historial de Cambios)
 
-*   **[Fecha Actual]**: Se implementa la búsqueda de partidos y jugadores en un mapa, junto con un sistema de invitaciones, visibilidad pública y un asistente de IA para fichajes.
-*   **[Fecha Anterior]**: Se añade la funcionalidad completa de editar y eliminar grupos, incluyendo la limpieza de datos asociados. Se mejora la guía de bienvenida con un carrusel visual.
-*   **[Fecha Anterior]**: Se integra un pronóstico del clima por IA al programar un partido.
-*   **[Fecha Anterior]**: Se mejora el Dashboard, se ajusta la IA para citas célebres y se realizan múltiples mejoras de UI/UX.
-*   **[Fecha Anterior]**: Se implementa la página de detalle del jugador con gráfico de progresión de OVR.
-*   **[Fecha Anterior]**: Se reestructura completamente el sistema de evaluación por pares.
+*   **[Fecha Actual]**: Se implementa la búsqueda de partidos y jugadores en un mapa, junto con un sistema de invitaciones, visibilidad pública y un asistente de IA para fichajes. Se corrige la UI del modal de disponibilidad y la página de búsqueda para una mejor experiencia móvil. Se solucionan errores de compilación y de tiempo de ejecución relacionados con la gestión de invitaciones y formularios.
+*   **[Fecha Anterior]**: Se añade la funcionalidad completa de editar y eliminar grupos, incluyendo la limpieza de datos asociados. Se mejora la guía de bienvenida con un carrusel visual y se reemplazan las imágenes de placeholder.
+*   **[Fecha Anterior]-**: Se integra un pronóstico del clima por IA, se mejora el Dashboard, se implementa la página de detalle del jugador con gráfico de OVR y se reestructura el sistema de evaluación por pares.
 
 ---
 
