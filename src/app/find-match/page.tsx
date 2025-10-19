@@ -311,14 +311,14 @@ export default function FindMatchPage() {
     if (!matchSearchCompleted) {
       return (
         <Card>
-            <CardHeader>
+            <CardHeader className="p-4">
                 <CardTitle className="text-center">Encontrá Partidos Cerca Tuyo</CardTitle>
-                <CardDescription className="text-center">
-                    Ajusta los filtros y dale al botón para encontrar partidos públicos.
+                <CardDescription className="text-center text-xs sm:text-sm">
+                    Ajustá los filtros y dale al botón para encontrar partidos públicos.
                 </CardDescription>
             </CardHeader>
-             <CardContent className="p-4 md:p-6">
-                <div className="w-full space-y-6">
+             <CardContent className="p-4">
+                <div className="w-full space-y-4">
                     <div>
                         <div className="flex justify-between font-medium mb-1">
                             <Label>Radio de Búsqueda:</Label>
@@ -421,14 +421,14 @@ export default function FindMatchPage() {
 
     const initialView = (
         <Card>
-            <CardHeader>
+            <CardHeader className="p-4">
                 <CardTitle className="text-center">Encontrá Jugadores Libres</CardTitle>
-                <CardDescription className="text-center">
+                <CardDescription className="text-center text-xs sm:text-sm">
                     Selecciona un partido y ajusta los filtros para encontrar el jugador que te falta.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="p-4 md:p-6">
-                <div className="w-full space-y-6">
+            <CardContent className="p-4">
+                <div className="w-full space-y-4">
                     <div>
                         <Label htmlFor='match-select-player-search'>Partido a completar</Label>
                         <Select onValueChange={setPlayerSearchMatchId} value={playerSearchMatchId || ''}>
@@ -467,8 +467,8 @@ export default function FindMatchPage() {
                 </div>
             </CardContent>
              <CardFooter className="p-4 border-t">
-                <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <Button onClick={applyPlayerFilters} size="lg" disabled={isSearching || !playerSearchMatchId} className="w-full sm:w-auto">
+                <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-2">
+                    <Button onClick={applyPlayerFilters} size="lg" disabled={isSearching || !playerSearchMatchId} className="w-full sm:flex-grow">
                         {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
                         {isSearching ? 'Buscando...' : 'Buscar Jugadores'}
                     </Button>
