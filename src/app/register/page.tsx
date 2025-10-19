@@ -114,29 +114,19 @@ export default function RegisterPage() {
         // Step 4: Create Firestore documents in a batch for atomicity
         const batch = writeBatch(firestore);
 
-        // 4a. Create the user's first group
-        const newGroupRef = doc(collection(firestore, 'groups'));
-        const newGroup: Omit<Group, 'id'> = {
-          name: `Grupo de ${data.displayName}`,
-          ownerUid: newUser.uid,
-          inviteCode: nanoid(8),
-          members: [newUser.uid],
-        };
-        batch.set(newGroupRef, newGroup);
-
-        // 4b. Create user document in /users and set the new group as active
+        // 4a. Create user document in /users
         const userRef = doc(firestore, 'users', newUser.uid);
         const newUserProfile = {
           uid: newUser.uid,
           email: newUser.email,
           displayName: data.displayName,
           photoURL: photoURL,
-          groups: [newGroupRef.id],
-          activeGroupId: newGroupRef.id,
+          groups: [], // Start with no groups
+          activeGroupId: null, // No active group initially
         };
         batch.set(userRef, newUserProfile);
 
-        // 4c. Create player document in /players
+        // 4b. Create player document in /players
         const playerRef = doc(firestore, 'players', newUser.uid); // Use user UID as player ID
         const baseStat = 50;
         const newPlayer = {
@@ -152,7 +142,7 @@ export default function RegisterPage() {
             photoUrl: photoURL,
             stats: { matchesPlayed: 0, goals: 0, assists: 0, averageRating: 0 },
             ownerUid: newUser.uid,
-            groupId: newGroupRef.id,
+            groupId: null, // No group initially
         };
         batch.set(playerRef, newPlayer);
 

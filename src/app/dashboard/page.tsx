@@ -165,7 +165,7 @@ function DashboardContent() {
     return (
         <div className="flex flex-col gap-8">
              <div className="flex items-center gap-3">
-                <MateIcon className="h-8 w-8" />
+                <MateIcon className="h-8 w-8 text-primary" />
                 <PageHeader
                     title="El Vestuario"
                     description="Bienvenido a tu vestuario virtual."
