@@ -1,10 +1,10 @@
+
 // @ts-nocheck
 'use server';
 
 import { generateBalancedTeams, GenerateBalancedTeamsInput } from '@/ai/flows/generate-balanced-teams';
 import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/flows/suggest-player-improvements';
 import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-match-day-forecast';
-import { generateEvaluationTags, GenerateEvaluationTagsInput } from '@/ai/flows/generate-evaluation-tags';
 import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-fit-player';
 import { Player, Evaluation } from './types';
 import { getFirestore, doc, collection, getDocs, where, query } from 'firebase/firestore';
@@ -109,7 +109,7 @@ export async function getPlayerImprovementSuggestionsAction(playerId: string, gr
             playerStats: player.stats,
             evaluations: evaluations.map(e => ({
                 rating: e.rating || 0,
-                performanceTags: e.performanceTags || [],
+                performanceTags: e.performanceTags?.map(t => t.name) || [],
                 evaluatedBy: e.evaluatorId || '',
                 evaluatedAt: e.evaluatedAt || '',
                 matchId: e.matchId || ''
@@ -132,16 +132,6 @@ export async function getWeatherForecastAction(input: GetMatchDayForecastInput) 
     } catch (error) {
         console.error('Error getting weather forecast:', error);
         return { error: 'No se pudo obtener el pronóstico del tiempo.' };
-    }
-}
-
-export async function generateTagsAction(input: GenerateEvaluationTagsInput) {
-    try {
-        const result = await generateEvaluationTags(input);
-        return result;
-    } catch (error) {
-        console.error('Error generating evaluation tags:', error);
-        return { error: 'No se pudieron generar las etiquetas de evaluación.' };
     }
 }
 

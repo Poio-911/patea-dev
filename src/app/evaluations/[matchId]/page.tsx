@@ -17,28 +17,13 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Loader2, Save, ShieldCheck, Goal, Check, WandSparkles, Plus, Minus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Slider } from '@/components/ui/slider';
-import { performanceTags as staticTags } from '@/lib/data';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { generateTagsAction } from '@/lib/actions';
-import { GenerateEvaluationTagsOutput } from '@/ai/flows/generate-evaluation-tags';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
-const performanceTagSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  description: z.string(),
-  effects: z.array(z.object({
-    attribute: z.string(),
-    change: z.number(),
-  })),
-});
+import { PerformanceTag, performanceTagsDb } from '@/lib/performance-tags';
+import { cn } from '@/lib/utils';
 
 const playerEvaluationSchema = z.object({
   assignmentId: z.string(),
@@ -48,7 +33,7 @@ const playerEvaluationSchema = z.object({
   position: z.string(),
   evaluationType: z.enum(['points', 'tags']).default('points'),
   rating: z.coerce.number().min(1).max(10).optional(),
-  performanceTags: z.array(performanceTagSchema).min(3, "Debes seleccionar al menos 3 etiquetas.").optional(),
+  performanceTags: z.array(z.custom<PerformanceTag>()).min(3, "Debes seleccionar al menos 3 etiquetas.").optional(),
 });
 
 const evaluationSchema = z.object({
@@ -59,7 +44,19 @@ const evaluationSchema = z.object({
 type EvaluationFormData = z.infer<typeof evaluationSchema>;
 type PlayerEvaluationFormData = z.infer<typeof playerEvaluationSchema>;
 
-const TagCheckbox = ({ tag, isChecked, onCheckedChange }: { tag: z.infer<typeof performanceTagSchema>, isChecked: boolean, onCheckedChange: (checked: boolean) => void }) => {
+// Helper function to shuffle an array
+const shuffleArray = <T>(array: T[]): T[] => {
+    let currentIndex = array.length, randomIndex;
+    while (currentIndex !== 0) {
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+    }
+    return array;
+};
+
+
+const TagCheckbox = ({ tag, isChecked, onCheckedChange }: { tag: PerformanceTag, isChecked: boolean, onCheckedChange: (checked: boolean) => void }) => {
     const positiveEffects = tag.effects.filter(e => e.change > 0);
     const negativeEffects = tag.effects.filter(e => e.change < 0);
     return (
@@ -96,8 +93,7 @@ export default function PerformEvaluationPage() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
-  const [aiTags, setAiTags] = useState<Record<string, GenerateEvaluationTagsOutput['tags']>>({});
-  const [isTagsLoading, setIsTagsLoading] = useState(false);
+  const [randomTags, setRandomTags] = useState<Record<string, PerformanceTag[]>>({});
 
   const allGroupPlayersQuery = useMemo(() => 
     firestore && user?.activeGroupId ? query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId)) : null
@@ -124,44 +120,47 @@ export default function PerformEvaluationPage() {
   const { control, getValues, setValue } = form;
   const { fields, replace } = useFieldArray({ control: form.control, name: "evaluations" });
 
-  useEffect(() => {
-    const initializeFormAndTags = async () => {
-        if (assignments && allGroupPlayers) {
-            if (assignments.length > 0) {
-                setIsTagsLoading(true);
-                const initialFormValues: PlayerEvaluationFormData[] = [];
-                const newAiTags: Record<string, GenerateEvaluationTagsOutput['tags']> = {};
+  const getRandomTagsForPosition = useCallback((position: string) => {
+    const positionTags = performanceTagsDb.filter(tag => tag.positions.includes('ALL') || tag.positions.includes(position as any));
+    const positiveTags = positionTags.filter(tag => tag.impact === 'positive');
+    const negativeTags = positionTags.filter(tag => tag.impact === 'negative');
+    
+    const selectedPositive = shuffleArray(positiveTags).slice(0, 6);
+    const selectedNegative = shuffleArray(negativeTags).slice(0, 4);
 
-                for (const assignment of assignments) {
-                    const subject = allGroupPlayers.find(p => p.id === assignment.subjectId);
-                    if (subject) {
-                        initialFormValues.push({
-                            assignmentId: assignment.id,
-                            subjectId: assignment.subjectId,
-                            displayName: subject.name,
-                            photoUrl: subject.photoUrl || '',
-                            position: subject.position,
-                            evaluationType: 'points',
-                            rating: 5,
-                            performanceTags: [],
-                        });
-                        const tagsResult = await generateTagsAction({ position: subject.position });
-                        if (!('error' in tagsResult)) {
-                            newAiTags[subject.id] = tagsResult.tags;
-                        }
-                    }
+    return shuffleArray([...selectedPositive, ...selectedNegative]);
+  }, []);
+
+  useEffect(() => {
+    if (assignments && allGroupPlayers) {
+        if (assignments.length > 0) {
+            const initialFormValues: PlayerEvaluationFormData[] = [];
+            const tagsForPlayers: Record<string, PerformanceTag[]> = {};
+
+            for (const assignment of assignments) {
+                const subject = allGroupPlayers.find(p => p.id === assignment.subjectId);
+                if (subject) {
+                    initialFormValues.push({
+                        assignmentId: assignment.id,
+                        subjectId: assignment.subjectId,
+                        displayName: subject.name,
+                        photoUrl: subject.photoUrl || '',
+                        position: subject.position,
+                        evaluationType: 'points',
+                        rating: 5,
+                        performanceTags: [],
+                    });
+                    tagsForPlayers[subject.id] = getRandomTagsForPosition(subject.position);
                 }
-                replace(initialFormValues);
-                setAiTags(newAiTags);
-                setIsTagsLoading(false);
             }
-            setIsPageLoading(false);
-        } else if (!assignmentsLoading && !playersLoading) {
-            setIsPageLoading(false);
+            replace(initialFormValues);
+            setRandomTags(tagsForPlayers);
         }
-    };
-    initializeFormAndTags();
-  }, [assignments, allGroupPlayers, replace, assignmentsLoading, playersLoading]);
+        setIsPageLoading(false);
+    } else if (!assignmentsLoading && !playersLoading) {
+        setIsPageLoading(false);
+    }
+  }, [assignments, allGroupPlayers, replace, assignmentsLoading, playersLoading, getRandomTagsForPosition]);
 
 
   const onSubmit = async (data: EvaluationFormData) => {
@@ -310,7 +309,7 @@ export default function PerformEvaluationPage() {
                                         <Tabs value={typeField.value} onValueChange={typeField.onChange} className="w-full">
                                             <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
                                                 <TabsTrigger value="points">Evaluar por Puntos</TabsTrigger>
-                                                <TabsTrigger value="tags">Evaluar por Etiquetas (IA)</TabsTrigger>
+                                                <TabsTrigger value="tags">Evaluar por Etiquetas</TabsTrigger>
                                             </TabsList>
                                             <TabsContent value="points" className="p-4 bg-muted/30 rounded-b-md">
                                                 <FormField
@@ -335,37 +334,30 @@ export default function PerformEvaluationPage() {
                                                 />
                                             </TabsContent>
                                             <TabsContent value="tags" className="p-4 bg-muted/30 rounded-b-md">
-                                                {isTagsLoading ? (
-                                                    <div className="flex items-center justify-center h-40">
-                                                        <Loader2 className="h-6 w-6 animate-spin"/>
-                                                        <p className="ml-2">Generando etiquetas de IA...</p>
-                                                    </div>
-                                                ) : (
-                                                    <Controller
-                                                        name={`evaluations.${index}.performanceTags`}
-                                                        control={control}
-                                                        render={({ field: tagsField, fieldState }) => (
-                                                            <FormItem>
-                                                                <FormLabel>Elige al menos 3 etiquetas</FormLabel>
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-                                                                    {aiTags[field.subjectId]?.map(tag => (
-                                                                        <TagCheckbox 
-                                                                            key={tag.id}
-                                                                            tag={tag}
-                                                                            isChecked={!!tagsField.value?.find(t => t.id === tag.id)}
-                                                                            onCheckedChange={(checked) => {
-                                                                                const currentVal = tagsField.value || [];
-                                                                                const newVal = checked ? [...currentVal, tag] : currentVal.filter(t => t.id !== tag.id);
-                                                                                tagsField.onChange(newVal);
-                                                                            }}
-                                                                        />
-                                                                    ))}
-                                                                </div>
-                                                                <FormMessage>{fieldState.error?.message}</FormMessage>
-                                                            </FormItem>
-                                                        )}
-                                                    />
-                                                )}
+                                                <Controller
+                                                    name={`evaluations.${index}.performanceTags`}
+                                                    control={control}
+                                                    render={({ field: tagsField, fieldState }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Elige al menos 3 etiquetas</FormLabel>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2 max-h-96 overflow-y-auto">
+                                                                {randomTags[field.subjectId]?.map(tag => (
+                                                                    <TagCheckbox 
+                                                                        key={tag.id}
+                                                                        tag={tag}
+                                                                        isChecked={!!tagsField.value?.find(t => t.id === tag.id)}
+                                                                        onCheckedChange={(checked) => {
+                                                                            const currentVal = tagsField.value || [];
+                                                                            const newVal = checked ? [...currentVal, tag] : currentVal.filter(t => t.id !== tag.id);
+                                                                            tagsField.onChange(newVal);
+                                                                        }}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                            <FormMessage>{fieldState.error?.message}</FormMessage>
+                                                        </FormItem>
+                                                    )}
+                                                />
                                             </TabsContent>
                                         </Tabs>
                                     )}
