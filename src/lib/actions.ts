@@ -11,7 +11,7 @@ import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-
 import { generatePlayerCardImage } from '@/ai/flows/generate-player-card-image';
 import { Player, Evaluation } from './types';
 import { getFirestore as getAdminFirestore, FieldValue } from 'firebase-admin/firestore';
-import { initializeApp, getApps, App as AdminApp } from 'firebase-admin/app';
+import { initializeApp, getApps, App as AdminApp, cert } from 'firebase-admin/app';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getStorage as getAdminStorage } from 'firebase-admin/storage';
 
@@ -164,7 +164,7 @@ export async function generatePlayerCardImageAction(userId: string) {
         }
 
         const player = playerSnap.data() as Player;
-        const credits = player.cardGenerationCredits ?? 2;
+        const credits = player.cardGenerationCredits === undefined ? 2 : player.cardGenerationCredits;
 
         if (credits <= 0) {
             return { error: "No te quedan créditos para generar imágenes." };
