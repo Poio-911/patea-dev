@@ -15,179 +15,154 @@ A continuación se detallan las funcionalidades clave que hemos construido:
 
 ### a. Autenticación y Perfil de Usuario
 - **Registro y Login**: Los usuarios pueden crear una cuenta usando email/contraseña o iniciar sesión con Google.
-- **Creación Automática de Perfil**: Al registrarse, se crea automáticamente un perfil de usuario y un perfil de jugador asociado, con estadísticas iniciales.
+- **Creación Automática de Perfil y Grupo**: Al registrarse, se crea automáticamente un perfil de usuario, un perfil de jugador asociado y un **primer grupo** para el usuario.
 - **Página de Perfil Personal (`/profile`)**:
-    - Muestra la información de la cuenta del usuario (nombre, email).
-    - Permite la **subida y actualización de la foto de perfil**, que se almacena en Firebase Storage.
-    - Muestra la **carta de jugador** personal con sus atributos (OVR, PAC, SHO, etc.).
-    - Presenta estadísticas de rendimiento agregadas (partidos jugados, goles, rating promedio).
+    - Muestra la información de la cuenta y la carta de jugador personal.
+    - Permite la **subida y actualización de la foto de perfil**.
+    - Incluye pestañas para ver los partidos y jugadores manuales creados por el usuario.
 
 ### b. Gestión de Grupos
-- **Creación y Unión a Grupos**: Los usuarios pueden crear sus propios grupos de jugadores o unirse a grupos existentes mediante un código de invitación único.
-- **Grupo Activo**: Los usuarios pueden pertenecer a múltiples grupos y seleccionar cuál es su "grupo activo". Toda la información (jugadores, partidos) se muestra en el contexto del grupo activo.
-- **Panel de Control (`/dashboard`)**: Ofrece una vista rápida de las estadísticas del grupo activo, como el número de jugadores, próximos partidos, y el top de jugadores.
+- **CRUD Completo de Grupos**: Los usuarios pueden crear, editar el nombre y eliminar sus propios grupos. La eliminación de un grupo también elimina todos los jugadores y partidos asociados.
+- **Unión a Grupos**: Posibilidad de unirse a grupos existentes mediante un código de invitación único.
+- **Grupo Activo**: Los usuarios pueden pertenecer a múltiples grupos y seleccionar cuál es su "grupo activo" desde un menú desplegable.
 
 ### c. Gestión de Jugadores (CRUD Completo)
-- **Añadir Jugadores**: Los organizadores pueden añadir "jugadores manuales" al grupo, definiendo su nombre, posición y atributos iniciales. Estos jugadores no son usuarios registrados.
+- **Añadir Jugadores**: Los organizadores pueden añadir "jugadores manuales" al grupo.
 - **Visualización de Jugadores**: La página `/players` muestra todas las cartas de los jugadores del grupo activo.
-- **Edición de Jugadores Manuales**: Los organizadores pueden editar el nombre, la posición y los atributos de los jugadores manuales que han creado.
-- **Eliminación Segura de Jugadores**: Los organizadores pueden eliminar a los jugadores **manuales** que han creado. El sistema protege a los jugadores que son usuarios reales para evitar borrados accidentales.
-- **Actualización (Evolución) de Jugadores**: Las estadísticas y atributos de los jugadores se actualizan automáticamente después de cada partido evaluado.
+- **Edición y Eliminación**: Los organizadores pueden editar y eliminar a los jugadores **manuales** que han creado.
 - **Página de Detalle del Jugador (`/players/[id]`)**:
-    - Página dedicada para cada jugador, accesible al hacer clic en su `PlayerCard`.
     - Muestra un **gráfico de líneas** con la progresión histórica de su OVR.
-    - Presenta una **tabla con el historial de evaluaciones** de cada partido (rating promedio, goles, etc.).
+    - Presenta una **tabla con el historial de evaluaciones** de cada partido.
 
-### d. Gestión de Partidos (Ciclo de Vida Completo)
-- **Creación de Partidos**:
-    - **Manual**: El organizador selecciona a todos los jugadores. Al confirmar, la IA genera los equipos equilibrados automáticamente.
-    - **Colaborativo**: El organizador crea el evento y los jugadores del grupo pueden "apuntarse" o "darse de baja". El organizador también puede invitar jugadores manualmente.
-- **Finalización de Partidos**:
-    - Para partidos colaborativos que están llenos, al finalizarlos se generan los equipos con la IA.
-    - Cambia el estado del partido a `completed`.
-- **Evaluación de Partidos**: Este es un sistema de dos partes:
-    - **Evaluación por Pares**: Los jugadores evalúan a sus compañeros.
-    - **Supervisión del Organizador**: El organizador finaliza el proceso y calcula los nuevos OVR.
+### d. Búsqueda de Partidos y Jugadores
+- **Página de Búsqueda (`/find-match`)**: Interfaz unificada con mapa para encontrar partidos públicos y jugadores libres.
+- **Búsqueda de Partidos**: Los usuarios pueden buscar partidos públicos cercanos, filtrando por radio, fecha y tamaño del partido. Los resultados se muestran en el mapa y en una lista.
+- **Búsqueda de Jugadores**: Permite a los organizadores buscar jugadores que se hayan marcado como "visibles", filtrando por posición y OVR.
+- **Asistente de Fichajes (IA)**: Una función de IA (`findBestFitPlayer`) recomienda los mejores jugadores disponibles para completar un partido específico, basándose en la posición y el equilibrio del equipo.
 
-### e. Sistema de Evaluación por Pares
-- **Página de Evaluaciones (`/evaluations`)**:
-    - Funciona como una "bandeja de entrada" para el usuario.
-    - Muestra una lista de todos los partidos que el usuario tiene **pendientes por evaluar**.
-- **Asignaciones Automáticas**: Al finalizar un partido, el sistema genera y guarda en la base de datos las **asignaciones de evaluación** (cada jugador debe evaluar a ~2 compañeros de su mismo equipo).
-- **Página de Evaluación Individual (`/evaluations/[matchId]`)**:
-    - Al hacer clic en un partido pendiente, el usuario accede a un formulario para evaluar a los compañeros asignados (goles, rating 1-10, etiquetas).
-    - Al enviar, la asignación se marca como "completada".
-- **Panel de Supervisión del Organizador (`/matches/[id]/evaluate`)**:
-    - Página exclusiva para el organizador del partido.
-    - Muestra en tiempo real qué jugadores ya han completado su evaluación y quiénes faltan.
-    - Permite al organizador **finalizar el proceso** y calcular los nuevos OVRs. Al hacerlo, el estado del partido cambia a `evaluated`.
+### e. Visibilidad y Disponibilidad del Jugador
+- **Interruptor de Visibilidad**: En el dashboard, los jugadores pueden hacerse "visibles" para que otros organizadores los encuentren y los inviten a partidos.
+- **Configuración de Disponibilidad**: Los usuarios pueden especificar los días y horarios en los que suelen estar disponibles para jugar, ayudando a los organizadores a encontrar al jugador perfecto.
 
-### f. Funcionalidades de Inteligencia Artificial (Genkit)
-- **Generación de Equipos Equilibrados**:
-    - Utiliza un flujo de IA (`generateBalancedTeams`) que recibe una lista de jugadores y devuelve dos equipos optimizados para tener un OVR promedio lo más similar posible.
-    - Proporciona métricas de equilibrio, como la diferencia de OVR y un porcentaje de "justicia".
-- **Sugerencias de Mejora de Rendimiento**:
-    - En la carta de cada jugador, un botón "Consejos IA" abre un diálogo.
-    - Al activarlo, se llama a un flujo de IA (`suggestPlayerImprovements`) que analiza el historial de evaluaciones **reales** del jugador (calificaciones y etiquetas de rendimiento).
-    - La IA devuelve 2-3 consejos concisos y personalizados en **español** para que el jugador pueda mejorar.
-- **Pronóstico del Clima**:
-    - Al crear un partido, la IA ahora busca y muestra automáticamente un pronóstico del tiempo para la fecha y ubicación del evento.
-    - El pronóstico incluye una descripción amigable y un ícono representativo (sol, nubes, lluvia, etc.).
+### f. Gestión de Partidos e Invitaciones
+- **Creación de Partidos**: Manual (el DT elige) o Colaborativo (los jugadores se apuntan). Los partidos colaborativos pueden ser públicos.
+- **Invitaciones a Jugadores**: Los organizadores pueden invitar a jugadores de fuera de su grupo a partidos públicos. El jugador invitado recibe una notificación y puede aceptar o rechazar.
+- **Bandeja de Invitaciones**: Un panel centralizado donde los jugadores ven y gestionan todas sus invitaciones a partidos.
+
+### g. Sistema de Evaluación por Pares
+- **Evaluación por Puntos o Etiquetas (IA)**: Al evaluar, se puede elegir entre un sistema de puntuación tradicional (1-10) o un sistema dinámico de etiquetas generadas por IA que afectan directamente a los atributos.
+- **Auto-evaluación**: Los jugadores reportan sus propios goles en el formulario de evaluación.
+- **Panel de Supervisión del Organizador**: El organizador finaliza el proceso de evaluación, lo que dispara el cálculo y la actualización de los OVRs y estadísticas de los jugadores.
+
+### h. Notificaciones y Chat
+- **Notificaciones en Tiempo Real**: Un sistema de notificaciones en la app avisa al usuario sobre invitaciones a partidos, nuevos jugadores que se unen o evaluaciones pendientes.
+- **Chat por Partido**: Cada partido tiene su propia sala de chat para que los jugadores coordinen detalles.
+
+### i. Funcionalidades de Inteligencia Artificial (Genkit)
+- **Generación de Equipos Equilibrados**: (`generateBalancedTeams`).
+- **Sugerencias de Mejora**: (`suggestPlayerImprovements`).
+- **Pronóstico del Clima**: (`getMatchDayForecast`).
+- **Generación de Etiquetas de Evaluación**: (`generateEvaluationTags`).
+- **Asistente de Fichajes**: (`findBestFitPlayer`).
 
 ---
 
 ## 3. Arquitectura y Estructura de Archivos
 
-La aplicación sigue una estructura moderna de Next.js con el App Router.
-
 ```
 /
 ├── public/
 ├── src/
-│   ├── ai/                      # Lógica de Inteligencia Artificial con Genkit
+│   ├── ai/
 │   │   ├── flows/
+│   │   │   ├── find-best-fit-player.ts      # <-- NUEVO
 │   │   │   ├── generate-balanced-teams.ts
-│   │   │   ├── get-match-day-forecast.ts   <-- NUEVO
-│   │   │   └── suggest-player-improvements.ts
-│   │   └── genkit.ts            # Configuración global de Genkit
+│   │   │   ├── generate-evaluation-tags.ts
+│   │   │   └── ...
+│   │   └── genkit.ts
 │   │
-│   ├── app/                     # Rutas y páginas de la aplicación
-│   │   ├── login/page.tsx
-│   │   ├── register/page.tsx
+│   ├── app/
 │   │   ├── dashboard/page.tsx
 │   │   ├── evaluations/
-│   │   │   ├── [matchId]/page.tsx   # Página para que un jugador evalúe a sus compañeros
-│   │   │   └── page.tsx             # Bandeja de entrada de evaluaciones pendientes
+│   │   │   ├── [matchId]/page.tsx
+│   │   │   └── page.tsx
+│   │   ├── find-match/page.tsx           # <-- NUEVO
 │   │   ├── groups/page.tsx
 │   │   ├── matches/
-│   │   │   ├── [id]/evaluate/page.tsx # Panel del organizador para supervisar y finalizar
+│   │   │   ├── [id]/evaluate/page.tsx
 │   │   │   └── page.tsx
 │   │   ├── players/
-│   │   │   ├── [id]/page.tsx        # Página de detalle del jugador
+│   │   │   ├── [id]/page.tsx
 │   │   │   └── page.tsx
 │   │   ├── profile/page.tsx
-│   │   ├── globals.css          # Estilos globales y variables de tema (Tailwind)
-│   │   └── layout.tsx           # Layout raíz con el proveedor de Firebase
+│   │   └── ...
 │   │
-│   ├── components/              # Componentes reutilizables de React
-│   │   ├── ui/                  # Componentes de UI de ShadCN (Button, Card, etc.)
+│   ├── components/
 │   │   ├── add-match-dialog.tsx
 │   │   ├── add-player-dialog.tsx
 │   │   ├── edit-player-dialog.tsx
-│   │   ├── ai-suggestion-dialog.tsx
-│   │   ├── main-nav.tsx         # Barra de navegación principal y lateral
+│   │   ├── find-best-fit-dialog.tsx      # <-- NUEVO
+│   │   ├── invitations-sheet.tsx         # <-- NUEVO
+│   │   ├── main-nav.tsx
 │   │   ├── match-card.tsx
+│   │   ├── match-chat-sheet.tsx          # <-- NUEVO
+│   │   ├── match-details-dialog.tsx      # <-- NUEVO
+│   │   ├── match-marker.tsx              # <-- NUEVO
 │   │   ├── player-card.tsx
+│   │   ├── player-marker.tsx             # <-- NUEVO
+│   │   ├── notification-bell.tsx         # <-- NUEVO
+│   │   ├── set-availability-dialog.tsx   # <-- NUEVO
 │   │   └── ...
 │   │
-│   ├── firebase/                # Configuración y hooks de Firebase
-│   │   ├── auth/use-user.tsx    # Hook para gestionar el estado del usuario
-│   │   ├── firestore/           # Hooks para interactuar con Firestore
-│   │   │   ├── use-collection.tsx
-│   │   │   └── use-doc.tsx
-│   │   ├── client-provider.tsx  # Proveedor de contexto para el cliente
-│   │   ├── config.ts            # Configuración del proyecto Firebase
-│   │   ├── index.ts             # Punto de entrada para exportar todo lo de Firebase
-│   │   └── provider.tsx         # Proveedor principal de contexto de Firebase
+│   ├── firebase/
+│   │   ├── auth/use-user.tsx
+│   │   ├── firestore/
+│   │   └── ...
 │   │
-│   └── lib/                     # Utilidades, tipos y lógica de negocio
-│       ├── actions.ts           # Acciones de servidor (Server Actions) para llamar a la IA
-│       ├── data.ts              # Datos estáticos (ej. etiquetas de rendimiento)
-│       ├── types.ts             # Definiciones de tipos de TypeScript (Player, Match, etc.)
-│       └── utils.ts             # Funciones de utilidad (ej. `cn` para clases)
+│   └── lib/
+│       ├── actions.ts
+│       ├── types.ts
+│       └── ...
 │
 ├── docs/
-│   └── backend.json             # "Blueprint" de la estructura de datos
+│   └── backend.json
 │
-├── next.config.ts               # Configuración de Next.js
-├── tailwind.config.ts           # Configuración de Tailwind CSS
-├── package.json
-└── PROJECT_DOCUMENTATION.md     # Este archivo (¡el que estás leyendo ahora!)
+└── ...
 ```
 
 ---
 
 ## 4. Estructura de la Base de Datos (Firestore)
 
-La base de datos NoSQL en Firestore está estructurada en colecciones de alto nivel. Usamos el archivo `docs/backend.json` como una plantilla para definir nuestras entidades.
+- **`/users/{userId}`**: Perfil público del usuario.
+  - **Subcolección**: `/users/{userId}/notifications/{notificationId}`: Almacena notificaciones personales.
 
-- **`/users/{userId}`**
-    - **Descripción**: Almacena el perfil público de cada usuario registrado.
-    - **Campos clave**: `uid`, `email`, `displayName`, `photoURL`, `activeGroupId`.
+- **`/groups/{groupId}`**: Información de cada grupo.
 
-- **`/groups/{groupId}`**
-    - **Descripción**: Almacena la información de cada grupo de usuarios.
-    - **Campos clave**: `name`, `ownerUid`, `inviteCode`, `members` (array de UIDs).
+- **`/players/{playerId}`**: Carta y estadísticas de cada jugador.
+  - **Subcolección**: `/players/{playerId}/ovrHistory/{historyId}`: Historial de progresión de OVR.
 
-- **`/players/{playerId}`**
-    - **Descripción**: Almacena la carta y estadísticas de cada jugador. Para usuarios registrados, `{playerId}` es igual a su `userId`. Para jugadores manuales, es un ID único generado.
-    - **Campos clave**: `name`, `position`, `ovr`, `pac`, `sho`, `pas`, `dri`, `def`, `phy`, `photoUrl`, `stats`, `ownerUid`, `groupId`.
-    - **Subcolección**: `/players/{playerId}/ovrHistory/{historyId}`
-        - **Descripción**: Almacena un registro de cada cambio de OVR del jugador, creando un historial de progresión.
+- **`/availablePlayers/{playerId}`**: Almacena jugadores que han activado su visibilidad pública, incluyendo su ubicación y horarios disponibles.
 
-- **`/matches/{matchId}`**
-    - **Descripción**: Almacena los datos de cada partido.
-    - **Campos clave**: `title`, `date`, `status`, `type`, `matchSize`, `players` (array de jugadores apuntados), `teams` (array de equipos generados por IA), `ownerUid`, `groupId`, `weather` (**NUEVO**).
-    - **Subcolección**: `/matches/{matchId}/assignments/{assignmentId}`
-        - **Descripción**: Almacena las tareas de evaluación generadas al finalizar un partido (quién evalúa a quién).
-        - **Campos clave**: `evaluatorId`, `subjectId`, `status`.
+- **`/matches/{matchId}`**: Datos de cada partido.
+  - **Subcolección**: `/matches/{matchId}/assignments/{assignmentId}`: Tareas de evaluación.
+  - **Subcolección**: `/matches/{matchId}/invitations/{invitationId}`: Invitaciones enviadas para este partido.
+  - **Subcolelección**: `/matches/{matchId}/selfEvaluations/{userId}`: Auto-reporte de goles.
+  - **Subcolección**: `/matches/{matchId}/messages/{messageId}`: Chat del partido.
 
-- **`/evaluations/{evaluationId}`**
-    - **Descripción**: Almacena la evaluación específica y completada de un jugador para un partido.
-    - **Campos clave**: `assignmentId`, `playerId`, `evaluatorId`, `matchId`, `rating`, `goals`, `performanceTags`.
+- **`/evaluations/{evaluationId}`**: Registros de evaluaciones completadas.
 
 ---
 
 ## 5. Changelog (Historial de Cambios)
 
-*   **[Fecha Actual]**: Se integra un **pronóstico del clima por IA** al programar un partido. Al introducir fecha y ubicación, la IA busca el clima y muestra una descripción con un ícono.
-*   **[Fecha Anterior]**: Se implementan varias mejoras de UI/UX. Se ajusta el tamaño de la fuente en el header para el OVR y la posición, se mejora el estilo y tamaño del menú de navegación inferior en móviles, y se restaura el efecto de fondo difuminado. Se ajusta la paleta de colores para una mayor coherencia visual.
-*   **[Fecha Anterior]**: Se mejora el **Dashboard**: se añade una tarjeta de video destacado con autoplay, se simplifica la lista de partidos recientes para que sea más legible y se ajusta la IA para que la frase célebre sea siempre en español y priorice a jugadores rioplatenses.
-*   **[Fecha Anterior]**: Se realiza un análisis completo de la aplicación y se actualiza esta documentación para reflejar el estado actual y estable del proyecto después de resolver problemas de compilación.
-*   **[Fecha Anterior]**: Se implementa la **página de detalle del jugador** (`/players/[id]`). Ahora las tarjetas de jugador son clickables y llevan a una página que muestra el historial de evaluaciones del jugador y un **gráfico con la progresión de su OVR**. Se añade la subcolección `ovrHistory` a la base de datos.
-*   **[Fecha Anterior]**: Se reestructura completamente el **sistema de evaluación**. Se crea una nueva página `/evaluations` donde los jugadores ven sus tareas pendientes. Las asignaciones ahora se guardan en la base de datos al finalizar un partido para mayor robustez. La página `/matches/[id]/evaluate` se convierte en un panel exclusivo para el organizador.
-*   **[Fecha Anterior]**: Se implementa la funcionalidad para **editar jugadores manuales**, completando el ciclo CRUD.
+*   **[Fecha Actual]**: Se implementa la búsqueda de partidos y jugadores en un mapa, junto con un sistema de invitaciones, visibilidad pública y un asistente de IA para fichajes.
+*   **[Fecha Anterior]**: Se añade la funcionalidad completa de editar y eliminar grupos, incluyendo la limpieza de datos asociados. Se mejora la guía de bienvenida con un carrusel visual.
+*   **[Fecha Anterior]**: Se integra un pronóstico del clima por IA al programar un partido.
+*   **[Fecha Anterior]**: Se mejora el Dashboard, se ajusta la IA para citas célebres y se realizan múltiples mejoras de UI/UX.
+*   **[Fecha Anterior]**: Se implementa la página de detalle del jugador con gráfico de progresión de OVR.
+*   **[Fecha Anterior]**: Se reestructura completamente el sistema de evaluación por pares.
 
 ---
 
-¡Felicidades por todo el progreso! A pesar de los obstáculos técnicos, la aplicación es ahora un sistema robusto y completo con funcionalidades avanzadas.
+¡Felicidades por el increíble avance! La aplicación es ahora un sistema muy completo y robusto.

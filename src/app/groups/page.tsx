@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -45,7 +44,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,7 +54,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const createGroupSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
@@ -66,7 +66,7 @@ const joinGroupSchema = z.object({
 });
 
 const editGroupSchema = z.object({
-    name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
+  name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
 });
 
 type CreateGroupForm = z.infer<typeof createGroupSchema>;
@@ -121,9 +121,9 @@ export default function GroupsPage() {
         inviteCode: nanoid(8),
         members: [user.uid],
       };
-      
+
       batch.set(newGroupRef, newGroup);
-      
+
       batch.update(userRef, {
         groups: arrayUnion(newGroupRef.id),
         activeGroupId: newGroupRef.id,
@@ -165,7 +165,7 @@ export default function GroupsPage() {
         setIsJoining(false);
         return;
       }
-      
+
       const groupDoc = querySnapshot.docs[0];
       const groupData = groupDoc.data() as Group;
 
@@ -211,26 +211,26 @@ export default function GroupsPage() {
       setIsJoining(false);
     }
   };
-  
+
   const handleSetActiveGroup = async (groupId: string) => {
     if (!firestore || !user) return;
 
     const userRef = doc(firestore, 'users', user.uid);
-    
+
     try {
-        await updateDoc(userRef, { activeGroupId: groupId });
-        
-        toast({
-            title: 'Grupo Activado',
-            description: 'Has cambiado tu grupo activo.'
-        });
+      await updateDoc(userRef, { activeGroupId: groupId });
+
+      toast({
+        title: 'Grupo Activado',
+        description: 'Has cambiado tu grupo activo.'
+      });
     } catch (error) {
-        console.error("Error setting active group:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'No se pudo cambiar el grupo activo.'
-        });
+      console.error("Error setting active group:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo cambiar el grupo activo.'
+      });
     }
   };
 
@@ -245,61 +245,58 @@ export default function GroupsPage() {
 
     const groupRef = doc(firestore, 'groups', editingGroupId);
     try {
-        await updateDoc(groupRef, { name: data.name });
-        toast({ title: 'Grupo actualizado', description: 'El nombre del grupo ha sido cambiado.'});
-        setEditingGroupId(null);
+      await updateDoc(groupRef, { name: data.name });
+      toast({ title: 'Grupo actualizado', description: 'El nombre del grupo ha sido cambiado.' });
+      setEditingGroupId(null);
     } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar el grupo.' });
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar el grupo.' });
     } finally {
-        setIsEditing(false);
+      setIsEditing(false);
     }
   };
 
   const handleDeleteGroup = async () => {
     if (!firestore || !user || !deletingGroupId) return;
     setIsDeleting(true);
-    
+
     const groupRef = doc(firestore, 'groups', deletingGroupId);
 
     try {
-        await runTransaction(firestore, async (transaction) => {
-            const groupDoc = await transaction.get(groupRef);
-            if (!groupDoc.exists()) {
-                throw new Error("El grupo no existe.");
-            }
-            if (groupDoc.data().ownerUid !== user.uid) {
-                throw new Error("No tienes permiso para borrar este grupo.");
-            }
+      await runTransaction(firestore, async (transaction) => {
+        const groupDoc = await transaction.get(groupRef);
+        if (!groupDoc.exists()) {
+          throw new Error("El grupo no existe.");
+        }
+        if (groupDoc.data().ownerUid !== user.uid) {
+          throw new Error("No tienes permiso para borrar este grupo.");
+        }
 
-            // Find players and matches to delete
-            const playersQuery = query(collection(firestore, 'players'), where('groupId', '==', deletingGroupId));
-            const playersSnapshot = await getDocs(playersQuery);
-            playersSnapshot.forEach(playerDoc => transaction.delete(playerDoc.ref));
-            
-            const matchesQuery = query(collection(firestore, 'matches'), where('groupId', '==', deletingGroupId));
-            const matchesSnapshot = await getDocs(matchesQuery);
-            matchesSnapshot.forEach(matchDoc => transaction.delete(matchDoc.ref));
+        const playersQuery = query(collection(firestore, 'players'), where('groupId', '==', deletingGroupId));
+        const playersSnapshot = await getDocs(playersQuery);
+        playersSnapshot.forEach(playerDoc => transaction.delete(playerDoc.ref));
 
-            // Delete the group itself
-            transaction.delete(groupRef);
+        const matchesQuery = query(collection(firestore, 'matches'), where('groupId', '==', deletingGroupId));
+        const matchesSnapshot = await getDocs(matchesQuery);
+        matchesSnapshot.forEach(matchDoc => transaction.delete(matchDoc.ref));
 
-            // Update user's activeGroupId if it was the deleted one
-            const userDoc = await transaction.get(doc(firestore, 'users', user.uid));
-            if (userDoc.exists() && userDoc.data().activeGroupId === deletingGroupId) {
-                const userRef = doc(firestore, 'users', user.uid);
-                const remainingGroups = groups?.filter(g => g.id !== deletingGroupId);
-                const newActiveGroupId = remainingGroups && remainingGroups.length > 0 ? remainingGroups[0].id : null;
-                transaction.update(userRef, { activeGroupId: newActiveGroupId });
-            }
-        });
-        
-        toast({ title: 'Grupo Eliminado', description: 'El grupo y todos sus datos han sido borrados.' });
-        setDeletingGroupId(null);
+        transaction.delete(groupRef);
+
+        const userDoc = await transaction.get(doc(firestore, 'users', user.uid));
+        if (userDoc.exists() && userDoc.data().activeGroupId === deletingGroupId) {
+          const userRef = doc(firestore, 'users', user.uid);
+          const remainingGroups = groups?.filter(g => g.id !== deletingGroupId);
+          const newActiveGroupId = remainingGroups && remainingGroups.length > 0 ? remainingGroups[0].id : null;
+          transaction.update(userRef, { activeGroupId: newActiveGroupId });
+        }
+      });
+
+      toast({ title: 'Grupo Eliminado', description: 'El grupo y todos sus datos han sido borrados.' });
+      setDeletingGroupId(null);
     } catch (error: any) {
-        console.error('Error deleting group:', error);
-        toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudo eliminar el grupo.' });
+      console.error('Error deleting group:', error);
+      toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudo eliminar el grupo.' });
     } finally {
-        setIsDeleting(false);
+      setIsDeleting(false);
     }
   };
 
@@ -310,103 +307,118 @@ export default function GroupsPage() {
         description="Gestiona tus grupos, únete a uno nuevo o crea el tuyo."
       />
 
-        <div className="space-y-4">
-            {groupsLoading ? (
-                <p>Cargando grupos...</p>
-            ) : groups && groups.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {groups.map(group => (
-                        <Card key={group.id} className={cn("flex flex-col", { "border-primary ring-2 ring-primary": user?.activeGroupId === group.id })}>
-                           <CardHeader className="flex-row items-start justify-between">
-                                <div>
-                                    <CardTitle>{group.name}</CardTitle>
-                                    <CardDescription>Propietario: {group.ownerUid === user?.uid ? 'Tú' : 'Otro'}</CardDescription>
-                                </div>
-                                {group.ownerUid === user?.uid && (
-                                     <AlertDialog>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                    <MoreVertical size={16} />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => handleEditGroup(group)}>
-                                                    <Edit className="mr-2 h-4 w-4" /> Editar Nombre
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <AlertDialogTrigger asChild>
-                                                    <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar Grupo
-                                                    </DropdownMenuItem>
-                                                </AlertDialogTrigger>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>¿Seguro que querés borrar "{group.name}"?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    Esta acción es irreversible. Se borrarán todos los jugadores y partidos asociados a este grupo.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel onClick={() => setDeletingGroupId(null)}>Cancelar</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => { setDeletingGroupId(group.id); handleDeleteGroup(); }} className="bg-destructive hover:bg-destructive/90">
-                                                    {isDeleting ? 'Borrando...' : 'Sí, borrar'}
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                )}
-                           </CardHeader>
-                           <CardContent className="flex-grow">
-                                <p className="text-sm text-muted-foreground">Jugadores: {playerCounts[group.id] || 0}</p>
-                                <div className="mt-4">
-                                    <p className="text-xs font-semibold">Código de Invitación:</p>
-                                    <Input readOnly value={group.inviteCode} className="mt-1 h-8 bg-muted"/>
-                                </div>
-                           </CardContent>
-                           <CardFooter>
-                                {user?.activeGroupId !== group.id && (
-                                    <Button variant="outline" className="w-full" onClick={() => handleSetActiveGroup(group.id)}>
-                                        Activar Grupo
-                                    </Button>
-                                )}
-                           </CardFooter>
-                        </Card>
-                    ))}
-                </div>
-            ) : (
-                <Alert className="text-center">
-                    <Users className="h-4 w-4" />
-                    <AlertTitle>No estás en ningún grupo</AlertTitle>
-                    <AlertDescription>
-                        Crea tu primer grupo o únete a uno usando un código de invitación.
-                    </AlertDescription>
-                </Alert>
-            )}
-        </div>
+      <div className="space-y-4">
+        {groupsLoading ? (
+          <p>Cargando grupos...</p>
+        ) : groups && groups.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {groups.map(group => (
+              <Card
+                key={group.id}
+                className={cn("flex flex-col", {
+                  "border-primary ring-2 ring-primary": user?.activeGroupId === group.id
+                })}
+              >
+                <CardHeader className="flex-row items-start justify-between">
+                  <div>
+                    <CardTitle>{group.name}</CardTitle>
+                    <CardDescription>Propietario: {group.ownerUid === user?.uid ? 'Tú' : 'Otro'}</CardDescription>
+                  </div>
+                  {group.ownerUid === user?.uid && (
+                    <AlertDialog>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical size={16} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditGroup(group)}>
+                            <Edit className="mr-2 h-4 w-4" /> Editar Nombre
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem
+                              onSelect={e => e.preventDefault()}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" /> Eliminar Grupo
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Seguro que querés borrar "{group.name}"?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta acción es irreversible. Se borrarán todos los jugadores y partidos asociados a este grupo.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel onClick={() => setDeletingGroupId(null)}>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => { setDeletingGroupId(group.id); handleDeleteGroup(); }}
+                            className="bg-destructive hover:bg-destructive/90"
+                          >
+                            {isDeleting ? 'Borrando...' : 'Sí, borrar'}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <p className="text-sm text-muted-foreground">Jugadores: {playerCounts[group.id] || 0}</p>
+                  <div className="mt-4">
+                    <p className="text-xs font-semibold">Código de Invitación:</p>
+                    <Input readOnly value={group.inviteCode} className="mt-1 h-8 bg-muted" />
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  {user?.activeGroupId !== group.id && (
+                    <Button variant="outline" className="w-full" onClick={() => handleSetActiveGroup(group.id)}>
+                      Activar Grupo
+                    </Button>
+                  )}
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Alert className="text-center">
+            <Users className="h-4 w-4" />
+            <AlertTitle>No estás en ningún grupo</AlertTitle>
+            <AlertDescription>
+              Crea tu primer grupo o únete a uno usando un código de invitación.
+            </AlertDescription>
+          </Alert>
+        )}
+      </div>
 
-        <AlertDialog open={!!editingGroupId} onOpenChange={(open) => !open && setEditingGroupId(null)}>
-            <AlertDialogContent>
-                <form onSubmit={editForm.handleSubmit(handleUpdateGroup)}>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Editar Nombre del Grupo</AlertDialogTitle>
-                    </AlertDialogHeader>
-                    <div className="py-4">
-                        <Input {...editForm.register('name')} />
-                        {editForm.formState.errors.name && <p className="text-xs text-destructive mt-1">{editForm.formState.errors.name.message}</p>}
-                    </div>
-                    <AlertDialogFooter>
-                        <Button type="button" variant="ghost" onClick={() => setEditingGroupId(null)}>Cancelar</Button>
-                        <Button type="submit" disabled={isEditing}>
-                            {isEditing && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                            Guardar
-                        </Button>
-                    </AlertDialogFooter>
-                </form>
-            </AlertDialogContent>
-        </AlertDialog>
+      <AlertDialog open={!!editingGroupId} onOpenChange={(open) => !open && setEditingGroupId(null)}>
+        <AlertDialogContent>
+          <form onSubmit={editForm.handleSubmit(handleUpdateGroup)}>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Editar Nombre del Grupo</AlertDialogTitle>
+            </AlertDialogHeader>
+            <div className="py-4">
+              <Input {...editForm.register('name')} />
+              {editForm.formState.errors.name && (
+                <p className="text-xs text-destructive mt-1">
+                  {editForm.formState.errors.name.message}
+                </p>
+              )}
+            </div>
+            <AlertDialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setEditingGroupId(null)}>Cancelar</Button>
+              <Button type="submit" disabled={isEditing}>
+                {isEditing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Guardar
+              </Button>
+            </AlertDialogFooter>
+          </form>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Separator />
 
@@ -446,7 +458,7 @@ export default function GroupsPage() {
             <CardDescription>
               Crea un nuevo espacio para tus partidos y jugadores.
             </CardDescription>
-          </Header>
+          </CardHeader>
           <form onSubmit={createForm.handleSubmit(handleCreateGroup)}>
             <CardContent>
               <Input
@@ -454,7 +466,7 @@ export default function GroupsPage() {
                 placeholder="Nombre del grupo"
                 disabled={isCreating}
               />
-               {createForm.formState.errors.name && (
+              {createForm.formState.errors.name && (
                 <p className="mt-2 text-xs text-destructive">
                   {createForm.formState.errors.name.message}
                 </p>
