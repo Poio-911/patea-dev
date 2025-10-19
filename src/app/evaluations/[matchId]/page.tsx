@@ -1,12 +1,11 @@
-
-import PerformEvaluationView from '@/components/perform-evaluation-view'
+import { PerformEvaluationView } from '@/components/perform-evaluation-view'
 
 interface PerformEvaluationPageProps {
-  params: { matchId: string }
+  params: Promise<{ matchId: string }>
 }
 
 export default async function PerformEvaluationPage({ params }: PerformEvaluationPageProps) {
-  const { matchId } = params
+  const { matchId } = await params
 
   if (!matchId) {
     return <div>ID de partido no válido.</div>
