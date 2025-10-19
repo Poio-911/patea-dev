@@ -180,49 +180,58 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
         try {
             let finalTeams = match.teams;
-            let matchUpdate: any = { status: 'completed' };
+            let matchUpdateData: any = { status: 'completed' };
 
-            // For collaborative matches, generate teams now. For manual, they already exist.
-            if(match.type === 'collaborative' && isMatchFull) {
+            // For collaborative matches, generate teams now. For manual, they should already exist.
+            // But let's check if teams exist for manual too, and generate if not.
+            if ((match.type === 'collaborative' && isMatchFull) || (match.type === 'manual' && (!finalTeams || finalTeams.length === 0))) {
                 const selectedPlayersData = allPlayers.filter(p => match.playerUids.includes(p.id));
-                const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
                 
-                if ('error' in teamGenerationResult) {
-                    throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
+                // Only generate if the number of players matches the required size
+                if (selectedPlayersData.length === match.matchSize) {
+                    const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
+                    
+                    if ('error' in teamGenerationResult) {
+                        throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
+                    }
+                    if (!teamGenerationResult.teams) {
+                        throw new Error('La respuesta de la IA no contiene equipos.');
+                    }
+                    finalTeams = teamGenerationResult.teams;
+                    matchUpdateData.teams = finalTeams;
+                } else {
+                     // If manual and not full, just complete without teams. They can't evaluate.
+                     console.warn("Finishing manual match without full player list. Teams not generated.");
                 }
-                if (!teamGenerationResult.teams) {
-                    throw new Error('La respuesta de la IA no contiene equipos.');
-                }
-                finalTeams = teamGenerationResult.teams;
-                matchUpdate.teams = finalTeams;
             }
 
-            batch.update(matchRef, matchUpdate);
+            batch.update(matchRef, matchUpdateData);
 
-            // Generate and save evaluation assignments for all match types
-            const assignments = generateEvaluationAssignments({ ...match, teams: finalTeams }, allPlayers);
-            assignments.forEach(assignment => {
-                const assignmentRef = doc(collection(firestore, `matches/${match.id}/assignments`));
-                batch.set(assignmentRef, assignment);
+            // Only generate assignments if teams were successfully formed
+            if (finalTeams && finalTeams.length > 0) {
+                const assignments = generateEvaluationAssignments({ ...match, teams: finalTeams }, allPlayers);
+                assignments.forEach(assignment => {
+                    const assignmentRef = doc(collection(firestore, `matches/${match.id}/assignments`));
+                    batch.set(assignmentRef, assignment);
 
-                // Create a notification for the evaluator
-                const notificationRef = doc(collection(firestore, `users/${assignment.evaluatorId}/notifications`));
-                const notification: Omit<Notification, 'id'> = {
-                    type: 'evaluation_pending',
-                    title: '¡Evaluación pendiente!',
-                    message: `Es hora de evaluar a tus compañeros del partido "${match.title}".`,
-                    link: `/evaluations/${match.id}`,
-                    isRead: false,
-                    createdAt: new Date().toISOString(),
-                };
-                batch.set(notificationRef, notification);
-            });
+                    const notificationRef = doc(collection(firestore, `users/${assignment.evaluatorId}/notifications`));
+                    const notification: Omit<Notification, 'id'> = {
+                        type: 'evaluation_pending',
+                        title: '¡Evaluación pendiente!',
+                        message: `Es hora de evaluar a tus compañeros del partido "${match.title}".`,
+                        link: `/evaluations/${match.id}`,
+                        isRead: false,
+                        createdAt: new Date().toISOString(),
+                    };
+                    batch.set(notificationRef, notification);
+                });
+            }
            
             await batch.commit();
 
             toast({
                 title: 'Partido Finalizado',
-                description: `El partido "${match.title}" ha sido marcado como finalizado y se han generado las asignaciones de evaluación.`
+                description: `El partido "${match.title}" ha sido marcado como finalizado. Se han generado las evaluaciones.`
             });
 
         } catch (error: any) {
