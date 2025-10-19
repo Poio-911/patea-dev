@@ -73,7 +73,7 @@ export default function ProfilePage() {
         const storage = getStorage(firebaseApp);
 
         const fileExtension = file.name.split('.').pop();
-        const fileName = `${user.uid}-${crypto.randomUUID()}.${fileExtension}`;
+        const fileName = `${user.uid}-${Date.now()}.${fileExtension}`;
         const filePath = `profile-images/${user.uid}/${fileName}`;
         
         const storageRef = ref(storage, filePath);
@@ -86,6 +86,12 @@ export default function ProfilePage() {
         const batch = writeBatch(firestore);
         batch.update(userDocRef, { photoURL: newPhotoURL });
         batch.update(playerDocRef, { photoUrl: newPhotoURL });
+        
+        if (availablePlayerData) {
+             const availablePlayerDocRef = doc(firestore, 'availablePlayers', user.uid);
+             batch.update(availablePlayerDocRef, { photoUrl: newPhotoURL });
+        }
+        
         await batch.commit();
 
         await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
@@ -114,7 +120,7 @@ export default function ProfilePage() {
   const loading = userLoading || createdPlayersLoading || createdMatchesLoading || playerLoading || availablePlayerLoading;
 
   if (loading) {
-    return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    return <div className="flex justify-center items-center h-full"><SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" /></div>;
   }
 
   if (!user) {
