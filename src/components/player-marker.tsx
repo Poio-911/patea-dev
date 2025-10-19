@@ -42,7 +42,7 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
       position={player.location}
       onClick={() => handleMarkerClick(player.uid)}
       icon={{
-        path: 'M8 3C8.82843 3 9.5 2.32843 9.5 1.5C9.5 0.671573 8.82843 0 8 0C7.17157 0 6.5 0.671573 6.5 1.5C6.5 2.32843 7.17158 3 8 3ZM12 4V2H14V4C14 5.10457 13.1045 6 12 6H10.5454L10.9897 16H8.98773L8.76557 11H7.23421L7.01193 16H5.00995L5.42014 6.77308L3.29995 9.6L1.69995 8.4L4.99995 4H12Z',
+        path: 'M8 3C8.82843 3 9.5 2.32843 9.5 1.5C9.5 0.671573 8.82843 0 8 0C7.17158 0 6.5 0.671573 6.5 1.5C6.5 2.32843 7.17158 3 8 3ZM12 4V2H14V4C14 5.10457 13.1045 6 12 6H10.5454L10.9897 16H8.98773L8.76557 11H7.23421L7.01193 16H5.00995L5.42014 6.77308L3.29995 9.6L1.69995 8.4L4.99995 4H12Z',
         fillColor: '#FBBF24',
         fillOpacity: 1,
         strokeWeight: 0,
@@ -65,6 +65,7 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
                   playerToInvite={player} 
                   userMatches={availableMatchesForInvite}
                   match={null}
+                  availablePlayers={null} // Not needed here as the context is different
                 >
                   <Button size="sm" className="w-full h-8 text-xs" disabled={!user || availableMatchesForInvite.length === 0}>
                       <UserPlus className="mr-2 h-4 w-4" />

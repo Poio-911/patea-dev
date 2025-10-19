@@ -30,6 +30,7 @@ import { Alert, AlertDescription } from './ui/alert';
 type InvitePlayerDialogProps = {
   playerToInvite: AvailablePlayer | null;
   userMatches: Match[];
+  availablePlayers?: Player[] | null;
   children: React.ReactNode;
   match?: Match | null; // Match is pre-selected
   disabled?: boolean;
