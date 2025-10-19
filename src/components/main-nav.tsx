@@ -206,9 +206,9 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto p-4 pt-20 pb-20 md:p-6 md:pt-22">{children}</main>
+          <main className="flex-1 overflow-y-auto p-4 pt-20 pb-20 md:p-6 md:pt-22 md:pb-16">{children}</main>
           
-          <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg md:hidden">
+          <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg">
               <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
               {navItems.map((item) => {
                   const isActive = pathname.startsWith(item.href);
