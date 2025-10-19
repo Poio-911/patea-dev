@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -170,37 +171,35 @@ export default function PlayerProfileView({ playerId, isUploading }: PlayerProfi
     <div className="flex flex-col gap-8">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1">
-            <Card>
-                <CardContent className="pt-6 flex flex-col items-center gap-4">
-                    <div className="relative">
-                        <Avatar className="h-32 w-32 border-4 border-primary/50">
-                            <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
-                            <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        {isUploading && (
-                            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                                <Loader2 className="h-8 w-8 animate-spin text-white" />
-                            </div>
-                        )}
-                    </div>
-                    <div className="text-center">
-                        <h2 className="text-2xl font-bold font-headline">{player.name}</h2>
-                        <div className="flex items-center justify-center gap-4 mt-1">
-                            <span className={cn("text-4xl font-bold", positionColors[player.position])}>{player.ovr}</span>
-                            <Badge variant="secondary" className="text-lg">{player.position}</Badge>
+            <div className="flex flex-col items-center gap-4">
+                <div className="relative">
+                    <Avatar className="h-32 w-32 border-4 border-primary/50">
+                        <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
+                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    {isUploading && (
+                        <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                            <Loader2 className="h-8 w-8 animate-spin text-white" />
                         </div>
+                    )}
+                </div>
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold font-headline">{player.name}</h2>
+                    <div className="flex items-center justify-center gap-4 mt-1">
+                        <span className={cn("text-4xl font-bold", positionColors[player.position])}>{player.ovr}</span>
+                        <Badge variant="secondary" className="text-lg">{player.position}</Badge>
                     </div>
-                    <Separator />
-                     <div className="w-full grid grid-cols-2 gap-x-8 gap-y-3 px-4">
-                        <Stat label="RIT" value={player.pac} />
-                        <Stat label="TIR" value={player.sho} />
-                        <Stat label="PAS" value={player.pas} />
-                        <Stat label="REG" value={player.dri} />
-                        <Stat label="DEF" value={player.def} />
-                        <Stat label="FIS" value={player.phy} />
-                    </div>
-                </CardContent>
-            </Card>
+                </div>
+                <Separator className="w-full"/>
+                 <div className="w-full grid grid-cols-2 gap-x-8 gap-y-3 px-4">
+                    <Stat label="RIT" value={player.pac} />
+                    <Stat label="TIR" value={player.sho} />
+                    <Stat label="PAS" value={player.pas} />
+                    <Stat label="REG" value={player.dri} />
+                    <Stat label="DEF" value={player.def} />
+                    <Stat label="FIS" value={player.phy} />
+                </div>
+            </div>
         </div>
         <div className="lg:col-span-2">
           <Card>

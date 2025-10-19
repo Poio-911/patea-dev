@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/page-header';
 import { doc, collection, query, where, writeBatch } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { Upload, Settings, UserRound, CaseSensitive, Loader2, Sparkles } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Player, Match, AvailablePlayer } from '@/lib/types';
 import { useState, useRef, useMemo, useEffect, useTransition } from 'react';
@@ -28,6 +28,7 @@ import { useDoc } from '@/firebase/firestore/use-doc';
 import { SetAvailabilityDialog } from '@/components/set-availability-dialog';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { generatePlayerCardImageAction } from '@/lib/actions';
+import { Separator } from '@/components/ui/separator';
 
 
 export default function ProfilePage() {
@@ -140,7 +141,9 @@ export default function ProfilePage() {
   };
   
   const loading = userLoading || createdPlayersLoading || createdMatchesLoading || playerLoading || availablePlayerLoading;
-  const credits = player?.cardGenerationCredits ?? 0;
+  
+  // FIX: Assign 2 credits if the field is missing or undefined for existing users
+  const credits = player?.cardGenerationCredits === undefined ? 2 : player.cardGenerationCredits;
 
   if (loading) {
     return <div className="flex justify-center items-center h-full"><SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" /></div>;
@@ -155,29 +158,33 @@ export default function ProfilePage() {
         <PageHeader
             title="Mi Perfil"
             description="Tu información personal, estadísticas de jugador y actividad."
-        >
-             <div className="flex flex-col sm:flex-row gap-2">
-                <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={handlePhotoUpload}
-                    className="hidden"
-                    accept="image/png, image/jpeg, image/gif" 
-                />
-                <Button onClick={handleButtonClick} size="sm" variant="outline" disabled={isUploading || isGenerating}>
-                    {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                    {isUploading ? "Subiendo..." : "Cambiar Foto"}
-                </Button>
-                <Button onClick={handleGenerateAICard} size="sm" variant="default" disabled={isGenerating || credits <= 0}>
-                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                    Generar Foto de Jugador con IA ({credits})
-                </Button>
-            </div>
-      </PageHeader>
+        />
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-3">
-             <PlayerProfileView playerId={user.uid} isUploading={isUploading || isGenerating} />
+             <Card>
+                <CardContent className="pt-6">
+                    <PlayerProfileView playerId={user.uid} isUploading={isUploading || isGenerating} />
+                </CardContent>
+                <Separator/>
+                <CardFooter className="flex-col sm:flex-row gap-2 p-4">
+                     <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                        accept="image/png, image/jpeg, image/gif" 
+                    />
+                    <Button onClick={handleButtonClick} size="sm" variant="outline" disabled={isUploading || isGenerating} className="w-full sm:w-auto">
+                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                        {isUploading ? "Subiendo..." : "Cambiar Foto"}
+                    </Button>
+                    <Button onClick={handleGenerateAICard} size="sm" variant="default" disabled={isGenerating || credits <= 0} className="w-full sm:w-auto">
+                        {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                        Generar Foto con IA ({credits})
+                    </Button>
+                </CardFooter>
+             </Card>
         </div>
 
         <Card className="lg:col-span-3">
@@ -284,4 +291,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
 
