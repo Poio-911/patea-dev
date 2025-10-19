@@ -380,7 +380,7 @@ export default function FindMatchPage() {
                     </CardHeader>
                     <CardContent className="p-2">
                         <ScrollArea className="h-[calc(100vh-20rem)] lg:h-full">
-                            <div className="space-y-2 p-1">
+                            <div className="space-y-2 p-1 pb-20 md:pb-1">
                                 {filteredMatches.length > 0 ? filteredMatches.map((match) => (
                                 <div id={`match-card-${match.id}`} key={match.id}>
                                     <CompactMatchCard
@@ -402,7 +402,7 @@ export default function FindMatchPage() {
                     </CardContent>
                 </Card>
             </div>
-            <div className="lg:col-span-2 h-[400px] lg:h-full w-full rounded-lg overflow-hidden">
+            <div className="h-[400px] lg:h-full w-full rounded-lg overflow-hidden">
                 <GoogleMap
                     mapContainerStyle={containerStyle}
                     center={userLocation || defaultCenter}
@@ -500,8 +500,8 @@ export default function FindMatchPage() {
                         </Button>
                     </CardHeader>
                     <CardContent className="p-2">
-                        <ScrollArea className="h-[calc(100vh-20rem)] lg:h-full">
-                            <div className="space-y-2 p-1">
+                        <ScrollArea className="h-full">
+                            <div className="space-y-2 p-1 pb-20 md:pb-1">
                                 {filteredPlayers && filteredPlayers.length > 0 ? filteredPlayers.map((player) => (
                                 <div id={`player-card-${player.uid}`} key={player.uid}>
                                     <CompactPlayerCard
@@ -525,7 +525,7 @@ export default function FindMatchPage() {
                     </CardContent>
                 </Card>
             </div>
-            <div className="lg:col-span-2 h-[400px] lg:h-full w-full rounded-lg overflow-hidden">
+            <div className="h-[400px] lg:h-full w-full rounded-lg overflow-hidden">
                 {isLoaded ? (
                     <GoogleMap
                         mapContainerStyle={containerStyle}
@@ -548,7 +548,7 @@ export default function FindMatchPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4 h-[calc(100vh-8rem)]">
+    <div className="flex flex-col gap-4">
         <PageHeader
             title="Buscar Partidos y Jugadores"
             description="Encontrá partidos públicos o jugadores libres para completar tu equipo."
@@ -576,3 +576,4 @@ export default function FindMatchPage() {
     </div>
   );
 }
+
