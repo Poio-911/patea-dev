@@ -27,6 +27,7 @@ import { WelcomeDialog } from '@/components/welcome-dialog';
 import { SetAvailabilityDialog } from '@/components/set-availability-dialog';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { Label } from '@/components/ui/label';
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
     upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
@@ -257,7 +258,7 @@ function DashboardContent() {
                                                     </div>
                                                      <div className="flex items-center gap-1.5">
                                                         <User className="h-3.5 w-3.5" />
-                                                        <span>{ownerName || 'Desconocido'}</span>
+                                                        <span className="truncate">{ownerName.trim() || 'Desconocido'}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -336,5 +337,3 @@ export default function DashboardPage() {
         </Suspense>
     )
 }
-
-    
