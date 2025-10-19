@@ -3,8 +3,9 @@
   {
     "origin": [
       "http://localhost:3000",
-      "https://studio--mil-disculpis.us-central1.hosted.app",
-      "https://*.cloudworkstations.dev"
+      "https://*.cloudworkstations.dev",
+      "https://mil-disculpis.web.app",
+      "https://mil-disculpis.firebaseapp.com"
     ],
     "method": [
       "GET",
@@ -22,7 +23,8 @@
       "X-Goog-Upload-Command",
       "X-Goog-Upload-Offset",
       "X-Goog-Upload-Protocol",
-      "x-firebase-gmpid"
+      "x-firebase-gmpid",
+      "Access-Control-Allow-Origin"
     ],
     "maxAgeSeconds": 3600
   }
