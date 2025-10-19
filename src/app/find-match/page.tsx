@@ -71,27 +71,21 @@ const CompactMatchCard = ({ match, onHover, isActive }: { match: Match, onHover:
             onMouseEnter={() => onHover(match.id)}
             onMouseLeave={() => onHover(null)}
         >
-            <div className="p-3 grid grid-cols-3 gap-2 items-center">
-                <div className="col-span-2 space-y-1">
-                    <h3 className="font-bold truncate">{match.title}</h3>
-                    <div className="text-xs text-muted-foreground space-y-1">
-                        <div className="flex items-center gap-2">
-                            <Calendar className="h-3 w-3" />
-                            <span>{format(new Date(match.date), "d MMM, yyyy", { locale: es })} - {match.time}hs</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <MapPin className="h-3 w-3" />
-                            <span className="truncate">{match.location.name}</span>
-                        </div>
+            <div className="p-4 grid grid-cols-3 gap-4 items-center">
+                <div className="col-span-2 space-y-2">
+                    <h3 className="font-bold leading-tight">{match.title}</h3>
+                    <div className="text-xs text-muted-foreground flex items-center gap-2">
+                        <Calendar className="h-3 w-3" />
+                        <span>{format(new Date(match.date), "d MMM, yyyy", { locale: es })} - {match.time}hs</span>
                     </div>
                 </div>
-                <div className="col-span-1 flex flex-col items-end justify-between h-full gap-2">
+                <div className="col-span-1 flex flex-col items-end justify-center gap-2">
                      <div className="flex items-center gap-2 text-sm font-semibold">
-                        <SoccerPlayerIcon className="h-4 w-4" />
-                        <span>{match.players.length} / {match.matchSize}</span>
+                        <Users className="h-4 w-4" />
+                        <span>{match.players.length}/{match.matchSize}</span>
                     </div>
                     <MatchDetailsDialog match={match}>
-                       <Button variant="default" size="sm" className="h-7 px-2 text-xs w-full">
+                       <Button variant="default" size="sm" className="h-8 text-xs w-full">
                            Ver Detalles
                        </Button>
                     </MatchDetailsDialog>
@@ -379,7 +373,7 @@ export default function FindMatchPage() {
                         </Button>
                     </CardHeader>
                     <CardContent className="p-2">
-                        <ScrollArea className="h-[calc(100vh-20rem)] lg:h-full">
+                        <ScrollArea className="h-full">
                             <div className="space-y-2 p-1 pb-20 md:pb-1">
                                 {filteredMatches.length > 0 ? filteredMatches.map((match) => (
                                 <div id={`match-card-${match.id}`} key={match.id}>
@@ -548,14 +542,14 @@ export default function FindMatchPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 h-full">
         <PageHeader
             title="Buscar Partidos y Jugadores"
             description="Encontrá partidos públicos o jugadores libres para completar tu equipo."
         />
         <Tabs defaultValue="find-matches" className="flex flex-col flex-grow">
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                 <TabsList className="grid w-full grid-cols-2 sm:w-auto">
+                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="find-matches">
                         <Search className="mr-2 h-4 w-4"/>
                         Buscar Partidos
