@@ -1,4 +1,4 @@
-# Prospecto de Inversión: Amateur Football Manager (AFM)
+# Prospecto de Inversión: Pateá
 
 ## "Donde la Pasión se Encuentra con la Tecnología"
 
@@ -8,15 +8,15 @@
 
 El fútbol amateur es un mercado global multimillonario, impulsado por una pasión que trasciende lo profesional. Sin embargo, su organización está anclada en el caos: grupos de WhatsApp desordenados, equipos desequilibrados que generan frustración y una falta total de seguimiento del rendimiento que limita el compromiso del jugador.
 
-**Amateur Football Manager (AFM)** no es solo una aplicación para organizar partidos; es una **plataforma de servicios deportivos (SaaS)** que digitaliza y gamifica la experiencia del fútbol amateur. Utilizando una arquitectura tecnológica de vanguardia con **Next.js**, una base de datos en tiempo real con **Firebase**, y una capa de inteligencia artificial con **Google AI (Genkit)**, AFM transforma la desorganización en una experiencia de usuario adictiva, similar a la de un videojuego de gestión deportiva.
+**Pateá** no es solo una aplicación para organizar partidos; es una **plataforma de servicios deportivos (SaaS)** que digitaliza y gamifica la experiencia del fútbol amateur. Utilizando una arquitectura tecnológica de vanguardia con **Next.js**, una base de datos en tiempo real con **Firebase**, y una capa de inteligencia artificial con **Google AI (Genkit)**, Pateá transforma la desorganización en una experiencia de usuario adictiva, similar a la de un videojuego de gestión deportiva.
 
-**Buscamos capital para acelerar nuestra penetración en el mercado, expandir nuestro conjunto de características premium y posicionar a AFM como la plataforma de referencia para el fútbol amateur a nivel mundial.**
+**Buscamos capital para acelerar nuestra penetración en el mercado, expandir nuestro conjunto de características premium y posicionar a Pateá como la plataforma de referencia para el fútbol amateur a nivel mundial.**
 
 ---
 
 ### 2. La Solución Tecnológica: Un Ecosistema Deportivo Inteligente
 
-AFM ataca los puntos débiles del mercado con una solución integral, escalable y basada en datos.
+Pateá ataca los puntos débiles del mercado con una solución integral, escalable y basada en datos.
 
 #### a. **Núcleo de Gestión Centralizada (Firebase)**
 - **Arquitectura Serverless y Escalable:** Nuestra base de datos NoSQL (Firestore) y sistema de autenticación (Firebase Auth) garantizan un rendimiento en tiempo real y una capacidad de escalado masivo con costos operativos mínimos. La plataforma puede soportar desde un pequeño grupo de amigos hasta ligas enteras sin necesidad de re-arquitectura.
@@ -67,7 +67,7 @@ Nuestra estrategia de monetización se basa en un modelo **Freemium**, diseñado
 
 ### 4. Visión a Futuro y Roadmap
 
-Nuestra visión es convertir a AFM en el "LinkedIn del fútbol amateur".
+Nuestra visión es convertir a Pateá en el "LinkedIn del fútbol amateur".
 
 - **Q1: Expansión a App Nativa (Android/iOS):** La arquitectura actual, con un backend desacoplado en Firebase, está **100% preparada** para soportar una aplicación nativa. El esfuerzo se centrará únicamente en la UI, reduciendo drásticamente el tiempo y el costo de desarrollo.
 - **Q2: Integración de Pagos:** Implementar un sistema para que los jugadores puedan pagar su cuota del partido directamente desde la aplicación.
@@ -80,4 +80,4 @@ Nuestra visión es convertir a AFM en el "LinkedIn del fútbol amateur".
 
 Somos un equipo ágil y altamente cualificado, con experiencia probada en la construcción de productos digitales escalables y centrados en el usuario. Nuestra capacidad para iterar rápidamente y responder a las necesidades del mercado es nuestra mayor fortaleza.
 
-**AFM es más que una aplicación. Es el futuro de la organización deportiva amateur. Estamos listos para escalar. ¿Te unes al equipo?**
+**Pateá es más que una aplicación. Es el futuro de la organización deportiva amateur. Estamos listos para escalar. ¿Te unes al equipo?**
