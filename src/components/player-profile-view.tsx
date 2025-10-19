@@ -87,7 +87,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
 
             // 4. Fetch evaluator profiles
             if (evaluatorIds.length > 0) {
-                const usersQuery = query(collection(firestore, 'users'), where('uid', 'in', evaluatorIds));
+                const usersQuery = query(collection(firestore, 'users'), where('__name__', 'in', evaluatorIds));
                 const usersSnapshot = await getDocs(usersQuery);
                 const newProfiles: Record<string, {displayName: string, photoURL: string}> = {};
                 usersSnapshot.forEach(doc => {
@@ -171,6 +171,10 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1">
             <div className="flex flex-col items-center gap-4">
+                <Avatar className="h-32 w-32 border-4 border-primary/50">
+                    <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
+                    <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                </Avatar>
                 <div className="text-center">
                     <h2 className="text-2xl font-bold font-headline">{player.name}</h2>
                     <div className="flex items-center justify-center gap-4 mt-1">
