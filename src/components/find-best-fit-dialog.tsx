@@ -85,7 +85,7 @@ export function FindBestFitDialog({
              toast({ variant: 'destructive', title: 'Error', description: 'El asistente recomendó jugadores que ya no están disponibles.' });
         }
       } else {
-         toast({ title: 'Sin suerte esta vez', description: 'No se encontraron jugadores adecuados en el mercado.' });
+         toast({ title: 'Sin suerte esta vez', description: 'No se encontraron jugadores adecuados entre los disponibles.' });
       }
     });
   };
@@ -147,7 +147,7 @@ export function FindBestFitDialog({
                     {isPending && (
                         <div className="flex flex-col items-center justify-center h-40 gap-4 text-center border-2 border-dashed rounded-lg">
                             <Sparkles className="h-10 w-10 text-amber-500 animate-pulse" />
-                            <p className="font-semibold">Buscando en el mercado de pases...</p>
+                            <p className="font-semibold">Revisando la lista de jugadores libres...</p>
                             <p className="text-sm text-muted-foreground">Encontrando a los mejores jugadores para tu partido.</p>
                         </div>
                     )}
@@ -195,5 +195,3 @@ export function FindBestFitDialog({
     </Dialog>
   );
 }
-
-    

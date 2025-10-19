@@ -120,7 +120,7 @@ export function SetAvailabilityDialog({ player, availability, children }: SetAva
             );
         } else {
             await deleteDoc(availablePlayerDocRef);
-            toast({ title: 'Ya no estás disponible', description: 'Has sido eliminado del mercado de fichajes.' });
+            toast({ title: 'Ya no estás disponible', description: 'Has sido eliminado de la lista de jugadores libres.' });
             setOpen(false);
             setIsSubmitting(false);
         }
@@ -151,7 +151,7 @@ export function SetAvailabilityDialog({ player, availability, children }: SetAva
                   Estoy disponible para partidos
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Aparecerás en el mercado de pases para otros organizadores.
+                  Otros DTs podrán encontrarte para invitarte.
                 </p>
               </div>
               <Controller

@@ -215,7 +215,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           {availablePlayerData && (
             <div className="fixed top-16 left-0 right-0 z-10 h-8 bg-gradient-to-r from-green-500/80 to-emerald-600/80 text-white flex items-center justify-center shadow-md animate-in fade-in-0 slide-in-from-top-2 duration-500">
                 <CheckCircle className="mr-2 h-4 w-4" />
-                <p className="text-xs font-semibold">Estás visible en el mercado de pases</p>
+                <p className="text-xs font-semibold">Estás visible para otros partidos</p>
             </div>
           )}
 

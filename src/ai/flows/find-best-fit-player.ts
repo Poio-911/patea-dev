@@ -28,7 +28,7 @@ const MatchSchema = z.object({
 
 const FindBestFitPlayerInputSchema = z.object({
   match: MatchSchema.describe("El partido que necesita jugadores."),
-  availablePlayers: z.array(PlayerSchema).describe("La lista de jugadores disponibles en el mercado."),
+  availablePlayers: z.array(PlayerSchema).describe("La lista de jugadores disponibles para fichar."),
   spotsToFill: z.number().describe("El número de plazas a cubrir en el partido.")
 });
 export type FindBestFitPlayerInput = z.infer<typeof FindBestFitPlayerInputSchema>;
@@ -66,7 +66,7 @@ const prompt = ai.definePrompt({
     - Plazas a cubrir: {{{spotsToFill}}}
     - Plantilla actual: {{#each match.players}} {{this.displayName}} ({{this.position}}, OVR {{this.ovr}}){{/each}}
 
-    JUGADORES DISPONIBLES EN EL MERCADO:
+    JUGADORES LIBRES PARA FICHAR:
     {{#each availablePlayers}}
     - UID: {{this.uid}}, Nombre: {{this.displayName}}, Posición: {{this.position}}, OVR: {{this.ovr}}
     {{/each}}
