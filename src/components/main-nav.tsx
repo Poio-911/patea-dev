@@ -83,7 +83,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
 
   React.useEffect(() => {
-    if (!userLoading && !user && pathname !== '/' && pathname !== '/login' && pathname !== '/register') {
+    const allowedPaths = ['/', '/login', '/register', '/forgot-password'];
+    if (!userLoading && !user && !allowedPaths.includes(pathname)) {
       router.push('/login');
     }
   }, [user, userLoading, pathname, router]);
@@ -113,7 +114,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     }
   };
 
-  if (pathname === '/' || pathname === '/login' || pathname === '/register') {
+  if (pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password') {
     return <>{children}</>;
   }
 
