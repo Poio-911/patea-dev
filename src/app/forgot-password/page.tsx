@@ -41,12 +41,14 @@ export default function ForgotPasswordPage() {
     setIsSubmitting(true);
     try {
       await sendPasswordResetEmail(auth, data.email);
+      // Even if the email doesn't exist, we show the success message for security reasons.
+      // Firebase doesn't throw an error for non-existent emails to prevent email enumeration attacks.
       setEmailSent(true);
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'No se pudo enviar el correo. Verifica que el email sea correcto.',
+        description: 'Ocurrió un error técnico al intentar enviar el correo. Por favor, inténtalo más tarde.',
       });
     } finally {
       setIsSubmitting(false);
@@ -67,10 +69,12 @@ export default function ForgotPasswordPage() {
         </CardHeader>
         <CardContent>
           {emailSent ? (
-            <Alert variant="default">
-              <CardTitle className="text-lg">Correo Enviado</CardTitle>
+            <Alert variant="default" className="border-green-500 text-green-700">
+              <CardTitle className="text-lg text-green-700">¡Correo Enviado!</CardTitle>
               <AlertDescription className="mt-2">
-                Revisá tu bandeja de entrada (y la de spam, por las dudas) para encontrar el enlace y restablecer tu contraseña.
+                Si la dirección de correo electrónico está registrada, recibirás un email en breve.
+                <br /><br />
+                <strong>Importante:</strong> No te olvides de revisar tu carpeta de <strong>spam</strong> o correo no deseado.
               </AlertDescription>
             </Alert>
           ) : (
