@@ -36,6 +36,7 @@ export type Player = {
   stats: PlayerStats;
   ownerUid: string; // The UID of the user who created this player
   groupId: string;
+  cardGenerationCredits?: number;
 } & DocumentData;
 
 export type DayOfWeek = 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes' | 'sabado' | 'domingo';

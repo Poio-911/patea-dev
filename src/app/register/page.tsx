@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useUser, useFirestore, initializeFirebase } from '@/firebase';
@@ -129,7 +130,7 @@ export default function RegisterPage() {
         // 4b. Create player document in /players
         const playerRef = doc(firestore, 'players', newUser.uid); // Use user UID as player ID
         const baseStat = 50;
-        const newPlayer = {
+        const newPlayer: Omit<Player, 'id'> = {
             name: data.displayName,
             position: data.position,
             pac: baseStat,
@@ -143,6 +144,7 @@ export default function RegisterPage() {
             stats: { matchesPlayed: 0, goals: 0, assists: 0, averageRating: 0 },
             ownerUid: newUser.uid,
             groupId: null, // No group initially
+            cardGenerationCredits: 2, // Give 2 credits on registration
         };
         batch.set(playerRef, newPlayer);
 
@@ -294,3 +296,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+

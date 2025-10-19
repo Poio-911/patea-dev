@@ -6,11 +6,11 @@ import { useUser, useFirestore, initializeFirebase } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { doc, collection, query, where, writeBatch } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { Upload, Settings, UserRound, CaseSensitive, Loader2 } from 'lucide-react';
+import { Upload, Settings, UserRound, CaseSensitive, Loader2, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Player, Match, AvailablePlayer } from '@/lib/types';
-import { useState, useRef, useMemo, useEffect } from 'react';
+import { useState, useRef, useMemo, useEffect, useTransition } from 'react';
 import { useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import PlayerProfileView from '@/components/player-profile-view';
@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { SetAvailabilityDialog } from '@/components/set-availability-dialog';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
+import { generatePlayerCardImageAction } from '@/lib/actions';
 
 
 export default function ProfilePage() {
@@ -36,6 +37,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isGenerating, startTransition] = useTransition();
   
   const playerRef = useMemo(() => firestore && user?.uid ? doc(firestore, 'players', user.uid) : null, [firestore, user?.uid]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
@@ -114,11 +116,31 @@ export default function ProfilePage() {
     }
   };
 
+  const handleGenerateAICard = () => {
+    if (!user?.uid) return;
+    startTransition(async () => {
+        const result = await generatePlayerCardImageAction(user.uid);
+        if (result.error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error al generar imagen',
+                description: result.error,
+            });
+        } else {
+            toast({
+                title: '¡Imagen de jugador generada!',
+                description: 'Tu nueva foto de perfil está lista.',
+            });
+        }
+    });
+  };
+
   const handleButtonClick = () => {
     fileInputRef.current?.click();
   };
   
   const loading = userLoading || createdPlayersLoading || createdMatchesLoading || playerLoading || availablePlayerLoading;
+  const credits = player?.cardGenerationCredits ?? 0;
 
   if (loading) {
     return <div className="flex justify-center items-center h-full"><SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" /></div>;
@@ -134,22 +156,28 @@ export default function ProfilePage() {
             title="Mi Perfil"
             description="Tu información personal, estadísticas de jugador y actividad."
         >
-            <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handlePhotoUpload}
-                className="hidden"
-                accept="image/png, image/jpeg, image/gif" 
-            />
-            <Button onClick={handleButtonClick} size="sm" variant="outline" disabled={isUploading}>
-                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                {isUploading ? "Subiendo..." : "Cambiar Foto"}
-            </Button>
+             <div className="flex flex-col sm:flex-row gap-2">
+                <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                    accept="image/png, image/jpeg, image/gif" 
+                />
+                <Button onClick={handleButtonClick} size="sm" variant="outline" disabled={isUploading || isGenerating}>
+                    {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                    {isUploading ? "Subiendo..." : "Cambiar Foto"}
+                </Button>
+                <Button onClick={handleGenerateAICard} size="sm" variant="default" disabled={isGenerating || credits <= 0}>
+                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                    Generar Foto de Jugador con IA ({credits})
+                </Button>
+            </div>
       </PageHeader>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-3">
-             <PlayerProfileView playerId={user.uid} isUploading={isUploading} />
+             <PlayerProfileView playerId={user.uid} isUploading={isUploading || isGenerating} />
         </div>
 
         <Card className="lg:col-span-3">
@@ -256,3 +284,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+

@@ -1,4 +1,5 @@
 
+
 {
   "entities": {
     "userProfile": {
@@ -40,7 +41,8 @@
           }
         },
         "ownerUid": { "type": "string" },
-        "groupId": { "type": "string", "description": "The ID of the group this player belongs to." }
+        "groupId": { "type": "string", "description": "The ID of the group this player belongs to." },
+        "cardGenerationCredits": { "type": "number", "description": "Credits remaining for AI card generation." }
       },
       "required": ["name", "position", "ovr", "ownerUid"]
     },
@@ -331,3 +333,4 @@
     }
   }
 }
+

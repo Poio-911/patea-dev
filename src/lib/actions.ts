@@ -1,4 +1,5 @@
 
+
 // @ts-nocheck
 'use server';
 
@@ -6,9 +7,12 @@ import { generateBalancedTeams, GenerateBalancedTeamsInput } from '@/ai/flows/ge
 import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/flows/suggest-player-improvements';
 import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-match-day-forecast';
 import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-fit-player';
+import { generatePlayerCardImage } from '@/ai/flows/generate-player-card-image';
 import { Player, Evaluation } from './types';
-import { getFirestore, doc, collection, getDocs, where, query } from 'firebase/firestore';
+import { getFirestore, doc, collection, getDocs, where, query, getDoc, writeBatch, updateDoc, increment } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
+import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { getAuth, updateProfile } from 'firebase/auth';
 
 
 // This approach uses the Client SDK on the server, which is not standard.
@@ -16,7 +20,9 @@ import { initializeFirebase } from '@/firebase';
 function getClientFirebase() {
     const { firebaseApp } = initializeFirebase();
     const firestore = getFirestore(firebaseApp);
-    return { firestore };
+    const auth = getAuth(firebaseApp);
+    const storage = getStorage(firebaseApp);
+    return { firestore, auth, storage };
 }
 
 
@@ -149,5 +155,75 @@ export async function findBestFitPlayerAction(input: Omit<FindBestFitPlayerInput
              return { error: 'La IA devolvió una respuesta inesperada. Por favor, inténtalo de nuevo.' };
         }
         return { error: error.message || 'La IA no pudo procesar la solicitud en este momento.' };
+    }
+}
+
+export async function generatePlayerCardImageAction(userId: string) {
+    const { firestore, auth, storage } = getClientFirebase();
+
+    const playerRef = doc(firestore, 'players', userId);
+    const playerSnap = await getDoc(playerRef);
+
+    if (!playerSnap.exists()) {
+        return { error: "No se encontró tu perfil de jugador." };
+    }
+
+    const player = playerSnap.data() as Player;
+    const credits = player.cardGenerationCredits ?? 0;
+
+    if (credits <= 0) {
+        return { error: "No te quedan créditos para generar imágenes." };
+    }
+
+    if (!player.photoUrl) {
+        return { error: "Primero debes subir una foto de perfil." };
+    }
+    
+    // Check if the current photo is a placeholder from picsum.photos
+    if (player.photoUrl.includes('picsum.photos')) {
+         return { error: "La generación de imágenes no funciona con fotos de marcador de posición. Por favor, sube una foto tuya real." };
+    }
+
+    try {
+        const generatedImageDataUri = await generatePlayerCardImage(player.photoUrl);
+        
+        // Upload new image to Storage
+        const filePath = `profile-images/${userId}/generated_${Date.now()}.png`;
+        const storageRef = ref(storage, filePath);
+        const uploadResult = await uploadString(storageRef, generatedImageDataUri, 'data_url');
+        const newPhotoURL = await getDownloadURL(uploadResult.ref);
+
+        // Update Auth, user profile, and player profile in a batch
+        const batch = writeBatch(firestore);
+        
+        // User profile
+        const userRef = doc(firestore, 'users', userId);
+        batch.update(userRef, { photoURL: newPhotoURL });
+        
+        // Player profile & credits
+        batch.update(playerRef, { 
+            photoUrl: newPhotoURL,
+            cardGenerationCredits: increment(-1)
+        });
+        
+        // Available Player profile if exists
+        const availablePlayerRef = doc(firestore, 'availablePlayers', userId);
+        const availablePlayerSnap = await getDoc(availablePlayerRef);
+        if (availablePlayerSnap.exists()) {
+            batch.update(availablePlayerRef, { photoUrl: newPhotoURL });
+        }
+
+        // Commit batch
+        await batch.commit();
+
+        // Update Auth profile
+        if (auth.currentUser) {
+            await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
+        }
+        
+        return { success: true, newPhotoURL };
+    } catch (error: any) {
+        console.error("Error generating player card image:", error);
+        return { error: "La IA no pudo generar la imagen. Inténtalo más tarde." };
     }
 }
