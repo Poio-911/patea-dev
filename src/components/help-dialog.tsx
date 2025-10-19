@@ -13,16 +13,12 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { Users, HelpCircle } from 'lucide-react';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
 import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 import { MatchIcon } from './icons/match-icon';
 import { EvaluationIcon } from './icons/evaluation-icon';
 import { FindMatchIcon } from './icons/find-match-icon';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './ui/carousel';
+import Image from 'next/image';
 
 interface HelpDialogProps {
   forceOpen?: boolean;
@@ -32,27 +28,32 @@ const tutorialContent = [
     {
         icon: Users,
         title: "Paso 1: Armá o unite a un Grupo",
-        content: "Todo arranca acá. Un 'grupo' es tu cuadro de amigos o tu comunidad de fútbol. Podés crear tu propio grupo (y te damos un código para invitar gente) o sumarte a uno que ya exista con su código. Toda tu movida (jugadores, partidos) pasa adentro de tu 'grupo activo'."
+        content: "Todo arranca acá. Un 'grupo' es tu cuadro de amigos. Podés crear el tuyo o sumarte a uno existente con un código. Tu 'grupo activo' es donde pasa toda la movida.",
+        image: "/images/help-groups.png"
     },
     {
         icon: SoccerPlayerIcon,
         title: "Paso 2: Manejá tu Plantel",
-        content: "En la sección 'Jugadores', podés agregar jugadores 'manuales' a tu grupo. Son perfiles que manejás vos, definiendo su puesto y habilidades (OVR, RIT, TIR, etc.). Los que se registran en la app también aparecen acá, pero su carta solo la pueden editar ellos mismos."
+        content: "En 'Jugadores', agregá perfiles 'manuales' para los que no usan la app. Los que se registran aparecen acá automáticamente, y su carta de jugador evoluciona con el tiempo.",
+        image: "/images/help-players.png"
     },
     {
         icon: MatchIcon,
         title: "Paso 3: Organizá Partidos",
-        content: "Hay dos formas. 'Manual': elegís a todos los jugadores y, al confirmar, los equipos se arman solos buscando el mayor equilibrio. 'Colaborativo': creás el evento y la gente de tu grupo se anota. También podés hacer un partido colaborativo 'Público' para que cualquiera en la app pueda encontrarlo y sumarse."
+        content: "Hay dos formas: 'Manual' (elegís los jugadores y la IA arma los equipos) o 'Colaborativo' (la gente de tu grupo se anota). ¡Incluso podés hacerlos públicos!",
+        image: "/images/help-matches.png"
     },
     {
         icon: EvaluationIcon,
         title: "Paso 4: Evaluá y Subí de Nivel",
-        content: "Después de cada partido, en 'Evaluaciones', podés puntuar a tus compañeros. Esto es clave: en base a esos puntajes, el sistema actualiza solo el OVR y los atributos de cada uno. ¡Así evolucionan con el tiempo, como en el FIFA!"
+        content: "Después de cada partido, en 'Evaluaciones', puntuás a tus compañeros. En base a eso, el sistema actualiza solo el OVR y los atributos de cada uno. ¡Como en el FIFA!",
+        image: "/images/help-evaluations.png"
     },
     {
         icon: FindMatchIcon,
         title: "Paso 5: Buscá Partidos y Jugadores",
-        content: "En la sección 'Buscar' tenés el mercado de pases. En 'Buscar Partidos', podés encontrar partidos públicos cerca tuyo. En 'Buscar Jugadores', ves a otros que se marcaron como 'disponibles' para jugar. Ideal para cuando te falta uno para completar."
+        content: "En 'Buscar' tenés el mercado. Encontrá partidos públicos cerca o jugadores libres para completar tu equipo cuando te falte uno. Hacete visible para que otros te encuentren.",
+        image: "/images/help-find.png"
     }
 ];
 
@@ -77,37 +78,38 @@ export function HelpDialog({ forceOpen = false }: HelpDialogProps) {
             <DialogDescription className="text-center">Acá tenés una guía rápida para que le saques todo el jugo a la app.</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-grow overflow-y-auto -mx-6 px-6 py-2 border-y">
-            <Accordion type="single" collapsible defaultValue="item-0">
-                {tutorialContent.map((section, index) => {
-                    const Icon = section.icon;
-                    return (
-                        <AccordionItem key={index} value={`item-${index}`}>
-                            <AccordionTrigger>
-                                <div className="flex items-center gap-4 text-left">
-                                    <div className="p-3 bg-primary/10 rounded-full">
-                                       <Icon className="h-5 w-5 text-primary" />
+        <div className="flex-grow overflow-y-auto -mx-6 px-6 py-2">
+           <Carousel className="w-full max-w-lg mx-auto">
+                <CarouselContent>
+                    {tutorialContent.map((section, index) => {
+                        const Icon = section.icon;
+                        return (
+                            <CarouselItem key={index}>
+                                <div className="p-1 text-center flex flex-col items-center">
+                                    <div className="p-4 bg-primary/10 rounded-full mb-4">
+                                       <Icon className="h-8 w-8 text-primary" />
                                     </div>
-                                    <span className="font-semibold text-base">{section.title}</span>
+                                    <h3 className="text-xl font-semibold mb-2">{section.title}</h3>
+                                    <p className="text-muted-foreground mb-4 px-4">{section.content}</p>
+                                    <div className="relative w-full aspect-video rounded-lg overflow-hidden border">
+                                        <Image src={section.image} alt={section.title} layout="fill" objectFit="cover" />
+                                    </div>
                                 </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pl-16 text-muted-foreground">
-                                {section.content}
-                            </AccordionContent>
-                        </AccordionItem>
-                    );
-                })}
-            </Accordion>
+                            </CarouselItem>
+                        )
+                    })}
+                </CarouselContent>
+                <CarouselPrevious className="left-0" />
+                <CarouselNext className="right-0" />
+            </Carousel>
         </div>
         
         <DialogFooter>
-            <Button onClick={() => setIsOpen(false)}>
-              ¡Entendido!
+            <Button onClick={() => setIsOpen(false)} className="w-full">
+              ¡Entendido, a jugar!
             </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-
-    

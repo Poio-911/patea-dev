@@ -26,9 +26,15 @@ export const useFcm = () => {
         console.log('Notification permission granted.');
         toast({ title: '¡Notificaciones activadas!', description: 'Recibirás avisos importantes sobre los partidos.' });
         
-        const currentToken = await getToken(messaging, {
-          vapidKey: 'YOUR_VAPID_KEY_HERE_FROM_FIREBASE_CONSOLE', // TODO: Replace with your VAPID key
-        });
+        // IMPORTANT: You need to replace this with your actual VAPID key from the Firebase console.
+        const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+        if (!vapidKey) {
+            console.error("VAPID key is not configured in environment variables.");
+            toast({ variant: 'destructive', title: 'Error de Configuración', description: 'Falta la clave de notificaciones del servidor.' });
+            return;
+        }
+        
+        const currentToken = await getToken(messaging, { vapidKey });
 
         if (currentToken) {
           console.log('FCM Token:', currentToken);
