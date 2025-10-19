@@ -1,12 +1,6 @@
-
 [
   {
-    "origin": [
-      "http://localhost:3000",
-      "https://*.cloudworkstations.dev",
-      "https://mil-disculpis.web.app",
-      "https://mil-disculpis.firebaseapp.com"
-    ],
+    "maxAgeSeconds": 3600,
     "method": [
       "GET",
       "POST",
@@ -14,6 +8,13 @@
       "DELETE",
       "HEAD",
       "OPTIONS"
+    ],
+    "origin": [
+      "http://localhost:3000",
+      "https://*.cloudworkstations.dev",
+      "https://mil-disculpis.web.app",
+      "https://mil-disculpis.firebaseapp.com",
+      "https://studio--mil-disculpis.us-central1.hosted.app"
     ],
     "responseHeader": [
       "Content-Type",
@@ -25,7 +26,6 @@
       "X-Goog-Upload-Protocol",
       "x-firebase-gmpid",
       "Access-Control-Allow-Origin"
-    ],
-    "maxAgeSeconds": 3600
+    ]
   }
 ]
