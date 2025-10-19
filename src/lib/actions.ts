@@ -159,7 +159,7 @@ export async function generatePlayerCardImageAction(userId: string) {
     try {
         const playerSnap = await playerRef.get();
 
-        if (!playerSnap.exists) {
+        if (!playerSnap.exists()) {
             return { error: "No se encontró tu perfil de jugador." };
         }
 
