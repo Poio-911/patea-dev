@@ -103,7 +103,7 @@ export default function PerformEvaluationPage({ params }: { params: { matchId: s
   const userAssignmentsQuery = useMemo(() => {
       if (!firestore || !user?.uid || !matchId) return null;
       return query(
-          collection(firestore, 'matches', matchId as string, 'assignments'),
+          collection(firestore, 'matches', matchId, 'assignments'),
           where('evaluatorId', '==', user.uid),
           where('status', '==', 'pending')
       );
@@ -183,10 +183,10 @@ export default function PerformEvaluationPage({ params }: { params: { matchId: s
     try {
         const batch = writeBatch(firestore);
 
-        const selfEvalRef = doc(collection(firestore, 'matches', matchId as string, 'selfEvaluations'));
+        const selfEvalRef = doc(collection(firestore, 'matches', matchId, 'selfEvaluations'));
         batch.set(selfEvalRef, {
             playerId: user.uid,
-            matchId: matchId as string,
+            matchId: matchId,
             goals: data.evaluatorGoals,
             reportedAt: new Date().toISOString(),
         });
@@ -197,7 +197,7 @@ export default function PerformEvaluationPage({ params }: { params: { matchId: s
                 assignmentId: evaluation.assignmentId,
                 playerId: evaluation.subjectId,
                 evaluatorId: user.uid,
-                matchId: matchId as string,
+                matchId: matchId,
                 goals: 0, // This is now stored in self-evaluation
                 evaluatedAt: new Date().toISOString(),
             };
@@ -210,7 +210,7 @@ export default function PerformEvaluationPage({ params }: { params: { matchId: s
             
             batch.set(evalRef, newEvaluation);
 
-            const assignmentRef = doc(firestore, 'matches', matchId as string, 'assignments', evaluation.assignmentId);
+            const assignmentRef = doc(firestore, 'matches', matchId, 'assignments', evaluation.assignmentId);
             batch.update(assignmentRef, {
                 status: 'completed',
                 evaluationId: evalRef.id
