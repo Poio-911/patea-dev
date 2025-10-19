@@ -2,7 +2,7 @@
 'use client';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Users2, Calendar, Loader2 } from 'lucide-react';
+import { Users2, Calendar, Loader2, Mail } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { useMemo } from 'react';
@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { AddMatchDialog } from '@/components/add-match-dialog';
 import type { Match, Player } from '@/lib/types';
 import { MatchCard } from '@/components/match-card';
+import { InvitationsSheet } from '@/components/invitations-sheet';
 
 export default function MatchesPage() {
     const { user, loading: userLoading } = useUser();
@@ -85,7 +86,10 @@ export default function MatchesPage() {
                 title="Partidos"
                 description="Programa, visualiza y gestiona todos tus partidos."
             >
-                <AddMatchDialog allPlayers={sortedPlayers} disabled={!user?.activeGroupId} />
+                <div className="flex gap-2">
+                    <InvitationsSheet />
+                    <AddMatchDialog allPlayers={sortedPlayers} disabled={!user?.activeGroupId} />
+                </div>
             </PageHeader>
 
             {!user?.activeGroupId && (

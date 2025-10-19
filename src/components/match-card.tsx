@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import type { Match, Player, EvaluationAssignment, Notification, UserProfile } from '@/lib/types';
-import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDoc } from 'firebase/firestore';
+import type { Match, Player, EvaluationAssignment, Notification, UserProfile, Invitation } from '@/lib/types';
+import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -121,6 +121,13 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         if (!firestore) return;
         setIsDeleting(true);
         try {
+            // Also delete invitations subcollection
+            const invitationsRef = collection(firestore, 'matches', match.id, 'invitations');
+            const invitationsSnap = await getDocs(invitationsRef);
+            const batch = writeBatch(firestore);
+            invitationsSnap.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+
             await deleteDoc(doc(firestore, 'matches', match.id));
             toast({
                 title: 'Partido Eliminado',
@@ -357,7 +364,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                         playerToInvite={null} 
                         userMatches={[]}
                         match={match} 
-                        availablePlayers={availablePlayersToInvite}
                         disabled={isMatchFull} 
                     >
                         <Button variant="outline" size="sm" className="w-full" disabled={isMatchFull}>

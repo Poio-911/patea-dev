@@ -83,6 +83,7 @@ export type Match = {
     icon: string;
     temperature: number;
   };
+  invitations?: Invitation[];
 } & DocumentData;
 
 export type Team = {
@@ -125,10 +126,10 @@ export type Notification = {
 
 export type Invitation = {
     id: string;
-    playerId: string;
-    playerName: string;
-    playerOvr: number;
-    playerPhotoUrl: string;
+    matchId: string;
+    matchTitle: string;
+    matchDate: string;
+    playerId: string; // The invited player
     status: 'pending' | 'accepted' | 'declined';
     createdAt: string;
 } & DocumentData;

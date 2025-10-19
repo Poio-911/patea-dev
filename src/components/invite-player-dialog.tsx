@@ -11,9 +11,9 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { useState, useTransition, useMemo } from 'react';
+import { useState, useTransition } from 'react';
 import { useFirestore, useUser } from '@/firebase';
-import { doc, updateDoc, arrayUnion, writeBatch, collection, getDoc, setDoc } from 'firebase/firestore';
+import { doc, writeBatch, collection, getDoc } from 'firebase/firestore';
 import type { AvailablePlayer, Match, Player, Invitation, Notification } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send } from 'lucide-react';
@@ -30,7 +30,6 @@ import { Alert, AlertDescription } from './ui/alert';
 type InvitePlayerDialogProps = {
   playerToInvite: AvailablePlayer | null;
   userMatches: Match[];
-  availablePlayers?: Player[] | null;
   children: React.ReactNode;
   match?: Match | null; // Match is pre-selected
   disabled?: boolean;
@@ -60,7 +59,6 @@ export function InvitePlayerDialog({
 
     startTransition(async () => {
       const batch = writeBatch(firestore);
-      const matchRef = doc(firestore, 'matches', finalSelectedMatchId);
       const allMatches = userMatches.length > 0 ? userMatches : (match ? [match] : []);
       const selectedMatchData = allMatches.find(m => m.id === finalSelectedMatchId);
 
@@ -68,13 +66,15 @@ export function InvitePlayerDialog({
           toast({ variant: 'destructive', title: 'Error', description: 'No se encontró el partido seleccionado.' });
           return;
       }
-
+      
+      // Check if player is already in match
       if (selectedMatchData.playerUids.includes(playerToInvite.uid)) {
           toast({ variant: 'default', title: 'Jugador ya en el partido', description: `${playerToInvite.displayName} ya está en la lista.` });
           setOpen(false);
           return;
       }
-
+      
+      // Create an invitation document instead of directly adding the player
       const invitationRef = doc(collection(firestore, `matches/${finalSelectedMatchId}/invitations`));
       const newInvitation: Omit<Invitation, 'id'> = {
           playerId: playerToInvite.uid,
@@ -86,6 +86,7 @@ export function InvitePlayerDialog({
       };
       batch.set(invitationRef, newInvitation);
 
+      // Create a notification for the invited player
       const notificationRef = doc(collection(firestore, `users/${playerToInvite.uid}/notifications`));
       const notification: Omit<Notification, 'id'> = {
         type: 'match_invite',
