@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -45,10 +44,18 @@ const timeOfDayOptions: { id: TimeOfDay, label: string }[] = [
 
 const availabilitySchema = z.object({
   isAvailable: z.boolean(),
-  availability: z.record(z.nativeEnum(Object.keys(daysOfWeek.reduce((acc, day) => ({ ...acc, [day.id]: '' }), {}))), z.array(z.string()).optional())
+  availability: z.object({
+    lunes: z.array(z.string()).optional(),
+    martes: z.array(z.string()).optional(),
+    miercoles: z.array(z.string()).optional(),
+    jueves: z.array(z.string()).optional(),
+    viernes: z.array(z.string()).optional(),
+    sabado: z.array(z.string()).optional(),
+    domingo: z.array(z.string()).optional(),
+  }).optional()
 }).refine(data => {
     if (!data.isAvailable) return true;
-    return Object.values(data.availability).some(times => times && times.length > 0);
+    return data.availability && Object.values(data.availability).some(times => times && times.length > 0);
 }, {
     message: "Si estás disponible, debés seleccionar al menos un día y horario.",
     path: ["availability"],
@@ -217,5 +224,3 @@ export function SetAvailabilityDialog({ player, availability, children }: SetAva
     </Dialog>
   );
 }
-
-    
