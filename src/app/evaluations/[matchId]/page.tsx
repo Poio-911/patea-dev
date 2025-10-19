@@ -3,7 +3,7 @@
 
 import { useFirestore, useUser, useCollection } from '@/firebase';
 import { doc, writeBatch, collection, query, where } from 'firebase/firestore';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import type { Match, Player, EvaluationAssignment, Evaluation, SelfEvaluation } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
@@ -84,9 +84,8 @@ const TagCheckbox = ({ tag, isChecked, onCheckedChange }: { tag: PerformanceTag,
     )
 }
 
-export default function PerformEvaluationPage() {
-  const params = useParams();
-  const matchId = params.matchId as string;
+export default function PerformEvaluationPage({ params }: { params: { matchId: string } }) {
+  const { matchId } = params;
   const firestore = useFirestore();
   const { user } = useUser();
   const router = useRouter();
