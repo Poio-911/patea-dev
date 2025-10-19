@@ -29,31 +29,36 @@ const tutorialContent = [
         icon: Users,
         title: "Paso 1: Armá o unite a un Grupo",
         content: "Todo arranca acá. Un 'grupo' es tu cuadro de amigos. Podés crear el tuyo o sumarte a uno existente con un código. Tu 'grupo activo' es donde pasa toda la movida.",
-        image: "https://picsum.photos/seed/helpgroups/800/450"
+        image: "https://picsum.photos/seed/helpgroups/800/450",
+        hint: "football team"
     },
     {
         icon: SoccerPlayerIcon,
         title: "Paso 2: Manejá tu Plantel",
         content: "En 'Jugadores', agregá perfiles 'manuales' para los que no usan la app. Los que se registran aparecen acá automáticamente, y su carta de jugador evoluciona con el tiempo.",
-        image: "https://picsum.photos/seed/helpplayers/800/450"
+        image: "https://picsum.photos/seed/helpplayers/800/450",
+        hint: "player card"
     },
     {
         icon: MatchIcon,
         title: "Paso 3: Organizá Partidos",
         content: "Hay dos formas: 'Manual' (elegís los jugadores y la IA arma los equipos) o 'Colaborativo' (la gente de tu grupo se anota). ¡Incluso podés hacerlos públicos!",
-        image: "https://picsum.photos/seed/helpmatches/800/450"
+        image: "https://picsum.photos/seed/helpmatches/800/450",
+        hint: "football match"
     },
     {
         icon: EvaluationIcon,
         title: "Paso 4: Evaluá y Subí de Nivel",
         content: "Después de cada partido, en 'Evaluaciones', puntuás a tus compañeros. En base a eso, el sistema actualiza solo el OVR y los atributos de cada uno. ¡Como en el FIFA!",
-        image: "https://picsum.photos/seed/helpevals/800/450"
+        image: "https://picsum.photos/seed/helpevals/800/450",
+        hint: "player stats"
     },
     {
         icon: FindMatchIcon,
         title: "Paso 5: Buscá Partidos y Jugadores",
         content: "En 'Buscar' tenés el mercado. Encontrá partidos públicos cerca o jugadores libres para completar tu equipo cuando te falte uno. Hacete visible para que otros te encuentren.",
-        image: "https://picsum.photos/seed/helpfind/800/450"
+        image: "https://picsum.photos/seed/helpfind/800/450",
+        hint: "map search"
     }
 ];
 
@@ -92,7 +97,7 @@ export function HelpDialog({ forceOpen = false }: HelpDialogProps) {
                                     <h3 className="text-xl font-semibold mb-2">{section.title}</h3>
                                     <p className="text-muted-foreground mb-4 px-4">{section.content}</p>
                                     <div className="relative w-full aspect-video rounded-lg overflow-hidden border">
-                                        <Image src={section.image} alt={section.title} layout="fill" objectFit="cover" data-ai-hint="tutorial step image" />
+                                        <Image src={section.image} alt={section.title} layout="fill" objectFit="cover" data-ai-hint={section.hint} />
                                     </div>
                                 </div>
                             </CarouselItem>
