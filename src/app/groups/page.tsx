@@ -468,7 +468,6 @@ export default function GroupsPage() {
           </form>
         </Card>
       </div>
-
     </div>
   );
 }
