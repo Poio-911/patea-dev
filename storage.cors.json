@@ -1,8 +1,10 @@
+
 [
   {
     "origin": [
       "http://localhost:3000",
-      "https://studio--mil-disculpis.us-central1.hosted.app"
+      "https://studio--mil-disculpis.us-central1.hosted.app",
+      "https://*.cloudworkstations.dev"
     ],
     "method": [
       "GET",

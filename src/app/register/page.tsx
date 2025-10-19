@@ -18,7 +18,7 @@ import Link from 'next/link';
 import { writeBatch, collection, doc } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { nanoid } from 'nanoid';
-import type { Group } from '@/lib/types';
+import type { Group, Player } from '@/lib/types';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, Camera } from 'lucide-react';
@@ -79,91 +79,91 @@ export default function RegisterPage() {
     let photoURL = `https://picsum.photos/seed/${data.displayName}/400/400`;
 
     try {
+        // Step 1: Create user in Auth
         const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
         const newUser = userCredential.user;
 
-        if(newUser) {
-
-            // If a file was selected, upload it now that we have a user UID
-            if (profileImageFile) {
-                try {
-                    const { firebaseApp } = initializeFirebase();
-                    const storage = getStorage(firebaseApp);
-                    const fileExtension = profileImageFile.name.split('.').pop();
-                    const fileName = `${newUser.uid}.${fileExtension}`;
-                    const filePath = `profile-images/${newUser.uid}/${fileName}`;
-                    const storageRef = ref(storage, filePath);
-                    
-                    const uploadResult = await uploadBytes(storageRef, profileImageFile);
-                    photoURL = await getDownloadURL(uploadResult.ref);
-                } catch (uploadError) {
-                    console.error("Error uploading profile image, using fallback.", uploadError);
-                    toast({
-                        variant: 'destructive',
-                        title: 'Error de subida',
-                        description: 'No se pudo subir tu foto de perfil. Se usará una imagen por defecto.',
-                    });
-                }
+        // Step 2: If a file was selected, upload it now that we have a user UID
+        if (profileImageFile) {
+            try {
+                const { firebaseApp } = initializeFirebase();
+                const storage = getStorage(firebaseApp);
+                const fileExtension = profileImageFile.name.split('.').pop();
+                const fileName = `${newUser.uid}.${fileExtension}`;
+                const filePath = `profile-images/${newUser.uid}/${fileName}`;
+                const storageRef = ref(storage, filePath);
+                
+                const uploadResult = await uploadBytes(storageRef, profileImageFile);
+                photoURL = await getDownloadURL(uploadResult.ref);
+            } catch (uploadError) {
+                console.error("Error uploading profile image, using fallback.", uploadError);
+                toast({
+                    variant: 'destructive',
+                    title: 'Error de subida',
+                    description: 'No se pudo subir tu foto. Se usará una por defecto, podés cambiarla desde tu perfil.',
+                });
             }
-
-            const batch = writeBatch(firestore);
-
-            // 1. Update auth profile
-            await updateProfile(newUser, {
-                displayName: data.displayName,
-                photoURL: photoURL,
-            });
-
-            // 2. Create the user's first group
-            const newGroupRef = doc(collection(firestore, 'groups'));
-            const newGroup: Omit<Group, 'id'> = {
-              name: `Grupo de ${data.displayName}`,
-              ownerUid: newUser.uid,
-              inviteCode: nanoid(8),
-              members: [newUser.uid],
-            };
-            batch.set(newGroupRef, newGroup);
-
-            // 3. Create user document in /users and set the new group as active
-            const userRef = doc(firestore, 'users', newUser.uid);
-            const newUserProfile = {
-              uid: newUser.uid,
-              email: newUser.email,
-              displayName: data.displayName,
-              photoURL: photoURL,
-              groups: [newGroupRef.id],
-              activeGroupId: newGroupRef.id,
-            };
-            batch.set(userRef, newUserProfile);
-
-            // 4. Create player document in /players and associate it with the new group
-            const playerRef = doc(firestore, 'players', newUser.uid); // Use user UID as player ID
-            const baseStat = 50;
-            const newPlayer = {
-                name: data.displayName,
-                position: data.position,
-                pac: baseStat,
-                sho: baseStat,
-                pas: baseStat,
-                dri: baseStat,
-                def: baseStat,
-                phy: baseStat,
-                ovr: baseStat,
-                photoUrl: photoURL,
-                stats: { matchesPlayed: 0, goals: 0, assists: 0, averageRating: 0 },
-                ownerUid: newUser.uid,
-                groupId: newGroupRef.id, // Associate player with the newly created group
-            };
-            batch.set(playerRef, newPlayer);
-
-            await batch.commit();
         }
+        
+        // Step 3: Update Auth profile with display name and final photoURL
+        await updateProfile(newUser, {
+            displayName: data.displayName,
+            photoURL: photoURL,
+        });
+
+        // Step 4: Create Firestore documents in a batch for atomicity
+        const batch = writeBatch(firestore);
+
+        // 4a. Create the user's first group
+        const newGroupRef = doc(collection(firestore, 'groups'));
+        const newGroup: Omit<Group, 'id'> = {
+          name: `Grupo de ${data.displayName}`,
+          ownerUid: newUser.uid,
+          inviteCode: nanoid(8),
+          members: [newUser.uid],
+        };
+        batch.set(newGroupRef, newGroup);
+
+        // 4b. Create user document in /users and set the new group as active
+        const userRef = doc(firestore, 'users', newUser.uid);
+        const newUserProfile = {
+          uid: newUser.uid,
+          email: newUser.email,
+          displayName: data.displayName,
+          photoURL: photoURL,
+          groups: [newGroupRef.id],
+          activeGroupId: newGroupRef.id,
+        };
+        batch.set(userRef, newUserProfile);
+
+        // 4c. Create player document in /players
+        const playerRef = doc(firestore, 'players', newUser.uid); // Use user UID as player ID
+        const baseStat = 50;
+        const newPlayer = {
+            name: data.displayName,
+            position: data.position,
+            pac: baseStat,
+            sho: baseStat,
+            pas: baseStat,
+            dri: baseStat,
+            def: baseStat,
+            phy: baseStat,
+            ovr: baseStat,
+            photoUrl: photoURL,
+            stats: { matchesPlayed: 0, goals: 0, assists: 0, averageRating: 0 },
+            ownerUid: newUser.uid,
+            groupId: newGroupRef.id,
+        };
+        batch.set(playerRef, newPlayer);
+
+        await batch.commit();
         
         toast({
             title: '¡Cuenta creada!',
             description: 'Te hemos redirigido al panel de control.',
         });
         // The useEffect will handle the redirect
+
     } catch (error: any) {
         toast({
             variant: 'destructive',
