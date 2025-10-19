@@ -25,6 +25,7 @@ import { Label } from './ui/label';
 import { Switch } from './ui/switch';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { Separator } from './ui/separator';
+import { ScrollArea } from './ui/scroll-area';
 
 const daysOfWeek: { id: DayOfWeek, label: string }[] = [
     { id: 'lunes', label: 'Lunes' },
@@ -43,7 +44,6 @@ const timeOfDayOptions: { id: TimeOfDay, label: string }[] = [
 ];
 
 const availabilitySchema = z.object({
-  isAvailable: z.boolean(),
   availability: z.object({
     lunes: z.array(z.string()).optional(),
     martes: z.array(z.string()).optional(),
@@ -52,13 +52,10 @@ const availabilitySchema = z.object({
     viernes: z.array(z.string()).optional(),
     sabado: z.array(z.string()).optional(),
     domingo: z.array(z.string()).optional(),
-  }).optional()
-}).refine(data => {
-    if (!data.isAvailable) return true;
-    return data.availability && Object.values(data.availability).some(times => times && times.length > 0);
-}, {
-    message: "Si estás disponible, debés seleccionar al menos un día y horario.",
-    path: ["availability"],
+  }).refine(data => Object.values(data).some(times => times && times.length > 0), {
+    message: "Debes seleccionar al menos un día y horario para guardar tu disponibilidad.",
+    path: ["lunes"], // report error on one of the fields
+  })
 });
 
 
@@ -80,14 +77,12 @@ export function SetAvailabilityDialog({ player, availability, children }: SetAva
   const form = useForm<AvailabilityFormData>({
     resolver: zodResolver(availabilitySchema),
     defaultValues: {
-      isAvailable: Object.keys(availability).length > 0,
       availability: availability || {},
     },
   });
   
   useEffect(() => {
     form.reset({
-        isAvailable: Object.keys(availability).length > 0,
         availability: availability || {}
     });
   }, [availability, form, open]);
@@ -103,35 +98,28 @@ export function SetAvailabilityDialog({ player, availability, children }: SetAva
     const availablePlayerDocRef = doc(firestore, 'availablePlayers', user.uid);
 
     try {
-        if (data.isAvailable) {
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const { latitude, longitude } = position.coords;
-                    const newAvailablePlayer: Omit<AvailablePlayer, 'id'> = {
-                        uid: user.uid,
-                        displayName: player.name,
-                        photoUrl: player.photoUrl || '',
-                        position: player.position,
-                        ovr: player.ovr,
-                        location: { lat: latitude, lng: longitude },
-                        availability: data.availability as Availability,
-                    };
-                    await setDoc(availablePlayerDocRef, newAvailablePlayer);
-                    toast({ title: 'Disponibilidad actualizada', description: 'Tus preferencias de horario han sido guardadas.' });
-                    setOpen(false);
-                    setIsSubmitting(false);
-                },
-                (error) => {
-                    toast({ variant: 'destructive', title: 'Error de ubicación', description: 'No se pudo obtener tu ubicación. Por favor, activa los permisos.' });
-                    setIsSubmitting(false);
-                }
-            );
-        } else {
-            await deleteDoc(availablePlayerDocRef);
-            toast({ title: 'Ya no estás visible', description: 'Has sido eliminado de la lista de jugadores libres.' });
-            setOpen(false);
-            setIsSubmitting(false);
-        }
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                const newAvailablePlayer: Omit<AvailablePlayer, 'id'> = {
+                    uid: user.uid,
+                    displayName: player.name,
+                    photoUrl: player.photoUrl || '',
+                    position: player.position,
+                    ovr: player.ovr,
+                    location: { lat: latitude, lng: longitude },
+                    availability: data.availability as Availability,
+                };
+                await setDoc(availablePlayerDocRef, newAvailablePlayer, { merge: true });
+                toast({ title: 'Disponibilidad actualizada', description: 'Tus preferencias de horario han sido guardadas.' });
+                setOpen(false);
+                setIsSubmitting(false);
+            },
+            (error) => {
+                toast({ variant: 'destructive', title: 'Error de ubicación', description: 'No se pudo obtener tu ubicación. Por favor, activa los permisos.' });
+                setIsSubmitting(false);
+            }
+        );
     } catch (error) {
         console.error('Error updating availability:', error);
         toast({ variant: 'destructive', title: 'Error', description: 'No se pudo guardar tu disponibilidad.' });
@@ -139,46 +127,19 @@ export function SetAvailabilityDialog({ player, availability, children }: SetAva
     }
   };
   
-  const isAvailable = form.watch('isAvailable');
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <DialogHeader>
-            <DialogTitle>Configurar Disponibilidad</DialogTitle>
-            <DialogDescription>
-              Hacete visible para otros organizadores y definí cuándo podés jugar.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-6">
-            <div className="flex items-center space-x-4 rounded-md border p-4">
-              <div className="flex-1 space-y-1">
-                <p className="text-sm font-medium leading-none">
-                  Estoy disponible para partidos
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Otros DTs podrán encontrarte para invitarte.
-                </p>
-              </div>
-              <Controller
-                control={form.control}
-                name="isAvailable"
-                render={({ field }) => (
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                    aria-label="Disponibilidad para partidos"
-                  />
-                )}
-              />
-            </div>
-
-            {isAvailable && (
-              <div className="space-y-4 animate-in fade-in-0 duration-500">
-                <Separator />
-                <Label>¿Qué días y horarios te quedan bien?</Label>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Configurar Disponibilidad Semanal</DialogTitle>
+          <DialogDescription>
+            Marcá los días y los momentos en los que generalmente estás libre para jugar.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex-grow overflow-hidden flex flex-col">
+            <ScrollArea className="flex-grow -mx-6 px-6">
+              <div className="py-4 space-y-4">
                 {daysOfWeek.map(day => (
                   <div key={day.id} className="p-3 border rounded-md">
                      <Controller
@@ -190,11 +151,11 @@ export function SetAvailabilityDialog({ player, availability, children }: SetAva
                                 variant="outline"
                                 value={field.value || []}
                                 onValueChange={field.onChange}
-                                className="justify-start gap-2"
+                                className="justify-start gap-2 flex-wrap"
                             >
-                                <Label className="font-semibold w-24">{day.label}</Label>
+                                <Label className="font-semibold w-24 flex-shrink-0">{day.label}</Label>
                                 {timeOfDayOptions.map(time => (
-                                    <ToggleGroupItem key={time.id} value={time.id} className="text-xs px-2">
+                                    <ToggleGroupItem key={time.id} value={time.id} className="text-xs px-2 h-8">
                                         {time.label}
                                     </ToggleGroupItem>
                                 ))}
@@ -207,18 +168,17 @@ export function SetAvailabilityDialog({ player, availability, children }: SetAva
                     <p className="text-sm font-medium text-destructive">{form.formState.errors.availability.message}</p>
                 )}
               </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <CalendarCheck className="mr-2 h-4 w-4" />
-              )}
-              Guardar Disponibilidad
-            </Button>
-          </DialogFooter>
+            </ScrollArea>
+            <DialogFooter className="mt-4 pt-4 border-t">
+                <Button type="submit" disabled={isSubmitting} className="w-full">
+                {isSubmitting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                    <CalendarCheck className="mr-2 h-4 w-4" />
+                )}
+                Guardar Disponibilidad
+                </Button>
+            </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

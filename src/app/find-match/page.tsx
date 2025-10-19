@@ -310,16 +310,15 @@ export default function FindMatchPage() {
 
     if (!matchSearchCompleted) {
       return (
-        <Card className="max-w-xl mx-auto h-full flex flex-col">
+        <Card className="h-full flex flex-col">
             <CardHeader>
                 <CardTitle className="text-center">Encontrá Partidos Cerca Tuyo</CardTitle>
                 <CardDescription className="text-center">
                     Ajusta los filtros y dale al botón para encontrar partidos públicos.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow overflow-y-auto flex flex-col items-center gap-6">
-                <ScrollArea className="w-full h-full">
-                <div className="w-full px-4 space-y-6 pb-24">
+            <CardContent className="flex-grow overflow-y-auto">
+                <div className="w-full px-1 space-y-6">
                     <div>
                         <div className="flex justify-between font-medium mb-1">
                             <Label>Radio de Búsqueda:</Label>
@@ -350,14 +349,13 @@ export default function FindMatchPage() {
                         </ToggleGroup>
                     </div>
                 </div>
-                </ScrollArea>
             </CardContent>
-            <CardContent className="mt-auto p-4 border-t">
+            <DialogFooter className="mt-auto p-4 border-t">
                 <Button onClick={handleSearchNearby} disabled={isSearching} size="lg" className="w-full">
                     {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LocateFixed className="mr-2 h-5 w-5" />}
                     {isSearching ? 'Buscando...' : 'Buscar Partidos Cercanos'}
                 </Button>
-            </CardContent>
+            </DialogFooter>
         </Card>
       );
     }
@@ -366,14 +364,14 @@ export default function FindMatchPage() {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
             <div className="lg:col-span-1 h-full flex flex-col gap-4">
-                <Card>
+                <Card className="flex-grow flex flex-col">
                     <CardHeader className="p-4 flex-row items-center justify-between">
                         <CardTitle className="text-lg">Partidos Encontrados ({filteredMatches.length})</CardTitle>
                         <Button variant="ghost" size="icon" onClick={() => setMatchSearchCompleted(false)}>
                             <SlidersHorizontal className="h-4 w-4" />
                         </Button>
                     </CardHeader>
-                    <CardContent className="p-2">
+                    <CardContent className="p-2 flex-grow overflow-hidden">
                         <ScrollArea className="h-full">
                             <div className="space-y-2 p-1">
                                 {filteredMatches.length > 0 ? filteredMatches.map((match) => (
@@ -422,55 +420,53 @@ export default function FindMatchPage() {
     }
 
     const initialView = (
-        <Card className="max-w-xl mx-auto h-full flex flex-col">
+        <Card className="h-full flex flex-col">
             <CardHeader>
                 <CardTitle className="text-center">Encontrá Jugadores Libres</CardTitle>
                 <CardDescription className="text-center">
                     Selecciona un partido y ajusta los filtros para encontrar el jugador que te falta.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow overflow-y-auto flex flex-col items-center gap-6">
-                <ScrollArea className="w-full h-full">
-                    <div className="w-full px-4 space-y-6 pb-24">
-                        <div>
-                            <Label htmlFor='match-select-player-search'>Partido a completar</Label>
-                            <Select onValueChange={setPlayerSearchMatchId} value={playerSearchMatchId || ''}>
-                            <SelectTrigger id="match-select-player-search" className='mt-1'>
-                                <SelectValue placeholder="Elige un partido..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {availableMatchesForInvite.length > 0 ? (
-                                    availableMatchesForInvite.map(match => (
-                                    <SelectItem key={match.id} value={match.id}>
-                                        {match.title} ({match.players.length}/{match.matchSize})
-                                    </SelectItem>
-                                    ))
-                                ) : (
-                                    <div className="p-4 text-center text-sm text-muted-foreground">No tienes partidos que necesiten jugadores.</div>
-                                )}
-                            </SelectContent>
-                            </Select>
-                        </div>
-                        <div className={cn(!playerSearchMatchId && "opacity-50 pointer-events-none")}>
-                            <Label className="font-medium">Posición</Label>
-                            <ToggleGroup type="multiple" value={playerPositionFilter} onValueChange={setPlayerPositionFilter} variant="outline" className="justify-start mt-1 flex-wrap">
-                                <ToggleGroupItem value="POR">POR</ToggleGroupItem>
-                                <ToggleGroupItem value="DEF">DEF</ToggleGroupItem>
-                                <ToggleGroupItem value="MED">MED</ToggleGroupItem>
-                                <ToggleGroupItem value="DEL">DEL</ToggleGroupItem>
-                            </ToggleGroup>
-                        </div>
-                        <div className={cn(!playerSearchMatchId && "opacity-50 pointer-events-none")}>
-                            <div className="flex justify-between font-medium mb-1">
-                                <Label>Rango de OVR:</Label>
-                                <span className="text-primary">{playerOvrFilter[0]} - {playerOvrFilter[1]}</span>
-                            </div>
-                            <Slider value={playerOvrFilter} onValueChange={(value) => setPlayerOvrFilter(value as [number, number])} min={40} max={99} step={1} />
-                        </div>
+            <CardContent className="flex-grow overflow-y-auto">
+                <div className="w-full px-1 space-y-6">
+                    <div>
+                        <Label htmlFor='match-select-player-search'>Partido a completar</Label>
+                        <Select onValueChange={setPlayerSearchMatchId} value={playerSearchMatchId || ''}>
+                        <SelectTrigger id="match-select-player-search" className='mt-1'>
+                            <SelectValue placeholder="Elige un partido..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {availableMatchesForInvite.length > 0 ? (
+                                availableMatchesForInvite.map(match => (
+                                <SelectItem key={match.id} value={match.id}>
+                                    {match.title} ({match.players.length}/{match.matchSize})
+                                </SelectItem>
+                                ))
+                            ) : (
+                                <div className="p-4 text-center text-sm text-muted-foreground">No tienes partidos que necesiten jugadores.</div>
+                            )}
+                        </SelectContent>
+                        </Select>
                     </div>
-                </ScrollArea>
+                    <div className={cn(!playerSearchMatchId && "opacity-50 pointer-events-none")}>
+                        <Label className="font-medium">Posición</Label>
+                        <ToggleGroup type="multiple" value={playerPositionFilter} onValueChange={setPlayerPositionFilter} variant="outline" className="justify-start mt-1 flex-wrap">
+                            <ToggleGroupItem value="POR">POR</ToggleGroupItem>
+                            <ToggleGroupItem value="DEF">DEF</ToggleGroupItem>
+                            <ToggleGroupItem value="MED">MED</ToggleGroupItem>
+                            <ToggleGroupItem value="DEL">DEL</ToggleGroupItem>
+                        </ToggleGroup>
+                    </div>
+                    <div className={cn(!playerSearchMatchId && "opacity-50 pointer-events-none")}>
+                        <div className="flex justify-between font-medium mb-1">
+                            <Label>Rango de OVR:</Label>
+                            <span className="text-primary">{playerOvrFilter[0]} - {playerOvrFilter[1]}</span>
+                        </div>
+                        <Slider value={playerOvrFilter} onValueChange={(value) => setPlayerOvrFilter(value as [number, number])} min={40} max={99} step={1} />
+                    </div>
+                </div>
             </CardContent>
-             <CardContent className="mt-auto p-4 border-t">
+             <DialogFooter className="mt-auto p-4 border-t">
                 <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-4">
                     <Button onClick={applyPlayerFilters} size="lg" disabled={isSearching || !playerSearchMatchId} className="w-full sm:w-auto">
                         {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
@@ -478,7 +474,7 @@ export default function FindMatchPage() {
                     </Button>
                      <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
                 </div>
-            </CardContent>
+            </DialogFooter>
         </Card>
     );
 
@@ -489,14 +485,14 @@ export default function FindMatchPage() {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
             <div className="lg:col-span-1 h-full flex flex-col gap-4">
-                <Card>
+                <Card className="flex-grow flex flex-col">
                     <CardHeader className="p-4 flex-row items-center justify-between">
                         <CardTitle className="text-lg">Jugadores Encontrados ({filteredPlayers?.length || 0})</CardTitle>
                          <Button variant="ghost" size="icon" onClick={() => setPlayerSearchCompleted(false)}>
                             <SlidersHorizontal className="h-4 w-4" />
                         </Button>
                     </CardHeader>
-                    <CardContent className="p-2">
+                    <CardContent className="p-2 flex-grow overflow-hidden">
                         <ScrollArea className="h-full">
                             <div className="space-y-2 p-1">
                                 {filteredPlayers && filteredPlayers.length > 0 ? filteredPlayers.map((player) => (
@@ -545,7 +541,7 @@ export default function FindMatchPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4 h-[calc(100vh-8rem)]">
+    <div className="flex flex-col gap-4 h-[calc(100vh-8rem)] pb-16 md:pb-0">
         <PageHeader
             title="Buscar Partidos y Jugadores"
             description="Encontrá partidos públicos o jugadores libres para completar tu equipo."
