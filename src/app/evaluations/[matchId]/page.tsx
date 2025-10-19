@@ -1,5 +1,5 @@
 
-import PerformEvaluationView from '@/components/perform-evaluation-view'
+import { PerformEvaluationView } from '@/components/perform-evaluation-view'
 
 interface PerformEvaluationPageProps {
   params: Promise<{ matchId: string }>
