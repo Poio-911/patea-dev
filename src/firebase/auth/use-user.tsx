@@ -34,24 +34,25 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           if (userDoc.exists()) {
              const userData = userDoc.data() as UserProfile;
              
-             // --- DATA REPAIR LOGIC ---
-             // This logic checks if the player document is missing a groupId and repairs it.
+             // --- DATA REPAIR & SYNC LOGIC ---
+             // This logic checks if the player's groupId is out of sync with the user's activeGroupId and repairs it.
              if (userData.activeGroupId) {
                 const playerRef = doc(firestore, 'players', firebaseUser.uid);
                 try {
                     const playerDoc = await getDoc(playerRef);
                     if (playerDoc.exists()) {
                         const playerData = playerDoc.data() as Player;
-                        if (!playerData.groupId) {
-                            console.log(`Repairing player profile for ${userData.displayName}: setting groupId to ${userData.activeGroupId}`);
+                        // If groupId is missing OR different from the active one, update it.
+                        if (playerData.groupId !== userData.activeGroupId) {
+                            console.log(`Syncing player groupId for ${userData.displayName}: setting groupId to ${userData.activeGroupId}`);
                             await updateDoc(playerRef, { groupId: userData.activeGroupId });
                         }
                     }
                 } catch (e) {
-                    console.error("Failed to repair player data:", e);
+                    console.error("Failed to sync player data:", e);
                 }
              }
-             // --- END REPAIR LOGIC ---
+             // --- END REPAIR & SYNC LOGIC ---
 
              setUser(userData);
              setLoading(false);
