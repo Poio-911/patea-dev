@@ -9,10 +9,25 @@ import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-ma
 import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-fit-player';
 import { generatePlayerCardImage } from '@/ai/flows/generate-player-card-image';
 import { Player, Evaluation } from './types';
+import { getFirestore as getAdminFirestore, FieldValue } from 'firebase-admin/firestore';
+import { initializeApp, getApps, App as AdminApp } from 'firebase-admin/app';
+import { getAuth as getAdminAuth } from 'firebase-admin/auth';
+import { getStorage as getAdminStorage } from 'firebase-admin/storage';
 import { getFirestore, doc, collection, getDocs, where, query, getDoc, writeBatch, updateDoc, increment } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { getAuth, updateProfile } from 'firebase/auth';
+
+let adminApp: AdminApp;
+if (!getApps().length) {
+  adminApp = initializeApp();
+} else {
+  adminApp = getApps()[0];
+}
+
+const adminDb = getAdminFirestore(adminApp);
+const adminAuth = getAdminAuth(adminApp);
+const adminStorage = getAdminStorage(adminApp).bucket('mil-disculpis.appspot.com');
 
 
 // This approach uses the Client SDK on the server, which is not standard.
@@ -67,20 +82,14 @@ export async function generateTeamsAction(players: Player[]) {
 }
 
 export async function getPlayerEvaluationsAction(playerId: string, groupId: string): Promise<Partial<Evaluation>[]> {
-    const { firestore } = getClientFirebase();
     const evaluations: Partial<Evaluation>[] = [];
     
-    // This is a simplified example and would be inefficient in a real app.
-    // A better approach would be to query evaluations directly if rules allow.
     try {
-        const q = collection(firestore, 'evaluations');
-        const querySnapshot = await getDocs(query(q, where('playerId', '==', playerId)));
-
-        const matchesQuery = collection(firestore, 'matches');
-        const matchesSnapshot = await getDocs(query(matchesQuery, where('groupId', '==', groupId)));
+        const evalsSnapshot = await adminDb.collection('evaluations').where('playerId', '==', playerId).get();
+        const matchesSnapshot = await adminDb.collection('matches').where('groupId', '==', groupId).get();
         const groupMatchIds = new Set(matchesSnapshot.docs.map(doc => doc.id));
 
-        querySnapshot.forEach(doc => {
+        evalsSnapshot.forEach(doc => {
             const evaluation = doc.data() as Evaluation;
             if (groupMatchIds.has(evaluation.matchId)) {
                 evaluations.push(evaluation);
@@ -97,11 +106,10 @@ export async function getPlayerEvaluationsAction(playerId: string, groupId: stri
 
 
 export async function getPlayerImprovementSuggestionsAction(playerId: string, groupId: string) {
-    const { firestore } = getClientFirebase();
 
     try {
-        const playerDocRef = doc(firestore, 'players', playerId);
-        const playerDocSnap = await getDoc(playerDocRef);
+        const playerDocRef = adminDb.doc(`players/${playerId}`);
+        const playerDocSnap = await playerDocRef.get();
 
         if (!playerDocSnap.exists) {
             return { error: 'No se pudo encontrar al jugador.' };
@@ -159,68 +167,66 @@ export async function findBestFitPlayerAction(input: Omit<FindBestFitPlayerInput
 }
 
 export async function generatePlayerCardImageAction(userId: string) {
-    const { firestore, auth, storage } = getClientFirebase();
-
-    const playerRef = doc(firestore, 'players', userId);
-    const playerSnap = await getDoc(playerRef);
-
-    if (!playerSnap.exists()) {
-        return { error: "No se encontró tu perfil de jugador." };
-    }
-
-    const player = playerSnap.data() as Player;
-    const credits = player.cardGenerationCredits ?? 0;
-
-    if (credits <= 0) {
-        return { error: "No te quedan créditos para generar imágenes." };
-    }
-
-    if (!player.photoUrl) {
-        return { error: "Primero debes subir una foto de perfil." };
-    }
-    
-    // Check if the current photo is a placeholder from picsum.photos
-    if (player.photoUrl.includes('picsum.photos')) {
-         return { error: "La generación de imágenes no funciona con fotos de marcador de posición. Por favor, sube una foto tuya real." };
-    }
+    const playerRef = adminDb.doc(`players/${userId}`);
 
     try {
-        const generatedImageDataUri = await generatePlayerCardImage(player.photoUrl);
-        
-        // Upload new image to Storage
-        const filePath = `profile-images/${userId}/generated_${Date.now()}.png`;
-        const storageRef = ref(storage, filePath);
-        const uploadResult = await uploadString(storageRef, generatedImageDataUri, 'data_url');
-        const newPhotoURL = await getDownloadURL(uploadResult.ref);
+        const playerSnap = await playerRef.get();
 
-        // Update Auth, user profile, and player profile in a batch
-        const batch = writeBatch(firestore);
+        if (!playerSnap.exists) {
+            return { error: "No se encontró tu perfil de jugador." };
+        }
+
+        const player = playerSnap.data() as Player;
+        const credits = player.cardGenerationCredits ?? 0;
+
+        if (credits <= 0) {
+            return { error: "No te quedan créditos para generar imágenes." };
+        }
+
+        if (!player.photoUrl) {
+            return { error: "Primero debes subir una foto de perfil." };
+        }
+
+        if (player.photoUrl.includes('picsum.photos')) {
+            return { error: "La generación de imágenes no funciona con fotos de marcador de posición. Por favor, sube una foto tuya real." };
+        }
+
+        const generatedImageDataUri = await generatePlayerCardImage(player.photoUrl);
+
+        const filePath = `profile-images/${userId}/generated_${Date.now()}.png`;
+        const file = adminStorage.file(filePath);
         
-        // User profile
-        const userRef = doc(firestore, 'users', userId);
-        batch.update(userRef, { photoURL: newPhotoURL });
+        const buffer = Buffer.from(generatedImageDataUri.split(',')[1], 'base64');
         
-        // Player profile & credits
-        batch.update(playerRef, { 
-            photoUrl: newPhotoURL,
-            cardGenerationCredits: increment(-1)
+        await file.save(buffer, {
+            metadata: {
+                contentType: 'image/png',
+            },
         });
         
-        // Available Player profile if exists
-        const availablePlayerRef = doc(firestore, 'availablePlayers', userId);
-        const availablePlayerSnap = await getDoc(availablePlayerRef);
+        const [newPhotoURL] = await file.getSignedUrl({
+            action: 'read',
+            expires: '03-09-2491'
+        });
+
+        const batch = adminDb.batch();
+        const userRef = adminDb.doc(`users/${userId}`);
+        batch.update(userRef, { photoURL: newPhotoURL });
+
+        batch.update(playerRef, {
+            photoUrl: newPhotoURL,
+            cardGenerationCredits: FieldValue.increment(-1)
+        });
+
+        const availablePlayerRef = adminDb.doc(`availablePlayers/${userId}`);
+        const availablePlayerSnap = await availablePlayerRef.get();
         if (availablePlayerSnap.exists()) {
             batch.update(availablePlayerRef, { photoUrl: newPhotoURL });
         }
 
-        // Commit batch
         await batch.commit();
+        await adminAuth.updateUser(userId, { photoURL: newPhotoURL });
 
-        // Update Auth profile
-        if (auth.currentUser) {
-            await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
-        }
-        
         return { success: true, newPhotoURL };
     } catch (error: any) {
         console.error("Error generating player card image:", error);
