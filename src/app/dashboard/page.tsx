@@ -170,10 +170,6 @@ function DashboardContent() {
                                                         <Calendar className="h-3.5 w-3.5" />
                                                         <span>{format(new Date(match.date), "d MMM, yyyy", { locale: es })}</span>
                                                     </div>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <MapPin className="h-3.5 w-3.5" />
-                                                        <span className="truncate max-w-xs">{match.location.name}</span>
-                                                    </div>
                                                      <div className="flex items-center gap-1.5">
                                                         <User className="h-3.5 w-3.5" />
                                                         <span>{ownerName || 'Desconocido'}</span>

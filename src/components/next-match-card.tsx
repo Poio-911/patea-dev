@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, MapPin, ArrowRight } from 'lucide-react';
+import { Calendar, Clock, Navigation, ArrowRight } from 'lucide-react';
 import type { Match } from '@/lib/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -12,10 +12,11 @@ interface NextMatchCardProps {
   match: Match | null;
 }
 
-const InfoRow = ({ icon: Icon, text }: { icon: React.ElementType, text: string | undefined }) => (
+const InfoRow = ({ icon: Icon, text, children }: { icon: React.ElementType, text?: string, children?: React.ReactNode }) => (
     <div className="flex items-center gap-3 text-sm text-muted-foreground">
         <Icon className="h-4 w-4" />
-        <span>{text}</span>
+        {text && <span>{text}</span>}
+        {children}
     </div>
 );
 
@@ -37,6 +38,8 @@ export function NextMatchCard({ match }: NextMatchCardProps) {
         </div>
     );
   }
+  
+  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location.address)}&query_place_id=${match.location.placeId}`;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
@@ -44,7 +47,13 @@ export function NextMatchCard({ match }: NextMatchCardProps) {
            <h3 className="text-xl font-bold">{match.title}</h3>
            <InfoRow icon={Calendar} text={match.date ? format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es }) : 'Fecha no definida'} />
            <InfoRow icon={Clock} text={`${match.time} hs`} />
-           <InfoRow icon={MapPin} text={match.location.name} />
+           <InfoRow icon={Navigation}>
+                <Button asChild variant="link" className="p-0 h-auto -ml-1 text-sm">
+                    <Link href={googleMapsUrl} target="_blank" rel="noopener noreferrer">
+                       Ir a la cancha en Google Maps
+                    </Link>
+                </Button>
+           </InfoRow>
       </div>
       <div className="flex justify-center items-center">
           <Button asChild size="lg">
@@ -57,5 +66,3 @@ export function NextMatchCard({ match }: NextMatchCardProps) {
     </div>
   );
 }
-
-    
