@@ -300,7 +300,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             );
         }
     
-        if (!isOwner && match.type === 'collaborative' && match.status === 'upcoming') {
+        if (match.type === 'collaborative' && match.status === 'upcoming') {
             if (isMatchFull && !isUserInMatch) {
                 return <Button variant="outline" size="sm" className="w-full" disabled>Partido Lleno</Button>;
             }
@@ -410,5 +410,3 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         </Card>
     );
 }
-
-    
