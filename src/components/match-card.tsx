@@ -82,12 +82,10 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     useEffect(() => {
         const fetchOwnerName = async () => {
             if (!firestore) return;
-            // First, try to find the owner in the group's player list
             const ownerInGroup = allPlayers.find(p => p.id === match.ownerUid);
             if (ownerInGroup) {
                 setOwnerName(ownerInGroup.name);
             } else {
-                // If not found (e.g., public match), fetch from the /users collection
                 try {
                     const userDocRef = doc(firestore, 'users', match.ownerUid);
                     const userDoc = await getDoc(userDocRef);
@@ -102,10 +100,8 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 }
             }
         };
-
         fetchOwnerName();
     }, [firestore, match.ownerUid, allPlayers]);
-
 
     const isUserInMatch = useMemo(() => {
         if (!user) return false;
@@ -116,14 +112,12 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         return match.players.length >= match.matchSize;
     }, [match.players, match.matchSize]);
 
-
     const currentStatus = statusConfig[match.status] || statusConfig.completed;
 
     const handleDeleteMatch = async () => {
         if (!firestore) return;
         setIsDeleting(true);
         try {
-            // Also delete invitations subcollection
             const invitationsRef = collection(firestore, 'matches', match.id, 'invitations');
             const invitationsSnap = await getDocs(invitationsRef);
             const batch = writeBatch(firestore);
@@ -137,11 +131,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             });
         } catch (error) {
             console.error("Error deleting match: ", error);
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: 'No se pudo eliminar el partido.'
-            });
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el partido.' });
         } finally {
             setIsDeleting(false);
         }
@@ -157,22 +147,15 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             if (!team) return;
 
             const teammates = team.players.filter(p => p.uid !== evaluatorId && realPlayerUids.includes(p.uid));
-            // Shuffle teammates for random assignment
             const shuffledTeammates = teammates.sort(() => 0.5 - Math.random());
             const playersToEvaluate = shuffledTeammates.slice(0, 2);
 
             playersToEvaluate.forEach(subject => {
-                assignments.push({
-                    matchId: match.id,
-                    evaluatorId: evaluatorId,
-                    subjectId: subject.uid,
-                    status: 'pending',
-                });
+                assignments.push({ matchId: match.id, evaluatorId: evaluatorId, subjectId: subject.uid, status: 'pending' });
             });
         });
         return assignments;
     };
-
 
     const handleFinishMatch = async () => {
         if (!firestore || !user) return;
@@ -190,12 +173,9 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 if (selectedPlayersData.length === match.matchSize) {
                     const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
                     
-                    if ('error' in teamGenerationResult) {
-                        throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
-                    }
-                    if (!teamGenerationResult.teams) {
-                        throw new Error('La respuesta de la IA no contiene equipos.');
-                    }
+                    if ('error' in teamGenerationResult) throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
+                    if (!teamGenerationResult.teams) throw new Error('La respuesta de la IA no contiene equipos.');
+                    
                     finalTeams = teamGenerationResult.teams;
                     matchUpdateData.teams = finalTeams;
                 } else {
@@ -225,29 +205,18 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             }
            
             await batch.commit();
-
-            toast({
-                title: 'Partido Finalizado',
-                description: `El partido "${match.title}" ha sido marcado como finalizado.`
-            });
-
+            toast({ title: 'Partido Finalizado', description: `El partido "${match.title}" ha sido marcado como finalizado.` });
         } catch (error: any) {
              console.error("Error finishing match: ", error);
-             toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: error.message || 'No se pudo finalizar el partido.'
-            });
+             toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudo finalizar el partido.' });
         } finally {
             setIsFinishing(false);
         }
     };
 
-
     const handleJoinOrLeaveMatch = async () => {
         if (!firestore || !user) return;
         setIsJoining(true);
-        
         const batch = writeBatch(firestore);
         const matchRef = doc(firestore, 'matches', match.id);
 
@@ -255,10 +224,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             if(isUserInMatch) {
                 const playerToRemove = match.players.find(p => p.uid === user.uid);
                 if (playerToRemove) {
-                    batch.update(matchRef, {
-                        players: arrayRemove(playerToRemove),
-                        playerUids: arrayRemove(user.uid)
-                    });
+                    batch.update(matchRef, { players: arrayRemove(playerToRemove), playerUids: arrayRemove(user.uid) });
                 }
                 toast({ title: 'Te has dado de baja', description: `Ya no estás apuntado a "${match.title}".` });
             } else {
@@ -278,19 +244,9 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 }
                 
                 const playerProfile = playerSnap.data() as Player;
-
-                const playerPayload = { 
-                    uid: user.uid,
-                    displayName: playerProfile.name,
-                    ovr: playerProfile.ovr,
-                    position: playerProfile.position,
-                    photoUrl: playerProfile.photoUrl || ''
-                };
+                const playerPayload = { uid: user.uid, displayName: playerProfile.name, ovr: playerProfile.ovr, position: playerProfile.position, photoUrl: playerProfile.photoUrl || '' };
                 
-                batch.update(matchRef, {
-                    players: arrayUnion(playerPayload),
-                    playerUids: arrayUnion(user.uid)
-                });
+                batch.update(matchRef, { players: arrayUnion(playerPayload), playerUids: arrayUnion(user.uid) });
                 
                 if (match.ownerUid !== user.uid) {
                     const notificationRef = doc(collection(firestore, `users/${match.ownerUid}/notifications`));
@@ -304,7 +260,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     };
                     batch.set(notificationRef, notification);
                 }
-
                 toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${match.title}".` });
             }
             await batch.commit();
@@ -329,8 +284,9 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 );
             }
             if (match.status === 'upcoming') {
+                const canFinish = (match.type === 'collaborative' && isMatchFull) || match.type === 'manual';
                 return (
-                    <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing} className="w-full">
+                    <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing || !canFinish} className="w-full">
                         {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
                         Finalizar Partido
                     </Button>
@@ -354,34 +310,10 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     }
 
     const secondaryActions = [
-        {
-            id: 'details',
-            label: 'Ver Detalles',
-            icon: Eye,
-            component: <MatchDetailsDialog match={match}><DropdownMenuItem onSelect={e => e.preventDefault()}> <Eye className="mr-2 h-4 w-4" />Ver Detalles</DropdownMenuItem></MatchDetailsDialog>,
-            show: true
-        },
-        {
-            id: 'teams',
-            label: 'Ver Equipos',
-            icon: Eye,
-            component: <MatchTeamsDialog match={match}><DropdownMenuItem onSelect={e => e.preventDefault()}><Eye className="mr-2 h-4 w-4" />Ver Equipos</DropdownMenuItem></MatchTeamsDialog>,
-            show: (match.teams && match.teams.length > 0)
-        },
-        {
-            id: 'chat',
-            label: 'Chat del Partido',
-            icon: MessageCircle,
-            component: <MatchChatSheet match={match}><DropdownMenuItem onSelect={e => e.preventDefault()}><MessageCircle className="mr-2 h-4 w-4" />Chat del Partido</DropdownMenuItem></MatchChatSheet>,
-            show: isUserInMatch
-        },
-        {
-            id: 'invite',
-            label: 'Invitar Jugador',
-            icon: UserPlus,
-            component: <InvitePlayerDialog playerToInvite={null} userMatches={[]} match={match} disabled={isMatchFull}><DropdownMenuItem onSelect={e => e.preventDefault()} disabled={isMatchFull}><UserPlus className="mr-2 h-4 w-4" />Invitar Jugador</DropdownMenuItem></InvitePlayerDialog>,
-            show: match.status === 'upcoming' && user?.uid === match.ownerUid && match.type === 'collaborative'
-        }
+        { id: 'details', label: 'Ver Detalles', icon: Eye, component: <MatchDetailsDialog match={match}><DropdownMenuItem onSelect={e => e.preventDefault()}> <Eye className="mr-2 h-4 w-4" />Ver Detalles</DropdownMenuItem></MatchDetailsDialog>, show: true },
+        { id: 'teams', label: 'Ver Equipos', icon: Eye, component: <MatchTeamsDialog match={match}><DropdownMenuItem onSelect={e => e.preventDefault()}><Eye className="mr-2 h-4 w-4" />Ver Equipos</DropdownMenuItem></MatchTeamsDialog>, show: (match.teams && match.teams.length > 0) },
+        { id: 'chat', label: 'Chat del Partido', icon: MessageCircle, component: <MatchChatSheet match={match}><DropdownMenuItem onSelect={e => e.preventDefault()}><MessageCircle className="mr-2 h-4 w-4" />Chat del Partido</DropdownMenuItem></MatchChatSheet>, show: isUserInMatch },
+        { id: 'invite', label: 'Invitar Jugador', icon: UserPlus, component: <InvitePlayerDialog playerToInvite={null} userMatches={[]} match={match} disabled={isMatchFull}><DropdownMenuItem onSelect={e => e.preventDefault()} disabled={isMatchFull}><UserPlus className="mr-2 h-4 w-4" />Invitar Jugador</DropdownMenuItem></InvitePlayerDialog>, show: match.status === 'upcoming' && user?.uid === match.ownerUid && match.type === 'collaborative' }
     ];
 
     const visibleSecondaryActions = secondaryActions.filter(a => a.show);
@@ -394,7 +326,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     <CardTitle className={cn("text-xl font-bold", currentStatus.neonClass)}>
                         {match.title}
                     </CardTitle>
-                     <Badge variant="outline" className={cn("whitespace-nowrap uppercase text-xs z-10", currentStatus.className)}>
+                    <Badge variant="outline" className={cn("whitespace-nowrap uppercase text-xs z-10", currentStatus.className)}>
                         {currentStatus.label}
                     </Badge>
                 </div>
@@ -402,7 +334,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                    <User className="h-3 w-3"/> Organizado por {ownerName || 'Cargando...'}
                 </CardDescription>
                 
-                 <DropdownMenu>
+                <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-white/70 hover:bg-white/20">
                             <MoreVertical size={18} />
