@@ -169,12 +169,12 @@ function GroupCard({ group, user, playerCounts, onSetActive, onEdit, onDelete }:
             </div>
         </CardContent>
         <CardFooter className="flex-col items-stretch gap-2">
-            <Button variant="whatsapp" size="sm" onClick={handleShareWhatsApp}>
+            <Button variant="outline" size="sm" onClick={handleShareWhatsApp}>
                 <WhatsAppIcon className="mr-2 h-4 w-4" />
                 Compartir por WhatsApp
             </Button>
             {user?.activeGroupId !== group.id && (
-                <Button variant="outline" size="sm" onClick={() => onSetActive(group.id)}>
+                <Button variant="default" size="sm" onClick={() => onSetActive(group.id)}>
                     Activar Grupo
                 </Button>
             )}
