@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -16,7 +15,7 @@ import { Separator } from '@/components/ui/separator';
 import type { Match, Player } from '@/lib/types';
 import { Star, Scale, ShieldCheck, Shirt } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ShirtIcon } from './icons/shirt-icon';
+import { TeamsIcon } from './icons/teams-icon';
 
 type MatchTeamsDialogProps = {
   match: Match;
@@ -51,8 +50,8 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
                             <UiCardTitle className="text-lg">{team.name}</UiCardTitle>
                             <Badge variant="secondary" className="mt-1">OVR Promedio: {team.averageOVR.toFixed(1)}</Badge>
                         </div>
-                        <div className={cn("p-2 rounded-lg", index === 0 ? 'bg-blue-100 dark:bg-blue-900/50' : 'bg-red-100 dark:bg-red-900/50')}>
-                            <ShirtIcon className={cn("h-8 w-8", index === 0 ? 'text-blue-600' : 'text-red-600')} />
+                        <div className={cn("p-2 rounded-full", index === 0 ? 'bg-blue-100 dark:bg-blue-900/50' : 'bg-red-100 dark:bg-red-900/50')}>
+                            <TeamsIcon className={cn("h-8 w-8", index === 0 ? 'text-blue-600' : 'text-red-600')} />
                         </div>
                     </div>
                 </CardHeader>
