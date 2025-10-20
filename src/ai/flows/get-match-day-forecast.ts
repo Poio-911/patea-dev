@@ -9,7 +9,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 
 // Define the input and output schemas for our main flow
 const GetMatchDayForecastInputSchema = z.object({
@@ -36,6 +36,7 @@ const getMatchDayForecastFlow = ai.defineFlow(
   async ({location, date}) => {
       
     const { output } = await ai.generate({
+        model: 'gemini-1.5-flash',
         prompt: `
         You are a helpful sports assistant. Your task is to provide a weather forecast for a specific location and date.
         Search for the weather forecast for the following location and date:
