@@ -58,16 +58,6 @@ const weatherIcons: Record<string, React.ElementType> = {
     Sun, Cloud, Cloudy, CloudRain, Wind, Zap,
 };
 
-const InfoRow = ({ icon: Icon, text, children }: { icon: React.ElementType, text?: string, children?: React.ReactNode }) => (
-    <div className="flex items-center gap-4">
-        <Icon className="h-6 w-6 text-primary flex-shrink-0" />
-        <div className="text-sm">
-            {text && <span>{text}</span>}
-            {children}
-        </div>
-    </div>
-);
-
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
 
@@ -341,21 +331,54 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 <CardDescription className="flex items-center gap-2 text-xs text-foreground/80">
                    <User className="h-3 w-3"/> Organizado por {ownerName || 'Cargando...'}
                 </CardDescription>
+                {isOwner && (
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-white/70 hover:bg-white/20">
+                                <MoreVertical size={18}/>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <MatchDetailsDialog match={match} isOwner={isOwner}>
+                                <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                                    <Trash2 className="mr-2 h-4 w-4 text-destructive"/>
+                                    <span className="text-destructive">Eliminar Partido</span>
+                                </DropdownMenuItem>
+                            </MatchDetailsDialog>
+                        </DropdownMenuContent>
+                     </DropdownMenu>
+                )}
             </CardHeader>
             <CardContent className="flex-grow space-y-4 pt-4 p-4">
-                <div className="grid grid-cols-1 gap-y-3">
-                    <InfoRow icon={Calendar} text={match.date ? format(new Date(match.date), 'E, d MMM, yyyy', { locale: es }) : 'Fecha no definida'} />
-                    <InfoRow icon={Clock} text={match.time} />
-                    <InfoRow icon={MapPin} text={match.location.name || match.location.address} />
-                </div>
-                
-                {WeatherIcon && match.weather && (
-                    <div className="flex items-center gap-4 rounded-lg bg-muted/50 p-3">
-                        <WeatherIcon className="h-8 w-8 text-blue-400" />
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3">
+                        <Calendar className="h-5 w-5 text-muted-foreground" />
                         <div>
-                            <p className="font-semibold text-sm">{match.weather.description}</p>
-                            <p className="text-xs text-muted-foreground">{match.weather.temperature}°C</p>
+                            <p className="text-xs text-muted-foreground">Fecha</p>
+                            <p className="font-bold text-sm capitalize">{format(new Date(match.date), "EEEE, d 'de' MMMM", { locale: es })}</p>
                         </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Clock className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                            <p className="text-xs text-muted-foreground">Hora</p>
+                            <p className="font-bold text-sm">{match.time} hs</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                    <MapPin className="h-5 w-5 text-muted-foreground mt-0.5"/>
+                    <div>
+                        <p className="text-xs text-muted-foreground">Lugar</p>
+                        <p className="font-bold text-sm">{match.location.name || match.location.address}</p>
+                    </div>
+                </div>
+
+                {WeatherIcon && match.weather && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground border-t pt-3 mt-3">
+                        <WeatherIcon className="h-4 w-4 text-blue-400" />
+                        <span>{match.weather.description} ({match.weather.temperature}°C)</span>
                     </div>
                 )}
                 
@@ -371,7 +394,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             </CardContent>
 
             <CardFooter className="flex flex-col items-stretch gap-2 p-3 bg-muted/50 mt-auto">
-                <div className="flex flex-col gap-2">
+                <div className="space-y-2">
                     <PrimaryAction />
                     <div className="grid grid-cols-2 gap-2">
                         <MatchDetailsDialog match={match} isOwner={isOwner}><Button variant="outline" size="sm" className="w-full"><Eye className="mr-2 h-4 w-4" />Detalles</Button></MatchDetailsDialog>
