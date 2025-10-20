@@ -483,7 +483,11 @@ export default function FindMatchPage() {
                         {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
                         {isSearching ? 'Buscando...' : 'Buscar Jugadores'}
                     </Button>
-                     <FindBestFitDialog userMatches={availableMatchesForInvite} availablePlayers={allAvailablePlayers || []} />
+                     <FindBestFitDialog
+                        userMatches={availableMatchesForInvite}
+                        availablePlayers={allAvailablePlayers || []}
+                        selectedMatchId={playerSearchMatchId}
+                     />
                 </div>
             </CardFooter>
         </Card>

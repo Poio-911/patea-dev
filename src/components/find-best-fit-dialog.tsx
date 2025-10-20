@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -10,18 +11,10 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import type { AvailablePlayer, Match } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, Send, UserSearch } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Label } from './ui/label';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { findBestFitPlayerAction } from '@/lib/actions';
 import { Card, CardContent } from './ui/card';
@@ -35,21 +28,31 @@ type RecommendedPlayer = AvailablePlayer & { reason: string };
 type FindBestFitDialogProps = {
   userMatches: Match[];
   availablePlayers: AvailablePlayer[];
+  selectedMatchId: string | null;
 };
 
 export function FindBestFitDialog({
   userMatches,
   availablePlayers,
+  selectedMatchId,
 }: FindBestFitDialogProps) {
   const [open, setOpen] = useState(false);
-  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [recommendedPlayers, setRecommendedPlayers] = useState<RecommendedPlayer[]>([]);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
+  useEffect(() => {
+    // If the dialog is open and the selectedMatchId changes (from outside),
+    // trigger the search automatically.
+    if (open && selectedMatchId) {
+        handleFindPlayer();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMatchId, open]);
+
   const handleFindPlayer = () => {
     if (!selectedMatchId) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Seleccioná un partido para buscar.' });
+      toast({ variant: 'destructive', title: 'Error', description: 'Primero seleccioná un partido en la página principal.' });
       return;
     }
     const selectedMatch = userMatches.find(m => m.id === selectedMatchId);
@@ -97,50 +100,22 @@ export function FindBestFitDialog({
         setOpen(o);
         if (!o) {
             setRecommendedPlayers([]);
-            setSelectedMatchId(null);
         }
     }}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full sm:w-auto">
+        <Button variant="outline" className="w-full sm:w-auto" disabled={!selectedMatchId}>
             <Sparkles className="mr-2 h-4 w-4 text-amber-500" />
-            Encontrar Jugador Ideal
+            Asistente de Fichajes
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Asistente de Fichajes</DialogTitle>
+          <DialogTitle>Asistente de Fichajes para "{selectedMatch?.title}"</DialogTitle>
           <DialogDescription>
-            Seleccioná uno de tus partidos y el asistente te recomendará los mejores jugadores para completar el cuadro.
+            La IA está analizando a los jugadores disponibles para recomendarte los mejores fichajes.
           </DialogDescription>
         </DialogHeader>
         <div className="flex-grow py-4 space-y-4 overflow-y-hidden">
-          {userMatches.length > 0 ? (
-            <div className="space-y-2">
-              <Label htmlFor='match-select'>Tus Partidos Incompletos</Label>
-              <div className="flex gap-2">
-                <Select onValueChange={setSelectedMatchId} value={selectedMatchId || ''}>
-                  <SelectTrigger id="match-select">
-                    <SelectValue placeholder="Elegí un partido..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {userMatches.map(match => (
-                      <SelectItem key={match.id} value={match.id}>
-                        {match.title} ({match.players.length}/{match.matchSize})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button onClick={handleFindPlayer} disabled={isPending || !selectedMatchId}>
-                    {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserSearch className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Alert>
-              <AlertDescription>No tenés partidos que necesiten jugadores. Creá uno para poder usar el asistente.</AlertDescription>
-            </Alert>
-          )}
-
           <div className="pt-4 flex-grow overflow-y-hidden">
             <ScrollArea className="h-full max-h-96">
                 <div className="space-y-4 pr-4">
@@ -182,9 +157,13 @@ export function FindBestFitDialog({
                             </CardContent>
                         </Card>
                     ))}
-                    {!isPending && recommendedPlayers.length === 0 && selectedMatchId && (
+                    {!isPending && recommendedPlayers.length === 0 && (
                         <div className="flex flex-col items-center justify-center h-40 gap-4 text-center border-2 border-dashed rounded-lg">
-                            <p className="text-sm text-muted-foreground">Pulsá el botón de búsqueda para recibir una recomendación.</p>
+                           <Button onClick={handleFindPlayer} disabled={isPending || !selectedMatchId}>
+                                <UserSearch className="mr-2 h-4 w-4" />
+                                {isPending ? "Buscando..." : "Buscar Fichajes Ahora"}
+                            </Button>
+                            <p className="text-sm text-muted-foreground mt-2">Pulsa el botón para recibir una recomendación.</p>
                         </div>
                     )}
                 </div>
