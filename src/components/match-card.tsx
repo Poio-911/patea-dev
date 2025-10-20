@@ -418,44 +418,46 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                    <User className="h-3 w-3"/> Organizado por {ownerName || 'Cargando...'}
                 </CardDescription>
                 
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-white/70 hover:bg-white/20">
-                            <MoreVertical size={18} />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        {visibleSecondaryActions.map(action => <React.Fragment key={action.id}>{action.component}</React.Fragment>)}
-                        {user?.uid === match.ownerUid && match.status !== 'evaluated' && (
-                             <>
-                                {visibleSecondaryActions.length > 0 && <DropdownMenuSeparator />}
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onSelect={(e) => e.preventDefault()}>
-                                            <Trash2 className="mr-2 h-4 w-4" /> Eliminar Partido
-                                        </DropdownMenuItem>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                        <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Esta acción no se puede deshacer. Esto eliminará permanentemente el partido
-                                            y todos sus datos asociados.
-                                        </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                Sí, eliminar partido
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                             </>
-                        )}
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                 {user?.uid === match.ownerUid && (
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-white/70 hover:bg-white/20">
+                                <MoreVertical size={18} />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            {visibleSecondaryActions.map(action => <React.Fragment key={action.id}>{action.component}</React.Fragment>)}
+                            {user?.uid === match.ownerUid && match.status !== 'evaluated' && (
+                                <>
+                                    {visibleSecondaryActions.length > 0 && <DropdownMenuSeparator />}
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onSelect={(e) => e.preventDefault()}>
+                                                <Trash2 className="mr-2 h-4 w-4" /> Eliminar Partido
+                                            </DropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                            <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Esta acción no se puede deshacer. Esto eliminará permanentemente el partido
+                                                y todos sus datos asociados.
+                                            </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                                                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                    Sí, eliminar partido
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </>
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                 )}
 
             </CardHeader>
             <CardContent className="flex-grow space-y-4 pt-4 p-4">
