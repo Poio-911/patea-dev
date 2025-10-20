@@ -1,7 +1,7 @@
 import fetch from "node-fetch";
 
 const API_KEY = "AIzaSyCsXE7FonqgCYz70c1xbxSe20F7Qr1oWU0"; // tu GOOGLE_GENAI_API_KEY
-const MODEL = "gemini-2.0-flash";
+const MODEL = "gemini-2.5-pro";
 const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
 
 const body = {

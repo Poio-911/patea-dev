@@ -8,7 +8,7 @@ import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, doc, getDoc } from 'firebase/firestore';
 import type { Match, AvailablePlayer, Player } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { Loader2, MapPin, Calendar, Users, LocateFixed, Search, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { Loader2, MapPin, Calendar, Users, LocateFixed, Search, SlidersHorizontal, Sparkles, AlertCircle } from 'lucide-react';
 import { MatchMarker } from '@/components/match-marker';
 import { libraries } from '@/lib/google-maps';
 import { mapStyles } from '@/lib/map-styles';
@@ -144,6 +144,7 @@ export default function FindMatchPage() {
   // -- Common State --
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   // -- Find Matches State --
   const [searchRadius, setSearchRadius] = useState(7);
@@ -267,9 +268,10 @@ export default function FindMatchPage() {
 
   const handleSearchNearby = useCallback(() => {
     setIsSearching(true);
+    setLocationError(null);
 
     if (!navigator.geolocation) {
-      toast({ variant: 'destructive', title: 'Error de Geolocalización', description: 'Tu navegador no soporta esta función.' });
+      setLocationError('Tu navegador no soporta geolocalización.');
       setIsSearching(false);
       return;
     }
@@ -284,11 +286,14 @@ export default function FindMatchPage() {
         setIsSearching(false);
       },
       (error) => {
-        toast({ variant: 'destructive', title: 'Error de Ubicación', description: 'No se pudo obtener tu ubicación. Asegúrate de haber dado los permisos necesarios.' });
+        const message = error.code === 1
+            ? 'Debes permitir el acceso a la ubicación en tu navegador para buscar partidos.'
+            : 'No se pudo obtener tu ubicación. Inténtalo de nuevo.';
+        setLocationError(message);
         setIsSearching(false);
       }
     );
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     if (userLocation) {
@@ -317,7 +322,7 @@ export default function FindMatchPage() {
                     Ajustá los filtros y dale al botón para encontrar partidos públicos.
                 </CardDescription>
             </CardHeader>
-             <CardContent className="p-4">
+             <CardContent className="p-4 space-y-4">
                 <div className="w-full space-y-4">
                     <div>
                         <div className="flex justify-between font-medium mb-1">
@@ -349,6 +354,18 @@ export default function FindMatchPage() {
                         </ToggleGroup>
                     </div>
                 </div>
+                {locationError && (
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Error de Ubicación</AlertTitle>
+                        <AlertDescription>
+                            {locationError}
+                            <Button variant="link" className="p-0 h-auto ml-1 text-destructive" onClick={handleSearchNearby}>
+                                Reintentar
+                            </Button>
+                        </AlertDescription>
+                    </Alert>
+                )}
             </CardContent>
             <CardFooter className="p-4 border-t">
                 <Button onClick={handleSearchNearby} disabled={isSearching} size="lg" className="w-full">
@@ -367,7 +384,7 @@ export default function FindMatchPage() {
                 <Card className="flex-grow flex flex-col">
                     <CardHeader className="p-4 flex-row items-center justify-between">
                         <CardTitle className="text-lg">Partidos Encontrados ({filteredMatches.length})</CardTitle>
-                        <Button variant="ghost" size="icon" onClick={() => setMatchSearchCompleted(false)}>
+                        <Button variant="ghost" size="icon" onClick={() => {setMatchSearchCompleted(false); setLocationError(null);}}>
                             <SlidersHorizontal className="h-4 w-4" />
                         </Button>
                     </CardHeader>

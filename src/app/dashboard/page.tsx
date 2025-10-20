@@ -7,7 +7,7 @@ import { useCollection, useDoc } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, Users2, Calendar, MapPin, User, UserRound, Eye, Loader2 } from 'lucide-react';
+import { Star, Users2, Calendar, MapPin, User, UserRound, Eye, Loader2, Locate, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, limit, doc, setDoc, deleteDoc } from 'firebase/firestore';
@@ -42,6 +42,7 @@ function DashboardContent() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isToggling, setIsToggling] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   const playersQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
@@ -114,46 +115,56 @@ function DashboardContent() {
     return [...players].sort((a, b) => b.ovr - a.ovr).slice(0, 5);
   }, [players]);
 
+  const requestLocationAndToggle = () => {
+    if (!firestore || !user || !player) return;
+    setIsToggling(true);
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        const availablePlayerDocRef = doc(firestore, 'availablePlayers', user.uid);
+        const newAvailablePlayer: Omit<AvailablePlayer, 'id'> = {
+          uid: user.uid,
+          displayName: player.name,
+          photoUrl: player.photoUrl || '',
+          position: player.position,
+          ovr: player.ovr,
+          location: { lat: latitude, lng: longitude },
+          availability: {},
+        };
+        await setDoc(availablePlayerDocRef, newAvailablePlayer);
+        toast({ title: 'Ahora estás visible', description: 'Otros DTs pueden encontrarte para invitarte.' });
+        setIsToggling(false);
+      },
+      (error) => {
+        const message = error.code === 1 
+            ? 'Debes permitir el acceso a la ubicación en tu navegador para hacerte visible.'
+            : 'No se pudo obtener tu ubicación. Inténtalo de nuevo.';
+        setLocationError(message);
+        setIsToggling(false);
+      }
+    );
+  }
+
   const handleToggleAvailability = async (isAvailable: boolean) => {
     if (!firestore || !user || !player) return;
 
-    setIsToggling(true);
-    const availablePlayerDocRef = doc(firestore, 'availablePlayers', user.uid);
-
-    try {
-      if (isAvailable) {
-        // Turning ON availability
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const { latitude, longitude } = position.coords;
-            const newAvailablePlayer: Omit<AvailablePlayer, 'id'> = {
-              uid: user.uid,
-              displayName: player.name,
-              photoUrl: player.photoUrl || '',
-              position: player.position,
-              ovr: player.ovr,
-              location: { lat: latitude, lng: longitude },
-              availability: {}, // Start with empty availability, user can detail it later
-            };
-            await setDoc(availablePlayerDocRef, newAvailablePlayer);
-            toast({ title: 'Ahora estás visible', description: 'Otros DTs pueden encontrarte para invitarte.' });
+    if (isAvailable) {
+        requestLocationAndToggle();
+    } else {
+        setIsToggling(true);
+        try {
+            const availablePlayerDocRef = doc(firestore, 'availablePlayers', user.uid);
+            await deleteDoc(availablePlayerDocRef);
+            toast({ title: 'Ya no estás visible', description: 'Has sido eliminado de la lista de jugadores libres.' });
+            setLocationError(null);
+        } catch (error) {
+            console.error('Error turning off availability:', error);
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cambiar tu visibilidad.' });
+        } finally {
             setIsToggling(false);
-          },
-          (error) => {
-            toast({ variant: 'destructive', title: 'Error de ubicación', description: 'No se pudo obtener tu ubicación. Por favor, activa los permisos.' });
-            setIsToggling(false);
-          }
-        );
-      } else {
-        // Turning OFF availability
-        await deleteDoc(availablePlayerDocRef);
-        toast({ title: 'Ya no estás visible', description: 'Has sido eliminado de la lista de jugadores libres.' });
-        setIsToggling(false);
-      }
-    } catch (error) {
-      console.error('Error toggling availability:', error);
-      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cambiar tu visibilidad.' });
-      setIsToggling(false);
+        }
     }
   };
 
@@ -206,25 +217,39 @@ function DashboardContent() {
                 {availablePlayerData ? 'Estás visible para que otros grupos te inviten a partidos.' : 'No estás visible para otros grupos.'}
             </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center space-x-2">
-                <Switch
-                    id="availability-switch"
-                    checked={!!availablePlayerData}
-                    onCheckedChange={handleToggleAvailability}
-                    disabled={isToggling}
-                />
-                <Label htmlFor="availability-switch" className="font-medium">
-                    {isToggling ? 'Actualizando...' : (availablePlayerData ? 'Visible' : 'Oculto')}
-                </Label>
-                 {isToggling && <SoccerPlayerIcon className="h-5 w-5 color-cycle-animation" />}
+        <CardContent className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center space-x-2">
+                    <Switch
+                        id="availability-switch"
+                        checked={!!availablePlayerData}
+                        onCheckedChange={handleToggleAvailability}
+                        disabled={isToggling}
+                    />
+                    <Label htmlFor="availability-switch" className="font-medium">
+                        {isToggling ? 'Actualizando...' : (availablePlayerData ? 'Visible' : 'Oculto')}
+                    </Label>
+                    {isToggling && <SoccerPlayerIcon className="h-5 w-5 color-cycle-animation" />}
+                </div>
+                <SetAvailabilityDialog player={player} availability={availablePlayerData?.availability || {}}>
+                    <Button variant="outline" disabled={!availablePlayerData}>
+                        <UserRound className="mr-2 h-4 w-4" />
+                        Ajustar Disponibilidad y Horarios
+                    </Button>
+                </SetAvailabilityDialog>
             </div>
-            <SetAvailabilityDialog player={player} availability={availablePlayerData?.availability || {}}>
-                <Button variant="outline">
-                    <UserRound className="mr-2 h-4 w-4" />
-                    Ajustar Disponibilidad y Horarios
-                </Button>
-            </SetAvailabilityDialog>
+            {locationError && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error de Ubicación</AlertTitle>
+                    <AlertDescription>
+                        {locationError}
+                        <Button variant="link" className="p-0 h-auto ml-1 text-destructive" onClick={requestLocationAndToggle}>
+                            Reintentar
+                        </Button>
+                    </AlertDescription>
+                </Alert>
+            )}
         </CardContent>
       </Card>
 
