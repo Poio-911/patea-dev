@@ -2,8 +2,8 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Match, Player, EvaluationAssignment, Notification, UserProfile, Invitation } from '@/lib/types';
-import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDoc, getDocs, query, where } from 'firebase/firestore';
+import type { Match, Player, EvaluationAssignment, Notification, UserProfile } from '@/lib/types';
+import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDoc, getDocs } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -411,5 +411,3 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         </Card>
     );
 }
-
-    
