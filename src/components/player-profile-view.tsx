@@ -241,25 +241,6 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     }
   };
 
-  const handleGenerateAICard = () => {
-    if (!user?.uid) return;
-    startTransition(async () => {
-        const result = await generatePlayerCardImageAction(user.uid);
-        if (result.error) {
-            toast({
-                variant: 'destructive',
-                title: 'Error al generar imagen',
-                description: result.error,
-            });
-        } else {
-            toast({
-                title: '¡Imagen de jugador generada!',
-                description: 'Tu nueva foto de perfil está lista.',
-            });
-        }
-    });
-  };
-
   const handleButtonClick = () => {
     fileInputRef.current?.click();
   };
@@ -305,10 +286,6 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                 <Button onClick={handleButtonClick} size="sm" variant="outline" disabled={isUploading || isGenerating} className="w-full">
                                     {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                                     {isUploading ? "Subiendo..." : "Cambiar Foto"}
-                                </Button>
-                                <Button onClick={handleGenerateAICard} size="sm" variant="default" disabled={isGenerating || credits <= 0} className="w-full">
-                                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                    Transformar Foto (IA) ({credits})
                                 </Button>
                             </div>
                         )}
@@ -570,3 +547,5 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     </div>
   );
 }
+
+    
