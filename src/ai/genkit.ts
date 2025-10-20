@@ -1,13 +1,15 @@
 import { genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import { googleAI } from '@genkit-ai/google-genai';
 
 export const ai = genkit({
   plugins: [
     googleAI({
       apiKey: process.env.GOOGLE_GENAI_API_KEY!,
-      defaultModel: 'gemini-1.5-flash', // o 'gemini-1.5-pro' si querés más precisión
+      location: 'us-central1', // 🔥 obligatorio para Gemini
     }),
   ],
-  logLevel: 'debug',
-  enableTracingAndMetrics: true,
+  logger: {
+    level: 'debug', // ✅ reemplaza logLevel
+    transports: ['console'], // muestra logs en consola
+  },
 });

@@ -25,7 +25,10 @@ const forecastPrompt = ai.definePrompt({
   name: 'matchDayForecast',
   input: { schema: GetMatchDayForecastInputSchema },
   output: { schema: GetMatchDayForecastOutputSchema },
-  model: 'gemini-1.5-flash', // 👈 nombre directo del modelo
+
+  // 🔥 usa el nombre completo del modelo (clave del error anterior)
+  model: 'models/gemini-1.5-flash',
+
   prompt: `
     Eres un asistente meteorológico para una aplicación de fútbol amateur. 
     Proporciona un breve resumen del clima en español para el siguiente lugar y fecha. 
