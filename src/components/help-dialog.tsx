@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -18,7 +19,6 @@ import { MatchIcon } from './icons/match-icon';
 import { EvaluationIcon } from './icons/evaluation-icon';
 import { FindMatchIcon } from './icons/find-match-icon';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './ui/carousel';
-import Image from 'next/image';
 
 interface HelpDialogProps {
   forceOpen?: boolean;
@@ -55,20 +55,24 @@ const tutorialContent = [
 
 export function HelpDialog({ forceOpen = false, onExplicitClose }: HelpDialogProps) {
   const [isOpen, setIsOpen] = useState(forceOpen);
+  const router = useRouter();
+  const pathname = usePathname();
 
   const handleOpenChange = (open: boolean) => {
-    if (!open && onExplicitClose) {
+    if (!open) {
+      if (onExplicitClose) {
         onExplicitClose();
+      }
+      // Clean up URL
+      if (pathname.includes('new_user')) {
+          router.replace(pathname.split('?')[0], {scroll: false});
+      }
     }
     setIsOpen(open);
   }
 
   const handleGotItClick = () => {
-    if (onExplicitClose) {
-        onExplicitClose();
-    } else {
-        setIsOpen(false);
-    }
+    handleOpenChange(false);
   }
 
   const DialogTriggerButton = (
