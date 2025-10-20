@@ -26,45 +26,39 @@ export default function MatchesPage() {
 
     const groupMatchesQuery = useMemo(() => {
         if (!firestore || !user?.activeGroupId) return null;
-        return query(collection(firestore, 'matches'), where('groupId', '==', user.activeGroupId), orderBy('date', 'desc'));
+        return query(
+            collection(firestore, 'matches'), 
+            where('groupId', '==', user.activeGroupId), 
+            orderBy('date', 'desc')
+        );
     }, [firestore, user?.activeGroupId]);
     
-    // Query for matches where user is a player, but not necessarily in the active group
-    const joinedMatchesQuery = useMemo(() => {
-        if (!firestore || !user?.uid) return null;
+    // Query for public matches where the user is a player, but are NOT from the current active group.
+    const joinedPublicMatchesQuery = useMemo(() => {
+        if (!firestore || !user?.uid || !user?.activeGroupId) return null;
         return query(
             collection(firestore, 'matches'),
-            where('playerUids', 'array-contains', user.uid)
+            where('playerUids', 'array-contains', user.uid),
+            where('isPublic', '==', true),
+            where('groupId', '!=', user.activeGroupId)
         );
-    }, [firestore, user?.uid]);
+    }, [firestore, user?.uid, user?.activeGroupId]);
 
 
     const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(groupMatchesQuery);
-    const { data: joinedMatches, loading: joinedMatchesLoading } = useCollection<Match>(joinedMatchesQuery);
+    const { data: joinedPublicMatches, loading: joinedPublicMatchesLoading } = useCollection<Match>(joinedPublicMatchesQuery);
     
-    // Client-side merge because Firestore 'or' queries are limited.
+    // Merge matches from the active group with any public matches the user has joined.
     const matches = useMemo(() => {
-        if (!groupMatches && !joinedMatches) return null;
-        
         const allMatchesMap = new Map<string, Match>();
         
-        const safeGroupMatches = groupMatches || [];
-        const safeJoinedMatches = joinedMatches || [];
-
-        // Add all matches from the active group
-        safeGroupMatches.forEach(match => allMatchesMap.set(match.id, match));
-
-        // Add joined public/other matches, avoiding duplicates
-        safeJoinedMatches.forEach(match => {
-            if (!allMatchesMap.has(match.id)) {
-                allMatchesMap.set(match.id, match);
-            }
-        });
+        (groupMatches || []).forEach(match => allMatchesMap.set(match.id, match));
+        (joinedPublicMatches || []).forEach(match => allMatchesMap.set(match.id, match));
 
         return Array.from(allMatchesMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [groupMatches, joinedMatches]);
+    }, [groupMatches, joinedPublicMatches]);
 
-    const loading = userLoading || playersLoading || groupMatchesLoading || joinedMatchesLoading;
+    const loading = userLoading || playersLoading || groupMatchesLoading || joinedPublicMatchesLoading;
     
     const sortedPlayers = useMemo(() => {
         if (!allGroupPlayers) return [];
