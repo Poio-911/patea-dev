@@ -11,6 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 
 const PlayerSchema = z.object({
     uid: z.string(),
@@ -97,7 +98,7 @@ const findBestFitPlayerFlow = ai.defineFlow(
     if (input.availablePlayers.length === 0 || input.spotsToFill <= 0) {
         return { recommendations: [] };
     }
-    const { output } = await prompt(input);
+    const { output } = await prompt(input, { model: 'googleai/gemini-2.5-flash' });
     return output!;
   }
 );

@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -9,6 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 
 const FakeAdOutputSchema = z.object({
   productName: z.string().describe('The completely fictional, absurd name of the product or service.'),
@@ -47,7 +49,7 @@ const generateFakeAdFlow = ai.defineFlow(
     outputSchema: FakeAdOutputSchema,
   },
   async () => {
-    const { output } = await prompt();
+    const { output } = await prompt({}, { model: 'googleai/gemini-2.5-flash' });
     return output!;
   }
 );

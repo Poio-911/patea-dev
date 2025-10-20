@@ -11,6 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 
 const GroupSummaryInputSchema = z.object({
   playerCount: z.number().describe('El número total de jugadores en el grupo.'),
@@ -69,7 +70,7 @@ const generateGroupSummaryFlow = ai.defineFlow(
     outputSchema: GroupSummaryOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
+    const { output } = await prompt(input, { model: 'googleai/gemini-2.5-flash' });
     return output!;
   }
 );

@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -9,6 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 
 const FootballHeadlineSchema = z.object({
   title: z.string().describe('The headline of the news story.'),
@@ -52,9 +54,7 @@ const getFootballHeadlinesFlow = ai.defineFlow(
     outputSchema: FootballHeadlinesOutputSchema,
   },
   async () => {
-    const { output } = await prompt();
+    const { output } = await prompt({}, { model: 'googleai/gemini-2.5-flash' });
     return output!;
   }
 );
-
-    
