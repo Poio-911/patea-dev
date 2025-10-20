@@ -14,6 +14,7 @@ import { Loader2, ShieldQuestion, Calendar, Edit } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
+import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
 
 export default function EvaluationsPage() {
     const { user, loading: userLoading } = useUser();
@@ -71,6 +72,10 @@ export default function EvaluationsPage() {
         <div className="flex flex-col gap-8">
             <PageHeader title="Mis Evaluaciones" description="Aquí encontrarás los partidos que tienes pendientes por evaluar." />
             
+            <AttributesHelpDialog>
+                <Button variant="link" className="p-0 h-auto self-start">¿Qué significan los atributos de evaluación?</Button>
+            </AttributesHelpDialog>
+
             {pendingMatches.length === 0 ? (
                 <Alert>
                     <ShieldQuestion className="h-4 w-4" />

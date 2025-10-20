@@ -22,9 +22,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { SetAvailabilityDialog } from './set-availability-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AttributeKey } from '@/lib/data';
-import { AttributeHelpTooltip } from './attribute-help-tooltip';
-
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -37,12 +34,9 @@ const positionColors: Record<Player['position'], string> = {
   POR: 'text-chart-4',
 };
 
-const Stat = ({ label, value, attributeKey }: { label: string; value: number; attributeKey: AttributeKey }) => (
+const Stat = ({ label, value }: { label: string; value: number }) => (
   <div className="flex items-center justify-between text-sm">
-    <div className="flex items-center">
-        <span className="font-semibold text-muted-foreground">{label}</span>
-        <AttributeHelpTooltip attribute={attributeKey} />
-    </div>
+    <span className="font-semibold text-muted-foreground">{label}</span>
     <span className="font-bold">{value}</span>
   </div>
 );
@@ -69,7 +63,6 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
 
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isGenerating, startTransition] = useTransition();
 
   const isCurrentUserProfile = user?.uid === playerId;
 
@@ -271,7 +264,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                 <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
                                 <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            {(isUploading || isGenerating) && (
+                            {isUploading && (
                                 <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
                                     <Loader2 className="h-8 w-8 animate-spin text-white" />
                                 </div>
@@ -286,7 +279,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                     className="hidden"
                                     accept="image/png, image/jpeg, image/gif" 
                                 />
-                                <Button onClick={handleButtonClick} size="sm" variant="outline" disabled={isUploading || isGenerating} className="w-full">
+                                <Button onClick={handleButtonClick} size="sm" variant="outline" disabled={isUploading} className="w-full">
                                     {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                                     {isUploading ? "Subiendo..." : "Cambiar Foto"}
                                 </Button>
@@ -302,12 +295,12 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                     </div>
                     <Separator className="my-4"/>
                     <div className="w-full grid grid-cols-2 gap-x-8 gap-y-3 px-4">
-                        <Stat label="RIT" value={player.pac} attributeKey="PAC" />
-                        <Stat label="TIR" value={player.sho} attributeKey="SHO" />
-                        <Stat label="PAS" value={player.pas} attributeKey="PAS" />
-                        <Stat label="REG" value={player.dri} attributeKey="DRI" />
-                        <Stat label="DEF" value={player.def} attributeKey="DEF" />
-                        <Stat label="FIS" value={player.phy} attributeKey="PHY" />
+                        <Stat label="RIT" value={player.pac} />
+                        <Stat label="TIR" value={player.sho} />
+                        <Stat label="PAS" value={player.pas} />
+                        <Stat label="REG" value={player.dri} />
+                        <Stat label="DEF" value={player.def} />
+                        <Stat label="FIS" value={player.phy} />
                     </div>
                 </CardContent>
             </Card>

@@ -11,6 +11,7 @@ import { Users2, Users, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import type { Player } from '@/lib/types';
+import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
 
 export default function PlayersPage() {
   const { user, loading: userLoading } = useUser();
@@ -40,6 +41,11 @@ export default function PlayersPage() {
       >
         <AddPlayerDialog />
       </PageHeader>
+
+      <AttributesHelpDialog>
+          <Button variant="link" className="p-0 h-auto self-start">¿Qué significan los atributos?</Button>
+      </AttributesHelpDialog>
+
        {loading && (
           <div className="flex items-center justify-center p-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -78,5 +84,3 @@ export default function PlayersPage() {
     </div>
   );
 }
-
-    

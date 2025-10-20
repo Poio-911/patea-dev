@@ -30,8 +30,6 @@ import { addDoc, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { PlayerPosition } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { AttributeKey } from '@/lib/data';
-import { AttributeHelpTooltip } from './attribute-help-tooltip';
 
 const playerSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio'),
@@ -46,12 +44,9 @@ const playerSchema = z.object({
 
 type PlayerFormData = z.infer<typeof playerSchema>;
 
-const AttributeInput = ({ label, attributeKey, register }: { label: string, attributeKey: AttributeKey, register: any }) => (
+const AttributeInput = ({ label, attributeKey, register }: { label: string, attributeKey: string, register: any }) => (
     <div className="grid grid-cols-2 items-center gap-2">
-        <div className="flex items-center">
-            <Label htmlFor={attributeKey.toLowerCase()}>{label}</Label>
-            <AttributeHelpTooltip attribute={attributeKey} />
-        </div>
+        <Label htmlFor={attributeKey.toLowerCase()}>{label}</Label>
         <Input id={attributeKey.toLowerCase()} type="number" {...register(attributeKey.toLowerCase())} />
     </div>
 );
@@ -176,12 +171,12 @@ export function AddPlayerDialog() {
                 {errors.position && <p className="col-span-4 text-right text-xs text-destructive">{errors.position.message}</p>}
 
                 <div className="grid grid-cols-2 gap-4">
-                    <AttributeInput label="RIT" attributeKey="PAC" register={register} />
-                    <AttributeInput label="TIR" attributeKey="SHO" register={register} />
-                    <AttributeInput label="PAS" attributeKey="PAS" register={register} />
-                    <AttributeInput label="REG" attributeKey="DRI" register={register} />
-                    <AttributeInput label="DEF" attributeKey="DEF" register={register} />
-                    <AttributeInput label="FIS" attributeKey="PHY" register={register} />
+                    <AttributeInput label="RIT" attributeKey="pac" register={register} />
+                    <AttributeInput label="TIR" attributeKey="sho" register={register} />
+                    <AttributeInput label="PAS" attributeKey="pas" register={register} />
+                    <AttributeInput label="REG" attributeKey="dri" register={register} />
+                    <AttributeInput label="DEF" attributeKey="def" register={register} />
+                    <AttributeInput label="FIS" attributeKey="phy" register={register} />
                 </div>
             </div>
             <DialogFooter>
