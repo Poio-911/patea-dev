@@ -22,7 +22,7 @@ const forecastPrompt = ai.definePrompt({
   name: 'matchDayForecast',
   input: { schema: GetMatchDayForecastInputSchema },
   output: { schema: GetMatchDayForecastOutputSchema },
-  model: googleAI('gemini-1.5-flash'),
+  model: 'googleai/gemini-1.5-flash',
   prompt: `
     Eres un asistente meteorológico para una app de fútbol amateur.
     Proporciona un breve y amigable resumen del clima en ESPAÑOL.
