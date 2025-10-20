@@ -26,13 +26,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User, MessageCircle, FileSignature } from 'lucide-react';
+import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User, MessageCircle, FileSignature, MoreVertical } from 'lucide-react';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import Link from 'next/link';
 import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 import { MatchChatSheet } from './match-chat-sheet';
 import { MatchDetailsDialog } from './match-details-dialog';
 import { TeamsIcon } from './icons/teams-icon';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 
 
 type MatchCardProps = {
@@ -310,29 +317,76 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     
     const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
 
+    const PrimaryAction = () => {
+        if (!isOwner) {
+            if (match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic)) {
+                if (isMatchFull && !isUserInMatch) {
+                    return <Button variant="outline" size="sm" className="w-full" disabled>Partido Lleno</Button>;
+                }
+                return (
+                    <Button variant={isUserInMatch ? 'secondary' : 'default'} size="sm" onClick={handleJoinOrLeaveMatch} disabled={isJoining} className="w-full">
+                        {isJoining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isUserInMatch ? <LogOut className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />)}
+                        {isUserInMatch ? 'Darse de baja' : 'Apuntarse'}
+                    </Button>
+                );
+            }
+            return null;
+        }
+
+        // Owner actions
+        if (match.status === 'upcoming') {
+            return (
+                <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing} className="w-full">
+                    {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                    Finalizar Partido
+                </Button>
+            );
+        }
+        if (match.status === 'completed') {
+            return (
+                 <Button asChild variant="default" size="sm" className="w-full">
+                    <Link href={`/matches/${match.id}/evaluate`}>
+                        <FileSignature className="mr-2 h-4 w-4" />
+                        Supervisar
+                    </Link>
+                </Button>
+            );
+        }
+        return null;
+    };
+
+
     return (
         <Card className="flex flex-col overflow-hidden shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
             <CardHeader className={cn('relative bg-gradient-to-br to-transparent p-4', currentStatus.gradientClass)}>
                 <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <CardTitle className={cn("text-xl font-bold", currentStatus.neonClass)}>
-                            {match.title}
-                        </CardTitle>
-                        <CardDescription className="flex items-center gap-2 text-xs text-foreground/80 mt-1">
-                            <User className="h-3 w-3"/> Organizado por {ownerName || 'Cargando...'}
-                        </CardDescription>
-                    </div>
+                    <CardTitle className={cn("text-xl font-bold", currentStatus.neonClass)}>
+                        {match.title}
+                    </CardTitle>
                      <Badge variant="outline" className={cn("whitespace-nowrap uppercase text-xs z-10", currentStatus.className)}>
                         {currentStatus.label}
                     </Badge>
                 </div>
-                 {isOwner && match.status !== 'evaluated' && (
+                <CardDescription className="flex items-center gap-2 text-xs text-foreground/80">
+                   <User className="h-3 w-3"/> Organizado por {ownerName || 'Cargando...'}
+                </CardDescription>
+                
+                 {isOwner && (
                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                             <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-destructive/70 hover:bg-destructive/20 hover:text-destructive">
-                                <Trash2 size={18} />
-                            </Button>
-                        </AlertDialogTrigger>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                 <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-white/70 hover:bg-white/20">
+                                    <MoreVertical size={18} />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                 <AlertDialogTrigger asChild>
+                                     <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar Partido
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <AlertDialogContent>
                             <AlertDialogHeader>
                             <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
@@ -382,32 +436,11 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
             <CardFooter className="flex flex-col items-stretch gap-2 p-3 bg-muted/50 mt-auto">
                 <div className="grid grid-cols-2 gap-2">
-                    {isOwner && match.status === 'upcoming' && (
-                         <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing}>
-                            {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                            Finalizar Partido
-                        </Button>
-                    )}
-                     {isOwner && match.status === 'completed' && (
-                        <Button asChild variant="default" size="sm">
-                            <Link href={`/matches/${match.id}/evaluate`}>
-                                <FileSignature className="mr-2 h-4 w-4" />
-                                Supervisar
-                            </Link>
-                        </Button>
-                    )}
-                     {!isOwner && match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic) && (
-                        isMatchFull && !isUserInMatch
-                        ? <Button variant="outline" size="sm" disabled>Partido Lleno</Button>
-                        : <Button variant={isUserInMatch ? 'secondary' : 'default'} size="sm" onClick={handleJoinOrLeaveMatch} disabled={isJoining}>
-                            {isJoining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isUserInMatch ? <LogOut className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />)}
-                            {isUserInMatch ? 'Darse de baja' : 'Apuntarse'}
-                          </Button>
-                     )}
-                     <MatchDetailsDialog match={match}><Button variant="outline" size="sm"><Eye className="mr-2 h-4 w-4" />Detalles</Button></MatchDetailsDialog>
-                     {isUserInMatch && <MatchChatSheet match={match}><Button variant="outline" size="sm"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button></MatchChatSheet>}
-                     {match.teams && match.teams.length > 0 && <MatchTeamsDialog match={match}><Button variant="outline" size="sm"><TeamsIcon className="mr-2 h-4 w-4" />Equipos</Button></MatchTeamsDialog>}
-                     {isOwner && match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic) && <InvitePlayerDialog playerToInvite={null} userMatches={[]} match={match} disabled={isMatchFull}><Button variant="outline" size="sm" disabled={isMatchFull}><UserPlus className="mr-2 h-4 w-4" />Invitar</Button></InvitePlayerDialog>}
+                    <PrimaryAction />
+                    <MatchDetailsDialog match={match}><Button variant="outline" size="sm"><Eye className="mr-2 h-4 w-4" />Detalles</Button></MatchDetailsDialog>
+                    {isUserInMatch && <MatchChatSheet match={match}><Button variant="outline" size="sm"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button></MatchChatSheet>}
+                    {match.teams && match.teams.length > 0 && <MatchTeamsDialog match={match}><Button variant="outline" size="sm"><TeamsIcon className="mr-2 h-4 w-4" />Equipos</Button></MatchTeamsDialog>}
+                    {isOwner && match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic) && <InvitePlayerDialog playerToInvite={null} userMatches={[]} match={match} disabled={isMatchFull}><Button variant="outline" size="sm" disabled={isMatchFull}><UserPlus className="mr-2 h-4 w-4" />Invitar</Button></InvitePlayerDialog>}
                 </div>
             </CardFooter>
         </Card>
