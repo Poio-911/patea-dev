@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle as UiCardTitle } from '@/compo
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import type { Match, Player } from '@/lib/types';
-import { Star, Scale, ShieldCheck, Shirt } from 'lucide-react';
+import { Star, Scale, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TeamsIcon } from './icons/teams-icon';
 
