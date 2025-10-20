@@ -116,11 +116,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         return match.players.length >= match.matchSize;
     }, [match.players, match.matchSize]);
 
-    const availablePlayersToInvite = useMemo(() => {
-        if (!allPlayers) return [];
-        return allPlayers.filter(p => !match.playerUids.includes(p.id));
-    }, [allPlayers, match.playerUids]);
-
 
     const currentStatus = statusConfig[match.status] || statusConfig.completed;
 
@@ -189,12 +184,9 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             let finalTeams = match.teams;
             let matchUpdateData: any = { status: 'completed' };
 
-            // For collaborative matches, generate teams now. For manual, they should already exist.
-            // But let's check if teams exist for manual too, and generate if not.
             if ((match.type === 'collaborative' && isMatchFull) || (match.type === 'manual' && (!finalTeams || finalTeams.length === 0))) {
                 const selectedPlayersData = allPlayers.filter(p => match.playerUids.includes(p.id));
                 
-                // Only generate if the number of players matches the required size
                 if (selectedPlayersData.length === match.matchSize) {
                     const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
                     
@@ -207,14 +199,12 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     finalTeams = teamGenerationResult.teams;
                     matchUpdateData.teams = finalTeams;
                 } else {
-                     // If manual and not full, just complete without teams. They can't evaluate.
-                     console.warn("Finishing manual match without full player list. Teams not generated.");
+                     console.warn("Finishing match without full player list. Teams not generated.");
                 }
             }
 
             batch.update(matchRef, matchUpdateData);
 
-            // Only generate assignments if teams were successfully formed
             if (finalTeams && finalTeams.length > 0) {
                 const assignments = generateEvaluationAssignments({ ...match, teams: finalTeams }, allPlayers);
                 assignments.forEach(assignment => {
@@ -238,7 +228,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
             toast({
                 title: 'Partido Finalizado',
-                description: `El partido "${match.title}" ha sido marcado como finalizado. Se han generado las evaluaciones.`
+                description: `El partido "${match.title}" ha sido marcado como finalizado.`
             });
 
         } catch (error: any) {
@@ -302,7 +292,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     playerUids: arrayUnion(user.uid)
                 });
                 
-                // Notify the organizer
                 if (match.ownerUid !== user.uid) {
                     const notificationRef = doc(collection(firestore, `users/${match.ownerUid}/notifications`));
                     const notification: Omit<Notification, 'id'> = {
@@ -328,31 +317,27 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     }
 
     const renderPrimaryAction = () => {
-        // Owner action: Supervise evaluations
-        if (match.status === 'completed' && user?.uid === match.ownerUid) {
-            return (
-                <Button asChild variant="default" size="sm" className="w-full">
-                    <Link href={`/matches/${match.id}/evaluate`}>
-                        <FileSignature className="mr-2 h-4 w-4" />
-                        Supervisar
-                    </Link>
-                </Button>
-            );
+        if (user?.uid === match.ownerUid) {
+            if (match.status === 'completed') {
+                return (
+                    <Button asChild variant="default" size="sm" className="w-full">
+                        <Link href={`/matches/${match.id}/evaluate`}>
+                            <FileSignature className="mr-2 h-4 w-4" />
+                            Supervisar
+                        </Link>
+                    </Button>
+                );
+            }
+            if (match.status === 'upcoming') {
+                return (
+                    <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing} className="w-full">
+                        {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                        Finalizar Partido
+                    </Button>
+                );
+            }
         }
-
-        // Owner action: Finish match
-        const canFinishMatch = user?.uid === match.ownerUid && match.status === 'upcoming' &&
-            ((match.type === 'collaborative' && isMatchFull) || match.type === 'manual');
-        if (canFinishMatch) {
-            return (
-                <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing} className="w-full">
-                    {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                    Finalizar Partido
-                </Button>
-            );
-        }
-
-        // Player action: Join/Leave collaborative match
+        
         if (match.status === 'upcoming' && match.type === 'collaborative') {
             if (isMatchFull && !isUserInMatch) {
                 return <Button variant="outline" size="sm" className="w-full" disabled>Partido Lleno</Button>;
@@ -364,7 +349,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 </Button>
             );
         }
-
+        
         return null;
     }
 
@@ -400,7 +385,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     ];
 
     const visibleSecondaryActions = secondaryActions.filter(a => a.show);
-    
     const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
 
     return (
@@ -418,46 +402,44 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                    <User className="h-3 w-3"/> Organizado por {ownerName || 'Cargando...'}
                 </CardDescription>
                 
-                 {user?.uid === match.ownerUid && (
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-white/70 hover:bg-white/20">
-                                <MoreVertical size={18} />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            {visibleSecondaryActions.map(action => <React.Fragment key={action.id}>{action.component}</React.Fragment>)}
-                            {user?.uid === match.ownerUid && match.status !== 'evaluated' && (
-                                <>
-                                    {visibleSecondaryActions.length > 0 && <DropdownMenuSeparator />}
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onSelect={(e) => e.preventDefault()}>
-                                                <Trash2 className="mr-2 h-4 w-4" /> Eliminar Partido
-                                            </DropdownMenuItem>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                            <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Esta acción no se puede deshacer. Esto eliminará permanentemente el partido
-                                                y todos sus datos asociados.
-                                            </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-                                                <AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                                                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                    Sí, eliminar partido
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </>
-                            )}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                 )}
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-white/70 hover:bg-white/20">
+                            <MoreVertical size={18} />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        {visibleSecondaryActions.map(action => <React.Fragment key={action.id}>{action.component}</React.Fragment>)}
+                        {user?.uid === match.ownerUid && match.status !== 'evaluated' && (
+                            <>
+                                {visibleSecondaryActions.length > 0 && <DropdownMenuSeparator />}
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onSelect={(e) => e.preventDefault()}>
+                                            <Trash2 className="mr-2 h-4 w-4" /> Eliminar Partido
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Esta acción no se puede deshacer. Esto eliminará permanentemente el partido
+                                            y todos sus datos asociados.
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                Sí, eliminar partido
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </>
+                        )}
+                    </DropdownMenuContent>
+                </DropdownMenu>
 
             </CardHeader>
             <CardContent className="flex-grow space-y-4 pt-4 p-4">
