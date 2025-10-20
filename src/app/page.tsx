@@ -7,6 +7,8 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
+import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
+import { Mail } from 'lucide-react';
 
 export default function HomePage() {
   const { user, loading } = useUser();
@@ -29,7 +31,7 @@ export default function HomePage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <div className="mx-auto flex w-full max-w-md flex-col items-center justify-center space-y-6 text-center">
+      <div className="mx-auto flex w-full max-w-md flex-grow flex-col items-center justify-center space-y-6 text-center">
         <div className="flex items-center gap-4">
           <SoccerPlayerIcon className="h-16 w-16 text-primary" />
           <h1 className="text-6xl font-bold font-headline">Pateá</h1>
@@ -46,6 +48,19 @@ export default function HomePage() {
             </Button>
         </div>
       </div>
+       <footer className="py-4 text-center text-sm text-muted-foreground">
+          <p className="font-semibold">Desarrollado por Santiago López</p>
+          <div className="flex items-center justify-center gap-4 mt-2">
+            <a href="mailto:lopeztoma.santiago@gmail.com" className="flex items-center gap-1 hover:text-primary transition-colors">
+                <Mail className="h-4 w-4"/>
+                <span>lopeztoma.santiago@gmail.com</span>
+            </a>
+            <a href="https://wa.me/59892443585" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary transition-colors">
+                <WhatsAppIcon className="h-4 w-4" />
+                <span>+598 92 443 585</span>
+            </a>
+          </div>
+      </footer>
     </div>
   );
 }
