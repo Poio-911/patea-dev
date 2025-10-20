@@ -30,6 +30,8 @@ import { addDoc, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { PlayerPosition } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { AttributeKey } from '@/lib/data';
+import { AttributeHelpTooltip } from './attribute-help-tooltip';
 
 const playerSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio'),
@@ -43,6 +45,17 @@ const playerSchema = z.object({
 });
 
 type PlayerFormData = z.infer<typeof playerSchema>;
+
+const AttributeInput = ({ label, attributeKey, register }: { label: string, attributeKey: AttributeKey, register: any }) => (
+    <div className="grid grid-cols-2 items-center gap-2">
+        <div className="flex items-center">
+            <Label htmlFor={attributeKey.toLowerCase()}>{label}</Label>
+            <AttributeHelpTooltip attribute={attributeKey} />
+        </div>
+        <Input id={attributeKey.toLowerCase()} type="number" {...register(attributeKey.toLowerCase())} />
+    </div>
+);
+
 
 export function AddPlayerDialog() {
   const [open, setOpen] = useState(false);
@@ -163,30 +176,12 @@ export function AddPlayerDialog() {
                 {errors.position && <p className="col-span-4 text-right text-xs text-destructive">{errors.position.message}</p>}
 
                 <div className="grid grid-cols-2 gap-4">
-                <div className="grid grid-cols-2 items-center gap-2">
-                    <Label htmlFor="pac">RIT</Label>
-                    <Input id="pac" type="number" {...register('pac')} />
-                </div>
-                <div className="grid grid-cols-2 items-center gap-2">
-                    <Label htmlFor="sho">TIR</Label>
-                    <Input id="sho" type="number" {...register('sho')} />
-                </div>
-                <div className="grid grid-cols-2 items-center gap-2">
-                    <Label htmlFor="pas">PAS</Label>
-                    <Input id="pas" type="number" {...register('pas')} />
-                </div>
-                <div className="grid grid-cols-2 items-center gap-2">
-                    <Label htmlFor="dri">REG</Label>
-                    <Input id="dri" type="number" {...register('dri')} />
-                </div>
-                <div className="grid grid-cols-2 items-center gap-2">
-                    <Label htmlFor="def">DEF</Label>
-                    <Input id="def" type="number" {...register('def')} />
-                </div>
-                <div className="grid grid-cols-2 items-center gap-2">
-                    <Label htmlFor="phy">FIS</Label>
-                    <Input id="phy" type="number" {...register('phy')} />
-                </div>
+                    <AttributeInput label="RIT" attributeKey="PAC" register={register} />
+                    <AttributeInput label="TIR" attributeKey="SHO" register={register} />
+                    <AttributeInput label="PAS" attributeKey="PAS" register={register} />
+                    <AttributeInput label="REG" attributeKey="DRI" register={register} />
+                    <AttributeInput label="DEF" attributeKey="DEF" register={register} />
+                    <AttributeInput label="FIS" attributeKey="PHY" register={register} />
                 </div>
             </div>
             <DialogFooter>
@@ -198,5 +193,3 @@ export function AddPlayerDialog() {
     </Dialog>
   );
 }
-
-    

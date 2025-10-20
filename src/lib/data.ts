@@ -9,6 +9,18 @@ const getPlayerImage = (id: string) => {
   return img ? img.imageUrl : 'https://picsum.photos/seed/default/400/400';
 }
 
+export type AttributeKey = 'PAC' | 'SHO' | 'PAS' | 'DRI' | 'DEF' | 'PHY';
+
+export const attributeDescriptions: Record<AttributeKey, { name: string, description: string }> = {
+  PAC: { name: 'Ritmo (RIT)', description: 'Mide la velocidad y aceleración del jugador en el campo.' },
+  SHO: { name: 'Tiro (TIR)', description: 'Define la precisión y potencia de los remates a puerta.' },
+  PAS: { name: 'Pase (PAS)', description: 'Representa la calidad y visión para dar pases a los compañeros.' },
+  DRI: { name: 'Regate (REG)', description: 'Mide el control del balón y la habilidad en el uno contra uno.' },
+  DEF: { name: 'Defensa (DEF)', description: 'Indica la capacidad para marcar, realizar entradas y posicionarse defensivamente.' },
+  PHY: { name: 'Físico (FIS)', description: 'Representa la fuerza, resistencia y aguante del jugador durante el partido.' }
+};
+
+
 export const players: Player[] = [
   // This data is now fetched from Firestore
 ];
@@ -55,4 +67,5 @@ export const youtubeGoalHighlights = [
   { videoId: 'r6y1a-1e62A', title: 'Los goles de la 3ª fecha del Torneo Apertura 2024 | Tenfield' },
   { videoId: 'YQ-qB4I3M7s', title: 'Uruguay 3-1 Chile | Mejores Momentos | Eliminatorias CONMEBOL' }
 ];
+
 

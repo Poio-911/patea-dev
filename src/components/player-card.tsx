@@ -30,6 +30,8 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import React from 'react';
 import { Badge } from './ui/badge';
+import { AttributeKey } from '@/lib/data';
+import { AttributeHelpTooltip } from './attribute-help-tooltip';
 
 
 type PlayerCardProps = {
@@ -51,9 +53,12 @@ const positionColors: Record<Player['position'], string> = {
   POR: 'text-chart-4',
 };
 
-const Stat = ({ label, value }: { label: string; value: number }) => (
+const Stat = ({ label, value, attributeKey }: { label: string; value: number; attributeKey: AttributeKey }) => (
   <div className="flex items-center justify-between text-sm">
-    <span className="font-semibold text-muted-foreground">{label}</span>
+    <div className="flex items-center">
+        <span className="font-semibold text-muted-foreground">{label}</span>
+        <AttributeHelpTooltip attribute={attributeKey} />
+    </div>
     <span className="font-bold">{value}</span>
   </div>
 );
@@ -157,12 +162,12 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
         </div>
         
         <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 flex-grow">
-          <Stat label="RIT" value={player.pac} />
-          <Stat label="TIR" value={player.sho} />
-          <Stat label="PAS" value={player.pas} />
-          <Stat label="REG" value={player.dri} />
-          <Stat label="DEF" value={player.def} />
-          <Stat label="FIS" value={player.phy} />
+          <Stat label="RIT" value={player.pac} attributeKey="PAC" />
+          <Stat label="TIR" value={player.sho} attributeKey="SHO" />
+          <Stat label="PAS" value={player.pas} attributeKey="PAS" />
+          <Stat label="REG" value={player.dri} attributeKey="DRI" />
+          <Stat label="DEF" value={player.def} attributeKey="DEF" />
+          <Stat label="FIS" value={player.phy} attributeKey="PHY" />
         </div>
       </CardContent>
     </Card>
@@ -178,5 +183,3 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
 
   return <CardContentComponent />;
 }
-
-    

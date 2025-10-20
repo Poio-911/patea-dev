@@ -19,10 +19,11 @@ import { Separator } from '@/components/ui/separator';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { generatePlayerCardImageAction } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
 import { SetAvailabilityDialog } from './set-availability-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AttributeKey } from '@/lib/data';
+import { AttributeHelpTooltip } from './attribute-help-tooltip';
 
 
 type PlayerProfileViewProps = {
@@ -36,9 +37,12 @@ const positionColors: Record<Player['position'], string> = {
   POR: 'text-chart-4',
 };
 
-const Stat = ({ label, value }: { label: string; value: number }) => (
+const Stat = ({ label, value, attributeKey }: { label: string; value: number; attributeKey: AttributeKey }) => (
   <div className="flex items-center justify-between text-sm">
-    <span className="font-semibold text-muted-foreground">{label}</span>
+    <div className="flex items-center">
+        <span className="font-semibold text-muted-foreground">{label}</span>
+        <AttributeHelpTooltip attribute={attributeKey} />
+    </div>
     <span className="font-bold">{value}</span>
   </div>
 );
@@ -246,7 +250,6 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   };
 
   const loading = playerLoading || historyLoading || isLoading || (isCurrentUserProfile && (createdMatchesLoading || createdPlayersLoading || availablePlayerLoading));
-  const credits = player?.cardGenerationCredits === undefined ? 2 : player.cardGenerationCredits;
 
 
   if (loading) {
@@ -299,12 +302,12 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                     </div>
                     <Separator className="my-4"/>
                     <div className="w-full grid grid-cols-2 gap-x-8 gap-y-3 px-4">
-                        <Stat label="RIT" value={player.pac} />
-                        <Stat label="TIR" value={player.sho} />
-                        <Stat label="PAS" value={player.pas} />
-                        <Stat label="REG" value={player.dri} />
-                        <Stat label="DEF" value={player.def} />
-                        <Stat label="FIS" value={player.phy} />
+                        <Stat label="RIT" value={player.pac} attributeKey="PAC" />
+                        <Stat label="TIR" value={player.sho} attributeKey="SHO" />
+                        <Stat label="PAS" value={player.pas} attributeKey="PAS" />
+                        <Stat label="REG" value={player.dri} attributeKey="DRI" />
+                        <Stat label="DEF" value={player.def} attributeKey="DEF" />
+                        <Stat label="FIS" value={player.phy} attributeKey="PHY" />
                     </div>
                 </CardContent>
             </Card>
@@ -547,5 +550,3 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     </div>
   );
 }
-
-    
