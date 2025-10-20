@@ -25,6 +25,7 @@ const prompt = ai.definePrompt({
   name: 'getMatchDayForecastPrompt',
   input: { schema: GetMatchDayForecastInputSchema },
   output: { schema: GetMatchDayForecastOutputSchema },
+  model: 'models/gemini-1.5-flash',
   prompt: `
     You are a helpful assistant. Provide a short, friendly Spanish weather summary.
     Location: {{{location}}}
