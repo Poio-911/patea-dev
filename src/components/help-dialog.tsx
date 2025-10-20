@@ -89,7 +89,7 @@ export function HelpDialog({ forceOpen = false, onExplicitClose }: HelpDialogPro
       {!forceOpen && DialogTriggerButton}
       <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-            <DialogTitle className="text-2xl font-bold font-headline text-center">¡Bienvenido a tu Manager de Fútbol!</DialogTitle>
+            <DialogTitle className="text-2xl font-bold font-headline text-center">¡Bienvenido a Pateá!</DialogTitle>
             <DialogDescription className="text-center">Acá tenés una guía rápida para que le saques todo el jugo a la app.</DialogDescription>
         </DialogHeader>
 
