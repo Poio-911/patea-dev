@@ -26,7 +26,7 @@ import { Player, MatchLocation, Notification, Team } from '@/lib/types';
 import { Alert, AlertDescription } from './ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Checkbox } from './ui/checkbox';
@@ -469,9 +469,9 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                         <div className="flex items-center justify-center gap-4 text-sm w-full">
                             <div className="flex items-center gap-2">
                                 <WeatherIcon className="h-6 w-6 text-primary"/>
-                                <p className="font-medium">{weather.description}</p>
+                                <p className="font-bold text-lg">{weather.temperature}°C</p>
                             </div>
-                             <p className="font-bold text-lg">{weather.temperature}°C</p>
+                            <p className="font-medium text-muted-foreground">{weather.description}</p>
                         </div>
                     ) : (
                         <p className="text-sm text-muted-foreground text-center">Poné fecha y lugar para ver el pronóstico del tiempo.</p>
