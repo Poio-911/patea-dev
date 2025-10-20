@@ -16,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import type { Match, Player } from '@/lib/types';
 import { Star, Scale, ShieldCheck, Shirt } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ShirtIcon } from './icons/shirt-icon';
 
 type MatchTeamsDialogProps = {
   match: Match;
@@ -42,11 +43,18 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
         </DialogHeader>
         <div className="py-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {teams.map((team) => (
+            {teams.map((team, index) => (
               <Card key={team.name}>
-                <CardHeader className="flex-row items-center justify-between">
-                    <UiCardTitle className="text-lg">{team.name}</UiCardTitle>
-                  <Badge variant="secondary">OVR Promedio: {team.averageOVR.toFixed(1)}</Badge>
+                <CardHeader>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <UiCardTitle className="text-lg">{team.name}</UiCardTitle>
+                            <Badge variant="secondary" className="mt-1">OVR Promedio: {team.averageOVR.toFixed(1)}</Badge>
+                        </div>
+                        <div className={cn("p-2 rounded-lg", index === 0 ? 'bg-blue-100 dark:bg-blue-900/50' : 'bg-red-100 dark:bg-red-900/50')}>
+                            <ShirtIcon className={cn("h-8 w-8", index === 0 ? 'text-blue-600' : 'text-red-600')} />
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-2">
