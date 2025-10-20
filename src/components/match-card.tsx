@@ -26,12 +26,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Star, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User, MessageCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Star, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User, MessageCircle, MoreVertical } from 'lucide-react';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import Link from 'next/link';
 import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 import { MatchChatSheet } from './match-chat-sheet';
 import { MatchDetailsDialog } from './match-details-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 
 
 type MatchCardProps = {
@@ -321,10 +328,29 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     }
 
     const renderPrimaryAction = () => {
-        if (match.status !== 'upcoming') return null;
-    
-        // Show join/leave button for collaborative matches or public matches
-        if (match.type === 'collaborative' || match.isPublic) {
+        if (match.status === 'completed' && user?.uid === match.ownerUid) {
+            return (
+                <Button asChild variant="default" size="sm" className="w-full">
+                    <Link href={`/matches/${match.id}/evaluate`}>
+                        <Star className="mr-2 h-4 w-4" />
+                        Supervisar Evaluaciones
+                    </Link>
+                </Button>
+            );
+        }
+        
+        const canFinishMatch = user?.uid === match.ownerUid && match.status === 'upcoming' &&
+            ((match.type === 'collaborative' && isMatchFull) || match.type === 'manual');
+        if (canFinishMatch) {
+            return (
+                <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing} className="w-full">
+                    {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                    Finalizar Partido
+                </Button>
+            );
+        }
+
+        if (match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic)) {
             if (isMatchFull && !isUserInMatch) {
                 return <Button variant="outline" size="sm" className="w-full" disabled>Partido Lleno</Button>;
             }
@@ -335,99 +361,96 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 </Button>
             );
         }
-        
+
         return null;
     }
 
-    const renderSecondaryActions = () => {
-        const canFinishMatch = user?.uid === match.ownerUid && match.status === 'upcoming' &&
-            ((match.type === 'collaborative' && isMatchFull) || match.type === 'manual');
+    const secondaryActions = [
+        {
+            id: 'details',
+            label: 'Ver Detalles',
+            icon: Eye,
+            component: <MatchDetailsDialog match={match}><DropdownMenuItem onSelect={e => e.preventDefault()}> <Eye className="mr-2 h-4 w-4" />Ver Detalles</DropdownMenuItem></MatchDetailsDialog>,
+            show: true
+        },
+        {
+            id: 'teams',
+            label: 'Ver Equipos',
+            icon: Eye,
+            component: <MatchTeamsDialog match={match}><DropdownMenuItem onSelect={e => e.preventDefault()}><Eye className="mr-2 h-4 w-4" />Ver Equipos</DropdownMenuItem></MatchTeamsDialog>,
+            show: (match.teams && match.teams.length > 0)
+        },
+        {
+            id: 'chat',
+            label: 'Chat del Partido',
+            icon: MessageCircle,
+            component: <MatchChatSheet match={match}><DropdownMenuItem onSelect={e => e.preventDefault()}><MessageCircle className="mr-2 h-4 w-4" />Chat del Partido</DropdownMenuItem></MatchChatSheet>,
+            show: isUserInMatch
+        },
+        {
+            id: 'invite',
+            label: 'Invitar Jugador',
+            icon: UserPlus,
+            component: <InvitePlayerDialog playerToInvite={null} userMatches={[]} match={match} disabled={isMatchFull}><DropdownMenuItem onSelect={e => e.preventDefault()} disabled={isMatchFull}><UserPlus className="mr-2 h-4 w-4" />Invitar Jugador</DropdownMenuItem></InvitePlayerDialog>,
+            show: match.status === 'upcoming' && user?.uid === match.ownerUid && match.type === 'collaborative'
+        }
+    ];
 
-        return (
-            <div className="grid grid-cols-2 gap-2">
-                <MatchDetailsDialog match={match}>
-                    <Button variant="outline" size="sm" className="w-full">
-                        <Eye className="mr-2 h-4 w-4" />
-                        Ver Detalles
-                    </Button>
-                </MatchDetailsDialog>
-                
-                {canFinishMatch && (
-                    <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing} className="w-full">
-                        {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                        Finalizar
-                    </Button>
-                )}
-
-                {(match.teams && match.teams.length > 0) && (
-                    <MatchTeamsDialog match={match}>
-                        <Button variant="outline" size="sm" className="w-full">
-                            <Eye className="mr-2 h-4 w-4" />
-                            Ver Equipos
-                        </Button>
-                    </MatchTeamsDialog>
-                )}
-
-                {match.status === 'upcoming' && user?.uid === match.ownerUid && match.type === 'collaborative' && (
-                    <InvitePlayerDialog 
-                        playerToInvite={null} 
-                        userMatches={[]}
-                        match={match} 
-                        disabled={isMatchFull} 
-                    >
-                        <Button variant="outline" size="sm" className="w-full" disabled={isMatchFull}>
-                            <UserPlus className="mr-2 h-4 w-4" />
-                            Invitar
-                        </Button>
-                    </InvitePlayerDialog>
-                )}
-
-                {isUserInMatch && (
-                    <MatchChatSheet match={match}>
-                        <Button variant="outline" size="sm" className="w-full">
-                            <MessageCircle className="mr-2 h-4 w-4" />
-                            Chat
-                        </Button>
-                    </MatchChatSheet>
-                )}
-
-                {match.status === 'completed' && user?.uid === match.ownerUid && (
-                     <Button asChild variant="default" size="sm" className="w-full col-span-2">
-                        <Link href={`/matches/${match.id}/evaluate`}>
-                            <Star className="mr-2 h-4 w-4" />
-                            Supervisar Evaluaciones
-                        </Link>
-                    </Button>
-                 )}
-
-                {match.status === 'evaluated' && user?.uid === match.ownerUid && (
-                    <Button asChild variant="secondary" size="sm" className="w-full col-span-2">
-                        <Link href={`/matches/${match.id}/evaluate`}>
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Evaluado
-                        </Link>
-                    </Button>
-                )}
-            </div>
-        );
-    }
+    const visibleSecondaryActions = secondaryActions.filter(a => a.show);
     
     const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
 
     return (
         <Card className="flex flex-col overflow-hidden shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
-            <CardHeader className={cn('bg-gradient-to-br to-transparent p-4', currentStatus.gradientClass)}>
+            <CardHeader className={cn('relative bg-gradient-to-br to-transparent p-4', currentStatus.gradientClass)}>
                 <div className="flex items-start justify-between gap-4">
                     <CardTitle className={cn("text-xl font-bold", currentStatus.neonClass)}>
                         {match.title}
                     </CardTitle>
-                    <Badge variant="outline" className={cn("whitespace-nowrap uppercase text-xs", currentStatus.className)}>
+                     <Badge variant="outline" className={cn("whitespace-nowrap uppercase text-xs z-10", currentStatus.className)}>
                         {currentStatus.label}
                     </Badge>
                 </div>
                 <CardDescription className="flex items-center gap-2 text-xs text-foreground/80">
                    <User className="h-3 w-3"/> Organizado por {ownerName || 'Cargando...'}
                 </CardDescription>
+                
+                {user?.uid === match.ownerUid && match.status !== 'evaluated' && (
+                    <AlertDialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-white/70 hover:bg-white/20">
+                                    <MoreVertical size={18} />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {visibleSecondaryActions.map(action => <React.Fragment key={action.id}>{action.component}</React.Fragment>)}
+                                {visibleSecondaryActions.length > 0 && <DropdownMenuSeparator />}
+                                <AlertDialogTrigger asChild>
+                                     <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar Partido
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta acción no se puede deshacer. Esto eliminará permanentemente el partido
+                                y todos sus datos asociados.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Sí, eliminar partido
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
             </CardHeader>
             <CardContent className="flex-grow space-y-4 pt-4 p-4">
                 <div className="grid grid-cols-1 gap-y-3">
@@ -461,35 +484,20 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             <CardFooter className="flex flex-col items-stretch gap-2 p-3 bg-muted/50 mt-auto">
                  <div className="space-y-2">
                     {renderPrimaryAction()}
-                    {renderSecondaryActions()}
+                    {visibleSecondaryActions.length > 0 && user?.uid !== match.ownerUid && (
+                       <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                 <Button variant="outline" size="sm" className="w-full">
+                                    <MoreVertical className="mr-2 h-4 w-4" />
+                                    Más Opciones
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                               {visibleSecondaryActions.map(action => <React.Fragment key={action.id}>{action.component}</React.Fragment>)}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
                  </div>
-
-                 {user?.uid === match.ownerUid && match.status !== 'evaluated' && (
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive text-xs h-8 mt-2">
-                                <Trash2 className="mr-2 h-3 w-3" />
-                                Eliminar Partido
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Esto eliminará permanentemente el partido
-                                y todos sus datos asociados.
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Sí, eliminar partido
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                 )}
             </CardFooter>
         </Card>
     );
