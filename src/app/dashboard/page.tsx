@@ -23,7 +23,6 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Separator } from '@/components/ui/separator';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
-import { WelcomeDialog } from '@/components/welcome-dialog';
 import { SetAvailabilityDialog } from '@/components/set-availability-dialog';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
@@ -198,7 +197,6 @@ function DashboardContent() {
 
   return (
     <div className="flex flex-col gap-8">
-      <WelcomeDialog />
       <div className="flex items-center gap-3">
         <MateIcon className="h-8 w-8 text-primary" />
         <PageHeader

@@ -39,6 +39,7 @@ import { EvaluationIcon } from './icons/evaluation-icon';
 import { NotificationBell } from './notification-bell';
 import { useFcm } from '@/hooks/use-fcm';
 import { HelpDialog } from './help-dialog';
+import { WelcomeDialog } from './welcome-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { isToday, parseISO } from 'date-fns';
 
@@ -125,6 +126,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   
   return (
     <SidebarProvider>
+      <WelcomeDialog />
       <div className="relative flex h-screen w-full flex-col">
           <header className="fixed top-0 left-0 right-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background/70 px-4 backdrop-blur-lg sm:px-6">
               <div className="flex items-center gap-2">

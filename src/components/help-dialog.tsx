@@ -63,7 +63,7 @@ export function HelpDialog({ forceOpen = false, onExplicitClose }: HelpDialogPro
       if (onExplicitClose) {
         onExplicitClose();
       }
-      // Clean up URL
+      // Clean up URL if it contains the new_user param
       if (pathname.includes('new_user')) {
           router.replace(pathname.split('?')[0], {scroll: false});
       }
