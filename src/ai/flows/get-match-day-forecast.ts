@@ -1,64 +1,61 @@
-
 'use server';
 
 /**
- * @fileOverview A flow to get a weather forecast for a match day.
+ * @fileOverview Flujo para obtener un pronóstico del clima en español para un día de partido.
  */
 
- import { ai } from '@/ai/genkit';
- import { z } from 'zod';
+import { ai } from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/google-genai';
+import { z } from 'zod';
 
 const GetMatchDayForecastInputSchema = z.object({
   location: z.string(),
-   date: z.string(),
- });
- export type GetMatchDayForecastInput = z.infer<typeof GetMatchDayForecastInputSchema>;
- 
- const GetMatchDayForecastOutputSchema = z.object({
+  date: z.string(),
+});
+export type GetMatchDayForecastInput = z.infer<typeof GetMatchDayForecastInputSchema>;
+
+const GetMatchDayForecastOutputSchema = z.object({
   description: z.string(),
-   icon: z.enum(['Sun', 'Cloud', 'Cloudy', 'CloudRain', 'CloudSnow', 'Wind', 'Zap']),
-   temperature: z.number(),
- });
- export type GetMatchDayForecastOutput = z.infer<typeof GetMatchDayForecastOutputSchema>;
- 
- // Define the prompt for the AI
- const prompt = ai.definePrompt({
-    name: 'getMatchDayForecastPrompt',
-   input: { schema: GetMatchDayForecastInputSchema },
-   output: { schema: GetMatchDayForecastOutputSchema },
-    model: 'gemini-1.5-flash-latest',
-   prompt: `
- You are a helpful assistant. Provide a short, friendly Spanish weather summary.
- Location: {{{location}}}
- Date: {{{date}}}
- Include:
-     - short description (in Spanish)
- - temperature in °C
-     - one icon from: Sun, Cloud, Cloudy, CloudRain, CloudSnow, Wind, Zap
-   36  `,
- });
- 
+  icon: z.enum(['Sun', 'Cloud', 'Cloudy', 'CloudRain', 'CloudSnow', 'Wind', 'Zap']),
+  temperature: z.number(),
+});
+export type GetMatchDayForecastOutput = z.infer<typeof GetMatchDayForecastOutputSchema>;
 
- // Main Genkit Flow
- const getMatchDayForecastFlow = ai.defineFlow(
+const forecastPrompt = ai.definePrompt(
   {
-   name: 'getMatchDayForecastFlow',
-    inputSchema: GetMatchDayForecastInputSchema,
-     outputSchema: GetMatchDayForecastOutputSchema,
-   },
-   async (input) => {
- 
-     const { output } = await prompt(input);
- 
-     if (!output) {
-        throw new Error("Failed to get a valid response from the AI.");
+    name: 'matchDayForecast',
+    input: { schema: GetMatchDayForecastInputSchema },
+    output: { schema: GetMatchDayForecastOutputSchema },
+    prompt: `
+    Eres un asistente meteorológico para una aplicación de fútbol amateur. 
+    Proporciona un breve resumen del clima en español para el siguiente lugar y fecha. 
+    Lugar: {{{location}}}
+    Fecha: {{{date}}}
+    
+    Tu respuesta DEBE incluir:
+    - una breve descripción amigable (ej: "Ideal para jugar", "Se recomienda llevar paraguas").
+    - la temperatura aproximada en °C.
+    - un ícono de esta lista estricta: Sun, Cloud, Cloudy, CloudRain, CloudSnow, Wind, Zap.
+    
+    Ejemplo de respuesta:
+    Clima perfecto para un partido, algo fresco. Temp: 18°C. Icono: Sun
+    `,
+    model: googleAI('gemini-1.5-flash-preview-0514'),
+    output: {
+        format: 'json'
     }
+  }
+);
 
-    return output;
-   }
- );
- 
- // Export wrapper
-export async function getMatchDayForecast(input: GetMatchDayForecastInput): Promise<GetMatchDayForecastOutput> {
-return getMatchDayForecastFlow(input);
- }
+
+export const getMatchDayForecast = ai.defineFlow(
+  {
+    name: 'getMatchDayForecastFlow',
+    inputSchema: GetMatchDayForecastInputSchema,
+    outputSchema: GetMatchDayForecastOutputSchema,
+  },
+  async (input) => {
+    const { output } = await forecastPrompt(input);
+    return output!;
+  }
+);
