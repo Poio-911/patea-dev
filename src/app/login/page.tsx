@@ -160,7 +160,7 @@ export default function LoginPage() {
       </div>
       <footer className="py-4 text-center text-sm text-muted-foreground">
           <p className="font-semibold">Desarrollado por Santiago López</p>
-          <div className="flex items-center justify-center gap-4 mt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-x-4 gap-y-2 mt-2">
             <a href="mailto:lopeztoma.santiago@gmail.com" className="flex items-center gap-1 hover:text-primary transition-colors">
                 <Mail className="h-4 w-4"/>
                 <span>lopeztoma.santiago@gmail.com</span>
