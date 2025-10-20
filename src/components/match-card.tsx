@@ -153,28 +153,23 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             let finalTeams = freshMatch.teams;
             let matchUpdateData: any = { status: 'completed' };
 
-            // Logic to generate teams if they don't exist yet for a full match
-            if ( (freshMatch.type === 'collaborative' && freshMatch.players.length >= freshMatch.matchSize) || (freshMatch.type === 'manual' && (!finalTeams || finalTeams.length === 0)) ) {
-                
-                const playerIdsInMatch = freshMatch.playerUids;
-                const playersInMatchQuery = query(collection(firestore, 'players'), where('__name__', 'in', playerIdsInMatch));
-                const playersSnapshot = await getDocs(playersInMatchQuery);
-                const selectedPlayersData = playersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Player));
-
-                if (selectedPlayersData.length >= freshMatch.matchSize) {
-                    const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
+            // Logic to generate teams if they don't exist yet
+            if (!finalTeams || finalTeams.length === 0) {
+                 const playerIdsInMatch = freshMatch.playerUids;
+                 if (playerIdsInMatch.length >= freshMatch.matchSize) {
+                    const playersInMatchQuery = query(collection(firestore, 'players'), where('__name__', 'in', playerIdsInMatch));
+                    const playersSnapshot = await getDocs(playersInMatchQuery);
+                    const selectedPlayersData = playersSnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as Player));
                     
-                    if ('error' in teamGenerationResult) {
-                        throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
-                    }
-                    if (!teamGenerationResult.teams) {
-                        throw new Error('La respuesta de la IA no contiene equipos.');
-                    }
+                    const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
+                    if ('error' in teamGenerationResult) throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
+                    if (!teamGenerationResult.teams) throw new Error('La respuesta de la IA no contiene equipos.');
+
                     finalTeams = teamGenerationResult.teams;
                     matchUpdateData.teams = finalTeams;
-                } else {
+                 } else {
                      console.warn("Finishing match without full player list. Teams not generated.");
-                }
+                 }
             }
 
             batch.update(matchRef, matchUpdateData);
@@ -316,42 +311,36 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                         {match.title}
                     </CardTitle>
                     
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2 text-foreground/80 hover:bg-foreground/10">
-                                <MoreVertical className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            {isOwner && match.status === 'upcoming' && (
-                                <DropdownMenuItem onClick={handleFinishMatch} disabled={isFinishing}>
-                                    <CheckCircle className="mr-2 h-4 w-4" />
-                                    Finalizar Partido
-                                </DropdownMenuItem>
-                            )}
-                            {isOwner && match.status === 'completed' && (
-                                 <DropdownMenuItem asChild>
-                                    <Link href={`/matches/${match.id}/evaluate`}>
+                    {isOwner && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2 text-foreground/80 hover:bg-foreground/10">
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {isOwner && match.status === 'upcoming' && (
+                                    <DropdownMenuItem onClick={handleFinishMatch} disabled={isFinishing}>
+                                        <CheckCircle className="mr-2 h-4 w-4" />
+                                        Finalizar Partido
+                                    </DropdownMenuItem>
+                                )}
+                                {(isOwner && match.status !== 'upcoming') && (
+                                    <DropdownMenuItem disabled>
                                         <FileSignature className="mr-2 h-4 w-4" />
-                                        Supervisar
-                                    </Link>
-                                </DropdownMenuItem>
-                            )}
-                            {(isOwner && match.status !== 'upcoming' && match.status !== 'completed') && (
-                                <DropdownMenuItem disabled>
-                                    <FileSignature className="mr-2 h-4 w-4" />
-                                    <span>Supervisar (no disponible)</span>
-                                </DropdownMenuItem>
-                            )}
-                            {(isOwner && match.status === 'upcoming') && <DropdownMenuSeparator />}
-                            {isOwner && (
-                                <DropdownMenuItem disabled>
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Eliminar (Pronto)
-                                </DropdownMenuItem>
-                            )}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                                        <span>Acciones no disponibles</span>
+                                    </DropdownMenuItem>
+                                )}
+                                {(isOwner && match.status === 'upcoming') && <DropdownMenuSeparator />}
+                                {isOwner && (
+                                    <DropdownMenuItem disabled>
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Eliminar (Pronto)
+                                    </DropdownMenuItem>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
                 </div>
                  <div className="flex items-center gap-2 flex-wrap">
                     <CardDescription className="flex items-center gap-2 text-xs text-foreground/80">
@@ -420,6 +409,15 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     {isUserInMatch && <MatchChatSheet match={match}><Button variant="outline" size="sm" className="w-full"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button></MatchChatSheet>}
                     {match.teams && match.teams.length > 0 && <MatchTeamsDialog match={match}><Button variant="outline" size="sm" className="w-full"><TeamsIcon className="mr-2 h-4 w-4" />Equipos</Button></MatchTeamsDialog>}
                     
+                    {isOwner && match.status === 'completed' && (
+                        <Button asChild size="sm" className="w-full bg-amber-500 hover:bg-amber-600 text-white col-span-2">
+                            <Link href={`/matches/${match.id}/evaluate`}>
+                                <FileSignature className="mr-2 h-4 w-4" />
+                                Supervisar Evaluaciones
+                            </Link>
+                        </Button>
+                    )}
+
                     {isOwner && match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic) && (
                         <InvitePlayerDialog 
                             playerToInvite={null} 
