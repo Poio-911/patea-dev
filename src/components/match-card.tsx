@@ -272,7 +272,9 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     }
 
     const renderPrimaryAction = () => {
-        if (user?.uid === match.ownerUid) {
+        const isOwner = user?.uid === match.ownerUid;
+
+        if (isOwner) {
             if (match.status === 'completed') {
                 return (
                     <Button asChild variant="default" size="sm" className="w-full">
@@ -294,7 +296,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             }
         }
         
-        if (match.status === 'upcoming' && match.type === 'collaborative') {
+        if (match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic)) {
             if (isMatchFull && !isUserInMatch) {
                 return <Button variant="outline" size="sm" className="w-full" disabled>Partido Lleno</Button>;
             }
@@ -309,11 +311,20 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         return null;
     }
 
+    const isOwner = user?.uid === match.ownerUid;
+
     const secondaryActions = [
         { id: 'details', label: 'Ver Detalles', icon: Eye, component: <MatchDetailsDialog match={match}><DropdownMenuItem onSelect={e => e.preventDefault()}> <Eye className="mr-2 h-4 w-4" />Ver Detalles</DropdownMenuItem></MatchDetailsDialog>, show: true },
         { id: 'teams', label: 'Ver Equipos', icon: Eye, component: <MatchTeamsDialog match={match}><DropdownMenuItem onSelect={e => e.preventDefault()}><Eye className="mr-2 h-4 w-4" />Ver Equipos</DropdownMenuItem></MatchTeamsDialog>, show: (match.teams && match.teams.length > 0) },
         { id: 'chat', label: 'Chat del Partido', icon: MessageCircle, component: <MatchChatSheet match={match}><DropdownMenuItem onSelect={e => e.preventDefault()}><MessageCircle className="mr-2 h-4 w-4" />Chat del Partido</DropdownMenuItem></MatchChatSheet>, show: isUserInMatch },
-        { id: 'invite', label: 'Invitar Jugador', icon: UserPlus, component: <InvitePlayerDialog playerToInvite={null} userMatches={[]} match={match} disabled={isMatchFull}><DropdownMenuItem onSelect={e => e.preventDefault()} disabled={isMatchFull}><UserPlus className="mr-2 h-4 w-4" />Invitar Jugador</DropdownMenuItem></InvitePlayerDialog>, show: match.status === 'upcoming' && user?.uid === match.ownerUid && match.type === 'collaborative' }
+        { id: 'invite', label: 'Invitar Jugador', icon: UserPlus, component: <InvitePlayerDialog playerToInvite={null} userMatches={[]} match={match} disabled={isMatchFull}><DropdownMenuItem onSelect={e => e.preventDefault()} disabled={isMatchFull}><UserPlus className="mr-2 h-4 w-4" />Invitar Jugador</DropdownMenuItem></InvitePlayerDialog>, show: match.status === 'upcoming' && isOwner && (match.type === 'collaborative' || match.isPublic) },
+        { id: 'delete', label: 'Eliminar Partido', icon: Trash2, component: (
+            <AlertDialogTrigger asChild>
+                <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onSelect={(e) => e.preventDefault()}>
+                    <Trash2 className="mr-2 h-4 w-4" /> Eliminar Partido
+                </DropdownMenuItem>
+            </AlertDialogTrigger>
+        ), show: isOwner && match.status !== 'evaluated' }
     ];
 
     const visibleSecondaryActions = secondaryActions.filter(a => a.show);
@@ -334,45 +345,40 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                    <User className="h-3 w-3"/> Organizado por {ownerName || 'Cargando...'}
                 </CardDescription>
                 
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-white/70 hover:bg-white/20">
-                            <MoreVertical size={18} />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        {visibleSecondaryActions.map(action => <React.Fragment key={action.id}>{action.component}</React.Fragment>)}
-                        {user?.uid === match.ownerUid && match.status !== 'evaluated' && (
-                            <>
-                                {visibleSecondaryActions.length > 0 && <DropdownMenuSeparator />}
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onSelect={(e) => e.preventDefault()}>
-                                            <Trash2 className="mr-2 h-4 w-4" /> Eliminar Partido
-                                        </DropdownMenuItem>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                        <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Esta acción no se puede deshacer. Esto eliminará permanentemente el partido
-                                            y todos sus datos asociados.
-                                        </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                Sí, eliminar partido
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </>
-                        )}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-
+                {visibleSecondaryActions.length > 0 && (
+                    <AlertDialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-white/70 hover:bg-white/20">
+                                    <MoreVertical size={18} />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {visibleSecondaryActions.map(action => (
+                                    <React.Fragment key={action.id}>
+                                        {action.component}
+                                    </React.Fragment>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                         <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta acción no se puede deshacer. Esto eliminará permanentemente el partido
+                                    y todos sus datos asociados.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Sí, eliminar partido
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
             </CardHeader>
             <CardContent className="flex-grow space-y-4 pt-4 p-4">
                 <div className="grid grid-cols-1 gap-y-3">
@@ -400,7 +406,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                      </div>
                      <span className="text-sm text-muted-foreground">jugadores</span>
                 </div>
-
             </CardContent>
 
             <CardFooter className="flex flex-col items-stretch gap-2 p-3 bg-muted/50 mt-auto">
@@ -411,3 +416,5 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         </Card>
     );
 }
+
+    
