@@ -95,6 +95,15 @@ export function SetAvailabilityDialog({ player, availability, children }: SetAva
     }
     setIsSubmitting(true);
     
+    // Clean up undefined values from the availability object
+    const cleanAvailability = Object.entries(data.availability).reduce((acc, [day, times]) => {
+        if (times !== undefined) {
+            acc[day as DayOfWeek] = times;
+        }
+        return acc;
+    }, {} as Availability);
+
+
     const availablePlayerDocRef = doc(firestore, 'availablePlayers', user.uid);
 
     try {
@@ -108,7 +117,7 @@ export function SetAvailabilityDialog({ player, availability, children }: SetAva
                     position: player.position,
                     ovr: player.ovr,
                     location: { lat: latitude, lng: longitude },
-                    availability: data.availability as Availability,
+                    availability: cleanAvailability,
                 };
                 await setDoc(availablePlayerDocRef, newAvailablePlayer, { merge: true });
                 toast({ title: 'Disponibilidad actualizada', description: 'Tus preferencias de horario han sido guardadas.' });
