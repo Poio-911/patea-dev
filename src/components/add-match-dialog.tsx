@@ -466,9 +466,12 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                             <span>Viendo el pronóstico...</span>
                         </div>
                     ) : weather && WeatherIcon ? (
-                        <div className="flex items-center gap-3 text-sm">
-                            <WeatherIcon className="h-6 w-6 text-primary"/>
-                            <p className="font-medium">{weather.description}</p>
+                        <div className="flex items-center justify-center gap-4 text-sm w-full">
+                            <div className="flex items-center gap-2">
+                                <WeatherIcon className="h-6 w-6 text-primary"/>
+                                <p className="font-medium">{weather.description}</p>
+                            </div>
+                             <p className="font-bold text-lg">{weather.temperature}°C</p>
                         </div>
                     ) : (
                         <p className="text-sm text-muted-foreground text-center">Poné fecha y lugar para ver el pronóstico del tiempo.</p>
@@ -640,3 +643,5 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     </Dialog>
   );
 }
+
+    
