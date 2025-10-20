@@ -22,6 +22,7 @@ import Image from 'next/image';
 
 interface HelpDialogProps {
   forceOpen?: boolean;
+  onExplicitClose?: () => void;
 }
 
 const tutorialContent = [
@@ -52,8 +53,23 @@ const tutorialContent = [
     }
 ];
 
-export function HelpDialog({ forceOpen = false }: HelpDialogProps) {
+export function HelpDialog({ forceOpen = false, onExplicitClose }: HelpDialogProps) {
   const [isOpen, setIsOpen] = useState(forceOpen);
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open && onExplicitClose) {
+        onExplicitClose();
+    }
+    setIsOpen(open);
+  }
+
+  const handleGotItClick = () => {
+    if (onExplicitClose) {
+        onExplicitClose();
+    } else {
+        setIsOpen(false);
+    }
+  }
 
   const DialogTriggerButton = (
     <DialogTrigger asChild>
@@ -65,7 +81,7 @@ export function HelpDialog({ forceOpen = false }: HelpDialogProps) {
   );
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       {!forceOpen && DialogTriggerButton}
       <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
@@ -97,7 +113,7 @@ export function HelpDialog({ forceOpen = false }: HelpDialogProps) {
         </div>
         
         <DialogFooter>
-            <Button onClick={() => setIsOpen(false)} className="w-full">
+            <Button onClick={handleGotItClick} className="w-full">
               ¡Entendido, a jugar!
             </Button>
         </DialogFooter>

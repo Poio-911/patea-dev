@@ -2,10 +2,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { HelpDialog } from './help-dialog';
 
 export function WelcomeDialog() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const isNewUser = searchParams.get('new_user') === 'true';
   const [showWelcome, setShowWelcome] = useState(false);
@@ -21,10 +22,16 @@ export function WelcomeDialog() {
     }
   }, [isNewUser]);
 
+  const handleClose = () => {
+    setShowWelcome(false);
+    // Remove the query parameter and redirect to the groups page
+    router.replace('/groups');
+  };
+
   if (!showWelcome) {
     return null;
   }
 
   // We reuse the HelpDialog component and trigger it programmatically
-  return <HelpDialog forceOpen={true} />;
+  return <HelpDialog forceOpen={true} onExplicitClose={handleClose} />;
 }
