@@ -26,7 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User, MessageCircle, FileSignature, MoreVertical, Users } from 'lucide-react';
+import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User, MessageCircle, FileSignature, MoreVertical, Users, UserCheck } from 'lucide-react';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import Link from 'next/link';
 import { SoccerPlayerIcon } from './icons/soccer-player-icon';
@@ -280,22 +280,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
 
     const PrimaryAction = () => {
-        if (!isOwner) {
-            if (match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic)) {
-                if (isMatchFull && !isUserInMatch) {
-                    return <Button variant="outline" size="sm" className="w-full" disabled>Partido Lleno</Button>;
-                }
-                return (
-                    <Button variant={isUserInMatch ? 'secondary' : 'default'} size="sm" onClick={handleJoinOrLeaveMatch} disabled={isJoining} className="w-full">
-                        {isJoining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isUserInMatch ? <LogOut className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />)}
-                        {isUserInMatch ? 'Darse de baja' : 'Apuntarse'}
-                    </Button>
-                );
-            }
-            return null;
-        }
-
-        if (match.status === 'upcoming') {
+        if (isOwner && match.status === 'upcoming') {
             return (
                 <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing} className="w-full">
                     {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
@@ -303,9 +288,10 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 </Button>
             );
         }
-        if (match.status === 'completed') {
+    
+        if (isOwner && match.status === 'completed') {
             return (
-                 <Button asChild variant="default" size="sm" className="w-full">
+                <Button asChild variant="default" size="sm" className="w-full">
                     <Link href={`/matches/${match.id}/evaluate`}>
                         <FileSignature className="mr-2 h-4 w-4" />
                         Supervisar
@@ -313,6 +299,19 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 </Button>
             );
         }
+    
+        if (!isOwner && match.type === 'collaborative' && match.status === 'upcoming') {
+            if (isMatchFull && !isUserInMatch) {
+                return <Button variant="outline" size="sm" className="w-full" disabled>Partido Lleno</Button>;
+            }
+            return (
+                <Button variant={isUserInMatch ? 'secondary' : 'default'} size="sm" onClick={handleJoinOrLeaveMatch} disabled={isJoining} className="w-full">
+                    {isJoining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isUserInMatch ? <LogOut className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />)}
+                    {isUserInMatch ? 'Darse de baja' : 'Apuntarse'}
+                </Button>
+            );
+        }
+    
         return null;
     };
 
@@ -328,9 +327,15 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                         {currentStatus.label}
                     </Badge>
                 </div>
-                <CardDescription className="flex items-center gap-2 text-xs text-foreground/80">
-                   <User className="h-3 w-3"/> Organizado por {ownerName || 'Cargando...'}
-                </CardDescription>
+                 <div className="flex items-center gap-2 flex-wrap">
+                    <CardDescription className="flex items-center gap-2 text-xs text-foreground/80">
+                        <User className="h-3 w-3"/> Organizado por {ownerName || 'Cargando...'}
+                    </CardDescription>
+                    <Badge variant="secondary" className="capitalize text-xs">
+                        {match.type === 'manual' ? <UserCheck className="mr-1.5 h-3 w-3"/> : <Users className="mr-1.5 h-3 w-3"/>}
+                        {match.type}
+                    </Badge>
+                </div>
             </CardHeader>
             <CardContent className="flex-grow space-y-4 pt-4 p-4">
                  <div className="grid grid-cols-2 gap-4">
@@ -385,9 +390,25 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     </MatchDetailsDialog>
                     {isUserInMatch && <MatchChatSheet match={match}><Button variant="outline" size="sm" className="w-full"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button></MatchChatSheet>}
                     {match.teams && match.teams.length > 0 && <MatchTeamsDialog match={match}><Button variant="outline" size="sm" className="w-full"><TeamsIcon className="mr-2 h-4 w-4" />Equipos</Button></MatchTeamsDialog>}
-                    {isOwner && match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic) && <InvitePlayerDialog playerToInvite={null} userMatches={[]} match={match} disabled={isMatchFull}><Button variant="outline" size="sm" className="w-full" disabled={isMatchFull}><UserPlus className="mr-2 h-4 w-4" />Invitar</Button></InvitePlayerDialog>}
+                    
+                    {isOwner && match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic) && (
+                        <InvitePlayerDialog 
+                            playerToInvite={null} 
+                            userMatches={[]} 
+                            match={match} 
+                            allGroupPlayers={allPlayers}
+                            disabled={isMatchFull}
+                        >
+                            <Button variant="outline" size="sm" className="w-full" disabled={isMatchFull}>
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                Invitar
+                            </Button>
+                        </InvitePlayerDialog>
+                    )}
                 </div>
             </CardFooter>
         </Card>
     );
 }
+
+    

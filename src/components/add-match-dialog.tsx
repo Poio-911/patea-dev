@@ -50,7 +50,9 @@ const matchLocationSchema = z.object({
 
 const matchSchema = z.object({
   title: z.string().min(3, 'El título debe tener al menos 3 caracteres.'),
-  date: z.string().min(1, 'La fecha es obligatoria.'),
+  date: z.date({
+    required_error: "La fecha del partido es obligatoria.",
+  }),
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:MM).'),
   location: matchLocationSchema,
   type: z.enum(['manual', 'collaborative'], { required_error: 'El tipo es obligatorio.' }),
@@ -173,7 +175,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     mode: 'onChange',
     defaultValues: {
       title: 'Partido Amistoso',
-      date: format(new Date(), 'yyyy-MM-dd'),
+      date: new Date(),
       time: '21:00',
       type: 'manual',
       matchSize: '10',
@@ -182,7 +184,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     },
   });
   
-  const { formState, trigger, watch, setValue, getValues } = form;
+  const { formState, trigger, watch, setValue, getValues, control } = form;
   const watchedDate = watch('date');
   const watchedLocation = watch('location');
   const watchedTime = watch('time');
@@ -199,7 +201,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       setTimeout(() => {
         form.reset({
           title: 'Partido Amistoso',
-          date: format(new Date(), 'yyyy-MM-dd'),
+          date: new Date(),
           time: '21:00',
           type: 'manual',
           matchSize: '10',
@@ -220,7 +222,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
             setIsFetchingWeather(true);
             setWeather(null);
             try {
-                const dateObj = parseISO(watchedDate);
+                const dateObj = watchedDate;
                 const [hours, minutes] = watchedTime.split(':').map(Number);
                 const matchDateTime = new Date(dateObj);
                 matchDateTime.setHours(hours, minutes);
@@ -334,9 +336,9 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     const newMatchRef = doc(collection(firestore, 'matches'));
     const newMatch = {
       ...data,
+      date: data.date.toISOString(),
       isPublic: false,
       matchSize: selectedMatchSize,
-      date: parseISO(data.date).toISOString(),
       status: 'upcoming' as const,
       ownerUid: user.uid,
       groupId: user.activeGroupId,
@@ -368,9 +370,9 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     if (!user?.uid || !user.activeGroupId) throw new Error("User not authenticated");
     const newMatch = {
       ...data,
+      date: data.date.toISOString(),
       isPublic: data.isPublic,
       matchSize: selectedMatchSize,
-      date: parseISO(data.date).toISOString(),
       status: 'upcoming' as const,
       ownerUid: user.uid,
       groupId: user.activeGroupId,
@@ -413,9 +415,36 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <Label>Fecha</Label>
-                        <Input type="date" {...form.register('date')} />
-                        {formState.errors.date && <p className="text-xs text-destructive mt-1">{formState.errors.date.message}</p>}
+                      <Label>Fecha</Label>
+                      <Controller
+                          name="date"
+                          control={control}
+                          render={({ field }) => (
+                              <Popover>
+                                  <PopoverTrigger asChild>
+                                      <Button
+                                          variant={"outline"}
+                                          className={cn(
+                                              "w-full justify-start text-left font-normal",
+                                              !field.value && "text-muted-foreground"
+                                          )}
+                                      >
+                                          <CalendarIcon className="mr-2 h-4 w-4" />
+                                          {field.value ? format(field.value, "PPP", { locale: es }) : <span>Elegí una fecha</span>}
+                                      </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                      <Calendar
+                                          mode="single"
+                                          selected={field.value}
+                                          onSelect={field.onChange}
+                                          initialFocus
+                                      />
+                                  </PopoverContent>
+                              </Popover>
+                          )}
+                      />
+                      {formState.errors.date && <p className="text-xs text-destructive mt-1">{formState.errors.date.message}</p>}
                     </div>
                     <div>
                         <Label htmlFor="time">Hora</Label>
@@ -611,3 +640,5 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     </Dialog>
   );
 }
+
+    
