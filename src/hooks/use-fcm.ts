@@ -7,6 +7,21 @@ import { useFirebaseApp, useUser, useFirestore } from '@/firebase';
 import { useToast } from './use-toast';
 import { doc, setDoc } from 'firebase/firestore';
 
+// Helper function to convert VAPID key to Uint8Array
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+
 export const useFcm = () => {
   const { toast } = useToast();
   const app = useFirebaseApp();
@@ -24,9 +39,7 @@ export const useFcm = () => {
 
       if (permission === 'granted') {
         console.log('Notification permission granted.');
-        toast({ title: '¡Notificaciones activadas!', description: 'Recibirás avisos importantes sobre los partidos.' });
         
-        // IMPORTANT: You need to replace this with your actual VAPID key from the Firebase console.
         const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
         if (!vapidKey) {
             console.error("VAPID key is not configured in environment variables.");
@@ -34,6 +47,7 @@ export const useFcm = () => {
             return;
         }
         
+        // Convert the VAPID key and pass it to getToken.
         const currentToken = await getToken(messaging, { vapidKey });
 
         if (currentToken) {
@@ -43,6 +57,8 @@ export const useFcm = () => {
               token: currentToken,
               createdAt: new Date().toISOString() 
           }, { merge: true });
+          
+          toast({ title: '¡Notificaciones activadas!', description: 'Recibirás avisos importantes sobre los partidos.' });
 
         } else {
           console.log('No registration token available. Request permission to generate one.');
