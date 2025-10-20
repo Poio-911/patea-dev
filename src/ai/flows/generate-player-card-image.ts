@@ -1,6 +1,6 @@
 'use server';
 import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import { googleAI } from '@genkit-ai/google-genai';
 
 export async function generatePlayerCardImage(photoDataUri: string): Promise<string> {
     const { media } = await ai.generate({
