@@ -1,15 +1,11 @@
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 
+// ⚙️ Configuración de Genkit
 export const ai = genkit({
   plugins: [
     googleAI({
-      apiKey: process.env.GOOGLE_GENAI_API_KEY!,
-      location: 'us-central1', // 🔥 obligatorio para Gemini
+      apiKey: process.env.GOOGLE_GENAI_API_KEY!, // tu API key de Google AI Studio
     }),
   ],
-  logger: {
-    level: 'debug', // ✅ reemplaza logLevel
-    transports: ['console'], // muestra logs en consola
-  },
 });

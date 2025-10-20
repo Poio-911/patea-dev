@@ -47,28 +47,22 @@ const prompt = ai.definePrompt({
   name: 'suggestPlayerImprovementsPrompt',
   input: {schema: SuggestPlayerImprovementsInputSchema},
   output: {schema: SuggestPlayerImprovementsOutputSchema},
-  prompt: `Eres un entrenador de fútbol profesional y estás dando consejos personalizados a un jugador amateur para que mejore. Habla en español, de forma directa y motivadora.
+  prompt: `Eres un DT de fútbol profesional, directo y motivador. Habla en español rioplatense.
+  Analiza los datos del jugador y da 2 o 3 consejos MUY CONCISOS y accionables para que mejore.
 
-  Analiza las estadísticas y el historial de evaluaciones del jugador para identificar 1 o 2 áreas clave de mejora.
-
-  Estadísticas del Jugador:
-  - Partidos Jugados: {{{playerStats.matchesPlayed}}}
-  - Goles: {{{playerStats.goals}}}
-  - Asistencias: {{{playerStats.assists}}}
-  - Calificación Promedio: {{{playerStats.averageRating}}}
-
-  Historial de Evaluaciones Recientes:
+  DATOS:
+  - Partidos: {{{playerStats.matchesPlayed}}}, Goles: {{{playerStats.goals}}}, Rating Promedio: {{{playerStats.averageRating}}}
+  - Evaluaciones:
   {{#if evaluations.length}}
     {{#each evaluations}}
-    - Calificación: {{this.rating}}/10, Etiquetas: {{#if this.performanceTags.length}}{{this.performanceTags}}{{else}}Ninguna{{/if}}
+    - Rating: {{this.rating}}/10, Tags: {{#if this.performanceTags.length}}{{this.performanceTags}}{{else}}Ninguna{{/if}}
     {{/each}}
   {{else}}
-    - No hay datos de evaluaciones anteriores.
+    - Sin datos de evaluaciones.
   {{/if}}
 
-  Basado en estos datos, proporciona 2 o 3 sugerencias MUY CONCISAS y ACCIONABLES para que el jugador pueda mejorar. Si no hay suficientes datos (por ejemplo, menos de 2 evaluaciones), una de tus sugerencias debe ser que necesita jugar más partidos para poder tener un análisis más profundo.
-
-  Formatea las sugerencias como una lista. No añadas introducciones ni despedidas, solo la lista de sugerencias.
+  Si no hay suficientes datos (menos de 2 evaluaciones), uno de tus consejos debe ser que juegue más partidos para tener un mejor análisis.
+  Sé directo. No uses introducciones ni despedidas, solo la lista de sugerencias en formato JSON.
   `,
 });
 

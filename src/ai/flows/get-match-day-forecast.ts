@@ -1,11 +1,9 @@
-'use server';
 
-/**
- * @fileOverview Flujo para obtener un pronóstico del clima en español para un día de partido.
- */
+'use server';
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { googleAI } from '@genkit-ai/google-genai';
 
 const GetMatchDayForecastInputSchema = z.object({
   location: z.string(),
@@ -20,32 +18,27 @@ const GetMatchDayForecastOutputSchema = z.object({
 });
 export type GetMatchDayForecastOutput = z.infer<typeof GetMatchDayForecastOutputSchema>;
 
-// 🧠 Prompt del modelo Gemini
 const forecastPrompt = ai.definePrompt({
   name: 'matchDayForecast',
   input: { schema: GetMatchDayForecastInputSchema },
   output: { schema: GetMatchDayForecastOutputSchema },
-
-  // 🔥 usa el nombre completo del modelo (clave del error anterior)
-  model: 'models/gemini-1.5-flash',
-
+  model: googleAI('gemini-1.5-flash'),
   prompt: `
-    Eres un asistente meteorológico para una aplicación de fútbol amateur. 
-    Proporciona un breve resumen del clima en español para el siguiente lugar y fecha. 
+    Eres un asistente meteorológico para una app de fútbol amateur.
+    Proporciona un breve y amigable resumen del clima en ESPAÑOL.
+
     Lugar: {{{location}}}
     Fecha: {{{date}}}
-    
-    Tu respuesta DEBE incluir:
-    - una breve descripción amigable (ej: "Ideal para jugar", "Se recomienda llevar paraguas").
-    - la temperatura aproximada en °C.
-    - un ícono de esta lista estricta: Sun, Cloud, Cloudy, CloudRain, CloudSnow, Wind, Zap.
-    
-    Ejemplo de respuesta:
-    Clima perfecto para un partido, algo fresco. Temp: 18°C. Icono: Sun
+
+    Responde estrictamente en JSON con:
+    {
+      "description": "texto corto en español",
+      "temperature": número en Celsius,
+      "icon": uno de: Sun, Cloud, Cloudy, CloudRain, CloudSnow, Wind, Zap
+    }
   `,
 });
 
-// 🌤️ Flujo principal
 export const getMatchDayForecast = ai.defineFlow(
   {
     name: 'getMatchDayForecastFlow',
@@ -54,11 +47,7 @@ export const getMatchDayForecast = ai.defineFlow(
   },
   async (input) => {
     const { output } = await forecastPrompt(input);
-
-    if (!output) {
-      throw new Error('No se pudo obtener un pronóstico válido del modelo.');
-    }
-
+    if (!output) throw new Error('No se obtuvo respuesta válida del modelo.');
     return output;
   }
 );
