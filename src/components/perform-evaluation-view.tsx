@@ -62,15 +62,18 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 
 const TagCheckbox = ({
   tag,
+  subjectId,
   isChecked,
   onCheckedChange,
 }: {
   tag: PerformanceTag
+  subjectId: string
   isChecked: boolean
   onCheckedChange: (checked: boolean) => void
 }) => {
   const positiveEffects = tag.effects.filter((e) => e.change > 0)
   const negativeEffects = tag.effects.filter((e) => e.change < 0)
+  const uniqueId = `tag-${tag.id}-${subjectId}`;
 
   return (
     <div
@@ -79,8 +82,8 @@ const TagCheckbox = ({
         isChecked ? 'bg-primary/10 border-primary' : 'hover:bg-accent/50'
       )}
     >
-      <Checkbox checked={isChecked} onCheckedChange={onCheckedChange} id={`tag-${tag.id}`} className="mt-1" />
-      <label htmlFor={`tag-${tag.id}`} className="w-full cursor-pointer space-y-2">
+      <Checkbox checked={isChecked} onCheckedChange={onCheckedChange} id={uniqueId} className="mt-1" />
+      <label htmlFor={uniqueId} className="w-full cursor-pointer space-y-2">
         <div>
           <p className="font-semibold">{tag.name}</p>
           <p className="text-xs text-muted-foreground">{tag.description}</p>
@@ -374,6 +377,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
                                       <TagCheckbox
                                         key={tag.id}
                                         tag={tag}
+                                        subjectId={field.subjectId}
                                         isChecked={!!tagsField.value?.find((t) => t.id === tag.id)}
                                         onCheckedChange={(checked) => {
                                           const currentVal = tagsField.value || []
