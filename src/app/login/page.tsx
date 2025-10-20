@@ -5,7 +5,7 @@ import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,10 +15,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { Separator } from '@/components/ui/separator';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
-import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import { Mail } from 'lucide-react';
+import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 
 const loginSchema = z.object({
     email: z.string().email('Por favor, introduce un correo electrónico válido.'),
@@ -32,7 +31,6 @@ export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -47,23 +45,6 @@ export default function LoginPage() {
       router.push('/dashboard');
     }
   }, [user, loading, router]);
-
-  const handleGoogleLogin = async () => {
-    if (!auth) return;
-    setIsGoogleLoading(true);
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-      // The useEffect will handle the redirect
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error de inicio de sesión',
-        description: error.message,
-      });
-      setIsGoogleLoading(false);
-    }
-  };
 
   const onSubmit = async (data: LoginFormValues) => {
     if (!auth) return;
@@ -89,13 +70,13 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-       <div className="mx-auto flex w-full max-w-md flex-grow flex-col items-center justify-center space-y-6 text-center">
+       <div className="mx-auto flex w-full max-w-sm flex-grow flex-col items-center justify-center space-y-6 text-center">
         <Card className="w-full">
             <CardHeader className="text-center">
             <div className="flex w-full flex-col items-center justify-center gap-2">
                 <div className="flex items-center gap-3">
-                    <SoccerPlayerIcon className="h-12 w-12 text-primary" />
-                    <h1 className="text-5xl font-bold font-headline">Pateá</h1>
+                    <SoccerPlayerIcon className="h-10 w-10 text-primary" />
+                    <h1 className="text-4xl font-bold font-headline">Pateá</h1>
                 </div>
                 <p className="text-muted-foreground text-center text-sm">
                     Inicia sesión para organizar los partidos con tus amigos.
@@ -152,18 +133,19 @@ export default function LoginPage() {
             </CardContent>
         </Card>
       </div>
-      <footer className="py-4 text-center text-sm text-muted-foreground">
+      <footer className="py-4 text-center text-xs text-muted-foreground">
           <p className="font-semibold">Desarrollado por Santiago López</p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-x-4 gap-y-2 mt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-x-3 gap-y-1 mt-2">
             <a href="mailto:lopeztoma.santiago@gmail.com" className="flex items-center gap-1 hover:text-primary transition-colors">
-                <Mail className="h-4 w-4"/>
+                <Mail className="h-3 w-3"/>
                 <span>lopeztoma.santiago@gmail.com</span>
             </a>
             <a href="https://wa.me/59892443585" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary transition-colors">
-                <WhatsAppIcon className="h-4 w-4" />
+                <WhatsAppIcon className="h-3 w-3" />
                 <span>+598 92 443 585</span>
             </a>
           </div>
+          <p className="mt-3 text-muted-foreground/80">© 2024 Pateá. Todos los derechos reservados.</p>
       </footer>
     </div>
   );
