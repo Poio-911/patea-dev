@@ -2,61 +2,64 @@
 'use server';
 /**
  * @fileOverview A flow to get a weather forecast for a match day.
- *
- * - getMatchDayForecast - A function that returns a weather forecast.
- * - GetMatchDayForecastInput - The input type for the getMatchDayForecast function.
- * - GetMatchDayForecastOutput - The return type for the getMatchDayForecast function.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-// Define the input and output schemas for our main flow
 const GetMatchDayForecastInputSchema = z.object({
-  location: z.string().describe('The location of the match (e.g., "Montevideo, Uruguay").'),
-  date: z.string().describe('The date and time of the match in ISO 8601 format.'),
+  location: z.string(),
+  date: z.string(),
 });
 export type GetMatchDayForecastInput = z.infer<typeof GetMatchDayForecastInputSchema>;
 
 const GetMatchDayForecastOutputSchema = z.object({
-  description: z.string().describe('A concise, user-friendly description of the weather in Spanish.'),
-  icon: z.enum(['Sun', 'Cloud', 'Cloudy', 'CloudRain', 'CloudSnow', 'Wind', 'Zap']).describe('An icon name representing the weather condition.'),
-  temperature: z.number().describe('The temperature in Celsius.'),
+  description: z.string(),
+  icon: z.enum(['Sun', 'Cloud', 'Cloudy', 'CloudRain', 'CloudSnow', 'Wind', 'Zap']),
+  temperature: z.number(),
 });
 export type GetMatchDayForecastOutput = z.infer<typeof GetMatchDayForecastOutputSchema>;
 
-
-// Define the main Genkit Flow
+// Main Genkit Flow
 const getMatchDayForecastFlow = ai.defineFlow(
   {
     name: 'getMatchDayForecastFlow',
     inputSchema: GetMatchDayForecastInputSchema,
     outputSchema: GetMatchDayForecastOutputSchema,
   },
-  async ({location, date}) => {
-      
-    const { output } = await ai.generate({
-        model: 'gemini-1.5-flash',
+  async ({ location, date }) => {
+    console.log('🌦️ [getMatchDayForecastFlow] Iniciado');
+    console.log('📍 Ubicación:', location);
+    console.log('🗓️ Fecha:', date);
+    console.log('🔑 GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? '[OK]' : '[FALTA]');
+    console.log('🔧 Model: gemini-1.5-flash');
+
+    try {
+      const { output } = await ai.generate({
+        model: 'models/gemini-1.5-flash',
         prompt: `
-        You are a helpful sports assistant. Your task is to provide a weather forecast for a specific location and date.
-        Search for the weather forecast for the following location and date:
-        Location: ${location}
-        Date: ${date}
-
-        Based on the forecast, generate a very concise and friendly description in SPANISH.
-        Also, select the most appropriate icon from the provided list and extract the temperature in Celsius.
-
-        - The description should be short and easy to read (e.g., "Noche clara, 18°C, poco viento.").
-        - Choose one of these icons based on the weather condition: 'Sun', 'Cloud', 'Cloudy', 'CloudRain', 'CloudSnow', 'Wind', 'Zap'.
-        - Extract the temperature in Celsius.
-      `,
+          You are a helpful assistant. Provide a short, friendly Spanish weather summary.
+          Location: ${location}
+          Date: ${date}
+          Include:
+          - short description (in Spanish)
+          - temperature in °C
+          - one icon from: Sun, Cloud, Cloudy, CloudRain, CloudSnow, Wind, Zap
+        `,
         output: { schema: GetMatchDayForecastOutputSchema },
-    });
-    return output!;
+      });
+
+      console.log('✅ [getMatchDayForecastFlow] Salida:', output);
+      return output!;
+    } catch (error: any) {
+      console.error('❌ [getMatchDayForecastFlow] Error en ai.generate:', error);
+      throw new Error('Failed to fetch weather');
+    }
   }
 );
 
-// Export the wrapper function
+// Export wrapper
 export async function getMatchDayForecast(input: GetMatchDayForecastInput): Promise<GetMatchDayForecastOutput> {
+  console.log('🚀 Ejecutando getMatchDayForecast...');
   return getMatchDayForecastFlow(input);
 }
