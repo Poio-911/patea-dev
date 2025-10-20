@@ -75,7 +75,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     const firestore = useFirestore();
     const { user } = useUser();
     const { toast } = useToast();
-    const [isDeleting, setIsDeleting] = useState(false);
     const [isFinishing, setIsFinishing] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
     const [ownerName, setOwnerName] = useState<string | null>(null);
@@ -120,33 +119,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
     const currentStatus = statusConfig[match.status] || statusConfig.completed;
 
-    const handleDeleteMatch = async () => {
-        if (!firestore) return;
-        setIsDeleting(true);
-        try {
-            const invitationsRef = collection(firestore, 'matches', match.id, 'invitations');
-            const invitationsSnap = await getDocs(invitationsRef);
-            const batch = writeBatch(firestore);
-            invitationsSnap.forEach(doc => batch.delete(doc.ref));
-            await batch.commit();
-
-            await deleteDoc(doc(firestore, 'matches', match.id));
-            toast({
-                title: 'Partido Eliminado',
-                description: 'El partido ha sido eliminado correctamente.'
-            });
-        } catch (error) {
-            console.error("Error deleting match: ", error);
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: 'No se pudo eliminar el partido.'
-            });
-        } finally {
-            setIsDeleting(false);
-        }
-    };
-    
     const generateEvaluationAssignments = (match: Match, allPlayers: Player[]): Omit<EvaluationAssignment, 'id'>[] => {
         const assignments: Omit<EvaluationAssignment, 'id'>[] = [];
         const matchPlayers = allPlayers.filter(p => match.playerUids.includes(p.id));
@@ -333,7 +305,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             return null;
         }
 
-        // Owner actions
         if (match.status === 'upcoming') {
             return (
                 <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing} className="w-full">
@@ -370,41 +341,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 <CardDescription className="flex items-center gap-2 text-xs text-foreground/80">
                    <User className="h-3 w-3"/> Organizado por {ownerName || 'Cargando...'}
                 </CardDescription>
-                
-                 {isOwner && (
-                    <AlertDialog>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                 <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-white/70 hover:bg-white/20">
-                                    <MoreVertical size={18} />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                 <AlertDialogTrigger asChild>
-                                     <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar Partido
-                                    </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Esto eliminará permanentemente el partido
-                                y todos sus datos asociados.
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Sí, eliminar partido
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                )}
             </CardHeader>
             <CardContent className="flex-grow space-y-4 pt-4 p-4">
                 <div className="grid grid-cols-1 gap-y-3">
@@ -435,12 +371,14 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             </CardContent>
 
             <CardFooter className="flex flex-col items-stretch gap-2 p-3 bg-muted/50 mt-auto">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-2">
                     <PrimaryAction />
-                    <MatchDetailsDialog match={match}><Button variant="outline" size="sm"><Eye className="mr-2 h-4 w-4" />Detalles</Button></MatchDetailsDialog>
-                    {isUserInMatch && <MatchChatSheet match={match}><Button variant="outline" size="sm"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button></MatchChatSheet>}
-                    {match.teams && match.teams.length > 0 && <MatchTeamsDialog match={match}><Button variant="outline" size="sm"><TeamsIcon className="mr-2 h-4 w-4" />Equipos</Button></MatchTeamsDialog>}
-                    {isOwner && match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic) && <InvitePlayerDialog playerToInvite={null} userMatches={[]} match={match} disabled={isMatchFull}><Button variant="outline" size="sm" disabled={isMatchFull}><UserPlus className="mr-2 h-4 w-4" />Invitar</Button></InvitePlayerDialog>}
+                    <div className="grid grid-cols-2 gap-2">
+                        <MatchDetailsDialog match={match} isOwner={isOwner}><Button variant="outline" size="sm" className="w-full"><Eye className="mr-2 h-4 w-4" />Detalles</Button></MatchDetailsDialog>
+                        {isUserInMatch && <MatchChatSheet match={match}><Button variant="outline" size="sm" className="w-full"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button></MatchChatSheet>}
+                        {match.teams && match.teams.length > 0 && <MatchTeamsDialog match={match}><Button variant="outline" size="sm" className="w-full"><TeamsIcon className="mr-2 h-4 w-4" />Equipos</Button></MatchTeamsDialog>}
+                        {isOwner && match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic) && <InvitePlayerDialog playerToInvite={null} userMatches={[]} match={match} disabled={isMatchFull}><Button variant="outline" size="sm" className="w-full" disabled={isMatchFull}><UserPlus className="mr-2 h-4 w-4" />Invitar</Button></InvitePlayerDialog>}
+                    </div>
                 </div>
             </CardFooter>
         </Card>
