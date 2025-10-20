@@ -1,3 +1,4 @@
+
 'use server';
 
 import 'dotenv/config';
@@ -42,7 +43,7 @@ export async function generateTeamsAction(players: Player[]) {
   try {
     const result = await generateBalancedTeams(input);
     if ('error' in result) {
-      throw new Error(result.error || 'La IA no pudo generar los equipos.');
+      throw new Error(String(result.error) || 'La IA no pudo generar los equipos.');
     }
     if (!result || !result.teams) {
       throw new Error('La respuesta de la IA no contiene equipos.');
@@ -137,7 +138,7 @@ export async function findBestFitPlayerAction(input: Omit<FindBestFitPlayerInput
     try {
         const result = await findBestFitPlayer(input);
         if ('error' in result) {
-            throw new Error(result.error);
+            throw new Error(String(result.error));
         }
         return result;
     } catch (error: any) {
