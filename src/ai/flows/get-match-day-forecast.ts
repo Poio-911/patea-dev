@@ -25,7 +25,6 @@ const prompt = ai.definePrompt({
   name: 'getMatchDayForecastPrompt',
   input: { schema: GetMatchDayForecastInputSchema },
   output: { schema: GetMatchDayForecastOutputSchema },
-  model: 'models/gemini-1.5-flash',
   prompt: `
     You are a helpful assistant. Provide a short, friendly Spanish weather summary.
     Location: {{{location}}}
@@ -47,8 +46,27 @@ const getMatchDayForecastFlow = ai.defineFlow(
   },
   async ({location, date}) => {
       
-    const { output } = await prompt({location, date});
-    return output!;
+    const { output } = await ai.generate({
+        prompt: `
+            You are a helpful assistant. Provide a short, friendly Spanish weather summary.
+            Location: ${location}
+            Date: ${date}
+            Include:
+            - short description (in Spanish)
+            - temperature in °C
+            - one icon from: Sun, Cloud, Cloudy, CloudRain, CloudSnow, Wind, Zap
+        `,
+        model: 'gemini-1.5-flash',
+        output: {
+            schema: GetMatchDayForecastOutputSchema
+        }
+    });
+    
+    if (!output) {
+        throw new Error("Failed to get a valid response from the AI.");
+    }
+    
+    return output;
   }
 );
 
