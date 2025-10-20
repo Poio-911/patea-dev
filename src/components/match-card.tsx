@@ -26,7 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User, MessageCircle, FileSignature, MoreVertical } from 'lucide-react';
+import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User, MessageCircle, FileSignature, MoreVertical, Users } from 'lucide-react';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import Link from 'next/link';
 import { SoccerPlayerIcon } from './icons/soccer-player-icon';
@@ -331,26 +331,9 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 <CardDescription className="flex items-center gap-2 text-xs text-foreground/80">
                    <User className="h-3 w-3"/> Organizado por {ownerName || 'Cargando...'}
                 </CardDescription>
-                {isOwner && (
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-white/70 hover:bg-white/20">
-                                <MoreVertical size={18}/>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <MatchDetailsDialog match={match} isOwner={isOwner}>
-                                <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                                    <Trash2 className="mr-2 h-4 w-4 text-destructive"/>
-                                    <span className="text-destructive">Eliminar Partido</span>
-                                </DropdownMenuItem>
-                            </MatchDetailsDialog>
-                        </DropdownMenuContent>
-                     </DropdownMenu>
-                )}
             </CardHeader>
             <CardContent className="flex-grow space-y-4 pt-4 p-4">
-                <div className="grid grid-cols-2 gap-4">
+                 <div className="grid grid-cols-2 gap-4">
                     <div className="flex items-center gap-3">
                         <Calendar className="h-5 w-5 text-muted-foreground" />
                         <div>
@@ -384,24 +367,25 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 
                 <Separator />
                 
-                <div className="flex items-center justify-between">
-                     <div className="flex items-center gap-2 text-lg font-bold">
-                        <SoccerPlayerIcon className="h-5 w-5 text-muted-foreground" />
-                        <span>{match.players.length} / {match.matchSize}</span>
-                     </div>
-                     <span className="text-sm text-muted-foreground">jugadores</span>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                    <Users className="h-5 w-5" />
+                    <span className="text-xl font-bold text-foreground">{match.players.length} / {match.matchSize}</span>
+                    <span className="text-sm">Jugadores</span>
                 </div>
             </CardContent>
 
             <CardFooter className="flex flex-col items-stretch gap-2 p-3 bg-muted/50 mt-auto">
-                <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
                     <PrimaryAction />
-                    <div className="grid grid-cols-2 gap-2">
-                        <MatchDetailsDialog match={match} isOwner={isOwner}><Button variant="outline" size="sm" className="w-full"><Eye className="mr-2 h-4 w-4" />Detalles</Button></MatchDetailsDialog>
-                        {isUserInMatch && <MatchChatSheet match={match}><Button variant="outline" size="sm" className="w-full"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button></MatchChatSheet>}
-                        {match.teams && match.teams.length > 0 && <MatchTeamsDialog match={match}><Button variant="outline" size="sm" className="w-full"><TeamsIcon className="mr-2 h-4 w-4" />Equipos</Button></MatchTeamsDialog>}
-                        {isOwner && match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic) && <InvitePlayerDialog playerToInvite={null} userMatches={[]} match={match} disabled={isMatchFull}><Button variant="outline" size="sm" className="w-full" disabled={isMatchFull}><UserPlus className="mr-2 h-4 w-4" />Invitar</Button></InvitePlayerDialog>}
-                    </div>
+                    <MatchDetailsDialog match={match} isOwner={isOwner}>
+                        <Button variant="outline" size="sm" className="w-full">
+                            <Eye className="mr-2 h-4 w-4" />
+                            Detalles
+                        </Button>
+                    </MatchDetailsDialog>
+                    {isUserInMatch && <MatchChatSheet match={match}><Button variant="outline" size="sm" className="w-full"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button></MatchChatSheet>}
+                    {match.teams && match.teams.length > 0 && <MatchTeamsDialog match={match}><Button variant="outline" size="sm" className="w-full"><TeamsIcon className="mr-2 h-4 w-4" />Equipos</Button></MatchTeamsDialog>}
+                    {isOwner && match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic) && <InvitePlayerDialog playerToInvite={null} userMatches={[]} match={match} disabled={isMatchFull}><Button variant="outline" size="sm" className="w-full" disabled={isMatchFull}><UserPlus className="mr-2 h-4 w-4" />Invitar</Button></InvitePlayerDialog>}
                 </div>
             </CardFooter>
         </Card>
