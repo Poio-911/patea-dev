@@ -48,19 +48,6 @@ export default function HomePage() {
             </Button>
         </div>
       </div>
-       <footer className="py-4 text-center text-sm text-muted-foreground">
-          <p className="font-semibold">Desarrollado por Santiago López</p>
-          <div className="flex items-center justify-center gap-4 mt-2">
-            <a href="mailto:lopeztoma.santiago@gmail.com" className="flex items-center gap-1 hover:text-primary transition-colors">
-                <Mail className="h-4 w-4"/>
-                <span>lopeztoma.santiago@gmail.com</span>
-            </a>
-            <a href="https://wa.me/59892443585" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary transition-colors">
-                <WhatsAppIcon className="h-4 w-4" />
-                <span>+598 92 443 585</span>
-            </a>
-          </div>
-      </footer>
     </div>
   );
 }
