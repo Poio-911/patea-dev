@@ -1,5 +1,3 @@
-
-// @ts-nocheck
 'use server';
 
 import 'dotenv/config';

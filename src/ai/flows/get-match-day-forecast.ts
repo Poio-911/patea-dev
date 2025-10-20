@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -6,7 +5,6 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/google-genai';
 import { z } from 'zod';
 
 const GetMatchDayForecastInputSchema = z.object({
@@ -22,12 +20,13 @@ const GetMatchDayForecastOutputSchema = z.object({
 });
 export type GetMatchDayForecastOutput = z.infer<typeof GetMatchDayForecastOutputSchema>;
 
-const forecastPrompt = ai.definePrompt(
-  {
-    name: 'matchDayForecast',
-    input: { schema: GetMatchDayForecastInputSchema },
-    output: { schema: GetMatchDayForecastOutputSchema },
-    prompt: `
+// 🧠 Prompt del modelo Gemini
+const forecastPrompt = ai.definePrompt({
+  name: 'matchDayForecast',
+  input: { schema: GetMatchDayForecastInputSchema },
+  output: { schema: GetMatchDayForecastOutputSchema },
+  model: 'gemini-1.5-flash', // 👈 nombre directo del modelo
+  prompt: `
     Eres un asistente meteorológico para una aplicación de fútbol amateur. 
     Proporciona un breve resumen del clima en español para el siguiente lugar y fecha. 
     Lugar: {{{location}}}
@@ -40,15 +39,10 @@ const forecastPrompt = ai.definePrompt(
     
     Ejemplo de respuesta:
     Clima perfecto para un partido, algo fresco. Temp: 18°C. Icono: Sun
-    `,
-    model: googleAI('gemini-1.5-flash-preview-0514'),
-    output: {
-        format: 'json'
-    }
-  }
-);
+  `,
+});
 
-
+// 🌤️ Flujo principal
 export const getMatchDayForecast = ai.defineFlow(
   {
     name: 'getMatchDayForecastFlow',
@@ -57,6 +51,11 @@ export const getMatchDayForecast = ai.defineFlow(
   },
   async (input) => {
     const { output } = await forecastPrompt(input);
-    return output!;
+
+    if (!output) {
+      throw new Error('No se pudo obtener un pronóstico válido del modelo.');
+    }
+
+    return output;
   }
 );
