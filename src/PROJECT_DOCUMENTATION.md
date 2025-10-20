@@ -162,7 +162,8 @@ A continuación se detallan las funcionalidades clave que hemos construido:
 
 ## 5. Changelog (Historial de Cambios)
 
-*   **[Fecha Actual]**: Se implementa la búsqueda de partidos y jugadores en un mapa, junto con un sistema de invitaciones, visibilidad pública y un asistente de IA para fichajes. Se corrige la UI del modal de disponibilidad y la página de búsqueda para una mejor experiencia móvil. Se solucionan errores de compilación y de tiempo de ejecución relacionados con la gestión de invitaciones y formularios.
+*   **[Fecha Actual]**: Se rediseña completamente la `MatchCard` para mejorar la jerarquía visual y la experiencia de usuario. Se reorganizan los datos del partido (fecha, hora, lugar) para mayor claridad, se mejora el indicador de jugadores y se reubican las acciones del organizador (Editar, Eliminar) dentro del modal de "Detalles" para una interfaz más limpia y segura. Se actualiza el icono de equipos.
+*   **[Fecha Anterior]**: Se implementa la búsqueda de partidos y jugadores en un mapa, junto con un sistema de invitaciones, visibilidad pública y un asistente de IA para fichajes. Se corrige la UI del modal de disponibilidad y la página de búsqueda para una mejor experiencia móvil. Se solucionan errores de compilación y de tiempo de ejecución relacionados con la gestión de invitaciones y formularios.
 *   **[Fecha Anterior]**: Se añade la funcionalidad completa de editar y eliminar grupos, incluyendo la limpieza de datos asociados. Se mejora la guía de bienvenida con un carrusel visual y se reemplazan las imágenes de placeholder.
 *   **[Fecha Anterior]-**: Se integra un pronóstico del clima por IA, se mejora el Dashboard, se implementa la página de detalle del jugador con gráfico de OVR y se reestructura el sistema de evaluación por pares.
 
