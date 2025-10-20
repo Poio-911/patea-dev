@@ -92,12 +92,12 @@ export default function LoginPage() {
        <div className="mx-auto flex w-full max-w-md flex-grow flex-col items-center justify-center space-y-6 text-center">
         <Card className="w-full">
             <CardHeader className="text-center">
-            <div className="flex w-full flex-col items-center justify-center gap-4">
-                <div className="flex items-center gap-4">
-                    <SoccerPlayerIcon className="h-16 w-16 text-primary" />
-                    <h1 className="text-6xl font-bold font-headline">Pateá</h1>
+            <div className="flex w-full flex-col items-center justify-center gap-2">
+                <div className="flex items-center gap-3">
+                    <SoccerPlayerIcon className="h-12 w-12 text-primary" />
+                    <h1 className="text-5xl font-bold font-headline">Pateá</h1>
                 </div>
-                <p className="text-muted-foreground text-center">
+                <p className="text-muted-foreground text-center text-sm">
                     Inicia sesión para organizar los partidos con tus amigos.
                 </p>
             </div>
@@ -142,12 +142,6 @@ export default function LoginPage() {
                         ¿Olvidaste tu contraseña?
                     </Link>
                 </div>
-
-                <Separator className="my-6" />
-
-                <Button onClick={handleGoogleLogin} variant="outline" className="w-full" disabled={isGoogleLoading}>
-                    {isGoogleLoading ? 'Cargando...' : 'Continuar con Google'}
-                </Button>
 
                 <p className="mt-6 text-center text-sm text-muted-foreground">
                     ¿No tienes una cuenta?{' '}
