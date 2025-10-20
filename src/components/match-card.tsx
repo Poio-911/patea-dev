@@ -279,27 +279,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     
     const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
 
-    const PrimaryAction = () => {
-        if (isOwner && match.status === 'upcoming') {
-            return (
-                <Button variant="default" size="sm" onClick={handleFinishMatch} disabled={isFinishing} className="w-full">
-                    {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                    Finalizar Partido
-                </Button>
-            );
-        }
-    
-        if (isOwner && match.status === 'completed') {
-            return (
-                <Button asChild variant="default" size="sm" className="w-full">
-                    <Link href={`/matches/${match.id}/evaluate`}>
-                        <FileSignature className="mr-2 h-4 w-4" />
-                        Supervisar
-                    </Link>
-                </Button>
-            );
-        }
-    
+    const JoinLeaveButton = () => {
         if (match.type === 'collaborative' && match.status === 'upcoming') {
             if (isMatchFull && !isUserInMatch) {
                 return <Button variant="outline" size="sm" className="w-full" disabled>Partido Lleno</Button>;
@@ -311,10 +291,8 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 </Button>
             );
         }
-    
         return null;
-    };
-
+    }
 
     return (
         <Card className="flex flex-col overflow-hidden shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
@@ -323,9 +301,40 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     <CardTitle className={cn("text-xl font-bold", currentStatus.neonClass)}>
                         {match.title}
                     </CardTitle>
-                     <Badge variant="outline" className={cn("whitespace-nowrap uppercase text-xs z-10", currentStatus.className)}>
-                        {currentStatus.label}
-                    </Badge>
+                    {isOwner ? (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2 text-foreground/80 hover:bg-foreground/10">
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {match.status === 'upcoming' && (
+                                    <DropdownMenuItem onClick={handleFinishMatch} disabled={isFinishing}>
+                                        <CheckCircle className="mr-2 h-4 w-4" />
+                                        Finalizar Partido
+                                    </DropdownMenuItem>
+                                )}
+                                {match.status === 'completed' && (
+                                     <DropdownMenuItem asChild>
+                                        <Link href={`/matches/${match.id}/evaluate`}>
+                                            <FileSignature className="mr-2 h-4 w-4" />
+                                            Supervisar
+                                        </Link>
+                                    </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem disabled>
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Eliminar (Pronto)
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    ) : (
+                         <Badge variant="outline" className={cn("whitespace-nowrap uppercase text-xs z-10", currentStatus.className)}>
+                            {currentStatus.label}
+                        </Badge>
+                    )}
                 </div>
                  <div className="flex items-center gap-2 flex-wrap">
                     <CardDescription className="flex items-center gap-2 text-xs text-foreground/80">
@@ -381,7 +390,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
             <CardFooter className="flex flex-col items-stretch gap-2 p-3 bg-muted/50 mt-auto">
                 <div className="grid grid-cols-2 gap-2">
-                    <PrimaryAction />
+                    <JoinLeaveButton />
                     <MatchDetailsDialog match={match} isOwner={isOwner}>
                         <Button variant="outline" size="sm" className="w-full">
                             <Eye className="mr-2 h-4 w-4" />
