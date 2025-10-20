@@ -84,6 +84,7 @@ const prompt = ai.definePrompt({
 
     Asegúrate de que la respuesta sea un JSON válido y que el 'playerId' corresponda a uno de los UIDs de la lista de disponibles.
   `,
+  model: 'gemini-1.5-flash',
 });
 
 
