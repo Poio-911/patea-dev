@@ -63,6 +63,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import { Label } from '@/components/ui/label';
