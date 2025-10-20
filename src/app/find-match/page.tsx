@@ -62,6 +62,9 @@ const getDistance = (pos1: { lat: number; lng: number }, pos2: { lat: number; ln
 
 
 const CompactMatchCard = ({ match, onHover, isActive }: { match: Match, onHover: (id: string | null) => void, isActive: boolean }) => {
+    const { user } = useUser();
+    const isOwner = user?.uid === match.ownerUid;
+
     return (
         <Card
             className={cn(
@@ -84,7 +87,7 @@ const CompactMatchCard = ({ match, onHover, isActive }: { match: Match, onHover:
                         <Users className="h-4 w-4" />
                         <span>{match.players.length}/{match.matchSize}</span>
                     </div>
-                    <MatchDetailsDialog match={match}>
+                    <MatchDetailsDialog match={match} isOwner={isOwner}>
                        <Button variant="default" size="sm" className="h-8 text-xs w-full">
                            Ver Detalles
                        </Button>
