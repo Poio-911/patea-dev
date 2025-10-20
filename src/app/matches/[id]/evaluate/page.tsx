@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
@@ -332,6 +333,14 @@ export default function EvaluateMatchPage() {
                         </div>
                     ))}
                  </div>
+                 {completedEvaluatorsCount === 0 && (
+                    <Alert>
+                        <AlertTitle>Esperando Evaluaciones</AlertTitle>
+                        <AlertDescription>
+                            Aún ningún jugador ha completado su evaluación. El botón para finalizar se activará cuando haya al menos una.
+                        </AlertDescription>
+                    </Alert>
+                 )}
             </CardContent>
             <CardFooter>
                 <Button size="lg" onClick={handleFinalizeEvaluation} disabled={isFinalizing || completedEvaluatorsCount === 0}>

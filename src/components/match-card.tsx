@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -142,13 +143,25 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         const matchRef = doc(firestore, 'matches', match.id);
 
         try {
-            let finalTeams = match.teams;
+            // Refetch match data to ensure it's up to date before processing
+            const freshMatchSnap = await getDoc(matchRef);
+            if (!freshMatchSnap.exists()) {
+                throw new Error("El partido ya no existe.");
+            }
+            const freshMatch = { id: freshMatchSnap.id, ...freshMatchSnap.data() } as Match;
+            
+            let finalTeams = freshMatch.teams;
             let matchUpdateData: any = { status: 'completed' };
 
-            if ((match.type === 'collaborative' && isMatchFull) || (match.type === 'manual' && (!finalTeams || finalTeams.length === 0))) {
-                const selectedPlayersData = allPlayers.filter(p => match.playerUids.includes(p.id));
+            // Logic to generate teams if they don't exist yet for a full match
+            if ( (freshMatch.type === 'collaborative' && freshMatch.players.length >= freshMatch.matchSize) || (freshMatch.type === 'manual' && (!finalTeams || finalTeams.length === 0)) ) {
                 
-                if (selectedPlayersData.length === match.matchSize) {
+                const playerIdsInMatch = freshMatch.playerUids;
+                const playersInMatchQuery = query(collection(firestore, 'players'), where('__name__', 'in', playerIdsInMatch));
+                const playersSnapshot = await getDocs(playersInMatchQuery);
+                const selectedPlayersData = playersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Player));
+
+                if (selectedPlayersData.length >= freshMatch.matchSize) {
                     const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
                     
                     if ('error' in teamGenerationResult) {
@@ -166,18 +179,19 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
             batch.update(matchRef, matchUpdateData);
 
+            // Generate evaluation assignments only if teams were successfully formed
             if (finalTeams && finalTeams.length > 0) {
-                const assignments = generateEvaluationAssignments({ ...match, teams: finalTeams }, allPlayers);
+                 const assignments = generateEvaluationAssignments({ ...freshMatch, teams: finalTeams }, allPlayers);
                 assignments.forEach(assignment => {
-                    const assignmentRef = doc(collection(firestore, `matches/${match.id}/assignments`));
+                    const assignmentRef = doc(collection(firestore, `matches/${freshMatch.id}/assignments`));
                     batch.set(assignmentRef, assignment);
 
                     const notificationRef = doc(collection(firestore, `users/${assignment.evaluatorId}/notifications`));
                     const notification: Omit<Notification, 'id'> = {
                         type: 'evaluation_pending',
                         title: '¡Evaluación pendiente!',
-                        message: `Es hora de evaluar a tus compañeros del partido "${match.title}".`,
-                        link: `/evaluations/${match.id}`,
+                        message: `Es hora de evaluar a tus compañeros del partido "${freshMatch.title}".`,
+                        link: `/evaluations/${freshMatch.id}`,
                         isRead: false,
                         createdAt: new Date().toISOString(),
                     };
@@ -189,7 +203,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
             toast({
                 title: 'Partido Finalizado',
-                description: `El partido "${match.title}" ha sido marcado como finalizado.`
+                description: `El partido "${freshMatch.title}" ha sido marcado como finalizado.`
             });
 
         } catch (error: any) {
@@ -301,40 +315,43 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     <CardTitle className={cn("text-xl font-bold", currentStatus.neonClass)}>
                         {match.title}
                     </CardTitle>
-                    {isOwner ? (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2 text-foreground/80 hover:bg-foreground/10">
-                                    <MoreVertical className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                {match.status === 'upcoming' && (
-                                    <DropdownMenuItem onClick={handleFinishMatch} disabled={isFinishing}>
-                                        <CheckCircle className="mr-2 h-4 w-4" />
-                                        Finalizar Partido
-                                    </DropdownMenuItem>
-                                )}
-                                {match.status === 'completed' && (
-                                     <DropdownMenuItem asChild>
-                                        <Link href={`/matches/${match.id}/evaluate`}>
-                                            <FileSignature className="mr-2 h-4 w-4" />
-                                            Supervisar
-                                        </Link>
-                                    </DropdownMenuItem>
-                                )}
-                                <DropdownMenuSeparator />
+                    
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2 text-foreground/80 hover:bg-foreground/10">
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            {isOwner && match.status === 'upcoming' && (
+                                <DropdownMenuItem onClick={handleFinishMatch} disabled={isFinishing}>
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Finalizar Partido
+                                </DropdownMenuItem>
+                            )}
+                            {isOwner && match.status === 'completed' && (
+                                 <DropdownMenuItem asChild>
+                                    <Link href={`/matches/${match.id}/evaluate`}>
+                                        <FileSignature className="mr-2 h-4 w-4" />
+                                        Supervisar
+                                    </Link>
+                                </DropdownMenuItem>
+                            )}
+                            {(isOwner && match.status !== 'upcoming' && match.status !== 'completed') && (
+                                <DropdownMenuItem disabled>
+                                    <FileSignature className="mr-2 h-4 w-4" />
+                                    <span>Supervisar (no disponible)</span>
+                                </DropdownMenuItem>
+                            )}
+                            {(isOwner && match.status === 'upcoming') && <DropdownMenuSeparator />}
+                            {isOwner && (
                                 <DropdownMenuItem disabled>
                                     <Trash2 className="mr-2 h-4 w-4" />
                                     Eliminar (Pronto)
                                 </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    ) : (
-                         <Badge variant="outline" className={cn("whitespace-nowrap uppercase text-xs z-10", currentStatus.className)}>
-                            {currentStatus.label}
-                        </Badge>
-                    )}
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
                  <div className="flex items-center gap-2 flex-wrap">
                     <CardDescription className="flex items-center gap-2 text-xs text-foreground/80">
@@ -343,6 +360,9 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     <Badge variant="secondary" className="capitalize text-xs">
                         {match.type === 'manual' ? <UserCheck className="mr-1.5 h-3 w-3"/> : <Users className="mr-1.5 h-3 w-3"/>}
                         {match.type}
+                    </Badge>
+                     <Badge variant="outline" className={cn("whitespace-nowrap uppercase text-xs z-10", currentStatus.className)}>
+                        {currentStatus.label}
                     </Badge>
                 </div>
             </CardHeader>
