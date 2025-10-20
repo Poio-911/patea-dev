@@ -213,8 +213,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           )}
 
           <main className={cn(
-            "flex-1 overflow-y-auto p-4 pt-20 pb-20 md:p-6 md:pt-22 md:pb-16",
-            availablePlayerData && "pt-[104px]" // Adjust main content padding when the banner is visible
+            "flex-1 overflow-y-auto p-4 pt-20 pb-20 md:p-6 md:pt-24 md:pb-16",
+            availablePlayerData && "pt-[104px] md:pt-[120px]"
           )}>
             {children}
           </main>
