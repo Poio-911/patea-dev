@@ -44,23 +44,9 @@ const getMatchDayForecastFlow = ai.defineFlow(
     inputSchema: GetMatchDayForecastInputSchema,
     outputSchema: GetMatchDayForecastOutputSchema,
   },
-  async ({location, date}) => {
+  async (input) => {
       
-    const { output } = await ai.generate({
-        prompt: `
-            You are a helpful assistant. Provide a short, friendly Spanish weather summary.
-            Location: ${location}
-            Date: ${date}
-            Include:
-            - short description (in Spanish)
-            - temperature in °C
-            - one icon from: Sun, Cloud, Cloudy, CloudRain, CloudSnow, Wind, Zap
-        `,
-        model: 'gemini-1.5-flash',
-        output: {
-            schema: GetMatchDayForecastOutputSchema
-        }
-    });
+    const { output } = await prompt(input);
     
     if (!output) {
         throw new Error("Failed to get a valid response from the AI.");

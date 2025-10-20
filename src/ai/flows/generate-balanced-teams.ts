@@ -94,7 +94,6 @@ Para cada equipo que armes, tenés que:
 
 Asegurate de que la respuesta sea un JSON válido y que siga estrictamente el esquema de salida.
 `,
-  model: 'gemini-1.5-flash',
 });
 
 const generateBalancedTeamsFlow = ai.defineFlow(

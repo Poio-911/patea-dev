@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -69,7 +70,6 @@ const prompt = ai.definePrompt({
 
   Formatea las sugerencias como una lista. No añadas introducciones ni despedidas, solo la lista de sugerencias.
   `,
-  model: 'gemini-1.5-flash',
 });
 
 const suggestPlayerImprovementsFlow = ai.defineFlow(
