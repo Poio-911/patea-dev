@@ -26,7 +26,7 @@ import { Player, MatchLocation, Notification, Team } from '@/lib/types';
 import { Alert, AlertDescription } from './ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Checkbox } from './ui/checkbox';
@@ -50,7 +50,7 @@ const matchLocationSchema = z.object({
 
 const matchSchema = z.object({
   title: z.string().min(3, 'El título debe tener al menos 3 caracteres.'),
-  date: z.date({ required_error: 'La fecha es obligatoria.' }),
+  date: z.string().min(1, 'La fecha es obligatoria.'),
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:MM).'),
   location: matchLocationSchema,
   type: z.enum(['manual', 'collaborative'], { required_error: 'El tipo es obligatorio.' }),
@@ -173,6 +173,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     mode: 'onChange',
     defaultValues: {
       title: 'Partido Amistoso',
+      date: format(new Date(), 'yyyy-MM-dd'),
       time: '21:00',
       type: 'manual',
       matchSize: '10',
@@ -198,6 +199,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       setTimeout(() => {
         form.reset({
           title: 'Partido Amistoso',
+          date: format(new Date(), 'yyyy-MM-dd'),
           time: '21:00',
           type: 'manual',
           matchSize: '10',
@@ -218,8 +220,9 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
             setIsFetchingWeather(true);
             setWeather(null);
             try {
+                const dateObj = parseISO(watchedDate);
                 const [hours, minutes] = watchedTime.split(':').map(Number);
-                const matchDateTime = new Date(watchedDate);
+                const matchDateTime = new Date(dateObj);
                 matchDateTime.setHours(hours, minutes);
 
                 const forecast = await getMatchDayForecast({
@@ -333,7 +336,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       ...data,
       isPublic: false,
       matchSize: selectedMatchSize,
-      date: data.date.toISOString(),
+      date: parseISO(data.date).toISOString(),
       status: 'upcoming' as const,
       ownerUid: user.uid,
       groupId: user.activeGroupId,
@@ -367,7 +370,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       ...data,
       isPublic: data.isPublic,
       matchSize: selectedMatchSize,
-      date: data.date.toISOString(),
+      date: parseISO(data.date).toISOString(),
       status: 'upcoming' as const,
       ownerUid: user.uid,
       groupId: user.activeGroupId,
@@ -411,23 +414,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <Label>Fecha</Label>
-                        <Controller
-                            name="date"
-                            control={form.control}
-                            render={({ field }) => (
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {field.value ? format(field.value, 'PPP', { locale: es }) : <span>Elegí una fecha</span>}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0">
-                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={es} />
-                                    </PopoverContent>
-                                </Popover>
-                            )}
-                        />
+                        <Input type="date" {...form.register('date')} />
                         {formState.errors.date && <p className="text-xs text-destructive mt-1">{formState.errors.date.message}</p>}
                     </div>
                     <div>

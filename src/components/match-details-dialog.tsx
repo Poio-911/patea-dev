@@ -15,7 +15,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar, Clock, MapPin, Users, Info, Loader2, UserPlus, LogOut, Navigation, Edit, Trash2 } from 'lucide-react';
 import { Badge } from './ui/badge';
@@ -52,7 +52,7 @@ interface MatchDetailsDialogProps {
 }
 
 const editMatchSchema = z.object({
-  date: z.date(),
+  date: z.string().min(1, 'La fecha es obligatoria.'),
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:MM).'),
 });
 
@@ -80,7 +80,7 @@ export function MatchDetailsDialog({ match: initialMatch, isOwner, children }: M
   const form = useForm<EditMatchFormData>({
     resolver: zodResolver(editMatchSchema),
     defaultValues: {
-      date: new Date(initialMatch.date),
+      date: format(new Date(initialMatch.date), 'yyyy-MM-dd'),
       time: initialMatch.time,
     }
   });
@@ -103,7 +103,7 @@ export function MatchDetailsDialog({ match: initialMatch, isOwner, children }: M
     setIsSaving(true);
     try {
         await updateDoc(doc(firestore, 'matches', currentMatch.id), {
-            date: data.date.toISOString(),
+            date: parseISO(data.date).toISOString(),
             time: data.time,
         });
         toast({ title: "Partido actualizado", description: "La fecha y hora han sido modificadas." });
@@ -154,23 +154,7 @@ export function MatchDetailsDialog({ match: initialMatch, isOwner, children }: M
                       <h3 className="font-bold text-lg">Editando Partido</h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <Controller
-                                name="date"
-                                control={form.control}
-                                render={({ field }) => (
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
-                                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                                {field.value ? format(field.value, 'PPP', { locale: es }) : <span>Elegí una fecha</span>}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0">
-                                            <CalendarPicker mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={es} />
-                                        </PopoverContent>
-                                    </Popover>
-                                )}
-                            />
+                            <Input type="date" {...form.register('date')} />
                         </div>
                         <div>
                             <Input id="time" {...form.register('time')} />

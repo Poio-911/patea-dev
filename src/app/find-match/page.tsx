@@ -15,7 +15,7 @@ import { mapStyles } from '@/lib/map-styles';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -35,6 +35,7 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 
 
 const containerStyle = {
@@ -153,7 +154,7 @@ export default function FindMatchPage() {
   const [searchRadius, setSearchRadius] = useState(7);
   const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
   const [matchSearchCompleted, setMatchSearchCompleted] = useState(false);
-  const [matchDateFilter, setMatchDateFilter] = useState<Date | undefined>();
+  const [matchDateFilter, setMatchDateFilter] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [matchSizeFilter, setMatchSizeFilter] = useState<string[]>([]);
 
   // -- Find Players State --
@@ -230,7 +231,7 @@ export default function FindMatchPage() {
         const distance = getDistance(userLocation, match.location);
         if (distance > searchRadius) return false;
 
-        if (matchDateFilter && !isSameDay(new Date(match.date), matchDateFilter)) return false;
+        if (matchDateFilter && !isSameDay(new Date(match.date), parseISO(matchDateFilter))) return false;
 
         if (matchSizeFilter.length > 0 && !matchSizeFilter.includes(String(match.matchSize))) return false;
 
@@ -336,17 +337,7 @@ export default function FindMatchPage() {
                     </div>
                     <div>
                       <Label className="font-medium">Fecha del Partido</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal mt-1', !matchDateFilter && 'text-muted-foreground')}>
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {matchDateFilter ? format(matchDateFilter, 'PPP', { locale: es }) : <span>Cualquier fecha</span>}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <CalendarPicker mode="single" selected={matchDateFilter} onSelect={setMatchDateFilter} initialFocus locale={es} />
-                        </PopoverContent>
-                      </Popover>
+                      <Input type="date" value={matchDateFilter} onChange={e => setMatchDateFilter(e.target.value)} />
                     </div>
                      <div>
                         <Label className="font-medium">Tamaño del Partido</Label>
