@@ -328,6 +328,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     }
 
     const renderPrimaryAction = () => {
+        // Owner action: Supervise evaluations
         if (match.status === 'completed' && user?.uid === match.ownerUid) {
             return (
                 <Button asChild variant="default" size="sm" className="w-full">
@@ -338,7 +339,8 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 </Button>
             );
         }
-        
+
+        // Owner action: Finish match
         const canFinishMatch = user?.uid === match.ownerUid && match.status === 'upcoming' &&
             ((match.type === 'collaborative' && isMatchFull) || match.type === 'manual');
         if (canFinishMatch) {
@@ -350,7 +352,8 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             );
         }
 
-        if (match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic)) {
+        // Player action: Join/Leave collaborative match
+        if (match.status === 'upcoming' && match.type === 'collaborative') {
             if (isMatchFull && !isUserInMatch) {
                 return <Button variant="outline" size="sm" className="w-full" disabled>Partido Lleno</Button>;
             }
@@ -423,31 +426,33 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         {visibleSecondaryActions.map(action => <React.Fragment key={action.id}>{action.component}</React.Fragment>)}
-                        {user?.uid === match.ownerUid && visibleSecondaryActions.length > 0 && <DropdownMenuSeparator />}
                         {user?.uid === match.ownerUid && match.status !== 'evaluated' && (
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                     <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onSelect={(e) => e.preventDefault()}>
-                                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar Partido
-                                    </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Esta acción no se puede deshacer. Esto eliminará permanentemente el partido
-                                        y todos sus datos asociados.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                                            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Sí, eliminar partido
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                             </AlertDialog>
+                             <>
+                                {visibleSecondaryActions.length > 0 && <DropdownMenuSeparator />}
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onSelect={(e) => e.preventDefault()}>
+                                            <Trash2 className="mr-2 h-4 w-4" /> Eliminar Partido
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Esta acción no se puede deshacer. Esto eliminará permanentemente el partido
+                                            y todos sus datos asociados.
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                Sí, eliminar partido
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                             </>
                         )}
                     </DropdownMenuContent>
                 </DropdownMenu>
