@@ -30,7 +30,6 @@ const getPixelPositionOffset = (width: number, height: number, yOffset = 0) => (
 });
 
 export function PlayerMarker({ player, activeMarker, handleMarkerClick }: PlayerMarkerProps) {
-  const isUserLocationMarker = player.uid === 'user-location';
   const playerName = player.displayName || (player as any).name;
 
   if (!player.location || typeof player.location.lat !== 'number' || typeof player.location.lng !== 'number') {
@@ -51,11 +50,11 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
       </OverlayView>
 
       {/* The pop-up InfoWindow, shown only when active */}
-      {activeMarker === player.uid && !isUserLocationMarker && (
+      {activeMarker === player.uid && (
          <OverlayView
             position={player.location}
             mapPaneName={OverlayView.FLOAT_PANE}
-            getPixelPositionOffset={(width, height) => getPixelPositionOffset(width, height, 10)} // 10px offset above marker
+            getPixelPositionOffset={(width, height) => getPixelPositionOffset(width, height, 40)} // Increased yOffset to lift popup
         >
             <div className="bg-background border rounded-xl shadow-lg w-48 animate-in fade-in-0 zoom-in-95">
                 <div className="flex justify-between items-center p-2 border-b">
