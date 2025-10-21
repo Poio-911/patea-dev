@@ -36,14 +36,14 @@ import {
 import type { Player, AvailablePlayer } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
-import { SoccerPlayerIcon } from './icons/soccer-player-icon';
-import { MatchIcon } from './icons/match-icon';
-import { FindMatchIcon } from './icons/find-match-icon';
-import { EvaluationIcon } from './icons/evaluation-icon';
-import { NotificationBell } from './notification-bell';
+import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
+import { MatchIcon } from '@/components/icons/match-icon';
+import { FindMatchIcon } from '@/components/icons/find-match-icon';
+import { EvaluationIcon } from '@/components/icons/evaluation-icon';
+import { NotificationBell } from '@/components/notification-bell';
 import { useFcm } from '@/hooks/use-fcm';
-import { HelpDialog } from './help-dialog';
-import { WelcomeDialog } from './welcome-dialog';
+import { HelpDialog } from '@/components/help-dialog';
+import { WelcomeDialog } from '@/components/welcome-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { isToday, parseISO } from 'date-fns';
 
