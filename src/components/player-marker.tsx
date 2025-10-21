@@ -23,11 +23,6 @@ const positionBadgeStyles: Record<AvailablePlayer['position'], string> = {
   POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
 };
 
-// Helper to offset the marker and pop-up correctly
-const getPixelPositionOffset = (width: number, height: number) => ({
-  x: -(width / 2),
-});
-
 export function PlayerMarker({ player, activeMarker, handleMarkerClick }: PlayerMarkerProps) {
   const playerName = player.displayName || (player as any).name;
 
@@ -37,8 +32,7 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
   
   return (
     <>
-      {/* The actual marker icon */}
-       <OverlayView
+      <OverlayView
         position={player.location}
         mapPaneName={OverlayView.MARKER_LAYER}
         getPixelPositionOffset={(width, height) => ({ x: -width / 2, y: -height })}
@@ -48,12 +42,11 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
         </div>
       </OverlayView>
 
-      {/* The pop-up InfoWindow, shown only when active */}
       {activeMarker === player.uid && (
          <OverlayView
             position={player.location}
             mapPaneName={OverlayView.FLOAT_PANE}
-            getPixelPositionOffset={(width, height) => ({x: -(width/2), y: -(height + 40)})}
+            getPixelPositionOffset={(width, height) => ({x: -(width/2), y: -(height + 10)})}
         >
             <div className="bg-background border rounded-xl shadow-lg w-48 animate-in fade-in-0 zoom-in-95">
                 <div className="flex justify-between items-center p-2 border-b">
