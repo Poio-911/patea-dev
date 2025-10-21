@@ -1,0 +1,352 @@
+
+
+{
+  "entities": {
+    "userProfile": {
+      "title": "User Profile",
+      "description": "Represents a user's profile information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's unique ID." },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string", "format": "uri" },
+        "groups": { "type": "array", "items": { "type": "string" }, "description": "List of group IDs the user is a member of." },
+        "activeGroupId": { "type": "string", "description": "The ID of the user's currently active group." }
+      },
+      "required": ["uid", "email"]
+    },
+    "player": {
+      "title": "Player",
+      "description": "Represents a football player.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "position": { "type": "string", "enum": ["DEL", "MED", "DEF", "POR"] },
+        "ovr": { "type": "number" },
+        "pac": { "type": "number" },
+        "sho": { "type": "number" },
+        "pas": { "type": "number" },
+        "dri": { "type": "number" },
+        "def": { "type": "number" },
+        "phy": { "type": "number" },
+        "photoUrl": { "type": "string", "format": "uri" },
+        "stats": {
+          "type": "object",
+          "properties": {
+            "matchesPlayed": { "type": "number" },
+            "goals": { "type": "number" },
+            "assists": { "type": "number" },
+            "averageRating": { "type": "number" }
+          }
+        },
+        "ownerUid": { "type": "string" },
+        "groupId": { "type": "string", "description": "The ID of the group this player belongs to." },
+        "cardGenerationCredits": { "type": "number", "description": "Credits remaining for AI card generation." }
+      },
+      "required": ["name", "position", "ovr", "ownerUid"]
+    },
+    "availablePlayer": {
+      "title": "Available Player",
+      "description": "Represents a player who is available to be invited to matches, including their schedule.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoUrl": { "type": "string", "format": "uri" },
+        "position": { "type": "string", "enum": ["DEL", "MED", "DEF", "POR"] },
+        "ovr": { "type": "number" },
+        "location": {
+            "type": "object",
+            "properties": {
+                "lat": { "type": "number" },
+                "lng": { "type": "number" }
+            }
+        },
+        "availability": {
+            "type": "object",
+            "description": "Player's weekly availability.",
+            "properties": {
+                "lunes": { "type": "array", "items": { "type": "string", "enum": ["mañana", "tarde", "noche"] } },
+                "martes": { "type": "array", "items": { "type": "string", "enum": ["mañana", "tarde", "noche"] } },
+                "miercoles": { "type": "array", "items": { "type": "string", "enum": ["mañana", "tarde", "noche"] } },
+                "jueves": { "type": "array", "items": { "type": "string", "enum": ["mañana", "tarde", "noche"] } },
+                "viernes": { "type": "array", "items": { "type": "string", "enum": ["mañana", "tarde", "noche"] } },
+                "sabado": { "type": "array", "items": { "type": "string", "enum": ["mañana", "tarde", "noche"] } },
+                "domingo": { "type": "array", "items": { "type": "string", "enum": ["mañana", "tarde", "noche"] } }
+            }
+        }
+      },
+      "required": ["uid", "displayName", "position", "ovr", "location", "availability"]
+    },
+    "match": {
+      "title": "Match",
+      "description": "Represents a football match.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "time": { "type": "string" },
+        "location": {
+            "type": "object",
+            "properties": {
+                "name": { "type": "string" },
+                "address": { "type": "string" },
+                "lat": { "type": "number" },
+                "lng": { "type": "number" },
+                "placeId": { "type": "string" }
+            }
+        },
+        "type": { "type": "string", "enum": ["manual", "collaborative"] },
+        "matchSize": { "type": "number", "enum": [10, 14, 22] },
+        "status": { "type": "string", "enum": ["upcoming", "active", "completed", "evaluated"] },
+        "ownerUid": { "type": "string" },
+        "groupId": { "type": "string", "description": "The ID of the group this match belongs to." },
+        "isPublic": { "type": "boolean", "description": "Indicates if the match is open to players outside the group." },
+        "players": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "uid": { "type": "string" },
+              "displayName": { "type": "string" },
+              "ovr": { "type": "number" },
+              "position": { "type": "string" },
+              "photoUrl": { "type": "string", "format": "uri" }
+            }
+          }
+        },
+        "playerUids": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "A simple array of player UIDs for efficient querying."
+        },
+        "teams": { "type": "array", "items": { "$ref": "#/entities/team" } },
+        "weather": {
+            "type": "object",
+            "description": "Stores the weather forecast for the match.",
+            "properties": {
+                "description": { "type": "string" },
+                "icon": { "type": "string" },
+                "temperature": { "type": "number" }
+            }
+        }
+      },
+      "required": ["title", "date", "status", "ownerUid", "groupId", "type", "matchSize"]
+    },
+    "team": {
+      "title": "Team",
+      "description": "Represents a generated team for a match.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "players": {
+          "type": "array",
+           "items": {
+            "type": "object",
+            "properties": {
+              "uid": { "type": "string" },
+              "displayName": { "type": "string" },
+              "ovr": { "type": "number" },
+              "position": { "type": "string" }
+            }
+          }
+        },
+        "totalOVR": { "type": "number" },
+        "averageOVR": { "type": "number" }
+      },
+      "required": ["name", "players"]
+    },
+    "group": {
+      "title": "Group",
+      "description": "Represents a user group.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerUid": { "type": "string" },
+        "inviteCode": { "type": "string" },
+        "members": { "type": "array", "items": { "type": "string" }, "description": "List of user UIDs who are members of this group." }
+      },
+      "required": ["name", "ownerUid", "inviteCode"]
+    },
+    "notification": {
+        "title": "Notification",
+        "description": "Represents a user notification.",
+        "type": "object",
+        "properties": {
+            "type": { "type": "string", "enum": ["match_invite", "new_joiner", "evaluation_pending", "match_update"] },
+            "title": { "type": "string" },
+            "message": { "type": "string" },
+            "link": { "type": "string", "format": "uri-reference" },
+            "isRead": { "type": "boolean" },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["type", "title", "message", "isRead", "createdAt"]
+    },
+     "invitation": {
+      "title": "Invitation",
+      "description": "Represents an invitation for a player to join a match.",
+      "type": "object",
+      "properties": {
+        "playerId": { "type": "string" },
+        "playerName": { "type": "string" },
+        "playerOvr": { "type": "number" },
+        "playerPhotoUrl": { "type": "string", "format": "uri" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "declined"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["playerId", "status", "createdAt"]
+    },
+    "fcmToken": {
+      "title": "FCM Token",
+      "description": "Represents a Firebase Cloud Messaging token for a user's device.",
+      "type": "object",
+      "properties": {
+        "token": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["token", "createdAt"]
+    },
+    "evaluation": {
+      "title": "Evaluation",
+      "description": "Stores a single player's evaluation for a specific match, submitted by another player.",
+      "type": "object",
+      "properties": {
+        "assignmentId": { "type": "string" },
+        "playerId": { "type": "string" },
+        "evaluatorId": { "type": "string" },
+        "matchId": { "type": "string" },
+        "rating": { "type": "number" },
+        "goals": { "type": "number" },
+        "performanceTags": { "type": "array", "items": { "type": "string" } },
+        "evaluatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["assignmentId", "playerId", "evaluatorId", "rating", "matchId"]
+    },
+     "selfEvaluation": {
+      "title": "Self Evaluation",
+      "description": "Stores a player's self-reported stats for a match (e.g., goals).",
+      "type": "object",
+      "properties": {
+        "playerId": { "type": "string" },
+        "matchId": { "type": "string" },
+        "goals": { "type": "number" },
+        "reportedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["playerId", "matchId", "goals", "reportedAt"]
+    },
+    "evaluationAssignment": {
+      "title": "Evaluation Assignment",
+      "description": "Represents a task for a player to evaluate a teammate in a match.",
+      "type": "object",
+      "properties": {
+        "matchId": { "type": "string" },
+        "evaluatorId": { "type": "string" },
+        "subjectId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed"] },
+        "evaluationId": { "type": "string" }
+      },
+      "required": ["matchId", "evaluatorId", "subjectId", "status"]
+    },
+    "evaluationSubmission": {
+      "title": "Evaluation Submission",
+      "description": "A temporary document holding a user's full evaluation submission, to be processed by a backend function.",
+      "type": "object",
+      "properties": {
+        "evaluatorId": { "type": "string" },
+        "matchId": { "type": "string" },
+        "match": { "$ref": "#/entities/match" },
+        "submittedAt": { "type": "string", "format": "date-time" },
+        "submission": { "type": "object", "description": "The raw form data from the evaluation form." }
+      },
+      "required": ["evaluatorId", "matchId", "submittedAt", "submission"]
+    },
+    "ovrHistory": {
+        "title": "OVR History",
+        "description": "Represents a single entry in a player's OVR progression history.",
+        "type": "object",
+        "properties": {
+            "date": { "type": "string", "format": "date-time" },
+            "oldOVR": { "type": "number" },
+            "newOVR": { "type": "number" },
+            "change": { "type": "number" },
+            "matchId": { "type": "string" }
+        },
+        "required": ["date", "oldOVR", "newOVR", "change", "matchId"]
+    },
+    "chatMessage": {
+      "title": "Chat Message",
+      "description": "Represents a single message in a match chat.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "senderPhotoUrl": { "type": "string", "format": "uri" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "senderId", "senderName", "createdAt"]
+    }
+  },
+  "auth": {
+    "providers": ["google.com", "password"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/userProfile" },
+      "description": "Stores public profiles for users."
+    },
+    "/users/{userId}/fcmTokens/{tokenId}": {
+      "schema": { "$ref": "#/entities/fcmToken" },
+      "description": "Stores FCM tokens for a user's devices."
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+        "schema": { "$ref": "#/entities/notification" },
+        "description": "Stores notifications for a specific user."
+    },
+    "/players/{playerId}": {
+      "schema": { "$ref": "#/entities/player" },
+      "description": "Stores data for each player, linked to a group. PlayerId is the same as the user's UID for registered users."
+    },
+    "/players/{playerId}/ovrHistory/{historyId}": {
+        "schema": { "$ref": "#/entities/ovrHistory" },
+        "description": "Stores the OVR progression history for a player."
+    },
+    "/availablePlayers/{playerId}": {
+      "schema": { "$ref": "#/entities/availablePlayer" },
+      "description": "Stores players who have marked themselves as available for matches."
+    },
+    "/groups/{groupId}": {
+      "schema": { "$ref": "#/entities/group" },
+      "description": "Stores data for each user group."
+    },
+    "/matches/{matchId}": {
+      "schema": { "$ref": "#/entities/match" },
+      "description": "Stores data for each match, linked to a group."
+    },
+    "/matches/{matchId}/assignments/{assignmentId}": {
+      "schema": { "$ref": "#/entities/evaluationAssignment" },
+      "description": "Stores all the evaluation assignments for a specific match."
+    },
+     "/matches/{matchId}/selfEvaluations/{userId}": {
+      "schema": { "$ref": "#/entities/selfEvaluation" },
+      "description": "Stores a player's self-reported stats for a match."
+    },
+    "/matches/{matchId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/chatMessage" },
+      "description": "Stores chat messages for a specific match."
+    },
+    "/matches/{matchId}/invitations/{invitationId}": {
+      "schema": { "$ref": "#/entities/invitation" },
+      "description": "Stores invitations for players to join this match."
+    },
+    "/evaluations/{evaluationId}": {
+        "schema": { "$ref": "#/entities/evaluation" },
+        "description": "Stores all individual evaluation records across all matches."
+    },
+    "/evaluationSubmissions/{submissionId}": {
+        "schema": { "$ref": "#/entities/evaluationSubmission" },
+        "description": "A temporary collection to queue evaluation submissions for backend processing."
+    }
+  }
+}

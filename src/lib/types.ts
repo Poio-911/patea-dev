@@ -1,5 +1,6 @@
 
 
+
 import { DocumentData, DocumentReference } from "firebase/firestore";
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
@@ -176,6 +177,27 @@ export type SelfEvaluation = {
   matchId: string;
   goals: number;
   reportedAt: string;
+} & DocumentData;
+
+export type EvaluationSubmission = {
+    id: string;
+    evaluatorId: string;
+    matchId: string;
+    match?: Partial<Match>;
+    submittedAt: string;
+    submission: {
+        evaluatorGoals: number;
+        evaluations: {
+            assignmentId: string;
+            subjectId: string;
+            displayName: string;
+            photoUrl: string;
+            position: string;
+            evaluationType: 'points' | 'tags';
+            rating?: number;
+            performanceTags?: any[];
+        }[];
+    }
 } & DocumentData;
 
 export type PlayerProfileViewProps = {
