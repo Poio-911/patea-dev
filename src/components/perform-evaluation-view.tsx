@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
@@ -7,7 +6,16 @@ import Link from 'next/link'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { doc, writeBatch, collection, query, where, addDoc, getDocs, orderBy } from 'firebase/firestore'
+import { 
+  doc, 
+  writeBatch, 
+  collection, 
+  query, 
+  where, 
+  addDoc, 
+  getDocs, 
+  orderBy 
+} from 'firebase/firestore'
 import { Loader2, Save, ShieldCheck, Goal, Plus, Minus, FileClock } from 'lucide-react'
 
 import { useFirestore, useUser, useCollection } from '@/firebase'
