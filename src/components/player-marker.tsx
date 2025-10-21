@@ -1,11 +1,19 @@
 
 'use client';
 
-import { useMemo } from 'react';
-import { MarkerF, InfoWindowF } from '@react-google-maps/api';
+import { useMemo, useState } from 'react';
+import { InfoWindowF, OverlayView } from '@react-google-maps/api';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { doc, arrayUnion, arrayRemove, getDoc, writeBatch, collection } from 'firebase/firestore';
+import { useDoc, useFirestore, useUser } from '@/firebase';
 import type { AvailablePlayer } from '@/lib/types';
+import { Button } from './ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, UserPlus, LogOut, X } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
+import { PlayerMarkerIcon } from './icons/player-marker-icon';
 
 interface PlayerMarkerProps {
   player: AvailablePlayer;
@@ -20,33 +28,35 @@ const positionBadgeStyles: Record<AvailablePlayer['position'], string> = {
   POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
 };
 
-export function PlayerMarker({ player, activeMarker, handleMarkerClick }: PlayerMarkerProps) {
-  const playerName = player.displayName || (player as any).name;
 
-  const icon = useMemo(() => {
-    return {
-      path: 'M8 0C3.58 0 0 3.58 0 8c0 7 8 16 8 16s8-9 8-16c0-4.42-3.58-8-8-8zm0 12c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z',
-      fillColor: '#FBBF24', // amber-400
-      fillOpacity: 1,
-      strokeWeight: 1,
-      strokeColor: '#000',
-      scale: 1.5,
-      anchor: new google.maps.Point(8, 24),
-    };
-  }, []);
+export function PlayerMarker({ player, activeMarker, handleMarkerClick }: PlayerMarkerProps) {
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const { toast } = useToast();
+  const [isJoining, setIsJoining] = useState(false);
+
+  const playerName = player.displayName || (player as any).name;
 
   if (!player.location || typeof player.location.lat !== 'number' || typeof player.location.lng !== 'number') {
     return null;
   }
+
+  const getPixelPositionOffset = (width: number, height: number) => ({
+    x: -(width / 2),
+    y: -(height / 2),
+  });
   
   return (
     <>
-      <MarkerF
+       <OverlayView
         position={player.location}
-        onClick={() => handleMarkerClick(player.uid)}
-        icon={icon}
-        zIndex={activeMarker === player.uid ? 5 : 1}
-      />
+        mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+        getPixelPositionOffset={getPixelPositionOffset}
+      >
+        <button type="button" onClick={() => handleMarkerClick(player.uid)} className="cursor-pointer border-none bg-transparent p-0">
+          <PlayerMarkerIcon className="h-8 w-8 text-amber-500 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]" />
+        </button>
+      </OverlayView>
 
       {activeMarker === player.uid && (
          <InfoWindowF
@@ -54,10 +64,11 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
             onCloseClick={() => handleMarkerClick('')}
             options={{
                 pixelOffset: new window.google.maps.Size(0, -40),
+                disableAutoPan: true,
             }}
         >
             <div className="w-48">
-                <div className="flex justify-between items-center pb-2">
+                 <div className="flex justify-between items-center pb-2">
                     <h3 className="font-bold text-base leading-tight truncate">{playerName}</h3>
                 </div>
                 <div className="flex items-center justify-start gap-2">
@@ -70,3 +81,4 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
     </>
   );
 }
+
