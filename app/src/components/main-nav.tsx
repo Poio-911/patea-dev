@@ -249,14 +249,14 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           )}
 
           <main className={cn(
-            "flex-1 overflow-y-auto p-4 pt-20 pb-20 md:p-6 md:pt-24 md:pb-6 md:pl-72 md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:pl-14",
+            "flex-1 overflow-y-auto p-4 pt-20 pb-20 md:p-6 md:pt-24 md:pb-24 md:pl-72 md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:pl-14",
             availablePlayerData && "pt-[104px] md:pt-[120px]"
           )}>
             {children}
           </main>
           
-          <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg md:hidden">
-              <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
+          <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg">
+              <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium md:max-w-none md:px-4 md:pl-[calc(var(--sidebar-width)_+_1rem)] peer-data-[state=collapsed]:peer-data-[collapsible=icon]:md:pl-[calc(var(--sidebar-width-icon)_+_1rem)]">
               {navItems.map((item) => {
                   const isActive = pathname.startsWith(item.href);
                   const isMatchIcon = item.href === '/matches';
