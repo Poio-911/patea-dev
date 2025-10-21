@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/page-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ShieldQuestion, Calendar, Edit, Eye } from 'lucide-react';
+import { Loader2, ShieldQuestion, Calendar, Edit, Eye, FileClock } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
@@ -65,6 +65,24 @@ export default function EvaluationsPage() {
         return matches.filter(match => assignments.some(a => a.matchId === match.id));
     }, [matches, assignments]);
 
+    const allPendingItems = useMemo(() => {
+        const items = new Map<string, { match: Match; submission?: EvaluationSubmission }>();
+
+        pendingMatches.forEach(match => {
+            if (!pendingSubmissionMap.has(match.id)) {
+                items.set(match.id, { match });
+            }
+        });
+
+        pendingSubmissions?.forEach(submission => {
+            if (submission.match) {
+                 items.set(submission.matchId, { match: submission.match as Match, submission });
+            }
+        });
+
+        return Array.from(items.values()).sort((a, b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime());
+    }, [pendingMatches, pendingSubmissions, pendingSubmissionMap]);
+
     const loading = userLoading || assignmentsLoading || matchesLoading || submissionsLoading;
 
     if (loading) {
@@ -84,24 +102,6 @@ export default function EvaluationsPage() {
             </div>
         )
     }
-
-    const allPendingItems = useMemo(() => {
-        const items = new Map<string, { match: Match; submission?: EvaluationSubmission }>();
-
-        pendingMatches.forEach(match => {
-            if (!pendingSubmissionMap.has(match.id)) {
-                items.set(match.id, { match });
-            }
-        });
-
-        pendingSubmissions?.forEach(submission => {
-            if (submission.match) {
-                 items.set(submission.matchId, { match: submission.match as Match, submission });
-            }
-        });
-
-        return Array.from(items.values()).sort((a, b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime());
-    }, [pendingMatches, pendingSubmissions, pendingSubmissionMap]);
     
     return (
         <div className="flex flex-col gap-8">
@@ -123,6 +123,7 @@ export default function EvaluationsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                    {allPendingItems.map(({ match, submission }) => {
                        const assignmentsForMatch = assignments?.filter(a => a.matchId === match.id).length || 0;
+                       const isEvaluationSent = !!submission;
                        
                        return (
                          <Card key={match.id}>
@@ -142,17 +143,17 @@ export default function EvaluationsPage() {
                                  <span>Finalizado</span>
                                </div>
                                <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-                                 {submission ? <Eye className="h-4 w-4"/> : <Edit className="h-4 w-4"/>}
+                                 {isEvaluationSent ? <FileClock className="h-4 w-4"/> : <Edit className="h-4 w-4"/>}
                                  <span>
-                                    {submission 
-                                        ? 'Evaluación enviada' 
+                                    {isEvaluationSent 
+                                        ? 'Evaluación en proceso' 
                                         : `${assignmentsForMatch} evaluación(es) pendiente(s)`
                                     }
                                  </span>
                                </div>
                             </CardContent>
                             <CardContent>
-                                {submission ? (
+                                {isEvaluationSent && submission ? (
                                     <ViewSubmissionDialog submission={submission}>
                                         <Button variant="outline" className="w-full">
                                             <Eye className="mr-2 h-4 w-4" />
