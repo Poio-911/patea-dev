@@ -13,7 +13,6 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
   SidebarHeader,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
 } from '@/components/ui/sidebar';
@@ -135,8 +134,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <WelcomeDialog />
-      <div className="relative flex h-screen w-full flex-col">
-          <header className="fixed top-0 left-0 right-0 z-20 flex h-16 shrink-0 items-center justify-between border-b bg-background/70 px-4 backdrop-blur-lg sm:px-6">
+      <div className="relative h-screen w-full">
+          <header className="fixed top-0 left-0 right-0 z-20 flex h-16 shrink-0 items-center justify-between border-b bg-background/70 px-4 backdrop-blur-lg sm:px-6 md:left-[var(--sidebar-width)] md:data-[state=collapsed]:left-[var(--sidebar-width-icon)] transition-all duration-300 ease-in-out">
               <div className="flex items-center gap-2">
                   <div className="hidden md:block">
                       <SidebarTrigger />
@@ -213,47 +212,47 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               </div>
           </header>
 
-          <div className="flex flex-1">
-            <Sidebar>
-                <SidebarHeader>
-                    <div className="flex items-center gap-2">
-                        <SoccerPlayerIcon className="h-8 w-8 text-primary" />
-                        <span className="text-xl font-bold font-headline">Pateá</span>
-                    </div>
-                </SidebarHeader>
-                <SidebarContent>
-                    <SidebarMenu>
-                        {navItems.map((item) => (
-                        <SidebarMenuItem key={item.href}>
-                            <Link href={item.href}>
-                            <SidebarMenuButton
-                                isActive={pathname.startsWith(item.href)}
-                                tooltip={item.label}
-                            >
-                                <item.icon />
-                                {item.label}
-                            </SidebarMenuButton>
-                            </Link>
-                        </SidebarMenuItem>
-                        ))}
-                    </SidebarMenu>
-                     <div className="mt-auto">
-                        <Separator className="my-2" />
-                        <SidebarGroup>
-                            <SidebarGroupLabel>Mi Grupo</SidebarGroupLabel>
-                            <GroupSwitcher />
-                        </SidebarGroup>
-                    </div>
-                </SidebarContent>
-            </Sidebar>
+          <Sidebar>
+            <SidebarHeader>
+                <div className="flex items-center gap-2">
+                    <SoccerPlayerIcon className="h-8 w-8 text-primary" />
+                    <span className="text-xl font-bold font-headline">Pateá</span>
+                </div>
+            </SidebarHeader>
+            <SidebarContent>
+                <SidebarMenu>
+                    {navItems.map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                        <Link href={item.href}>
+                        <SidebarMenuButton
+                            isActive={pathname.startsWith(item.href)}
+                            tooltip={item.label}
+                        >
+                            <item.icon />
+                            <span>{item.label}</span>
+                        </SidebarMenuButton>
+                        </Link>
+                    </SidebarMenuItem>
+                    ))}
+                </SidebarMenu>
+                 <div className="mt-auto">
+                    <Separator className="my-2" />
+                    <SidebarGroup>
+                        <SidebarGroupLabel>Mi Grupo</SidebarGroupLabel>
+                        <GroupSwitcher />
+                    </SidebarGroup>
+                </div>
+            </SidebarContent>
+          </Sidebar>
 
-            <main className={cn(
-                "flex-1 overflow-y-auto p-4 pb-20 pt-20 md:p-6 md:pb-6",
-                availablePlayerData && "pt-[104px] md:pt-[88px]"
-            )}>
+          <main className={cn(
+              "h-screen overflow-y-auto pt-16 pb-16 md:pb-0 md:pl-[var(--sidebar-width)] transition-[padding] duration-300 ease-in-out",
+              "group-data-[state=collapsed]/sidebar-wrapper:md:pl-[var(--sidebar-width-icon)]"
+          )}>
+            <div className="p-4 md:p-6">
                 {children}
-            </main>
-          </div>
+            </div>
+          </main>
           
           <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg md:hidden">
               <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
