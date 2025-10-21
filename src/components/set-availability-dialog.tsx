@@ -98,7 +98,7 @@ export function SetAvailabilityDialog({ player, availability, children }: SetAva
     // Clean up undefined values from the availability object
     const cleanAvailability = Object.entries(data.availability).reduce((acc, [day, times]) => {
         if (times !== undefined) {
-            acc[day as DayOfWeek] = times;
+            acc[day as DayOfWeek] = times as TimeOfDay[];
         }
         return acc;
     }, {} as Availability);
