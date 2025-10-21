@@ -6,9 +6,6 @@ import { MarkerF, InfoWindowF } from '@react-google-maps/api';
 import type { AvailablePlayer } from '@/lib/types';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
-import { Button } from './ui/button';
-import { X } from 'lucide-react';
-import { PlayerMarkerIcon } from './icons/player-marker-icon';
 
 interface PlayerMarkerProps {
   player: AvailablePlayer;
@@ -57,18 +54,15 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
             onCloseClick={() => handleMarkerClick('')}
             options={{
                 pixelOffset: new window.google.maps.Size(0, -40),
-                disableAutoPan: true,
             }}
         >
-            <div className="bg-background rounded-xl w-48 p-0 m-0">
-                <div className="flex justify-between items-center p-2 border-b">
-                    <h3 className="font-bold text-base leading-tight truncate pl-2">{playerName}</h3>
+            <div className="w-48">
+                <div className="flex justify-between items-center pb-2">
+                    <h3 className="font-bold text-base leading-tight truncate">{playerName}</h3>
                 </div>
-                <div className="p-2">
-                    <div className="flex items-center justify-start gap-2">
-                        <Badge variant="default" className={cn("text-sm font-bold", player.ovr > 80 ? "bg-green-500/80" : "bg-primary")}>{player.ovr}</Badge>
-                        <Badge variant="outline" className={cn("text-sm font-semibold", positionBadgeStyles[player.position])}>{player.position}</Badge>
-                    </div>
+                <div className="flex items-center justify-start gap-2">
+                    <Badge variant="default" className={cn("text-sm font-bold", player.ovr > 80 ? "bg-green-500/80" : "bg-primary")}>{player.ovr}</Badge>
+                    <Badge variant="outline" className={cn("text-sm font-semibold", positionBadgeStyles[player.position])}>{player.position}</Badge>
                 </div>
             </div>
         </InfoWindowF>
