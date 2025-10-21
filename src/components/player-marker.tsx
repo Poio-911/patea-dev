@@ -23,9 +23,10 @@ const positionBadgeStyles: Record<AvailablePlayer['position'], string> = {
   POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
 };
 
-const getPixelPositionOffset = (width: number, height: number) => ({
+// Helper to offset the marker and pop-up correctly
+const getPixelPositionOffset = (width: number, height: number, yOffset = 0) => ({
   x: -(width / 2),
-  y: -(height + 10), // Position it above the marker
+  y: -(height + yOffset),
 });
 
 export function PlayerMarker({ player, activeMarker, handleMarkerClick }: PlayerMarkerProps) {
@@ -38,37 +39,41 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
 
   return (
     <>
-      <div 
-        style={{
-          position: 'absolute',
-          transform: `translate(${getPixelPositionOffset(30, 30).x}px, ${getPixelPositionOffset(30, 30).y}px)`
-        }}
-        onClick={() => handleMarkerClick(player.uid)}
+      {/* The actual marker icon */}
+      <OverlayView
+        position={player.location}
+        mapPaneName={OverlayView.MARKER_LAYER}
+        getPixelPositionOffset={(width, height) => getPixelPositionOffset(width, height)}
       >
-        <PlayerMarkerIcon className="h-8 w-8 text-amber-500 cursor-pointer" />
-      </div>
+        <div onClick={() => handleMarkerClick(player.uid)} className="cursor-pointer">
+            <PlayerMarkerIcon className="h-8 w-8 text-amber-500" />
+        </div>
+      </OverlayView>
 
+      {/* The pop-up InfoWindow, shown only when active */}
       {activeMarker === player.uid && !isUserLocationMarker && (
          <OverlayView
             position={player.location}
             mapPaneName={OverlayView.FLOAT_PANE}
-            getPixelPositionOffset={(width, height) => getPixelPositionOffset(width, height + 20)}
+            getPixelPositionOffset={(width, height) => getPixelPositionOffset(width, height, 10)} // 10px offset above marker
         >
-            <div className="bg-background border rounded-xl shadow-lg p-3 w-48 animate-in fade-in-0 zoom-in-95">
-                <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-bold text-base leading-tight truncate">{playerName}</h3>
+            <div className="bg-background border rounded-xl shadow-lg w-48 animate-in fade-in-0 zoom-in-95">
+                <div className="flex justify-between items-center p-2 border-b">
+                    <h3 className="font-bold text-base leading-tight truncate pl-2">{playerName}</h3>
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 -mr-1"
+                        className="h-6 w-6"
                         onClick={() => handleMarkerClick('')}
                     >
                         <X className="h-4 w-4" />
                     </Button>
                 </div>
-                <div className="flex items-center justify-start gap-2">
-                    <Badge variant="default" className={cn("text-sm font-bold", player.ovr > 80 ? "bg-green-500/80" : "bg-primary")}>{player.ovr}</Badge>
-                    <Badge variant="outline" className={cn("text-sm font-semibold", positionBadgeStyles[player.position])}>{player.position}</Badge>
+                <div className="p-3">
+                    <div className="flex items-center justify-start gap-2">
+                        <Badge variant="default" className={cn("text-sm font-bold", player.ovr > 80 ? "bg-green-500/80" : "bg-primary")}>{player.ovr}</Badge>
+                        <Badge variant="outline" className={cn("text-sm font-semibold", positionBadgeStyles[player.position])}>{player.position}</Badge>
+                    </div>
                 </div>
             </div>
         </OverlayView>
