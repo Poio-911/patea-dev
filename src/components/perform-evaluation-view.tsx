@@ -7,8 +7,8 @@ import Link from 'next/link'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { doc, writeBatch, collection, query, where, addDoc } from 'firebase/firestore'
-import { Loader2, Save, ShieldCheck, Goal, Plus, Minus } from 'lucide-react'
+import { doc, writeBatch, collection, query, where, addDoc, getDocs } from 'firebase/firestore'
+import { Loader2, Save, ShieldCheck, Goal, Plus, Minus, FileClock } from 'lucide-react'
 
 import { useFirestore, useUser, useCollection } from '@/firebase'
 import { PageHeader } from '@/components/page-header'
@@ -114,6 +114,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isPageLoading, setIsPageLoading] = useState(true)
+  const [submissionIsPending, setSubmissionIsPending] = useState(false);
   const [randomTags, setRandomTags] = useState<Record<string, PerformanceTag[]>>({})
 
   const allGroupPlayersQuery = useMemo(
@@ -152,6 +153,22 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
     const selectedNegative = shuffleArray(positionTags.filter((t) => t.impact === 'negative')).slice(0, 4)
     return shuffleArray([...selectedPositive, ...selectedNegative])
   }, [])
+
+  useEffect(() => {
+    async function checkPendingSubmission() {
+      if (!firestore || !user?.uid || !matchId) return;
+      const submissionsQuery = query(
+        collection(firestore, 'evaluationSubmissions'),
+        where('matchId', '==', matchId),
+        where('evaluatorId', '==', user.uid)
+      );
+      const snapshot = await getDocs(submissionsQuery);
+      setSubmissionIsPending(!snapshot.empty);
+    }
+
+    checkPendingSubmission();
+  }, [firestore, user, matchId, isPageLoading]);
+
 
   useEffect(() => {
     if (assignments && allGroupPlayers) {
@@ -243,11 +260,28 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
 
   if (!user) return <div>Datos no encontrados.</div>
 
-  return (
-    <div className="flex flex-col gap-8">
-      <PageHeader title="Evaluar Partido" description="Evalúa el rendimiento de tus compañeros de equipo asignados." />
+  if (submissionIsPending) {
+    return (
+        <div className="flex flex-col gap-8">
+            <PageHeader title="Evaluar Partido" description="Tus evaluaciones ya fueron enviadas." />
+            <Alert variant="default" className="border-blue-500 text-blue-700">
+                <FileClock className="h-4 w-4" />
+                <AlertTitle className="text-blue-700">Evaluación en Proceso</AlertTitle>
+                <AlertDescription>
+                    Tus evaluaciones para este partido ya fueron enviadas y están esperando ser procesadas por el organizador.
+                    <Button asChild variant="link" className="p-0 h-auto ml-1">
+                        <Link href="/evaluations">Volver a mis evaluaciones</Link>
+                    </Button>
+                </AlertDescription>
+            </Alert>
+        </div>
+    )
+  }
 
-      {fields.length === 0 ? (
+  if (fields.length === 0) {
+    return (
+      <div className="flex flex-col gap-8">
+        <PageHeader title="Evaluar Partido" description="Ya no tienes evaluaciones pendientes para este partido." />
         <Alert>
           <ShieldCheck className="h-4 w-4" />
           <AlertTitle>Sin Evaluaciones Pendientes</AlertTitle>
@@ -258,130 +292,136 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
             </Button>
           </AlertDescription>
         </Alert>
-      ) : (
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Tu Rendimiento</CardTitle>
-                <CardDescription>Antes de evaluar a tus compañeros, registra tu propia actuación.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <FormField
-                  control={form.control}
-                  name="evaluatorGoals"
-                  render={({ field }) => (
-                    <FormItem className="max-w-xs">
-                      <FormLabel>¿Cuántos goles marcaste en este partido?</FormLabel>
-                      <div className="flex items-center gap-2">
-                        <Goal className="h-5 w-5 text-muted-foreground" />
-                        <FormControl>
-                          <Input type="number" min="0" {...field} />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
+      </div>
+    );
+  }
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Jugadores a Evaluar</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {fields.map((field, index) => (
-                  <div key={field.id} className="border-b pb-6 last:border-b-0 last:pb-0">
-                    <div className="flex items-center gap-4 mb-4">
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={field.photoUrl} alt={field.displayName} />
-                        <AvatarFallback>{field.displayName.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <p className="font-semibold text-lg">{field.displayName}</p>
+  return (
+    <div className="flex flex-col gap-8">
+      <PageHeader title="Evaluar Partido" description="Evalúa el rendimiento de tus compañeros de equipo asignados." />
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tu Rendimiento</CardTitle>
+              <CardDescription>Antes de evaluar a tus compañeros, registra tu propia actuación.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="evaluatorGoals"
+                render={({ field }) => (
+                  <FormItem className="max-w-xs">
+                    <FormLabel>¿Cuántos goles marcaste en este partido?</FormLabel>
+                    <div className="flex items-center gap-2">
+                      <Goal className="h-5 w-5 text-muted-foreground" />
+                      <FormControl>
+                        <Input type="number" min="0" {...field} />
+                      </FormControl>
                     </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
 
-                    <Controller
-                      name={`evaluations.${index}.evaluationType`}
-                      control={form.control}
-                      render={({ field: typeField }) => (
-                        <Tabs value={typeField.value} onValueChange={typeField.onChange} className="w-full">
-                          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
-                            <TabsTrigger value="points">Evaluar por Puntos</TabsTrigger>
-                            <TabsTrigger value="tags">Evaluar por Etiquetas</TabsTrigger>
-                          </TabsList>
-
-                          <TabsContent value="points" className="p-4 bg-muted/30 rounded-b-md">
-                            <FormField
-                              control={form.control}
-                              name={`evaluations.${index}.rating`}
-                              render={({ field: ratingField }) => (
-                                <FormItem>
-                                  <FormLabel>Rating: {ratingField.value || 5}</FormLabel>
-                                  <FormControl>
-                                    <div className="flex items-center gap-2 pt-2">
-                                      <span className="text-xs text-muted-foreground">1</span>
-                                      <Slider
-                                        min={1}
-                                        max={10}
-                                        step={1}
-                                        defaultValue={[ratingField.value || 5]}
-                                        onValueChange={(value) => ratingField.onChange(value[0])}
-                                      />
-                                      <span className="text-xs text-muted-foreground">10</span>
-                                    </div>
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                          </TabsContent>
-
-                          <TabsContent value="tags" className="p-4 bg-muted/30 rounded-b-md">
-                            <Controller
-                              name={`evaluations.${index}.performanceTags`}
-                              control={form.control}
-                              render={({ field: tagsField, fieldState }) => (
-                                <FormItem>
-                                  <FormLabel>Elige al menos 3 etiquetas</FormLabel>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2 max-h-96 overflow-y-auto">
-                                    {randomTags[field.subjectId]?.map((tag) => (
-                                      <TagCheckbox
-                                        key={tag.id}
-                                        tag={tag}
-                                        subjectId={field.subjectId}
-                                        isChecked={!!tagsField.value?.find((t) => t.id === tag.id)}
-                                        onCheckedChange={(checked) => {
-                                          const currentVal = tagsField.value || []
-                                          const newVal = checked
-                                            ? [...currentVal, tag]
-                                            : currentVal.filter((t) => t.id !== tag.id)
-                                          tagsField.onChange(newVal)
-                                        }}
-                                      />
-                                    ))}
-                                  </div>
-                                  <FormMessage>{fieldState.error?.message}</FormMessage>
-                                </FormItem>
-                              )}
-                            />
-                          </TabsContent>
-                        </Tabs>
-                      )}
-                    />
+          <Card>
+            <CardHeader>
+              <CardTitle>Jugadores a Evaluar</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {fields.map((field, index) => (
+                <div key={field.id} className="border-b pb-6 last:border-b-0 last:pb-0">
+                  <div className="flex items-center gap-4 mb-4">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={field.photoUrl} alt={field.displayName} />
+                      <AvatarFallback>{field.displayName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <p className="font-semibold text-lg">{field.displayName}</p>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
 
-            <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                {isSubmitting ? 'Enviando...' : 'Enviar Evaluaciones'}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      )}
+                  <Controller
+                    name={`evaluations.${index}.evaluationType`}
+                    control={form.control}
+                    render={({ field: typeField }) => (
+                      <Tabs value={typeField.value} onValueChange={typeField.onChange} className="w-full">
+                        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
+                          <TabsTrigger value="points">Evaluar por Puntos</TabsTrigger>
+                          <TabsTrigger value="tags">Evaluar por Etiquetas</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="points" className="p-4 bg-muted/30 rounded-b-md">
+                          <FormField
+                            control={form.control}
+                            name={`evaluations.${index}.rating`}
+                            render={({ field: ratingField }) => (
+                              <FormItem>
+                                <FormLabel>Rating: {ratingField.value || 5}</FormLabel>
+                                <FormControl>
+                                  <div className="flex items-center gap-2 pt-2">
+                                    <span className="text-xs text-muted-foreground">1</span>
+                                    <Slider
+                                      min={1}
+                                      max={10}
+                                      step={1}
+                                      defaultValue={[ratingField.value || 5]}
+                                      onValueChange={(value) => ratingField.onChange(value[0])}
+                                    />
+                                    <span className="text-xs text-muted-foreground">10</span>
+                                  </div>
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                        </TabsContent>
+
+                        <TabsContent value="tags" className="p-4 bg-muted/30 rounded-b-md">
+                          <Controller
+                            name={`evaluations.${index}.performanceTags`}
+                            control={form.control}
+                            render={({ field: tagsField, fieldState }) => (
+                              <FormItem>
+                                <FormLabel>Elige al menos 3 etiquetas</FormLabel>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2 max-h-96 overflow-y-auto">
+                                  {randomTags[field.subjectId]?.map((tag) => (
+                                    <TagCheckbox
+                                      key={tag.id}
+                                      tag={tag}
+                                      subjectId={field.subjectId}
+                                      isChecked={!!tagsField.value?.find((t) => t.id === tag.id)}
+                                      onCheckedChange={(checked) => {
+                                        const currentVal = tagsField.value || []
+                                        const newVal = checked
+                                          ? [...currentVal, tag]
+                                          : currentVal.filter((t) => t.id !== tag.id)
+                                        tagsField.onChange(newVal)
+                                      }}
+                                    />
+                                  ))}
+                                </div>
+                                <FormMessage>{fieldState.error?.message}</FormMessage>
+                              </FormItem>
+                            )}
+                          />
+                        </TabsContent>
+                      </Tabs>
+                    )}
+                  />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              {isSubmitting ? 'Enviando...' : 'Enviar Evaluaciones'}
+            </Button>
+          </div>
+        </form>
+      </Form>
     </div>
   )
 }
