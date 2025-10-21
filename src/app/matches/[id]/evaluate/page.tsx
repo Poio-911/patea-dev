@@ -55,30 +55,14 @@ const calculateOvrChange = (currentOvr: number, avgRating: number): number => {
     return finalDelta;
 };
 
-const calculateAttributeChanges = (currentAttrs: Player, avgRating: number, position: string, tags: Evaluation['performanceTags'] = []) => {
+const calculateAttributeChanges = (currentAttrs: Player, tags: Evaluation['performanceTags'] = []) => {
     let attributeEffects: Record<string, number> = {};
 
-    // Method 1: Based on Tags
     if (tags && tags.length > 0) {
         tags.forEach(tag => {
             tag.effects?.forEach(effect => {
                 attributeEffects[effect.attribute] = (attributeEffects[effect.attribute] || 0) + effect.change;
             });
-        });
-    }
-    // Method 2: Based on Rating (fallback or primary)
-    else {
-        const intensity = (avgRating - OVR_PROGRESSION.BASELINE_RATING) * 0.2;
-        const positionPriorities = {
-            DEL: { primary: 'sho', secondary: ['pac', 'dri'] },
-            MED: { primary: 'pas', secondary: ['dri', 'sho'] },
-            DEF: { primary: 'def', secondary: ['phy', 'pas'] },
-            POR: { primary: 'def', secondary: ['phy', 'pas'] },
-        };
-        const priorities = positionPriorities[position as keyof typeof positionPriorities] || positionPriorities.DEF;
-        attributeEffects[priorities.primary] = (attributeEffects[priorities.primary] || 0) + intensity * 2;
-        priorities.secondary.forEach(attr => {
-            attributeEffects[attr] = (attributeEffects[attr] || 0) + intensity;
         });
     }
     
@@ -172,21 +156,27 @@ export default function EvaluateMatchPage() {
                 if (!player) continue;
 
                 const playerPeerEvals = peerEvalsByPlayer[playerId];
-                const pointBasedEvals = playerPeerEvals.filter(ev => ev.rating !== undefined);
-                const tagBasedEvals = playerPeerEvals.filter(ev => ev.performanceTags !== undefined);
+                const pointBasedEvals = playerPeerEvals.filter(ev => ev.rating !== undefined && ev.rating !== null);
+                const tagBasedEvals = playerPeerEvals.filter(ev => ev.performanceTags && ev.performanceTags.length > 0);
+                
+                let updatedAttributes = { ...player };
+                let ovrChangeFromPoints = 0;
 
-                // --- Calculate attribute changes from tags ---
-                let combinedTags = tagBasedEvals.flatMap(ev => ev.performanceTags || []);
-                const updatedAttributes = calculateAttributeChanges(player, 0, player.position, combinedTags);
+                // Process tag-based evaluations if they are the majority or only type
+                if (tagBasedEvals.length > 0 && tagBasedEvals.length >= pointBasedEvals.length) {
+                    const combinedTags = tagBasedEvals.flatMap(ev => ev.performanceTags || []);
+                    updatedAttributes = calculateAttributeChanges(player, combinedTags);
+                }
                 
-                // --- Calculate OVR change from points ---
-                const totalRating = pointBasedEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0);
-                const avgRating = pointBasedEvals.length > 0 ? totalRating / pointBasedEvals.length : OVR_PROGRESSION.BASELINE_RATING;
-                const ovrChange = calculateOvrChange(player.ovr, avgRating);
+                // Process point-based evaluations
+                if (pointBasedEvals.length > 0 && pointBasedEvals.length > tagBasedEvals.length) {
+                    const totalRating = pointBasedEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0);
+                    const avgRating = totalRating / pointBasedEvals.length;
+                    ovrChangeFromPoints = calculateOvrChange(player.ovr, avgRating);
+                }
                 
-                // Recalculate OVR based on new attributes and add point-based change
                 let newOvr = Math.round((updatedAttributes.pac + updatedAttributes.sho + updatedAttributes.pas + updatedAttributes.dri + updatedAttributes.def + updatedAttributes.phy) / 6);
-                newOvr += ovrChange;
+                newOvr += ovrChangeFromPoints;
                 newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, newOvr));
 
                 const playerSelfEval = selfEvalsByPlayerId.get(playerId);
@@ -194,8 +184,13 @@ export default function EvaluateMatchPage() {
 
                 const newMatchesPlayed = (player.stats.matchesPlayed || 0) + 1;
                 const newTotalGoals = (player.stats.goals || 0) + goalsInMatch;
+                
+                const avgRatingFromPoints = pointBasedEvals.length > 0
+                    ? pointBasedEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0) / pointBasedEvals.length
+                    : player.stats.averageRating;
+                
                 const newAvgRating = pointBasedEvals.length > 0
-                    ? ((player.stats.averageRating || 0) * (player.stats.matchesPlayed || 0) + avgRating) / newMatchesPlayed
+                    ? ((player.stats.averageRating || 0) * (player.stats.matchesPlayed || 0) + avgRatingFromPoints) / newMatchesPlayed
                     : player.stats.averageRating;
                 
                 const playerDocRef = doc(firestore, 'players', playerId);
