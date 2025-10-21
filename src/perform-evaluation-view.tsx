@@ -8,7 +8,7 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { doc, writeBatch, collection, query, where, addDoc, getDocs } from 'firebase/firestore'
-import { Loader2, Save, ShieldCheck, Goal, Plus, Minus, FileClock } from 'lucide-react'
+import { Loader2, Save, ShieldCheck, Goal, Plus, Minus, FileClock, History, Star } from 'lucide-react'
 
 import { useFirestore, useUser, useCollection, useDoc } from '@/firebase'
 import { PageHeader } from '@/components/page-header'
@@ -24,9 +24,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { PerformanceTag, performanceTagsDb } from '@/lib/performance-tags'
 import { cn } from '@/lib/utils'
-import type { Player, EvaluationAssignment, Match } from '@/lib/types'
+import type { Player, EvaluationAssignment, Match, Evaluation } from '@/lib/types'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
+import { Badge } from './ui/badge'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 
-// --- Validación con Zod ---
+// --- Validation Schemas ---
 const playerEvaluationSchema = z.object({
   assignmentId: z.string(),
   subjectId: z.string(),
@@ -49,7 +53,7 @@ const evaluationSchema = z.object({
 type EvaluationFormData = z.infer<typeof evaluationSchema>
 type PlayerEvaluationFormData = z.infer<typeof playerEvaluationSchema>
 
-// --- Helper ---
+// --- Helper Functions ---
 const shuffleArray = <T,>(array: T[]): T[] => {
   let currentIndex = array.length
   while (currentIndex !== 0) {
@@ -60,28 +64,14 @@ const shuffleArray = <T,>(array: T[]): T[] => {
   return array
 }
 
-const TagCheckbox = ({
-  tag,
-  subjectId,
-  isChecked,
-  onCheckedChange,
-}: {
-  tag: PerformanceTag
-  subjectId: string
-  isChecked: boolean
-  onCheckedChange: (checked: boolean) => void
-}) => {
+// --- Sub-components ---
+const TagCheckbox = ({ tag, subjectId, isChecked, onCheckedChange }: { tag: PerformanceTag; subjectId: string; isChecked: boolean; onCheckedChange: (checked: boolean) => void }) => {
   const positiveEffects = tag.effects.filter((e) => e.change > 0)
   const negativeEffects = tag.effects.filter((e) => e.change < 0)
-  const uniqueId = `tag-${tag.id}-${subjectId}`;
+  const uniqueId = `tag-${tag.id}-${subjectId}`
 
   return (
-    <div
-      className={cn(
-        'flex items-start gap-3 rounded-lg border p-3 transition-colors',
-        isChecked ? 'bg-primary/10 border-primary' : 'hover:bg-accent/50'
-      )}
-    >
+    <div className={cn('flex items-start gap-3 rounded-lg border p-3 transition-colors', isChecked ? 'bg-primary/10 border-primary' : 'hover:bg-accent/50')}>
       <Checkbox checked={isChecked} onCheckedChange={onCheckedChange} id={uniqueId} className="mt-1" />
       <label htmlFor={uniqueId} className="w-full cursor-pointer space-y-2">
         <div>
@@ -105,7 +95,84 @@ const TagCheckbox = ({
   )
 }
 
-// --- COMPONENTE PRINCIPAL ---
+const PlayerHistoryTab = ({ subjectId }: { subjectId: string }) => {
+    const firestore = useFirestore();
+    const [history, setHistory] = useState<(Evaluation & { matchTitle?: string })[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            if (!firestore) return;
+            setLoading(true);
+            try {
+                const evalsQuery = query(collection(firestore, 'evaluations'), where('playerId', '==', subjectId), orderBy('evaluatedAt', 'desc'));
+                const evalsSnapshot = await getDocs(evalsQuery);
+                const playerEvals = evalsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Evaluation));
+
+                const matchIds = [...new Set(playerEvals.map(e => e.matchId))];
+                const matchesData: Record<string, string> = {};
+
+                if (matchIds.length > 0) {
+                    const matchesQuery = query(collection(firestore, 'matches'), where('__name__', 'in', matchIds));
+                    const matchesSnapshot = await getDocs(matchesQuery);
+                    matchesSnapshot.forEach(doc => {
+                        matchesData[doc.id] = (doc.data() as Match).title;
+                    });
+                }
+                
+                const combinedHistory = playerEvals.map(ev => ({ ...ev, matchTitle: matchesData[ev.matchId] || 'Partido desconocido' }));
+                setHistory(combinedHistory);
+            } catch (error) {
+                console.error("Error fetching player history:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchHistory();
+    }, [firestore, subjectId]);
+
+    if (loading) {
+        return <div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+    }
+    
+    if (history.length === 0) {
+        return <p className="text-sm text-center text-muted-foreground p-4">Este jugador aún no tiene evaluaciones históricas.</p>
+    }
+
+    return (
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Partido</TableHead>
+                    <TableHead className="text-center">Rating</TableHead>
+                    <TableHead>Etiquetas</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {history.map(ev => (
+                    <TableRow key={ev.id}>
+                        <TableCell>
+                            <p className="font-medium">{ev.matchTitle}</p>
+                            <p className="text-xs text-muted-foreground">{format(new Date(ev.evaluatedAt), 'dd/MM/yyyy')}</p>
+                        </TableCell>
+                        <TableCell className="text-center">
+                            {ev.rating ? <Badge><Star className="mr-1 h-3 w-3"/>{ev.rating}</Badge> : '-'}
+                        </TableCell>
+                        <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                                {ev.performanceTags?.map(tag => <Badge key={tag.id} variant="outline">{tag.name}</Badge>) ?? '-'}
+                            </div>
+                        </TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
+    );
+};
+
+
+// --- MAIN COMPONENT ---
 export default function PerformEvaluationView({ matchId }: { matchId: string }) {
   const firestore = useFirestore()
   const { user } = useUser()
@@ -114,16 +181,16 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isPageLoading, setIsPageLoading] = useState(true)
-  const [submissionIsPending, setSubmissionIsPending] = useState(false);
+  const [submissionIsPending, setSubmissionIsPending] = useState(false)
   const [randomTags, setRandomTags] = useState<Record<string, PerformanceTag[]>>({})
 
-  const matchRef = useMemo(() => firestore && matchId ? doc(firestore, 'matches', matchId) : null, [firestore, matchId]);
-  const { data: matchData, loading: matchLoading } = useDoc<Match>(matchRef);
+  const matchRef = useMemo(() => firestore && matchId ? doc(firestore, 'matches', matchId) : null, [firestore, matchId])
+  const { data: matchData, loading: matchLoading } = useDoc<Match>(matchRef)
   
   const allGroupPlayersQuery = useMemo(() => 
     firestore && user?.activeGroupId ? query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId)) : null
-  , [firestore, user?.activeGroupId]);
-  const { data: allGroupPlayers, loading: playersLoading } = useCollection<Player>(allGroupPlayersQuery);
+  , [firestore, user?.activeGroupId])
+  const { data: allGroupPlayers, loading: playersLoading } = useCollection<Player>(allGroupPlayersQuery)
 
   const userAssignmentsQuery = useMemo(() => {
     if (!firestore || !user?.uid || !matchId) return null
@@ -134,8 +201,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
     )
   }, [firestore, user, matchId])
 
-  const { data: assignments, loading: assignmentsLoading } =
-    useCollection<EvaluationAssignment>(userAssignmentsQuery)
+  const { data: assignments, loading: assignmentsLoading } = useCollection<EvaluationAssignment>(userAssignmentsQuery)
 
   const form = useForm<EvaluationFormData>({
     resolver: zodResolver(evaluationSchema),
@@ -145,9 +211,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
   const { fields, replace } = useFieldArray({ control: form.control, name: 'evaluations' })
 
   const getRandomTagsForPosition = useCallback((position: string) => {
-    const positionTags = performanceTagsDb.filter(
-      (tag) => tag.positions.includes('ALL') || tag.positions.includes(position as any)
-    )
+    const positionTags = performanceTagsDb.filter((tag) => tag.positions.includes('ALL') || tag.positions.includes(position as any))
     const selectedPositive = shuffleArray(positionTags.filter((t) => t.impact === 'positive')).slice(0, 6)
     const selectedNegative = shuffleArray(positionTags.filter((t) => t.impact === 'negative')).slice(0, 4)
     return shuffleArray([...selectedPositive, ...selectedNegative])
@@ -155,19 +219,14 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
 
   useEffect(() => {
     async function checkPendingSubmission() {
-      if (!firestore || !user?.uid || !matchId) return;
-      const submissionsQuery = query(
-        collection(firestore, 'evaluationSubmissions'),
-        where('matchId', '==', matchId),
-        where('evaluatorId', '==', user.uid)
-      );
-      const snapshot = await getDocs(submissionsQuery);
-      setSubmissionIsPending(!snapshot.empty);
+      if (!firestore || !user?.uid || !matchId) return
+      const submissionsQuery = query(collection(firestore, 'evaluationSubmissions'), where('matchId', '==', matchId), where('evaluatorId', '==', user.uid))
+      const snapshot = await getDocs(submissionsQuery)
+      setSubmissionIsPending(!snapshot.empty)
     }
 
-    checkPendingSubmission();
-  }, [firestore, user, matchId, isPageLoading]);
-
+    checkPendingSubmission()
+  }, [firestore, user, matchId, isPageLoading])
 
   useEffect(() => {
     if (assignments && allGroupPlayers) {
@@ -191,7 +250,6 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
             tagsForPlayers[subject.id] = getRandomTagsForPosition(subject.position)
           }
         }
-
         replace(initialFormValues)
         setRandomTags(tagsForPlayers)
       }
@@ -206,19 +264,11 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
 
     for (const evaluation of data.evaluations) {
       if (evaluation.evaluationType === 'points' && (!evaluation.rating || evaluation.rating < 1 || evaluation.rating > 10)) {
-        toast({
-          variant: 'destructive',
-          title: 'Error de Validación',
-          description: `Debes asignar un rating (1-10) para ${evaluation.displayName}.`,
-        })
+        toast({ variant: 'destructive', title: 'Error de Validación', description: `Debes asignar un rating (1-10) para ${evaluation.displayName}.` })
         return
       }
       if (evaluation.evaluationType === 'tags' && (!evaluation.performanceTags || evaluation.performanceTags.length < 3)) {
-        toast({
-          variant: 'destructive',
-          title: 'Error de Validación',
-          description: `Debes seleccionar al menos 3 etiquetas para ${evaluation.displayName}.`,
-        })
+        toast({ variant: 'destructive', title: 'Error de Validación', description: `Debes seleccionar al menos 3 etiquetas para ${evaluation.displayName}.` })
         return
       }
     }
@@ -228,31 +278,15 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
       const submissionData = {
         evaluatorId: user.uid,
         matchId,
-        match: matchData ? { 
-            id: matchData.id,
-            title: matchData.title,
-            date: matchData.date,
-            location: matchData.location,
-            players: matchData.players,
-            matchSize: matchData.matchSize
-        } : {},
+        match: matchData ? { id: matchData.id, title: matchData.title, date: matchData.date, location: matchData.location, players: matchData.players, matchSize: matchData.matchSize } : {},
         submittedAt: new Date().toISOString(),
         submission: data,
-      };
-
-      await addDoc(collection(firestore, 'evaluationSubmissions'), submissionData);
-
-      toast({
-        title: '¡Evaluaciones en camino!',
-        description: 'Tus evaluaciones se han enviado y se procesarán en segundo plano.',
-      })
+      }
+      await addDoc(collection(firestore, 'evaluationSubmissions'), submissionData)
+      toast({ title: '¡Evaluaciones en camino!', description: 'Tus evaluaciones se han enviado y se procesarán en segundo plano.' })
       router.push('/evaluations')
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'No se pudieron enviar las evaluaciones.',
-      })
+      toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudieron enviar las evaluaciones.' })
     } finally {
       setIsSubmitting(false)
     }
@@ -300,13 +334,12 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
           </AlertDescription>
         </Alert>
       </div>
-    );
+    )
   }
 
   return (
     <div className="flex flex-col gap-8">
       <PageHeader title="Evaluar Partido" description="Evalúa el rendimiento de tus compañeros de equipo asignados." />
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <Card>
@@ -340,83 +373,81 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
             </CardHeader>
             <CardContent className="space-y-6">
               {fields.map((field, index) => (
-                <div key={field.id} className="border-b pb-6 last:border-b-0 last:pb-0">
-                  <div className="flex items-center gap-4 mb-4">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={field.photoUrl} alt={field.displayName} />
-                      <AvatarFallback>{field.displayName.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <p className="font-semibold text-lg">{field.displayName}</p>
+                <Tabs key={field.id} defaultValue="evaluate" className="border rounded-lg p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                      <div className="flex items-center gap-4">
+                          <Avatar className="h-12 w-12">
+                              <AvatarImage src={field.photoUrl} alt={field.displayName} />
+                              <AvatarFallback>{field.displayName.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <p className="font-semibold text-lg">{field.displayName}</p>
+                      </div>
+                      <TabsList className="grid w-full grid-cols-2 sm:w-auto">
+                          <TabsTrigger value="evaluate">Evaluar Ahora</TabsTrigger>
+                          <TabsTrigger value="history"><History className="mr-2 h-4 w-4"/>Historial</TabsTrigger>
+                      </TabsList>
                   </div>
+                  
+                  <TabsContent value="evaluate">
+                     <Controller
+                        name={`evaluations.${index}.evaluationType`}
+                        control={form.control}
+                        render={({ field: typeField }) => (
+                          <Tabs value={typeField.value} onValueChange={typeField.onChange} className="w-full">
+                            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
+                              <TabsTrigger value="points">Evaluar por Puntos</TabsTrigger>
+                              <TabsTrigger value="tags">Evaluar por Etiquetas</TabsTrigger>
+                            </TabsList>
 
-                  <Controller
-                    name={`evaluations.${index}.evaluationType`}
-                    control={form.control}
-                    render={({ field: typeField }) => (
-                      <Tabs value={typeField.value} onValueChange={typeField.onChange} className="w-full">
-                        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
-                          <TabsTrigger value="points">Evaluar por Puntos</TabsTrigger>
-                          <TabsTrigger value="tags">Evaluar por Etiquetas</TabsTrigger>
-                        </TabsList>
+                            <TabsContent value="points" className="p-4 bg-muted/30 rounded-b-md">
+                              <FormField
+                                control={form.control}
+                                name={`evaluations.${index}.rating`}
+                                render={({ field: ratingField }) => (
+                                  <FormItem>
+                                    <FormLabel>Rating: {ratingField.value || 5}</FormLabel>
+                                    <FormControl>
+                                      <div className="flex items-center gap-2 pt-2">
+                                        <span className="text-xs text-muted-foreground">1</span>
+                                        <Slider min={1} max={10} step={1} defaultValue={[ratingField.value || 5]} onValueChange={(value) => ratingField.onChange(value[0])} />
+                                        <span className="text-xs text-muted-foreground">10</span>
+                                      </div>
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                            </TabsContent>
 
-                        <TabsContent value="points" className="p-4 bg-muted/30 rounded-b-md">
-                          <FormField
-                            control={form.control}
-                            name={`evaluations.${index}.rating`}
-                            render={({ field: ratingField }) => (
-                              <FormItem>
-                                <FormLabel>Rating: {ratingField.value || 5}</FormLabel>
-                                <FormControl>
-                                  <div className="flex items-center gap-2 pt-2">
-                                    <span className="text-xs text-muted-foreground">1</span>
-                                    <Slider
-                                      min={1}
-                                      max={10}
-                                      step={1}
-                                      defaultValue={[ratingField.value || 5]}
-                                      onValueChange={(value) => ratingField.onChange(value[0])}
-                                    />
-                                    <span className="text-xs text-muted-foreground">10</span>
-                                  </div>
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                        </TabsContent>
-
-                        <TabsContent value="tags" className="p-4 bg-muted/30 rounded-b-md">
-                          <Controller
-                            name={`evaluations.${index}.performanceTags`}
-                            control={form.control}
-                            render={({ field: tagsField, fieldState }) => (
-                              <FormItem>
-                                <FormLabel>Elige al menos 3 etiquetas</FormLabel>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2 max-h-96 overflow-y-auto">
-                                  {randomTags[field.subjectId]?.map((tag) => (
-                                    <TagCheckbox
-                                      key={tag.id}
-                                      tag={tag}
-                                      subjectId={field.subjectId}
-                                      isChecked={!!tagsField.value?.find((t) => t.id === tag.id)}
-                                      onCheckedChange={(checked) => {
-                                        const currentVal = tagsField.value || []
-                                        const newVal = checked
-                                          ? [...currentVal, tag]
-                                          : currentVal.filter((t) => t.id !== tag.id)
-                                        tagsField.onChange(newVal)
-                                      }}
-                                    />
-                                  ))}
-                                </div>
-                                <FormMessage>{fieldState.error?.message}</FormMessage>
-                              </FormItem>
-                            )}
-                          />
-                        </TabsContent>
-                      </Tabs>
-                    )}
-                  />
-                </div>
+                            <TabsContent value="tags" className="p-4 bg-muted/30 rounded-b-md">
+                              <Controller
+                                name={`evaluations.${index}.performanceTags`}
+                                control={form.control}
+                                render={({ field: tagsField, fieldState }) => (
+                                  <FormItem>
+                                    <FormLabel>Elige al menos 3 etiquetas</FormLabel>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2 max-h-96 overflow-y-auto">
+                                      {randomTags[field.subjectId]?.map((tag) => (
+                                        <TagCheckbox key={tag.id} tag={tag} subjectId={field.subjectId} isChecked={!!tagsField.value?.find((t) => t.id === tag.id)}
+                                          onCheckedChange={(checked) => {
+                                            const currentVal = tagsField.value || []
+                                            const newVal = checked ? [...currentVal, tag] : currentVal.filter((t) => t.id !== tag.id)
+                                            tagsField.onChange(newVal)
+                                          }} />
+                                      ))}
+                                    </div>
+                                    <FormMessage>{fieldState.error?.message}</FormMessage>
+                                  </FormItem>
+                                )}
+                              />
+                            </TabsContent>
+                          </Tabs>
+                        )}
+                      />
+                  </TabsContent>
+                  <TabsContent value="history">
+                      <PlayerHistoryTab subjectId={field.subjectId} />
+                  </TabsContent>
+                </Tabs>
               ))}
             </CardContent>
           </Card>
