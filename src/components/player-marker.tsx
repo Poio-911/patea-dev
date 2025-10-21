@@ -37,20 +37,6 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
     return null;
   }
   
-  const icon = useMemo(() => {
-    if (isUserLocationMarker) {
-        return {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 7,
-            fillColor: '#4285F4',
-            fillOpacity: 1,
-            strokeColor: 'white',
-            strokeWeight: 2,
-        };
-    }
-  }, [isUserLocationMarker]);
-
-
   return (
     <>
       <OverlayView
@@ -58,7 +44,7 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
         mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
         getPixelPositionOffset={(width, height) => ({
           x: -(width / 2),
-          y: -(height / 2),
+          y: -height,
         })}
       >
         <button type="button" onClick={() => handleMarkerClick(player.uid)} className="cursor-pointer border-none bg-transparent p-0">
@@ -66,13 +52,13 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
         </button>
       </OverlayView>
 
-      {isActive && (
+      {isActive && !isUserLocationMarker && (
         <OverlayView
           position={player.location}
           mapPaneName={OverlayView.FLOAT_PANE}
           getPixelPositionOffset={(width, height) => ({
             x: -(width / 2),
-            y: -(height + 40), // Position above the icon + 10px margin
+            y: -(height + 40), 
           })}
         >
             <div className="relative w-48 rounded-xl border bg-background shadow-lg animate-in fade-in-0 zoom-in-95">
