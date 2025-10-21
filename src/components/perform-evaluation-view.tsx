@@ -405,7 +405,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
             <div className="flex justify-end">
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Enviar Evaluaciones
+                {isSubmitting ? 'Enviando...' : 'Enviar Evaluaciones'}
               </Button>
             </div>
           </form>
