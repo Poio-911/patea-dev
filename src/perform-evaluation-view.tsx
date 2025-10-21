@@ -10,7 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { doc, writeBatch, collection, query, where, addDoc, getDocs } from 'firebase/firestore'
 import { Loader2, Save, ShieldCheck, Goal, Plus, Minus, FileClock } from 'lucide-react'
 
-import { useFirestore, useUser, useCollection } from '@/firebase'
+import { useFirestore, useUser, useCollection, useDoc } from '@/firebase'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

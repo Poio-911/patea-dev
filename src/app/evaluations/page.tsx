@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, collectionGroup } from 'firebase/firestore';
@@ -21,6 +21,7 @@ export default function EvaluationsPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
 
+    // Hook 1: Assignments Query
     const assignmentsQuery = useMemo(() => {
         if (!firestore || !user?.uid) return null;
         return query(
@@ -29,9 +30,19 @@ export default function EvaluationsPage() {
             where('status', '==', 'pending')
         );
     }, [firestore, user?.uid]);
-
     const { data: assignments, loading: assignmentsLoading } = useCollection<EvaluationAssignment>(assignmentsQuery);
     
+    // Hook 2: Pending Submissions Query
+    const pendingSubmissionsQuery = useMemo(() => {
+        if (!firestore || !user?.uid) return null;
+        return query(
+            collection(firestore, 'evaluationSubmissions'),
+            where('evaluatorId', '==', user.uid)
+        );
+    }, [firestore, user?.uid]);
+    const { data: pendingSubmissions, loading: submissionsLoading } = useCollection<EvaluationSubmission>(pendingSubmissionsQuery);
+    
+    // Hook 3: Matches for pending assignments Query
     const pendingMatchIds = useMemo(() => {
         if (!assignments) return [];
         return [...new Set(assignments.map(a => a.matchId))];
@@ -41,49 +52,38 @@ export default function EvaluationsPage() {
         if (!firestore || pendingMatchIds.length === 0) return null;
         return query(collection(firestore, 'matches'), where('__name__', 'in', pendingMatchIds));
     }, [firestore, pendingMatchIds]);
-    
     const { data: matches, loading: matchesLoading } = useCollection<Match>(matchesQuery);
 
-    const pendingSubmissionsQuery = useMemo(() => {
-        if (!firestore || !user?.uid) return null;
-        return query(
-            collection(firestore, 'evaluationSubmissions'),
-            where('evaluatorId', '==', user.uid)
-        );
-    }, [firestore, user?.uid]);
-    
-    const { data: pendingSubmissions, loading: submissionsLoading } = useCollection<EvaluationSubmission>(pendingSubmissionsQuery);
-    
-    const pendingSubmissionMap = useMemo(() => {
-        const map = new Map<string, EvaluationSubmission>();
-        pendingSubmissions?.forEach(sub => map.set(sub.matchId, sub));
-        return map;
-    }, [pendingSubmissions]);
+    const loading = userLoading || assignmentsLoading || matchesLoading || submissionsLoading;
 
-    const pendingMatches = useMemo(() => {
-        if (!matches || !assignments) return [];
-        return matches.filter(match => assignments.some(a => a.matchId === match.id));
-    }, [matches, assignments]);
-
+    // This hook combines all data sources into a single list for rendering.
     const allPendingItems = useMemo(() => {
-        const items = new Map<string, { match: Match; submission?: EvaluationSubmission }>();
+        const items = new Map<string, { match: Match; submission?: EvaluationSubmission; hasPendingAssignment: boolean }>();
 
-        pendingMatches.forEach(match => {
-            if (!pendingSubmissionMap.has(match.id)) {
-                items.set(match.id, { match });
-            }
-        });
-
+        // First, add matches that have a pending submission
         pendingSubmissions?.forEach(submission => {
             if (submission.match) {
-                 items.set(submission.matchId, { match: submission.match as Match, submission });
+                items.set(submission.matchId, { 
+                    match: submission.match as Match, 
+                    submission,
+                    hasPendingAssignment: false // It's submitted, so assignment is no longer pending for the UI
+                });
             }
         });
 
+        // Then, add matches with pending assignments, but only if they haven't been submitted
+        matches?.forEach(match => {
+            if (!items.has(match.id)) {
+                items.set(match.id, { 
+                    match,
+                    hasPendingAssignment: true 
+                });
+            }
+        });
+        
         return Array.from(items.values()).sort((a, b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime());
-    }, [pendingMatches, pendingSubmissions, pendingSubmissionMap]);
+    }, [matches, pendingSubmissions]);
 
-    const loading = userLoading || assignmentsLoading || matchesLoading || submissionsLoading;
 
     if (loading) {
         return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -121,7 +121,7 @@ export default function EvaluationsPage() {
                 </Alert>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                   {allPendingItems.map(({ match, submission }) => {
+                   {allPendingItems.map(({ match, submission, hasPendingAssignment }) => {
                        const assignmentsForMatch = assignments?.filter(a => a.matchId === match.id).length || 0;
                        const isEvaluationSent = !!submission;
                        
@@ -130,19 +130,20 @@ export default function EvaluationsPage() {
                             <CardHeader>
                                 <CardTitle>{match.title}</CardTitle>
                                 <CardDescription>
-                                    {format(new Date(match.date), 'E, d MMM, yyyy', { locale: es })} - {match.location.address}
+                                    {format(new Date(match.date), 'E, d MMM, yyyy', { locale: es })} - {match.location?.address}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                  <SoccerPlayerIcon className="h-4 w-4"/>
-                                 <span>{match.players.length} / {match.matchSize} Jugadores</span>
+                                 <span>{match.players?.length || 0} / {match.matchSize} Jugadores</span>
                                </div>
                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                  <Calendar className="h-4 w-4"/>
                                  <span>Finalizado</span>
                                </div>
-                               <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                               { (hasPendingAssignment || isEvaluationSent) && (
+                                <div className="flex items-center gap-2 text-sm font-semibold text-primary">
                                  {isEvaluationSent ? <FileClock className="h-4 w-4"/> : <Edit className="h-4 w-4"/>}
                                  <span>
                                     {isEvaluationSent 
@@ -151,6 +152,7 @@ export default function EvaluationsPage() {
                                     }
                                  </span>
                                </div>
+                               )}
                             </CardContent>
                             <CardContent>
                                 {isEvaluationSent && submission ? (
