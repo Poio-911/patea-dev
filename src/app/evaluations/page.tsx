@@ -76,7 +76,7 @@ export default function EvaluationsPage() {
              <div className="flex flex-col gap-8">
                 <PageHeader title="Mis Evaluaciones" description="Evalúa el rendimiento de tus compañeros de equipo." />
                 <Alert>
-                    <AlertTitle>Función no disponible</Alert</AlertTitle>
+                    <AlertTitle>Función no disponible</AlertTitle>
                     <AlertDescription>
                        Debes iniciar sesión para ver tus evaluaciones pendientes.
                     </AlertDescription>
@@ -89,20 +89,19 @@ export default function EvaluationsPage() {
         const items = new Map<string, { match: Match; submission?: EvaluationSubmission }>();
 
         pendingMatches.forEach(match => {
-            items.set(match.id, { match });
+            if (!pendingSubmissionMap.has(match.id)) {
+                items.set(match.id, { match });
+            }
         });
 
         pendingSubmissions?.forEach(submission => {
-            if (!items.has(submission.matchId) && submission.match) {
+            if (submission.match) {
                  items.set(submission.matchId, { match: submission.match as Match, submission });
-            } else if (items.has(submission.matchId)) {
-                const entry = items.get(submission.matchId);
-                if(entry) entry.submission = submission;
             }
         });
 
         return Array.from(items.values()).sort((a, b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime());
-    }, [pendingMatches, pendingSubmissions]);
+    }, [pendingMatches, pendingSubmissions, pendingSubmissionMap]);
     
     return (
         <div className="flex flex-col gap-8">
