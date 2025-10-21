@@ -2,12 +2,10 @@
 'use client';
 
 import { useMemo } from 'react';
-import { MarkerF, InfoWindowF } from '@react-google-maps/api';
+import { OverlayView } from '@react-google-maps/api';
 import type { AvailablePlayer } from '@/lib/types';
-import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
-import { X } from 'lucide-react';
 import { PlayerMarkerIcon } from './icons/player-marker-icon';
 
 interface PlayerMarkerProps {
@@ -23,60 +21,81 @@ const positionBadgeStyles: Record<AvailablePlayer['position'], string> = {
   POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
 };
 
+const MARKER_ICON_HEIGHT = 32; // Approx height of the PlayerMarkerIcon
+const MARKER_ICON_WIDTH = 32;
+
+// This component handles the custom HTML marker icon
+const CustomMarker = ({ onClick }: { onClick: () => void }) => (
+    <button onClick={onClick} className="transform -translate-x-1/2 -translate-y-full">
+        <PlayerMarkerIcon className="h-8 w-8 text-amber-500 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]" />
+    </button>
+);
+
+
 export function PlayerMarker({ player, activeMarker, handleMarkerClick }: PlayerMarkerProps) {
   const playerName = player.displayName || (player as any).name;
   const isUserLocationMarker = player.uid === 'user-location';
   const isActive = activeMarker === player.uid;
 
-  const icon = useMemo(() => {
-    return {
-        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 16 16" fill="%23FBBF24"><path d="M8.00001 3C8.82844 3 9.50001 2.32843 9.50001 1.5C9.50001 0.671573 8.82844 0 8.00001 0C7.17158 0 6.50001 0.671573 6.50001 1.5C6.50001 2.32843 7.17158 3 8.00001 3Z" fill="currentColor"/><path d="M12 4V2H14V4C14 5.10457 13.1045 6 12 6H10.5454L10.9897 16H8.98773L8.76557 11H7.23421L7.01193 16H5.00995L5.42014 6.77308L3.29995 9.6L1.69995 8.4L4.99995 4H12Z" fill="currentColor"/></svg>'),
-        scaledSize: new window.google.maps.Size(32, 32),
-        anchor: new window.google.maps.Point(16, 32),
-    };
-  }, []);
-
   if (!player.location || typeof player.location.lat !== 'number' || typeof player.location.lng !== 'number') {
     return null;
   }
+  
+  if (isUserLocationMarker) {
+      // Special case for user's own location marker
+      return (
+        <OverlayView
+            position={player.location}
+            mapPaneName={OverlayView.FLOAT_PANE}
+            getPixelPositionOffset={(width, height) => ({
+                x: -(width / 2),
+                y: -(height / 2),
+            })}
+        >
+            <div className="h-4 w-4 rounded-full bg-blue-500 border-2 border-white shadow-md" />
+        </OverlayView>
+      )
+  }
 
   return (
-    <MarkerF
-      position={player.location}
-      icon={icon}
-      onClick={() => handleMarkerClick(player.uid)}
-      zIndex={isActive ? 100 : 1}
-    >
-      {isActive && !isUserLocationMarker && (
-        <InfoWindowF
-          position={player.location}
-          onCloseClick={() => handleMarkerClick('')}
-          options={{
-            pixelOffset: new window.google.maps.Size(0, -40),
-            disableAutoPan: true,
-          }}
+    <>
+        {/* The Icon Marker */}
+        <OverlayView
+            position={player.location}
+            mapPaneName={OverlayView.MARKER_LAYER}
+            getPixelPositionOffset={(width, height) => ({
+                x: -(width / 2),
+                y: -height,
+            })}
         >
-          <div className="bg-background rounded-xl shadow-lg w-48 overflow-hidden p-0 m-0">
-             <div className="flex items-center justify-between border-b p-2">
-                <h3 className="pl-2 text-base font-bold leading-tight truncate">{playerName}</h3>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={() => handleMarkerClick('')}
-                >
-                    <X className="h-4 w-4" />
-                </Button>
-            </div>
-            <div className="p-2">
-                <div className="flex items-center justify-start gap-2">
-                    <Badge variant="default" className={cn("text-sm font-bold", player.ovr > 80 ? "bg-green-500/80" : "bg-primary")}>{player.ovr}</Badge>
-                    <Badge variant="outline" className={cn("text-sm font-semibold", positionBadgeStyles[player.position])}>{player.position}</Badge>
+            <CustomMarker onClick={() => handleMarkerClick(player.uid)} />
+        </OverlayView>
+
+        {/* The Custom InfoWindow (Popup) */}
+        {isActive && (
+            <OverlayView
+                position={player.location}
+                mapPaneName={OverlayView.FLOAT_PANE}
+                getPixelPositionOffset={(width, height) => ({
+                    // Center horizontally, and position it above the marker icon
+                    x: -(width / 2),
+                    y: -(height + MARKER_ICON_HEIGHT + 10), // popup height + icon height + 10px margin
+                })}
+            >
+                <div className="relative w-48 rounded-xl border bg-background shadow-lg animate-in fade-in-0 zoom-in-95">
+                    <div className="flex items-center justify-between border-b p-2">
+                         <h3 className="pl-2 text-base font-bold leading-tight truncate">{playerName}</h3>
+                    </div>
+                    <div className="p-2">
+                        <div className="flex items-center justify-start gap-2">
+                            <Badge variant="default" className={cn("text-sm font-bold", player.ovr > 80 ? "bg-green-500/80" : "bg-primary")}>{player.ovr}</Badge>
+                            <Badge variant="outline" className={cn("text-sm font-semibold", positionBadgeStyles[player.position])}>{player.position}</Badge>
+                        </div>
+                    </div>
                 </div>
-            </div>
-          </div>
-        </InfoWindowF>
-      )}
-    </MarkerF>
+            </OverlayView>
+        )}
+    </>
   );
 }
+
