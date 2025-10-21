@@ -1,16 +1,12 @@
 
-
 'use client';
 
 import { useMemo } from 'react';
 import { MarkerF, InfoWindowF } from '@react-google-maps/api';
 import type { AvailablePlayer } from '@/lib/types';
-import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
-import { PlayerCard } from './player-card';
-import { Dialog, DialogContent, DialogTrigger } from './ui/dialog';
-import { SoccerPlayerIcon } from './icons/soccer-player-icon';
+import { PlayerMarkerIcon } from './icons/player-marker-icon';
 
 interface PlayerMarkerProps {
   player: AvailablePlayer;
@@ -25,11 +21,9 @@ const positionBadgeStyles: Record<AvailablePlayer['position'], string> = {
   POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
 };
 
-
 export function PlayerMarker({ player, activeMarker, handleMarkerClick }: PlayerMarkerProps) {
-
   const isUserLocationMarker = player.uid === 'user-location';
-  const playerName = player.displayName || player.name;
+  const playerName = player.displayName || (player as any).name;
 
   const icon = useMemo(() => {
     if (isUserLocationMarker) {
@@ -43,11 +37,11 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
       };
     }
 
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 16 16" fill="hsl(48, 95%, 53%)"><path d="M8.00001 3C8.82844 3 9.50001 2.32843 9.50001 1.5C9.50001 0.671573 8.82844 0 8.00001 0C7.17158 0 6.50001 0.671573 6.50001 1.5C6.50001 2.32843 7.17158 3 8.00001 3Z" /><path d="M12 4V2H14V4C14 5.10457 13.1045 6 12 6H10.5454L10.9897 16H8.98773L8.76557 11H7.23421L7.01193 16H5.00995L5.42014 6.77308L3.29995 9.6L1.69995 8.4L4.99995 4H12Z" /></svg>`;
 
     return {
-        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg.replace('currentColor', '#1D4ED8')),
-        scaledSize: new window.google.maps.Size(32, 32),
+      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+      scaledSize: new window.google.maps.Size(32, 32),
     };
   }, [isUserLocationMarker]);
   
@@ -64,20 +58,12 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
     >
       {activeMarker === player.uid && (
         <InfoWindowF onCloseClick={() => handleMarkerClick('')}>
-            <div className="space-y-2 p-1 w-48">
-                <h3 className="font-bold text-base leading-tight truncate">{playerName}</h3>
-                <div className="flex items-center justify-between">
-                    <Badge variant="default" className="text-sm font-bold bg-primary/20 text-primary border border-primary/50">{player.ovr}</Badge>
+            <div className="p-1">
+                <h3 className="font-bold text-base leading-tight truncate mb-2">{playerName}</h3>
+                <div className="flex items-center justify-between gap-2">
+                    <Badge variant="default" className={cn("text-sm font-bold", player.ovr > 80 ? "bg-green-500/80" : "bg-primary")}>{player.ovr}</Badge>
                     <Badge variant="outline" className={cn("text-sm font-semibold", positionBadgeStyles[player.position])}>{player.position}</Badge>
                 </div>
-                 <Dialog>
-                    <DialogTrigger asChild>
-                        <Button variant="link" className="p-0 h-auto text-xs">Ver Atributos</Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-sm p-0 border-0 bg-transparent shadow-none">
-                        <PlayerCard player={player as any} isLink={false} />
-                    </DialogContent>
-                </Dialog>
             </div>
         </InfoWindowF>
       )}

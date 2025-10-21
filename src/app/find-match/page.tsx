@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
@@ -68,7 +67,7 @@ const positionBadgeStyles: Record<Player['position'], string> = {
 const CompactPlayerCard = ({ player, onHover, isActive, selectedMatchForInvite, sentInvitations, onInvite }: { player: AvailablePlayer, onHover: (id: string | null) => void, isActive: boolean, selectedMatchForInvite: Match | null, sentInvitations: Set<string>, onInvite: (player: AvailablePlayer) => void }) => {
     const { user } = useUser();
     const isAlreadyInvited = sentInvitations.has(player.uid);
-    const playerName = player.displayName || player.name;
+    const playerName = player.displayName || (player as any).name;
 
     return (
         <Dialog>
@@ -85,12 +84,15 @@ const CompactPlayerCard = ({ player, onHover, isActive, selectedMatchForInvite, 
                         <div className="flex items-center gap-3">
                             <Avatar className="h-14 w-14 border">
                                 <AvatarImage src={player.photoUrl} alt={playerName} />
-                                <AvatarFallback>{playerName.charAt(0)}</AvatarFallback>
+                                <AvatarFallback>{playerName ? playerName.charAt(0) : 'J'}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1 space-y-1 overflow-hidden">
                                 <h3 className="font-bold truncate">{playerName}</h3>
                                 <div className='flex gap-1.5'>
-                                    <Badge className="text-base font-bold bg-primary/20 text-primary border border-primary/50">{player.ovr}</Badge>
+                                    <Badge className={cn(
+                                        "text-base font-bold",
+                                        player.ovr > 80 ? "bg-green-500/20 text-green-500 border-green-500/50" : "bg-primary/20 text-primary border-primary/50"
+                                    )}>{player.ovr}</Badge>
                                     <Badge variant="outline" className={cn("text-base font-semibold", positionBadgeStyles[player.position])}>{player.position}</Badge>
                                 </div>
                             </div>
@@ -330,5 +332,4 @@ export default function FindMatchPage() {
     </div>
   );
 }
-
 
