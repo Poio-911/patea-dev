@@ -97,7 +97,10 @@ export default function MatchesPage() {
                 title="Partidos"
                 description="Programa, visualiza y gestiona todos tus partidos."
             >
-                <InvitationsSheet />
+                <div className="flex items-center gap-2">
+                   <AddMatchDialog allPlayers={sortedPlayers} disabled={!user?.activeGroupId} />
+                   <InvitationsSheet />
+                </div>
             </PageHeader>
 
             {!user?.activeGroupId && (
@@ -133,14 +136,10 @@ export default function MatchesPage() {
                                     <Calendar className="h-12 w-12 text-muted-foreground/50" />
                                     <h2 className="mt-4 text-xl font-semibold">No hay partidos programados</h2>
                                     <p className="mt-2 text-sm text-muted-foreground">
-                                        ¡Programa el primero para empezar a jugar!
+                                        ¡Usa el botón de arriba para empezar a jugar!
                                     </p>
-                                    <div className="mt-6">
-                                       <AddMatchDialog allPlayers={sortedPlayers} disabled={!user?.activeGroupId} />
-                                    </div>
                                 </div>
                             )}
-                            {upcomingMatches.length > 0 && <div className='flex justify-center'><AddMatchDialog allPlayers={sortedPlayers} disabled={!user?.activeGroupId} /></div>}
                         </div>
                     </TabsContent>
 

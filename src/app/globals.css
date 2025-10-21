@@ -80,4 +80,42 @@
   .color-cycle-animation {
     animation: color-cycle 4s ease-in-out infinite;
   }
+
+  @keyframes border-shine {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  .animated-border {
+    position: relative;
+    overflow: hidden;
+    z-index: 0;
+  }
+
+  .animated-border::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+      from 180deg at 50% 50%,
+      hsl(var(--primary)) 0deg,
+      hsl(var(--chart-1)) 72deg,
+      hsl(var(--chart-2)) 144deg,
+      hsl(var(--chart-4)) 216deg,
+      hsl(var(--primary)) 288deg,
+      hsl(var(--primary)) 360deg
+    );
+    animation: border-shine 4s linear infinite;
+    z-index: -1;
+  }
 }

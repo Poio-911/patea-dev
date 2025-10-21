@@ -391,10 +391,13 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button disabled={disabled}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Armar Partido
-        </Button>
+        <div className="relative animated-border rounded-md">
+            <Button disabled={disabled} className="relative w-full z-10">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Armar Partido
+            </Button>
+            <div className="absolute inset-[-2px] bg-background rounded-lg z-0"></div>
+        </div>
       </DialogTrigger>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -643,5 +646,3 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     </Dialog>
   );
 }
-
-    
