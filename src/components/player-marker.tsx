@@ -8,6 +8,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
+import { PlayerMarkerIcon } from './icons/player-marker-icon';
 
 interface PlayerMarkerProps {
   player: AvailablePlayer;
@@ -28,11 +29,10 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
   const isActive = activeMarker === player.uid;
 
   const icon = useMemo(() => {
-    // Custom icon for the player marker
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 16 16" fill="%23FBBF24"><path d="M8.00001 3C8.82844 3 9.50001 2.32843 9.50001 1.5C9.50001 0.671573 8.82844 0 8.00001 0C7.17158 0 6.50001 0.671573 6.50001 1.5C6.50001 2.32843 7.17158 3 8.00001 3Z" fill="currentColor"/><path d="M12 4V2H14V4C14 5.10457 13.1045 6 12 6H10.5454L10.9897 16H8.98773L8.76557 11H7.23421L7.01193 16H5.00995L5.42014 6.77308L3.29995 9.6L1.69995 8.4L4.99995 4H12Z" fill="currentColor"/></svg>`;
     return {
-      url: 'data:image/svg+xml;charset=UTF-8,' + svg,
-      scaledSize: new window.google.maps.Size(32, 32),
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 16 16" fill="%23FBBF24"><path d="M8.00001 3C8.82844 3 9.50001 2.32843 9.50001 1.5C9.50001 0.671573 8.82844 0 8.00001 0C7.17158 0 6.50001 0.671573 6.50001 1.5C6.50001 2.32843 7.17158 3 8.00001 3Z" fill="currentColor"/><path d="M12 4V2H14V4C14 5.10457 13.1045 6 12 6H10.5454L10.9897 16H8.98773L8.76557 11H7.23421L7.01193 16H5.00995L5.42014 6.77308L3.29995 9.6L1.69995 8.4L4.99995 4H12Z" fill="currentColor"/></svg>'),
+        scaledSize: new window.google.maps.Size(32, 32),
+        anchor: new window.google.maps.Point(16, 32),
     };
   }, []);
 
@@ -52,12 +52,11 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
           position={player.location}
           onCloseClick={() => handleMarkerClick('')}
           options={{
-            pixelOffset: new window.google.maps.Size(0, -40), // Adjust this value to position correctly
+            pixelOffset: new window.google.maps.Size(0, -40),
             disableAutoPan: true,
           }}
         >
-          {/* This div is the custom content with controlled styles */}
-          <div className="bg-background rounded-xl shadow-lg w-48 overflow-hidden">
+          <div className="bg-background rounded-xl shadow-lg w-48 overflow-hidden p-0 m-0">
              <div className="flex items-center justify-between border-b p-2">
                 <h3 className="pl-2 text-base font-bold leading-tight truncate">{playerName}</h3>
                 <Button
