@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, collectionGroup } from 'firebase/firestore';
+import { collection, query, where, collectionGroup, getDocs } from 'firebase/firestore';
 import type { Match, EvaluationAssignment, EvaluationSubmission } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -17,11 +17,25 @@ import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
 import { ViewSubmissionDialog } from '@/components/view-submission-dialog';
 
+type PendingItem = {
+    matchId: string;
+    matchTitle: string;
+    matchDate: string;
+    matchLocation: string;
+    matchPlayerCount: number;
+    matchSize: number;
+    submission?: EvaluationSubmission;
+    assignmentCount: number;
+};
+
 export default function EvaluationsPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
 
-    // Hook 1: Assignments Query
+    const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
+    const [isLoadingItems, setIsLoadingItems] = useState(true);
+
+    // This query gets all pending assignments for the user across all matches.
     const assignmentsQuery = useMemo(() => {
         if (!firestore || !user?.uid) return null;
         return query(
@@ -31,60 +45,92 @@ export default function EvaluationsPage() {
         );
     }, [firestore, user?.uid]);
     const { data: assignments, loading: assignmentsLoading } = useCollection<EvaluationAssignment>(assignmentsQuery);
-    
-    // Hook 2: Pending Submissions Query
-    const pendingSubmissionsQuery = useMemo(() => {
-        if (!firestore || !user?.uid) return null;
-        return query(
-            collection(firestore, 'evaluationSubmissions'),
-            where('evaluatorId', '==', user.uid)
-        );
-    }, [firestore, user?.uid]);
-    const { data: pendingSubmissions, loading: submissionsLoading } = useCollection<EvaluationSubmission>(pendingSubmissionsQuery);
-    
-    // Hook 3: Matches for pending assignments Query
-    const pendingMatchIds = useMemo(() => {
-        if (!assignments) return [];
-        return [...new Set(assignments.map(a => a.matchId))];
-    }, [assignments]);
-    
-    const matchesQuery = useMemo(() => {
-        if (!firestore || pendingMatchIds.length === 0) return null;
-        return query(collection(firestore, 'matches'), where('__name__', 'in', pendingMatchIds));
-    }, [firestore, pendingMatchIds]);
-    const { data: matches, loading: matchesLoading } = useCollection<Match>(matchesQuery);
 
-    const loading = userLoading || assignmentsLoading || matchesLoading || submissionsLoading;
-
-    // This hook combines all data sources into a single list for rendering.
-    const allPendingItems = useMemo(() => {
-        const items = new Map<string, { match: Match; submission?: EvaluationSubmission; hasPendingAssignment: boolean }>();
-
-        // First, add matches that have a pending submission
-        pendingSubmissions?.forEach(submission => {
-            if (submission.match) {
-                items.set(submission.matchId, { 
-                    match: submission.match as Match, 
-                    submission,
-                    hasPendingAssignment: false // It's submitted, so assignment is no longer pending for the UI
-                });
+    useEffect(() => {
+        const fetchAllPendingItems = async () => {
+            if (!assignments || !firestore || !user) {
+                if (!assignmentsLoading) setIsLoadingItems(false);
+                return;
             }
-        });
 
-        // Then, add matches with pending assignments, but only if they haven't been submitted
-        matches?.forEach(match => {
-            if (!items.has(match.id)) {
-                items.set(match.id, { 
-                    match,
-                    hasPendingAssignment: true 
-                });
+            setIsLoadingItems(true);
+
+            // 1. Group assignments by matchId
+            const assignmentsByMatch = assignments.reduce((acc, assignment) => {
+                acc[assignment.matchId] = (acc[assignment.matchId] || 0) + 1;
+                return acc;
+            }, {} as Record<string, number>);
+
+            const matchIds = Object.keys(assignmentsByMatch);
+
+            if (matchIds.length === 0) {
+                setPendingItems([]);
+                setIsLoadingItems(false);
+                return;
             }
-        });
-        
-        return Array.from(items.values()).sort((a, b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime());
-    }, [matches, pendingSubmissions]);
+
+            // 2. Fetch match details for all pending matches in one go.
+            const matchesQuery = query(collection(firestore, 'matches'), where('__name__', 'in', matchIds));
+            const matchesSnapshot = await getDocs(matchesQuery);
+            const matchesById = new Map(matchesSnapshot.docs.map(doc => [doc.id, doc.data() as Match]));
+
+            // 3. Fetch any pending submissions for these matches
+            const submissionsQuery = query(
+                collection(firestore, 'evaluationSubmissions'),
+                where('matchId', 'in', matchIds),
+                where('evaluatorId', '==', user.uid)
+            );
+            const submissionsSnapshot = await getDocs(submissionsQuery);
+            const submissionsById = new Map(submissionsSnapshot.docs.map(doc => [doc.data().matchId, doc.data() as EvaluationSubmission]));
+
+            // 4. Combine all data
+            const combinedItems: PendingItem[] = matchIds.map(matchId => {
+                const match = matchesById.get(matchId);
+                const submission = submissionsById.get(matchId);
+                const assignmentCount = assignmentsByMatch[matchId];
+
+                // If a submission exists, we consider this item "in process"
+                // If not, it's a pending evaluation task.
+                if (submission) {
+                     return {
+                        matchId: matchId,
+                        matchTitle: submission.match?.title || 'Partido',
+                        matchDate: submission.match?.date || new Date().toISOString(),
+                        matchLocation: submission.match?.location?.address || 'Ubicación desconocida',
+                        matchPlayerCount: submission.match?.players?.length || 0,
+                        matchSize: submission.match?.matchSize || 0,
+                        submission: submission,
+                        assignmentCount: 0,
+                    };
+                }
+                
+                // If there's no submission, but we have a match from the assignments
+                if(match) {
+                     return {
+                        matchId: matchId,
+                        matchTitle: match.title,
+                        matchDate: match.date,
+                        matchLocation: match.location?.address,
+                        matchPlayerCount: match.players?.length,
+                        matchSize: match.matchSize,
+                        assignmentCount: assignmentCount,
+                    };
+                }
+
+                return null;
+            }).filter((item): item is PendingItem => item !== null);
+
+            setPendingItems(combinedItems.sort((a, b) => new Date(b.matchDate).getTime() - new Date(a.matchDate).getTime()));
+            setIsLoadingItems(false);
+        };
+
+        fetchAllPendingItems();
+
+    }, [assignments, firestore, user, assignmentsLoading]);
 
 
+    const loading = userLoading || isLoadingItems;
+    
     if (loading) {
         return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
@@ -111,7 +157,7 @@ export default function EvaluationsPage() {
                 <Button variant="link" className="p-0 h-auto self-start">¿Qué significan los atributos de evaluación?</Button>
             </AttributesHelpDialog>
 
-            {allPendingItems.length === 0 ? (
+            {pendingItems.length === 0 ? (
                 <Alert>
                     <ShieldQuestion className="h-4 w-4" />
                     <AlertTitle>¡Todo al día!</AlertTitle>
@@ -121,42 +167,39 @@ export default function EvaluationsPage() {
                 </Alert>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                   {allPendingItems.map(({ match, submission, hasPendingAssignment }) => {
-                       const assignmentsForMatch = assignments?.filter(a => a.matchId === match.id).length || 0;
-                       const isEvaluationSent = !!submission;
+                   {pendingItems.map((item) => {
+                       const isEvaluationSent = !!item.submission;
                        
                        return (
-                         <Card key={match.id}>
+                         <Card key={item.matchId}>
                             <CardHeader>
-                                <CardTitle>{match.title}</CardTitle>
+                                <CardTitle>{item.matchTitle}</CardTitle>
                                 <CardDescription>
-                                    {format(new Date(match.date), 'E, d MMM, yyyy', { locale: es })} - {match.location?.address}
+                                    {format(new Date(item.matchDate), 'E, d MMM, yyyy', { locale: es })} - {item.matchLocation}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                  <SoccerPlayerIcon className="h-4 w-4"/>
-                                 <span>{match.players?.length || 0} / {match.matchSize} Jugadores</span>
+                                 <span>{item.matchPlayerCount} / {item.matchSize} Jugadores</span>
                                </div>
                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                  <Calendar className="h-4 w-4"/>
                                  <span>Finalizado</span>
                                </div>
-                               { (hasPendingAssignment || isEvaluationSent) && (
-                                <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                               <div className="flex items-center gap-2 text-sm font-semibold text-primary">
                                  {isEvaluationSent ? <FileClock className="h-4 w-4"/> : <Edit className="h-4 w-4"/>}
                                  <span>
                                     {isEvaluationSent 
                                         ? 'Evaluación en proceso' 
-                                        : `${assignmentsForMatch} evaluación(es) pendiente(s)`
+                                        : `${item.assignmentCount} evaluación(es) pendiente(s)`
                                     }
                                  </span>
                                </div>
-                               )}
                             </CardContent>
                             <CardContent>
-                                {isEvaluationSent && submission ? (
-                                    <ViewSubmissionDialog submission={submission}>
+                                {isEvaluationSent && item.submission ? (
+                                    <ViewSubmissionDialog submission={item.submission}>
                                         <Button variant="outline" className="w-full">
                                             <Eye className="mr-2 h-4 w-4" />
                                             Ver mi Evaluación
@@ -164,7 +207,7 @@ export default function EvaluationsPage() {
                                     </ViewSubmissionDialog>
                                 ) : (
                                      <Button asChild className="w-full">
-                                        <Link href={`/evaluations/${match.id}`}>
+                                        <Link href={`/evaluations/${item.matchId}`}>
                                             <Edit className="mr-2 h-4 w-4"/>
                                             Ir a Evaluar
                                         </Link>
