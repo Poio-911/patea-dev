@@ -6,11 +6,11 @@ import { useMemo } from 'react';
 import { MarkerF, InfoWindowF } from '@react-google-maps/api';
 import type { AvailablePlayer } from '@/lib/types';
 import { Button } from './ui/button';
-import { Send } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { PlayerCard } from './player-card';
 import { Dialog, DialogContent, DialogTrigger } from './ui/dialog';
+import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 
 interface PlayerMarkerProps {
   player: AvailablePlayer;
@@ -29,6 +29,7 @@ const positionBadgeStyles: Record<AvailablePlayer['position'], string> = {
 export function PlayerMarker({ player, activeMarker, handleMarkerClick }: PlayerMarkerProps) {
 
   const isUserLocationMarker = player.uid === 'user-location';
+  const playerName = player.displayName || player.name;
 
   const icon = useMemo(() => {
     if (isUserLocationMarker) {
@@ -42,15 +43,11 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
       };
     }
 
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>`;
+
     return {
-        path: 'M8 12.5C12.4183 12.5 16 9.14924 16 5C16 0.850759 12.4183 -2.5 8 -2.5C3.58172 -2.5 0 0.850759 0 5C0 9.14924 3.58172 12.5 8 12.5Z',
-        fillColor: '#1a73e8',
-        fillOpacity: 1,
-        strokeWeight: 1,
-        strokeColor: '#FFFFFF',
-        rotation: 0,
-        scale: 1.5,
-        anchor: new window.google.maps.Point(8, 8),
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg.replace('currentColor', '#1D4ED8')),
+        scaledSize: new window.google.maps.Size(32, 32),
     };
   }, [isUserLocationMarker]);
   
@@ -67,17 +64,17 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
     >
       {activeMarker === player.uid && (
         <InfoWindowF onCloseClick={() => handleMarkerClick('')}>
-            <div className="space-y-2 p-1 w-64">
-                <h3 className="font-bold text-base leading-tight">{player.displayName}</h3>
+            <div className="space-y-2 p-1 w-48">
+                <h3 className="font-bold text-base leading-tight truncate">{playerName}</h3>
                 <div className="flex items-center justify-between">
-                    <Badge variant="default" className="text-base">{player.ovr}</Badge>
-                    <Badge variant="outline" className={cn("text-base", positionBadgeStyles[player.position])}>{player.position}</Badge>
+                    <Badge variant="default" className="text-sm font-bold bg-primary/20 text-primary border border-primary/50">{player.ovr}</Badge>
+                    <Badge variant="outline" className={cn("text-sm font-semibold", positionBadgeStyles[player.position])}>{player.position}</Badge>
                 </div>
                  <Dialog>
                     <DialogTrigger asChild>
                         <Button variant="link" className="p-0 h-auto text-xs">Ver Atributos</Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-sm p-0 border-0">
+                    <DialogContent className="sm:max-w-sm p-0 border-0 bg-transparent shadow-none">
                         <PlayerCard player={player as any} isLink={false} />
                     </DialogContent>
                 </Dialog>
