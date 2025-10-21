@@ -2,7 +2,7 @@
 'use client';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Users2, Calendar, Loader2, Mail } from 'lucide-react';
+import { Users2, Calendar, Loader2 } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { useMemo } from 'react';
@@ -12,6 +12,7 @@ import { AddMatchDialog } from '@/components/add-match-dialog';
 import type { Match, Player } from '@/lib/types';
 import { MatchCard } from '@/components/match-card';
 import { InvitationsSheet } from '@/components/invitations-sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function MatchesPage() {
     const { user, loading: userLoading } = useUser();
@@ -57,6 +58,22 @@ export default function MatchesPage() {
 
         return Array.from(allMatchesMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [groupMatches, joinedPublicMatches]);
+    
+    const { upcomingMatches, pastMatches } = useMemo(() => {
+        const upcoming: Match[] = [];
+        const past: Match[] = [];
+        matches.forEach(match => {
+            if (match.status === 'upcoming' || match.status === 'active') {
+                upcoming.push(match);
+            } else {
+                past.push(match);
+            }
+        });
+        // Upcoming matches should be sorted ascending (closest first)
+        upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        return { upcomingMatches: upcoming, pastMatches: past };
+    }, [matches]);
+
 
     const loading = userLoading || playersLoading || groupMatchesLoading || joinedPublicMatchesLoading;
     
@@ -80,10 +97,7 @@ export default function MatchesPage() {
                 title="Partidos"
                 description="Programa, visualiza y gestiona todos tus partidos."
             >
-                <div className="flex gap-2">
-                    <InvitationsSheet />
-                    <AddMatchDialog allPlayers={sortedPlayers} disabled={!user?.activeGroupId} />
-                </div>
+                <InvitationsSheet />
             </PageHeader>
 
             {!user?.activeGroupId && (
@@ -99,22 +113,55 @@ export default function MatchesPage() {
                 </Alert>
             )}
 
-            {user?.activeGroupId && matches && matches.length === 0 && !loading && (
-                 <div className="flex flex-col items-center justify-center text-center border-2 border-dashed border-muted-foreground/30 rounded-xl p-12">
-                    <Calendar className="h-12 w-12 text-muted-foreground/50" />
-                    <h2 className="mt-4 text-xl font-semibold">No hay partidos programados</h2>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                        Este grupo todavía no tiene partidos. ¡Programa el primero para empezar!
-                    </p>
-                </div>
-            )}
+            {user?.activeGroupId && (
+                <Tabs defaultValue="upcoming" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="upcoming">Próximos</TabsTrigger>
+                        <TabsTrigger value="history">Historial</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="upcoming" className="mt-6">
+                        <div className="flex flex-col gap-6">
+                            {upcomingMatches.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {upcomingMatches.map((match) => (
+                                        <MatchCard key={match.id} match={match} allPlayers={sortedPlayers} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center text-center border-2 border-dashed border-muted-foreground/30 rounded-xl p-12">
+                                    <Calendar className="h-12 w-12 text-muted-foreground/50" />
+                                    <h2 className="mt-4 text-xl font-semibold">No hay partidos programados</h2>
+                                    <p className="mt-2 text-sm text-muted-foreground">
+                                        ¡Programa el primero para empezar a jugar!
+                                    </p>
+                                    <div className="mt-6">
+                                       <AddMatchDialog allPlayers={sortedPlayers} disabled={!user?.activeGroupId} />
+                                    </div>
+                                </div>
+                            )}
+                            {upcomingMatches.length > 0 && <div className='flex justify-center'><AddMatchDialog allPlayers={sortedPlayers} disabled={!user?.activeGroupId} /></div>}
+                        </div>
+                    </TabsContent>
 
-            {user?.activeGroupId && matches && matches.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {matches.map((match) => (
-                        <MatchCard key={match.id} match={match} allPlayers={sortedPlayers} />
-                    ))}
-                </div>
+                    <TabsContent value="history" className="mt-6">
+                         {pastMatches.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {pastMatches.map((match) => (
+                                    <MatchCard key={match.id} match={match} allPlayers={sortedPlayers} />
+                                ))}
+                            </div>
+                        ) : (
+                             <div className="flex flex-col items-center justify-center text-center border-2 border-dashed border-muted-foreground/30 rounded-xl p-12">
+                                <Calendar className="h-12 w-12 text-muted-foreground/50" />
+                                <h2 className="mt-4 text-xl font-semibold">Sin Historial de Partidos</h2>
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                    Cuando completes tu primer partido, aparecerá aquí.
+                                </p>
+                            </div>
+                        )}
+                    </TabsContent>
+                </Tabs>
             )}
         </div>
     );
