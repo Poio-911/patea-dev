@@ -33,7 +33,7 @@ import { Badge } from './ui/badge';
 import { AttributeKey } from '@/lib/data';
 
 type PlayerCardProps = {
-  player: Player;
+  player: Player & { displayName?: string }; // Allow displayName for compatibility
   isLink?: boolean;
 };
 
@@ -64,6 +64,8 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isAlertOpen, setIsAlertOpen] = React.useState(false);
+  
+  const playerName = player.name || player.displayName || 'Jugador';
 
   // A manual player is one whose document ID is not the same as the UID of the user who created them.
   // Registered users have their player ID === their user UID.
@@ -78,7 +80,7 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
         await deleteDoc(doc(firestore, 'players', player.id));
         toast({
             title: "Jugador borrado",
-            description: `${player.name} fue eliminado de tu plantel.`
+            description: `${playerName} fue eliminado de tu plantel.`
         });
         setIsAlertOpen(false);
     } catch (error) {
@@ -129,7 +131,7 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
                         </DropdownMenu>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                            <AlertDialogTitle>¿Seguro que querés borrar a {player.name}?</AlertDialogTitle>
+                            <AlertDialogTitle>¿Seguro que querés borrar a {playerName}?</AlertDialogTitle>
                             <AlertDialogDescription>
                                 Esta acción no se puede deshacer. Vas a borrar al jugador para siempre.
                             </AlertDialogDescription>
@@ -148,11 +150,11 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
 
       <CardContent className="p-4 text-center bg-card flex-grow flex flex-col">
         <Avatar className="mx-auto -mt-12 h-24 w-24 border-4 border-background">
-          <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
-          <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+          <AvatarImage src={player.photoUrl} alt={playerName} data-ai-hint="player portrait" />
+          <AvatarFallback>{playerName.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="mt-2 text-center">
-            <h3 className="text-xl font-bold font-headline truncate">{player.name}</h3>
+            <h3 className="text-xl font-bold font-headline truncate">{playerName}</h3>
             <Badge variant="secondary" className={cn("mt-1", positionColors[player.position])}>{player.position}</Badge>
         </div>
         
