@@ -24,9 +24,8 @@ const positionBadgeStyles: Record<AvailablePlayer['position'], string> = {
 };
 
 // Helper to offset the marker and pop-up correctly
-const getPixelPositionOffset = (width: number, height: number, yOffset = 0) => ({
+const getPixelPositionOffset = (width: number, height: number) => ({
   x: -(width / 2),
-  y: -(height + yOffset),
 });
 
 export function PlayerMarker({ player, activeMarker, handleMarkerClick }: PlayerMarkerProps) {
@@ -39,10 +38,10 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
   return (
     <>
       {/* The actual marker icon */}
-      <OverlayView
+       <OverlayView
         position={player.location}
         mapPaneName={OverlayView.MARKER_LAYER}
-        getPixelPositionOffset={(width, height) => getPixelPositionOffset(width, height)}
+        getPixelPositionOffset={(width, height) => ({ x: -width / 2, y: -height })}
       >
         <div onClick={() => handleMarkerClick(player.uid)} className="cursor-pointer">
             <PlayerMarkerIcon className="h-8 w-8 text-amber-500 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]" />
@@ -54,7 +53,7 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
          <OverlayView
             position={player.location}
             mapPaneName={OverlayView.FLOAT_PANE}
-            getPixelPositionOffset={(width, height) => getPixelPositionOffset(width, height, 40)} // Increased yOffset to lift popup
+            getPixelPositionOffset={(width, height) => ({x: -(width/2), y: -(height + 40)})}
         >
             <div className="bg-background border rounded-xl shadow-lg w-48 animate-in fade-in-0 zoom-in-95">
                 <div className="flex justify-between items-center p-2 border-b">
