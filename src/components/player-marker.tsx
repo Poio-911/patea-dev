@@ -23,10 +23,13 @@ const positionBadgeStyles: Record<AvailablePlayer['position'], string> = {
   POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
 };
 
+const MARKER_ICON_HEIGHT = 32; // Height of the PlayerMarkerIcon in pixels (h-8 = 2rem = 32px)
+const POPUP_MARGIN = 10; // Space between marker and popup
+
 // This function calculates the offset to position the popup correctly above the marker
 const getPixelPositionOffset = (width: number, height: number) => ({
   x: -(width / 2),
-  y: -(height + 35), // Position popup 'height' pixels up + 35px for marker height and margin
+  y: -(height + MARKER_ICON_HEIGHT + POPUP_MARGIN), // Popup height + Icon height + margin
 });
 
 export function PlayerMarker({ player, activeMarker, handleMarkerClick }: PlayerMarkerProps) {
@@ -40,12 +43,13 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
   
   return (
     <>
+      {/* The Icon Marker */}
       <OverlayView
         position={player.location}
         mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
         getPixelPositionOffset={(width, height) => ({
             x: -(width / 2),
-            y: -height, // This centers the icon on the geographical point
+            y: -height, // This centers the icon on its geographical point
         })}
       >
         <button type="button" onClick={() => handleMarkerClick(player.uid)} className="cursor-pointer border-none bg-transparent p-0">
@@ -53,6 +57,7 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
         </button>
       </OverlayView>
 
+      {/* The Custom Popup */}
       {isActive && !isUserLocationMarker && (
         <OverlayView
           position={player.location}
