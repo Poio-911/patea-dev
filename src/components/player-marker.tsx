@@ -1,19 +1,14 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
-import { InfoWindowF, OverlayView } from '@react-google-maps/api';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { doc, arrayUnion, arrayRemove, getDoc, writeBatch, collection } from 'firebase/firestore';
-import { useDoc, useFirestore, useUser } from '@/firebase';
+import { useMemo } from 'react';
+import { OverlayView } from '@react-google-maps/api';
 import type { AvailablePlayer } from '@/lib/types';
 import { Button } from './ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, LogOut, X } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { PlayerMarkerIcon } from './icons/player-marker-icon';
+import { X } from 'lucide-react';
 
 interface PlayerMarkerProps {
   player: AvailablePlayer;
@@ -28,57 +23,83 @@ const positionBadgeStyles: Record<AvailablePlayer['position'], string> = {
   POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
 };
 
+const getPixelPositionOffset = (width: number, height: number) => ({
+  x: -(width / 2),
+  y: -height,
+});
 
 export function PlayerMarker({ player, activeMarker, handleMarkerClick }: PlayerMarkerProps) {
-  const firestore = useFirestore();
-  const { user } = useUser();
-  const { toast } = useToast();
-  const [isJoining, setIsJoining] = useState(false);
-
   const playerName = player.displayName || (player as any).name;
+  const isUserLocationMarker = player.uid === 'user-location';
+  const isActive = activeMarker === player.uid;
 
   if (!player.location || typeof player.location.lat !== 'number' || typeof player.location.lng !== 'number') {
     return null;
   }
-
-  const getPixelPositionOffset = (width: number, height: number) => ({
-    x: -(width / 2),
-    y: -(height / 2),
-  });
   
+  const icon = useMemo(() => {
+    if (isUserLocationMarker) {
+        return {
+            path: window.google.maps.SymbolPath.CIRCLE,
+            scale: 7,
+            fillColor: '#4285F4',
+            fillOpacity: 1,
+            strokeColor: 'white',
+            strokeWeight: 2,
+        };
+    }
+  }, [isUserLocationMarker]);
+
+
   return (
     <>
-       <OverlayView
+      <OverlayView
         position={player.location}
         mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
-        getPixelPositionOffset={getPixelPositionOffset}
+        getPixelPositionOffset={(width, height) => ({
+          x: -(width / 2),
+          y: -(height / 2),
+        })}
       >
         <button type="button" onClick={() => handleMarkerClick(player.uid)} className="cursor-pointer border-none bg-transparent p-0">
           <PlayerMarkerIcon className="h-8 w-8 text-amber-500 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]" />
         </button>
       </OverlayView>
 
-      {activeMarker === player.uid && (
-         <InfoWindowF
-            position={player.location}
-            onCloseClick={() => handleMarkerClick('')}
-            options={{
-                pixelOffset: new window.google.maps.Size(0, -40),
-                disableAutoPan: true,
-            }}
+      {isActive && (
+        <OverlayView
+          position={player.location}
+          mapPaneName={OverlayView.FLOAT_PANE}
+          getPixelPositionOffset={(width, height) => ({
+            x: -(width / 2),
+            y: -(height + 40), // Position above the icon + 10px margin
+          })}
         >
-            <div className="w-48">
-                 <div className="flex justify-between items-center pb-2">
-                    <h3 className="font-bold text-base leading-tight truncate">{playerName}</h3>
+            <div className="relative w-48 rounded-xl border bg-background shadow-lg animate-in fade-in-0 zoom-in-95">
+                <div className="flex items-center justify-between border-b p-2">
+                    <h3 className="pl-2 text-base font-bold leading-tight truncate">{playerName}</h3>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => handleMarkerClick('')}
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
                 </div>
-                <div className="flex items-center justify-start gap-2">
-                    <Badge variant="default" className={cn("text-sm font-bold", player.ovr > 80 ? "bg-green-500/80" : "bg-primary")}>{player.ovr}</Badge>
-                    <Badge variant="outline" className={cn("text-sm font-semibold", positionBadgeStyles[player.position])}>{player.position}</Badge>
+                <div className="p-2">
+                    <div className="flex items-center justify-start gap-2">
+                        <Badge variant="default" className={cn("text-sm font-bold", player.ovr > 80 ? "bg-green-500/80" : "bg-primary")}>{player.ovr}</Badge>
+                        <Badge variant="outline" className={cn("text-sm font-semibold", positionBadgeStyles[player.position])}>{player.position}</Badge>
+                    </div>
+                </div>
+                {/* Callout / Tail */}
+                <div className="absolute left-1/2 top-full h-3 w-3 -translate-x-1/2">
+                    <div className="h-full w-full rotate-45 border-b border-r border-border bg-background"></div>
                 </div>
             </div>
-        </InfoWindowF>
+        </OverlayView>
       )}
     </>
   );
 }
-
