@@ -37,7 +37,7 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
       };
     }
 
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 16 16" fill="hsl(48, 95%, 53%)"><path d="M8.00001 3C8.82844 3 9.50001 2.32843 9.50001 1.5C9.50001 0.671573 8.82844 0 8.00001 0C7.17158 0 6.50001 0.671573 6.50001 1.5C6.50001 2.32843 7.17158 3 8.00001 3Z" /><path d="M12 4V2H14V4C14 5.10457 13.1045 6 12 6H10.5454L10.9897 16H8.98773L8.76557 11H7.23421L7.01193 16H5.00995L5.42014 6.77308L3.29995 9.6L1.69995 8.4L4.99995 4H12Z" /></svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 16 16" fill="hsl(48, 95%, 53%)"><path d="M8.00001 3C8.82844 3 9.50001 2.32843 9.50001 1.5C9.50001 0.671573 8.82844 0 8.00001 0C7.17158 0 6.50001 0.671573 6.50001 1.5C6.50001 2.32843 7.17158 3 8.00001 3Z" /><path d="M12 4V2H14V4C14 5.10457 13.1045 6 12 6H10.5454L10.9897 16H8.98773L8.76557 11H7.23421L7.01193 16H5.00995L5.42014 6.77308L3.29995 9.6L1.69995 8.4L4.99995 4H12Z" /></svg>`;
 
     return {
       url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
@@ -58,9 +58,9 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
     >
       {activeMarker === player.uid && (
         <InfoWindowF onCloseClick={() => handleMarkerClick('')}>
-            <div className="p-1">
-                <h3 className="font-bold text-base leading-tight truncate mb-2">{playerName}</h3>
-                <div className="flex items-center justify-between gap-2">
+            <div className="p-0">
+                <h3 className="font-bold text-lg leading-tight truncate mb-2">{playerName}</h3>
+                <div className="flex items-center justify-start gap-2">
                     <Badge variant="default" className={cn("text-sm font-bold", player.ovr > 80 ? "bg-green-500/80" : "bg-primary")}>{player.ovr}</Badge>
                     <Badge variant="outline" className={cn("text-sm font-semibold", positionBadgeStyles[player.position])}>{player.position}</Badge>
                 </div>
