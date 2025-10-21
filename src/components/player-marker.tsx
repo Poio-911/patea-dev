@@ -36,7 +36,7 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
   if (!player.location || typeof player.location.lat !== 'number' || typeof player.location.lng !== 'number') {
     return null;
   }
-
+  
   return (
     <>
       {/* The actual marker icon */}
@@ -46,7 +46,7 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
         getPixelPositionOffset={(width, height) => getPixelPositionOffset(width, height)}
       >
         <div onClick={() => handleMarkerClick(player.uid)} className="cursor-pointer">
-            <PlayerMarkerIcon className="h-8 w-8 text-amber-500" />
+            <PlayerMarkerIcon className="h-8 w-8 text-amber-500 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]" />
         </div>
       </OverlayView>
 
@@ -69,7 +69,7 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
                         <X className="h-4 w-4" />
                     </Button>
                 </div>
-                <div className="p-3">
+                <div className="p-2">
                     <div className="flex items-center justify-start gap-2">
                         <Badge variant="default" className={cn("text-sm font-bold", player.ovr > 80 ? "bg-green-500/80" : "bg-primary")}>{player.ovr}</Badge>
                         <Badge variant="outline" className={cn("text-sm font-semibold", positionBadgeStyles[player.position])}>{player.position}</Badge>
