@@ -248,6 +248,18 @@
       },
       "required": ["matchId", "evaluatorId", "subjectId", "status"]
     },
+    "evaluationSubmission": {
+      "title": "Evaluation Submission",
+      "description": "A temporary document holding a user's full evaluation submission, to be processed by a backend function.",
+      "type": "object",
+      "properties": {
+        "evaluatorId": { "type": "string" },
+        "matchId": { "type": "string" },
+        "submittedAt": { "type": "string", "format": "date-time" },
+        "submission": { "type": "object", "description": "The raw form data from the evaluation form." }
+      },
+      "required": ["evaluatorId", "matchId", "submittedAt", "submission"]
+    },
     "ovrHistory": {
         "title": "OVR History",
         "description": "Represents a single entry in a player's OVR progression history.",
@@ -330,6 +342,10 @@
     "/evaluations/{evaluationId}": {
         "schema": { "$ref": "#/entities/evaluation" },
         "description": "Stores all individual evaluation records across all matches."
+    },
+    "/evaluationSubmissions/{submissionId}": {
+        "schema": { "$ref": "#/entities/evaluationSubmission" },
+        "description": "A temporary collection to queue evaluation submissions for backend processing."
     }
   }
 }

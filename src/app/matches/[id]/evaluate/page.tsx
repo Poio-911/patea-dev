@@ -1,19 +1,18 @@
 
-
 'use client';
 
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { doc, collection, query, writeBatch, runTransaction, getDocs, where, addDoc } from 'firebase/firestore';
+import { doc, collection, query, writeBatch, runTransaction, getDocs, where, addDoc, deleteDoc } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
 import type { Match, Player, EvaluationAssignment, Evaluation, OvrHistory, SelfEvaluation } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, Check, BarChart, UserCheck, UserX, Star } from 'lucide-react';
+import { Loader2, Check, BarChart, UserCheck, UserX, Star, AlertTriangle, FileClock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Progress } from '@/components/ui/progress';
 
 // Helper to determine if a player is a "real user"
@@ -21,43 +20,35 @@ const isRealUser = (player: Player) => player.id === player.ownerUid;
 
 // --- Player Progression Logic ---
 const OVR_PROGRESSION = {
-    BASELINE_RATING: 5,   // Neutral rating. A 5/10 produces almost no change.
-    SCALE: 0.6,           // Main multiplier. Controls the intensity of the change.
-    MAX_STEP: 2,          // OVR cannot change more than 2 points in a single match.
-    DECAY_START: 70,      // From 70 OVR onwards, progression starts to slow down.
-    SOFT_CAP: 95,         // From 95 onwards, progression is drastically reduced.
-    HARD_CAP: 99,         // Absolute maximum OVR a player can reach.
-    MIN_OVR: 40,          // Absolute minimum OVR.
-    MIN_ATTRIBUTE: 20,    // Minimum value for any specific attribute.
-    MAX_ATTRIBUTE: 90     // Maximum value for any specific attribute.
+    BASELINE_RATING: 5,
+    SCALE: 0.6,
+    MAX_STEP: 2,
+    DECAY_START: 70,
+    SOFT_CAP: 95,
+    HARD_CAP: 99,
+    MIN_OVR: 40,
+    MIN_ATTRIBUTE: 20,
+    MAX_ATTRIBUTE: 90
 };
 
 const calculateOvrChange = (currentOvr: number, avgRating: number): number => {
     if (avgRating === OVR_PROGRESSION.BASELINE_RATING) return 0;
-
     const ratingDelta = avgRating - OVR_PROGRESSION.BASELINE_RATING;
     let rawDelta = ratingDelta * OVR_PROGRESSION.SCALE;
-
-    // Apply decay for higher OVRs
     if (currentOvr >= OVR_PROGRESSION.DECAY_START) {
         if (currentOvr < OVR_PROGRESSION.SOFT_CAP) {
             const t = (currentOvr - OVR_PROGRESSION.DECAY_START) / (OVR_PROGRESSION.SOFT_CAP - OVR_PROGRESSION.DECAY_START);
-            const decayFactor = 1 - (0.6 * t); // Reduce progression by up to 60% as it approaches soft cap
-            rawDelta *= decayFactor;
+            rawDelta *= 1 - (0.6 * t);
         } else {
             const t = (currentOvr - OVR_PROGRESSION.SOFT_CAP) / (OVR_PROGRESSION.HARD_CAP - OVR_PROGRESSION.SOFT_CAP);
-            const hardCapFactor = 0.25 * (1 - t); // Reduce progression by at least 75% above soft cap
-            rawDelta *= hardCapFactor;
+            rawDelta *= 0.25 * (1 - t);
         }
     }
-    
-    const finalDelta = Math.round(Math.max(-OVR_PROGRESSION.MAX_STEP, Math.min(OVR_PROGRESSION.MAX_STEP, rawDelta)));
-    return finalDelta;
+    return Math.round(Math.max(-OVR_PROGRESSION.MAX_STEP, Math.min(OVR_PROGRESSION.MAX_STEP, rawDelta)));
 };
 
 const calculateAttributeChanges = (currentAttrs: Player, tags: Evaluation['performanceTags'] = []) => {
     let attributeEffects: Record<string, number> = {};
-
     if (tags && tags.length > 0) {
         tags.forEach(tag => {
             tag.effects?.forEach(effect => {
@@ -65,7 +56,6 @@ const calculateAttributeChanges = (currentAttrs: Player, tags: Evaluation['perfo
             });
         });
     }
-    
     const newAttributes = { ...currentAttrs };
     for (const attr in attributeEffects) {
         const key = attr as keyof Player;
@@ -74,7 +64,6 @@ const calculateAttributeChanges = (currentAttrs: Player, tags: Evaluation['perfo
             newAttributes[key] = Math.round(Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, newAttributes[key] as number)));
         }
     }
-
     return newAttributes;
 };
 
@@ -87,6 +76,8 @@ export default function EvaluateMatchPage() {
   
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const [isProcessingSubmissions, setIsProcessingSubmissions] = useState(false);
+  const [pendingSubmissionsCount, setPendingSubmissionsCount] = useState(0);
 
   const allGroupPlayersQuery = useMemo(() => 
     firestore && user?.activeGroupId ? query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId)) : null
@@ -100,6 +91,78 @@ export default function EvaluateMatchPage() {
       firestore ? collection(firestore, 'matches', matchId as string, 'assignments') : null, 
   [firestore, matchId]);
   const { data: assignments, loading: assignmentsLoading } = useCollection<EvaluationAssignment>(assignmentsQuery);
+  
+  const processPendingSubmissions = useCallback(async () => {
+    if (!firestore || !matchId) return;
+
+    setIsProcessingSubmissions(true);
+    const submissionsQuery = query(collection(firestore, 'evaluationSubmissions'), where('matchId', '==', matchId));
+    
+    try {
+        const snapshot = await getDocs(submissionsQuery);
+        if (snapshot.empty) {
+            setPendingSubmissionsCount(0);
+            setIsProcessingSubmissions(false);
+            return;
+        }
+
+        setPendingSubmissionsCount(snapshot.size);
+        const batch = writeBatch(firestore);
+
+        for (const submissionDoc of snapshot.docs) {
+            const submission = submissionDoc.data();
+            const { evaluatorId, submission: formData } = submission;
+
+            // Process self-evaluation
+            const selfEvalRef = doc(collection(firestore, 'matches', matchId as string, 'selfEvaluations'));
+            batch.set(selfEvalRef, {
+                playerId: evaluatorId,
+                matchId,
+                goals: formData.evaluatorGoals,
+                reportedAt: submission.submittedAt,
+            });
+
+            // Process peer evaluations
+            for (const evaluation of formData.evaluations) {
+                const evalRef = doc(collection(firestore, 'evaluations'));
+                const newEvaluation: Omit<Evaluation, 'id'> = {
+                    assignmentId: evaluation.assignmentId,
+                    playerId: evaluation.subjectId,
+                    evaluatorId,
+                    matchId: matchId as string,
+                    goals: 0,
+                    evaluatedAt: submission.submittedAt,
+                };
+                
+                if (evaluation.evaluationType === 'points') newEvaluation.rating = evaluation.rating;
+                else newEvaluation.performanceTags = evaluation.performanceTags;
+
+                batch.set(evalRef, newEvaluation);
+                
+                const assignmentRef = doc(firestore, 'matches', matchId as string, 'assignments', evaluation.assignmentId);
+                batch.update(assignmentRef, { status: 'completed', evaluationId: evalRef.id });
+            }
+            // Delete the processed submission
+            batch.delete(submissionDoc.ref);
+        }
+
+        await batch.commit();
+        toast({ title: "Nuevas evaluaciones procesadas", description: `${snapshot.size} envío(s) de evaluaciones han sido registrados.` });
+
+    } catch (error) {
+        console.error("Error processing submissions:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron procesar las evaluaciones pendientes.' });
+    } finally {
+        setIsProcessingSubmissions(false);
+        setPendingSubmissionsCount(0);
+    }
+  }, [firestore, matchId, toast]);
+
+  useEffect(() => {
+    if (match && match.status !== 'evaluated') {
+      processPendingSubmissions();
+    }
+  }, [match, processPendingSubmissions]);
 
   useEffect(() => {
     const loading = matchLoading || assignmentsLoading || playersLoading;
@@ -118,27 +181,27 @@ export default function EvaluateMatchPage() {
             throw new Error("No hay evaluaciones completadas para procesar.");
         }
 
-        const peerEvalsQuery = query(collection(firestore, 'evaluations'), where('assignmentId', 'in', completedAssignmentIds));
-        const peerEvalsSnapshot = await getDocs(peerEvalsQuery);
-        const matchPeerEvals = peerEvalsSnapshot.docs.map(doc => ({...doc.data(), id: doc.id} as Evaluation));
-
-        const selfEvalsQuery = collection(firestore, 'matches', match.id, 'selfEvaluations');
-        const selfEvalsSnapshot = await getDocs(selfEvalsQuery);
-        const matchSelfEvals = selfEvalsSnapshot.docs.map(doc => ({...doc.data(), id: doc.id} as SelfEvaluation));
-        const selfEvalsByPlayerId = new Map(matchSelfEvals.map(ev => [ev.playerId, ev]));
-
-        const peerEvalsByPlayer = matchPeerEvals.reduce((acc, ev) => {
-            acc[ev.playerId] = acc[ev.playerId] || [];
-            acc[ev.playerId].push(ev);
-            return acc;
-        }, {} as Record<string, Evaluation[]>);
-
         await runTransaction(firestore, async (transaction) => {
             if (!matchRef) return;
             const matchDoc = await transaction.get(matchRef);
             if (!matchDoc.exists() || matchDoc.data().status === 'evaluated') {
                 throw new Error("Este partido ya ha sido evaluado o no existe.");
             }
+
+            const peerEvalsQuery = query(collection(firestore, 'evaluations'), where('assignmentId', 'in', completedAssignmentIds));
+            const peerEvalsSnapshot = await getDocs(peerEvalsQuery); // Use regular getDocs inside transaction
+            const matchPeerEvals = peerEvalsSnapshot.docs.map(doc => ({...doc.data(), id: doc.id} as Evaluation));
+
+            const selfEvalsQuery = collection(firestore, 'matches', match.id as string, 'selfEvaluations');
+            const selfEvalsSnapshot = await getDocs(selfEvalsQuery);
+            const matchSelfEvals = selfEvalsSnapshot.docs.map(doc => ({...doc.data(), id: doc.id} as SelfEvaluation));
+            const selfEvalsByPlayerId = new Map(matchSelfEvals.map(ev => [ev.playerId, ev]));
+
+            const peerEvalsByPlayer = matchPeerEvals.reduce((acc, ev) => {
+                acc[ev.playerId] = acc[ev.playerId] || [];
+                acc[ev.playerId].push(ev);
+                return acc;
+            }, {} as Record<string, Evaluation[]>);
 
             const playerIdsToUpdate = Object.keys(peerEvalsByPlayer);
             const playerDocs = new Map<string, Player>();
@@ -162,14 +225,12 @@ export default function EvaluateMatchPage() {
                 let updatedAttributes = { ...player };
                 let ovrChangeFromPoints = 0;
 
-                // Process tag-based evaluations if they are the majority or only type
-                if (tagBasedEvals.length > 0 && tagBasedEvals.length >= pointBasedEvals.length) {
+                if (tagBasedEvals.length > pointBasedEvals.length) {
                     const combinedTags = tagBasedEvals.flatMap(ev => ev.performanceTags || []);
                     updatedAttributes = calculateAttributeChanges(player, combinedTags);
                 }
                 
-                // Process point-based evaluations
-                if (pointBasedEvals.length > 0 && pointBasedEvals.length > tagBasedEvals.length) {
+                if (pointBasedEvals.length >= tagBasedEvals.length) {
                     const totalRating = pointBasedEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0);
                     const avgRating = totalRating / pointBasedEvals.length;
                     ovrChangeFromPoints = calculateOvrChange(player.ovr, avgRating);
@@ -181,17 +242,10 @@ export default function EvaluateMatchPage() {
 
                 const playerSelfEval = selfEvalsByPlayerId.get(playerId);
                 const goalsInMatch = playerSelfEval?.goals || 0;
-
                 const newMatchesPlayed = (player.stats.matchesPlayed || 0) + 1;
                 const newTotalGoals = (player.stats.goals || 0) + goalsInMatch;
-                
-                const avgRatingFromPoints = pointBasedEvals.length > 0
-                    ? pointBasedEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0) / pointBasedEvals.length
-                    : player.stats.averageRating;
-                
-                const newAvgRating = pointBasedEvals.length > 0
-                    ? ((player.stats.averageRating || 0) * (player.stats.matchesPlayed || 0) + avgRatingFromPoints) / newMatchesPlayed
-                    : player.stats.averageRating;
+                const avgRatingFromPoints = pointBasedEvals.length > 0 ? pointBasedEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0) / pointBasedEvals.length : player.stats.averageRating;
+                const newAvgRating = pointBasedEvals.length > 0 ? ((player.stats.averageRating || 0) * (player.stats.matchesPlayed || 0) + avgRatingFromPoints) / newMatchesPlayed : player.stats.averageRating;
                 
                 const playerDocRef = doc(firestore, 'players', playerId);
                 transaction.update(playerDocRef, {
@@ -245,9 +299,7 @@ export default function EvaluateMatchPage() {
 
   const evaluatorsWhoHaveVoted = useMemo(() => {
     if (!assignments) return new Set();
-    const completedEvaluators = assignments
-        .filter(a => a.status === 'completed')
-        .map(a => a.evaluatorId);
+    const completedEvaluators = assignments.filter(a => a.status === 'completed').map(a => a.evaluatorId);
     return new Set(completedEvaluators);
   }, [assignments]);
 
@@ -296,6 +348,15 @@ export default function EvaluateMatchPage() {
             title={`Panel de Evaluación: ${match.title}`}
             description={`Supervisa el progreso de las evaluaciones de los jugadores.`}
         />
+        {isProcessingSubmissions && (
+            <Alert variant="default" className="border-blue-500">
+                <FileClock className="h-4 w-4 text-blue-500" />
+                <AlertTitle>Procesando Evaluaciones</AlertTitle>
+                <AlertDescription>
+                    Se están registrando {pendingSubmissionsCount} nuevos envíos de evaluaciones. La lista se actualizará en breve.
+                </AlertDescription>
+            </Alert>
+        )}
         <Card>
             <CardHeader>
                 <CardTitle>Progreso de la Evaluación</CardTitle>

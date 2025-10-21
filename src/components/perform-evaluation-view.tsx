@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { doc, writeBatch, collection, query, where } from 'firebase/firestore'
+import { doc, writeBatch, collection, query, where, addDoc } from 'firebase/firestore'
 import { Loader2, Save, ShieldCheck, Goal, Plus, Minus } from 'lucide-react'
 
 import { useFirestore, useUser, useCollection } from '@/firebase'
@@ -209,54 +209,25 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
 
     setIsSubmitting(true)
     try {
-      const batch = writeBatch(firestore)
-
-      const selfEvalRef = doc(collection(firestore, 'matches', matchId, 'selfEvaluations'))
-      batch.set(selfEvalRef, {
-        playerId: user.uid,
+      const submissionData = {
+        evaluatorId: user.uid,
         matchId,
-        goals: data.evaluatorGoals,
-        reportedAt: new Date().toISOString(),
-      })
+        submittedAt: new Date().toISOString(),
+        submission: data,
+      };
 
-      for (const evaluation of data.evaluations) {
-        const evalRef = doc(collection(firestore, 'evaluations'))
-        const newEvaluation: Omit<Evaluation, 'id'> = {
-          assignmentId: evaluation.assignmentId,
-          playerId: evaluation.subjectId,
-          evaluatorId: user.uid,
-          matchId,
-          goals: 0,
-          evaluatedAt: new Date().toISOString(),
-        }
-
-        if (evaluation.evaluationType === 'points') {
-          newEvaluation.rating = evaluation.rating
-        } else {
-          newEvaluation.performanceTags = evaluation.performanceTags
-        }
-
-        batch.set(evalRef, newEvaluation)
-
-        const assignmentRef = doc(firestore, 'matches', matchId, 'assignments', evaluation.assignmentId)
-        batch.update(assignmentRef, {
-          status: 'completed',
-          evaluationId: evalRef.id,
-        })
-      }
-
-      await batch.commit()
+      await addDoc(collection(firestore, 'evaluationSubmissions'), submissionData);
 
       toast({
-        title: '¡Evaluación Enviada!',
-        description: 'Gracias por tu participación. Tus evaluaciones han sido guardadas.',
+        title: '¡Evaluaciones en camino!',
+        description: 'Tus evaluaciones se han enviado y se procesarán en segundo plano.',
       })
       router.push('/evaluations')
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'No se pudieron guardar las evaluaciones.',
+        description: error.message || 'No se pudieron enviar las evaluaciones.',
       })
     } finally {
       setIsSubmitting(false)
