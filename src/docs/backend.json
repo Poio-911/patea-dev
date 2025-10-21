@@ -255,7 +255,6 @@
       "properties": {
         "evaluatorId": { "type": "string" },
         "matchId": { "type": "string" },
-        "match": { "$ref": "#/entities/match" },
         "submittedAt": { "type": "string", "format": "date-time" },
         "submission": { "type": "object", "description": "The raw form data from the evaluation form." }
       },
@@ -350,3 +349,4 @@
     }
   }
 }
+
