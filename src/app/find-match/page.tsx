@@ -31,7 +31,7 @@ import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlayerCard } from '@/components/player-card';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle as UiDialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const containerStyle = {
   width: '100%',
@@ -110,6 +110,9 @@ const CompactPlayerCard = ({ player, distance, onInvite, isAlreadyInvited }: { p
                 </Card>
              </DialogTrigger>
              <DialogContent className="sm:max-w-sm p-0 border-0 bg-transparent shadow-none">
+                 <DialogHeader>
+                    <UiDialogTitle className="sr-only">Tarjeta de Jugador de {playerName}</UiDialogTitle>
+                 </DialogHeader>
                  <PlayerCard player={player as unknown as Player} isLink={false} />
             </DialogContent>
         </Dialog>
@@ -392,7 +395,7 @@ export default function FindMatchPage() {
                             </div>
                         )}
                         
-                        {(recommendedPlayers.length > 0) && <Separator />}
+                        {(recommendedPlayers.length > 0) && <div className="py-2"><Separator /></div>}
 
                         <div>
                             <h2 className="text-xl font-bold mb-3">Todos los Jugadores ({filteredPlayers.length})</h2>
@@ -451,3 +454,5 @@ export default function FindMatchPage() {
     </div>
   );
 }
+
+    
