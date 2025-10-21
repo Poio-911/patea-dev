@@ -1,5 +1,4 @@
-
-'use client'; // Required for hooks and context providers
+'use client';
 
 import './globals.css';
 import { cn } from '@/lib/utils';
