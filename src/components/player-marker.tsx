@@ -23,9 +23,10 @@ const positionBadgeStyles: Record<AvailablePlayer['position'], string> = {
   POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
 };
 
+// This function calculates the offset to position the popup correctly above the marker
 const getPixelPositionOffset = (width: number, height: number) => ({
   x: -(width / 2),
-  y: -height,
+  y: -(height + 35), // Position popup 'height' pixels up + 35px for marker height and margin
 });
 
 export function PlayerMarker({ player, activeMarker, handleMarkerClick }: PlayerMarkerProps) {
@@ -43,8 +44,8 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
         position={player.location}
         mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
         getPixelPositionOffset={(width, height) => ({
-          x: -(width / 2),
-          y: -height,
+            x: -(width / 2),
+            y: -height, // This centers the icon on the geographical point
         })}
       >
         <button type="button" onClick={() => handleMarkerClick(player.uid)} className="cursor-pointer border-none bg-transparent p-0">
@@ -56,10 +57,7 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
         <OverlayView
           position={player.location}
           mapPaneName={OverlayView.FLOAT_PANE}
-          getPixelPositionOffset={(width, height) => ({
-            x: -(width / 2),
-            y: -(height + 40), 
-          })}
+          getPixelPositionOffset={getPixelPositionOffset}
         >
             <div className="relative w-48 rounded-xl border bg-background shadow-lg animate-in fade-in-0 zoom-in-95">
                 <div className="flex items-center justify-between border-b p-2">
@@ -78,10 +76,6 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
                         <Badge variant="default" className={cn("text-sm font-bold", player.ovr > 80 ? "bg-green-500/80" : "bg-primary")}>{player.ovr}</Badge>
                         <Badge variant="outline" className={cn("text-sm font-semibold", positionBadgeStyles[player.position])}>{player.position}</Badge>
                     </div>
-                </div>
-                {/* Callout / Tail */}
-                <div className="absolute left-1/2 top-full h-3 w-3 -translate-x-1/2">
-                    <div className="h-full w-full rotate-45 border-b border-r border-border bg-background"></div>
                 </div>
             </div>
         </OverlayView>
