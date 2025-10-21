@@ -1,6 +1,5 @@
 
 
-
 import { DocumentData, DocumentReference } from "firebase/firestore";
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';

@@ -34,6 +34,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { PerformanceTag, performanceTagsDb } from '@/lib/performance-tags'
 import { cn } from '@/lib/utils'
 import type { Player, EvaluationAssignment, Evaluation } from '@/lib/types'
+import { Badge } from '@/components/ui/badge'
 
 // --- Validación con Zod ---
 const playerEvaluationSchema = z.object({
