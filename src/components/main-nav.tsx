@@ -219,42 +219,23 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             {children}
           </main>
           
-          <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg">
+          <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg md:hidden">
               <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
               {navItems.map((item) => {
                   const isActive = pathname.startsWith(item.href);
                   const isMatchIcon = item.href === '/matches';
-                  
-                  if (isMatchIcon) {
-                    return (
-                        <div key={item.href} className="relative flex justify-center">
-                            <div className="absolute -top-7 h-16 w-16 rounded-full bg-background border-t border-x border-border/70 bottom-nav-shadow"></div>
-                             <Link
-                                href={item.href}
-                                className={cn(
-                                'group relative -top-3 flex h-14 w-14 flex-col items-center justify-center rounded-full border-4 transition-colors',
-                                isActive ? 'bg-primary border-primary/50 text-primary-foreground' : 'bg-background border-border text-muted-foreground hover:bg-accent'
-                                )}
-                            >
-                                <item.icon className="h-7 w-7" />
-                                <span className="sr-only">{item.label}</span>
-                            </Link>
-                        </div>
-                    )
-                  }
-
                   return (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                        'group inline-flex flex-col items-center justify-center px-1 text-muted-foreground transition-colors hover:text-primary',
-                        isActive && 'text-primary'
-                        )}
-                    >
-                        <item.icon className="h-6 w-6" />
-                        <span className="text-xs">{item.label}</span>
-                    </Link>
+                  <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                      'group inline-flex flex-col items-center justify-center px-1 text-muted-foreground transition-colors hover:text-primary',
+                      isActive && 'text-primary'
+                      )}
+                  >
+                      <item.icon className={cn("h-6 w-6", isMatchIcon && "h-7 w-7")} />
+                      <span className="text-xs">{item.label}</span>
+                  </Link>
                   );
               })}
               </div>

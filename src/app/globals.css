@@ -81,7 +81,31 @@
     animation: color-cycle 4s ease-in-out infinite;
   }
 
-  .bottom-nav-shadow {
-    filter: drop-shadow(0 -4px 8px rgba(0,0,0,0.04));
+  .animated-border-button {
+    position: relative;
+    overflow: hidden;
+  }
+  .animated-border-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+      from 0deg,
+      hsl(var(--chart-1)),
+      hsl(var(--chart-2)),
+      hsl(var(--chart-3)),
+      hsl(var(--chart-4)),
+      hsl(var(--chart-1))
+    );
+    animation: border-shine 4s linear infinite;
+    transform: translate(-50%, -50%);
+  }
+  @keyframes border-shine {
+    to {
+      transform: translate(-50%, -50%) rotate(360deg);
+    }
   }
 }
