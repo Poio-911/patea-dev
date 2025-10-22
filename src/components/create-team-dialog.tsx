@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { useFirestore, useUser } from '@/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,7 +32,7 @@ const colorPalette = [
     '#d32f2f', '#c2185b', '#7b1fa2', '#512da8', '#303f9f', '#1976d2',
     '#0288d1', '#0097a7', '#00796b', '#388e3c', '#689f38', '#fbc02d',
     '#ffa000', '#f57c00', '#e64a19', '#5d4037', '#616161', '#455a64',
-    '#ffffff', '#000000'
+    '#ffffff', '#000000', '#F472B6', '#8B5CF6', '#3B82F6', '#10B981', '#F59E0B'
 ];
 
 
