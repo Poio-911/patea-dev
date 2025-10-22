@@ -1,5 +1,6 @@
 
 
+
 {
   "entities": {
     "userProfile": {
@@ -157,6 +158,27 @@
       },
       "required": ["name", "players"]
     },
+    "groupTeam": {
+      "title": "Group Team",
+      "description": "Represents a persistent team within a group, stored in /teams collection.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "groupId": { "type": "string" },
+        "jersey": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "enum": ["plain", "stripes", "sash", "halves", "hoops", "checkered"] },
+            "primaryColor": { "type": "string" },
+            "secondaryColor": { "type": "string" }
+          }
+        },
+        "playerIds": { "type": "array", "items": { "type": "string" } },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "groupId", "jersey", "playerIds", "createdBy", "createdAt"]
+    },
     "group": {
       "title": "Group",
       "description": "Represents a user group.",
@@ -168,37 +190,6 @@
         "members": { "type": "array", "items": { "type": "string" }, "description": "List of user UIDs who are members of this group." }
       },
       "required": ["name", "ownerUid", "inviteCode"]
-    },
-    "groupTeam": {
-      "title": "Group Team",
-      "description": "Represents a persistent team within a group.",
-      "type": "object",
-      "properties": {
-        "name": { "type": "string" },
-        "formation": { "type": "string" },
-        "jersey": {
-          "type": "object",
-          "properties": {
-            "style": { "type": "string" },
-            "primaryColor": { "type": "string" },
-            "secondaryColor": { "type": "string" }
-          }
-        },
-        "ownerUid": { "type": "string" },
-        "groupId": { "type": "string" },
-        "members": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "playerId": { "type": "string" },
-              "number": { "type": "number" }
-            }
-          },
-          "description": "Array of player objects with their assigned numbers."
-        }
-      },
-      "required": ["name", "ownerUid", "groupId", "members", "formation", "jersey"]
     },
     "notification": {
         "title": "Notification",
@@ -350,9 +341,9 @@
       "schema": { "$ref": "#/entities/group" },
       "description": "Stores data for each user group."
     },
-    "/groups/{groupId}/teams/{teamId}": {
-      "schema": { "$ref": "#/entities/groupTeam" },
-      "description": "Stores the persistent teams created within a group."
+    "/teams/{teamId}": {
+        "schema": { "$ref": "#/entities/groupTeam" },
+        "description": "Stores data for each persistent team created by users."
     },
     "/matches/{matchId}": {
       "schema": { "$ref": "#/entities/match" },

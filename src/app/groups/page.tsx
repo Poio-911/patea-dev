@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -15,7 +16,7 @@ import {
   getDocs,
   writeBatch,
 } from 'firebase/firestore';
-import type { Group, Player, GroupTeam } from '@/lib/types';
+import type { Group, Player } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,9 +32,7 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { CreateTeamDialog } from '@/components/create-team-dialog';
-import { JerseyIcon } from '@/components/jerseys';
-import { TeamDetailDialog } from '@/components/team-detail-dialog';
+import { TeamList } from '@/components/team-builder/team-list';
 
 
 const joinGroupSchema = z.object({
@@ -71,12 +70,6 @@ export default function GroupsPage() {
     return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
   }, [firestore, user?.activeGroupId]);
   const { data: groupPlayers, loading: playersLoading } = useCollection<Player>(groupPlayersQuery);
-
-  const groupTeamsQuery = useMemo(() => {
-    if (!firestore || !user?.activeGroupId) return null;
-    return query(collection(firestore, 'groups', user.activeGroupId, 'teams'));
-  }, [firestore, user?.activeGroupId]);
-  const { data: groupTeams, loading: teamsLoading } = useCollection<GroupTeam>(groupTeamsQuery);
 
   const { topOvrPlayers, topScorers, mostMatchesPlayers } = useMemo(() => {
     if (!groupPlayers) return { topOvrPlayers: [], topScorers: [], mostMatchesPlayers: [] };
@@ -164,7 +157,7 @@ export default function GroupsPage() {
     }
   };
   
-  const loading = activeGroupLoading || playersLoading || teamsLoading;
+  const loading = activeGroupLoading || playersLoading;
 
   return (
     <div className="flex flex-col gap-8">
@@ -206,7 +199,7 @@ export default function GroupsPage() {
 
       {loading ? (
         <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
-      ) : !activeGroup ? (
+      ) : !activeGroup || !user ? (
         <Alert className="text-center py-10">
           <Users className="h-6 w-6 mx-auto mb-2" />
           <AlertTitle>No estás en ningún grupo</AlertTitle>
@@ -214,43 +207,10 @@ export default function GroupsPage() {
         </Alert>
       ) : (
         <div className="space-y-8">
+            <TeamList groupId={activeGroup.id} players={groupPlayers || []} currentUserId={user.uid} />
+
+            <Separator />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center justify-between">
-                                <div className="flex items-center gap-2"><Shield className="h-6 w-6 text-primary" />Equipos del Grupo</div>
-                                <CreateTeamDialog groupPlayers={groupPlayers || []} />
-                            </CardTitle>
-                            <CardDescription>Equipos fijos creados por los miembros para desafíos internos.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             {groupTeams && groupTeams.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {groupTeams.map(team => (
-                                        <Card key={team.id} className="p-4 flex flex-col items-center gap-4 text-center">
-                                            <div className="h-20 w-20 flex-shrink-0">
-                                              <JerseyIcon {...team.jersey} />
-                                            </div>
-                                            <div className="flex-grow">
-                                                <h4 className="font-bold">{team.name}</h4>
-                                                <p className="text-sm text-muted-foreground">{team.members.length} miembros</p>
-                                            </div>
-                                            <TeamDetailDialog team={team} allGroupPlayers={groupPlayers || []}>
-                                                <Button variant="outline" size="sm" className="w-full mt-auto">
-                                                    <Eye className="mr-2 h-4 w-4" />
-                                                    Ver Equipo
-                                                </Button>
-                                            </TeamDetailDialog>
-                                        </Card>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-center text-sm text-muted-foreground py-4">Aún no se han creado equipos fijos en este grupo.</p>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
                  <div className="lg:col-span-1 space-y-8">
                     <Card>
                         <CardHeader><CardTitle className="flex items-center gap-2"><Star className="h-5 w-5 text-amber-500"/>Top 5 Jugadores (OVR)</CardTitle></CardHeader>
@@ -268,38 +228,38 @@ export default function GroupsPage() {
                         </CardContent>
                     </Card>
                 </div>
-            </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <Card>
-                    <CardHeader><CardTitle className="flex items-center gap-2"><Goal className="h-5 w-5 text-red-500"/>Máximos Goleadores</CardTitle></CardHeader>
-                    <CardContent>
-                         <div className="space-y-3">
-                            {topScorers.map((player, index) => (
-                                <div key={player.id} className="flex items-center gap-3">
-                                    <div className="font-bold text-sm w-4">{index + 1}.</div>
-                                    <Avatar className="h-9 w-9"><AvatarImage src={player.photoUrl} alt={player.name} /><AvatarFallback>{player.name.charAt(0)}</AvatarFallback></Avatar>
-                                    <p className="font-medium flex-1 truncate">{player.name}</p>
-                                    <div className="font-bold">{player.stats?.goals || 0}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader><CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5 text-yellow-500"/>Más Partidos</CardTitle></CardHeader>
-                    <CardContent>
-                         <div className="space-y-3">
-                            {mostMatchesPlayers.map((player, index) => (
-                                <div key={player.id} className="flex items-center gap-3">
-                                    <div className="font-bold text-sm w-4">{index + 1}.</div>
-                                    <Avatar className="h-9 w-9"><AvatarImage src={player.photoUrl} alt={player.name} /><AvatarFallback>{player.name.charAt(0)}</AvatarFallback></Avatar>
-                                    <p className="font-medium flex-1 truncate">{player.name}</p>
-                                    <div className="font-bold">{player.stats?.matchesPlayed || 0}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
+                 <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <Card>
+                        <CardHeader><CardTitle className="flex items-center gap-2"><Goal className="h-5 w-5 text-red-500"/>Máximos Goleadores</CardTitle></CardHeader>
+                        <CardContent>
+                             <div className="space-y-3">
+                                {topScorers.map((player, index) => (
+                                    <div key={player.id} className="flex items-center gap-3">
+                                        <div className="font-bold text-sm w-4">{index + 1}.</div>
+                                        <Avatar className="h-9 w-9"><AvatarImage src={player.photoUrl} alt={player.name} /><AvatarFallback>{player.name.charAt(0)}</AvatarFallback></Avatar>
+                                        <p className="font-medium flex-1 truncate">{player.name}</p>
+                                        <div className="font-bold">{player.stats?.goals || 0}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader><CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5 text-yellow-500"/>Más Partidos</CardTitle></CardHeader>
+                        <CardContent>
+                             <div className="space-y-3">
+                                {mostMatchesPlayers.map((player, index) => (
+                                    <div key={player.id} className="flex items-center gap-3">
+                                        <div className="font-bold text-sm w-4">{index + 1}.</div>
+                                        <Avatar className="h-9 w-9"><AvatarImage src={player.photoUrl} alt={player.name} /><AvatarFallback>{player.name.charAt(0)}</AvatarFallback></Avatar>
+                                        <p className="font-medium flex-1 truncate">{player.name}</p>
+                                        <div className="font-bold">{player.stats?.matchesPlayed || 0}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </div>
       )}

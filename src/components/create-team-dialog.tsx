@@ -1,310 +1,299 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useForm, FormProvider, useFormContext, Controller, useWatch, useFieldArray } from 'react-hook-form';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useFirestore, useUser } from '@/firebase';
-import { collection, addDoc } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, PlusCircle, Shield, ArrowRight, ArrowLeft, Users, Check } from 'lucide-react';
-import { Player, GroupTeam, JerseyStyle, TeamMember } from '@/lib/types';
+import { Loader2, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { JerseyDesigner } from './team-builder/jersey-designer';
+import { Player, Jersey } from '@/lib/types';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { JerseyIcon } from './jerseys';
-import { Checkbox } from './ui/checkbox';
-import { ScrollArea } from './ui/scroll-area';
-import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
+import { useFirestore } from '@/firebase';
+import { collection, addDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
-const jerseyStyles: { id: JerseyStyle; name: string }[] = [
-    { id: 'solid', name: 'Liso' },
-    { id: 'stripes', name: 'Rayas' },
-    { id: 'sash', name: 'Banda' },
-    { id: 'halves', name: 'Mitades' },
-    { id: 'hoops', name: 'Aros' },
-    { id: 'checkered', name: 'Ajedrez' },
-];
+interface CreateTeamDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  groupId: string;
+  players: Player[];
+  currentUserId: string;
+}
 
-const colorPalette = [
-    '#d32f2f', '#c2185b', '#7b1fa2', '#512da8', '#303f9f', '#1976d2', '#0288d1', 
-    '#0097a7', '#00796b', '#388e3c', '#689f38', '#fbc02d', '#ffa000', '#f57c00', 
-    '#e64a19', '#5d4037', '#616161', '#455a64', '#ffffff', '#000000'
-];
-
-
-const memberSchema = z.object({
-  playerId: z.string(),
-  number: z.coerce.number().min(1, "N°").max(99, "N°"),
+const teamNameSchema = z.object({
+  name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
 });
 
-const createTeamSchema = z.object({
-  name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
-  jersey: z.object({
-    style: z.custom<JerseyStyle>(val => typeof val === 'string' && val.length > 0, "Debes elegir un estilo."),
-    primaryColor: z.string().min(1, "Debes elegir un color primario."),
-    secondaryColor: z.string().min(1, "Debes elegir un color secundario."),
-  }),
-  members: z.array(memberSchema).min(1, 'Debes seleccionar al menos un miembro.'),
-  formation: z.string().min(1, "Debes seleccionar una formación"),
-});
+type TeamNameForm = z.infer<typeof teamNameSchema>;
 
-type CreateTeamFormData = z.infer<typeof createTeamSchema>;
-
-const JerseyCreator = () => {
-    const { control, setValue, formState: { errors } } = useFormContext<CreateTeamFormData>();
-    const jersey = useWatch({ control, name: "jersey" });
-
-    const handleStyleSelect = (styleId: JerseyStyle) => {
-        setValue('jersey.style', styleId, { shouldValidate: true });
-        if (styleId === 'solid' && jersey.primaryColor) {
-            setValue('jersey.secondaryColor', jersey.primaryColor, { shouldValidate: true });
-        }
-    };
-    
-    const requiresSecondaryColor = jersey.style !== 'solid';
-
-    return (
-        <div className="space-y-4">
-            <div className="w-full h-40 rounded-lg flex items-center justify-center p-4 bg-muted/50">
-                <div className="w-32 h-32">
-                    <JerseyIcon style={jersey.style} primaryColor={jersey.primaryColor} secondaryColor={jersey.secondaryColor} />
-                </div>
-            </div>
-            
-            <div className="space-y-2">
-                <Label>Estilo de Camiseta</Label>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                    {jerseyStyles.map((style) => (
-                        <button
-                            key={style.id}
-                            type="button"
-                            className={cn(
-                                "border-2 rounded-lg p-1 cursor-pointer transition-all w-full flex flex-col items-center gap-1 hover:border-primary",
-                                jersey.style === style.id ? "border-primary ring-2 ring-primary" : "border-border"
-                            )}
-                            onClick={() => handleStyleSelect(style.id)}
-                        >
-                            <div className="w-10 h-10">
-                                <JerseyIcon style={style.id} primaryColor="#a1a1aa" secondaryColor={style.id === 'solid' ? "#a1a1aa" : "#e4e4e7"} />
-                            </div>
-                            <p className="text-xs text-center font-medium">{style.name}</p>
-                        </button>
-                    ))}
-                </div>
-                {errors.jersey?.style && <p className="text-destructive text-xs mt-1 text-center">{errors.jersey.style.message}</p>}
-            </div>
-
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                <div className="space-y-1">
-                    <Label>Color Primario</Label>
-                    <div className="grid grid-cols-10 gap-1.5 mt-1 border p-2 rounded-md">
-                        {colorPalette.map(color => (
-                            <button
-                                key={`primary-${color}`}
-                                type="button"
-                                className={cn(
-                                    "h-6 w-6 rounded-full border-2 transition-all flex items-center justify-center",
-                                    jersey.primaryColor === color ? 'border-ring' : 'border-transparent'
-                                )}
-                                onClick={() => {
-                                    setValue('jersey.primaryColor', color, { shouldValidate: true });
-                                    if (!requiresSecondaryColor) {
-                                        setValue('jersey.secondaryColor', color, { shouldValidate: true });
-                                    }
-                                }}
-                            >
-                                <span className="h-full w-full rounded-full" style={{ backgroundColor: color }} />
-                            </button>
-                        ))}
-                    </div>
-                    {errors.jersey?.primaryColor && <p className="text-destructive text-xs mt-1">{errors.jersey.primaryColor.message}</p>}
-                </div>
-                <div className={cn("space-y-1 transition-all duration-300", !requiresSecondaryColor && "opacity-30 pointer-events-none")}>
-                    <Label>Color Secundario</Label>
-                     <div className="grid grid-cols-10 gap-1.5 mt-1 border p-2 rounded-md">
-                        {colorPalette.map(color => (
-                            <button
-                                key={`secondary-${color}`}
-                                type="button"
-                                className={cn(
-                                    "h-6 w-6 rounded-full border-2 transition-all flex items-center justify-center",
-                                    jersey.secondaryColor === color ? 'border-ring' : 'border-transparent'
-                                )}
-                                onClick={() => requiresSecondaryColor && setValue('jersey.secondaryColor', color, { shouldValidate: true })}
-                            >
-                               <span className="h-full w-full rounded-full" style={{ backgroundColor: color }} />
-                            </button>
-                        ))}
-                    </div>
-                    {requiresSecondaryColor && errors.jersey?.secondaryColor && <p className="text-destructive text-xs mt-1">{errors.jersey.secondaryColor.message}</p>}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const MemberManager = ({ groupPlayers }: { groupPlayers: Player[] }) => {
-    const { control, formState: { errors }, watch } = useFormContext<CreateTeamFormData>();
-    const { fields, append, remove } = useFieldArray({
-        control,
-        name: "members"
-    });
-    const watchedMembers = watch("members");
-
-    return (
-        <div className="space-y-4">
-            <Label>Miembros del Equipo ({fields.length})</Label>
-            <ScrollArea className="h-72 border rounded-md p-2">
-                <div className="space-y-2">
-                    {groupPlayers.map((player, index) => {
-                        const fieldIndex = watchedMembers.findIndex((m) => m.playerId === player.id);
-                        const isSelected = fieldIndex !== -1;
-                        return (
-                            <div key={player.id} className={cn("p-2 rounded-md flex items-center gap-2 transition-colors", isSelected ? 'bg-accent' : 'hover:bg-muted/50')}>
-                                <Checkbox
-                                    id={`member-${player.id}`}
-                                    checked={isSelected}
-                                    onCheckedChange={(checked) => {
-                                        if (checked) {
-                                            append({ playerId: player.id, number: index + 1 });
-                                        } else {
-                                            const removeIndex = watchedMembers.findIndex((m) => m.playerId === player.id);
-                                            if (removeIndex > -1) {
-                                                remove(removeIndex);
-                                            }
-                                        }
-                                    }}
-                                />
-                                <Avatar className="h-9 w-9">
-                                    <AvatarImage src={player.photoUrl} alt={player.name} />
-                                    <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <Label htmlFor={`member-${player.id}`} className="flex-1 cursor-pointer font-semibold">{player.name}</Label>
-                                {isSelected && (
-                                    <Controller
-                                        control={control}
-                                        name={`members.${fieldIndex}.number`}
-                                        render={({ field }) => (
-                                            <Input
-                                                {...field}
-                                                type="number"
-                                                className="h-8 w-20"
-                                                placeholder="N°"
-                                            />
-                                        )}
-                                    />
-                                )}
-                            </div>
-                        )
-                    })}
-                </div>
-            </ScrollArea>
-             {errors.members && <p className="text-destructive text-xs mt-1">{errors.members.message}</p>}
-        </div>
-    );
-};
-
-export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
-  const [open, setOpen] = useState(false);
+export function CreateTeamDialog({
+  open,
+  onOpenChange,
+  groupId,
+  players,
+  currentUserId,
+}: CreateTeamDialogProps) {
   const [step, setStep] = useState(1);
-  const { user } = useUser();
-  const firestore = useFirestore();
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+  const [jersey, setJersey] = useState<Jersey>({
+    type: 'plain',
+    primaryColor: '#DC2626',
+    secondaryColor: '#FFFFFF',
+  });
+  const [isCreating, setIsCreating] = useState(false);
 
-  const form = useForm<CreateTeamFormData>({
-    resolver: zodResolver(createTeamSchema),
+  const { toast } = useToast();
+  const firestore = useFirestore();
+
+  const form = useForm<TeamNameForm>({
+    resolver: zodResolver(teamNameSchema),
     defaultValues: {
       name: '',
-      jersey: { style: 'solid', primaryColor: '#d32f2f', secondaryColor: '#d32f2f' },
-      members: [],
-      formation: '4-3-3',
     },
   });
 
-  const { trigger, handleSubmit, reset } = form;
-
-  const nextStep = async () => {
-    let fieldsToValidate: (keyof CreateTeamFormData | `jersey.${keyof CreateTeamFormData['jersey']}` | `members`)[] = [];
-    if (step === 1) fieldsToValidate = ['name'];
-    if (step === 2) fieldsToValidate = ['jersey.style', 'jersey.primaryColor', 'jersey.secondaryColor'];
-    
-    const isValid = await trigger(fieldsToValidate);
-    if (isValid) setStep(s => s + 1);
-  };
-  const prevStep = () => setStep(s => s - 1);
-  
-  const onSubmit = async (data: CreateTeamFormData) => {
-    if (!firestore || !user?.activeGroupId) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No hay un grupo activo.' });
-        return;
-    }
-    setIsSubmitting(true);
-    try {
-        const newTeam: Omit<GroupTeam, 'id'> = {
-            name: data.name,
-            jersey: data.jersey,
-            ownerUid: user.uid,
-            groupId: user.activeGroupId,
-            members: data.members,
-            formation: data.formation,
-        };
-        await addDoc(collection(firestore, 'groups', user.activeGroupId, 'teams'), newTeam);
-        toast({ title: '¡Equipo Creado!', description: `El equipo "${data.name}" se ha formado.` });
-        setOpen(false);
-    } catch (error) {
-        console.error('Error creating team:', error);
-        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo crear el equipo.' });
-    } finally {
-        setIsSubmitting(false);
-    }
+  const handlePlayerToggle = (playerId: string) => {
+    setSelectedPlayerIds(prev =>
+      prev.includes(playerId)
+        ? prev.filter(id => id !== playerId)
+        : [...prev, playerId]
+    );
   };
 
-  useEffect(() => {
-    if (!open) {
-      reset({
-        name: '',
-        jersey: { style: 'solid', primaryColor: '#d32f2f', secondaryColor: '#d32f2f' },
-        members: [],
-        formation: '4-3-3',
+  const handleNext = () => {
+    if (step === 1) {
+      form.trigger('name').then(isValid => {
+        if (isValid) setStep(2);
       });
-      setStep(1);
+    } else {
+      setStep(prev => Math.min(prev + 1, 3));
     }
-  }, [open, reset]);
-  
+  };
+
+  const handleBack = () => {
+    setStep(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleCreate = async (data: TeamNameForm) => {
+    if (!firestore) return;
+    setIsCreating(true);
+
+    try {
+      await addDoc(collection(firestore, 'teams'), {
+        name: data.name,
+        groupId,
+        jersey,
+        playerIds: selectedPlayerIds,
+        createdBy: currentUserId,
+        createdAt: new Date().toISOString(),
+      });
+
+      toast({
+        title: '¡Equipo creado!',
+        description: `El equipo "${data.name}" se ha creado exitosamente.`,
+      });
+
+      // Reset form
+      form.reset();
+      setStep(1);
+      setSelectedPlayerIds([]);
+      setJersey({
+        type: 'plain',
+        primaryColor: '#DC2626',
+        secondaryColor: '#FFFFFF',
+      });
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error creating team:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo crear el equipo.',
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const resetDialog = () => {
+    setStep(1);
+    form.reset();
+    setSelectedPlayerIds([]);
+    setJersey({
+      type: 'plain',
+      primaryColor: '#DC2626',
+      secondaryColor: '#FFFFFF',
+    });
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      resetDialog();
+    }
+    onOpenChange(newOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline"><PlusCircle className="mr-2 h-4 w-4" />Crear Equipo</Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Asistente de Creación de Equipo</DialogTitle>
-          <DialogDescription>Paso {step} de 3: {['Datos Básicos', 'Diseño de Camiseta', 'Miembros'][step-1]}</DialogDescription>
+          <DialogTitle>Crear Equipo Nuevo</DialogTitle>
+          <DialogDescription>
+            {step === 1 && 'Dale un nombre a tu equipo'}
+            {step === 2 && 'Seleccioná los jugadores del equipo'}
+            {step === 3 && 'Diseñá la camiseta del equipo'}
+          </DialogDescription>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <FormProvider {...form}>
-                <div className={cn("min-h-[400px]", step !== 1 ? 'hidden' : 'pt-4')}>
-                    <Label htmlFor="team-name">Nombre del Equipo</Label>
-                    <Input id="team-name" {...form.register('name')} placeholder="Ej: Furia Roja" />
-                    {form.formState.errors.name && <p className="text-destructive text-xs mt-1">{form.formState.errors.name.message}</p>}
-                </div>
 
-                <div className={cn("min-h-[400px]", step !== 2 ? 'hidden' : '')}><JerseyCreator /></div>
-                <div className={cn("min-h-[400px]", step !== 3 ? 'hidden' : 'pt-4')}><MemberManager groupPlayers={groupPlayers} /></div>
+        {/* Progress Indicator */}
+        <div className="flex items-center justify-between mb-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex items-center flex-1">
+              <div
+                className={cn(
+                  'flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium',
+                  step === i
+                    ? 'bg-primary text-primary-foreground'
+                    : step > i
+                    ? 'bg-primary/20 text-primary'
+                    : 'bg-muted text-muted-foreground'
+                )}
+              >
+                {step > i ? <Check className="h-4 w-4" /> : i}
+              </div>
+              {i < 3 && (
+                <div
+                  className={cn(
+                    'flex-1 h-1 mx-2',
+                    step > i ? 'bg-primary/20' : 'bg-muted'
+                  )}
+                />
+              )}
+            </div>
+          ))}
+        </div>
 
-                <DialogFooter className="pt-4">
-                    {step > 1 && <Button type="button" variant="outline" onClick={prevStep}><ArrowLeft className="mr-2 h-4 w-4" />Anterior</Button>}
-                    <div className="flex-grow"></div>
-                    {step < 3 && <Button type="button" onClick={nextStep}>Siguiente<ArrowRight className="ml-2 h-4 w-4" /></Button>}
-                    {step === 3 && <Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Shield className="mr-2 h-4 w-4" />}Crear Equipo</Button>}
-                </DialogFooter>
-            </FormProvider>
-        </form>
+        {/* Step 1: Nombre del Equipo */}
+        {step === 1 && (
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="team-name">Nombre del Equipo</Label>
+              <Input
+                id="team-name"
+                {...form.register('name')}
+                placeholder="Ej: Los Cracks, Equipo Rojo, etc."
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleNext();
+                  }
+                }}
+              />
+              {form.formState.errors.name && (
+                <p className="text-xs text-destructive">
+                  {form.formState.errors.name.message}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Selección de Jugadores */}
+        {step === 2 && (
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Jugadores ({selectedPlayerIds.length} seleccionados)</Label>
+              <div className="max-h-64 overflow-y-auto space-y-2 border rounded-md p-3">
+                {players.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No hay jugadores en este grupo
+                  </p>
+                ) : (
+                  players.map(player => (
+                    <label
+                      key={player.id}
+                      className="flex items-center space-x-3 p-2 rounded hover:bg-muted cursor-pointer"
+                      htmlFor={`player-${player.id}`}
+                    >
+                      <Checkbox
+                        id={`player-${player.id}`}
+                        checked={selectedPlayerIds.includes(player.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedPlayerIds(prev => [...prev, player.id]);
+                          } else {
+                            setSelectedPlayerIds(prev => prev.filter(id => id !== player.id));
+                          }
+                        }}
+                      />
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={player.photoUrl} alt={player.name} />
+                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{player.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {player.position} · OVR {player.ovr}
+                        </p>
+                      </div>
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Diseño de Camiseta */}
+        {step === 3 && (
+          <div className="py-4">
+            <JerseyDesigner value={jersey} onChange={setJersey} />
+          </div>
+        )}
+
+        {/* Footer con botones de navegación */}
+        <DialogFooter className="gap-2 sm:gap-2">
+          <div className="flex w-full justify-between gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleBack}
+              disabled={step === 1 || isCreating}
+            >
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Atrás
+            </Button>
+            {step < 3 ? (
+              <Button
+                type="button"
+                onClick={handleNext}
+                disabled={step === 2 && selectedPlayerIds.length === 0}
+              >
+                Siguiente
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                onClick={() => {
+                  form.handleSubmit(handleCreate)();
+                }}
+                disabled={isCreating}
+              >
+                {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Crear Equipo
+              </Button>
+            )}
+          </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
