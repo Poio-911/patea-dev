@@ -7,11 +7,12 @@ import { useDoc, useCollection, useFirestore } from '@/firebase';
 import { doc, collection, query, where } from 'firebase/firestore';
 import type { GroupTeam, Player } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { Loader2, Users } from 'lucide-react';
+import { Loader2, Users, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { TeamRosterPlayer } from '@/components/team-roster-player';
-import { ShirtIcon } from '@/components/icons/shirt-icon';
+import { JerseyPreview } from '@/components/team-builder/jersey-preview';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function TeamDetailPage() {
   const { id: teamId } = useParams();
@@ -61,6 +62,15 @@ export default function TeamDetailPage() {
 
   return (
     <div className="flex flex-col gap-8">
+        <div className="flex w-full items-center justify-between">
+            <Button asChild variant="outline" className="self-start">
+                <Link href="/groups">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Volver a Grupos
+                </Link>
+            </Button>
+        </div>
+
         <div className="flex flex-col items-center text-center gap-4">
             {team.jersey && (
               <div className="h-20 w-20 flex items-center justify-center overflow-hidden">
