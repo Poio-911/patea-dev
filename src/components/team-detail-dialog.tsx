@@ -24,17 +24,18 @@ interface TeamDetailDialogProps {
   children: React.ReactNode;
 }
 
-const TeamRosterPlayer = ({ player, number, jersey }: { player: Player; number: number; jersey: GroupTeam['jersey'] }) => {
+const TeamRosterPlayer = ({ player, number }: { player: Player; number: number; }) => {
   return (
     <div className="flex items-center gap-4 rounded-lg p-2 hover:bg-muted">
-        <div className="h-14 w-14 flex-shrink-0">
-            <JerseyIcon {...jersey} number={number} />
-        </div>
+        <Avatar className="h-12 w-12 border">
+          <AvatarImage src={player.photoUrl} alt={player.name} />
+          <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+        </Avatar>
         <div className="flex-1">
             <p className="font-bold">{player.name}</p>
             <p className="text-sm text-muted-foreground">{player.position}</p>
         </div>
-        <Badge variant="secondary" className="text-lg font-bold">{player.ovr}</Badge>
+        <Badge variant="secondary" className="text-lg font-bold">#{number}</Badge>
     </div>
   );
 };
@@ -54,16 +55,6 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
       .filter((p): p is Player & { number: number } => p !== null)
       .sort((a, b) => a.number - b.number);
   }, [team.members, allGroupPlayers]);
-
-  const formationPlayerCount = useMemo(() => {
-    // Simple logic for now, assumes standard 11-a-side logic.
-    // Can be expanded later.
-    return 11;
-  }, [team.formation]);
-
-  const titulares = teamPlayersWithDetails.slice(0, formationPlayerCount);
-  const suplentes = teamPlayersWithDetails.slice(formationPlayerCount);
-
 
   return (
     <Dialog>
@@ -101,7 +92,7 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
                     </h3>
                     <div className="space-y-1">
                         {teamPlayersWithDetails.map(player => (
-                            <TeamRosterPlayer key={player.id} player={player} number={player.number} jersey={team.jersey} />
+                            <TeamRosterPlayer key={player.id} player={player} number={player.number} />
                         ))}
                     </div>
                 </div>
