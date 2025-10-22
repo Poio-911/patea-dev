@@ -133,6 +133,15 @@ export type GroupTeam = {
   createdAt: string;
 } & DocumentData;
 
+export type Group = {
+  id: string;
+  name: string;
+  ownerUid: string;
+  inviteCode: string;
+  members: string[];
+} & DocumentData;
+
+
 export type NotificationType = 'match_invite' | 'new_joiner' | 'evaluation_pending' | 'match_update';
 
 export type Notification = {
