@@ -74,7 +74,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   const playerRef = useMemo(() => firestore && playerId ? doc(firestore, 'players', playerId) : null, [firestore, playerId]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
 
-  const createdPlayersQuery = useMemo(() => {
+ const createdPlayersQuery = useMemo(() => {
     if (!firestore || !isCurrentUserProfile || !playerId) return null;
     return query(collection(firestore, 'players'), where('ownerUid', '==', playerId));
   }, [firestore, playerId, isCurrentUserProfile]);
@@ -92,8 +92,8 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   }, [createdPlayers, user]);
   
   const sortedCreatedMatches = useMemo(() => {
-      if (!createdMatches) return [];
-      return [...createdMatches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    if (!createdMatches) return [];
+    return [...createdMatches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [createdMatches]);
 
 
@@ -380,7 +380,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                         <TabsTrigger value="created-players">Jugadores Creados</TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="evaluations">
+                    <TabsContent value="evaluations" className="mt-6">
                          <Card>
                             <CardHeader>
                                 <CardTitle>Historial de Evaluaciones</CardTitle>
@@ -454,7 +454,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="created-matches">
+                    <TabsContent value="created-matches" className="mt-6">
                         <Card>
                             <CardContent className="pt-6">
                                 <div className="relative w-full overflow-auto">
@@ -489,7 +489,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                             </CardContent>
                         </Card>
                     </TabsContent>
-                    <TabsContent value="created-players">
+                    <TabsContent value="created-players" className="mt-6">
                          <Card>
                             <CardContent className="pt-6">
                                 <Table>
