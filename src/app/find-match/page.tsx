@@ -33,6 +33,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PlayerCard } from '@/components/player-card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle as UiDialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
+import { PlayerDetailCard } from '@/components/player-detail-card';
 
 const containerStyle = {
   width: '100%',
@@ -68,10 +69,31 @@ const positionBadgeStyles: Record<Player['position'], string> = {
 
 
 const CompactPlayerCard = ({ player, distance, onInvite, isAlreadyInvited }: { player: AvailablePlayer, distance: number, onInvite: (player: AvailablePlayer) => void, isAlreadyInvited: boolean }) => {
+    const firestore = useFirestore();
+    const [fullPlayerData, setFullPlayerData] = useState<Player | null>(null);
+    const [isPlayerLoading, setIsPlayerLoading] = useState(false);
     const playerName = player.displayName || (player as any).name;
 
+    const handleOpen = async (open: boolean) => {
+        if (open && !fullPlayerData && firestore) {
+            setIsPlayerLoading(true);
+            try {
+                const playerRef = doc(firestore, 'players', player.uid);
+                const playerSnap = await getDoc(playerRef);
+                if (playerSnap.exists()) {
+                    setFullPlayerData({ id: playerSnap.id, ...playerSnap.data() } as Player);
+                }
+            } catch (error) {
+                console.error("Failed to fetch full player data:", error);
+            } finally {
+                setIsPlayerLoading(false);
+            }
+        }
+    };
+
+
     return (
-        <Dialog>
+        <Dialog onOpenChange={handleOpen}>
              <DialogTrigger asChild>
                 <Card className="cursor-pointer transition-all duration-200 overflow-hidden hover:border-primary/50">
                     <CardContent className="p-3">
@@ -112,10 +134,11 @@ const CompactPlayerCard = ({ player, distance, onInvite, isAlreadyInvited }: { p
              </DialogTrigger>
              <DialogContent className="sm:max-w-sm p-0 border-0 bg-transparent shadow-none">
                 <DialogHeader>
-                    <UiDialogTitle className="sr-only">Tarjeta de Jugador de {playerName}</UiDialogTitle>
+                    <UiDialogTitle className="sr-only">Detalles del Jugador: {playerName}</UiDialogTitle>
                 </DialogHeader>
-                 <PlayerCard player={player as unknown as Player} isLink={false} />
-            </DialogContent>
+                {isPlayerLoading && <div className="h-96 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>}
+                {fullPlayerData && <PlayerDetailCard player={fullPlayerData} />}
+             </DialogContent>
         </Dialog>
     )
 }
@@ -456,4 +479,3 @@ export default function FindMatchPage() {
   );
 }
 
-    
