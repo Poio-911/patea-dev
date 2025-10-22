@@ -79,8 +79,8 @@ export default function TeamDetailPage() {
   return (
     <div className="flex flex-col gap-8">
         <div className="flex flex-row items-center gap-4">
-            <div className="h-16 w-16 flex-shrink-0">
-                 {team.jersey && <JerseyPreview jersey={team.jersey} size="xl" />}
+            <div className="h-12 w-12 flex-shrink-0">
+                 {team.jersey && <JerseyPreview jersey={team.jersey} size="lg" />}
             </div>
             <div className="flex-grow">
                 <PageHeader title={team.name} />
