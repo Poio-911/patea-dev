@@ -33,6 +33,13 @@ const positionColors: Record<Player['position'], string> = {
   POR: 'text-chart-4',
 };
 
+const statusConfig: Record<Match['status'], { label: string; className: string }> = {
+    upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
+    active: { label: 'Activo', className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
+    completed: { label: 'Finalizado', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' },
+    evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' },
+};
+
 const Stat = ({ label, value }: { label: string; value: number }) => (
   <div className="flex items-center justify-between text-sm py-1">
     <span className="font-semibold text-muted-foreground">{label}</span>
@@ -111,8 +118,6 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
             setEvaluations(playerEvals);
 
             const matchIds = [...new Set(playerEvals.map(e => e.matchId))];
-            const evaluatorIds = [...new Set(playerEvals.map(e => e.evaluatorId))];
-            
             if (matchIds.length > 0) {
                 const matchesQuery = query(collection(firestore, 'matches'), where('__name__', 'in', matchIds));
                 const matchesSnapshot = await getDocs(matchesQuery);
@@ -121,6 +126,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                 setMatches([]);
             }
 
+            const evaluatorIds = [...new Set(playerEvals.map(e => e.evaluatorId))];
             if (evaluatorIds.length > 0) {
                 const usersQuery = query(collection(firestore, 'users'), where('__name__', 'in', evaluatorIds));
                 const usersSnapshot = await getDocs(usersQuery);
@@ -365,7 +371,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
             </div>
         </div>
         
-        {isCurrentUserProfile && (
+        {isCurrentUserProfile ? (
             <div className="lg:col-span-3">
                 <Tabs defaultValue="evaluations" className="w-full">
                     <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
@@ -451,32 +457,35 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                     <TabsContent value="created-matches">
                         <Card>
                             <CardContent className="pt-6">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Partido</TableHead>
-                                            <TableHead>Fecha</TableHead>
-                                            <TableHead>Jugadores</TableHead>
-                                            <TableHead>Estado</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {sortedCreatedMatches && sortedCreatedMatches.length > 0 ? sortedCreatedMatches.map(match => (
-                                            <TableRow key={match.id}>
-                                                <TableCell className="font-medium">{match.title}</TableCell>
-                                                <TableCell>{format(new Date(match.date), 'dd/MM/yyyy', { locale: es })}</TableCell>
-                                                <TableCell>{match.players.length} / {match.matchSize}</TableCell>
-                                                <TableCell>
-                                                    <Badge variant={match.status === 'completed' || match.status === 'evaluated' ? 'secondary' : 'default'}>{match.status}</Badge>
-                                                </TableCell>
-                                            </TableRow>
-                                        )) : (
+                                <div className="relative w-full overflow-auto">
+                                    <Table>
+                                        <TableHeader>
                                             <TableRow>
-                                                <TableCell colSpan={4} className="text-center h-24">No has creado ningún partido.</TableCell>
+                                                <TableHead>Partido</TableHead>
+                                                <TableHead>Fecha</TableHead>
+                                                <TableHead>Estado</TableHead>
                                             </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {sortedCreatedMatches && sortedCreatedMatches.length > 0 ? sortedCreatedMatches.map(match => {
+                                                const statusInfo = statusConfig[match.status] || statusConfig.completed;
+                                                return (
+                                                    <TableRow key={match.id}>
+                                                        <TableCell className="font-medium">{match.title}</TableCell>
+                                                        <TableCell>{format(new Date(match.date), 'dd/MM/yyyy', { locale: es })}</TableCell>
+                                                        <TableCell>
+                                                            <Badge variant="outline" className={cn(statusInfo.className)}>{statusInfo.label}</Badge>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            }) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={3} className="text-center h-24">No has creado ningún partido.</TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -522,6 +531,34 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                     </TabsContent>
                 </Tabs>
             </div>
+        ) : (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Historial de Evaluaciones</CardTitle>
+                    <CardDescription>Rendimiento del jugador en los últimos partidos evaluados.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, avgRating, individualEvaluations }) => (
+                        <Card key={match.id} className="bg-muted/50">
+                             <CardHeader className="flex flex-row items-center justify-between p-4">
+                                <div>
+                                    <CardTitle className="text-lg">{match.title}</CardTitle>
+                                    <CardDescription>{format(new Date(match.date), 'dd MMM, yyyy', { locale: es })}</CardDescription>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                     <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'} className="text-base">
+                                        <Star className="mr-1 h-3 w-3" /> {avgRating.toFixed(2)}
+                                    </Badge>
+                                </div>
+                            </CardHeader>
+                        </Card>
+                    )) : (
+                        <CardContent className="text-center text-muted-foreground py-10">
+                            Este jugador aún no tiene evaluaciones registradas.
+                        </CardContent>
+                    )}
+                </CardContent>
+            </Card>
         )}
     </div>
   );
