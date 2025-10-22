@@ -13,7 +13,7 @@ import { Separator } from './ui/separator';
 import type { GroupTeam, Player } from '@/lib/types';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
-import { Cone, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { JerseyIcon } from './jerseys';
 
 

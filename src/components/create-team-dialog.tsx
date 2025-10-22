@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, Controller, useWatch, FormProvider, useFormContext, useFieldArray } from 'react-hook-form';
+import { useForm, FormProvider, useFormContext, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useFirestore, useUser } from '@/firebase';
@@ -19,7 +18,7 @@ import { JerseyIcon } from './jerseys';
 import { Checkbox } from './ui/checkbox';
 import { ScrollArea } from './ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './ui/carousel';
+
 
 const jerseyStyles: { id: JerseyStyle; name: string }[] = [
     { id: 'solid', name: 'Liso' },
@@ -107,17 +106,18 @@ const JerseyCreator = () => {
                                 key={`primary-${color}`}
                                 type="button"
                                 className={cn(
-                                    "h-6 w-6 rounded-full border-2 transition-all",
+                                    "h-6 w-6 rounded-full border-2 transition-all flex items-center justify-center",
                                     jersey.primaryColor === color ? 'border-ring' : 'border-transparent'
                                 )}
-                                style={{ backgroundColor: color }}
                                 onClick={() => {
                                     setValue('jersey.primaryColor', color, { shouldValidate: true });
                                     if (!requiresSecondaryColor) {
                                         setValue('jersey.secondaryColor', color, { shouldValidate: true });
                                     }
                                 }}
-                            />
+                            >
+                                <span className="h-full w-full rounded-full" style={{ backgroundColor: color }} />
+                            </button>
                         ))}
                     </div>
                     {errors.jersey?.primaryColor && <p className="text-destructive text-xs mt-1">{errors.jersey.primaryColor.message}</p>}
@@ -130,12 +130,13 @@ const JerseyCreator = () => {
                                 key={`secondary-${color}`}
                                 type="button"
                                 className={cn(
-                                    "h-6 w-6 rounded-full border-2 transition-all",
+                                    "h-6 w-6 rounded-full border-2 transition-all flex items-center justify-center",
                                     jersey.secondaryColor === color ? 'border-ring' : 'border-transparent'
                                 )}
-                                style={{ backgroundColor: color }}
                                 onClick={() => requiresSecondaryColor && setValue('jersey.secondaryColor', color, { shouldValidate: true })}
-                            />
+                            >
+                               <span className="h-full w-full rounded-full" style={{ backgroundColor: color }} />
+                            </button>
                         ))}
                     </div>
                     {requiresSecondaryColor && errors.jersey?.secondaryColor && <p className="text-destructive text-xs mt-1">{errors.jersey.secondaryColor.message}</p>}
@@ -147,12 +148,12 @@ const JerseyCreator = () => {
 
 
 const MemberManager = ({ groupPlayers }: { groupPlayers: Player[] }) => {
-    const { control, formState: { errors } } = useFormContext<CreateTeamFormData>();
+    const { control, formState: { errors }, watch } = useFormContext<CreateTeamFormData>();
     const { fields, append, remove } = useFieldArray({
         control,
         name: "members"
     });
-    const watchedMembers = useWatch({ control, name: "members" });
+    const watchedMembers = watch("members");
 
     return (
         <div className="space-y-4">
@@ -160,7 +161,7 @@ const MemberManager = ({ groupPlayers }: { groupPlayers: Player[] }) => {
             <ScrollArea className="h-72 border rounded-md p-2">
                 <div className="space-y-2">
                     {groupPlayers.map((player, index) => {
-                        const fieldIndex = watchedMembers.findIndex((m: any) => m.playerId === player.id);
+                        const fieldIndex = watchedMembers.findIndex((m) => m.playerId === player.id);
                         const isSelected = fieldIndex !== -1;
                         return (
                             <div key={player.id} className={cn("p-2 rounded-md flex items-center gap-2 transition-colors", isSelected ? 'bg-accent' : 'hover:bg-muted/50')}>
@@ -171,7 +172,7 @@ const MemberManager = ({ groupPlayers }: { groupPlayers: Player[] }) => {
                                         if (checked) {
                                             append({ playerId: player.id, number: index + 1 });
                                         } else {
-                                            const removeIndex = watchedMembers.findIndex((m: any) => m.playerId === player.id);
+                                            const removeIndex = watchedMembers.findIndex((m) => m.playerId === player.id);
                                             if (removeIndex > -1) {
                                                 remove(removeIndex);
                                             }
@@ -245,11 +246,11 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
     try {
         const newTeam: Omit<GroupTeam, 'id'> = {
             name: data.name,
-            formation: "4-4-2", // Hardcoded for now
             jersey: data.jersey,
             ownerUid: user.uid,
             groupId: user.activeGroupId,
             members: data.members,
+            formation: '4-3-3', // Default or could be another step
         };
         await addDoc(collection(firestore, 'groups', user.activeGroupId, 'teams'), newTeam);
         toast({ title: '¡Equipo Creado!', description: `El equipo "${data.name}" se ha formado.` });

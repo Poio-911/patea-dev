@@ -1,12 +1,12 @@
 'use client';
 import { JerseyProps } from '.';
 
-export function StripesJersey({ primaryColor, secondaryColor, className }: JerseyProps) {
+export function StripesJersey({ primaryColor = '#cccccc', secondaryColor = '#aaaaaa', className }: JerseyProps) {
   const id = `stripes-${primaryColor}-${secondaryColor}`.replace(/#/g, '');
-  const shirtPath = "M243.2,4.5C148.8,4.5,70.3,55.8,35.4,122.3c-23.3,44.4-28,95.5-13.8,141.5c1.2,4.1,2.8,8.2,4.8,12.1 c13.4,26.7,35.1,49.2,62.1,64.2c27.1,15,58.3,22.7,90.2,22.7c31.9,0,63-7.7,90.2-22.7c27.1-15,48.7-37.5,62.1-64.2 c384.8,354,411.3,276,243.2,4.5z";
+  const shirtPath = "M90.3,4.5C64.6,4.5,41.2,16.2,20.8,35.4c-13.6,12.8-20.9,29.9-20.9,47.3 c0,29.5,15.6,56.3,42,72.2c16.1,9.7,35,14.6,54.4,14.6c19.4,0,38.3-4.9,54.4-14.6c26.4-15.9,42-42.7,42-72.2 c0-17.4-7.3-34.5-20.9-47.3C139.4,16.2,116.1,4.5,90.3,4.5z";
   
   return (
-    <svg viewBox="0 0 486 420" className={className} xmlSpace="preserve">
+    <svg viewBox="0 0 180 180" className={className} xmlSpace="preserve">
       <defs>
         <clipPath id={id}>
           <path d={shirtPath} />
@@ -14,15 +14,15 @@ export function StripesJersey({ primaryColor, secondaryColor, className }: Jerse
         <pattern
           id={`pattern-${id}`}
           patternUnits="userSpaceOnUse"
-          width="80"
-          height="80"
+          width="40"
+          height="40"
         >
-          <rect width="40" height="80" fill={primaryColor} />
-          <rect x="40" width="40" height="80" fill={secondaryColor} />
+          <rect width="20" height="40" fill={primaryColor} />
+          <rect x="20" width="20" height="40" fill={secondaryColor} />
         </pattern>
       </defs>
       <g clipPath={`url(#${id})`}>
-        <rect x="0" y="0" width="486" height="420" fill={`url(#pattern-${id})`} />
+        <rect x="0" y="0" width="180" height="180" fill={`url(#pattern-${id})`} />
       </g>
     </svg>
   );

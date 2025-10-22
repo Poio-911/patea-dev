@@ -7,12 +7,10 @@ import { HalvesJersey } from './HalvesJersey';
 import { HoopsJersey } from './HoopsJersey';
 import { CheckeredJersey } from './CheckeredJersey';
 
-
 export type JerseyProps = {
-  primaryColor: string;
-  secondaryColor: string;
+  primaryColor?: string;
+  secondaryColor?: string;
   className?: string;
-  number?: number;
 };
 
 const jerseyComponents: Record<JerseyStyle, React.FC<JerseyProps>> = {
@@ -25,10 +23,10 @@ const jerseyComponents: Record<JerseyStyle, React.FC<JerseyProps>> = {
 };
 
 interface JerseyIconProps extends JerseyProps {
-  style: JerseyStyle;
+  style?: JerseyStyle;
 }
 
-export function JerseyIcon({ style, ...props }: JerseyIconProps) {
+export function JerseyIcon({ style = 'solid', ...props }: JerseyIconProps) {
   const JerseyComponent = jerseyComponents[style] || SolidJersey;
   return <JerseyComponent {...props} />;
 }
