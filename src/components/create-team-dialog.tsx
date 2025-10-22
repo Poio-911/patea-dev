@@ -18,10 +18,26 @@ import { Loader2, PlusCircle, Shield, ArrowRight, ArrowLeft } from 'lucide-react
 import { Player, GroupTeam, JerseyStyle, TeamMember } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { JerseyIcon } from './icons/jersey-icon';
+import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
+
 
 const formations = ['4-4-2', '4-3-3', '3-5-2', '5-3-2', '4-5-1'];
 const jerseyStyles: JerseyStyle[] = ['solid', 'stripes', 'sash'];
-const colorPalette = ['#d32f2f', '#303f9f', '#0288d1', '#388e3c', '#fbc02d', '#f57c00', '#212121', '#fafafa'];
+const colorPalette = [
+    '#d32f2f', // Red
+    '#303f9f', // Indigo
+    '#0288d1', // Light Blue
+    '#388e3c', // Green
+    '#fbc02d', // Yellow
+    '#f57c00', // Orange
+    '#212121', // Black
+    '#ffffff', // White
+    '#c2185b', // Pink
+    '#7b1fa2', // Purple
+    '#00796b', // Teal
+    '#e64a19', // Deep Orange
+];
+
 
 const memberSchema = z.object({
   playerId: z.string(),
@@ -43,6 +59,7 @@ type CreateTeamFormData = z.infer<typeof createTeamSchema>;
 
 const JerseyCreator = ({ control, form }: { control: any, form: any }) => {
     const jersey = form.watch('jersey');
+    const selectedStyle = jersey.style;
 
     return (
         <Controller
@@ -50,8 +67,8 @@ const JerseyCreator = ({ control, form }: { control: any, form: any }) => {
             control={control}
             render={({ field }) => (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
-                    <div className="w-full h-40 rounded-lg flex items-center justify-center p-4 bg-muted/50">
-                        <div className="w-32 h-32">
+                    <div className="w-full h-48 rounded-lg flex items-center justify-center p-4 bg-muted/50">
+                        <div className="w-36 h-36">
                             <JerseyIcon {...jersey} />
                         </div>
                     </div>
@@ -74,14 +91,16 @@ const JerseyCreator = ({ control, form }: { control: any, form: any }) => {
                                 ))}
                             </div>
                         </div>
-                         <div>
-                            <Label>Color Secundario</Label>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                                {colorPalette.map(color => (
-                                    <button key={`secondary-${color}`} type="button" className="h-8 w-8 rounded-full border-2 transition-all" style={{ backgroundColor: color, borderColor: field.value.secondaryColor === color ? 'hsl(var(--ring))' : 'transparent' }} onClick={() => field.onChange({ ...field.value, secondaryColor: color })} />
-                                ))}
+                         {selectedStyle !== 'solid' && (
+                             <div className="transition-all duration-300">
+                                <Label>Color Secundario</Label>
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                    {colorPalette.map(color => (
+                                        <button key={`secondary-${color}`} type="button" className="h-8 w-8 rounded-full border-2 transition-all" style={{ backgroundColor: color, borderColor: field.value.secondaryColor === color ? 'hsl(var(--ring))' : 'transparent' }} onClick={() => field.onChange({ ...field.value, secondaryColor: color })} />
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                         )}
                     </div>
                 </div>
             )}
@@ -221,8 +240,10 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
   // Reset form and step when dialog closes
   useEffect(() => {
     if (!open) {
-      reset();
-      setStep(1);
+      setTimeout(() => {
+          reset();
+          setStep(1);
+      }, 200)
     }
   }, [open, reset]);
   
@@ -238,15 +259,15 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
         </DialogHeader>
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className={cn("min-h-[250px]", step !== 1 ? 'hidden' : '')}>
+            <div className={cn("min-h-[300px]", step !== 1 ? 'hidden' : '')}>
                 <Label htmlFor="team-name">Nombre del Equipo</Label>
                 <Input id="team-name" {...form.register('name')} placeholder="Ej: Furia Roja" />
                 {form.formState.errors.name && <p className="text-destructive text-xs mt-1">{form.formState.errors.name.message}</p>}
             </div>
 
-            <div className={cn("min-h-[250px]", step !== 2 ? 'hidden' : '')}><JerseyCreator control={control} form={form} /></div>
-            <div className={cn("min-h-[250px]", step !== 3 ? 'hidden' : '')}><FormationSelector control={control} /></div>
-            <div className={cn("min-h-[250px]", step !== 4 ? 'hidden' : '')}><MemberManager control={control} groupPlayers={groupPlayers} /></div>
+            <div className={cn("min-h-[300px]", step !== 2 ? 'hidden' : '')}><JerseyCreator control={control} form={form} /></div>
+            <div className={cn("min-h-[300px]", step !== 3 ? 'hidden' : '')}><FormationSelector control={control} /></div>
+            <div className={cn("min-h-[300px]", step !== 4 ? 'hidden' : '')}><MemberManager control={control} groupPlayers={groupPlayers} /></div>
 
             <DialogFooter className="pt-4">
                 {step > 1 && <Button type="button" variant="outline" onClick={prevStep}><ArrowLeft className="mr-2 h-4 w-4" />Anterior</Button>}
