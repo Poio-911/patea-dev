@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,113 +13,74 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, PlusCircle, Shield, ArrowRight, ArrowLeft } from 'lucide-react';
-import { Player, GroupTeam, JerseyStyle } from '@/lib/types';
+import { Player, GroupTeam, JerseyStyle, TeamMember } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Separator } from './ui/separator';
+import { JerseyIcon } from './icons/jersey-icon';
 
 const formations = ['4-4-2', '4-3-3', '3-5-2', '5-3-2', '4-5-1'];
 const jerseyStyles: JerseyStyle[] = ['solid', 'stripes', 'sash'];
-const colorPalette = ['#d32f2f', '#303f9f', '#0288d1', '#388e3c', '#fbc02d', '#f57c00', '#000000', '#ffffff'];
+const colorPalette = ['#d32f2f', '#303f9f', '#0288d1', '#388e3c', '#fbc02d', '#f57c00', '#212121', '#fafafa'];
 
-// Step 1: Basic Info
-const step1Schema = z.object({
+const memberSchema = z.object({
+  playerId: z.string(),
+  number: z.coerce.number().min(1, "N°").max(99, "N°"),
+});
+
+// Full schema for validation at the end
+const createTeamSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
-});
-
-// Step 2: Jersey Design
-const step2Schema = z.object({
   jersey: z.object({
-    style: z.enum(jerseyStyles),
-    primaryColor: z.string(),
-    secondaryColor: z.string(),
+    style: z.enum(jerseyStyles, { required_error: "Debes elegir un estilo." }),
+    primaryColor: z.string().min(1, "Debes elegir un color primario."),
+    secondaryColor: z.string().min(1, "Debes elegir un color secundario."),
   }),
-});
-
-// Step 3: Formation
-const step3Schema = z.object({
   formation: z.string().min(1, "Debes seleccionar una formación."),
+  members: z.array(memberSchema).min(1, 'Debes seleccionar al menos un miembro.'),
 });
-
-// Step 4: Members
-const step4Schema = z.object({
-  members: z.array(z.object({
-    playerId: z.string(),
-    number: z.coerce.number().min(1, "El dorsal es obligatorio.").max(99, "El dorsal no puede ser mayor a 99."),
-  })).min(1, 'Debes seleccionar al menos un miembro.'),
-});
-
-const createTeamSchema = step1Schema.merge(step2Schema).merge(step3Schema).merge(step4Schema);
 type CreateTeamFormData = z.infer<typeof createTeamSchema>;
 
-const JerseyIcon = ({ primaryColor, secondaryColor, style }: { primaryColor: string, secondaryColor: string, style: JerseyStyle }) => (
-  <svg viewBox="0 0 486.347 486.347" className="w-full h-full">
-    <defs>
-      <pattern id="stripes" patternUnits="userSpaceOnUse" width="20" height="20">
-        <path d="M0 0 H 20 V 20 H 0 Z" fill={primaryColor} />
-        <path d="M0 0 H 10 V 20 H 0 Z" fill={secondaryColor} />
-      </pattern>
-      <linearGradient id="sash" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="45%" stopColor={primaryColor} />
-        <stop offset="45%" stopColor={secondaryColor} />
-        <stop offset="55%" stopColor={secondaryColor} />
-        <stop offset="55%" stopColor={primaryColor} />
-      </linearGradient>
-    </defs>
-    <g>
-		<path d="M14.32,158.336c2.691,10.546,12.167,17.909,23.057,17.909c1.922,0,3.845-0.236,5.723-0.701l39.417-9.79
-			c4.466-1.072,5.626,2.404,5.626,4.396v249.939c0,13.049,10.63,23.676,23.686,23.676H374.7c13.063,0,23.699-10.627,23.699-23.676
-			V170.208c0-1.729,0.497-4.626,3.892-4.626c0.528,0,1.13,0.08,1.719,0.23l39.237,9.74c1.871,0.465,3.803,0.702,5.727,0.702
-			c10.892,0,20.369-7.364,23.051-17.909l13.577-53.215c1.566-6.141,0.645-12.509-2.605-17.941
-			c-3.241-5.422-8.411-9.253-14.559-10.778L343.975,45.511c-7.489-1.905-15.212-2.879-22.998-2.879l-30.453-0.05l-1.454,6.015
-			c-5.154,21.454-24.149,36.434-46.196,36.434c-22.051,0-41.05-14.979-46.198-36.434l-1.453-6.015h-28.569l-1.403,0.058
-			c-7.72,0-15.437,0.974-22.876,2.863L17.915,76.41c-6.155,1.525-11.319,5.356-14.569,10.778c-3.242,5.424-4.17,11.8-2.599,17.941
-			L14.32,158.336z" fill={style === 'solid' ? primaryColor : style === 'stripes' ? 'url(#stripes)' : 'url(#sash)'} />
-    </g>
-  </svg>
-);
-
 const JerseyCreator = ({ control }: { control: any }) => {
-    const jersey = useForm().watch();
+    const jersey = form.watch('jersey');
 
     return (
         <Controller
             name="jersey"
             control={control}
             render={({ field }) => (
-                <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 items-center">
-                        <div className="w-full h-32 rounded-md flex items-center justify-center p-2 bg-muted">
-                           <div className="w-24 h-24">
-                             <JerseyIcon {...field.value} />
-                           </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
+                    <div className="w-full h-40 rounded-lg flex items-center justify-center p-4 bg-muted/50">
+                        <div className="w-32 h-32">
+                            <JerseyIcon {...jersey} />
                         </div>
-                        <div className="space-y-3">
-                           <div>
-                            <Label>Estilo</Label>
-                            <div className="flex gap-2 mt-1">
+                    </div>
+                    <div className="space-y-4">
+                        <div>
+                            <Label>Estilo de Camiseta</Label>
+                            <div className="flex flex-wrap gap-2 mt-1">
                                 {jerseyStyles.map(style => (
                                     <Button key={style} type="button" variant={field.value.style === style ? 'default' : 'outline'} size="sm" onClick={() => field.onChange({ ...field.value, style })}>
                                         {style.charAt(0).toUpperCase() + style.slice(1)}
                                     </Button>
                                 ))}
                             </div>
-                           </div>
                         </div>
-                    </div>
-                    <div>
-                        <Label>Colores</Label>
-                        <div className="flex gap-2 mt-1">
-                            {colorPalette.map(color => (
-                                <button key={color} type="button" className="h-8 w-8 rounded-full border-2" style={{ backgroundColor: color, borderColor: field.value.primaryColor === color ? 'hsl(var(--ring))' : 'transparent' }} onClick={() => field.onChange({ ...field.value, primaryColor: color })} />
-                            ))}
+                        <div>
+                            <Label>Color Primario</Label>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                                {colorPalette.map(color => (
+                                    <button key={`primary-${color}`} type="button" className="h-8 w-8 rounded-full border-2 transition-all" style={{ backgroundColor: color, borderColor: field.value.primaryColor === color ? 'hsl(var(--ring))' : 'transparent' }} onClick={() => field.onChange({ ...field.value, primaryColor: color })} />
+                                ))}
+                            </div>
                         </div>
-                        <div className="flex gap-2 mt-2">
-                             {colorPalette.map(color => (
-                                <button key={color} type="button" className="h-8 w-8 rounded-full border-2" style={{ backgroundColor: color, borderColor: field.value.secondaryColor === color ? 'hsl(var(--ring))' : 'transparent' }} onClick={() => field.onChange({ ...field.value, secondaryColor: color })} />
-                            ))}
+                         <div>
+                            <Label>Color Secundario</Label>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                                {colorPalette.map(color => (
+                                    <button key={`secondary-${color}`} type="button" className="h-8 w-8 rounded-full border-2 transition-all" style={{ backgroundColor: color, borderColor: field.value.secondaryColor === color ? 'hsl(var(--ring))' : 'transparent' }} onClick={() => field.onChange({ ...field.value, secondaryColor: color })} />
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -134,8 +95,8 @@ const FormationSelector = ({ control }: { control: any }) => (
     control={control}
     render={({ field }) => (
         <div className="space-y-3">
-            <Label>Formación</Label>
-             <div className="grid grid-cols-3 gap-2">
+            <Label>Formación Táctica Predeterminada</Label>
+             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {formations.map(formation => (
                     <Button key={formation} type="button" variant={field.value === formation ? 'default' : 'outline'} onClick={() => field.onChange(formation)}>
                         {formation}
@@ -148,10 +109,10 @@ const FormationSelector = ({ control }: { control: any }) => (
 );
 
 const MemberManager = ({ control, groupPlayers }: { control: any; groupPlayers: Player[] }) => {
-  const { fields, append, remove, update } = useFieldArray({ control, name: "members" });
+  const { fields, append, remove } = useFieldArray({ control, name: "members" });
   const [searchTerm, setSearchTerm] = useState('');
 
-  const selectedPlayerIds = new Set(fields.map(field => (field as any).playerId));
+  const selectedPlayerIds = useMemo(() => new Set(fields.map(field => (field as any).playerId)), [fields]);
 
   const availablePlayers = useMemo(() => {
     return groupPlayers
@@ -165,25 +126,25 @@ const MemberManager = ({ control, groupPlayers }: { control: any; groupPlayers: 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
                 <Label>Jugadores Seleccionados</Label>
-                <ScrollArea className="h-48 border rounded-md p-2">
-                    {fields.length > 0 ? fields.map((field, index) => (
-                        <div key={field.id} className="flex items-center gap-2 p-1">
-                            <Input
-                                type="number"
-                                placeholder="#"
-                                className="w-16 h-8"
-                                {...control.register(`members.${index}.number`)}
-                            />
-                            <p className="flex-1 font-medium truncate">{(groupPlayers.find(p => p.id === (field as any).playerId))?.name}</p>
-                            <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)}>X</Button>
-                        </div>
-                    )) : <p className="text-center text-sm text-muted-foreground p-4">Aún no hay jugadores.</p>}
+                <ScrollArea className="h-52 border rounded-md p-2">
+                    {fields.length > 0 ? fields.map((field, index) => {
+                        const player = groupPlayers.find(p => p.id === (field as any).playerId);
+                        return (
+                            <div key={field.id} className="flex items-center gap-2 p-1">
+                                <Input type="number" placeholder="#" className="w-16 h-8 text-center" {...control.register(`members.${index}.number`)} />
+                                <p className="flex-1 font-medium truncate">{player?.name}</p>
+                                <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove(index)}>
+                                    <span className="text-destructive">X</span>
+                                </Button>
+                            </div>
+                        )
+                    }) : <p className="text-center text-sm text-muted-foreground p-4">Aún no hay jugadores.</p>}
                 </ScrollArea>
             </div>
             <div className="space-y-2">
                  <Label>Jugadores Disponibles</Label>
                  <Input placeholder="Buscar para agregar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                <ScrollArea className="h-40 border rounded-md p-2">
+                <ScrollArea className="h-44 border rounded-md p-2">
                     {availablePlayers.map(player => (
                         <div key={player.id} className="flex items-center gap-2 p-1 hover:bg-accent rounded-md cursor-pointer" onClick={() => append({ playerId: player.id, number: 1 })}>
                            <Avatar className="h-8 w-8"><AvatarImage src={player.photoUrl} /><AvatarFallback>{player.name.charAt(0)}</AvatarFallback></Avatar>
@@ -191,6 +152,7 @@ const MemberManager = ({ control, groupPlayers }: { control: any; groupPlayers: 
                            <PlusCircle className="h-4 w-4 text-muted-foreground" />
                         </div>
                     ))}
+                    {availablePlayers.length === 0 && <p className="text-center text-sm text-muted-foreground p-2">No hay jugadores disponibles.</p>}
                 </ScrollArea>
             </div>
         </div>
@@ -217,12 +179,12 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
     },
   });
 
-  const { control, trigger, getValues, handleSubmit } = form;
+  const { control, trigger, handleSubmit, watch, reset } = form;
 
   const nextStep = async () => {
-    let fieldsToValidate: (keyof CreateTeamFormData)[] = [];
+    let fieldsToValidate: (keyof CreateTeamFormData | `jersey.${keyof CreateTeamFormData['jersey']}` | `members`)[] = [];
     if (step === 1) fieldsToValidate = ['name'];
-    if (step === 2) fieldsToValidate = ['jersey'];
+    if (step === 2) fieldsToValidate = ['jersey.style', 'jersey.primaryColor', 'jersey.secondaryColor'];
     if (step === 3) fieldsToValidate = ['formation'];
     
     const isValid = await trigger(fieldsToValidate);
@@ -248,8 +210,6 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
         await addDoc(collection(firestore, 'groups', user.activeGroupId, 'teams'), newTeam);
         toast({ title: '¡Equipo Creado!', description: `El equipo "${data.name}" se ha formado.` });
         setOpen(false);
-        form.reset();
-        setStep(1);
     } catch (error) {
         console.error('Error creating team:', error);
         toast({ variant: 'destructive', title: 'Error', description: 'No se pudo crear el equipo.' });
@@ -257,6 +217,14 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
         setIsSubmitting(false);
     }
   };
+
+  // Reset form and step when dialog closes
+  useEffect(() => {
+    if (!open) {
+      reset();
+      setStep(1);
+    }
+  }, [open, reset]);
   
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -270,15 +238,15 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
         </DialogHeader>
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className={step !== 1 ? 'hidden' : ''}>
+            <div className={cn("min-h-[250px]", step !== 1 ? 'hidden' : '')}>
                 <Label htmlFor="team-name">Nombre del Equipo</Label>
                 <Input id="team-name" {...form.register('name')} placeholder="Ej: Furia Roja" />
                 {form.formState.errors.name && <p className="text-destructive text-xs mt-1">{form.formState.errors.name.message}</p>}
             </div>
 
-            <div className={step !== 2 ? 'hidden' : ''}><JerseyCreator control={control} /></div>
-            <div className={step !== 3 ? 'hidden' : ''}><FormationSelector control={control} /></div>
-            <div className={step !== 4 ? 'hidden' : ''}><MemberManager control={control} groupPlayers={groupPlayers} /></div>
+            <div className={cn("min-h-[250px]", step !== 2 ? 'hidden' : '')}><JerseyCreator control={control} /></div>
+            <div className={cn("min-h-[250px]", step !== 3 ? 'hidden' : '')}><FormationSelector control={control} /></div>
+            <div className={cn("min-h-[250px]", step !== 4 ? 'hidden' : '')}><MemberManager control={control} groupPlayers={groupPlayers} /></div>
 
             <DialogFooter className="pt-4">
                 {step > 1 && <Button type="button" variant="outline" onClick={prevStep}><ArrowLeft className="mr-2 h-4 w-4" />Anterior</Button>}
