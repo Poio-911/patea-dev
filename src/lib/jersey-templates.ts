@@ -1,3 +1,4 @@
+
 import { JerseyType } from './types';
 
 export type JerseyTemplate = {
