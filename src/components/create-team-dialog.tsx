@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
+import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useFirestore, useUser } from '@/firebase';
@@ -11,11 +11,16 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, PlusCircle, Shield, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Loader2, PlusCircle, Shield, ArrowRight, ArrowLeft, Users } from 'lucide-react';
 import { Player, GroupTeam, JerseyStyle, TeamMember } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { JerseyIcon } from './jerseys';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from './ui/carousel';
+import { Checkbox } from './ui/checkbox';
+import { ScrollArea } from './ui/scroll-area';
+import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
+import { Badge } from './ui/badge';
+import { Separator } from './ui/separator';
 
 const formations = ['4-4-2', '4-3-3', '3-5-2', '5-3-2', '4-5-1'];
 const jerseyStyles: { id: JerseyStyle, name: string }[] = [
@@ -48,82 +53,102 @@ const createTeamSchema = z.object({
 });
 type CreateTeamFormData = z.infer<typeof createTeamSchema>;
 
-const JerseyCreator = ({ control, form }: { control: any, form: any }) => {
-    const [api, setApi] = useState<CarouselApi>()
-    const jersey = form.watch('jersey');
-    const requiresSecondaryColor = jersey.style !== 'solid';
+const JerseyCreator = ({ control }: { control: any }) => {
+    const { setValue, formState: { errors } } = useFormContext<CreateTeamFormData>();
+    const jersey = useWatch({ control, name: "jersey" });
+
+    const [api, setApi] = useState<CarouselApi>();
 
     useEffect(() => {
         if (!api) return;
         
         api.on("select", () => {
-            const selectedStyle = jerseyStyles[api.selectedScrollSnap()].id;
-            form.setValue('jersey.style', selectedStyle, { shouldValidate: true });
+            const selectedStyleId = jerseyStyles[api.selectedScrollSnap()].id;
+            setValue('jersey.style', selectedStyleId, { shouldValidate: true });
+            if (selectedStyleId === 'solid') {
+                setValue('jersey.secondaryColor', jersey.primaryColor);
+            }
         });
-
-    }, [api, form]);
+    }, [api, setValue, jersey.primaryColor]);
+    
+    const requiresSecondaryColor = jersey.style !== 'solid';
 
     return (
-        <Controller
-            name="jersey"
-            control={control}
-            render={({ field }) => (
-                <div className="space-y-6">
-                    <div className="w-full h-48 rounded-lg flex items-center justify-center p-4 bg-muted/50">
-                        <div className="w-36 h-36">
-                            <JerseyIcon style={jersey.style} primaryColor={jersey.primaryColor} secondaryColor={jersey.secondaryColor} />
-                        </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                        <Label>Estilo de Camiseta</Label>
-                        <Carousel setApi={setApi} opts={{ align: "start" }} className="w-full max-w-sm mx-auto">
-                            <CarouselContent className="-ml-2">
-                                {jerseyStyles.map((style, index) => (
-                                    <CarouselItem key={style.id} className="basis-1/3 pl-2">
-                                        <div className="p-1">
-                                            <div 
-                                                className={cn("border-2 rounded-lg p-2 cursor-pointer transition-all", field.value.style === style.id ? "border-primary ring-2 ring-primary" : "border-border")}
-                                                onClick={() => api?.scrollTo(index)}
-                                            >
-                                                <div className="w-full h-16">
-                                                   <JerseyIcon style={style.id} primaryColor="#a1a1aa" secondaryColor="#e4e4e7" />
-                                                </div>
-                                                <p className="text-xs text-center font-medium mt-1">{style.name}</p>
-                                            </div>
-                                        </div>
-                                    </CarouselItem>
-                                ))}
-                            </CarouselContent>
-                            <CarouselPrevious className="hidden sm:flex" />
-                            <CarouselNext className="hidden sm:flex" />
-                        </Carousel>
-                         {form.formState.errors.jersey?.style && <p className="text-destructive text-xs mt-1">{form.formState.errors.jersey.style.message}</p>}
-                    </div>
-
-                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                        <div>
-                            <Label>Color Primario</Label>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                                {colorPalette.map(color => (
-                                    <button key={`primary-${color}`} type="button" className="h-8 w-8 rounded-full border-2 transition-all" style={{ backgroundColor: color, borderColor: field.value.primaryColor === color ? 'hsl(var(--ring))' : 'transparent' }} onClick={() => field.onChange({ ...field.value, primaryColor: color })} />
-                                ))}
-                            </div>
-                            {form.formState.errors.jersey?.primaryColor && <p className="text-destructive text-xs mt-1">{form.formState.errors.jersey.primaryColor.message}</p>}
-                        </div>
-                         <div className={cn("transition-all duration-300", !requiresSecondaryColor && "opacity-20 pointer-events-none")}>
-                            <Label>Color Secundario</Label>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                                {colorPalette.map(color => (
-                                    <button key={`secondary-${color}`} type="button" className="h-8 w-8 rounded-full border-2 transition-all" style={{ backgroundColor: color, borderColor: field.value.secondaryColor === color ? 'hsl(var(--ring))' : 'transparent' }} onClick={() => requiresSecondaryColor && field.onChange({ ...field.value, secondaryColor: color })} />
-                                ))}
-                            </div>
-                             {requiresSecondaryColor && form.formState.errors.jersey?.secondaryColor && <p className="text-destructive text-xs mt-1">{form.formState.errors.jersey.secondaryColor.message}</p>}
-                        </div>
-                    </div>
+        <div className="space-y-6">
+            <div className="w-full h-48 rounded-lg flex items-center justify-center p-4 bg-muted/50">
+                <div className="w-36 h-36">
+                    <JerseyIcon style={jersey.style} primaryColor={jersey.primaryColor} secondaryColor={jersey.secondaryColor} />
                 </div>
-            )}
-        />
+            </div>
+            
+            <div className="space-y-2">
+                <Label>Estilo de Camiseta</Label>
+                <Carousel setApi={setApi} opts={{ align: "start" }} className="w-full max-w-sm mx-auto">
+                    <CarouselContent className="-ml-2">
+                        {jerseyStyles.map((style, index) => (
+                            <CarouselItem key={style.id} className="basis-1/3 pl-2">
+                                <div className="p-1">
+                                    <button
+                                        type="button"
+                                        className={cn(
+                                            "border-2 rounded-lg p-2 cursor-pointer transition-all w-full",
+                                            jersey.style === style.id ? "border-primary ring-2 ring-primary" : "border-border"
+                                        )}
+                                        onClick={() => api?.scrollTo(index)}
+                                    >
+                                        <div className="w-full h-16">
+                                            <JerseyIcon style={style.id} primaryColor="#a1a1aa" secondaryColor={style.id === 'solid' ? "#a1a1aa" : "#e4e4e7"} />
+                                        </div>
+                                        <p className="text-xs text-center font-medium mt-1">{style.name}</p>
+                                    </button>
+                                </div>
+                            </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                    <CarouselPrevious className="hidden sm:flex" />
+                    <CarouselNext className="hidden sm:flex" />
+                </Carousel>
+                {errors.jersey?.style && <p className="text-destructive text-xs mt-1 text-center">{errors.jersey.style.message}</p>}
+            </div>
+
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                <div>
+                    <Label>Color Primario</Label>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                        {colorPalette.map(color => (
+                            <button
+                                key={`primary-${color}`}
+                                type="button"
+                                className="h-8 w-8 rounded-full border-2 transition-all"
+                                style={{ backgroundColor: color, borderColor: jersey.primaryColor === color ? 'hsl(var(--ring))' : 'transparent' }}
+                                onClick={() => {
+                                    setValue('jersey.primaryColor', color, { shouldValidate: true });
+                                    if (!requiresSecondaryColor) {
+                                        setValue('jersey.secondaryColor', color, { shouldValidate: true });
+                                    }
+                                }}
+                            />
+                        ))}
+                    </div>
+                    {errors.jersey?.primaryColor && <p className="text-destructive text-xs mt-1">{errors.jersey.primaryColor.message}</p>}
+                </div>
+                <div className={cn("transition-all duration-300", !requiresSecondaryColor && "opacity-20 pointer-events-none")}>
+                    <Label>Color Secundario</Label>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                        {colorPalette.map(color => (
+                            <button
+                                key={`secondary-${color}`}
+                                type="button"
+                                className="h-8 w-8 rounded-full border-2 transition-all"
+                                style={{ backgroundColor: color, borderColor: jersey.secondaryColor === color ? 'hsl(var(--ring))' : 'transparent' }}
+                                onClick={() => requiresSecondaryColor && setValue('jersey.secondaryColor', color, { shouldValidate: true })}
+                            />
+                        ))}
+                    </div>
+                    {requiresSecondaryColor && errors.jersey?.secondaryColor && <p className="text-destructive text-xs mt-1">{errors.jersey.secondaryColor.message}</p>}
+                </div>
+            </div>
+        </div>
     );
 };
 
@@ -141,13 +166,72 @@ const FormationSelector = ({ control, form }: { control: any, form: any }) => (
                     </Button>
                 ))}
             </div>
-             {form.formState.errors.formation && <p className="text-destructive text-xs mt-1">{form.formState.errors.formation.message}</p>}
+            {form.formState.errors.formation && <p className="text-destructive text-xs mt-1">{form.formState.errors.formation.message}</p>}
         </div>
     )}
   />
 );
 
-// MemberManager remains the same as it was functional
+const MemberManager = ({ control, groupPlayers, form }: { control: any, groupPlayers: Player[], form: any }) => {
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: "members"
+    });
+    const watchedMembers = useWatch({ control, name: "members" });
+    const selectedPlayerIds = new Set(watchedMembers.map((m: any) => m.playerId));
+
+    return (
+        <div className="space-y-4">
+            <Label>Miembros del Equipo ({fields.length})</Label>
+            <ScrollArea className="h-72 border rounded-md p-2">
+                <div className="space-y-2">
+                    {groupPlayers.map((player, index) => {
+                        const fieldIndex = watchedMembers.findIndex((m: any) => m.playerId === player.id);
+                        const isSelected = fieldIndex !== -1;
+                        return (
+                            <div key={player.id} className={cn("p-2 rounded-md flex items-center gap-2 transition-colors", isSelected ? 'bg-accent' : 'hover:bg-muted/50')}>
+                                <Checkbox
+                                    id={`member-${player.id}`}
+                                    checked={isSelected}
+                                    onCheckedChange={(checked) => {
+                                        if (checked) {
+                                            append({ playerId: player.id, number: index + 1 });
+                                        } else {
+                                            const removeIndex = watchedMembers.findIndex((m: any) => m.playerId === player.id);
+                                            if (removeIndex > -1) {
+                                                remove(removeIndex);
+                                            }
+                                        }
+                                    }}
+                                />
+                                <Avatar className="h-9 w-9">
+                                    <AvatarImage src={player.photoUrl} alt={player.name} />
+                                    <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <Label htmlFor={`member-${player.id}`} className="flex-1 cursor-pointer font-semibold">{player.name}</Label>
+                                {isSelected && (
+                                    <Controller
+                                        control={control}
+                                        name={`members.${fieldIndex}.number`}
+                                        render={({ field }) => (
+                                            <Input
+                                                {...field}
+                                                type="number"
+                                                className="h-8 w-20"
+                                                placeholder="N°"
+                                            />
+                                        )}
+                                    />
+                                )}
+                            </div>
+                        )
+                    })}
+                </div>
+            </ScrollArea>
+             {form.formState.errors.members && <p className="text-destructive text-xs mt-1">{form.formState.errors.members.message}</p>}
+        </div>
+    );
+};
 
 export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
   const [open, setOpen] = useState(false);
@@ -161,7 +245,7 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
     resolver: zodResolver(createTeamSchema),
     defaultValues: {
       name: '',
-      jersey: { style: 'solid', primaryColor: '#d32f2f', secondaryColor: '#ffffff' },
+      jersey: { style: 'solid', primaryColor: '#d32f2f', secondaryColor: '#d32f2f' },
       formation: '4-4-2',
       members: [],
     },
@@ -208,7 +292,12 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
 
   useEffect(() => {
     if (!open) {
-      reset();
+      reset({
+        name: '',
+        jersey: { style: 'solid', primaryColor: '#d32f2f', secondaryColor: '#d32f2f' },
+        formation: '4-4-2',
+        members: [],
+      });
       setStep(1);
     }
   }, [open, reset]);
@@ -225,24 +314,24 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
         </DialogHeader>
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className={cn("min-h-[400px]", step !== 1 ? 'hidden' : 'pt-4')}>
-                <Label htmlFor="team-name">Nombre del Equipo</Label>
-                <Input id="team-name" {...form.register('name')} placeholder="Ej: Furia Roja" />
-                {form.formState.errors.name && <p className="text-destructive text-xs mt-1">{form.formState.errors.name.message}</p>}
-            </div>
+            <FormProvider {...form}>
+                <div className={cn("min-h-[400px]", step !== 1 ? 'hidden' : 'pt-4')}>
+                    <Label htmlFor="team-name">Nombre del Equipo</Label>
+                    <Input id="team-name" {...form.register('name')} placeholder="Ej: Furia Roja" />
+                    {form.formState.errors.name && <p className="text-destructive text-xs mt-1">{form.formState.errors.name.message}</p>}
+                </div>
 
-            <div className={cn("min-h-[400px]", step !== 2 ? 'hidden' : '')}><JerseyCreator control={control} form={form} /></div>
-            <div className={cn("min-h-[400px]", step !== 3 ? 'hidden' : 'pt-4')}><FormationSelector control={control} form={form} /></div>
-            {/* MemberManager would be step 4, but it's complex and not defined here to keep it clean */}
-            <div className={cn("min-h-[400px]", step !== 4 ? 'hidden' : 'pt-4')}>
-                <p>Gestor de miembros (Paso 4)</p>
-            </div>
+                <div className={cn("min-h-[400px]", step !== 2 ? 'hidden' : '')}><JerseyCreator control={control} /></div>
+                <div className={cn("min-h-[400px]", step !== 3 ? 'hidden' : 'pt-4')}><FormationSelector control={control} form={form} /></div>
+                <div className={cn("min-h-[400px]", step !== 4 ? 'hidden' : 'pt-4')}><MemberManager control={control} groupPlayers={groupPlayers} form={form} /></div>
 
-            <DialogFooter className="pt-4">
-                {step > 1 && <Button type="button" variant="outline" onClick={prevStep}><ArrowLeft className="mr-2 h-4 w-4" />Anterior</Button>}
-                {step < 4 && <Button type="button" onClick={nextStep}>Siguiente<ArrowRight className="ml-2 h-4 w-4" /></Button>}
-                {step === 4 && <Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Shield className="mr-2 h-4 w-4" />}Crear Equipo</Button>}
-            </DialogFooter>
+                <DialogFooter className="pt-4">
+                    {step > 1 && <Button type="button" variant="outline" onClick={prevStep}><ArrowLeft className="mr-2 h-4 w-4" />Anterior</Button>}
+                    <div className="flex-grow"></div>
+                    {step < 4 && <Button type="button" onClick={nextStep}>Siguiente<ArrowRight className="ml-2 h-4 w-4" /></Button>}
+                    {step === 4 && <Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Shield className="mr-2 h-4 w-4" />}Crear Equipo</Button>}
+                </DialogFooter>
+            </FormProvider>
         </form>
       </DialogContent>
     </Dialog>
