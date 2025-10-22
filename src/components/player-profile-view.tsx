@@ -360,7 +360,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
         {isCurrentUserProfile && (
             <div className="lg:col-span-3">
                 <Tabs defaultValue="evaluations" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
                         <TabsTrigger value="evaluations">Mi Historial</TabsTrigger>
                         <TabsTrigger value="created-matches">Partidos Creados</TabsTrigger>
                         <TabsTrigger value="created-players">Jugadores Creados</TabsTrigger>
