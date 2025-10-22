@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -41,7 +41,7 @@ const createTeamSchema = z.object({
 });
 type CreateTeamFormData = z.infer<typeof createTeamSchema>;
 
-const JerseyCreator = ({ control }: { control: any }) => {
+const JerseyCreator = ({ control, form }: { control: any, form: any }) => {
     const jersey = form.watch('jersey');
 
     return (
@@ -244,7 +244,7 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
                 {form.formState.errors.name && <p className="text-destructive text-xs mt-1">{form.formState.errors.name.message}</p>}
             </div>
 
-            <div className={cn("min-h-[250px]", step !== 2 ? 'hidden' : '')}><JerseyCreator control={control} /></div>
+            <div className={cn("min-h-[250px]", step !== 2 ? 'hidden' : '')}><JerseyCreator control={control} form={form} /></div>
             <div className={cn("min-h-[250px]", step !== 3 ? 'hidden' : '')}><FormationSelector control={control} /></div>
             <div className={cn("min-h-[250px]", step !== 4 ? 'hidden' : '')}><MemberManager control={control} groupPlayers={groupPlayers} /></div>
 
