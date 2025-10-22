@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, Controller, useWatch } from 'react-hook-form';
+import { useForm, Controller, useWatch, useFieldArray, FormProvider, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useFirestore, useUser } from '@/firebase';
@@ -53,8 +54,8 @@ const createTeamSchema = z.object({
 });
 type CreateTeamFormData = z.infer<typeof createTeamSchema>;
 
-const JerseyCreator = ({ control }: { control: any }) => {
-    const { setValue, formState: { errors } } = useFormContext<CreateTeamFormData>();
+const JerseyCreator = () => {
+    const { control, setValue, formState: { errors } } = useFormContext<CreateTeamFormData>();
     const jersey = useWatch({ control, name: "jersey" });
 
     const [api, setApi] = useState<CarouselApi>();
@@ -172,7 +173,8 @@ const FormationSelector = ({ control, form }: { control: any, form: any }) => (
   />
 );
 
-const MemberManager = ({ control, groupPlayers, form }: { control: any, groupPlayers: Player[], form: any }) => {
+const MemberManager = ({ groupPlayers }: { groupPlayers: Player[] }) => {
+    const { control, formState: { errors } } = useFormContext<CreateTeamFormData>();
     const { fields, append, remove } = useFieldArray({
         control,
         name: "members"
@@ -228,7 +230,7 @@ const MemberManager = ({ control, groupPlayers, form }: { control: any, groupPla
                     })}
                 </div>
             </ScrollArea>
-             {form.formState.errors.members && <p className="text-destructive text-xs mt-1">{form.formState.errors.members.message}</p>}
+             {errors.members && <p className="text-destructive text-xs mt-1">{errors.members.message}</p>}
         </div>
     );
 };
@@ -321,9 +323,9 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
                     {form.formState.errors.name && <p className="text-destructive text-xs mt-1">{form.formState.errors.name.message}</p>}
                 </div>
 
-                <div className={cn("min-h-[400px]", step !== 2 ? 'hidden' : '')}><JerseyCreator control={control} /></div>
+                <div className={cn("min-h-[400px]", step !== 2 ? 'hidden' : '')}><JerseyCreator /></div>
                 <div className={cn("min-h-[400px]", step !== 3 ? 'hidden' : 'pt-4')}><FormationSelector control={control} form={form} /></div>
-                <div className={cn("min-h-[400px]", step !== 4 ? 'hidden' : 'pt-4')}><MemberManager control={control} groupPlayers={groupPlayers} form={form} /></div>
+                <div className={cn("min-h-[400px]", step !== 4 ? 'hidden' : 'pt-4')}><MemberManager groupPlayers={groupPlayers} /></div>
 
                 <DialogFooter className="pt-4">
                     {step > 1 && <Button type="button" variant="outline" onClick={prevStep}><ArrowLeft className="mr-2 h-4 w-4" />Anterior</Button>}
@@ -337,3 +339,5 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
     </Dialog>
   );
 }
+
+    
