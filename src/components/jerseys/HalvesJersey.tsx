@@ -1,28 +1,38 @@
+'use client';
 import { JerseyProps } from '.';
 
 export function HalvesJersey({ primaryColor, secondaryColor, className, number }: JerseyProps) {
     const id = `halves-${primaryColor}-${secondaryColor}`.replace(/#/g, '');
+    const shirtPath = "M243.174,85.534c-22.051,0-41.05-14.979-46.198-36.434l-1.453-6.015h-28.569l-1.403,0.058c-7.72,0-15.437,0.974-22.876,2.863L17.915,76.41c-6.155,1.525-11.319,5.356-14.569,10.778c-3.242,5.424-4.17,11.8-2.599,17.941l13.573,53.215c2.691,10.546,12.167,17.909,23.057,17.909c1.922,0,3.845-0.236,5.723-0.701l39.417-9.79c4.466-1.072,5.626,2.404,5.626,4.396v249.939c0,13.049,10.63,23.676,23.686,23.676H374.7c13.063,0,23.699-10.627,23.699-23.676V170.208c0-1.729,0.497-4.626,3.892-4.626c0.528,0,1.13,0.08,1.719,0.23l39.237,9.74c1.871,0.465,3.803,0.702,5.727,0.702c10.892,0,20.369-7.364,23.051-17.909l13.577-53.215c1.566-6.141,0.645-12.509-2.605-17.941c-3.241-5.422-8.411-9.253-14.559-10.778L343.975,45.511c-7.489-1.905-15.212-2.879-22.998-2.879l-30.453-0.05l-1.454,6.015c-5.154,21.454-24.149,36.434-46.196,36.434Z";
+    
     return (
-        <svg viewBox="-20 -50 40 40" className={className}>
+        <svg viewBox="0 0 486.347 486.347" className={className} xmlSpace="preserve">
             <defs>
                 <clipPath id={id}>
-                    <path d="M 0,-40 C 10,-40 10,-30 15,-20 L 15,10 L -15,10 L -15,-20 C -10,-30 -10,-40 0,-40 Z" />
+                    <path d={shirtPath} />
                 </clipPath>
             </defs>
             <g clipPath={`url(#${id})`}>
-                <rect x="-20" y="-50" width="20" height="60" fill={primaryColor} />
-                <rect x="0" y="-50" width="20" height="60" fill={secondaryColor} />
+                <rect x="0" y="0" width="243.17" height="487" fill={primaryColor} />
+                <rect x="243.17" y="0" width="243.17" height="487" fill={secondaryColor} />
             </g>
+            <path
+                d={shirtPath}
+                fill="transparent"
+                stroke="#00000040"
+                strokeWidth="10"
+                strokeLinejoin="round"
+            />
             {number && (
                 <text
-                    x="0"
-                    y="-5"
+                    x="243"
+                    y="260"
                     fontFamily="sans-serif"
-                    fontSize="20"
+                    fontSize="120"
                     textAnchor="middle"
                     fill="#ffffff"
                     stroke='#00000080'
-                    strokeWidth="0.5"
+                    strokeWidth="4"
                     fontWeight="bold"
                 >
                     {number}
