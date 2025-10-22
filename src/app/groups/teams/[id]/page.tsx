@@ -10,8 +10,9 @@ import { PageHeader } from '@/components/page-header';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Loader2, Users, Shirt } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ShirtIcon } from '@/components/icons/shirt-icon';
 
 const TeamRosterPlayer = ({ player, number }: { player: Player; number: number; }) => {
   return (
@@ -25,7 +26,7 @@ const TeamRosterPlayer = ({ player, number }: { player: Player; number: number; 
             <p className="text-sm text-muted-foreground">{player.position}</p>
         </div>
         <div className="flex flex-col items-center">
-             <Shirt className="h-5 w-5 text-muted-foreground"/>
+             <ShirtIcon className="h-5 w-5 text-muted-foreground"/>
              <p className="text-2xl font-bold">#{number}</p>
         </div>
     </Card>
@@ -49,11 +50,12 @@ export default function TeamDetailPage() {
   }, [firestore, team?.groupId]);
 
   const { data: groupPlayers, loading: playersLoading } = useCollection<Player>(playersQuery);
+  
+  const loading = teamLoading || playersLoading;
 
   const teamPlayersWithDetails = useMemo(() => {
-    if (!team || !groupPlayers) return [];
+    if (loading || !team || !groupPlayers) return [];
 
-    // Defensive: handle both new `members` structure and old `playerIds`
     if (team.members && team.members.length > 0) {
       return team.members
         .map(member => {
@@ -61,24 +63,21 @@ export default function TeamDetailPage() {
           if (!playerDetails) return null;
           return {
             ...playerDetails,
-            number: member.number || 0, // Fallback for number
+            number: member.number || 0,
           };
         })
         .filter((p): p is Player & { number: number } => p !== null)
         .sort((a, b) => a.number - b.number);
     }
     
-    // Fallback for old data structure
     const oldPlayerIds = (team as any).playerIds || [];
     return oldPlayerIds.map((playerId: string, index: number) => {
         const playerDetails = groupPlayers.find(p => p.id === playerId);
         if (!playerDetails) return null;
-        return { ...playerDetails, number: index + 1 }; // Assign a temporary number
+        return { ...playerDetails, number: index + 1 };
     }).filter((p): p is Player & { number: number } => p !== null);
 
-  }, [team, groupPlayers]);
-  
-  const loading = teamLoading || playersLoading;
+  }, [team, groupPlayers, loading]);
 
   if (loading) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-12 w-12 animate-spin" /></div>;
