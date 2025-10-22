@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, Controller, useWatch, FormProvider, useFormContext } from 'react-hook-form';
+import { useForm, Controller, useWatch, FormProvider, useFormContext, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useFirestore, useUser } from '@/firebase';
@@ -19,6 +19,7 @@ import { JerseyIcon } from './jerseys';
 import { Checkbox } from './ui/checkbox';
 import { ScrollArea } from './ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './ui/carousel';
 
 const jerseyStyles: { id: JerseyStyle; name: string }[] = [
     { id: 'solid', name: 'Liso' },
