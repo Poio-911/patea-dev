@@ -24,7 +24,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Users, Edit, Trash2, Copy, PlusCircle, LogIn, Star, Goal, Trophy, Shield } from 'lucide-react';
+import { Loader2, Users, Edit, Trash2, Copy, PlusCircle, LogIn, Star, Goal, Trophy, Shield, Eye } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
@@ -33,6 +33,7 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CreateTeamDialog } from '@/components/create-team-dialog';
 import { JerseyIcon } from '@/components/icons/jersey-icon';
+import { TeamDetailDialog } from '@/components/team-detail-dialog';
 
 
 const joinGroupSchema = z.object({
@@ -227,14 +228,20 @@ export default function GroupsPage() {
                              {groupTeams && groupTeams.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {groupTeams.map(team => (
-                                        <Card key={team.id} className="p-4 flex items-center gap-4">
-                                            <div className="h-16 w-16 flex-shrink-0">
+                                        <Card key={team.id} className="p-4 flex flex-col items-center gap-4 text-center">
+                                            <div className="h-20 w-20 flex-shrink-0">
                                               <JerseyIcon {...team.jersey} />
                                             </div>
-                                            <div>
+                                            <div className="flex-grow">
                                                 <h4 className="font-bold">{team.name}</h4>
                                                 <p className="text-sm text-muted-foreground">{team.members.length} miembros</p>
                                             </div>
+                                            <TeamDetailDialog team={team} allGroupPlayers={groupPlayers || []}>
+                                                <Button variant="outline" size="sm" className="w-full mt-auto">
+                                                    <Eye className="mr-2 h-4 w-4" />
+                                                    Ver Equipo
+                                                </Button>
+                                            </TeamDetailDialog>
                                         </Card>
                                     ))}
                                 </div>
