@@ -75,7 +75,8 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
 
   const createdMatchesQuery = useMemo(() => {
     if (!firestore || !isCurrentUserProfile || !playerId) return null;
-    return query(collection(firestore, 'matches'), where('ownerUid', '==', playerId), orderBy('date', 'desc'));
+    // Remove orderBy to avoid needing a composite index for this view. Sorting will be done client-side.
+    return query(collection(firestore, 'matches'), where('ownerUid', '==', playerId));
   }, [firestore, playerId, isCurrentUserProfile]);
   const { data: createdMatches, loading: createdMatchesLoading } = useCollection<Match>(createdMatchesQuery);
   
@@ -83,6 +84,11 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     if(!createdPlayers || !user) return [];
     return createdPlayers.filter(p => p.id !== user.uid);
   }, [createdPlayers, user]);
+  
+  const sortedCreatedMatches = useMemo(() => {
+      if (!createdMatches) return [];
+      return [...createdMatches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [createdMatches]);
 
 
   const ovrHistoryQuery = useMemo(() => {
@@ -369,7 +375,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                          <Card>
                             <CardHeader>
                                 <CardTitle>Historial de Evaluaciones</CardTitle>
-                                <CardDescription>Rendimiento del jugador en los últimos partidos evaluados.</CardDescription>
+                                <CardDescription>Rendimiento del jugador en los últimos partidos evaluados. Haz clic en un partido para ver el detalle.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, avgRating, individualEvaluations }) => (
@@ -452,7 +458,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {createdMatches && createdMatches.length > 0 ? createdMatches.map(match => (
+                                        {sortedCreatedMatches && sortedCreatedMatches.length > 0 ? sortedCreatedMatches.map(match => (
                                             <TableRow key={match.id}>
                                                 <TableCell className="font-medium">{match.title}</TableCell>
                                                 <TableCell>{format(new Date(match.date), 'dd/MM/yyyy', { locale: es })}</TableCell>
