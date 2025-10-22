@@ -31,7 +31,7 @@ import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlayerCard } from '@/components/player-card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle as UiDialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { PlayerDetailCard } from '@/components/player-detail-card';
 
@@ -132,9 +132,9 @@ const CompactPlayerCard = ({ player, distance, onInvite, isAlreadyInvited }: { p
                     </CardContent>
                 </Card>
              </DialogTrigger>
-             <DialogContent className="sm:max-w-sm p-0 border-0 bg-transparent shadow-none">
+             <DialogContent className="max-w-sm p-0 border-0 bg-transparent shadow-none">
                 <DialogHeader>
-                    <UiDialogTitle className="sr-only">Detalles del Jugador: {playerName}</UiDialogTitle>
+                    <DialogTitle className="sr-only">Detalles del Jugador: {playerName}</DialogTitle>
                 </DialogHeader>
                 {isPlayerLoading && <div className="h-96 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>}
                 {fullPlayerData && <PlayerDetailCard player={fullPlayerData} />}
@@ -478,4 +478,5 @@ export default function FindMatchPage() {
     </div>
   );
 }
+
 
