@@ -174,12 +174,30 @@
       "type": "object",
       "properties": {
         "name": { "type": "string" },
-        "shield": { "type": "string", "description": "An emoji or icon name for the team shield." },
+        "formation": { "type": "string" },
+        "jersey": {
+          "type": "object",
+          "properties": {
+            "style": { "type": "string" },
+            "primaryColor": { "type": "string" },
+            "secondaryColor": { "type": "string" }
+          }
+        },
         "ownerUid": { "type": "string" },
         "groupId": { "type": "string" },
-        "members": { "type": "array", "items": { "type": "string" }, "description": "Array of player UIDs." }
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "playerId": { "type": "string" },
+              "number": { "type": "number" }
+            }
+          },
+          "description": "Array of player objects with their assigned numbers."
+        }
       },
-      "required": ["name", "ownerUid", "groupId", "members"]
+      "required": ["name", "ownerUid", "groupId", "members", "formation", "jersey"]
     },
     "notification": {
         "title": "Notification",
@@ -365,5 +383,3 @@
     }
   }
 }
-
-    

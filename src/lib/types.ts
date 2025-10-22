@@ -35,7 +35,7 @@ export type Player = {
   photoUrl?: string;
   stats: PlayerStats;
   ownerUid: string; // The UID of the user who created this player
-  groupId: string;
+  groupId: string | null;
   cardGenerationCredits?: number;
 } & DocumentData;
 
@@ -120,14 +120,27 @@ export type Group = {
     members: string[];
 } & DocumentData;
 
+export type JerseyStyle = 'solid' | 'stripes' | 'sash';
+
+export type TeamMember = {
+  playerId: string;
+  number: number;
+};
+
 export type GroupTeam = {
   id: string;
   name: string;
-  shield: string;
+  formation: string;
+  jersey: {
+    style: JerseyStyle;
+    primaryColor: string;
+    secondaryColor: string;
+  };
   ownerUid: string;
   groupId: string;
-  members: string[]; // Array of player UIDs
+  members: TeamMember[]; // Array of player UIDs and their numbers
 } & DocumentData;
+
 
 export type NotificationType = 'match_invite' | 'new_joiner' | 'evaluation_pending' | 'match_update';
 
@@ -236,5 +249,3 @@ export type UserProfile = {
   groups?: string[];
   activeGroupId?: string | null;
 };
-
-    

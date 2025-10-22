@@ -1,9 +1,9 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useUser, useFirestore, useDoc } from '@/firebase';
-import { useCollection } from '@/firebase/firestore/use-collection';
+import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import {
   collection,
   query,
@@ -14,40 +14,21 @@ import {
   arrayUnion,
   getDocs,
   writeBatch,
-  deleteDoc,
-  runTransaction
 } from 'firebase/firestore';
 import type { Group, Player, GroupTeam } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Users, MoreVertical, Edit, Trash2, Copy, PlusCircle, LogIn, Star, Goal, Trophy, BarChart, Shield } from 'lucide-react';
+import { Loader2, Users, Edit, Trash2, Copy, PlusCircle, LogIn, Star, Goal, Trophy, Shield } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CreateTeamDialog } from '@/components/create-team-dialog';
@@ -61,6 +42,27 @@ const createGroupSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
 });
 type CreateGroupForm = z.infer<typeof createGroupSchema>;
+
+const JerseyIcon = ({ primaryColor, secondaryColor, style }: { primaryColor: string, secondaryColor: string, style: string }) => (
+    <svg viewBox="0 0 486.347 486.347" className="w-full h-full">
+      <defs>
+        <pattern id={`stripes-${primaryColor}-${secondaryColor}`} patternUnits="userSpaceOnUse" width="20" height="20">
+          <path d="M0 0 H 20 V 20 H 0 Z" fill={primaryColor} />
+          <path d="M0 0 H 10 V 20 H 0 Z" fill={secondaryColor} />
+        </pattern>
+        <linearGradient id={`sash-${primaryColor}-${secondaryColor}`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="45%" stopColor={primaryColor} />
+          <stop offset="45%" stopColor={secondaryColor} />
+          <stop offset="55%" stopColor={secondaryColor} />
+          <stop offset="55%" stopColor={primaryColor} />
+        </linearGradient>
+      </defs>
+      <g>
+          <path d="M14.32,158.336c2.691,10.546,12.167,17.909,23.057,17.909c1.922,0,3.845-0.236,5.723-0.701l39.417-9.79 c4.466-1.072,5.626,2.404,5.626,4.396v249.939c0,13.049,10.63,23.676,23.686,23.676H374.7c13.063,0,23.699-10.627,23.699-23.676 V170.208c0-1.729,0.497-4.626,3.892-4.626c0.528,0,1.13,0.08,1.719,0.23l39.237,9.74c1.871,0.465,3.803,0.702,5.727,0.702 c10.892,0,20.369-7.364,23.051-17.909l13.577-53.215c1.566-6.141,0.645-12.509-2.605-17.941 c-3.241-5.422-8.411-9.253-14.559-10.778L343.975,45.511c-7.489-1.905-15.212-2.879-22.998-2.879l-30.453-0.05l-1.454,6.015 c-5.154,21.454-24.149,36.434-46.196,36.434c-22.051,0-41.05-14.979-46.198-36.434l-1.453-6.015h-28.569l-1.403,0.058 c-7.72,0-15.437,0.974-22.876,2.863L17.915,76.41c-6.155,1.525-11.319,5.356-14.569,10.778c-3.242,5.424-4.17,11.8-2.599,17.941 L14.32,158.336z" 
+            fill={style === 'solid' ? primaryColor : style === 'stripes' ? `url(#stripes-${primaryColor}-${secondaryColor})` : `url(#sash-${primaryColor}-${secondaryColor})`} />
+      </g>
+    </svg>
+);
 
 
 export default function GroupsPage() {
@@ -81,23 +83,19 @@ export default function GroupsPage() {
     if (!firestore || !user?.activeGroupId) return null;
     return doc(firestore, 'groups', user.activeGroupId);
   }, [firestore, user?.activeGroupId]);
-
   const { data: activeGroup, loading: activeGroupLoading } = useDoc<Group>(activeGroupRef);
 
   const groupPlayersQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
     return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
   }, [firestore, user?.activeGroupId]);
-
   const { data: groupPlayers, loading: playersLoading } = useCollection<Player>(groupPlayersQuery);
 
   const groupTeamsQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
     return query(collection(firestore, 'groups', user.activeGroupId, 'teams'));
   }, [firestore, user?.activeGroupId]);
-
   const { data: groupTeams, loading: teamsLoading } = useCollection<GroupTeam>(groupTeamsQuery);
-
 
   const { topOvrPlayers, topScorers, mostMatchesPlayers } = useMemo(() => {
     if (!groupPlayers) return { topOvrPlayers: [], topScorers: [], mostMatchesPlayers: [] };
@@ -237,7 +235,6 @@ export default function GroupsPage() {
         <div className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
-                    {/* Equipos Fijos */}
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center justify-between">
@@ -250,8 +247,10 @@ export default function GroupsPage() {
                              {groupTeams && groupTeams.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {groupTeams.map(team => (
-                                        <Card key={team.id} className="p-4 flex items-start gap-4">
-                                            <div className="text-4xl">{team.shield}</div>
+                                        <Card key={team.id} className="p-4 flex items-center gap-4">
+                                            <div className="h-16 w-16 flex-shrink-0">
+                                              <JerseyIcon {...team.jersey} />
+                                            </div>
                                             <div>
                                                 <h4 className="font-bold">{team.name}</h4>
                                                 <p className="text-sm text-muted-foreground">{team.members.length} miembros</p>
@@ -266,7 +265,6 @@ export default function GroupsPage() {
                     </Card>
                 </div>
                  <div className="lg:col-span-1 space-y-8">
-                    {/* Top OVR Players */}
                     <Card>
                         <CardHeader><CardTitle className="flex items-center gap-2"><Star className="h-5 w-5 text-amber-500"/>Top 5 Jugadores (OVR)</CardTitle></CardHeader>
                         <CardContent>
@@ -285,7 +283,6 @@ export default function GroupsPage() {
                 </div>
             </div>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                 {/* Top Scorers */}
                 <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><Goal className="h-5 w-5 text-red-500"/>Máximos Goleadores</CardTitle></CardHeader>
                     <CardContent>
@@ -301,7 +298,6 @@ export default function GroupsPage() {
                         </div>
                     </CardContent>
                 </Card>
-                {/* Most Matches */}
                 <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5 text-yellow-500"/>Más Partidos</CardTitle></CardHeader>
                     <CardContent>
@@ -323,5 +319,3 @@ export default function GroupsPage() {
     </div>
   );
 }
-
-    
