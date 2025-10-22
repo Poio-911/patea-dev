@@ -113,14 +113,16 @@ export default function EvaluateMatchPage() {
             const submission = submissionDoc.data();
             const { evaluatorId, submission: formData } = submission;
 
-            // Process self-evaluation
-            const selfEvalRef = doc(collection(firestore, 'matches', matchId as string, 'selfEvaluations'));
-            batch.set(selfEvalRef, {
-                playerId: evaluatorId,
-                matchId,
-                goals: formData.evaluatorGoals,
-                reportedAt: submission.submittedAt,
-            });
+            // Process self-evaluation for goals
+            if (formData.evaluatorGoals > 0) {
+                const selfEvalRef = doc(collection(firestore, 'matches', matchId as string, 'selfEvaluations'));
+                batch.set(selfEvalRef, {
+                    playerId: evaluatorId,
+                    matchId,
+                    goals: formData.evaluatorGoals,
+                    reportedAt: submission.submittedAt,
+                });
+            }
 
             // Process peer evaluations
             for (const evaluation of formData.evaluations) {
@@ -130,7 +132,7 @@ export default function EvaluateMatchPage() {
                     playerId: evaluation.subjectId,
                     evaluatorId,
                     matchId: matchId as string,
-                    goals: 0,
+                    goals: 0, // Goals are now stored in selfEvaluations
                     evaluatedAt: submission.submittedAt,
                 };
                 
