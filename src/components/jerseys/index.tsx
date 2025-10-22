@@ -4,6 +4,9 @@ import { SolidJersey } from './SolidJersey';
 import { StripesJersey } from './StripesJersey';
 import { SashJersey } from './SashJersey';
 import { HalvesJersey } from './HalvesJersey';
+import { HoopsJersey } from './HoopsJersey';
+import { CheckeredJersey } from './CheckeredJersey';
+
 
 export type JerseyProps = {
   primaryColor: string;
@@ -17,6 +20,8 @@ const jerseyComponents: Record<JerseyStyle, React.FC<JerseyProps>> = {
   stripes: StripesJersey,
   sash: SashJersey,
   halves: HalvesJersey,
+  hoops: HoopsJersey,
+  checkered: CheckeredJersey,
 };
 
 interface JerseyIconProps extends JerseyProps {

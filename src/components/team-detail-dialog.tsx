@@ -76,14 +76,6 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
         
         <div className="flex-grow overflow-y-auto -mx-6 px-6">
             <div className="space-y-6">
-                <div className="flex items-center gap-4 text-lg">
-                    <Cone className="h-6 w-6 text-primary"/>
-                    <span className="font-semibold">Formación:</span>
-                    <Badge variant="secondary" className="text-lg">{team.formation}</Badge>
-                </div>
-                
-                <Separator />
-                
                 <div>
                     <h3 className="font-bold text-xl mb-3 flex items-center gap-2">
                         <Users className="h-5 w-5 text-primary"/>
