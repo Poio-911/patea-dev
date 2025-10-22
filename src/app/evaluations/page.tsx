@@ -48,107 +48,69 @@ export default function EvaluationsPage() {
 
     useEffect(() => {
         const fetchAllPendingItems = async () => {
-            if (!userAssignments || !firestore || !user) {
-                if (!assignmentsLoading) setIsLoadingItems(false);
+            if (!user || !firestore) {
+                 if (!assignmentsLoading) setIsLoadingItems(false);
                 return;
             }
 
             setIsLoadingItems(true);
 
-            const assignmentsByMatch = userAssignments.reduce((acc, assignment) => {
-                if (!acc[assignment.matchId]) {
-                    acc[assignment.matchId] = 0;
-                }
-                acc[assignment.matchId]++;
-                return acc;
-            }, {} as Record<string, number>);
+            // 1. Get all matches where the user has PENDING assignments
+            const pendingMatchIds = new Set(userAssignments?.map(a => a.matchId) || []);
 
-            const matchIds = Object.keys(assignmentsByMatch);
+            // 2. Get all matches where the user has already SUBMITTED an evaluation
+            const submissionsQuery = query(collection(firestore, 'evaluationSubmissions'), where('evaluatorId', '==', user.uid));
+            const submissionsSnapshot = await getDocs(submissionsQuery);
+            const submissionMatchIds = new Set(submissionsSnapshot.docs.map(doc => doc.data().matchId));
+            
+            const allRelevantMatchIds = [...new Set([...pendingMatchIds, ...submissionMatchIds])];
 
-            if (matchIds.length === 0) {
-                // Check for pending submissions even if there are no pending assignments
-                const submissionsQuery = query(
-                    collection(firestore, 'evaluationSubmissions'),
-                    where('evaluatorId', '==', user.uid)
-                );
-                const submissionsSnapshot = await getDocs(submissionsQuery);
-                if (submissionsSnapshot.empty) {
-                    setPendingItems([]);
-                    setIsLoadingItems(false);
-                    return;
-                }
-                
-                const submissionMatchIds = submissionsSnapshot.docs.map(doc => doc.data().matchId);
-                 const matchesQuery = query(collection(firestore, 'matches'), where('__name__', 'in', submissionMatchIds));
-                 const matchesSnapshot = await getDocs(matchesQuery);
-                 const matchesById = new Map(matchesSnapshot.docs.map(doc => [doc.id, doc.data() as Match]));
-
-                 const submissionsById = new Map(submissionsSnapshot.docs.map(doc => [doc.data().matchId, doc.data() as EvaluationSubmission]));
-                 
-                 const items: PendingItem[] = [];
-                 for(const matchId of submissionMatchIds) {
-                     const match = matchesById.get(matchId);
-                     const submission = submissionsById.get(matchId);
-                     if(match && submission) {
-                         const allAssignmentsQuery = query(collection(firestore, 'matches', matchId, 'assignments'));
-                         const allAssignmentsSnapshot = await getDocs(allAssignmentsQuery);
-                         const completedCount = allAssignmentsSnapshot.docs.filter(d => d.data().status === 'completed').length;
-                         items.push({
-                            matchId,
-                            matchTitle: match.title,
-                            matchDate: match.date,
-                            matchLocation: match.location?.address || 'Ubicación desconocida',
-                            submission,
-                            userAssignmentCount: 0,
-                            totalAssignments: allAssignmentsSnapshot.size,
-                            completedAssignments: completedCount
-                         });
-                     }
-                 }
-                setPendingItems(items);
-
-            } else {
-                const matchesQuery = query(collection(firestore, 'matches'), where('__name__', 'in', matchIds));
-                const matchesSnapshot = await getDocs(matchesQuery);
-                const matchesById = new Map(matchesSnapshot.docs.map(doc => [doc.id, doc.data() as Match]));
-
-                const submissionsQuery = query(
-                    collection(firestore, 'evaluationSubmissions'),
-                    where('matchId', 'in', matchIds),
-                    where('evaluatorId', '==', user.uid)
-                );
-                const submissionsSnapshot = await getDocs(submissionsQuery);
-                const submissionsById = new Map(submissionsSnapshot.docs.map(doc => [doc.data().matchId, doc.data() as EvaluationSubmission]));
-
-                const combinedItems: PendingItem[] = [];
-                for (const matchId of matchIds) {
-                     const match = matchesById.get(matchId);
-                     if (!match) continue;
-
-                     const submission = submissionsById.get(matchId);
-                     const userAssignmentCount = assignmentsByMatch[matchId];
-
-                     const allAssignmentsQuery = query(collection(firestore, 'matches', matchId, 'assignments'));
-                     const allAssignmentsSnapshot = await getDocs(allAssignmentsQuery);
-                     const completedCount = allAssignmentsSnapshot.docs.filter(d => d.data().status === 'completed').length;
-
-                     combinedItems.push({
-                        matchId: matchId,
-                        matchTitle: match.title,
-                        matchDate: match.date,
-                        matchLocation: match.location?.address || 'Ubicación desconocida',
-                        submission,
-                        userAssignmentCount,
-                        totalAssignments: allAssignmentsSnapshot.size,
-                        completedAssignments: completedCount,
-                     });
-                }
-                setPendingItems(combinedItems.sort((a, b) => new Date(b.matchDate).getTime() - new Date(a.matchDate).getTime()));
+            if (allRelevantMatchIds.length === 0) {
+                setPendingItems([]);
+                setIsLoadingItems(false);
+                return;
             }
+            
+            // 3. Fetch data for all relevant matches in one go
+            const matchesQuery = query(collection(firestore, 'matches'), where('__name__', 'in', allRelevantMatchIds));
+            const matchesSnapshot = await getDocs(matchesQuery);
+            const matchesById = new Map(matchesSnapshot.docs.map(doc => [doc.id, doc.data() as Match]));
+
+            // 4. Create submissions map for quick lookup
+            const submissionsById = new Map(submissionsSnapshot.docs.map(doc => [doc.data().matchId, doc.data() as EvaluationSubmission]));
+
+            // 5. Build pending items
+            const itemsPromises = allRelevantMatchIds.map(async (matchId) => {
+                const match = matchesById.get(matchId);
+                if (!match || match.status === 'evaluated') return null;
+
+                const allAssignmentsQuery = query(collection(firestore, 'matches', matchId, 'assignments'));
+                const allAssignmentsSnapshot = await getDocs(allAssignmentsQuery);
+                const completedCount = allAssignmentsSnapshot.docs.filter(d => d.data().status === 'completed').length;
+                
+                const userAssignmentCount = userAssignments?.filter(a => a.matchId === matchId).length || 0;
+                
+                return {
+                    matchId,
+                    matchTitle: match.title,
+                    matchDate: match.date,
+                    matchLocation: match.location?.address || 'Ubicación desconocida',
+                    submission: submissionsById.get(matchId),
+                    userAssignmentCount,
+                    totalAssignments: allAssignmentsSnapshot.size,
+                    completedAssignments: completedCount,
+                };
+            });
+
+            const resolvedItems = (await Promise.all(itemsPromises)).filter((item): item is PendingItem => item !== null);
+            setPendingItems(resolvedItems.sort((a, b) => new Date(b.matchDate).getTime() - new Date(a.matchDate).getTime()));
+            
             setIsLoadingItems(false);
         };
 
-        fetchAllPendingItems();
+        if (!assignmentsLoading && user) {
+            fetchAllPendingItems();
+        }
 
     }, [userAssignments, firestore, user, assignmentsLoading]);
 
@@ -220,7 +182,7 @@ export default function EvaluationsPage() {
                                  <span>
                                     {isEvaluationSent 
                                         ? 'Evaluación en proceso' 
-                                        : `${item.userAssignmentCount} evaluación(es) pendiente(s)`
+                                        : `${item.userAssignmentCount} evaluaciones pendientes`
                                     }
                                  </span>
                                </div>
