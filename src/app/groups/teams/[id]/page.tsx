@@ -78,8 +78,6 @@ export default function TeamDetailPage() {
 
   }, [team, groupPlayers]);
   
-  const memberCount = team?.members?.length || (team as any).playerIds?.length || 0;
-
   const loading = teamLoading || playersLoading;
 
   if (loading) {
@@ -89,6 +87,8 @@ export default function TeamDetailPage() {
   if (!team) {
     return <div className="text-center">No se encontró el equipo.</div>;
   }
+
+  const memberCount = team?.members?.length || (team as any).playerIds?.length || 0;
 
   return (
     <div className="flex flex-col gap-8">
