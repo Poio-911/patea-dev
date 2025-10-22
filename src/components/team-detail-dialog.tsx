@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -10,13 +9,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { JerseyIcon } from './jerseys';
 import { Separator } from './ui/separator';
 import type { GroupTeam, Player } from '@/lib/types';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
-import { Cone, Users, Shirt } from 'lucide-react';
+import { Cone, Users } from 'lucide-react';
+import { JerseyIcon } from './jerseys';
+
 
 interface TeamDetailDialogProps {
   team: GroupTeam;
@@ -98,7 +97,6 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
                 </div>
             </div>
         </div>
-
       </DialogContent>
     </Dialog>
   );

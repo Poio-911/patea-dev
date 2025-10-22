@@ -32,7 +32,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CreateTeamDialog } from '@/components/create-team-dialog';
-import { JerseyIcon } from '@/components/icons/jersey-icon';
+import { JerseyIcon } from '@/components/jerseys';
 import { TeamDetailDialog } from '@/components/team-detail-dialog';
 
 
