@@ -1,5 +1,4 @@
 
-
 {
   "entities": {
     "userProfile": {
@@ -169,6 +168,19 @@
       },
       "required": ["name", "ownerUid", "inviteCode"]
     },
+    "groupTeam": {
+      "title": "Group Team",
+      "description": "Represents a persistent team within a group.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "shield": { "type": "string", "description": "An emoji or icon name for the team shield." },
+        "ownerUid": { "type": "string" },
+        "groupId": { "type": "string" },
+        "members": { "type": "array", "items": { "type": "string" }, "description": "Array of player UIDs." }
+      },
+      "required": ["name", "ownerUid", "groupId", "members"]
+    },
     "notification": {
         "title": "Notification",
         "description": "Represents a user notification.",
@@ -319,6 +331,10 @@
       "schema": { "$ref": "#/entities/group" },
       "description": "Stores data for each user group."
     },
+    "/groups/{groupId}/teams/{teamId}": {
+      "schema": { "$ref": "#/entities/groupTeam" },
+      "description": "Stores the persistent teams created within a group."
+    },
     "/matches/{matchId}": {
       "schema": { "$ref": "#/entities/match" },
       "description": "Stores data for each match, linked to a group."
@@ -350,3 +366,4 @@
   }
 }
 
+    

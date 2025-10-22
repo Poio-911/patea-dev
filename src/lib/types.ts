@@ -120,6 +120,15 @@ export type Group = {
     members: string[];
 } & DocumentData;
 
+export type GroupTeam = {
+  id: string;
+  name: string;
+  shield: string;
+  ownerUid: string;
+  groupId: string;
+  members: string[]; // Array of player UIDs
+} & DocumentData;
+
 export type NotificationType = 'match_invite' | 'new_joiner' | 'evaluation_pending' | 'match_update';
 
 export type Notification = {
@@ -227,3 +236,5 @@ export type UserProfile = {
   groups?: string[];
   activeGroupId?: string | null;
 };
+
+    
