@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -131,7 +132,7 @@ const JerseyCreator = ({ control, form }: { control: any, form: any }) => {
     );
 };
 
-const FormationSelector = ({ control }: { control: any }) => (
+const FormationSelector = ({ control, form }: { control: any; form: any }) => (
   <Controller
     name="formation"
     control={control}
@@ -262,12 +263,11 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
     }
   };
 
+  // Reset form and step when dialog closes
   useEffect(() => {
     if (!open) {
-      setTimeout(() => {
-          reset();
-          setStep(1);
-      }, 200)
+      reset();
+      setStep(1);
     }
   }, [open, reset]);
   
@@ -290,7 +290,7 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
             </div>
 
             <div className={cn("min-h-[400px]", step !== 2 ? 'hidden' : '')}><JerseyCreator control={control} form={form} /></div>
-            <div className={cn("min-h-[400px]", step !== 3 ? 'hidden' : 'pt-4')}><FormationSelector control={control} /></div>
+            <div className={cn("min-h-[400px]", step !== 3 ? 'hidden' : 'pt-4')}><FormationSelector control={control} form={form} /></div>
             <div className={cn("min-h-[400px]", step !== 4 ? 'hidden' : 'pt-4')}><MemberManager control={control} groupPlayers={groupPlayers} form={form} /></div>
 
             <DialogFooter className="pt-4">
