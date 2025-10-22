@@ -13,6 +13,7 @@ import { collection, query, where, deleteDoc, doc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import { TeamsIcon } from '../icons/teams-icon';
 
 interface TeamListProps {
   groupId: string;
@@ -74,11 +75,14 @@ export function TeamList({ groupId, players, currentUserId }: TeamListProps) {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-semibold">Equipos del Grupo</h3>
-          <p className="text-sm text-muted-foreground">
-            {teams?.length || 0} equipos creados
-          </p>
+        <div className="flex items-center gap-3">
+          <TeamsIcon className="h-6 w-6 text-primary" />
+          <div>
+            <h3 className="text-lg font-semibold">Equipos del Grupo</h3>
+            <p className="text-sm text-muted-foreground">
+              {teams?.length || 0} equipos creados
+            </p>
+          </div>
         </div>
         <Button onClick={() => setCreateDialogOpen(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />

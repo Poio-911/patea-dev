@@ -1,6 +1,5 @@
 
 
-
 import { DocumentData, DocumentReference } from "firebase/firestore";
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
@@ -113,18 +112,10 @@ export type Team = {
   }
 };
 
-export type Group = {
-    id: string;
-    name: string;
-    ownerUid: string;
-    inviteCode: string;
-    members: string[];
-} & DocumentData;
-
-export type JerseyStyle = 'solid' | 'stripes' | 'sash' | 'halves' | 'hoops' | 'checkered' | 'plain';
+export type JerseyType = 'plain' | 'vertical' | 'band' | 'chevron' | 'thirds';
 
 export type Jersey = {
-  type: JerseyStyle;
+  type: JerseyType;
   primaryColor: string;
   secondaryColor: string;
 };
@@ -134,7 +125,10 @@ export type GroupTeam = {
   name: string;
   groupId: string;
   jersey: Jersey;
-  playerIds: string[];
+  members: {
+    playerId: string;
+    number: number;
+  }[];
   createdBy: string;
   createdAt: string;
 } & DocumentData;
