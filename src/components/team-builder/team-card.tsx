@@ -37,7 +37,10 @@ interface TeamCardProps {
 }
 
 export function TeamCard({ team, players, isOwner, onEdit, onDelete }: TeamCardProps) {
-  const teamPlayers = players.filter(p => team.members.some(m => m.playerId === p.id));
+  // Defensive coding: Check for `team.members` and fallback to `team.playerIds` (old structure)
+  const teamPlayerIds = team.members ? team.members.map(m => m.playerId) : (team as any).playerIds || [];
+  const teamPlayers = players.filter(p => teamPlayerIds.includes(p.id));
+  const memberCount = team.members?.length || (team as any).playerIds?.length || 0;
 
   return (
      <Link href={`/groups/teams/${team.id}`}>
@@ -49,7 +52,7 @@ export function TeamCard({ team, players, isOwner, onEdit, onDelete }: TeamCardP
                 <CardTitle className="text-lg">{team.name}</CardTitle>
                 <p className="text-xs text-muted-foreground mt-1">
                 <Users className="inline h-3 w-3 mr-1" />
-                {team.members.length} jugadores
+                {memberCount} jugadores
                 </p>
             </div>
             </div>

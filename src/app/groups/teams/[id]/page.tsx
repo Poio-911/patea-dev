@@ -26,7 +26,7 @@ const TeamRosterPlayer = ({ player, number }: { player: Player; number: number; 
         </div>
         <div className="flex flex-col items-center">
              <Shirt className="h-5 w-5 text-muted-foreground"/>
-             <p className="text-2xl font-bold">{number}</p>
+             <p className="text-2xl font-bold">#{number}</p>
         </div>
     </Card>
   );
@@ -52,18 +52,33 @@ export default function TeamDetailPage() {
 
   const teamPlayersWithDetails = useMemo(() => {
     if (!team || !groupPlayers) return [];
-    return team.members
-      .map(member => {
-        const playerDetails = groupPlayers.find(p => p.id === member.playerId);
+
+    // Defensive: handle both new `members` structure and old `playerIds`
+    if (team.members && team.members.length > 0) {
+      return team.members
+        .map(member => {
+          const playerDetails = groupPlayers.find(p => p.id === member.playerId);
+          if (!playerDetails) return null;
+          return {
+            ...playerDetails,
+            number: member.number || 0, // Fallback for number
+          };
+        })
+        .filter((p): p is Player & { number: number } => p !== null)
+        .sort((a, b) => a.number - b.number);
+    }
+    
+    // Fallback for old data structure
+    const oldPlayerIds = (team as any).playerIds || [];
+    return oldPlayerIds.map((playerId: string, index: number) => {
+        const playerDetails = groupPlayers.find(p => p.id === playerId);
         if (!playerDetails) return null;
-        return {
-          ...playerDetails,
-          number: member.number,
-        };
-      })
-      .filter((p): p is Player & { number: number } => p !== null)
-      .sort((a, b) => a.number - b.number);
+        return { ...playerDetails, number: index + 1 }; // Assign a temporary number
+    }).filter((p): p is Player & { number: number } => p !== null);
+
   }, [team, groupPlayers]);
+  
+  const memberCount = team?.members?.length || (team as any).playerIds?.length || 0;
 
   const loading = teamLoading || playersLoading;
 
@@ -85,7 +100,7 @@ export default function TeamDetailPage() {
                 <PageHeader title={team.name} />
                 <Badge variant="outline" className="mt-2 text-base">
                     <Users className="mr-2 h-4 w-4"/>
-                    {team.members.length} Jugadores
+                    {memberCount} Jugadores
                 </Badge>
             </div>
         </div>
