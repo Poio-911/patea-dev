@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -17,20 +16,17 @@ import {
 } from 'firebase/firestore';
 import type { Group, Player } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Users, Edit, Trash2, Copy, PlusCircle, LogIn, Star, Goal, Trophy, Shield, Eye } from 'lucide-react';
+import { Loader2, Users, PlusCircle, LogIn } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { TeamList } from '@/components/team-builder/team-list';
 
 
@@ -70,13 +66,6 @@ export default function GroupsPage() {
   }, [firestore, user?.activeGroupId]);
   const { data: groupPlayers, loading: playersLoading } = useCollection<Player>(groupPlayersQuery);
 
-  const { topOvrPlayers, topScorers, mostMatchesPlayers } = useMemo(() => {
-    if (!groupPlayers) return { topOvrPlayers: [], topScorers: [], mostMatchesPlayers: [] };
-    const sortedByOvr = [...groupPlayers].sort((a, b) => b.ovr - a.ovr).slice(0, 5);
-    const sortedByGoals = [...groupPlayers].sort((a, b) => (b.stats?.goals || 0) - (a.stats?.goals || 0)).slice(0, 3);
-    const sortedByMatches = [...groupPlayers].sort((a, b) => (b.stats?.matchesPlayed || 0) - (a.stats?.matchesPlayed || 0)).slice(0, 3);
-    return { topOvrPlayers: sortedByOvr, topScorers: sortedByGoals, mostMatchesPlayers: sortedByMatches };
-  }, [groupPlayers]);
 
   const handleCreateGroup = async (data: CreateGroupForm) => {
     if (!firestore || !user) return;
@@ -162,7 +151,7 @@ export default function GroupsPage() {
     <div className="flex flex-col gap-8">
       <PageHeader
         title={activeGroup ? activeGroup.name : 'Mis Grupos'}
-        description={activeGroup ? 'El panel de control de tu grupo.' : 'Gestiona tus grupos, únete a uno nuevo o crea el tuyo.'}
+        description={activeGroup ? `Código de invitación: ${activeGroup.inviteCode}` : 'Gestiona tus grupos, únete a uno nuevo o crea el tuyo.'}
       >
         <div className="flex items-center gap-2">
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
@@ -194,8 +183,6 @@ export default function GroupsPage() {
         </div>
       </PageHeader>
       
-      <Separator />
-
       {loading ? (
         <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
       ) : !activeGroup || !user ? (
@@ -205,62 +192,7 @@ export default function GroupsPage() {
           <AlertDescription>Crea tu primer grupo o únete a uno usando un código de invitación.</AlertDescription>
         </Alert>
       ) : (
-        <div className="space-y-8">
-            <TeamList groupId={activeGroup.id} players={groupPlayers || []} currentUserId={user.uid} />
-
-            <Separator />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                 <div className="lg:col-span-1 space-y-8">
-                    <Card>
-                        <CardHeader><CardTitle className="flex items-center gap-2"><Star className="h-5 w-5 text-amber-500"/>Top 5 Jugadores (OVR)</CardTitle></CardHeader>
-                        <CardContent>
-                            <div className="space-y-3">
-                                {topOvrPlayers.map((player, index) => (
-                                    <div key={player.id} className="flex items-center gap-3">
-                                        <div className="font-bold text-sm w-4">{index + 1}.</div>
-                                        <Avatar className="h-9 w-9"><AvatarImage src={player.photoUrl} alt={player.name} /><AvatarFallback>{player.name.charAt(0)}</AvatarFallback></Avatar>
-                                        <p className="font-medium flex-1 truncate">{player.name}</p>
-                                        <div className="font-bold text-primary">{player.ovr}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-                 <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <Card>
-                        <CardHeader><CardTitle className="flex items-center gap-2"><Goal className="h-5 w-5 text-red-500"/>Máximos Goleadores</CardTitle></CardHeader>
-                        <CardContent>
-                             <div className="space-y-3">
-                                {topScorers.map((player, index) => (
-                                    <div key={player.id} className="flex items-center gap-3">
-                                        <div className="font-bold text-sm w-4">{index + 1}.</div>
-                                        <Avatar className="h-9 w-9"><AvatarImage src={player.photoUrl} alt={player.name} /><AvatarFallback>{player.name.charAt(0)}</AvatarFallback></Avatar>
-                                        <p className="font-medium flex-1 truncate">{player.name}</p>
-                                        <div className="font-bold">{player.stats?.goals || 0}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader><CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5 text-yellow-500"/>Más Partidos</CardTitle></CardHeader>
-                        <CardContent>
-                             <div className="space-y-3">
-                                {mostMatchesPlayers.map((player, index) => (
-                                    <div key={player.id} className="flex items-center gap-3">
-                                        <div className="font-bold text-sm w-4">{index + 1}.</div>
-                                        <Avatar className="h-9 w-9"><AvatarImage src={player.photoUrl} alt={player.name} /><AvatarFallback>{player.name.charAt(0)}</AvatarFallback></Avatar>
-                                        <p className="font-medium flex-1 truncate">{player.name}</p>
-                                        <div className="font-bold">{player.stats?.matchesPlayed || 0}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-        </div>
+        <TeamList groupId={activeGroup.id} players={groupPlayers || []} currentUserId={user.uid} />
       )}
     </div>
   );
