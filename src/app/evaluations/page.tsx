@@ -90,7 +90,7 @@ export default function EvaluationsPage() {
                     matchTitle: match.title,
                     matchDate: match.date,
                     matchLocation: match.location?.address || 'Ubicación desconocida',
-                    submission: submissionsMap.get(matchId),
+                    submission: submissionsMap.get(matchId) || undefined,
                     userAssignmentCount,
                     totalAssignments: 0, // Will be updated by listener
                     completedAssignments: 0, // Will be updated by listener
