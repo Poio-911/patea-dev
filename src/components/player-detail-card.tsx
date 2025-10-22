@@ -13,19 +13,13 @@ type PlayerDetailCardProps = {
   player: Player;
 };
 
-const positionBackgrounds: Record<Player['position'], string> = {
-  DEL: 'bg-red-500/10',
-  MED: 'bg-green-500/10',
-  DEF: 'bg-blue-500/10',
-  POR: 'bg-orange-500/10',
+const positionBadgeStyles: Record<Player['position'], string> = {
+  DEL: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+  MED: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+  DEF: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
+  POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
 };
 
-const positionColors: Record<Player['position'], string> = {
-  DEL: 'text-red-500',
-  MED: 'text-green-500',
-  DEF: 'text-blue-500',
-  POR: 'text-orange-500',
-};
 
 const Stat = ({ label, value }: { label: string; value: number }) => (
   <div className="flex items-center justify-between text-sm">
@@ -38,25 +32,25 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
   const playerName = player.name || 'Jugador';
 
   return (
-    <Card className={cn("overflow-hidden border-2 shadow-lg border-border h-full flex flex-col", positionBackgrounds[player.position])}>
-      <CardHeader className="p-4 text-center items-center">
+    <Card className="overflow-hidden border-2 shadow-lg border-border h-full flex flex-col">
+      <CardHeader className="p-4 text-center items-center bg-muted/50">
         <Avatar className="h-24 w-24 border-4 border-background mb-2">
           <AvatarImage src={player.photoUrl} alt={playerName} />
           <AvatarFallback>{playerName.charAt(0)}</AvatarFallback>
         </Avatar>
         <CardTitle className="text-2xl font-bold font-headline">{playerName}</CardTitle>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className={cn("text-lg font-bold", positionColors[player.position])}>
+          <Badge variant="default" className="text-lg font-bold">
             {player.ovr} OVR
           </Badge>
-          <Badge variant="outline" className="text-lg">{player.position}</Badge>
+          <Badge variant="outline" className={cn("text-lg font-semibold", positionBadgeStyles[player.position])}>{player.position}</Badge>
         </div>
       </CardHeader>
 
       <CardContent className="p-4 flex-grow flex flex-col gap-4">
         <div>
             <h4 className="font-bold mb-2 text-center text-muted-foreground">Atributos</h4>
-            <div className="w-full grid grid-cols-2 gap-x-6 gap-y-2">
+            <div className="w-full grid grid-cols-2 gap-x-8 gap-y-2">
                 <Stat label="RIT" value={player.pac} />
                 <Stat label="TIR" value={player.sho} />
                 <Stat label="PAS" value={player.pas} />
@@ -88,7 +82,7 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
                 </div>
                  <div className="flex flex-col items-center p-2 rounded-md bg-muted/50">
                     <TrendingUp className="h-5 w-5 text-muted-foreground mb-1"/>
-                    <span className="text-xl font-bold">?</span>
+                    <span className="text-xl font-bold">{player.stats?.assists || 0}</span>
                     <span className="text-xs text-muted-foreground">Asistencias</span>
                 </div>
             </div>
@@ -97,4 +91,3 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
     </Card>
   );
 }
-
