@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
+import { ShirtIcon } from '@/components/icons/shirt-icon';
 
 const TeamRosterPlayer = ({ player, number }: { player: Player; number: number; }) => {
   return (
@@ -78,15 +79,15 @@ export default function TeamDetailPage() {
 
   return (
     <div className="flex flex-col gap-8">
-        <div className="flex flex-col items-center gap-4 text-center">
+        <div className="flex flex-col items-center text-center">
             {team.jersey && (
-              <div className="h-24 w-24">
+              <div className="h-24 w-24 mb-4">
                 <JerseyPreview jersey={team.jersey} size="xl" />
               </div>
             )}
-            <div>
+            <div className="flex flex-col items-center gap-2">
                 <PageHeader title={team.name} className="justify-center" />
-                <Badge variant="outline" className="mt-2 text-sm">
+                <Badge variant="outline" className="text-sm">
                     <Users className="mr-2 h-4 w-4"/>
                     {memberCount} Jugadores
                 </Badge>
