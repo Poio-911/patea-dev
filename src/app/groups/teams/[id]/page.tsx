@@ -11,7 +11,7 @@ import { Loader2, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ShirtIcon } from '@/components/icons/shirt-icon';
+import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 
 const TeamRosterPlayer = ({ player, number }: { player: Player; number: number; }) => {
   return (
@@ -25,8 +25,8 @@ const TeamRosterPlayer = ({ player, number }: { player: Player; number: number; 
             <p className="text-sm text-muted-foreground">{player.position}</p>
         </div>
         <div className="flex flex-col items-center">
-             <ShirtIcon className="h-5 w-5 text-muted-foreground"/>
-             <p className="text-2xl font-bold">#{number}</p>
+             <p className="text-xs text-muted-foreground">#</p>
+             <p className="text-2xl font-bold">{number}</p>
         </div>
     </Card>
   );
@@ -73,14 +73,14 @@ export default function TeamDetailPage() {
   if (!team) {
     return <div className="text-center">No se encontró el equipo.</div>;
   }
-
+  
   const memberCount = team.members ? team.members.length : ((team as any).playerIds || []).length;
 
   return (
     <div className="flex flex-col gap-8">
         <div className="flex flex-row items-center gap-4">
             <div className="h-16 w-16 flex-shrink-0">
-                 <ShirtIcon className="h-16 w-16 text-primary" />
+                 {team.jersey && <JerseyPreview jersey={team.jersey} size="xl" />}
             </div>
             <div className="flex-grow">
                 <PageHeader title={team.name} />
@@ -93,7 +93,7 @@ export default function TeamDetailPage() {
         
         <div className="space-y-4">
              <h2 className="text-xl font-bold">Plantel</h2>
-             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {teamPlayersWithDetails.map(player => (
                     <TeamRosterPlayer key={player.id} player={player} number={player.number} />
                 ))}
