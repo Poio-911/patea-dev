@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser, useFirestore, useDoc } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import {
   collection,
@@ -77,12 +77,12 @@ export default function GroupsPage() {
   const joinForm = useForm<JoinGroupForm>({ resolver: zodResolver(joinGroupSchema) });
   const createForm = useForm<CreateGroupForm>({ resolver: zodResolver(createGroupSchema) });
 
-  const activeGroupQuery = useMemo(() => {
+  const activeGroupRef = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
     return doc(firestore, 'groups', user.activeGroupId);
   }, [firestore, user?.activeGroupId]);
 
-  const { data: activeGroup, loading: activeGroupLoading } = useCollection<Group>(activeGroupQuery as any);
+  const { data: activeGroup, loading: activeGroupLoading } = useDoc<Group>(activeGroupRef);
 
   const groupPlayersQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
