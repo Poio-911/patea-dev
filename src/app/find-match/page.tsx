@@ -9,6 +9,7 @@ import type { Match, AvailablePlayer, Player, Invitation, Notification } from '@
 import { PageHeader } from '@/components/page-header';
 import { Loader2, MapPin, Calendar, Users, LocateFixed, Search, SlidersHorizontal, Sparkles, AlertCircle, Send, Check } from 'lucide-react';
 import { PlayerMarker } from '@/components/player-marker';
+import { MatchMarker } from '@/components/match-marker';
 import { libraries } from '@/lib/google-maps';
 import { mapStyles } from '@/lib/map-styles';
 import { ScrollArea } from '@/components/ui/scroll-area';
