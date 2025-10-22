@@ -7,7 +7,6 @@ import { useDoc, useCollection, useFirestore } from '@/firebase';
 import { doc, collection, query, where } from 'firebase/firestore';
 import type { GroupTeam, Player } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Loader2, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -49,14 +48,13 @@ export default function TeamDetailPage() {
     return query(collection(firestore, 'players'), where('groupId', '==', team.groupId));
   }, [firestore, team?.groupId]);
 
-  const { data: groupPlayers, loading: playersLoading } = useCollection<Player>(playersQuery);
+  const { data: groupPlayers, loading: playersLoading } = useCollection<Player>(groupPlayersQuery);
   
   const loading = teamLoading || playersLoading;
 
   const teamPlayersWithDetails = useMemo(() => {
     if (loading || !team || !groupPlayers) return [];
 
-    // Backward compatibility for old team structure
     const playerIds = team.members ? team.members.map(m => m.playerId) : (team as any).playerIds || [];
 
     return playerIds.map((playerId: string, index: number) => {
@@ -76,13 +74,13 @@ export default function TeamDetailPage() {
     return <div className="text-center">No se encontró el equipo.</div>;
   }
 
-  const memberCount = team.members?.length || (team as any).playerIds?.length || 0;
+  const memberCount = team.members ? team.members.length : ((team as any).playerIds || []).length;
 
   return (
     <div className="flex flex-col gap-8">
         <div className="flex flex-row items-center gap-4">
             <div className="h-16 w-16 flex-shrink-0">
-                 <JerseyPreview jersey={team.jersey} size="xl" />
+                 <ShirtIcon className="h-16 w-16 text-primary" />
             </div>
             <div className="flex-grow">
                 <PageHeader title={team.name} />
