@@ -22,7 +22,7 @@ const positionBadgeStyles: Record<Player['position'], string> = {
 
 
 const Stat = ({ label, value }: { label: string; value: number }) => (
-  <div className="flex items-center justify-between text-sm">
+  <div className="flex items-center justify-between text-sm py-1">
     <span className="font-semibold text-muted-foreground">{label}</span>
     <span className="font-bold">{value}</span>
   </div>
@@ -50,7 +50,7 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
       <CardContent className="p-4 flex-grow flex flex-col gap-4">
         <div>
             <h4 className="font-bold mb-2 text-center text-muted-foreground">Atributos</h4>
-            <div className="w-full grid grid-cols-2 gap-x-8 gap-y-2">
+            <div className="w-full grid grid-cols-2 gap-x-8">
                 <Stat label="RIT" value={player.pac} />
                 <Stat label="TIR" value={player.sho} />
                 <Stat label="PAS" value={player.pas} />
