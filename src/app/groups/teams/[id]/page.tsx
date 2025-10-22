@@ -8,7 +8,7 @@ import { doc, collection, query, where } from 'firebase/firestore';
 import type { GroupTeam, Player } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-import { Loader2, Users, Shirt } from 'lucide-react';
+import { Loader2, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,7 +22,7 @@ const TeamRosterPlayer = ({ player, number }: { player: Player; number: number; 
           <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
-            <p className="font-bold">{player.name}</p>
+            <p className="font-bold truncate">{player.name}</p>
             <p className="text-sm text-muted-foreground">{player.position}</p>
         </div>
         <div className="flex flex-col items-center">
@@ -56,28 +56,19 @@ export default function TeamDetailPage() {
   const teamPlayersWithDetails = useMemo(() => {
     if (loading || !team || !groupPlayers) return [];
 
-    if (team.members && team.members.length > 0) {
-      return team.members
-        .map(member => {
-          const playerDetails = groupPlayers.find(p => p.id === member.playerId);
-          if (!playerDetails) return null;
-          return {
-            ...playerDetails,
-            number: member.number || 0,
-          };
-        })
-        .filter((p): p is Player & { number: number } => p !== null)
-        .sort((a, b) => a.number - b.number);
-    }
-    
-    const oldPlayerIds = (team as any).playerIds || [];
-    return oldPlayerIds.map((playerId: string, index: number) => {
+    // Backward compatibility for old team structure
+    const playerIds = team.members ? team.members.map(m => m.playerId) : (team as any).playerIds || [];
+
+    return playerIds.map((playerId: string, index: number) => {
         const playerDetails = groupPlayers.find(p => p.id === playerId);
+        const memberInfo = team.members?.find(m => m.playerId === playerId);
         if (!playerDetails) return null;
-        return { ...playerDetails, number: index + 1 };
-    }).filter((p): p is Player & { number: number } => p !== null);
+        return { ...playerDetails, number: memberInfo?.number || index + 1 };
+    }).filter((p): p is Player & { number: number } => p !== null).sort((a,b) => a.number - b.number);
 
   }, [team, groupPlayers, loading]);
+  
+  const memberCount = team?.members?.length || (team as any).playerIds?.length || 0;
 
   if (loading) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-12 w-12 animate-spin" /></div>;
@@ -87,17 +78,15 @@ export default function TeamDetailPage() {
     return <div className="text-center">No se encontró el equipo.</div>;
   }
 
-  const memberCount = team?.members?.length || (team as any).playerIds?.length || 0;
-
   return (
     <div className="flex flex-col gap-8">
-        <div className="flex flex-col sm:flex-row items-center gap-6">
-            <div className="h-32 w-32 flex-shrink-0">
+        <div className="flex flex-row items-center gap-4">
+            <div className="h-20 w-20 flex-shrink-0">
                  <JerseyPreview jersey={team.jersey} size="xl" />
             </div>
-            <div className="text-center sm:text-left">
+            <div className="flex-grow">
                 <PageHeader title={team.name} />
-                <Badge variant="outline" className="mt-2 text-base">
+                <Badge variant="outline" className="mt-2 text-sm">
                     <Users className="mr-2 h-4 w-4"/>
                     {memberCount} Jugadores
                 </Badge>
