@@ -1,14 +1,14 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect, useRef, useTransition } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useDoc, useCollection, useFirestore, useUser, initializeFirebase, useAuth } from '@/firebase';
-import { doc, collection, query, where, orderBy, getDocs, writeBatch, updateDoc, increment } from 'firebase/firestore';
-import type { Player, Evaluation, Match, OvrHistory, UserProfile, AvailablePlayer } from '@/lib/types';
+import { doc, collection, query, where, orderBy, getDocs, writeBatch, updateDoc } from 'firebase/firestore';
+import type { Player, Evaluation, Match, OvrHistory, UserProfile } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, BarChart2, Star, Goal, ChevronDown, Upload, Sparkles, UserRound } from 'lucide-react';
+import { Loader2, BarChart2, Star, Goal, Upload, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -19,8 +19,8 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { SetAvailabilityDialog } from './set-availability-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -34,7 +34,7 @@ const positionColors: Record<Player['position'], string> = {
 };
 
 const Stat = ({ label, value }: { label: string; value: number }) => (
-  <div className="flex items-center justify-between text-sm">
+  <div className="flex items-center justify-between text-sm py-1">
     <span className="font-semibold text-muted-foreground">{label}</span>
     <span className="font-bold">{value}</span>
   </div>
@@ -57,7 +57,6 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [evaluatorProfiles, setEvaluatorProfiles] = useState<Record<string, {displayName: string, photoURL: string}>>({});
-  const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const [isUploading, setIsUploading] = useState(false);
@@ -68,9 +67,6 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   const playerRef = useMemo(() => firestore && playerId ? doc(firestore, 'players', playerId) : null, [firestore, playerId]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
 
-  const availablePlayerRef = useMemo(() => firestore && playerId ? doc(firestore, 'availablePlayers', playerId) : null, [firestore, playerId]);
-  const { data: availablePlayerData, loading: availablePlayerLoading } = useDoc<AvailablePlayer>(availablePlayerRef);
-
   const createdPlayersQuery = useMemo(() => {
     if (!firestore || !isCurrentUserProfile || !playerId) return null;
     return query(collection(firestore, 'players'), where('ownerUid', '==', playerId));
@@ -79,7 +75,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
 
   const createdMatchesQuery = useMemo(() => {
     if (!firestore || !isCurrentUserProfile || !playerId) return null;
-    return query(collection(firestore, 'matches'), where('ownerUid', '==', playerId));
+    return query(collection(firestore, 'matches'), where('ownerUid', '==', playerId), orderBy('date', 'desc'));
   }, [firestore, playerId, isCurrentUserProfile]);
   const { data: createdMatches, loading: createdMatchesLoading } = useCollection<Match>(createdMatchesQuery);
   
@@ -97,7 +93,10 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   
   useEffect(() => {
     async function fetchEvaluationData() {
-        if (!firestore || !playerId) return;
+        if (!firestore || !playerId) {
+            setIsLoading(false);
+            return;
+        };
 
         setIsLoading(true);
         try {
@@ -108,12 +107,11 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
 
             const matchIds = [...new Set(playerEvals.map(e => e.matchId))];
             const evaluatorIds = [...new Set(playerEvals.map(e => e.evaluatorId))];
-
+            
             if (matchIds.length > 0) {
                 const matchesQuery = query(collection(firestore, 'matches'), where('__name__', 'in', matchIds));
                 const matchesSnapshot = await getDocs(matchesQuery);
-                const fetchedMatches = matchesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match));
-                setMatches(fetchedMatches);
+                setMatches(matchesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match)));
             }
 
             if (evaluatorIds.length > 0) {
@@ -211,9 +209,10 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
         batch.update(userDocRef, { photoURL: newPhotoURL });
         batch.update(playerDocRef, { photoUrl: newPhotoURL });
         
-        if (availablePlayerData) {
-             const availablePlayerDocRef = doc(firestore, 'availablePlayers', user.uid);
-             batch.update(availablePlayerDocRef, { photoUrl: newPhotoURL });
+        const availablePlayerRef = doc(firestore, 'availablePlayers', user.uid);
+        const availablePlayerSnap = await getDoc(availablePlayerRef);
+        if (availablePlayerSnap.exists) {
+            batch.update(availablePlayerRef, { photoUrl: newPhotoURL });
         }
         
         await batch.commit();
@@ -241,7 +240,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     fileInputRef.current?.click();
   };
 
-  const loading = playerLoading || historyLoading || isLoading || (isCurrentUserProfile && (createdMatchesLoading || createdPlayersLoading || availablePlayerLoading));
+  const loading = playerLoading || historyLoading || isLoading || (isCurrentUserProfile && (createdMatchesLoading || createdPlayersLoading));
 
 
   if (loading) {
@@ -365,105 +364,81 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                         <TabsTrigger value="created-matches">Partidos Creados</TabsTrigger>
                         <TabsTrigger value="created-players">Jugadores Creados</TabsTrigger>
                     </TabsList>
+
                     <TabsContent value="evaluations">
-                        <Card>
+                         <Card>
                             <CardHeader>
-                            <CardTitle>Historial de Evaluaciones</CardTitle>
-                            <CardDescription>Rendimiento del jugador en los últimos partidos evaluados. Haz clic en un partido para ver el detalle.</CardDescription>
+                                <CardTitle>Historial de Evaluaciones</CardTitle>
+                                <CardDescription>Rendimiento del jugador en los últimos partidos evaluados.</CardDescription>
                             </CardHeader>
-                            <CardContent>
-                            <Table>
-                                <TableHeader>
-                                <TableRow>
-                                    <TableHead className='w-12'></TableHead>
-                                    <TableHead>Partido</TableHead>
-                                    <TableHead>Fecha</TableHead>
-                                    <TableHead className="text-center">Rating Prom.</TableHead>
-                                    <TableHead className="text-center">Goles</TableHead>
-                                </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, avgRating, goals, individualEvaluations }) => {
-                                        const isOpen = openAccordion === match.id;
-                                        return (
-                                            <React.Fragment key={match.id}>
-                                                <TableRow 
-                                                    className="cursor-pointer"
-                                                    onClick={() => setOpenAccordion(isOpen ? null : match.id)}
-                                                >
-                                                    <TableCell>
-                                                        <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
-                                                    </TableCell>
-                                                    <TableCell className="font-medium">{match.title}</TableCell>
-                                                    <TableCell>{format(new Date(match.date), 'dd MMM, yyyy', { locale: es })}</TableCell>
-                                                    <TableCell className="text-center">
-                                                        <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'} className="text-base">
-                                                        <Star className="mr-1 h-3 w-3" /> {avgRating.toFixed(2)}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        <Badge variant="outline" className="text-base">
-                                                            <Goal className="mr-1 h-3 w-3" /> {goals}
-                                                        </Badge>
-                                                    </TableCell>
-                                                </TableRow>
-                                                {isOpen && (
-                                                    <TableRow>
-                                                        <TableCell colSpan={5} className="p-0">
-                                                            <div className="bg-muted/50 p-4">
-                                                                <h4 className="font-semibold text-md mb-2 ml-4">Detalle de evaluaciones:</h4>
-                                                                <Table>
-                                                                    <TableHeader>
-                                                                        <TableRow>
-                                                                            <TableHead>Evaluador</TableHead>
-                                                                            <TableHead className="text-center">Rating</TableHead>
-                                                                            <TableHead>Etiquetas de Rendimiento</TableHead>
-                                                                        </TableRow>
-                                                                    </TableHeader>
-                                                                    <TableBody>
-                                                                        {individualEvaluations.map(ev => (
-                                                                            <TableRow key={ev.id} className="bg-background">
-                                                                                <TableCell>
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <Avatar className="h-8 w-8">
-                                                                                            <AvatarImage src={ev.evaluatorPhoto} alt={ev.evaluatorName} />
-                                                                                            <AvatarFallback>{ev.evaluatorName?.charAt(0)}</AvatarFallback>
-                                                                                        </Avatar>
-                                                                                        <span>{ev.evaluatorName}</span>
-                                                                                    </div>
-                                                                                </TableCell>
-                                                                                <TableCell className="text-center">
-                                                                                    <Badge variant="secondary">{ev.rating}</Badge>
-                                                                                </TableCell>
-                                                                                <TableCell>
-                                                                                    <div className="flex gap-1 flex-wrap">
-                                                                                    {ev.performanceTags && ev.performanceTags.length > 0 ? ev.performanceTags.map(tag => (
-                                                                                        <Badge key={tag.id} variant="outline">{tag.name}</Badge>
-                                                                                    )) : <span className="text-muted-foreground text-xs">Sin etiquetas</span>}
-                                                                                    </div>
-                                                                                </TableCell>
-                                                                            </TableRow>
-                                                                        ))}
-                                                                    </TableBody>
-                                                                </Table>
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )}
-                                            </React.Fragment>
-                                        )
-                                    }) : (
-                                        <TableRow>
-                                            <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
-                                                Este jugador aún no tiene evaluaciones registradas.
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                    </TableBody>
-                            </Table>
+                            <CardContent className="space-y-4">
+                                {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, avgRating, individualEvaluations }) => (
+                                    <Card key={match.id} className="bg-muted/50">
+                                        <CardHeader className="flex flex-row items-center justify-between p-4">
+                                            <div>
+                                                <CardTitle className="text-lg">{match.title}</CardTitle>
+                                                <CardDescription>{format(new Date(match.date), 'dd MMM, yyyy', { locale: es })}</CardDescription>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'} className="text-base">
+                                                    <Star className="mr-1 h-3 w-3" /> {avgRating.toFixed(2)}
+                                                </Badge>
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                        <Button variant="outline" size="sm"><Eye className="mr-2 h-4 w-4" />Ver Detalles</Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent>
+                                                        <DialogHeader>
+                                                            <DialogTitle>Evaluaciones de: {match.title}</DialogTitle>
+                                                        </DialogHeader>
+                                                        <Table>
+                                                            <TableHeader>
+                                                                <TableRow>
+                                                                    <TableHead>Evaluador</TableHead>
+                                                                    <TableHead className="text-center">Rating</TableHead>
+                                                                    <TableHead>Etiquetas</TableHead>
+                                                                </TableRow>
+                                                            </TableHeader>
+                                                            <TableBody>
+                                                                {individualEvaluations.map(ev => (
+                                                                    <TableRow key={ev.id}>
+                                                                        <TableCell>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <Avatar className="h-8 w-8">
+                                                                                    <AvatarImage src={ev.evaluatorPhoto} alt={ev.evaluatorName} />
+                                                                                    <AvatarFallback>{ev.evaluatorName?.charAt(0)}</AvatarFallback>
+                                                                                </Avatar>
+                                                                                <span>{ev.evaluatorName}</span>
+                                                                            </div>
+                                                                        </TableCell>
+                                                                        <TableCell className="text-center">
+                                                                            <Badge variant="secondary">{ev.rating}</Badge>
+                                                                        </TableCell>
+                                                                        <TableCell>
+                                                                            <div className="flex gap-1 flex-wrap">
+                                                                                {ev.performanceTags && ev.performanceTags.length > 0 ? ev.performanceTags.map(tag => (
+                                                                                    <Badge key={tag.id} variant="outline">{tag.name}</Badge>
+                                                                                )) : <span className="text-muted-foreground text-xs">N/A</span>}
+                                                                            </div>
+                                                                        </TableCell>
+                                                                    </TableRow>
+                                                                ))}
+                                                            </TableBody>
+                                                        </Table>
+                                                    </DialogContent>
+                                                </Dialog>
+                                            </div>
+                                        </CardHeader>
+                                    </Card>
+                                )) : (
+                                    <div className="text-center text-muted-foreground py-10">
+                                        Este jugador aún no tiene evaluaciones registradas.
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>
+
                     <TabsContent value="created-matches">
                         <Card>
                             <CardContent className="pt-6">
@@ -483,7 +458,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                                 <TableCell>{format(new Date(match.date), 'dd/MM/yyyy', { locale: es })}</TableCell>
                                                 <TableCell>{match.players.length} / {match.matchSize}</TableCell>
                                                 <TableCell>
-                                                    <Badge variant={match.status === 'completed' ? 'secondary' : 'default'}>{match.status}</Badge>
+                                                    <Badge variant={match.status === 'completed' || match.status === 'evaluated' ? 'secondary' : 'default'}>{match.status}</Badge>
                                                 </TableCell>
                                             </TableRow>
                                         )) : (
