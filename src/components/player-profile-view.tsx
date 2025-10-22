@@ -72,10 +72,9 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     return query(collection(firestore, 'players'), where('ownerUid', '==', playerId));
   }, [firestore, playerId, isCurrentUserProfile]);
   const { data: createdPlayers, loading: createdPlayersLoading } = useCollection<Player>(createdPlayersQuery);
-
+  
   const createdMatchesQuery = useMemo(() => {
     if (!firestore || !isCurrentUserProfile || !playerId) return null;
-    // Remove orderBy to avoid needing a composite index for this view. Sorting will be done client-side.
     return query(collection(firestore, 'matches'), where('ownerUid', '==', playerId));
   }, [firestore, playerId, isCurrentUserProfile]);
   const { data: createdMatches, loading: createdMatchesLoading } = useCollection<Match>(createdMatchesQuery);
@@ -118,6 +117,8 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                 const matchesQuery = query(collection(firestore, 'matches'), where('__name__', 'in', matchIds));
                 const matchesSnapshot = await getDocs(matchesQuery);
                 setMatches(matchesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match)));
+            } else {
+                setMatches([]);
             }
 
             if (evaluatorIds.length > 0) {
@@ -132,6 +133,8 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                     };
                 });
                 setEvaluatorProfiles(newProfiles);
+            } else {
+                setEvaluatorProfiles({});
             }
         } catch (error) {
             console.error("Error fetching evaluation data:", error);
@@ -217,7 +220,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
         
         const availablePlayerRef = doc(firestore, 'availablePlayers', user.uid);
         const availablePlayerSnap = await getDoc(availablePlayerRef);
-        if (availablePlayerSnap.exists) {
+        if (availablePlayerSnap.exists()) {
             batch.update(availablePlayerRef, { photoUrl: newPhotoURL });
         }
         
@@ -418,7 +421,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                                                             </div>
                                                                         </TableCell>
                                                                         <TableCell className="text-center">
-                                                                            <Badge variant="secondary">{ev.rating}</Badge>
+                                                                            {ev.rating !== undefined && <Badge variant="secondary">{ev.rating}</Badge>}
                                                                         </TableCell>
                                                                         <TableCell>
                                                                             <div className="flex gap-1 flex-wrap">
@@ -437,9 +440,9 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                         </CardHeader>
                                     </Card>
                                 )) : (
-                                    <div className="text-center text-muted-foreground py-10">
+                                    <CardContent className="text-center text-muted-foreground py-10">
                                         Este jugador aún no tiene evaluaciones registradas.
-                                    </div>
+                                    </CardContent>
                                 )}
                             </CardContent>
                         </Card>
