@@ -44,7 +44,7 @@ export default function TeamDetailPage() {
 
   const { data: team, loading: teamLoading } = useDoc<GroupTeam>(teamRef);
 
-  const playersQuery = useMemo(() => {
+  const groupPlayersQuery = useMemo(() => {
     if (!firestore || !team?.groupId) return null;
     return query(collection(firestore, 'players'), where('groupId', '==', team.groupId));
   }, [firestore, team?.groupId]);
@@ -68,8 +68,6 @@ export default function TeamDetailPage() {
 
   }, [team, groupPlayers, loading]);
   
-  const memberCount = team?.members?.length || (team as any).playerIds?.length || 0;
-
   if (loading) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-12 w-12 animate-spin" /></div>;
   }
@@ -78,10 +76,12 @@ export default function TeamDetailPage() {
     return <div className="text-center">No se encontró el equipo.</div>;
   }
 
+  const memberCount = team.members?.length || (team as any).playerIds?.length || 0;
+
   return (
     <div className="flex flex-col gap-8">
         <div className="flex flex-row items-center gap-4">
-            <div className="h-20 w-20 flex-shrink-0">
+            <div className="h-16 w-16 flex-shrink-0">
                  <JerseyPreview jersey={team.jersey} size="xl" />
             </div>
             <div className="flex-grow">
