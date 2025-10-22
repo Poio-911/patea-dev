@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { useFirestore, useUser } from '@/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,25 +17,22 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, PlusCircle, Shield, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Player, GroupTeam, JerseyStyle, TeamMember } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { JerseyIcon } from './icons/jersey-icon';
+import { JerseyIcon } from './jerseys';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 
 
 const formations = ['4-4-2', '4-3-3', '3-5-2', '5-3-2', '4-5-1'];
-const jerseyStyles: JerseyStyle[] = ['solid', 'stripes', 'sash'];
+const jerseyStyles: { id: JerseyStyle, name: string }[] = [
+    { id: 'solid', name: 'Liso' },
+    { id: 'stripes', name: 'Rayas' },
+    { id: 'sash', name: 'Banda' },
+    { id: 'halves', name: 'Mitades' },
+];
 const colorPalette = [
-    '#d32f2f', // Red
-    '#303f9f', // Indigo
-    '#0288d1', // Light Blue
-    '#388e3c', // Green
-    '#fbc02d', // Yellow
-    '#f57c00', // Orange
-    '#212121', // Black
-    '#ffffff', // White
-    '#c2185b', // Pink
-    '#7b1fa2', // Purple
-    '#00796b', // Teal
-    '#e64a19', // Deep Orange
+    '#d32f2f', '#c2185b', '#7b1fa2', '#512da8', '#303f9f', '#1976d2',
+    '#0288d1', '#0097a7', '#00796b', '#388e3c', '#689f38', '#fbc02d',
+    '#ffa000', '#f57c00', '#e64a19', '#5d4037', '#616161', '#455a64',
+    '#ffffff', '#000000'
 ];
 
 
@@ -44,11 +41,10 @@ const memberSchema = z.object({
   number: z.coerce.number().min(1, "N°").max(99, "N°"),
 });
 
-// Full schema for validation at the end
 const createTeamSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
   jersey: z.object({
-    style: z.enum(jerseyStyles, { required_error: "Debes elegir un estilo." }),
+    style: z.custom<JerseyStyle>(val => typeof val === 'string' && val.length > 0, "Debes elegir un estilo."),
     primaryColor: z.string().min(1, "Debes elegir un color primario."),
     secondaryColor: z.string().min(1, "Debes elegir un color secundario."),
   }),
@@ -60,6 +56,7 @@ type CreateTeamFormData = z.infer<typeof createTeamSchema>;
 const JerseyCreator = ({ control, form }: { control: any, form: any }) => {
     const jersey = form.watch('jersey');
     const selectedStyle = jersey.style;
+    const requiresSecondaryColor = selectedStyle !== 'solid';
 
     return (
         <Controller
@@ -69,17 +66,20 @@ const JerseyCreator = ({ control, form }: { control: any, form: any }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
                     <div className="w-full h-48 rounded-lg flex items-center justify-center p-4 bg-muted/50">
                         <div className="w-36 h-36">
-                            <JerseyIcon {...jersey} />
+                            <JerseyIcon style={jersey.style} primaryColor={jersey.primaryColor} secondaryColor={jersey.secondaryColor} />
                         </div>
                     </div>
                     <div className="space-y-4">
-                        <div>
+                         <div>
                             <Label>Estilo de Camiseta</Label>
-                            <div className="flex flex-wrap gap-2 mt-1">
+                             <div className="grid grid-cols-2 gap-2 mt-1">
                                 {jerseyStyles.map(style => (
-                                    <Button key={style} type="button" variant={field.value.style === style ? 'default' : 'outline'} size="sm" onClick={() => field.onChange({ ...field.value, style })}>
-                                        {style.charAt(0).toUpperCase() + style.slice(1)}
-                                    </Button>
+                                    <div key={style.id} className={cn("border rounded-md p-2 cursor-pointer hover:border-primary", field.value.style === style.id && "border-primary ring-2 ring-primary")} onClick={() => field.onChange({ ...field.value, style: style.id })}>
+                                        <div className="w-full h-12">
+                                           <JerseyIcon style={style.id} primaryColor="#a1a1aa" secondaryColor="#e4e4e7" />
+                                        </div>
+                                        <p className="text-xs text-center font-medium mt-1">{style.name}</p>
+                                    </div>
                                 ))}
                             </div>
                         </div>
@@ -91,16 +91,14 @@ const JerseyCreator = ({ control, form }: { control: any, form: any }) => {
                                 ))}
                             </div>
                         </div>
-                         {selectedStyle !== 'solid' && (
-                             <div className="transition-all duration-300">
-                                <Label>Color Secundario</Label>
-                                <div className="flex flex-wrap gap-2 mt-1">
-                                    {colorPalette.map(color => (
-                                        <button key={`secondary-${color}`} type="button" className="h-8 w-8 rounded-full border-2 transition-all" style={{ backgroundColor: color, borderColor: field.value.secondaryColor === color ? 'hsl(var(--ring))' : 'transparent' }} onClick={() => field.onChange({ ...field.value, secondaryColor: color })} />
-                                    ))}
-                                </div>
+                         <div className={cn("transition-all duration-300", !requiresSecondaryColor && "opacity-50 pointer-events-none")}>
+                            <Label>Color Secundario</Label>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                                {colorPalette.map(color => (
+                                    <button key={`secondary-${color}`} type="button" className="h-8 w-8 rounded-full border-2 transition-all" style={{ backgroundColor: color, borderColor: field.value.secondaryColor === color ? 'hsl(var(--ring))' : 'transparent' }} onClick={() => requiresSecondaryColor && field.onChange({ ...field.value, secondaryColor: color })} />
+                                ))}
                             </div>
-                         )}
+                        </div>
                     </div>
                 </div>
             )}
@@ -203,7 +201,7 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
   const nextStep = async () => {
     let fieldsToValidate: (keyof CreateTeamFormData | `jersey.${keyof CreateTeamFormData['jersey']}` | `members`)[] = [];
     if (step === 1) fieldsToValidate = ['name'];
-    if (step === 2) fieldsToValidate = ['jersey.style', 'jersey.primaryColor', 'jersey.secondaryColor'];
+    if (step === 2) fieldsToValidate = ['jersey.style', 'jersey.primaryColor'];
     if (step === 3) fieldsToValidate = ['formation'];
     
     const isValid = await trigger(fieldsToValidate);
@@ -237,7 +235,6 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
     }
   };
 
-  // Reset form and step when dialog closes
   useEffect(() => {
     if (!open) {
       setTimeout(() => {

@@ -120,7 +120,7 @@ export type Group = {
     members: string[];
 } & DocumentData;
 
-export type JerseyStyle = 'solid' | 'stripes' | 'sash';
+export type JerseyStyle = 'solid' | 'stripes' | 'sash' | 'halves';
 
 export type TeamMember = {
   playerId: string;

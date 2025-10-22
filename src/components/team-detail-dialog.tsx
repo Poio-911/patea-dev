@@ -11,7 +11,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { JerseyIcon } from './icons/jersey-icon';
+import { JerseyIcon } from './jerseys';
 import { Separator } from './ui/separator';
 import type { GroupTeam, Player } from '@/lib/types';
 import { Badge } from './ui/badge';
@@ -24,18 +24,17 @@ interface TeamDetailDialogProps {
   children: React.ReactNode;
 }
 
-const TeamRosterPlayer = ({ player, number }: { player: Player; number: number }) => {
+const TeamRosterPlayer = ({ player, number, jersey }: { player: Player; number: number; jersey: GroupTeam['jersey'] }) => {
   return (
     <div className="flex items-center gap-4 rounded-lg p-2 hover:bg-muted">
-        <Avatar className="h-12 w-12 border-2">
-            <AvatarImage src={player.photoUrl} alt={player.name} />
-            <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-        </Avatar>
+        <div className="h-14 w-14 flex-shrink-0">
+            <JerseyIcon {...jersey} number={number} />
+        </div>
         <div className="flex-1">
             <p className="font-bold">{player.name}</p>
             <p className="text-sm text-muted-foreground">{player.position}</p>
         </div>
-        <Badge className="text-lg font-bold">{number}</Badge>
+        <Badge variant="secondary" className="text-lg font-bold">{player.ovr}</Badge>
     </div>
   );
 };
@@ -69,7 +68,7 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
         <DialogHeader>
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 flex-shrink-0">
@@ -98,28 +97,14 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
                 <div>
                     <h3 className="font-bold text-xl mb-3 flex items-center gap-2">
                         <Users className="h-5 w-5 text-primary"/>
-                        Titulares ({titulares.length})
+                        Plantel ({teamPlayersWithDetails.length})
                     </h3>
                     <div className="space-y-1">
-                        {titulares.map(player => (
-                            <TeamRosterPlayer key={player.id} player={player} number={player.number} />
+                        {teamPlayersWithDetails.map(player => (
+                            <TeamRosterPlayer key={player.id} player={player} number={player.number} jersey={team.jersey} />
                         ))}
                     </div>
                 </div>
-
-                {suplentes.length > 0 && (
-                    <div>
-                        <h3 className="font-bold text-xl mb-3 flex items-center gap-2">
-                            <Users className="h-5 w-5 text-muted-foreground"/>
-                            Suplentes ({suplentes.length})
-                        </h3>
-                        <div className="space-y-1">
-                            {suplentes.map(player => (
-                                <TeamRosterPlayer key={player.id} player={player} number={player.number} />
-                            ))}
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
 
