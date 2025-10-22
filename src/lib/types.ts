@@ -1,6 +1,7 @@
 
 
 import { DocumentData, DocumentReference } from "firebase/firestore";
+import { PerformanceTag } from "./performance-tags";
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
 
@@ -173,12 +174,7 @@ export type Evaluation = {
     matchId: string; // The ID of the match, for easier querying
     rating?: number; // Scale 1-10
     goals: number; // Goals scored by the evaluator in that match
-    performanceTags?: {
-        id: string;
-        name: string;
-        description: string;
-        effects: { attribute: string; change: number }[];
-    }[];
+    performanceTags?: PerformanceTag[];
     evaluatedAt: string;
 } & DocumentData;
 
@@ -216,7 +212,7 @@ export type EvaluationSubmission = {
             position: string;
             evaluationType: 'points' | 'tags';
             rating?: number;
-            performanceTags?: any[];
+            performanceTags?: PerformanceTag[]; // Corrected type
         }[];
     }
 } & DocumentData;

@@ -8,14 +8,11 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { 
-  doc, 
-  writeBatch, 
   collection, 
   query, 
   where, 
   addDoc, 
   getDocs, 
-  orderBy 
 } from 'firebase/firestore'
 import { Loader2, Save, ShieldCheck, Goal, Plus, Minus, FileClock } from 'lucide-react'
 
@@ -33,10 +30,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { PerformanceTag, performanceTagsDb } from '@/lib/performance-tags'
 import { cn } from '@/lib/utils'
-import type { Player, EvaluationAssignment, Evaluation } from '@/lib/types'
-import { Badge } from '@/components/ui/badge'
+import type { Player, EvaluationAssignment } from '@/lib/types'
 
-// --- Validación con Zod ---
+// --- Zod Validation ---
 const playerEvaluationSchema = z.object({
   assignmentId: z.string(),
   subjectId: z.string(),
@@ -46,7 +42,7 @@ const playerEvaluationSchema = z.object({
   evaluationType: z.enum(['points', 'tags']).default('points'),
   rating: z.coerce.number().min(1).max(10).optional(),
   performanceTags: z
-    .array(z.any())
+    .array(z.custom<PerformanceTag>())
     .min(3, 'Debes seleccionar al menos 3 etiquetas.')
     .optional(),
 })
@@ -115,7 +111,7 @@ const TagCheckbox = ({
   )
 }
 
-// --- COMPONENTE PRINCIPAL ---
+// --- MAIN COMPONENT ---
 export default function PerformEvaluationView({ matchId }: { matchId: string }) {
   const firestore = useFirestore()
   const { user } = useUser()
