@@ -8,29 +8,9 @@ import { doc, collection, query, where } from 'firebase/firestore';
 import type { GroupTeam, Player } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Loader2, Users } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-
-const TeamRosterPlayer = ({ player, number }: { player: Player; number: number; }) => {
-  return (
-    <Card className="flex items-center gap-4 p-3">
-        <Avatar className="h-12 w-12 border">
-          <AvatarImage src={player.photoUrl} alt={player.name} />
-          <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <div className="flex-1">
-            <p className="font-bold truncate">{player.name}</p>
-            <p className="text-sm text-muted-foreground">{player.position}</p>
-        </div>
-        <div className="flex flex-col items-center">
-             <p className="text-xs text-muted-foreground">#</p>
-             <p className="text-2xl font-bold">{number}</p>
-        </div>
-    </Card>
-  );
-};
+import { TeamRosterPlayer } from '@/components/team-roster-player';
 
 export default function TeamDetailPage() {
   const { id: teamId } = useParams();
@@ -85,7 +65,7 @@ export default function TeamDetailPage() {
               </div>
             )}
             <div className="flex flex-col items-center gap-2">
-                <PageHeader title={team.name} className="justify-center" />
+                <PageHeader title={team.name} className="justify-center text-center" />
                 <Badge variant="outline" className="text-sm">
                     <Users className="mr-2 h-4 w-4"/>
                     {memberCount} Jugadores
