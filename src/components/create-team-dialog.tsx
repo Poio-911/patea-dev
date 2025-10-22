@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, FormProvider, useFormContext, Controller, useWatch } from 'react-hook-form';
+import { useForm, FormProvider, useFormContext, Controller, useWatch, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useFirestore, useUser } from '@/firebase';
@@ -19,7 +20,6 @@ import { Checkbox } from './ui/checkbox';
 import { ScrollArea } from './ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 
-
 const jerseyStyles: { id: JerseyStyle; name: string }[] = [
     { id: 'solid', name: 'Liso' },
     { id: 'stripes', name: 'Rayas' },
@@ -32,7 +32,7 @@ const jerseyStyles: { id: JerseyStyle; name: string }[] = [
 const colorPalette = [
     '#d32f2f', '#c2185b', '#7b1fa2', '#512da8', '#303f9f', '#1976d2', '#0288d1', 
     '#0097a7', '#00796b', '#388e3c', '#689f38', '#fbc02d', '#ffa000', '#f57c00', 
-    '#e64a19', '#5d4037', '#616161', '#455a64', '#ffffff', '#212121'
+    '#e64a19', '#5d4037', '#616161', '#455a64', '#ffffff', '#000000'
 ];
 
 
@@ -49,9 +49,10 @@ const createTeamSchema = z.object({
     secondaryColor: z.string().min(1, "Debes elegir un color secundario."),
   }),
   members: z.array(memberSchema).min(1, 'Debes seleccionar al menos un miembro.'),
+  formation: z.string().min(1, "Debes seleccionar una formación"),
 });
-type CreateTeamFormData = z.infer<typeof createTeamSchema>;
 
+type CreateTeamFormData = z.infer<typeof createTeamSchema>;
 
 const JerseyCreator = () => {
     const { control, setValue, formState: { errors } } = useFormContext<CreateTeamFormData>();
@@ -68,7 +69,7 @@ const JerseyCreator = () => {
 
     return (
         <div className="space-y-4">
-             <div className="w-full h-40 rounded-lg flex items-center justify-center p-4 bg-muted/50">
+            <div className="w-full h-40 rounded-lg flex items-center justify-center p-4 bg-muted/50">
                 <div className="w-32 h-32">
                     <JerseyIcon style={jersey.style} primaryColor={jersey.primaryColor} secondaryColor={jersey.secondaryColor} />
                 </div>
@@ -146,7 +147,6 @@ const JerseyCreator = () => {
     );
 };
 
-
 const MemberManager = ({ groupPlayers }: { groupPlayers: Player[] }) => {
     const { control, formState: { errors }, watch } = useFormContext<CreateTeamFormData>();
     const { fields, append, remove } = useFieldArray({
@@ -222,6 +222,7 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
       name: '',
       jersey: { style: 'solid', primaryColor: '#d32f2f', secondaryColor: '#d32f2f' },
       members: [],
+      formation: '4-3-3',
     },
   });
 
@@ -250,7 +251,7 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
             ownerUid: user.uid,
             groupId: user.activeGroupId,
             members: data.members,
-            formation: '4-3-3', // Default or could be another step
+            formation: data.formation,
         };
         await addDoc(collection(firestore, 'groups', user.activeGroupId, 'teams'), newTeam);
         toast({ title: '¡Equipo Creado!', description: `El equipo "${data.name}" se ha formado.` });
@@ -269,6 +270,7 @@ export function CreateTeamDialog({ groupPlayers }: { groupPlayers: Player[] }) {
         name: '',
         jersey: { style: 'solid', primaryColor: '#d32f2f', secondaryColor: '#d32f2f' },
         members: [],
+        formation: '4-3-3',
       });
       setStep(1);
     }
