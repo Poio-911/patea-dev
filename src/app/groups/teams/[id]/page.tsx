@@ -51,7 +51,7 @@ export default function TeamDetailPage() {
   const { data: groupPlayers, loading: playersLoading } = useCollection<Player>(groupPlayersQuery);
   
   const loading = teamLoading || playersLoading;
-
+  
   const teamPlayersWithDetails = useMemo(() => {
     if (loading || !team || !groupPlayers) return [];
 
@@ -65,7 +65,7 @@ export default function TeamDetailPage() {
     }).filter((p): p is Player & { number: number } => p !== null).sort((a,b) => a.number - b.number);
 
   }, [team, groupPlayers, loading]);
-  
+
   if (loading) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-12 w-12 animate-spin" /></div>;
   }
@@ -78,12 +78,14 @@ export default function TeamDetailPage() {
 
   return (
     <div className="flex flex-col gap-8">
-        <div className="flex flex-row items-center gap-4">
-            <div className="h-12 w-12 flex-shrink-0">
-                 {team.jersey && <JerseyPreview jersey={team.jersey} size="lg" />}
-            </div>
-            <div className="flex-grow">
-                <PageHeader title={team.name} />
+        <div className="flex flex-col items-center gap-4 text-center">
+            {team.jersey && (
+              <div className="h-24 w-24">
+                <JerseyPreview jersey={team.jersey} size="xl" />
+              </div>
+            )}
+            <div>
+                <PageHeader title={team.name} className="justify-center" />
                 <Badge variant="outline" className="mt-2 text-sm">
                     <Users className="mr-2 h-4 w-4"/>
                     {memberCount} Jugadores
