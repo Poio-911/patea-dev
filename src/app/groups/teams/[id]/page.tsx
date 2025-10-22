@@ -11,6 +11,7 @@ import { Loader2, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { TeamRosterPlayer } from '@/components/team-roster-player';
+import { ShirtIcon } from '@/components/icons/shirt-icon';
 
 export default function TeamDetailPage() {
   const { id: teamId } = useParams();
@@ -41,7 +42,9 @@ export default function TeamDetailPage() {
         const playerDetails = groupPlayers.find(p => p.id === playerId);
         const memberInfo = team.members?.find(m => m.playerId === playerId);
         if (!playerDetails) return null;
-        return { ...playerDetails, number: memberInfo?.number || index + 1 };
+        // Fallback for old teams that don't have number
+        const number = memberInfo?.number !== undefined ? memberInfo.number : index + 1;
+        return { ...playerDetails, number };
     }).filter((p): p is Player & { number: number } => p !== null).sort((a,b) => a.number - b.number);
 
   }, [team, groupPlayers, loading]);
@@ -54,14 +57,14 @@ export default function TeamDetailPage() {
     return <div className="text-center">No se encontró el equipo.</div>;
   }
   
-  const memberCount = team.members ? team.members.length : ((team as any).playerIds || []).length;
+  const memberCount = team.members?.length || (team as any).playerIds?.length || 0;
 
   return (
     <div className="flex flex-col gap-8">
         <div className="flex flex-col items-center text-center gap-4">
             {team.jersey && (
-              <div className="h-24 w-24">
-                <JerseyPreview jersey={team.jersey} size="xl" />
+              <div className="h-20 w-20 flex items-center justify-center overflow-hidden">
+                <JerseyPreview jersey={team.jersey} size="md" />
               </div>
             )}
             <div className="flex flex-col items-center gap-2">
