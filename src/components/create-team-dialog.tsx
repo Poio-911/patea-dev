@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, Controller, useWatch, useFieldArray, FormProvider } from 'react-hook-form';
+import { useForm, Controller, useWatch, FormProvider, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useFirestore, useUser } from '@/firebase';
@@ -19,8 +20,6 @@ import { Checkbox } from './ui/checkbox';
 import { ScrollArea } from './ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 
-const formations = ['4-4-2', '4-3-3', '3-5-2', '5-3-2', '4-5-1'];
-
 const jerseyStyles: { id: JerseyStyle; name: string }[] = [
     { id: 'solid', name: 'Liso' },
     { id: 'stripes', name: 'Rayas' },
@@ -31,11 +30,11 @@ const jerseyStyles: { id: JerseyStyle; name: string }[] = [
 ];
 
 const colorPalette = [
-    '#d32f2f', '#c2185b', '#7b1fa2', '#512da8', '#303f9f', '#1976d2',
-    '#0288d1', '#0097a7', '#00796b', '#388e3c', '#689f38', '#fbc02d',
-    '#ffa000', '#f57c00', '#e64a19', '#5d4037', '#616161', '#455a64',
-    '#ffffff', '#000000', '#F472B6', '#8B5CF6', '#3B82F6', '#10B981', '#F59E0B'
+    '#d32f2f', '#c2185b', '#7b1fa2', '#512da8', '#303f9f', '#1976d2', '#0288d1', 
+    '#0097a7', '#00796b', '#388e3c', '#689f38', '#fbc02d', '#ffa000', '#f57c00', 
+    '#e64a19', '#5d4037', '#616161', '#455a64', '#ffffff', '#212121'
 ];
+
 
 const memberSchema = z.object({
   playerId: z.string(),
@@ -55,12 +54,12 @@ type CreateTeamFormData = z.infer<typeof createTeamSchema>;
 
 
 const JerseyCreator = () => {
-    const { control, setValue, formState: { errors } } = useForm<CreateTeamFormData>();
+    const { control, setValue, formState: { errors } } = useFormContext<CreateTeamFormData>();
     const jersey = useWatch({ control, name: "jersey" });
 
     const handleStyleSelect = (styleId: JerseyStyle) => {
         setValue('jersey.style', styleId, { shouldValidate: true });
-        if (styleId === 'solid') {
+        if (styleId === 'solid' && jersey.primaryColor) {
             setValue('jersey.secondaryColor', jersey.primaryColor, { shouldValidate: true });
         }
     };
@@ -69,15 +68,15 @@ const JerseyCreator = () => {
 
     return (
         <div className="space-y-4">
-             <div className="w-full h-48 rounded-lg flex items-center justify-center p-4 bg-muted/50">
-                <div className="w-40 h-40">
+             <div className="w-full h-40 rounded-lg flex items-center justify-center p-4 bg-muted/50">
+                <div className="w-32 h-32">
                     <JerseyIcon style={jersey.style} primaryColor={jersey.primaryColor} secondaryColor={jersey.secondaryColor} />
                 </div>
             </div>
             
             <div className="space-y-2">
                 <Label>Estilo de Camiseta</Label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                     {jerseyStyles.map((style) => (
                         <button
                             key={style.id}
@@ -88,7 +87,7 @@ const JerseyCreator = () => {
                             )}
                             onClick={() => handleStyleSelect(style.id)}
                         >
-                            <div className="w-12 h-12">
+                            <div className="w-10 h-10">
                                 <JerseyIcon style={style.id} primaryColor="#a1a1aa" secondaryColor={style.id === 'solid' ? "#a1a1aa" : "#e4e4e7"} />
                             </div>
                             <p className="text-xs text-center font-medium">{style.name}</p>
@@ -101,13 +100,16 @@ const JerseyCreator = () => {
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                 <div className="space-y-1">
                     <Label>Color Primario</Label>
-                    <div className="grid grid-cols-7 gap-1.5 mt-1 border p-2 rounded-md">
+                    <div className="grid grid-cols-10 gap-1.5 mt-1 border p-2 rounded-md">
                         {colorPalette.map(color => (
                             <button
                                 key={`primary-${color}`}
                                 type="button"
-                                className="h-8 w-8 rounded-full border-2 transition-all"
-                                style={{ backgroundColor: color, borderColor: jersey.primaryColor === color ? 'hsl(var(--ring))' : 'transparent' }}
+                                className={cn(
+                                    "h-6 w-6 rounded-full border-2 transition-all",
+                                    jersey.primaryColor === color ? 'border-ring' : 'border-transparent'
+                                )}
+                                style={{ backgroundColor: color }}
                                 onClick={() => {
                                     setValue('jersey.primaryColor', color, { shouldValidate: true });
                                     if (!requiresSecondaryColor) {
@@ -121,13 +123,16 @@ const JerseyCreator = () => {
                 </div>
                 <div className={cn("space-y-1 transition-all duration-300", !requiresSecondaryColor && "opacity-30 pointer-events-none")}>
                     <Label>Color Secundario</Label>
-                    <div className="grid grid-cols-7 gap-1.5 mt-1 border p-2 rounded-md">
+                     <div className="grid grid-cols-10 gap-1.5 mt-1 border p-2 rounded-md">
                         {colorPalette.map(color => (
                             <button
                                 key={`secondary-${color}`}
                                 type="button"
-                                className="h-8 w-8 rounded-full border-2 transition-all"
-                                style={{ backgroundColor: color, borderColor: jersey.secondaryColor === color ? 'hsl(var(--ring))' : 'transparent' }}
+                                className={cn(
+                                    "h-6 w-6 rounded-full border-2 transition-all",
+                                    jersey.secondaryColor === color ? 'border-ring' : 'border-transparent'
+                                )}
+                                style={{ backgroundColor: color }}
                                 onClick={() => requiresSecondaryColor && setValue('jersey.secondaryColor', color, { shouldValidate: true })}
                             />
                         ))}
@@ -141,7 +146,7 @@ const JerseyCreator = () => {
 
 
 const MemberManager = ({ groupPlayers }: { groupPlayers: Player[] }) => {
-    const { control, formState: { errors } } = useForm<CreateTeamFormData>();
+    const { control, formState: { errors } } = useFormContext<CreateTeamFormData>();
     const { fields, append, remove } = useFieldArray({
         control,
         name: "members"
