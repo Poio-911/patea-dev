@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { ShirtIcon } from '../icons/shirt-icon';
 
 interface JerseyDesignerProps {
   value: Jersey;
@@ -36,14 +37,17 @@ export function JerseyDesigner({ value, onChange }: JerseyDesignerProps) {
       <div className="space-y-6 order-2 md:order-1">
         {/* Selección del tipo de camiseta */}
         <div className="space-y-3">
-          <Label>Tipo de Camiseta</Label>
+          <Label className="flex items-center gap-2">
+            <ShirtIcon className="h-4 w-4" />
+            Diseño de la Camiseta
+          </Label>
           <RadioGroup value={value.type} onValueChange={handleTypeChange}>
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-3 gap-2">
               {templates.map(template => (
                 <label
                   key={template.type}
                   className={cn(
-                    'relative flex flex-col items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all hover:border-primary/50',
+                    'relative flex aspect-square items-center justify-center rounded-lg border-2 cursor-pointer transition-all hover:border-primary/50',
                     value.type === template.type ? 'border-primary bg-primary/5' : 'border-border'
                   )}
                 >
@@ -51,10 +55,11 @@ export function JerseyDesigner({ value, onChange }: JerseyDesignerProps) {
                     value={template.type}
                     className="sr-only"
                   />
-                  <div className="text-sm font-medium text-center">{template.label}</div>
-                  <div className="text-xs text-muted-foreground text-center">
-                    {template.description}
-                  </div>
+                  <JerseyPreview 
+                    jersey={{ type: template.type, primaryColor: '#9CA3AF', secondaryColor: '#E5E7EB' }} 
+                    size="md"
+                    className="p-1"
+                  />
                 </label>
               ))}
             </div>
