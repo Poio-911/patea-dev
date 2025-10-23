@@ -140,7 +140,6 @@ export default function TeamDetailPage() {
         
         {/* Upcoming Matches */}
         <div className="space-y-4">
-            <h2 className="text-xl font-bold flex items-center gap-2"><CalendarDays className="h-6 w-6 text-primary"/> Próximos Partidos</h2>
             {upcomingMatches.length > 0 ? (
                 <UpcomingMatchesFeed matches={upcomingMatches} />
             ) : (
