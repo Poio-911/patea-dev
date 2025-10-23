@@ -1,3 +1,4 @@
+
 import { JerseyType } from './types';
 
 export type JerseyTemplate = {
@@ -53,7 +54,6 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
       secondary: ['#ffffff'], // Blanco -> secundario
     },
   },
-
   thirds: {
     type: 'thirds',
     label: 'Tercios',
@@ -64,7 +64,6 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
       secondary: ['#ffffff'], // Blanco -> secundario
     },
   },
-
   lines: {
     type: 'lines',
     label: 'Lineas',
@@ -92,6 +91,13 @@ export function getAllJerseyTemplates(): JerseyTemplate[] {
   return Object.values(JERSEY_TEMPLATES);
 }
 
+const expandHex = (hex: string) => {
+  if (hex.length === 4) {
+    return `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
+  }
+  return hex;
+};
+
 /**
  * Reemplaza los colores en un SVG según el template y los colores elegidos
  */
@@ -103,28 +109,29 @@ export function applyColorsToSvg(
 ): string {
   let result = svgContent;
 
-  // Reemplazar colores primarios
-  template.colorMapping.primary.forEach(oldColor => {
-    // Escapar caracteres especiales en el color para regex
-    const escapedColor = oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    // Reemplazar en atributos fill y stroke
-    const fillRegex = new RegExp(`fill="${escapedColor}"`, 'gi');
-    const strokeRegex = new RegExp(`stroke="${escapedColor}"`, 'gi');
-    result = result.replace(fillRegex, `fill="${primaryColor}"`);
-    result = result.replace(strokeRegex, `stroke="${primaryColor}"`);
-  });
+  const replaceColor = (content: string, oldColors: string[], newColor: string) => {
+    let modifiedContent = content;
+    oldColors.forEach(oldColor => {
+      const oldColorLong = expandHex(oldColor).substring(1);
+      const oldColorShort = oldColor.length === 7 ? `#${oldColor[1]}${oldColor[3]}${oldColor[5]}` : oldColor;
+      
+      const regexLong = new RegExp(`(fill|stroke)="#${oldColorLong}"`, 'gi');
+      const regexShort = new RegExp(`(fill|stroke)="${oldColorShort}"`, 'gi');
+      
+      modifiedContent = modifiedContent.replace(regexLong, `$1="${newColor}"`);
+      if (oldColor.length === 7) { // Only run short regex if long one was used
+        modifiedContent = modifiedContent.replace(regexShort, `$1="${newColor}"`);
+      }
+    });
+    return modifiedContent;
+  };
 
-  // Reemplazar colores secundarios
-  template.colorMapping.secondary.forEach(oldColor => {
-    const escapedColor = oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const fillRegex = new RegExp(`fill="${escapedColor}"`, 'gi');
-    const strokeRegex = new RegExp(`stroke="${escapedColor}"`, 'gi');
-    result = result.replace(fillRegex, `fill="${secondaryColor}"`);
-    result = result.replace(strokeRegex, `stroke="${secondaryColor}"`);
-  });
+  result = replaceColor(result, template.colorMapping.primary, primaryColor);
+  result = replaceColor(result, template.colorMapping.secondary, secondaryColor);
 
   return result;
 }
+
 
 /**
  * Colores predefinidos populares para equipos de fútbol
