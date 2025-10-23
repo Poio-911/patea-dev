@@ -11,7 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+import { googleAI } from '@genkit-ai/googleai';
 
 const GroupSummaryInputSchema = z.object({
   playerCount: z.number().describe('El número total de jugadores en el grupo.'),
@@ -37,8 +37,8 @@ export async function generateGroupSummary(input: GroupSummaryInput): Promise<Gr
 
 const prompt = ai.definePrompt({
   name: 'generateGroupSummaryPrompt',
-  input: { schema: GroupSummaryInputSchema },
-  output: { schema: GroupSummaryOutputSchema },
+  inputSchema: GroupSummaryInputSchema,
+  outputSchema: GroupSummaryOutputSchema,
   prompt: `
     Eres un periodista deportivo carismático y con un gran conocimiento del fútbol amateur del Río de la Plata.
     Tu tarea es escribir un titular o un breve análisis (1-2 frases) sobre la situación actual de un grupo de fútbol.
@@ -70,7 +70,7 @@ const generateGroupSummaryFlow = ai.defineFlow(
     outputSchema: GroupSummaryOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input, { model: 'googleai/gemini-2.5-flash' });
+    const { output } = await prompt(input);
     return output!;
   }
 );

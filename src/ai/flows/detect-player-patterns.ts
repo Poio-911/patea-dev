@@ -3,7 +3,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+import { googleAI } from '@genkit-ai/googleai';
 
 // ── SCHEMA DE INPUT ──────────────────────────────────────────
 const DetectPlayerPatternsInputSchema = z.object({
@@ -81,8 +81,8 @@ export type DetectPlayerPatternsOutput = z.infer<typeof DetectPlayerPatternsOutp
 
 const prompt = ai.definePrompt({
   name: 'detectPlayerPatternsPrompt',
-  input: {schema: DetectPlayerPatternsInputSchema},
-  output: {schema: DetectPlayerPatternsOutputSchema},
+  inputSchema: DetectPlayerPatternsInputSchema,
+  outputSchema: DetectPlayerPatternsOutputSchema,
   prompt: `Sos un analista de datos de fútbol experto. Habla en español rioplatense.
 Analiza el rendimiento histórico de {{playerName}} y detecta patrones significativos.
 
@@ -162,7 +162,7 @@ const detectPlayerPatternsFlow = ai.defineFlow(
     outputSchema: DetectPlayerPatternsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input, { model: googleAI.model('gemini-2.5-flash') });
+    const {output} = await prompt(input, { model: 'googleai/gemini-2.5-flash' });
     return output!;
   }
 );

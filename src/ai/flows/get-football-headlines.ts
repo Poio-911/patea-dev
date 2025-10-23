@@ -10,7 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+import { googleAI } from '@genkit-ai/googleai';
 
 const FootballHeadlineSchema = z.object({
   title: z.string().describe('The headline of the news story.'),
@@ -32,7 +32,7 @@ export async function getFootballHeadlines(): Promise<FootballHeadlinesOutput> {
 
 const prompt = ai.definePrompt({
   name: 'footballHeadlinesPrompt',
-  output: { schema: FootballHeadlinesOutputSchema },
+  outputSchema: FootballHeadlinesOutputSchema,
   prompt: `
     Eres un periodista deportivo de un importante diario del Río de la Plata.
     Tu tarea es generar 3 o 4 titulares de noticias de fútbol que parezcan recientes y relevantes.
@@ -54,7 +54,7 @@ const getFootballHeadlinesFlow = ai.defineFlow(
     outputSchema: FootballHeadlinesOutputSchema,
   },
   async () => {
-    const { output } = await prompt({}, { model: 'googleai/gemini-2.5-flash' });
+    const { output } = await prompt();
     return output!;
   }
 );

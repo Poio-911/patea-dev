@@ -3,7 +3,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+import { googleAI } from '@genkit-ai/googleai';
 
 // ── SCHEMA DE INPUT ──────────────────────────────────────────
 const CoachConversationInputSchema = z.object({
@@ -50,8 +50,8 @@ export type CoachConversationOutput = z.infer<typeof CoachConversationOutputSche
 
 const prompt = ai.definePrompt({
   name: 'coachConversationPrompt',
-  input: {schema: CoachConversationInputSchema},
-  output: {schema: CoachConversationOutputSchema},
+  inputSchema: CoachConversationInputSchema,
+  outputSchema: CoachConversationOutputSchema,
   prompt: `Sos un DT de fútbol profesional que habla en español rioplatense. Tu estilo es directo, motivador y personal.
 Estás conversando con {{playerContext.playerName}}, un jugador {{playerContext.position}} con OVR {{playerContext.ovr}}.
 
@@ -109,7 +109,7 @@ const coachConversationFlow = ai.defineFlow(
     outputSchema: CoachConversationOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input, { model: googleAI.model('gemini-2.5-flash') });
+    const {output} = await prompt(input, { model: 'googleai/gemini-2.5-flash' });
     return output!;
   }
 );

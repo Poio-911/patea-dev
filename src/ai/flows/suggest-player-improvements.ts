@@ -11,7 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+import { googleAI } from '@genkit-ai/googleai';
 
 const SuggestPlayerImprovementsInputSchema = z.object({
   playerId: z.string().describe('El ID del jugador para generar sugerencias.'),
@@ -46,8 +46,8 @@ export async function suggestPlayerImprovements(input: SuggestPlayerImprovements
 
 const prompt = ai.definePrompt({
   name: 'suggestPlayerImprovementsPrompt',
-  input: {schema: SuggestPlayerImprovementsInputSchema},
-  output: {schema: SuggestPlayerImprovementsOutputSchema},
+  inputSchema: SuggestPlayerImprovementsInputSchema,
+  outputSchema: SuggestPlayerImprovementsOutputSchema,
   prompt: `Eres un DT de fútbol profesional, directo y motivador. Habla en español rioplatense.
   Analiza los datos del jugador y da 2 o 3 consejos MUY CONCISOS y accionables para que mejore.
 
@@ -74,7 +74,7 @@ const suggestPlayerImprovementsFlow = ai.defineFlow(
     outputSchema: SuggestPlayerImprovementsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input, { model: googleAI.model('gemini-2.5-flash') });
+    const {output} = await prompt(input);
     return output!;
   }
 );
