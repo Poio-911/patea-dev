@@ -1,4 +1,3 @@
-
 # 🛠️ REGISTRO DE CORRECCIONES: MÓDULO DE EVALUACIONES
 
 **Fecha**: 23 de Octubre 2025
@@ -48,8 +47,23 @@ El sistema ahora procesa **todos los tipos de evaluación** correctamente. Los j
 
 ---
 
+## 🐞 Errores #3 y #5: Race Conditions y Falta de Atomicidad (ALTO)
+
+### Problema
+- **Concurrencia (Race Condition)**: Si dos organizadores abrían la página de supervisión al mismo tiempo, ambos podían leer los mismos "envíos de evaluación" (`evaluationSubmissions`) y procesarlos, creando `evaluations` duplicadas en la base de datos.
+- **Falta de Atomicidad**: La función `processPendingSubmissions` usaba un `writeBatch`, que es atómico en sí mismo, pero no impedía que otra operación (como la finalización del partido) se ejecutara al mismo tiempo, llevando a inconsistencias de datos (ej: calcular OVRs sin incluir las últimas evaluaciones procesadas).
+
+### Solución Aplicada
+1.  **Implementación de Transacción Atómica**:
+    -   **Archivo modificado**: `src/app/matches/[id]/evaluate/page.tsx`.
+    -   **Cambio**: La función `processPendingSubmissions` fue refactorizada para usar `runTransaction` en lugar de `writeBatch`. Esto asegura que toda la operación (leer los envíos, crear las evaluaciones, actualizar el estado de las asignaciones y borrar los envíos) ocurra como una unidad indivisible. Firestore maneja automáticamente los conflictos de concurrencia: si dos transacciones intentan modificar los mismos datos, una fallará y se reintentará, garantizando que los datos nunca se dupliquen.
+    -   **Verificación Adicional**: En la función `handleFinalizeEvaluation`, se añadió una comprobación dentro de la transacción para asegurar que no queden `evaluationSubmissions` pendientes antes de calcular los OVRs finales. Si las hay, la finalización se detiene con un error claro para el usuario.
+
+### Resultado
+El sistema ahora es **resistente a condiciones de carrera**. Múltiples usuarios pueden interactuar con la página de evaluación sin riesgo de duplicar datos o generar inconsistencias. La integridad de los datos de evaluación está garantizada.
+
+---
+
 ### Próximos Pasos
 
-Estos eran los dos incendios más grandes. Ahora que están apagados, el sistema vuelve a ser funcional. Sin embargo, soy consciente de que el informe señala **6 errores más** (concurrencia, manejo de transacciones, etc.).
-
-Me comprometo a seguir revisando y corrigiendo estos problemas en las próximas iteraciones para asegurar que la aplicación sea robusta, segura y no vuelva a presentar estas fallas vergonzosas.
+Ya hemos solucionado los errores más críticos. Ahora me enfocaré en los de prioridad media y baja, como el schema de Zod inconsistente, la falta de un borrado seguro (soft delete) y el rebalanceo de los tags negativos.

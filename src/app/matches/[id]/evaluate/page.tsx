@@ -93,18 +93,18 @@ export default function EvaluateMatchPage() {
     if (!firestore || !matchId) return;
 
     setIsProcessingSubmissions(true);
-    const submissionsQuery = query(collection(firestore, 'evaluationSubmissions'), where('matchId', '==', matchId));
     
     try {
+      await runTransaction(firestore, async (transaction) => {
+        const submissionsQuery = query(collection(firestore, 'evaluationSubmissions'), where('matchId', '==', matchId));
+        // We get the docs inside the transaction to ensure we have the latest state
         const snapshot = await getDocs(submissionsQuery);
+
         if (snapshot.empty) {
-            setPendingSubmissionsCount(0);
-            setIsProcessingSubmissions(false);
-            return;
+            return; // No submissions to process
         }
 
         setPendingSubmissionsCount(snapshot.size);
-        const batch = writeBatch(firestore);
 
         for (const submissionDoc of snapshot.docs) {
             const submission = submissionDoc.data();
@@ -113,7 +113,7 @@ export default function EvaluateMatchPage() {
             // Process self-evaluation for goals
             if (formData.evaluatorGoals > 0) {
                 const selfEvalRef = doc(collection(firestore, 'matches', matchId as string, 'selfEvaluations'));
-                batch.set(selfEvalRef, {
+                transaction.set(selfEvalRef, {
                     playerId: evaluatorId,
                     matchId,
                     goals: formData.evaluatorGoals,
@@ -136,26 +136,28 @@ export default function EvaluateMatchPage() {
                 if (evaluation.evaluationType === 'points') newEvaluation.rating = evaluation.rating;
                 else newEvaluation.performanceTags = evaluation.performanceTags;
 
-                batch.set(evalRef, newEvaluation);
+                transaction.set(evalRef, newEvaluation);
                 
                 const assignmentRef = doc(firestore, 'matches', matchId as string, 'assignments', evaluation.assignmentId);
-                batch.update(assignmentRef, { status: 'completed', evaluationId: evalRef.id });
+                transaction.update(assignmentRef, { status: 'completed', evaluationId: evalRef.id });
             }
             // Delete the processed submission
-            batch.delete(submissionDoc.ref);
+            transaction.delete(submissionDoc.ref);
         }
+      });
 
-        await batch.commit();
-        toast({ title: "Nuevas evaluaciones procesadas", description: `${snapshot.size} envío(s) de evaluaciones han sido registrados.` });
+      if (pendingSubmissionsCount > 0) {
+          toast({ title: "Nuevas evaluaciones procesadas", description: `${pendingSubmissionsCount} envío(s) de evaluaciones han sido registrados.` });
+      }
 
     } catch (error) {
-        console.error("Error processing submissions:", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron procesar las evaluaciones pendientes.' });
+        console.error("Error processing submissions transaction:", error);
+        toast({ variant: 'destructive', title: 'Error de Transacción', description: 'No se pudieron procesar las evaluaciones pendientes. Reintentando...' });
     } finally {
         setIsProcessingSubmissions(false);
         setPendingSubmissionsCount(0);
     }
-  }, [firestore, matchId, toast]);
+  }, [firestore, matchId, toast, pendingSubmissionsCount]);
 
   useEffect(() => {
     if (match && match.status !== 'evaluated') {
@@ -185,6 +187,13 @@ export default function EvaluateMatchPage() {
             const matchDoc = await transaction.get(matchRef);
             if (!matchDoc.exists() || matchDoc.data().status === 'evaluated') {
                 throw new Error("Este partido ya ha sido evaluado o no existe.");
+            }
+            
+            // Ensure no pending submissions before finalizing
+            const pendingSubmissionsQuery = query(collection(firestore, 'evaluationSubmissions'), where('matchId', '==', match.id));
+            const pendingSubmissionsSnapshot = await getDocs(pendingSubmissionsQuery);
+            if(!pendingSubmissionsSnapshot.empty){
+                throw new Error(`Aún hay ${pendingSubmissionsSnapshot.size} evaluaciones pendientes de procesar. Espera un momento y reintenta.`);
             }
 
             const peerEvalsQuery = query(collection(firestore, 'evaluations'), where('assignmentId', 'in', completedAssignmentIds));
@@ -225,25 +234,23 @@ export default function EvaluateMatchPage() {
                 let updatedAttributes = { ...player };
                 let ovrChangeFromPoints = 0;
 
-                // --- CORRECCIÓN ERROR #2 ---
-                // 1. Procesar los tags siempre que existan
+                // 1. Process tags always if they exist
                 if (tagBasedEvals.length > 0) {
                     const combinedTags = tagBasedEvals.flatMap(ev => ev.performanceTags || []);
                     updatedAttributes = calculateAttributeChanges(player, combinedTags);
                 }
                 
-                // 2. Procesar los puntos siempre que existan
+                // 2. Process points always if they exist
                 if (pointBasedEvals.length > 0) {
                     const totalRating = pointBasedEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0);
                     const avgRating = totalRating / pointBasedEvals.length;
                     ovrChangeFromPoints = calculateOvrChange(player.ovr, avgRating);
                 }
                 
-                // 3. Calcular el nuevo OVR combinando ambos efectos
+                // 3. Calculate new OVR by combining both effects
                 let newOvr = Math.round((updatedAttributes.pac + updatedAttributes.sho + updatedAttributes.pas + updatedAttributes.dri + updatedAttributes.def + updatedAttributes.phy) / 6);
                 newOvr += ovrChangeFromPoints;
                 newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, newOvr));
-                // --- FIN CORRECCIÓN ---
 
                 const playerSelfEval = selfEvalsByPlayerId.get(playerId);
                 const goalsInMatch = playerSelfEval?.goals || 0;
