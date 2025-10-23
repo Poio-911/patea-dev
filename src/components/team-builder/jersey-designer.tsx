@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { ShirtIcon } from '../icons/shirt-icon';
+import { Button } from '@/components/ui/button';
 
 interface JerseyDesignerProps {
   value: Jersey;
@@ -18,18 +19,21 @@ interface JerseyDesignerProps {
 
 export function JerseyDesigner({ value, onChange }: JerseyDesignerProps) {
   const templates = getAllJerseyTemplates();
+  const [activeColorSelection, setActiveColorSelection] = useState<'primary' | 'secondary'>('primary');
 
   const handleTypeChange = (type: JerseyType) => {
     onChange({ ...value, type });
   };
 
-  const handlePrimaryColorChange = (color: string) => {
-    onChange({ ...value, primaryColor: color });
+  const handleColorChange = (color: string) => {
+    if (activeColorSelection === 'primary') {
+      onChange({ ...value, primaryColor: color });
+    } else {
+      onChange({ ...value, secondaryColor: color });
+    }
   };
-
-  const handleSecondaryColorChange = (color: string) => {
-    onChange({ ...value, secondaryColor: color });
-  };
+  
+  const activeColorValue = activeColorSelection === 'primary' ? value.primaryColor : value.secondaryColor;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -41,7 +45,7 @@ export function JerseyDesigner({ value, onChange }: JerseyDesignerProps) {
             <ShirtIcon className="h-4 w-4" />
             Diseño de la Camiseta
           </Label>
-          <RadioGroup value={value.type} onValueChange={handleTypeChange}>
+           <RadioGroup value={value.type} onValueChange={handleTypeChange}>
             <div className="grid grid-cols-3 gap-2">
               {templates.map(template => (
                 <label
@@ -66,19 +70,34 @@ export function JerseyDesigner({ value, onChange }: JerseyDesignerProps) {
           </RadioGroup>
         </div>
 
-        {/* Selección de color primario */}
+        {/* Selección de color */}
         <div className="space-y-3">
-          <Label>Color Primario</Label>
-          <div className="space-y-3">
-            <div className="grid grid-cols-6 gap-2">
+            <Label>Colores del Equipo</Label>
+            <div className="grid grid-cols-2 gap-2">
+                <Button
+                    type="button"
+                    variant={activeColorSelection === 'primary' ? 'default' : 'outline'}
+                    onClick={() => setActiveColorSelection('primary')}
+                >
+                    Color 1 (Primario)
+                </Button>
+                <Button
+                    type="button"
+                    variant={activeColorSelection === 'secondary' ? 'default' : 'outline'}
+                    onClick={() => setActiveColorSelection('secondary')}
+                >
+                    Color 2 (Secundario)
+                </Button>
+            </div>
+            <div className="grid grid-cols-6 gap-2 pt-2">
               {POPULAR_TEAM_COLORS.slice(0, 12).map(color => (
                 <button
                   key={color.hex}
                   type="button"
-                  onClick={() => handlePrimaryColorChange(color.hex)}
+                  onClick={() => handleColorChange(color.hex)}
                   className={cn(
-                    'h-10 w-full rounded border-2 transition-all hover:scale-110',
-                    value.primaryColor.toUpperCase() === color.hex.toUpperCase()
+                    'h-10 w-full rounded-full border-2 transition-all hover:scale-110',
+                    activeColorValue.toUpperCase() === color.hex.toUpperCase()
                       ? 'border-primary ring-2 ring-primary/50'
                       : 'border-border'
                   )}
@@ -87,57 +106,19 @@ export function JerseyDesigner({ value, onChange }: JerseyDesignerProps) {
                 />
               ))}
             </div>
-            <div className="flex items-center gap-2">
-              <Label htmlFor="primary-custom" className="text-xs">Personalizado:</Label>
+             <div className="flex items-center gap-2 pt-2">
+              <Label htmlFor="custom-color-input" className="text-xs">Personalizado:</Label>
               <input
-                id="primary-custom"
+                id="custom-color-input"
                 type="color"
-                value={value.primaryColor}
-                onChange={e => handlePrimaryColorChange(e.target.value)}
-                className="h-10 w-20 rounded border cursor-pointer"
+                value={activeColorValue}
+                onChange={e => handleColorChange(e.target.value)}
+                className="h-10 w-20 rounded border cursor-pointer bg-transparent"
               />
               <span className="text-xs text-muted-foreground font-mono">
-                {value.primaryColor.toUpperCase()}
+                {activeColorValue.toUpperCase()}
               </span>
             </div>
-          </div>
-        </div>
-
-        {/* Selección de color secundario */}
-        <div className="space-y-3">
-          <Label>Color Secundario</Label>
-          <div className="space-y-3">
-            <div className="grid grid-cols-6 gap-2">
-              {POPULAR_TEAM_COLORS.slice(0, 12).map(color => (
-                <button
-                  key={color.hex}
-                  type="button"
-                  onClick={() => handleSecondaryColorChange(color.hex)}
-                  className={cn(
-                    'h-10 w-full rounded border-2 transition-all hover:scale-110',
-                    value.secondaryColor.toUpperCase() === color.hex.toUpperCase()
-                      ? 'border-primary ring-2 ring-primary/50'
-                      : 'border-border'
-                  )}
-                  style={{ backgroundColor: color.hex }}
-                  title={color.name}
-                />
-              ))}
-            </div>
-            <div className="flex items-center gap-2">
-              <Label htmlFor="secondary-custom" className="text-xs">Personalizado:</Label>
-              <input
-                id="secondary-custom"
-                type="color"
-                value={value.secondaryColor}
-                onChange={e => handleSecondaryColorChange(e.target.value)}
-                className="h-10 w-20 rounded border cursor-pointer"
-              />
-              <span className="text-xs text-muted-foreground font-mono">
-                {value.secondaryColor.toUpperCase()}
-              </span>
-            </div>
-          </div>
         </div>
       </div>
 
