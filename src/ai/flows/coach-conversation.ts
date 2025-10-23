@@ -63,7 +63,7 @@ DATOS DEL JUGADOR:
 - Asistencias: {{playerContext.stats.assists}}
 - Rating Promedio: {{playerContext.stats.averageRating}}
 {{#if playerContext.recentTags}}
-- Etiquetas Recientes: {{player-context.recentTags}}
+- Etiquetas Recientes: {{playerContext.recentTags}}
 {{/if}}
 {{#if playerContext.strengths}}
 - Fortalezas: {{playerContext.strengths}}
