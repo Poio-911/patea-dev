@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useDoc, useCollection, useFirestore } from '@/firebase';
 import { doc, collection, query, where } from 'firebase/firestore';
-import type { GroupTeam, Player, GroupTeamMember, Match } from '@/lib/types';
+import type { GroupTeam, Player, GroupTeamMember, Match, DetailedTeamPlayer } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Loader2, Users, ArrowLeft, ShieldCheck, UserCheck, CalendarDays, History } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -19,8 +19,6 @@ import { UpcomingMatchesFeed } from '@/components/groups/upcoming-matches-feed';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-
-export type DetailedTeamPlayer = Player & { number: number; status: 'titular' | 'suplente' };
 
 export default function TeamDetailPage() {
   const { id: teamId } = useParams();
@@ -85,7 +83,7 @@ export default function TeamDetailPage() {
         };
       })
       .filter((p): p is DetailedTeamPlayer => p !== null)
-      .sort((a, b) => a.number - b.number);
+      .sort((a: DetailedTeamPlayer, b: DetailedTeamPlayer) => a.number - b.number);
       
     return {
         titulares: detailedPlayers.filter(p => p.status === 'titular'),

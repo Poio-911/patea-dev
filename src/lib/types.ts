@@ -1,3 +1,4 @@
+
 import { DocumentData, DocumentReference } from "firebase/firestore";
 import type { PerformanceTag as Pt } from "./performance-tags";
 
@@ -39,6 +40,8 @@ export type Player = {
   groupId: string | null;
   cardGenerationCredits?: number;
 } & DocumentData;
+
+export type DetailedTeamPlayer = Player & { number: number; status: 'titular' | 'suplente' };
 
 export type DayOfWeek = 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes' | 'sabado' | 'domingo';
 export type TimeOfDay = 'mañana' | 'tarde' | 'noche';

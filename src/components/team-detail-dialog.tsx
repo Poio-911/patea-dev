@@ -10,12 +10,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Separator } from './ui/separator';
+import { Separator } from '@/components/ui/separator';
 import type { GroupTeam, Player, DetailedTeamPlayer } from '@/lib/types';
-import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Users } from 'lucide-react';
-import { JerseyPreview } from './team-builder/jersey-preview';
-import { TeamRosterPlayer } from './team-roster-player';
+import { JerseyPreview } from '@/components/team-builder/jersey-preview';
+import { TeamRosterPlayer } from '@/components/team-roster-player';
 
 
 interface TeamDetailDialogProps {
@@ -32,7 +32,7 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
 
     return teamPlayerIds
       .map((playerId: string, index: number) => {
-        const playerDetails = allGroupPlayers.find(p => p.id === playerId);
+        const playerDetails = allGroupPlayers.find((p: Player) => p.id === playerId);
         if (!playerDetails) return null;
 
         const memberInfo = team.members ? team.members.find(m => m.playerId === playerId) : null;
