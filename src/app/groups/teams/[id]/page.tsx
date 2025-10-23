@@ -84,7 +84,7 @@ export default function TeamDetailPage() {
           status: member.status || 'titular'
         };
       })
-      .filter((p): p is DetailedTeamPlayer => p !== null)
+      .filter((p: (Player & { number: number; status: "titular" | "suplente"; }) | null): p is DetailedTeamPlayer => p !== null)
       .sort((a, b) => a.number - b.number);
       
     return {
@@ -138,13 +138,9 @@ export default function TeamDetailPage() {
         
         <Separator />
         
-        {upcomingMatches.length > 0 && (
-            <>
-                <UpcomingMatchesFeed matches={upcomingMatches} teamName={team.name} />
-                <Separator />
-            </>
-        )}
+        <UpcomingMatchesFeed matches={upcomingMatches} teamName={team.name} />
         
+        {upcomingMatches.length > 0 && <Separator />}
 
         {/* Starting Lineup */}
         <div className="space-y-4">

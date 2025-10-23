@@ -31,7 +31,7 @@ export async function generateTeamsAction(players: Player[]) {
   }
 
   const input: GenerateBalancedTeamsInput = {
-    players: players.map(p => ({
+    players: players.map((p: Player) => ({
       uid: p.id, // Use the document ID as the unique identifier
       displayName: p.name,
       ovr: p.ovr,
