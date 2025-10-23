@@ -21,6 +21,7 @@ import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import { UserGroupsList } from '@/components/groups/user-groups-list';
 import { GroupStatsCards } from '@/components/groups/group-stats-cards';
 import { UpcomingMatchesFeed } from '@/components/groups/upcoming-matches-feed';
+import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 
 export default function GroupsPage() {
   const { user, loading: userLoading } = useUser();
@@ -53,6 +54,11 @@ export default function GroupsPage() {
 
   return (
     <div className="flex flex-col gap-8">
+        <FirstTimeInfoDialog
+            featureKey="hasSeenGroupsInfo"
+            title="¡Bienvenid@ a tus Grupos!"
+            description="Esta es tu central de operaciones. Desde 'Mis Grupos' podés crear nuevos grupos, unirte a otros, o cambiar tu grupo activo. Debajo verás toda la info del grupo que tengas seleccionado, ¡incluyendo los equipos que podés crear!"
+        />
         <UserGroupsList />
       
         {loading ? (

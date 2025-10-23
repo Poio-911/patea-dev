@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import type { Player } from '@/lib/types';
 import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
+import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 
 export default function PlayersPage() {
   const { user, loading: userLoading } = useUser();
@@ -35,6 +36,11 @@ export default function PlayersPage() {
 
   return (
     <div className="flex flex-col gap-8">
+      <FirstTimeInfoDialog
+        featureKey="hasSeenPlayersInfo"
+        title="Sección de Plantel"
+        description="Aquí podés ver a tod@s l@s integrantes de tu grupo activo, con sus estadísticas y OVR. Podés agregar jugador@s 'manuales' para quienes no usan la app y hacer clic en una carta para ver su progreso."
+      />
       <PageHeader
         title="Plantel"
         description="Gestioná la plantilla de tu equipo y las estadísticas de los jugadores."

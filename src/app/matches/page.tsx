@@ -2,7 +2,7 @@
 'use client';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Users2, Calendar, Loader2 } from 'lucide-react';
+import { Users2, Calendar, Loader2, Info } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { useMemo } from 'react';
@@ -13,6 +13,14 @@ import type { Match, Player } from '@/lib/types';
 import { MatchCard } from '@/components/match-card';
 import { InvitationsSheet } from '@/components/invitations-sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
 
 export default function MatchesPage() {
     const { user, loading: userLoading } = useUser();
@@ -93,6 +101,11 @@ export default function MatchesPage() {
     
     return (
         <div className="flex flex-col gap-8">
+            <FirstTimeInfoDialog
+                featureKey="hasSeenMatchesInfo"
+                title="Sección de Partidos"
+                description="Acá podés crear nuevos partidos, ver los que están por jugarse y revisar el historial de los ya jugados. Usá las pestañas para navegar entre 'Próximos' e 'Historial'."
+            />
             <PageHeader
                 title="Partidos"
                 description="Programa, visualiza y gestiona todos tus partidos."
@@ -102,6 +115,33 @@ export default function MatchesPage() {
                    <InvitationsSheet />
                 </div>
             </PageHeader>
+
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                         <div className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer self-start">
+                            <Info className="h-4 w-4" />
+                            <span>¿Cómo funcionan los partidos y las evaluaciones?</span>
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-md">
+                        <div className="space-y-3 p-2">
+                             <h4 className="font-bold">Tipos de Partido</h4>
+                             <ul className="list-disc list-inside text-xs space-y-1">
+                                <li><b>Manual:</b> El organizador elige a tod@s l@s jugador@s.</li>
+                                <li><b>Colaborativo:</b> El organizador crea el evento y l@s demás se apuntan.</li>
+                                <li><b>Por Equipos:</b> Se enfrentan dos equipos ya creados en tu grupo.</li>
+                             </ul>
+                             <h4 className="font-bold">Proceso Post-Partido</h4>
+                             <ul className="list-disc list-inside text-xs space-y-1">
+                                <li>Al <b>finalizar</b> un partido, si es colaborativo o manual y están tod@s, la IA arma los equipos.</li>
+                                <li>Luego, se generan las <b>evaluaciones pendientes</b> para que cada participante evalúe a sus compañer@s.</li>
+                                <li>Como organizador, tenés que ir al panel de supervisión para <b>cerrar la evaluación</b>. Esto dispara el cálculo y la actualización de los OVRs de tod@s.</li>
+                             </ul>
+                        </div>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
 
             {!user?.activeGroupId && (
                 <Alert>

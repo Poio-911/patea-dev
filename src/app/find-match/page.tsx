@@ -35,6 +35,7 @@ import { PlayerCard } from '@/components/player-card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { PlayerDetailCard } from '@/components/player-detail-card';
+import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 
 const containerStyle = {
   width: '100%',
@@ -452,6 +453,11 @@ export default function FindMatchPage() {
 
   return (
     <div className="flex flex-col gap-4 h-[calc(100vh-8rem)] pb-16 md:pb-0">
+        <FirstTimeInfoDialog
+            featureKey="hasSeenFindMatchInfo"
+            title="Sección de Búsqueda"
+            description="Este es el mercado de pases. En 'Buscar Partidos', encontrá partidos públicos cerca tuyo. En 'Buscar Jugadores', si sos organizador, podés encontrar jugador@s libres para completar tu equipo e invitarl@s."
+        />
         <PageHeader
             title="Buscar Partidos y Jugadores"
             description="Encontrá partidos públicos o jugadores libres para completar tu equipo."

@@ -17,6 +17,7 @@ import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
 import { ViewSubmissionDialog } from '@/components/view-submission-dialog';
 import { Progress } from '@/components/ui/progress';
+import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 
 type PendingItem = {
     matchId: string;
@@ -160,6 +161,11 @@ export default function EvaluationsPage() {
     
     return (
         <div className="flex flex-col gap-8">
+            <FirstTimeInfoDialog
+                featureKey="hasSeenEvaluationsInfo"
+                title="Bandeja de Evaluaciones"
+                description="Después de cada partido, acá aparecerán tus tareas de evaluación. Tenés que puntuar el rendimiento de un par de compañer@s para que el sistema pueda actualizar los OVRs de tod@s. ¡Tu opinión es clave!"
+            />
             <PageHeader title="Mis Evaluaciones" description="Aquí encontrarás los partidos que tienes pendientes por evaluar." />
             
             <AttributesHelpDialog>

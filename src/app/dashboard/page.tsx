@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Suspense, useState } from 'react';
@@ -28,6 +27,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { MateIcon } from '@/components/icons/mate-icon';
+import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
     upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
@@ -195,6 +195,11 @@ function DashboardContent() {
 
   return (
     <div className="flex flex-col gap-8">
+      <FirstTimeInfoDialog
+        featureKey="hasSeenDashboardInfo"
+        title="¡Bienvenid@ a tu Vestuario!"
+        description="Este es tu panel de control. Acá vas a ver un resumen de todo: tu próximo partido, los cracks de tu grupo, y una opción clave: la 'Visibilidad Pública', que te permite ser encontrado por otros organizadores."
+      />
       <div className="flex items-center gap-3">
         <MateIcon className="h-8 w-8 text-primary" />
         <PageHeader
