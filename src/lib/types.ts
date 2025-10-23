@@ -212,7 +212,7 @@ export type EvaluationSubmission = {
             position: string;
             evaluationType: 'points' | 'tags';
             rating?: number;
-            performanceTags?: PerformanceTag[]; // Corrected type
+            performanceTags?: PerformanceTag[];
         }[];
     }
 } & DocumentData;

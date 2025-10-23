@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { JerseyDesigner } from './team-builder/jersey-designer';
-import { Player, Jersey, JerseyType, GroupTeam } from '@/lib/types';
+import { Player, Jersey, GroupTeam } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
@@ -29,14 +29,16 @@ interface CreateTeamDialogProps {
   currentUserId: string;
 }
 
+const memberSchema = z.object({
+  playerId: z.string(),
+  number: z.coerce.number().min(1, 'El dorsal debe ser mayor a 0').max(99, 'El dorsal no puede ser mayor a 99'),
+});
+
 const createTeamSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
-  members: z.array(z.object({
-      playerId: z.string(),
-      number: z.coerce.number().min(1, 'El dorsal debe ser mayor a 0').max(99, 'El dorsal no puede ser mayor a 99'),
-  })).min(1, 'Debes seleccionar al menos un jugador.'),
+  members: z.array(memberSchema).min(1, 'Debes seleccionar al menos un jugador.'),
   jersey: z.object({
-      type: z.custom<JerseyType>(),
+      type: z.custom<Jersey['type']>(),
       primaryColor: z.string(),
       secondaryColor: z.string()
   })
@@ -45,15 +47,14 @@ const createTeamSchema = z.object({
 type CreateTeamFormData = z.infer<typeof createTeamSchema>;
 
 const MemberManager = ({ groupPlayers }: { groupPlayers: Player[] }) => {
-    const { control, formState: { errors }, watch } = useFormContext<CreateTeamFormData>();
+    const { control, formState: { errors } } = useFormContext<CreateTeamFormData>();
     const { fields, append, remove } = useFieldArray({
         control,
         name: "members"
     });
     const [searchTerm, setSearchTerm] = useState('');
 
-    const watchedMembers = watch('members');
-    const selectedPlayerIds = useMemo(() => new Set(watchedMembers?.map(m => m.playerId) || []), [watchedMembers]);
+    const selectedPlayerIds = useMemo(() => new Set(fields.map(field => field.playerId)), [fields]);
 
     const filteredPlayers = useMemo(() => {
         return groupPlayers.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -106,35 +107,53 @@ const MemberManager = ({ groupPlayers }: { groupPlayers: Player[] }) => {
     );
 };
 
-const RosterManager = () => {
-    const { control, formState: { errors }, watch, setValue } = useFormContext<CreateTeamFormData>();
+const RosterManager = ({ groupPlayers }: { groupPlayers: Player[] }) => {
+    const { control, formState: { errors } } = useFormContext<CreateTeamFormData>();
     const { fields } = useFieldArray({
         control,
         name: "members"
     });
     
+    const selectedPlayers = useMemo(() => {
+        return fields.map(field => ({
+            ...field,
+            playerDetails: groupPlayers.find(p => p.id === field.playerId)
+        })).filter(item => item.playerDetails);
+    }, [fields, groupPlayers]);
+
     return (
-        <div className="space-y-4">
-            {fields.map((field, index) => (
-                 <div key={field.id} className="flex items-center gap-3">
-                    <Label htmlFor={`members.${index}.number`} className="w-12 text-lg font-bold text-muted-foreground">#</Label>
-                    <Controller
-                        control={control}
-                        name={`members.${index}.number`}
-                        render={({ field: numField }) => (
-                            <Input
-                                {...numField}
-                                id={`members.${index}.number`}
-                                type="number"
-                                className="w-20"
-                                onChange={e => numField.onChange(parseInt(e.target.value, 10))}
+        <ScrollArea className="h-80">
+            <div className="space-y-4 pr-4">
+                {selectedPlayers.map((field, index) => (
+                     <div key={field.id} className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor={`members.${index}.number`} className="w-8 text-lg font-bold text-muted-foreground">#</Label>
+                            <Controller
+                                control={control}
+                                name={`members.${index}.number`}
+                                render={({ field: numField }) => (
+                                    <Input
+                                        {...numField}
+                                        id={`members.${index}.number`}
+                                        type="number"
+                                        min="1"
+                                        max="99"
+                                        className="w-20"
+                                        onChange={e => numField.onChange(parseInt(e.target.value, 10) || 0)}
+                                    />
+                                )}
                             />
-                        )}
-                    />
-                    <p className="flex-1 font-medium">Jugador {index + 1}</p>
-                 </div>
-            ))}
-        </div>
+                        </div>
+                        <Avatar className="h-9 w-9">
+                            <AvatarImage src={field.playerDetails?.photoUrl} alt={field.playerDetails?.name} />
+                            <AvatarFallback>{field.playerDetails?.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <p className="flex-1 font-medium">{field.playerDetails?.name}</p>
+                     </div>
+                ))}
+                 {errors.members && <p className="text-xs text-destructive mt-2">{errors.members.root?.message}</p>}
+            </div>
+        </ScrollArea>
     )
 }
 
@@ -163,7 +182,7 @@ export function CreateTeamDialog({
     },
   });
   
-   const { control, trigger, getValues, setValue } = form;
+   const { control, trigger } = form;
 
   const handleNext = async () => {
     let isValid = false;
@@ -278,7 +297,7 @@ export function CreateTeamDialog({
                     <MemberManager groupPlayers={players} />
                 )}
                 
-                {step === 3 && <RosterManager />}
+                {step === 3 && <RosterManager groupPlayers={players} />}
 
                  <DialogFooter className="gap-2 sm:gap-2 mt-4">
                   <div className="flex w-full justify-between gap-2">
