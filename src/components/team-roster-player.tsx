@@ -7,8 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { MoreVertical } from 'lucide-react';
-import { Button } from './ui/button';
-import { SetPlayerStatusDialog } from './set-player-status-dialog';
+import { Button } from '@/components/ui/button';
+import { SetPlayerStatusDialog } from '@/components/set-player-status-dialog';
 
 // This type now needs to be exported
 export type DetailedTeamPlayer = Player & { number: number; status: 'titular' | 'suplente' };
