@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { ShirtIcon } from '../icons/shirt-icon';
+import { ShirtIcon, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface JerseyDesignerProps {
@@ -36,67 +36,82 @@ export function JerseyDesigner({ value, onChange }: JerseyDesignerProps) {
   const activeColorValue = activeColorSelection === 'primary' ? value.primaryColor : value.secondaryColor;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Columna izquierda: Controles */}
-      <div className="space-y-6 order-2 md:order-1">
+    <div className="space-y-6">
+        {/* Vista Previa */}
+        <div className="space-y-2">
+            <Label className="text-sm font-medium">Vista Previa</Label>
+            <Card className="p-4 bg-muted/30">
+                <div className="flex flex-col items-center justify-center gap-2">
+                    <div className="relative bg-background/50 rounded-lg w-full max-w-[150px]">
+                        <JerseyPreview jersey={value} size="lg" className="mx-auto" />
+                    </div>
+                </div>
+            </Card>
+        </div>
+
         {/* Selección del tipo de camiseta */}
         <div className="space-y-3">
-          <Label className="flex items-center gap-2">
-            <ShirtIcon className="h-4 w-4" />
-            Diseño de la Camiseta
-          </Label>
-           <RadioGroup value={value.type} onValueChange={handleTypeChange}>
-            <div className="grid grid-cols-3 gap-2">
-              {templates.map(template => (
-                <label
-                  key={template.type}
-                  className={cn(
-                    'relative flex aspect-square items-center justify-center rounded-lg border-2 cursor-pointer transition-all hover:border-primary/50',
-                    value.type === template.type ? 'border-primary bg-primary/5' : 'border-border'
-                  )}
-                >
-                  <RadioGroupItem
-                    value={template.type}
-                    className="sr-only"
-                  />
-                  <JerseyPreview 
-                    jersey={{ type: template.type, primaryColor: '#9CA3AF', secondaryColor: '#E5E7EB' }} 
-                    size="md"
-                    className="p-1"
-                  />
-                </label>
-              ))}
+            <Label className="flex items-center gap-2 text-sm font-medium">
+                <ShirtIcon className="h-4 w-4" />
+                Diseño
+            </Label>
+             <div className="grid grid-cols-5 gap-2">
+              {templates.map(template => {
+                const isSelected = value.type === template.type;
+                return (
+                    <div
+                        key={template.type}
+                        onClick={() => handleTypeChange(template.type)}
+                        className={cn(
+                            'relative flex aspect-square items-center justify-center rounded-lg border-2 cursor-pointer transition-all hover:border-primary/50',
+                            isSelected ? 'border-primary ring-2 ring-primary/50' : 'border-border'
+                        )}
+                    >
+                         {isSelected && (
+                            <div className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                                <Check className="h-3 w-3" />
+                            </div>
+                         )}
+                        <JerseyPreview 
+                            jersey={{ type: template.type, primaryColor: '#9CA3AF', secondaryColor: '#E5E7EB' }} 
+                            size="md"
+                            className="p-1"
+                        />
+                    </div>
+                )
+              })}
             </div>
-          </RadioGroup>
         </div>
 
         {/* Selección de color */}
         <div className="space-y-3">
-            <Label>Colores del Equipo</Label>
+            <Label className="text-sm font-medium">Colores</Label>
             <div className="grid grid-cols-2 gap-2">
                 <Button
                     type="button"
                     variant={activeColorSelection === 'primary' ? 'default' : 'outline'}
+                    size="sm"
                     onClick={() => setActiveColorSelection('primary')}
                 >
-                    Color 1
+                    Color Primario
                 </Button>
                 <Button
                     type="button"
                     variant={activeColorSelection === 'secondary' ? 'default' : 'outline'}
+                    size="sm"
                     onClick={() => setActiveColorSelection('secondary')}
                 >
-                    Color 2
+                    Color Secundario
                 </Button>
             </div>
-            <div className="grid grid-cols-6 gap-2 pt-2">
-              {POPULAR_TEAM_COLORS.slice(0, 12).map(color => (
+            <div className="grid grid-cols-8 gap-2 pt-2">
+              {POPULAR_TEAM_COLORS.slice(0, 16).map(color => (
                 <button
                   key={color.hex}
                   type="button"
                   onClick={() => handleColorChange(color.hex)}
                   className={cn(
-                    'h-10 w-10 rounded-full border-2 transition-all hover:scale-110',
+                    'h-8 w-8 rounded-full border-2 transition-all hover:scale-110',
                     activeColorValue.toUpperCase() === color.hex.toUpperCase()
                       ? 'border-primary ring-2 ring-primary/50'
                       : 'border-border'
@@ -107,47 +122,18 @@ export function JerseyDesigner({ value, onChange }: JerseyDesignerProps) {
               ))}
             </div>
              <div className="flex items-center gap-2 pt-2">
-              <Label htmlFor="custom-color-input" className="text-xs">Personalizado:</Label>
               <input
                 id="custom-color-input"
                 type="color"
                 value={activeColorValue}
                 onChange={e => handleColorChange(e.target.value)}
-                className="h-10 w-20 rounded border cursor-pointer bg-transparent"
+                className="h-8 w-12 rounded border cursor-pointer bg-transparent"
               />
-              <span className="text-xs text-muted-foreground font-mono">
+              <Label htmlFor="custom-color-input" className="text-xs text-muted-foreground font-mono">
                 {activeColorValue.toUpperCase()}
-              </span>
+              </Label>
             </div>
         </div>
-      </div>
-
-      {/* Columna derecha: Vista previa */}
-      <div className="order-1 md:order-2">
-        <div className="md:sticky md:top-4">
-          <Card className="p-6 bg-muted/30">
-            <div className="flex flex-col items-center justify-center gap-4">
-              <Label className="text-base">Vista Previa</Label>
-              <div className="relative bg-background rounded-lg p-6 w-full max-w-[200px]">
-                <JerseyPreview jersey={value} size="lg" className="mx-auto" />
-              </div>
-              <div className="text-center space-y-1">
-                <p className="text-sm font-medium">{templates.find(t => t.type === value.type)?.label}</p>
-                <div className="flex gap-2 items-center justify-center">
-                  <div className="flex items-center gap-1">
-                    <div className="h-4 w-4 rounded border" style={{ backgroundColor: value.primaryColor }} />
-                    <span className="text-xs text-muted-foreground">Color 1</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="h-4 w-4 rounded border" style={{ backgroundColor: value.secondaryColor }} />
-                    <span className="text-xs text-muted-foreground">Color 2</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
     </div>
   );
 }

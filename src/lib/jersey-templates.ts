@@ -70,8 +70,8 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
     description: 'Camiseta con líneas azules',
     svgPath: '/jerseys/opcion-7.svg',
     colorMapping: {
-      primary: ['#33f'],
-      secondary: ['#ffffff'],
+      primary: ['#ffffff'], 
+      secondary: ['#33f'],
     },
   },
 };

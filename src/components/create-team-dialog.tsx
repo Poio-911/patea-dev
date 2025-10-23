@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, Check, Users, Search } from 'lucide-react';
 import { JerseyDesigner } from './team-builder/jersey-designer';
 import { Player, Jersey, GroupTeam, GroupTeamMember } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,6 +19,8 @@ import { useFirestore } from '@/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
+import { Badge } from './ui/badge';
+import { Card } from './ui/card';
 
 
 interface CreateTeamDialogProps {
@@ -61,30 +63,46 @@ const MemberManager = ({ groupPlayers }: { groupPlayers: Player[] }) => {
     
     return (
         <div className="space-y-4">
-             <div className="relative">
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                     placeholder="Buscar jugador..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8"
+                    className="pl-10"
                 />
             </div>
-            <ScrollArea className="h-64 border rounded-md">
-                <div className="p-2 space-y-1">
-                {filteredPlayers.length > 0 ? filteredPlayers.map(player => (
-                    <label key={player.id} htmlFor={`player-${player.id}`} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted cursor-pointer">
-                        <Checkbox
-                            id={`player-${player.id}`}
-                            checked={selectedPlayerIds.has(player.id)}
-                            onCheckedChange={() => handlePlayerToggle(player.id)}
-                        />
-                        <Avatar className="h-9 w-9">
-                            <AvatarImage src={player.photoUrl} alt={player.name} />
-                            <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{player.name}</span>
-                    </label>
-                )) : <p className="text-center text-sm text-muted-foreground p-4">No se encontraron jugadores.</p>}
+            <ScrollArea className="h-72">
+                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pr-4">
+                {filteredPlayers.length > 0 ? filteredPlayers.map(player => {
+                    const isSelected = selectedPlayerIds.has(player.id);
+                    return (
+                        <Card 
+                            key={player.id} 
+                            onClick={() => handlePlayerToggle(player.id)}
+                            className={cn(
+                                "cursor-pointer transition-all border-2",
+                                isSelected ? "border-primary ring-2 ring-primary/50" : "border-border"
+                            )}
+                        >
+                            <div className="flex flex-col items-center p-3 gap-2 relative">
+                                {isSelected && (
+                                    <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                                        <Check className="h-4 w-4" />
+                                    </div>
+                                )}
+                                <Avatar className="h-12 w-12">
+                                    <AvatarImage src={player.photoUrl} alt={player.name} />
+                                    <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="text-center">
+                                    <p className="font-semibold text-sm truncate">{player.name}</p>
+                                    <p className="text-xs text-muted-foreground">{player.position} / OVR {player.ovr}</p>
+                                </div>
+                            </div>
+                        </Card>
+                    )
+                }) : <p className="col-span-full text-center text-sm text-muted-foreground p-4">No se encontraron jugadores.</p>}
                 </div>
             </ScrollArea>
              {errors.playerIds && (
@@ -123,10 +141,16 @@ export function CreateTeamDialog({
     },
   });
   
-   const { control, trigger, formState } = form;
+   const { control, trigger } = form;
 
   const handleNext = async () => {
-    const isValid = await trigger('name');
+    let isValid;
+    if (step === 1) {
+        isValid = await trigger('name');
+    } else if (step === 2) {
+        isValid = await trigger('playerIds');
+    }
+    
     if (isValid) {
       setStep(prev => prev + 1);
     }
@@ -141,7 +165,7 @@ export function CreateTeamDialog({
     setIsCreating(true);
 
     try {
-        const members: GroupTeamMember[] = data.playerIds.map((playerId, index) => ({
+        const members: GroupTeamMember[] = data.playerIds.map((playerId: string, index: number) => ({
             playerId,
             number: index + 1, // Assign sequential numbers as default
             status: 'titular', // Default status for new members
@@ -191,34 +215,39 @@ export function CreateTeamDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Crear Equipo Nuevo</DialogTitle>
            <DialogDescription>
-            {step === 1 && 'Dale un nombre a tu equipo y diseñá la camiseta.'}
+            {step === 1 && 'Dale una identidad a tu equipo con un nombre y una camiseta única.'}
             {step === 2 && 'Seleccioná los jugadores que formarán parte del plantel.'}
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex items-center justify-between mb-4">
-          {[1, 2].map(i => (
-            <div key={i} className="flex items-center flex-1">
-              <div className={cn('flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium', step === i ? 'bg-primary text-primary-foreground' : step > i ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground')}>
-                {step > i ? <Check className="h-4 w-4" /> : i}
-              </div>
-              {i < 2 && <div className={cn('flex-1 h-1 mx-2', step > i ? 'bg-primary/20' : 'bg-muted')} />}
-            </div>
-          ))}
+        <div className="flex items-center justify-center gap-2 my-4">
+            {[1, 2].map(i => (
+                <div key={i} className="flex items-center">
+                    <div className={cn('flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium', step === i ? 'bg-primary text-primary-foreground' : step > i ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground')}>
+                        {step > i ? <Check className="h-4 w-4" /> : i}
+                    </div>
+                    <p className={cn("ml-2 text-sm font-medium", step >= i ? "text-foreground" : "text-muted-foreground")}>
+                        {i === 1 ? 'Diseño' : 'Jugadores'}
+                    </p>
+                </div>
+            ))}
         </div>
         
         <FormProvider {...form}>
-            <form onSubmit={form.handleSubmit(handleCreate)}>
+            <form onSubmit={form.handleSubmit(handleCreate)} className="flex-grow flex flex-col overflow-hidden">
+                <div className="flex-grow overflow-y-auto -mx-6 px-6">
                  {step === 1 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-                        <div className="space-y-4">
-                             <Label htmlFor="team-name">Nombre del Equipo</Label>
-                             <Input id="team-name" {...form.register('name')} placeholder="Ej: Los Cracks" autoFocus />
-                             {formState.errors.name && <p className="text-xs text-destructive">{formState.errors.name.message}</p>}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
+                        <div className="space-y-6">
+                             <div className="space-y-2">
+                                <Label htmlFor="team-name">Nombre del Equipo</Label>
+                                <Input id="team-name" {...form.register('name')} placeholder="Ej: Los Cracks" autoFocus />
+                                {form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}
+                             </div>
                         </div>
                         <Controller
                             control={control}
@@ -234,10 +263,13 @@ export function CreateTeamDialog({
                 )}
                 
                 {step === 2 && (
-                    <MemberManager groupPlayers={players} />
+                     <div className="py-4">
+                        <MemberManager groupPlayers={players} />
+                    </div>
                 )}
+                </div>
 
-                 <DialogFooter className="gap-2 sm:gap-2 mt-4">
+                 <DialogFooter className="gap-2 sm:gap-2 mt-auto pt-4 border-t">
                   <div className="flex w-full justify-between gap-2">
                     <Button type="button" variant="outline" onClick={handleBack} disabled={step === 1 || isCreating}>
                       <ChevronLeft className="mr-2 h-4 w-4" /> Atrás
@@ -247,7 +279,7 @@ export function CreateTeamDialog({
                         Siguiente <ChevronRight className="ml-2 h-4 w-4" />
                       </Button>
                     ) : (
-                      <Button type="submit" disabled={isCreating || !formState.isValid}>
+                      <Button type="submit" disabled={isCreating || !form.formState.isValid}>
                         {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Crear Equipo
                       </Button>
