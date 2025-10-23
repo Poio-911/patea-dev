@@ -6,7 +6,7 @@ import { detectPlayerPatternsAction } from '@/lib/actions';
 import type { DetectPlayerPatternsOutput } from '@/ai/flows/detect-player-patterns';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Sparkles, Brain, Target, AlertCircle, Activity, TrendingUp, TrendingDown, MoveHorizontal, Shuffle, Zap, Lightbulb, Trophy } from 'lucide-react';
+import { Loader2, Sparkles, Brain, Target, AlertCircle, Activity, TrendingUp, TrendingDown, MoveHorizontal, Shuffle, Zap, Lightbulb, Trophy, Star } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
