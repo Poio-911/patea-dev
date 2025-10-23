@@ -563,5 +563,3 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     </div>
   );
 }
-
-    
