@@ -1,8 +1,23 @@
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    experimental: {
-        allowedDevOrigins: ["https://studio.web.app", "https://studio.firebase.google.com"]
-    }
+  reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+      },
+       {
+        protocol: 'https',
+        hostname: 'storage.googleapis.com',
+      },
+    ],
+  },
 };
 
 export default nextConfig;

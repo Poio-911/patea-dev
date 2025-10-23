@@ -74,7 +74,7 @@ export default function TeamDetailPage() {
   const { titulares, suplentes } = useMemo(() => {
     if (loading || !team || !groupPlayers || !team.members) return { titulares: [], suplentes: [] };
 
-    const detailedPlayers = team.members
+    const detailedPlayers: DetailedTeamPlayer[] = team.members
       .map((member: GroupTeamMember) => {
         const playerDetails = groupPlayers.find((p: Player) => p.id === member.playerId);
         if (!playerDetails) return null;
@@ -84,7 +84,7 @@ export default function TeamDetailPage() {
           status: member.status || 'titular'
         };
       })
-      .filter((p: (Player & { number: number; status: "titular" | "suplente"; }) | null): p is DetailedTeamPlayer => p !== null)
+      .filter((p): p is DetailedTeamPlayer => p !== null)
       .sort((a, b) => a.number - b.number);
       
     return {

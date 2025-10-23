@@ -8,15 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { MoreVertical } from 'lucide-react';
 import { Button } from './ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { SetPlayerStatusDialog } from './set-player-status-dialog';
-import { DetailedTeamPlayer } from '@/app/groups/teams/[id]/page';
 
+// This type now needs to be exported
+export type DetailedTeamPlayer = Player & { number: number; status: 'titular' | 'suplente' };
 
 interface TeamRosterPlayerProps {
     player: DetailedTeamPlayer;

@@ -328,7 +328,7 @@ function DashboardContent() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {top5Players.length > 0 ? top5Players.map((player, index) => {
+                  {top5Players.length > 0 ? top5Players.map((player: Player, index: number) => {
                       const isManualPlayer = player.id !== player.ownerUid;
                       return (
                         <div key={player.id} className="flex items-center gap-4">

@@ -12,10 +12,11 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from './ui/separator';
 import type { GroupTeam, Player } from '@/lib/types';
-import { Badge } from './ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Users } from 'lucide-react';
 import { JerseyPreview } from './team-builder/jersey-preview';
+import { TeamRosterPlayer } from './team-roster-player';
+import type { DetailedTeamPlayer } from './team-roster-player';
 
 
 interface TeamDetailDialogProps {
@@ -23,22 +24,6 @@ interface TeamDetailDialogProps {
   allGroupPlayers: Player[];
   children: React.ReactNode;
 }
-
-const TeamRosterPlayer = ({ player, number }: { player: Player; number: number; }) => {
-  return (
-    <div className="flex items-center gap-4 rounded-lg p-2 hover:bg-muted">
-        <Avatar className="h-12 w-12 border">
-          <AvatarImage src={player.photoUrl} alt={player.name} />
-          <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <div className="flex-1">
-            <p className="font-bold">{player.name}</p>
-            <p className="text-sm text-muted-foreground">{player.position}</p>
-        </div>
-        <Badge variant="secondary" className="text-lg font-bold">#{number}</Badge>
-    </div>
-  );
-};
 
 export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetailDialogProps) {
   
@@ -89,7 +74,7 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
                         Plantel ({teamPlayersWithDetails.length})
                     </h3>
                     <div className="space-y-1">
-                        {teamPlayersWithDetails.map(player => (
+                        {teamPlayersWithDetails.map((player: DetailedTeamPlayer) => (
                             <TeamRosterPlayer key={player.id} player={player} number={player.number} />
                         ))}
                     </div>
