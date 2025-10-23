@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -11,7 +10,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
 
 const GenerateBalancedTeamsInputSchema = z.object({
   players: z
@@ -104,7 +102,7 @@ const generateBalancedTeamsFlow = ai.defineFlow(
     outputSchema: GenerateBalancedTeamsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const {output} = await prompt(input, { model: 'gemini-2.5-flash' });
     return output!;
   }
 );

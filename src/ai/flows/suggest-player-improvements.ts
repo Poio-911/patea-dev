@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -11,7 +10,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
 
 const SuggestPlayerImprovementsInputSchema = z.object({
   playerId: z.string().describe('El ID del jugador para generar sugerencias.'),
@@ -74,7 +72,7 @@ const suggestPlayerImprovementsFlow = ai.defineFlow(
     outputSchema: SuggestPlayerImprovementsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const {output} = await prompt(input, { model: 'gemini-2.5-flash' });
     return output!;
   }
 );

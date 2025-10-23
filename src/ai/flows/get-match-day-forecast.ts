@@ -1,9 +1,7 @@
-
 'use server';
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { googleAI } from '@genkit-ai/googleai';
 
 const GetMatchDayForecastInputSchema = z.object({
   location: z.string(),
@@ -40,7 +38,7 @@ export const getMatchDayForecast = ai.defineFlow(
     outputSchema: GetMatchDayForecastOutputSchema,
   },
   async (input) => {
-    const { output } = await forecastPrompt(input);
+    const { output } = await forecastPrompt(input, { model: 'gemini-2.5-flash' });
     if (!output) throw new Error('No se obtuvo respuesta válida del modelo.');
     return output;
   }

@@ -1,9 +1,7 @@
-
 'use server';
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
 
 // ── SCHEMA DE INPUT ──────────────────────────────────────────
 const DetectPlayerPatternsInputSchema = z.object({
@@ -162,7 +160,7 @@ const detectPlayerPatternsFlow = ai.defineFlow(
     outputSchema: DetectPlayerPatternsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input, { model: 'googleai/gemini-2.5-flash' });
+    const {output} = await prompt(input, { model: 'gemini-2.5-flash' });
     return output!;
   }
 );
