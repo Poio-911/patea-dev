@@ -59,7 +59,7 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
         };
       })
       .filter((p: (Player & { number: number; }) | null): p is Player & { number: number } => p !== null)
-      .sort((a, b) => a.number - b.number);
+      .sort((a: Player & { number: number }, b: Player & { number: number }) => a.number - b.number);
   }, [team, allGroupPlayers]);
 
   return (
