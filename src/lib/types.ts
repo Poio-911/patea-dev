@@ -123,9 +123,12 @@ export type Jersey = {
   secondaryColor: string;
 };
 
+export type PlayerStatus = 'titular' | 'suplente';
+
 export type GroupTeamMember = {
   playerId: string;
   number: number;
+  status: PlayerStatus;
 };
 
 export type GroupTeam = {

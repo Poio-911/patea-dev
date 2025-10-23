@@ -1,16 +1,27 @@
 
 'use client';
 
-import type { Player } from '@/lib/types';
+import type { Player, GroupTeam } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { MoreVertical } from 'lucide-react';
+import { Button } from './ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { SetPlayerStatusDialog } from './set-player-status-dialog';
+import { DetailedTeamPlayer } from '@/app/groups/teams/[id]/page';
 
 
 interface TeamRosterPlayerProps {
-    player: Player;
-    number: number;
+    player: DetailedTeamPlayer;
+    team: GroupTeam;
+    onPlayerUpdate: () => void;
 }
 
 const positionBadgeStyles: Record<Player['position'], string> = {
@@ -21,16 +32,24 @@ const positionBadgeStyles: Record<Player['position'], string> = {
 };
 
 
-export const TeamRosterPlayer = ({ player, number }: TeamRosterPlayerProps) => {
+export const TeamRosterPlayer = ({ player, team, onPlayerUpdate }: TeamRosterPlayerProps) => {
   return (
-    <Card className="flex flex-col items-center text-center p-3 gap-2 hover:shadow-md transition-shadow">
-        <div className="relative">
+    <Card className="flex flex-col items-center text-center p-3 gap-2 hover:shadow-md transition-shadow relative">
+        <div className="absolute top-1 right-1">
+            <SetPlayerStatusDialog player={player} team={team} onPlayerUpdate={onPlayerUpdate}>
+                <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <MoreVertical className="h-4 w-4" />
+                </Button>
+            </SetPlayerStatusDialog>
+        </div>
+
+        <div className="relative mt-4">
              <Avatar className="h-16 w-16 border">
               <AvatarImage src={player.photoUrl} alt={player.name} />
               <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <Badge className="absolute -bottom-2 -right-2 text-base font-bold rounded-full h-8 w-8 flex items-center justify-center border-2 border-background">
-                {number}
+                {player.number}
             </Badge>
         </div>
         <div className="flex flex-col items-center">
@@ -43,4 +62,3 @@ export const TeamRosterPlayer = ({ player, number }: TeamRosterPlayerProps) => {
     </Card>
   );
 };
-
