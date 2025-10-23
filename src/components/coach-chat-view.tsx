@@ -1,16 +1,15 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { coachConversationAction } from '@/lib/actions';
 import type { CoachConversationInput, CoachConversationOutput } from '@/ai/flows/coach-conversation';
 import { useUser } from '@/firebase';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, Send, ArrowDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CoachIcon } from './icons/coach-icon';
@@ -40,13 +39,20 @@ export function CoachChatView({ playerId, groupId }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const scrollToBottom = useCallback(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  }, []);
+
   useEffect(() => {
-    if (messages.length === 0) {
+    if (messages.length === 0 && user) {
       const welcomeMessage: Message = {
         role: 'coach',
-        content: `¡Hola, ${user?.displayName?.split(' ')[0]}! Soy tu DT virtual. ¿En qué te puedo ayudar hoy?`,
+        content: `¡Hola, ${user.displayName?.split(' ')[0]}! Soy tu DT virtual. ¿En qué te puedo ayudar hoy?`,
         timestamp: new Date().toISOString(),
         mood: 'supportive',
       };
@@ -56,9 +62,20 @@ export function CoachChatView({ playerId, groupId }: Props) {
 
   useEffect(() => {
     if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        const isScrolledToBottom = scrollRef.current.scrollHeight - scrollRef.current.clientHeight <= scrollRef.current.scrollTop + 1;
+        if (isScrolledToBottom) {
+             scrollToBottom();
+        }
     }
-  }, [messages, isLoading]);
+  }, [messages, isLoading, scrollToBottom]);
+
+  const handleScroll = () => {
+    if (scrollRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+      // Show button if user has scrolled up more than 300px from the bottom
+      setShowScrollButton(scrollHeight - clientHeight - scrollTop > 300);
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim() || !playerId || !groupId) return;
@@ -107,55 +124,54 @@ export function CoachChatView({ playerId, groupId }: Props) {
   };
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-[70vh] flex flex-col">
         <CardHeader>
             <CardTitle className="flex items-center gap-2">
                 <CoachIcon className="h-6 w-6 text-primary" />
                 Charla con el DT
             </CardTitle>
         </CardHeader>
-        <CardContent ref={scrollRef} className="flex-1 overflow-y-auto pr-4 -mx-6 px-6">
-            <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto px-4 relative" ref={scrollRef} onScroll={handleScroll}>
+            <div className="space-y-4 py-4">
             {messages.map((message, index) => (
-                <div key={index} className={cn('flex gap-3', message.role === 'user' ? 'justify-end' : 'justify-start')}>
+                <div key={index} className={cn('flex items-end gap-2 text-sm', message.role === 'user' ? 'justify-end' : 'justify-start')}>
                 {message.role === 'coach' && (
-                    <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground">DT</AvatarFallback>
+                    <Avatar className="h-6 w-6">
+                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">DT</AvatarFallback>
                     </Avatar>
                 )}
-                <div className={cn('rounded-lg px-4 py-2 max-w-[80%]', message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                    {message.mood && <Badge variant="outline" className="mt-2 text-xs">{moodLabels[message.mood]}</Badge>}
+                <div className={cn('rounded-2xl px-3 py-2 max-w-[80%]', message.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-muted rounded-bl-none')}>
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                    {message.mood && <Badge variant="outline" className="mt-2 text-xs bg-background/50">{moodLabels[message.mood]}</Badge>}
                     {message.suggestedActions && message.suggestedActions.length > 0 && (
-                    <div className="mt-3 space-y-2">
-                        <p className="text-xs font-semibold">Acciones sugeridas:</p>
-                        <ul className="space-y-1">
-                        {message.suggestedActions.map((action, i) => (
-                            <li key={i} className="text-xs flex items-start gap-1">
-                            <span className="text-primary">•</span>
-                            <span>{action}</span>
-                            </li>
-                        ))}
-                        </ul>
-                    </div>
+                        <div className="mt-3 space-y-2 border-t border-white/20 pt-2">
+                            <p className="text-xs font-semibold">Acciones sugeridas:</p>
+                            <ul className="space-y-1">
+                            {message.suggestedActions.map((action, i) => (
+                                <li key={i} className="text-xs flex items-start gap-1">
+                                    <span className="opacity-80">•</span>
+                                    <span>{action}</span>
+                                </li>
+                            ))}
+                            </ul>
+                        </div>
                     )}
-                    <p className="text-xs opacity-70 mt-1 text-right">{format(new Date(message.timestamp), 'HH:mm')}</p>
                 </div>
-                {message.role === 'user' && user && (
-                    <Avatar className="h-8 w-8">
-                    <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
-                    </Avatar>
-                )}
                 </div>
             ))}
             {isLoading && (
-                <div className="flex gap-3 justify-start">
-                <Avatar className="h-8 w-8"><AvatarFallback className="bg-primary text-primary-foreground">DT</AvatarFallback></Avatar>
-                <div className="bg-muted rounded-lg px-4 py-2"><Loader2 className="h-4 w-4 animate-spin" /></div>
+                <div className="flex items-end gap-2 justify-start">
+                    <Avatar className="h-6 w-6"><AvatarFallback className="bg-primary text-primary-foreground text-xs">DT</AvatarFallback></Avatar>
+                    <div className="bg-muted rounded-2xl rounded-bl-none px-3 py-2"><Loader2 className="h-4 w-4 animate-spin" /></div>
                 </div>
             )}
             </div>
-        </CardContent>
+            {showScrollButton && (
+                <Button size="icon" className="absolute bottom-4 right-4 rounded-full h-10 w-10 shadow-lg" onClick={scrollToBottom}>
+                    <ArrowDown className="h-5 w-5" />
+                </Button>
+            )}
+        </div>
         <div className="border-t p-4 flex gap-2">
           <Input value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}} placeholder="Escribí tu mensaje..." disabled={isLoading} className="flex-1" />
           <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon">

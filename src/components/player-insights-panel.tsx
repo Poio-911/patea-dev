@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -79,7 +78,7 @@ export function PlayerInsightsPanel({ playerId, playerName, groupId }: PlayerIns
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
-          Insights de Rendimiento - {playerName}
+          Insights de Rendimiento
         </CardTitle>
         <CardDescription>Análisis automático de tu evolución basado en evaluaciones</CardDescription>
       </CardHeader>
@@ -105,7 +104,7 @@ export function PlayerInsightsPanel({ playerId, playerName, groupId }: PlayerIns
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Target className="h-8 w-8 text-green-600" /><div><h4 className="text-sm font-semibold text-muted-foreground">Atributo Más Fuerte</h4><p className="text-lg font-bold">{insights.insights.strongestAttribute}</p></div></div></CardContent></Card>
                 <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><AlertCircle className="h-8 w-8 text-orange-600" /><div><h4 className="text-sm font-semibold text-muted-foreground">Área a Mejorar</h4><p className="text-lg font-bold">{insights.insights.weakestAttribute}</p></div></div></CardContent></Card>
                 {trajectoryInfo && <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><trajectoryInfo.icon className={cn("h-8 w-8", trajectoryInfo.color)} /><div><h4 className="text-sm font-semibold text-muted-foreground">Trayectoria</h4><p className="text-lg font-bold">{trajectoryInfo.label}</p></div></div></CardContent></Card>}
