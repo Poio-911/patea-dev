@@ -46,7 +46,7 @@ export default function TeamDetailPage() {
         // Fallback for old teams that don't have number
         const number = memberInfo?.number !== undefined ? memberInfo.number : index + 1;
         return { ...playerDetails, number };
-    }).filter((p: (Player & { number: number; }) | null): p is Player & { number: number } => p !== null).sort((a,b) => a.number - b.number);
+    }).filter((p: (Player & { number: number; }) | null): p is Player & { number: number } => p !== null).sort((a: Player & { number: number }, b: Player & { number: number }) => a.number - b.number);
 
   }, [team, groupPlayers, loading]);
 
