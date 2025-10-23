@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
@@ -9,7 +10,7 @@ import {
   where, 
   orderBy, 
   getDocs, 
-  getDoc, // ✅ ← AGREGADO
+  getDoc,
   writeBatch, 
   updateDoc 
 } from 'firebase/firestore';
@@ -30,7 +31,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
+import { CoachChatDialog } from '@/components/coach-chat-dialog';
+import { PlayerInsightsPanel } from '@/components/player-insights-panel';
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -173,7 +175,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     fetchEvaluationData();
   }, [firestore, playerId]);
 
-  const filteredEvaluationsByMatch = useMemo((): MatchEvaluationSummary[] => {
+  const filteredEvaluationsByMatch: MatchEvaluationSummary[] = useMemo(() => {
     if (isLoading || evaluations.length === 0) return [];
     
     const evalsByMatch: Record<string, { match: Match; evaluations: DetailedEvaluation[] }> = {};
@@ -412,6 +414,13 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
             </div>
         </div>
         
+        {isCurrentUserProfile && player && user?.activeGroupId && (
+            <div className="fixed bottom-6 right-6 z-30 flex flex-col gap-2 items-end">
+                <PlayerInsightsPanel playerId={playerId} playerName={player.name} groupId={user.activeGroupId} />
+                <CoachChatDialog playerId={playerId} groupId={user.activeGroupId} />
+            </div>
+        )}
+
         {isCurrentUserProfile ? (
             <div className="lg:col-span-3">
                 <Tabs defaultValue="evaluations" className="w-full">

@@ -7,7 +7,9 @@ import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/
 import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-match-day-forecast';
 import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-fit-player';
 import { generatePlayerCardImage } from '@/ai/flows/generate-player-card-image';
-import { Player, Evaluation } from './types';
+import { coachConversation, type CoachConversationInput } from '@/ai/flows/coach-conversation';
+import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '@/ai/flows/detect-player-patterns';
+import { Player, Evaluation, OvrHistory } from './types';
 import { getFirestore as getAdminFirestore, FieldValue } from 'firebase-admin/firestore';
 import { initializeApp, getApps, App as AdminApp, cert } from 'firebase-admin/app';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
@@ -70,7 +72,7 @@ export async function getPlayerEvaluationsAction(playerId: string, groupId: stri
     
     try {
         if (!playerId || !groupId) return [];
-        const evalsSnapshot = await adminDb.collection('evaluations').where('playerId', '==', playerId).get();
+        const evalsSnapshot = await adminDb.collection('evaluations').where('playerId', '==', playerId).orderBy('evaluatedAt', 'desc').get();
         const matchesSnapshot = await adminDb.collection('matches').where('groupId', '==', groupId).get();
         const groupMatchIds = new Set(matchesSnapshot.docs.map(doc => doc.id));
 
@@ -217,4 +219,110 @@ export async function generatePlayerCardImageAction(userId: string) {
         console.error("Error generating player card image:", error);
         return { error: error.message || "La IA no pudo generar la imagen. Inténtalo más tarde." };
     }
+}
+
+export async function coachConversationAction(
+  playerId: string,
+  groupId: string,
+  userMessage: string,
+  conversationHistory?: CoachConversationInput['conversationHistory']
+) {
+  try {
+    const playerDocRef = adminDb.doc(`players/${playerId}`);
+    const playerDocSnap = await playerDocRef.get();
+
+    if (!playerDocSnap.exists) {
+      return { error: 'No se pudo encontrar al jugador.' };
+    }
+
+    const player = playerDocSnap.data() as Player;
+    const evaluations = await getPlayerEvaluationsAction(playerId, groupId);
+    const recentTags = evaluations
+      .flatMap((e: any) => e.performanceTags?.map((t: any) => t.name) || [])
+      .slice(0, 10);
+    const positiveTags = evaluations
+      .flatMap((e: any) => e.performanceTags?.filter((t: any) => t.effects.some((ef: any) => ef.change > 0)).map((t: any) => t.name) || []);
+    const negativeTags = evaluations
+      .flatMap((e: any) => e.performanceTags?.filter((t: any) => t.effects.some((ef: any) => ef.change < 0)).map((t: any) => t.name) || []);
+
+    const input: CoachConversationInput = {
+      userMessage,
+      conversationHistory: conversationHistory || [],
+      playerContext: {
+        playerId: playerId,
+        playerName: player.name,
+        position: player.position,
+        ovr: player.ovr,
+        stats: {
+          matchesPlayed: player.stats.matchesPlayed,
+          goals: player.stats.goals,
+          assists: player.stats.assists || 0,
+          averageRating: player.stats.averageRating,
+        },
+        recentTags: recentTags.length > 0 ? recentTags : undefined,
+        strengths: positiveTags.length > 0 ? positiveTags : undefined,
+        weaknesses: negativeTags.length > 0 ? negativeTags : undefined,
+      },
+    };
+
+    const result = await coachConversation(input);
+    return result;
+  } catch (error: any) {
+    console.error('Error in coach conversation:', error);
+    return { error: error.message || 'Error al generar la respuesta del entrenador.' };
+  }
+}
+
+export async function detectPlayerPatternsAction(playerId: string, groupId: string) {
+  try {
+    const playerDocRef = adminDb.doc(`players/${playerId}`);
+    const playerDocSnap = await playerDocRef.get();
+
+    if (!playerDocSnap.exists) {
+      return { error: 'No se pudo encontrar al jugador.' };
+    }
+    const player = playerDocSnap.data() as Player;
+
+    const evaluations = await getPlayerEvaluationsAction(playerId, groupId);
+
+    const ovrHistorySnapshot = await adminDb
+      .collection(`players/${playerId}/ovrHistory`)
+      .orderBy('date', 'desc')
+      .limit(20)
+      .get();
+    const ovrHistory = ovrHistorySnapshot.docs.map(doc => doc.data() as OvrHistory);
+
+    const recentEvaluations = evaluations.slice(0, 15).map((e: any) => ({
+      matchDate: e.evaluatedAt || '',
+      rating: e.rating,
+      performanceTags: (e.performanceTags || []).map((t: any) => ({
+        name: t.name,
+        impact: t.effects.some((ef: any) => ef.change > 0) ? 'positive' as const :
+               t.effects.some((ef: any) => ef.change < 0) ? 'negative' as const :
+               'neutral' as const,
+      })),
+      goals: e.goals || 0,
+    }));
+
+    const input: DetectPlayerPatternsInput = {
+      playerId,
+      playerName: player.name,
+      position: player.position,
+      currentOVR: player.ovr,
+      stats: {
+        matchesPlayed: player.stats.matchesPlayed,
+        goals: player.stats.goals,
+        assists: player.stats.assists || 0,
+        averageRating: player.stats.averageRating,
+      },
+      recentEvaluations,
+      ovrHistory: ovrHistory.length > 0 ? ovrHistory : undefined,
+    };
+
+    const result = await detectPlayerPatterns(input);
+    return result;
+  } catch (error: any) {
+    console.error('Error detecting player patterns:', error);
+    return { error: error.message || 'No se pudo analizar el rendimiento del jugador.' };
+  }
 }
