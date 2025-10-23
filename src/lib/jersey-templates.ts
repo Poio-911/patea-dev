@@ -53,16 +53,6 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
       secondary: ['#ffffff'], // Blanco -> secundario
     },
   },
-  thirds: {
-    type: 'thirds',
-    label: 'Tercios',
-    description: 'Camiseta dividida en tercios',
-    svgPath: '/jerseys/thirds-pink-white-football-shirt-svgrepo-com.svg',
-    colorMapping: {
-      primary: ['#f41616'], // Rojo -> primario
-      secondary: ['#fff'], // Blanco -> secundario
-    },
-  },
 };
 
 /**

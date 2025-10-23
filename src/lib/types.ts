@@ -115,7 +115,7 @@ export type Team = {
   jersey?: Jersey;
 };
 
-export type JerseyType = 'plain' | 'vertical' | 'band' | 'chevron' | 'thirds';
+export type JerseyType = 'plain' | 'vertical' | 'band' | 'chevron';
 
 export type Jersey = {
   type: JerseyType;
