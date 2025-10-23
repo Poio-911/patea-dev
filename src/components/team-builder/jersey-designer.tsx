@@ -79,14 +79,14 @@ export function JerseyDesigner({ value, onChange }: JerseyDesignerProps) {
                     variant={activeColorSelection === 'primary' ? 'default' : 'outline'}
                     onClick={() => setActiveColorSelection('primary')}
                 >
-                    Color 1 (Primario)
+                    Color 1
                 </Button>
                 <Button
                     type="button"
                     variant={activeColorSelection === 'secondary' ? 'default' : 'outline'}
                     onClick={() => setActiveColorSelection('secondary')}
                 >
-                    Color 2 (Secundario)
+                    Color 2
                 </Button>
             </div>
             <div className="grid grid-cols-6 gap-2 pt-2">
@@ -96,7 +96,7 @@ export function JerseyDesigner({ value, onChange }: JerseyDesignerProps) {
                   type="button"
                   onClick={() => handleColorChange(color.hex)}
                   className={cn(
-                    'h-10 w-full rounded-full border-2 transition-all hover:scale-110',
+                    'h-10 w-10 rounded-full border-2 transition-all hover:scale-110',
                     activeColorValue.toUpperCase() === color.hex.toUpperCase()
                       ? 'border-primary ring-2 ring-primary/50'
                       : 'border-border'
@@ -136,11 +136,11 @@ export function JerseyDesigner({ value, onChange }: JerseyDesignerProps) {
                 <div className="flex gap-2 items-center justify-center">
                   <div className="flex items-center gap-1">
                     <div className="h-4 w-4 rounded border" style={{ backgroundColor: value.primaryColor }} />
-                    <span className="text-xs text-muted-foreground">Primario</span>
+                    <span className="text-xs text-muted-foreground">Color 1</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="h-4 w-4 rounded border" style={{ backgroundColor: value.secondaryColor }} />
-                    <span className="text-xs text-muted-foreground">Secundario</span>
+                    <span className="text-xs text-muted-foreground">Color 2</span>
                   </div>
                 </div>
               </div>
