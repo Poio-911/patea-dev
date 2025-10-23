@@ -15,7 +15,7 @@ import type { GroupTeam, Player } from '@/lib/types';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Users } from 'lucide-react';
-import { JerseyIcon } from './jerseys';
+import { JerseyPreview } from './team-builder/jersey-preview';
 
 
 interface TeamDetailDialogProps {
@@ -69,7 +69,7 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
         <DialogHeader>
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 flex-shrink-0">
-                <JerseyIcon jersey={team.jersey} />
+                <JerseyPreview jersey={team.jersey} />
             </div>
             <div>
                 <DialogTitle className="text-2xl font-bold">{team.name}</DialogTitle>
