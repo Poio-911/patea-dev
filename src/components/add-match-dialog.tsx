@@ -14,15 +14,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Globe } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Globe, Check } from 'lucide-react';
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFirestore, useUser } from '@/firebase';
-import { addDoc, collection, writeBatch, doc } from 'firebase/firestore';
+import { addDoc, collection, writeBatch, doc, getDocs, query, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Player, MatchLocation, Notification, Team } from '@/lib/types';
+import { Player, MatchLocation, Notification, Team, MatchType, GroupTeam } from '@/lib/types';
 import { Alert, AlertDescription } from './ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
@@ -38,7 +38,9 @@ import { Switch } from './ui/switch';
 import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { SoccerPlayerIcon } from './icons/soccer-player-icon';
-
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { JerseyPreview } from './team-builder/jersey-preview';
+import { TeamsIcon } from './icons/teams-icon';
 
 const matchLocationSchema = z.object({
   name: z.string(),
@@ -55,18 +57,22 @@ const matchSchema = z.object({
   }),
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:MM).'),
   location: matchLocationSchema,
-  type: z.enum(['manual', 'collaborative'], { required_error: 'El tipo es obligatorio.' }),
+  type: z.enum(['manual', 'collaborative', 'by_teams'], { required_error: 'El tipo es obligatorio.' }),
   matchSize: z.enum(['10', '14', '22'], { required_error: 'El tamaño es obligatorio.' }),
   players: z.array(z.string()),
+  selectedTeams: z.array(z.string()).optional(),
   isPublic: z.boolean().optional(),
 }).refine(data => {
     if (data.type === 'manual') {
         const minPlayers = Math.ceil(parseInt(data.matchSize) / 2);
         return data.players.length >= minPlayers;
     }
+    if (data.type === 'by_teams') {
+        return data.selectedTeams?.length === 2;
+    }
     return true;
 }, {
-    message: "Para partidos manuales, debes seleccionar al menos la mitad de los jugadores.",
+    message: "Para partidos 'manuales', debes seleccionar al menos la mitad de los jugadores. Para partidos 'por equipos', debes seleccionar exactamente 2 equipos.",
     path: ['players'],
 });
 
@@ -170,6 +176,13 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
+  const teamsQuery = useMemo(() => {
+    if (!firestore || !user?.activeGroupId) return null;
+    return query(collection(firestore, 'teams'), where('groupId', '==', user.activeGroupId));
+  }, [firestore, user?.activeGroupId]);
+
+  const { data: groupTeams, loading: teamsLoading } = useCollection<GroupTeam>(teamsQuery);
+
   const form = useForm<MatchFormData>({
     resolver: zodResolver(matchSchema),
     mode: 'onChange',
@@ -180,6 +193,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       type: 'manual',
       matchSize: '10',
       players: [],
+      selectedTeams: [],
       isPublic: false,
     },
   });
@@ -196,7 +210,6 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   const selectedPlayersCount = form.watch('players').length;
 
   useEffect(() => {
-    // Reset state when dialog is opened or closed
     if (!open) {
       setTimeout(() => {
         form.reset({
@@ -207,6 +220,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
           matchSize: '10',
           players: [],
           isPublic: false,
+          selectedTeams: [],
         });
         setStep(1);
         setSearchTerm('');
@@ -216,7 +230,6 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   }, [open, form]);
 
   useEffect(() => {
-    // Fetch weather when date or location changes
     const fetchWeather = async () => {
         if (watchedDate && watchedLocation?.address) {
             setIsFetchingWeather(true);
@@ -234,7 +247,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 setWeather(forecast);
             } catch (error) {
                 console.error("Failed to fetch weather", error);
-                setWeather(null); // Clear previous weather on error
+                setWeather(null);
             } finally {
                 setIsFetchingWeather(false);
             }
@@ -243,15 +256,15 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     
     const debounceTimeout = setTimeout(() => {
         fetchWeather();
-    }, 1000); // Debounce to avoid excessive API calls
+    }, 1000);
 
     return () => clearTimeout(debounceTimeout);
   }, [watchedDate, watchedLocation, watchedTime]);
 
 
   useEffect(() => {
-    // Reset player selection when match type or size changes
     setValue('players', []);
+    setValue('selectedTeams', []);
   }, [matchType, selectedMatchSize, setValue]);
 
 
@@ -272,6 +285,22 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     setValue('players', newPlayers, { shouldValidate: true });
   };
   
+  const handleTeamSelect = (teamId: string) => {
+    const currentTeams = getValues('selectedTeams') || [];
+    let newTeams;
+    if (currentTeams.includes(teamId)) {
+        newTeams = currentTeams.filter(id => id !== teamId);
+    } else {
+        if (currentTeams.length >= 2) {
+            toast({ variant: 'destructive', title: 'Límite de equipos', description: 'Solo puedes seleccionar 2 equipos.'});
+            return;
+        }
+        newTeams = [...currentTeams, teamId];
+    }
+    setValue('selectedTeams', newTeams, { shouldValidate: true });
+  };
+  
+
   const filteredPlayers = useMemo(() => {
     if (!allPlayers) return [];
     return allPlayers.filter(player => player.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -300,6 +329,8 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         try {
             if (data.type === 'manual') {
               await createManualMatch(data);
+            } else if (data.type === 'by_teams') {
+              await createByTeamsMatch(data);
             } else {
               await createCollaborativeMatch(data);
             }
@@ -316,6 +347,64 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         }
     });
   };
+
+  const createByTeamsMatch = async (data: MatchFormData) => {
+    if (!firestore || !user?.uid || !user.activeGroupId || !groupTeams) throw new Error("Datos insuficientes para crear partido por equipos.");
+    if (!data.selectedTeams || data.selectedTeams.length !== 2) throw new Error("Debes seleccionar exactamente 2 equipos.");
+
+    const selectedTeamsData = data.selectedTeams.map(id => groupTeams.find(t => t.id === id)).filter((t): t is GroupTeam => !!t);
+
+    const allTeamMembers = selectedTeamsData.flatMap(t => t.members);
+    const allPlayerIds = [...new Set(allTeamMembers.map(m => m.playerId))];
+    
+    // Fetch all needed players at once to get their details
+    const playersQuery = query(collection(firestore, 'players'), where('__name__', 'in', allPlayerIds));
+    const playersSnap = await getDocs(playersQuery);
+    const playersMap = new Map(playersSnap.docs.map(d => [d.id, {id: d.id, ...d.data()} as Player]));
+
+    const finalTeams: Team[] = selectedTeamsData.map(teamData => {
+        const teamPlayers = teamData.members.map(member => {
+            const playerDetails = playersMap.get(member.playerId);
+            return {
+                uid: member.playerId,
+                displayName: playerDetails?.name || 'Jugador',
+                ovr: playerDetails?.ovr || 50,
+                position: playerDetails?.position || 'MED'
+            };
+        });
+
+        const totalOVR = teamPlayers.reduce((sum, p) => sum + p.ovr, 0);
+        const averageOVR = totalOVR / teamPlayers.length;
+
+        return {
+            name: teamData.name,
+            players: teamPlayers,
+            totalOVR,
+            averageOVR,
+        };
+    });
+
+    const newMatchRef = doc(collection(firestore, 'matches'));
+    const newMatch = {
+      title: data.title,
+      date: data.date.toISOString(),
+      time: data.time,
+      location: data.location,
+      type: 'by_teams' as MatchType,
+      matchSize: finalTeams[0].players.length + finalTeams[1].players.length,
+      isPublic: false,
+      status: 'upcoming' as const,
+      ownerUid: user.uid,
+      groupId: user.activeGroupId,
+      players: finalTeams.flatMap(t => t.players),
+      playerUids: finalTeams.flatMap(t => t.players.map(p => p.uid)),
+      teams: finalTeams,
+      weather: weather || undefined,
+    };
+    
+    await addDoc(collection(firestore, 'matches'), newMatch);
+  };
+
 
   const createManualMatch = async (data: MatchFormData) => {
     if (!firestore || !user?.uid || !user.activeGroupId) throw new Error("User not authenticated");
@@ -401,7 +490,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
           <DialogHeader>
             <DialogTitle>Armar un Partido Nuevo</DialogTitle>
             <DialogDescription>
-              {step === 1 ? 'Meté los detalles del partido y elegí cómo se arma.' : 'Elegí los jugadores para el partido.'}
+              {step === 1 ? 'Meté los detalles del partido y elegí cómo se arma.' : 'Elegí los jugadores o equipos para el partido.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -511,29 +600,26 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                         name="type"
                         control={form.control}
                         render={({ field }) => (
-                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <Label className="flex gap-4 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
-                                    <div className="flex-shrink-0 mt-1">
-                                        <RadioGroupItem value="manual" />
-                                    </div>
+                                    <div className="flex-shrink-0 mt-1"><RadioGroupItem value="manual" /></div>
                                     <div className="flex flex-col gap-1">
-                                        <div className="flex items-center gap-2 font-bold">
-                                            <UserCheck className="h-5 w-5" />
-                                            <span>Manual</span>
-                                        </div>
+                                        <div className="flex items-center gap-2 font-bold"><UserCheck className="h-5 w-5" /><span>Manual</span></div>
                                         <span className="text-xs font-normal leading-tight">El organizador elige a todos los jugadores.</span>
                                     </div>
                                 </Label>
                                 <Label className="flex gap-4 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
-                                    <div className="flex-shrink-0 mt-1">
-                                        <RadioGroupItem value="collaborative" />
-                                    </div>
+                                    <div className="flex-shrink-0 mt-1"><RadioGroupItem value="collaborative" /></div>
                                     <div className="flex flex-col gap-1">
-                                         <div className="flex items-center gap-2 font-bold">
-                                            <Users className="h-5 w-5" />
-                                            <span>Colaborativo</span>
-                                        </div>
+                                         <div className="flex items-center gap-2 font-bold"><Users className="h-5 w-5" /><span>Colaborativo</span></div>
                                         <span className="text-xs font-normal leading-tight">Los jugadores del grupo se apuntan para participar.</span>
+                                    </div>
+                                </Label>
+                                <Label className="flex gap-4 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
+                                    <div className="flex-shrink-0 mt-1"><RadioGroupItem value="by_teams" /></div>
+                                    <div className="flex flex-col gap-1">
+                                         <div className="flex items-center gap-2 font-bold"><TeamsIcon className="h-5 w-5" /><span>Por Equipos</span></div>
+                                        <span className="text-xs font-normal leading-tight">Enfrenta a dos equipos ya creados en el grupo.</span>
                                     </div>
                                 </Label>
                             </RadioGroup>
@@ -568,55 +654,79 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
           </div>
           
           <div className={cn("py-4 transition-all duration-300", step !== 2 && "hidden")}>
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        <Label>Jugadores ({selectedPlayersCount} / {selectedMatchSize})</Label>
-                        <Progress value={(selectedPlayersCount / selectedMatchSize) * 100} />
+               {matchType === 'manual' && (
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Jugadores ({selectedPlayersCount} / {selectedMatchSize})</Label>
+                            <Progress value={(selectedPlayersCount / selectedMatchSize) * 100} />
+                        </div>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Buscar jugador por nombre..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10"
+                            />
+                        </div>
+                        {allPlayers.length > 0 ? (
+                            <div className="max-h-[350px] md:max-h-full overflow-y-auto space-y-2 border p-2 rounded-md">
+                                {filteredPlayers.map(player => (
+                                    <div key={player.id} className="flex items-center space-x-3 rounded-md border p-3 hover:bg-accent/50 has-[:checked]:bg-accent has-[:checked]:text-accent-foreground">
+                                        <Checkbox
+                                            id={`player-${player.id}`}
+                                            onCheckedChange={(checked) => handlePlayerSelect(player.id, !!checked)}
+                                            checked={form.getValues('players').includes(player.id)}
+                                        />
+                                        <Avatar className="h-9 w-9">
+                                            <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
+                                            <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <Label htmlFor={`player-${player.id}`} className="flex-1 cursor-pointer flex items-center gap-2">
+                                            <span className="font-semibold">{player.name}</span>
+                                            <SoccerPlayerIcon className={cn("h-4 w-4", positionColors[player.position])} />
+                                            <span className={cn("text-xs font-semibold", positionColors[player.position])}>{player.position}</span>
+                                        </Label>
+                                    </div>
+                                ))}
+                                {filteredPlayers.length === 0 && (
+                                    <p className="p-4 text-center text-sm text-muted-foreground">
+                                        No se encontraron jugadores con ese nombre.
+                                    </p>
+                                )}
+                            </div>
+                        ) : (
+                            <Alert>
+                                <AlertDescription>
+                                    No hay jugadores en tu grupo. Andá a la página de Jugadores para agregar.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                        {formState.errors.players && <p className="text-xs text-destructive mt-1">{formState.errors.players.message}</p>}
                     </div>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Buscar jugador por nombre..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10"
-                        />
-                    </div>
-                    {allPlayers.length > 0 ? (
-                        <div className="max-h-[350px] md:max-h-full overflow-y-auto space-y-2 border p-2 rounded-md">
-                            {filteredPlayers.map(player => (
-                                <div key={player.id} className="flex items-center space-x-3 rounded-md border p-3 hover:bg-accent/50 has-[:checked]:bg-accent has-[:checked]:text-accent-foreground">
-                                    <Checkbox
-                                        id={`player-${player.id}`}
-                                        onCheckedChange={(checked) => handlePlayerSelect(player.id, !!checked)}
-                                        checked={form.getValues('players').includes(player.id)}
-                                    />
-                                    <Avatar className="h-9 w-9">
-                                        <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
-                                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <Label htmlFor={`player-${player.id}`} className="flex-1 cursor-pointer flex items-center gap-2">
-                                        <span className="font-semibold">{player.name}</span>
-                                        <SoccerPlayerIcon className={cn("h-4 w-4", positionColors[player.position])} />
-                                        <span className={cn("text-xs font-semibold", positionColors[player.position])}>{player.position}</span>
-                                    </Label>
+               )}
+               {matchType === 'by_teams' && (
+                    <div className="space-y-4">
+                        <Label>Seleccioná dos equipos para el partido</Label>
+                        {teamsLoading && <Loader2 className="mx-auto h-6 w-6 animate-spin" />}
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-96 overflow-y-auto p-1">
+                            {groupTeams?.map(team => (
+                                <div key={team.id} onClick={() => handleTeamSelect(team.id)} className={cn("rounded-lg border-2 cursor-pointer transition-all", getValues('selectedTeams')?.includes(team.id) ? 'border-primary ring-2 ring-primary/50' : 'hover:border-primary/50')}>
+                                    <div className="flex flex-col items-center p-4 gap-2">
+                                        <JerseyPreview jersey={team.jersey} size="md" />
+                                        <p className="font-bold text-center text-sm">{team.name}</p>
+                                    </div>
+                                    {getValues('selectedTeams')?.includes(team.id) && (
+                                        <div className="absolute top-2 right-2 h-5 w-5 bg-primary rounded-full flex items-center justify-center text-primary-foreground">
+                                            <Check className="h-4 w-4" />
+                                        </div>
+                                    )}
                                 </div>
                             ))}
-                            {filteredPlayers.length === 0 && (
-                                <p className="p-4 text-center text-sm text-muted-foreground">
-                                    No se encontraron jugadores con ese nombre.
-                                </p>
-                            )}
                         </div>
-                    ) : (
-                        <Alert>
-                            <AlertDescription>
-                                No hay jugadores en tu grupo. Andá a la página de Jugadores para agregar.
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                    {formState.errors.players && <p className="text-xs text-destructive mt-1">{formState.errors.players.message}</p>}
-                </div>
+                        {formState.errors.selectedTeams && <p className="text-xs text-destructive mt-1">{formState.errors.selectedTeams.message}</p>}
+                    </div>
+                )}
           </div>
           
           <DialogFooter>
