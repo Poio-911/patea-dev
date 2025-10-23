@@ -1,3 +1,6 @@
+
+'use client';
+
 import React from 'react';
 import type { JerseyStyle } from '@/lib/types';
 import { SolidJersey } from './SolidJersey';
@@ -14,6 +17,11 @@ export type JerseyProps = {
 };
 
 const jerseyComponents: Record<JerseyStyle, React.FC<JerseyProps>> = {
+  plain: SolidJersey,
+  vertical: StripesJersey,
+  band: HoopsJersey,
+  chevron: SashJersey, // Asignando uno existente como placeholder
+  thirds: HalvesJersey,  // Asignando uno existente como placeholder
   solid: SolidJersey,
   stripes: StripesJersey,
   sash: SashJersey,
