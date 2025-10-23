@@ -3,15 +3,14 @@
 
 import { useParams } from 'next/navigation';
 import { useDoc, useUser, useFirestore } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, collection, query, where, getDoc, addDoc } from 'firebase/firestore';
 import type { Player } from '@/lib/types';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import { CoachChatView } from '@/components/coach-chat-view';
 import { PlayerInsightsPanel } from '@/components/player-insights-panel';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
 
 export default function AnalysisPage() {
   const { id: playerId } = useParams();
@@ -35,18 +34,18 @@ export default function AnalysisPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+        <div className="flex w-full items-center justify-between">
+             <Button asChild variant="outline" className="self-start">
+                <Link href={`/players/${playerId}`}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Volver al Perfil
+                </Link>
+            </Button>
+        </div>
         <PageHeader 
             title="Análisis Avanzado con IA"
             description={`Explorá tu rendimiento y recibí consejos del DT virtual para ${player.name}.`}
         />
-         <Button asChild variant="outline" className="self-start hidden sm:flex">
-            <Link href={`/players/${playerId}`}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Volver al Perfil
-            </Link>
-        </Button>
-      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="flex flex-col gap-4">
