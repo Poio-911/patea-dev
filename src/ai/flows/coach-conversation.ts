@@ -63,13 +63,13 @@ DATOS DEL JUGADOR:
 - Asistencias: {{playerContext.stats.assists}}
 - Rating Promedio: {{playerContext.stats.averageRating}}
 {{#if playerContext.recentTags}}
-- Etiquetas Recientes: {{{playerContext.recentTags}}}
+- Etiquetas Recientes: {{playerContext.recentTags}}
 {{/if}}
 {{#if playerContext.strengths}}
-- Fortalezas: {{{playerContext.strengths}}}
+- Fortalezas: {{playerContext.strengths}}
 {{/if}}
 {{#if playerContext.weaknesses}}
-- Debilidades: {{{playerContext.weaknesses}}}
+- Debilidades: {{playerContext.weaknesses}}
 {{/if}}
 
 HISTORIAL DE CONVERSACIÓN:
@@ -109,7 +109,7 @@ const coachConversationFlow = ai.defineFlow(
     outputSchema: CoachConversationOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input, { model: 'googleai/gemini-2.5-flash' });
+    const {output} = await prompt(input, { model: googleAI.model('gemini-2.5-flash') });
     return output!;
   }
 );

@@ -61,10 +61,10 @@ const prompt = ai.definePrompt({
     Tu tarea es analizar un partido incompleto y una lista de jugadores libres para recomendar los mejores fichajes posibles.
 
     DATOS DEL PARTIDO INCOMPLETO:
-    - Título: {{{match.title}}}
-    - Jugadores necesarios: {{{match.matchSize}}}
+    - Título: {{match.title}}
+    - Jugadores necesarios: {{match.matchSize}}
     - Jugadores actuales: {{match.players.length}}
-    - Plazas a cubrir: {{{spotsToFill}}}
+    - Plazas a cubrir: {{spotsToFill}}
     - Plantilla actual: {{#each match.players}} {{this.displayName}} ({{this.position}}, OVR {{this.ovr}}){{/each}}
 
     JUGADORES LIBRES PARA FICHAR:
@@ -72,7 +72,7 @@ const prompt = ai.definePrompt({
     - UID: {{this.uid}}, Nombre: {{this.displayName}}, Posición: {{this.position}}, OVR: {{this.ovr}}
     {{/each}}
 
-    Basado en esto, tu objetivo es elegir hasta {{{spotsToFill}}} jugadores de la lista de disponibles para recomendar.
+    Basado en esto, tu objetivo es elegir hasta {{spotsToFill}} jugadores de la lista de disponibles para recomendar.
     Tus criterios principales deben ser:
     1.  **Cubrir Posiciones Faltantes:** Si al equipo le falta un defensa, un delantero, o sobre todo un portero ('POR'), prioriza fichar jugadores en esas posiciones.
     2.  **Equilibrio de OVR:** Los jugadores elegidos deben mejorar al equipo pero sin desbalancear drásticamente el OVR promedio del equipo actual. Evita recomendar jugadores con un OVR muy por encima o muy por debajo del promedio del equipo actual.
