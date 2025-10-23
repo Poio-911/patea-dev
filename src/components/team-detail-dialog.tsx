@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -42,18 +43,24 @@ const TeamRosterPlayer = ({ player, number }: { player: Player; number: number; 
 export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetailDialogProps) {
   
   const teamPlayersWithDetails = useMemo(() => {
-    return team.members
-      .map(member => {
-        const playerDetails = allGroupPlayers.find(p => p.id === member.playerId);
+    // Defensive coding: Check for `team.members` and fallback to `team.playerIds` (old structure)
+    const teamPlayerIds = team.members ? team.members.map(m => m.playerId) : (team as any).playerIds || [];
+
+    return teamPlayerIds
+      .map((playerId: string, index: number) => {
+        const playerDetails = allGroupPlayers.find(p => p.id === playerId);
         if (!playerDetails) return null;
+
+        const memberInfo = team.members ? team.members.find(m => m.playerId === playerId) : null;
+        
         return {
           ...playerDetails,
-          number: member.number,
+          number: memberInfo ? memberInfo.number : index + 1, // Fallback to index if number not present
         };
       })
       .filter((p): p is Player & { number: number } => p !== null)
       .sort((a, b) => a.number - b.number);
-  }, [team.members, allGroupPlayers]);
+  }, [team, allGroupPlayers]);
 
   return (
     <Dialog>
@@ -62,7 +69,7 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
         <DialogHeader>
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 flex-shrink-0">
-                <JerseyIcon {...team.jersey} />
+                <JerseyIcon jersey={team.jersey} />
             </div>
             <div>
                 <DialogTitle className="text-2xl font-bold">{team.name}</DialogTitle>
