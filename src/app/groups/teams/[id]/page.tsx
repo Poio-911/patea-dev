@@ -141,7 +141,7 @@ export default function TeamDetailPage() {
         {/* Upcoming Matches */}
         <div className="space-y-4">
             {upcomingMatches.length > 0 ? (
-                <UpcomingMatchesFeed matches={upcomingMatches} />
+                <UpcomingMatchesFeed matches={upcomingMatches} teamName={team.name} />
             ) : (
                 <Alert variant="default">
                     <AlertTitle>Sin Próximos Partidos</AlertTitle>
