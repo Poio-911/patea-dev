@@ -64,6 +64,26 @@ El sistema ahora es **resistente a condiciones de carrera**. Múltiples usuarios
 
 ---
 
+## 🐞 Errores #4 y #7: Validación Inconsistente y Borrado Inseguro (MEDIO)
+
+### Problema
+- **Error #4**: En `perform-evaluation-view.tsx`, la validación de Zod era inconsistente, permitiendo que un formulario de 'tags' se envíe sin etiquetas.
+- **Error #7**: En `matches/[id]/evaluate/page.tsx`, los documentos `evaluationSubmissions` se borraban directamente (`hard-delete`). Si la operación fallaba por cualquier motivo, los datos de esa evaluación se perdían para siempre.
+
+### Solución Aplicada
+1.  **Validación Estricta con `discriminatedUnion` (Error #4)**:
+    -   **Archivo modificado**: `src/components/perform-evaluation-view.tsx`.
+    -   **Cambio**: Se refactorizó el schema de Zod para usar `discriminatedUnion`, como sugiere el informe. Ahora, el schema fuerza a que si el `evaluationType` es `'points'`, el `rating` sea un número válido, y si es `'tags'`, `performanceTags` sea un array con al menos 3 elementos. No hay lugar para la ambigüedad.
+
+2.  **Implementación de "Soft Delete" (Error #7)**:
+    -   **Archivo modificado**: `src/app/matches/[id]/evaluate/page.tsx`.
+    -   **Cambio**: Se eliminó la operación `transaction.delete()`. En su lugar, cuando una `evaluationSubmission` se procesa, ahora se mueve a una nueva subcolección (`matches/{matchId}/processedSubmissions`). Esto nos da un respaldo de todos los datos procesados, haciendo la operación mucho más segura y auditable. Si algo falla, el dato original no se pierde.
+
+### Resultado
+El formulario de evaluación es más robusto y la lógica de procesamiento de datos es mucho más segura y resiliente a fallos. Se ha reducido drásticamente el riesgo de pérdida de datos.
+
+---
+
 ### Próximos Pasos
 
-Ya hemos solucionado los errores más críticos. Ahora me enfocaré en los de prioridad media y baja, como el schema de Zod inconsistente, la falta de un borrado seguro (soft delete) y el rebalanceo de los tags negativos.
+Solo quedan los errores de prioridad baja: documentar el cálculo del `averageRating` y rebalancear los tags negativos para mejorar la experiencia de usuario. ¡Ya casi estamos

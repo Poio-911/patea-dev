@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
@@ -32,7 +31,7 @@ import { PerformanceTag, performanceTagsDb } from '@/lib/performance-tags'
 import { cn } from '@/lib/utils'
 import type { Player, EvaluationAssignment, PlayerEvaluationFormData } from '@/lib/types'
 
-// --- Zod Validation (CORREGIDO) ---
+// --- Zod Validation (CORREGIDO Y REFORZADO) ---
 const pointsEvaluationSchema = z.object({
   assignmentId: z.string(),
   subjectId: z.string(),
@@ -41,7 +40,7 @@ const pointsEvaluationSchema = z.object({
   position: z.string(),
   evaluationType: z.literal('points'),
   rating: z.coerce.number().min(1).max(10), // Requerido
-  performanceTags: z.never().optional(),
+  performanceTags: z.array(z.custom<PerformanceTag>()).optional(), // Puede no estar
 });
 
 const tagsEvaluationSchema = z.object({
@@ -51,7 +50,7 @@ const tagsEvaluationSchema = z.object({
   photoUrl: z.string(),
   position: z.string(),
   evaluationType: z.literal('tags'),
-  rating: z.never().optional(),
+  rating: z.coerce.number().optional(), // Puede no estar
   performanceTags: z.array(z.custom<PerformanceTag>()).min(3, 'Debes seleccionar al menos 3 etiquetas.'), // Requerido
 });
 
@@ -205,6 +204,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
               position: subject.position,
               evaluationType: 'points',
               rating: 5,
+              performanceTags: [],
             })
             tagsForPlayers[subject.id] = getRandomTagsForPosition(subject.position)
           }
@@ -345,7 +345,9 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
                     name={`evaluations.${index}.evaluationType`}
                     control={form.control}
                     render={({ field: typeField }) => (
-                      <Tabs value={typeField.value} onValueChange={typeField.onChange} className="w-full">
+                      <Tabs value={typeField.value} onValueChange={(value) => {
+                        form.setValue(`evaluations.${index}.evaluationType`, value as 'points' | 'tags', { shouldValidate: true });
+                      }} className="w-full">
                         <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
                           <TabsTrigger value="points">Evaluar por Puntos</TabsTrigger>
                           <TabsTrigger value="tags">Evaluar por Etiquetas</TabsTrigger>
@@ -371,6 +373,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
                                     <span className="text-xs text-muted-foreground">10</span>
                                   </div>
                                 </FormControl>
+                                <FormMessage />
                               </FormItem>
                             )}
                           />
@@ -389,7 +392,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
                                       key={tag.id}
                                       tag={tag}
                                       subjectId={field.subjectId}
-                                      isChecked={!!tagsField.value?.find((t: any) => t.id === tag.id)}
+                                      isChecked={!!(tagsField.value || []).find((t: any) => t.id === tag.id)}
                                       onCheckedChange={(checked) => {
                                         const currentVal = tagsField.value || []
                                         const newVal = checked
@@ -408,6 +411,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
                       </Tabs>
                     )}
                   />
+                  <FormMessage>{form.formState.errors.evaluations?.[index]?.root?.message}</FormMessage>
                 </div>
               ))}
             </CardContent>

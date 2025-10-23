@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
@@ -91,37 +90,37 @@ export default function EvaluateMatchPage() {
   
   const processPendingSubmissions = useCallback(async () => {
     if (!firestore || !matchId) return;
-
     setIsProcessingSubmissions(true);
     
     try {
       await runTransaction(firestore, async (transaction) => {
         const submissionsQuery = query(collection(firestore, 'evaluationSubmissions'), where('matchId', '==', matchId));
-        // We get the docs inside the transaction to ensure we have the latest state
         const snapshot = await getDocs(submissionsQuery);
 
-        if (snapshot.empty) {
-            return; // No submissions to process
-        }
+        if (snapshot.empty) return;
 
         setPendingSubmissionsCount(snapshot.size);
 
         for (const submissionDoc of snapshot.docs) {
-            const submission = submissionDoc.data();
-            const { evaluatorId, submission: formData } = submission;
+            const submissionData = submissionDoc.data();
 
-            // Process self-evaluation for goals
+            // Move to processedSubmissions and delete original
+            const processedRef = doc(collection(firestore, `matches/${matchId}/processedSubmissions`));
+            transaction.set(processedRef, submissionData);
+            transaction.delete(submissionDoc.ref);
+
+            const { evaluatorId, submission: formData } = submissionData;
+            
             if (formData.evaluatorGoals > 0) {
-                const selfEvalRef = doc(collection(firestore, 'matches', matchId as string, 'selfEvaluations'));
+                const selfEvalRef = doc(collection(firestore, `matches/${matchId}/selfEvaluations`));
                 transaction.set(selfEvalRef, {
                     playerId: evaluatorId,
                     matchId,
                     goals: formData.evaluatorGoals,
-                    reportedAt: submission.submittedAt,
+                    reportedAt: submissionData.submittedAt,
                 });
             }
 
-            // Process peer evaluations
             for (const evaluation of formData.evaluations) {
                 const evalRef = doc(collection(firestore, 'evaluations'));
                 const newEvaluation: Omit<Evaluation, 'id'> = {
@@ -129,8 +128,8 @@ export default function EvaluateMatchPage() {
                     playerId: evaluation.subjectId,
                     evaluatorId,
                     matchId: matchId as string,
-                    goals: 0, // Goals are now stored in selfEvaluations
-                    evaluatedAt: submission.submittedAt,
+                    goals: 0,
+                    evaluatedAt: submissionData.submittedAt,
                 };
                 
                 if (evaluation.evaluationType === 'points') newEvaluation.rating = evaluation.rating;
@@ -141,8 +140,6 @@ export default function EvaluateMatchPage() {
                 const assignmentRef = doc(firestore, 'matches', matchId as string, 'assignments', evaluation.assignmentId);
                 transaction.update(assignmentRef, { status: 'completed', evaluationId: evalRef.id });
             }
-            // Delete the processed submission
-            transaction.delete(submissionDoc.ref);
         }
       });
 
@@ -161,7 +158,13 @@ export default function EvaluateMatchPage() {
 
   useEffect(() => {
     if (match && match.status !== 'evaluated') {
-      processPendingSubmissions();
+      const interval = setInterval(() => {
+        processPendingSubmissions();
+      }, 15000); // Check for new submissions every 15 seconds
+      
+      processPendingSubmissions(); // Also run once on load
+
+      return () => clearInterval(interval);
     }
   }, [match, processPendingSubmissions]);
 
