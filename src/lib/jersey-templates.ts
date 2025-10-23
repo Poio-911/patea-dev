@@ -17,51 +17,91 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
   plain: {
     type: 'plain',
     label: 'Lisa',
-    description: 'Camiseta de un solo color',
+    description: 'Diseño clásico de un solo color.',
     svgPath: '/jerseys/plain-pink-football-shirt-svgrepo-com.svg',
     colorMapping: {
-      primary: ['#fbb'], // El rosa se reemplaza por el color primario
+      primary: ['#fbb'],
       secondary: [],
     },
   },
   vertical: {
     type: 'vertical',
     label: 'Franjas Verticales',
-    description: 'Camiseta con franjas verticales',
+    description: 'Diseño tradicional con franjas verticales.',
     svgPath: '/jerseys/vertical-blue-yellow-football-shirt-svgrepo-com.svg',
     colorMapping: {
-      primary: ['#fe0'], // Amarillo -> primario
-      secondary: ['#33f'], // Azul -> secundario
+      primary: ['#fe0'],
+      secondary: ['#33f'],
     },
   },
   band: {
     type: 'band',
     label: 'Franja Horizontal',
-    description: 'Camiseta con franja horizontal',
+    description: 'Una banda horizontal cruza el pecho.',
     svgPath: '/jerseys/band-red-white-football-shirt-svgrepo-com.svg',
     colorMapping: {
-      primary: ['#ffffff'], // Blanco -> primario
-      secondary: ['#d00'], // Rojo -> secundario
+      primary: ['#ffffff'],
+      secondary: ['#d00'],
     },
   },
   chevron: {
     type: 'chevron',
     label: 'Chevron (V)',
-    description: 'Camiseta con diseño en V',
+    description: 'Diseño dinámico en forma de V.',
     svgPath: '/jerseys/chevron-blue-white-football-shirt-svgrepo-com.svg',
     colorMapping: {
-      primary: ['#33f'], // Azul -> primario
-      secondary: ['#ffffff'], // Blanco -> secundario
+      primary: ['#33f'],
+      secondary: ['#ffffff'],
     },
   },
   thirds: {
     type: 'thirds',
     label: 'Tercios',
-    description: 'Camiseta dividida en tercios',
+    description: 'Camiseta dividida en tres secciones.',
     svgPath: '/jerseys/thirds-red-white-football-shirt-svgrepo-com.svg',
     colorMapping: {
-      primary: ['#d00'], // Rojo -> primario
-      secondary: ['#ffffff'], // Blanco -> secundario
+      primary: ['#d00'],
+      secondary: ['#ffffff'],
+    },
+  },
+  hoops: {
+    type: 'hoops',
+    label: 'Aros Horizontales',
+    description: 'Franjas horizontales gruesas.',
+    svgPath: '/jerseys/band-red-white-football-shirt-svgrepo-com.svg', // Re-using a similar SVG structure
+    colorMapping: {
+        primary: ['#ffffff'],
+        secondary: ['#d00'],
+    },
+  },
+  sash: {
+    type: 'sash',
+    label: 'Banda Diagonal',
+    description: 'Una banda cruza el pecho en diagonal.',
+    svgPath: '/jerseys/chevron-blue-white-football-shirt-svgrepo-com.svg', // Re-using a similar SVG structure
+    colorMapping: {
+        primary: ['#33f'],
+        secondary: ['#ffffff'],
+    },
+  },
+  checkered: {
+    type: 'checkered',
+    label: 'Ajedrez',
+    description: 'Diseño clásico a cuadros.',
+    svgPath: '/jerseys/plain-pink-football-shirt-svgrepo-com.svg', // Base for pattern
+    colorMapping: {
+        primary: ['#fbb'],
+        secondary: [],
+    },
+  },
+  stripes: {
+    type: 'stripes',
+    label: 'Rayas Finas',
+    description: 'Diseño con múltiples rayas verticales.',
+    svgPath: '/jerseys/vertical-blue-yellow-football-shirt-svgrepo-com.svg',
+     colorMapping: {
+      primary: ['#fe0'],
+      secondary: ['#33f'],
     },
   },
 };
