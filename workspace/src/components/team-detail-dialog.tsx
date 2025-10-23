@@ -9,13 +9,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Separator } from './ui/separator';
+import { Separator } from '@/components/ui/separator';
 import type { GroupTeam, Player } from '@/lib/types';
-import { Badge } from './ui/badge';
-import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Users } from 'lucide-react';
-import { JerseyPreview } from './team-builder/jersey-preview';
-import { TeamRosterPlayer, DetailedTeamPlayer } from './team-roster-player';
+import { JerseyPreview } from '@/components/team-builder/jersey-preview';
+import { TeamRosterPlayer, DetailedTeamPlayer } from '@/components/team-roster-player';
 
 
 interface TeamDetailDialogProps {
@@ -27,20 +26,19 @@ interface TeamDetailDialogProps {
 export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetailDialogProps) {
   
   const teamPlayersWithDetails = useMemo(() => {
-    // Defensive coding: Check for `team.members` and fallback to `team.playerIds` (old structure)
-    const teamPlayerIds = team.members ? team.members.map(m => m.playerId) : (team as any).playerIds || [];
+    const teamPlayerIds = team.members ? team.members.map(m => m.playerId) : [];
 
     return teamPlayerIds
-      .map((playerId: string, index: number) => {
+      .map((playerId: string) => {
         const playerDetails = allGroupPlayers.find((p: Player) => p.id === playerId);
         if (!playerDetails) return null;
 
-        const memberInfo = team.members ? team.members.find(m => m.playerId === playerId) : null;
+        const memberInfo = team.members.find(m => m.playerId === playerId);
         
         return {
           ...playerDetails,
-          number: memberInfo ? memberInfo.number : index + 1, // Fallback to index if number not present
-          status: memberInfo ? memberInfo.status : 'titular',
+          number: memberInfo ? memberInfo.number : 0,
+          status: memberInfo ? memberInfo.status : 'suplente',
         };
       })
       .filter((p: DetailedTeamPlayer | null): p is DetailedTeamPlayer => p !== null)
