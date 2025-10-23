@@ -1,14 +1,13 @@
-
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useDoc, useCollection, useFirestore, useUser, initializeFirebase, useAuth } from '@/firebase';
 import { doc, collection, query, where, orderBy, getDocs, writeBatch, updateDoc } from 'firebase/firestore';
-import type { Player, Evaluation, Match, OvrHistory, UserProfile } from '@/lib/types';
+import type { Player, Evaluation, Match, OvrHistory, UserProfile, PerformanceTag } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, BarChart2, Star, Goal, Upload, Eye } from 'lucide-react';
+import { Loader2, BarChart2, Star, Goal, Upload, Eye, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -50,7 +49,8 @@ const Stat = ({ label, value }: { label: string; value: number }) => (
 type DetailedEvaluation = Evaluation & { evaluatorName?: string; evaluatorPhoto?: string };
 type MatchEvaluationSummary = {
     match: Match;
-    avgRating: number;
+    avgRating: number; // Será 0 si no hay ratings numéricos
+    hasNumericRatings: boolean;
     goals: number;
     individualEvaluations: DetailedEvaluation[];
 };
@@ -65,6 +65,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   const [matches, setMatches] = useState<Match[]>([]);
   const [evaluatorProfiles, setEvaluatorProfiles] = useState<Record<string, {displayName: string, photoURL: string}>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [openAccordion, setOpenAccordion] = useState<string | null>(null);
 
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -119,9 +120,19 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
 
             const matchIds = [...new Set(playerEvals.map(e => e.matchId))];
             if (matchIds.length > 0) {
-                const matchesQuery = query(collection(firestore, 'matches'), where('__name__', 'in', matchIds));
-                const matchesSnapshot = await getDocs(matchesQuery);
-                setMatches(matchesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match)));
+                // Firestore 'in' queries are limited to 30 elements. Chunk if necessary.
+                const matchChunks: string[][] = [];
+                for (let i = 0; i < matchIds.length; i += 30) {
+                    matchChunks.push(matchIds.slice(i, i + 30));
+                }
+
+                const matchPromises = matchChunks.map(chunk => 
+                    getDocs(query(collection(firestore, 'matches'), where('__name__', 'in', chunk)))
+                );
+                
+                const matchSnapshots = await Promise.all(matchPromises);
+                const allMatches = matchSnapshots.flatMap(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match)));
+                setMatches(allMatches);
             } else {
                 setMatches([]);
             }
@@ -174,11 +185,13 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     return Object.values(evalsByMatch).map(summary => {
         const ratings = summary.evaluations.map(ev => ev.rating).filter((r): r is number => typeof r === 'number' && !isNaN(r));
         const goals = summary.evaluations.reduce((sum, ev) => sum + (ev.goals || 0), 0);
-        const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+        const hasNumericRatings = ratings.length > 0;
+        const avgRating = hasNumericRatings ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
         
         return {
             match: summary.match,
             avgRating,
+            hasNumericRatings,
             goals,
             individualEvaluations: summary.evaluations
         };
@@ -387,65 +400,92 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                 <CardDescription>Rendimiento del jugador en los últimos partidos evaluados. Haz clic en un partido para ver el detalle.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, avgRating, individualEvaluations }) => (
-                                    <Card key={match.id} className="bg-muted/50">
-                                        <CardHeader className="flex flex-row items-center justify-between p-4">
-                                            <div>
-                                                <CardTitle className="text-lg">{match.title}</CardTitle>
-                                                <CardDescription>{format(new Date(match.date), 'dd MMM, yyyy', { locale: es })}</CardDescription>
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'} className="text-base">
-                                                    <Star className="mr-1 h-3 w-3" /> {avgRating.toFixed(2)}
-                                                </Badge>
-                                                <Dialog>
-                                                    <DialogTrigger asChild>
-                                                        <Button variant="outline" size="sm"><Eye className="mr-2 h-4 w-4" />Ver Detalles</Button>
-                                                    </DialogTrigger>
-                                                    <DialogContent>
-                                                        <DialogHeader>
-                                                            <DialogTitle>Evaluaciones de: {match.title}</DialogTitle>
-                                                        </DialogHeader>
-                                                        <Table>
-                                                            <TableHeader>
-                                                                <TableRow>
-                                                                    <TableHead>Evaluador</TableHead>
-                                                                    <TableHead className="text-center">Rating</TableHead>
-                                                                    <TableHead>Etiquetas</TableHead>
-                                                                </TableRow>
-                                                            </TableHeader>
-                                                            <TableBody>
-                                                                {individualEvaluations.map(ev => (
-                                                                    <TableRow key={ev.id}>
-                                                                        <TableCell>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <Avatar className="h-8 w-8">
-                                                                                    <AvatarImage src={ev.evaluatorPhoto} alt={ev.evaluatorName} />
-                                                                                    <AvatarFallback>{ev.evaluatorName?.charAt(0)}</AvatarFallback>
-                                                                                </Avatar>
-                                                                                <span>{ev.evaluatorName}</span>
-                                                                            </div>
-                                                                        </TableCell>
-                                                                        <TableCell className="text-center">
-                                                                            {ev.rating !== undefined && <Badge variant="secondary">{ev.rating}</Badge>}
-                                                                        </TableCell>
-                                                                        <TableCell>
-                                                                            <div className="flex gap-1 flex-wrap">
-                                                                                {ev.performanceTags && ev.performanceTags.length > 0 ? ev.performanceTags.map(tag => (
-                                                                                    <Badge key={tag.id} variant="outline">{tag.name}</Badge>
-                                                                                )) : <span className="text-muted-foreground text-xs">N/A</span>}
-                                                                            </div>
-                                                                        </TableCell>
-                                                                    </TableRow>
-                                                                ))}
-                                                            </TableBody>
-                                                        </Table>
-                                                    </DialogContent>
-                                                </Dialog>
-                                            </div>
-                                        </CardHeader>
-                                    </Card>
-                                )) : (
+                                {filteredEvaluationsByMatch.length > 0 ? (
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="w-12"></TableHead>
+                                                <TableHead>Partido</TableHead>
+                                                <TableHead>Fecha</TableHead>
+                                                <TableHead className="text-center">Rating Prom.</TableHead>
+                                                <TableHead className="text-center">Goles</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {filteredEvaluationsByMatch.map(({ match, avgRating, goals, hasNumericRatings, individualEvaluations }) => {
+                                                const isOpen = openAccordion === match.id;
+                                                return (
+                                                    <React.Fragment key={match.id}>
+                                                        <TableRow onClick={() => setOpenAccordion(isOpen ? null : match.id)} className="cursor-pointer">
+                                                            <TableCell><ChevronDown className={cn("transition-transform", isOpen && "rotate-180")} /></TableCell>
+                                                            <TableCell className="font-medium">{match.title}</TableCell>
+                                                            <TableCell>{format(new Date(match.date), 'dd MMM, yyyy', { locale: es })}</TableCell>
+                                                            <TableCell className="text-center">
+                                                                {hasNumericRatings ? (
+                                                                    <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'}>
+                                                                        <Star className="mr-1 h-3 w-3" /> {avgRating.toFixed(2)}
+                                                                    </Badge>
+                                                                ) : (
+                                                                    <Badge variant="outline" className="text-muted-foreground">N/A</Badge>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell className="text-center">
+                                                                <Badge variant="outline"><Goal className="mr-1 h-3 w-3" /> {goals}</Badge>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                        {isOpen && (
+                                                            <TableRow>
+                                                                <TableCell colSpan={5}>
+                                                                    <div className="p-4 bg-muted/50 rounded-md">
+                                                                         <h4 className="font-semibold mb-2">Detalle de Evaluaciones:</h4>
+                                                                         <Table>
+                                                                            <TableHeader>
+                                                                                <TableRow>
+                                                                                    <TableHead>Evaluador</TableHead>
+                                                                                    <TableHead className="text-center">Rating</TableHead>
+                                                                                    <TableHead>Etiquetas</TableHead>
+                                                                                </TableRow>
+                                                                            </TableHeader>
+                                                                            <TableBody>
+                                                                                {individualEvaluations.map(ev => (
+                                                                                    <TableRow key={ev.id}>
+                                                                                        <TableCell>
+                                                                                            <div className="flex items-center gap-2">
+                                                                                                <Avatar className="h-8 w-8">
+                                                                                                    <AvatarImage src={ev.evaluatorPhoto} alt={ev.evaluatorName} />
+                                                                                                    <AvatarFallback>{ev.evaluatorName?.charAt(0)}</AvatarFallback>
+                                                                                                </Avatar>
+                                                                                                <span>{ev.evaluatorName}</span>
+                                                                                            </div>
+                                                                                        </TableCell>
+                                                                                        <TableCell className="text-center">
+                                                                                            {ev.rating !== undefined ? <Badge variant="secondary">{ev.rating}</Badge> : <span className="text-muted-foreground text-xs">-</span>}
+                                                                                        </TableCell>
+                                                                                        <TableCell>
+                                                                                            <div className="flex gap-1 flex-wrap">
+                                                                                                {ev.performanceTags?.map((tag, idx) => {
+                                                                                                    if (typeof tag === 'object' && tag && 'name' in tag) {
+                                                                                                        return <Badge key={tag.id || idx} variant="outline">{tag.name}</Badge>;
+                                                                                                    }
+                                                                                                    return null;
+                                                                                                })}
+                                                                                                {(!ev.performanceTags || ev.performanceTags.length === 0) && <span className="text-muted-foreground text-xs">-</span>}
+                                                                                            </div>
+                                                                                        </TableCell>
+                                                                                    </TableRow>
+                                                                                ))}
+                                                                            </TableBody>
+                                                                         </Table>
+                                                                    </div>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        )}
+                                                    </React.Fragment>
+                                                )
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                ) : (
                                     <CardContent className="text-center text-muted-foreground py-10">
                                         Este jugador aún no tiene evaluaciones registradas.
                                     </CardContent>
@@ -538,7 +578,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                     <CardDescription>Rendimiento del jugador en los últimos partidos evaluados.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                     {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, avgRating }) => (
+                     {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, avgRating, hasNumericRatings }) => (
                         <Card key={match.id} className="bg-muted/50">
                              <CardHeader className="flex flex-row items-center justify-between p-4">
                                 <div>
@@ -546,9 +586,13 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                     <CardDescription>{format(new Date(match.date), 'dd MMM, yyyy', { locale: es })}</CardDescription>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                     <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'} className="text-base">
-                                        <Star className="mr-1 h-3 w-3" /> {avgRating.toFixed(2)}
-                                    </Badge>
+                                     {hasNumericRatings ? (
+                                        <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'} className="text-base">
+                                            <Star className="mr-1 h-3 w-3" /> {avgRating.toFixed(2)}
+                                        </Badge>
+                                     ) : (
+                                        <Badge variant="outline" className="text-muted-foreground">N/A</Badge>
+                                     )}
                                 </div>
                             </CardHeader>
                         </Card>

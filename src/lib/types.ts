@@ -113,7 +113,7 @@ export type Team = {
   }
 };
 
-export type JerseyStyle = 'solid' | 'stripes' | 'sash' | 'halves' | 'hoops' | 'checkered' | 'plain' | 'vertical' | 'band' | 'chevron' | 'thirds';
+export type JerseyStyle = 'solid' | 'stripes' | 'sash' | 'halves' | 'hoops' | 'checkered';
 
 
 export type Jersey = {
@@ -178,7 +178,7 @@ export type Evaluation = {
     matchId: string; // The ID of the match, for easier querying
     rating?: number; // Scale 1-10
     goals: number; // Goals scored by the evaluator in that match
-    performanceTags?: PerformanceTag[];
+    performanceTags?: PerformanceTag[]; // Array of full PerformanceTag objects
     evaluatedAt: string;
 } & DocumentData;
 
