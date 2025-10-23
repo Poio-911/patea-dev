@@ -63,7 +63,7 @@ export type AvailablePlayer = {
 
 
 export type MatchStatus = 'upcoming' | 'active' | 'completed' | 'evaluated';
-export type MatchType = 'manual' | 'collaborative';
+export type MatchType = 'manual' | 'collaborative' | 'by_teams';
 export type MatchSize = 10 | 14 | 22;
 
 export type MatchLocation = {
@@ -97,6 +97,7 @@ export type Match = {
 } & DocumentData;
 
 export type Team = {
+  id?: string;
   name: string;
   players: {
     uid: string;
@@ -106,8 +107,8 @@ export type Team = {
   }[];
   totalOVR: number;
   averageOVR: number;
-  suggestedFormation: string;
-  tags: string[];
+  suggestedFormation?: string;
+  tags?: string[];
   balanceMetrics?: {
     ovrDifference: number;
     fairnessPercentage: number;

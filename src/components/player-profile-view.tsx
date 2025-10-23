@@ -1,9 +1,18 @@
-
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useDoc, useCollection, useFirestore, useUser, initializeFirebase, useAuth } from '@/firebase';
-import { doc, collection, query, where, orderBy, getDocs, writeBatch, updateDoc } from 'firebase/firestore';
+import { 
+  doc, 
+  collection, 
+  query, 
+  where, 
+  orderBy, 
+  getDocs, 
+  getDoc, // ✅ ← AGREGADO
+  writeBatch, 
+  updateDoc 
+} from 'firebase/firestore';
 import type { Player, Evaluation, Match, OvrHistory, UserProfile, PerformanceTag } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -21,6 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 type PlayerProfileViewProps = {
   playerId: string;
