@@ -11,11 +11,11 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import type { GroupTeam, Player } from '@/lib/types';
+import type { GroupTeam, Player, DetailedTeamPlayer } from '@/lib/types';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Users } from 'lucide-react';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-import { TeamRosterPlayer, DetailedTeamPlayer } from '@/components/team-roster-player';
+import { TeamRosterPlayer } from '@/components/team-roster-player';
 
 
 interface TeamDetailDialogProps {
