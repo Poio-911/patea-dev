@@ -20,7 +20,7 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
     description: 'Camiseta de un solo color',
     svgPath: '/jerseys/plain-pink-football-shirt-svgrepo-com.svg',
     colorMapping: {
-      primary: ['#fbb'], // El rosa se reemplaza por el color primario
+      primary: ['#fbb'],
       secondary: [],
     },
   },
@@ -30,8 +30,8 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
     description: 'Camiseta con franjas verticales',
     svgPath: '/jerseys/vertical-blue-yellow-football-shirt-svgrepo-com.svg',
     colorMapping: {
-      primary: ['#fe0'], // Amarillo -> primario
-      secondary: ['#33f'], // Azul -> secundario
+      primary: ['#fe0'], 
+      secondary: ['#33f'],
     },
   },
   band: {
@@ -40,8 +40,8 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
     description: 'Camiseta con franja horizontal',
     svgPath: '/jerseys/band-red-white-football-shirt-svgrepo-com.svg',
     colorMapping: {
-      primary: ['#d00'], // Rojo -> primario
-      secondary: ['#ffffff'], // Blanco -> secundario
+      primary: ['#d00'],
+      secondary: ['#ffffff'],
     },
   },
   chevron: {
@@ -50,8 +50,8 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
     description: 'Camiseta con diseño en V',
     svgPath: '/jerseys/chevron-blue-white-football-shirt-svgrepo-com.svg',
     colorMapping: {
-      primary: ['#33f'], // Azul -> primario
-      secondary: ['#ffffff'], // Blanco -> secundario
+      primary: ['#33f'],
+      secondary: ['#ffffff'],
     },
   },
   thirds: {
@@ -60,8 +60,8 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
     description: 'Camiseta dividida en tercios',
     svgPath: '/jerseys/thirds-red-white-football-shirt-svgrepo-com.svg',
     colorMapping: {
-      primary: ['#d00'], // Rojo -> primario
-      secondary: ['#ffffff'], // Blanco -> secundario
+      primary: ['#d00'],
+      secondary: ['#ffffff'],
     },
   },
   lines: {
@@ -71,10 +71,9 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
     svgPath: '/jerseys/opcion-7.svg',
     colorMapping: {
       primary: ['#f41616'],
-      secondary: ['#fff'],
+      secondary: ['#ffffff'],
     },
   },
-
 };
 
 /**
@@ -91,13 +90,6 @@ export function getAllJerseyTemplates(): JerseyTemplate[] {
   return Object.values(JERSEY_TEMPLATES);
 }
 
-const expandHex = (hex: string) => {
-  if (hex.length === 4) {
-    return `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
-  }
-  return hex;
-};
-
 /**
  * Reemplaza los colores en un SVG según el template y los colores elegidos
  */
@@ -112,16 +104,9 @@ export function applyColorsToSvg(
   const replaceColor = (content: string, oldColors: string[], newColor: string) => {
     let modifiedContent = content;
     oldColors.forEach(oldColor => {
-      const oldColorLong = expandHex(oldColor).substring(1);
-      const oldColorShort = oldColor.length === 7 ? `#${oldColor[1]}${oldColor[3]}${oldColor[5]}` : oldColor;
-      
-      const regexLong = new RegExp(`(fill|stroke)="#${oldColorLong}"`, 'gi');
-      const regexShort = new RegExp(`(fill|stroke)="${oldColorShort}"`, 'gi');
-      
-      modifiedContent = modifiedContent.replace(regexLong, `$1="${newColor}"`);
-      if (oldColor.length === 7) { // Only run short regex if long one was used
-        modifiedContent = modifiedContent.replace(regexShort, `$1="${newColor}"`);
-      }
+      // Usar una expresión regular para reemplazar el color, ignorando mayúsculas/minúsculas.
+      const regex = new RegExp(`(fill|stroke)="${oldColor}"`, 'gi');
+      modifiedContent = modifiedContent.replace(regex, `$1="${newColor}"`);
     });
     return modifiedContent;
   };
