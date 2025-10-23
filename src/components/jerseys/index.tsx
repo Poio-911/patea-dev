@@ -1,14 +1,5 @@
-
 'use client';
-
-import React from 'react';
-import type { JerseyType, Jersey } from '@/lib/types';
-import { SolidJersey } from './SolidJersey';
-import { StripesJersey } from './StripesJersey';
-import { SashJersey } from './SashJersey';
-import { HalvesJersey } from './HalvesJersey';
-import { HoopsJersey } from './HoopsJersey';
-import { CheckeredJersey } from './CheckeredJersey';
+import { JerseyPreview } from "../team-builder/jersey-preview";
 
 export type JerseyProps = {
   primaryColor?: string;
@@ -16,23 +7,5 @@ export type JerseyProps = {
   className?: string;
 };
 
-const jerseyComponents: Record<JerseyType, React.FC<JerseyProps>> = {
-  plain: SolidJersey,
-  vertical: StripesJersey,
-  band: HoopsJersey,
-  chevron: SashJersey,
-  thirds: HalvesJersey,
-  hoops: HoopsJersey,
-  sash: SashJersey,
-  checkered: CheckeredJersey,
-  stripes: StripesJersey,
-};
-
-interface JerseyIconProps extends JerseyProps {
-  style?: JerseyType;
-}
-
-export function JerseyIcon({ style = 'plain', ...props }: JerseyIconProps) {
-  const JerseyComponent = jerseyComponents[style] || SolidJersey;
-  return <JerseyComponent {...props} />;
-}
+// Este componente ahora es un alias para JerseyPreview
+export const JerseyIcon = JerseyPreview;
