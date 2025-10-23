@@ -96,7 +96,7 @@ function DashboardContent() {
     if (!matches) return { nextMatch: null, recentMatches: [] };
     
     const upcoming = matches
-      .filter(m => m.status === 'upcoming')
+      .filter(m => m.status === 'upcoming' && new Date(m.date) >= new Date())
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
     const recent = matches.filter(m => m.status !== 'upcoming').slice(0, 2);
