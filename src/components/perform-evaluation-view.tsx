@@ -30,30 +30,42 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { PerformanceTag, performanceTagsDb } from '@/lib/performance-tags'
 import { cn } from '@/lib/utils'
-import type { Player, EvaluationAssignment } from '@/lib/types'
+import type { Player, EvaluationAssignment, PlayerEvaluationFormData } from '@/lib/types'
 
-// --- Zod Validation ---
-const playerEvaluationSchema = z.object({
+// --- Zod Validation (CORREGIDO) ---
+const pointsEvaluationSchema = z.object({
   assignmentId: z.string(),
   subjectId: z.string(),
   displayName: z.string(),
   photoUrl: z.string(),
   position: z.string(),
-  evaluationType: z.enum(['points', 'tags']).default('points'),
-  rating: z.coerce.number().min(1).max(10).optional(),
-  performanceTags: z
-    .array(z.custom<PerformanceTag>())
-    .min(3, 'Debes seleccionar al menos 3 etiquetas.')
-    .optional(),
-})
+  evaluationType: z.literal('points'),
+  rating: z.coerce.number().min(1).max(10), // Requerido
+  performanceTags: z.never().optional(),
+});
+
+const tagsEvaluationSchema = z.object({
+  assignmentId: z.string(),
+  subjectId: z.string(),
+  displayName: z.string(),
+  photoUrl: z.string(),
+  position: z.string(),
+  evaluationType: z.literal('tags'),
+  rating: z.never().optional(),
+  performanceTags: z.array(z.custom<PerformanceTag>()).min(3, 'Debes seleccionar al menos 3 etiquetas.'), // Requerido
+});
+
+const playerEvaluationSchema = z.discriminatedUnion('evaluationType', [
+  pointsEvaluationSchema,
+  tagsEvaluationSchema,
+]);
 
 const evaluationSchema = z.object({
   evaluatorGoals: z.coerce.number().min(0).max(20).default(0),
   evaluations: z.array(playerEvaluationSchema),
-})
+});
 
-type EvaluationFormData = z.infer<typeof evaluationSchema>
-type PlayerEvaluationFormData = z.infer<typeof playerEvaluationSchema>
+type EvaluationFormData = z.infer<typeof evaluationSchema>;
 
 // --- Helper ---
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -193,13 +205,12 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
               position: subject.position,
               evaluationType: 'points',
               rating: 5,
-              performanceTags: [],
             })
             tagsForPlayers[subject.id] = getRandomTagsForPosition(subject.position)
           }
         }
 
-        replace(initialFormValues)
+        replace(initialFormValues as any)
         setRandomTags(tagsForPlayers)
       }
       setIsPageLoading(false)
@@ -210,25 +221,6 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
 
   const onSubmit = async (data: EvaluationFormData) => {
     if (!firestore || !user || !matchId) return
-
-    for (const evaluation of data.evaluations) {
-      if (evaluation.evaluationType === 'points' && (!evaluation.rating || evaluation.rating < 1 || evaluation.rating > 10)) {
-        toast({
-          variant: 'destructive',
-          title: 'Error de Validación',
-          description: `Debes asignar un rating (1-10) para ${evaluation.displayName}.`,
-        })
-        return
-      }
-      if (evaluation.evaluationType === 'tags' && (!evaluation.performanceTags || evaluation.performanceTags.length < 3)) {
-        toast({
-          variant: 'destructive',
-          title: 'Error de Validación',
-          description: `Debes seleccionar al menos 3 etiquetas para ${evaluation.displayName}.`,
-        })
-        return
-      }
-    }
 
     setIsSubmitting(true)
     try {
@@ -247,6 +239,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
       })
       router.push('/evaluations')
     } catch (error: any) {
+      console.error("Error submitting evaluation:", error);
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -372,7 +365,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
                                       min={1}
                                       max={10}
                                       step={1}
-                                      defaultValue={[ratingField.value || 5]}
+                                      value={[ratingField.value || 5]}
                                       onValueChange={(value) => ratingField.onChange(value[0])}
                                     />
                                     <span className="text-xs text-muted-foreground">10</span>
@@ -396,12 +389,12 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
                                       key={tag.id}
                                       tag={tag}
                                       subjectId={field.subjectId}
-                                      isChecked={!!tagsField.value?.find((t) => t.id === tag.id)}
+                                      isChecked={!!tagsField.value?.find((t: any) => t.id === tag.id)}
                                       onCheckedChange={(checked) => {
                                         const currentVal = tagsField.value || []
                                         const newVal = checked
                                           ? [...currentVal, tag]
-                                          : currentVal.filter((t) => t.id !== tag.id)
+                                          : currentVal.filter((t: any) => t.id !== tag.id)
                                         tagsField.onChange(newVal)
                                       }}
                                     />

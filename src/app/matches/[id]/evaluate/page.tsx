@@ -4,7 +4,7 @@
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
 import { doc, collection, query, writeBatch, runTransaction, getDocs, where, addDoc, deleteDoc } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
-import type { Match, Player, EvaluationAssignment, Evaluation, OvrHistory, SelfEvaluation } from '@/lib/types';
+import type { Match, Player, EvaluationAssignment, Evaluation, OvrHistory, SelfEvaluation, PerformanceTag } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -47,22 +47,19 @@ const calculateOvrChange = (currentOvr: number, avgRating: number): number => {
     return Math.round(Math.max(-OVR_PROGRESSION.MAX_STEP, Math.min(OVR_PROGRESSION.MAX_STEP, rawDelta)));
 };
 
-const calculateAttributeChanges = (currentAttrs: Player, tags: Evaluation['performanceTags'] = []) => {
-    let attributeEffects: Record<string, number> = {};
+const calculateAttributeChanges = (currentAttrs: Player, tags: PerformanceTag[] = []) => {
+    const newAttributes = { ...currentAttrs };
     if (tags && tags.length > 0) {
         tags.forEach(tag => {
-            tag.effects?.forEach(effect => {
-                attributeEffects[effect.attribute] = (attributeEffects[effect.attribute] || 0) + effect.change;
+            if(!tag.effects) return;
+            tag.effects.forEach(effect => {
+                const key = effect.attribute as keyof Player;
+                if (typeof newAttributes[key] === 'number') {
+                    (newAttributes[key] as number) += effect.change;
+                     newAttributes[key] = Math.round(Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, newAttributes[key] as number)));
+                }
             });
         });
-    }
-    const newAttributes = { ...currentAttrs };
-    for (const attr in attributeEffects) {
-        const key = attr as keyof Player;
-        if (typeof newAttributes[key] === 'number') {
-            (newAttributes[key] as number) += attributeEffects[attr];
-            newAttributes[key] = Math.round(Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, newAttributes[key] as number)));
-        }
     }
     return newAttributes;
 };
@@ -191,7 +188,7 @@ export default function EvaluateMatchPage() {
             }
 
             const peerEvalsQuery = query(collection(firestore, 'evaluations'), where('assignmentId', 'in', completedAssignmentIds));
-            const peerEvalsSnapshot = await getDocs(peerEvalsQuery); // Use regular getDocs inside transaction
+            const peerEvalsSnapshot = await getDocs(peerEvalsQuery);
             const matchPeerEvals = peerEvalsSnapshot.docs.map(doc => ({...doc.data(), id: doc.id} as Evaluation));
 
             const selfEvalsQuery = collection(firestore, 'matches', match.id as string, 'selfEvaluations');
@@ -208,12 +205,13 @@ export default function EvaluateMatchPage() {
             const playerIdsToUpdate = Object.keys(peerEvalsByPlayer);
             const playerDocs = new Map<string, Player>();
             
-            for (const playerId of playerIdsToUpdate) {
-                const playerDocRef = doc(firestore, 'players', playerId);
-                const playerDoc = await transaction.get(playerDocRef);
-                if (playerDoc.exists()) {
-                    playerDocs.set(playerId, { id: playerDoc.id, ...playerDoc.data() } as Player);
-                }
+            // Pre-fetch all player documents
+            if (playerIdsToUpdate.length > 0) {
+                const playersQuery = query(collection(firestore, 'players'), where('__name__', 'in', playerIdsToUpdate));
+                const playersSnapshot = await getDocs(playersQuery);
+                playersSnapshot.forEach(playerDoc => {
+                    playerDocs.set(playerDoc.id, { id: playerDoc.id, ...playerDoc.data() } as Player);
+                });
             }
 
             for (const playerId of playerIdsToUpdate) {
@@ -227,20 +225,25 @@ export default function EvaluateMatchPage() {
                 let updatedAttributes = { ...player };
                 let ovrChangeFromPoints = 0;
 
-                if (tagBasedEvals.length > pointBasedEvals.length) {
+                // --- CORRECCIÓN ERROR #2 ---
+                // 1. Procesar los tags siempre que existan
+                if (tagBasedEvals.length > 0) {
                     const combinedTags = tagBasedEvals.flatMap(ev => ev.performanceTags || []);
                     updatedAttributes = calculateAttributeChanges(player, combinedTags);
                 }
                 
-                if (pointBasedEvals.length >= tagBasedEvals.length) {
+                // 2. Procesar los puntos siempre que existan
+                if (pointBasedEvals.length > 0) {
                     const totalRating = pointBasedEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0);
                     const avgRating = totalRating / pointBasedEvals.length;
                     ovrChangeFromPoints = calculateOvrChange(player.ovr, avgRating);
                 }
                 
+                // 3. Calcular el nuevo OVR combinando ambos efectos
                 let newOvr = Math.round((updatedAttributes.pac + updatedAttributes.sho + updatedAttributes.pas + updatedAttributes.dri + updatedAttributes.def + updatedAttributes.phy) / 6);
                 newOvr += ovrChangeFromPoints;
                 newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, newOvr));
+                // --- FIN CORRECCIÓN ---
 
                 const playerSelfEval = selfEvalsByPlayerId.get(playerId);
                 const goalsInMatch = playerSelfEval?.goals || 0;
