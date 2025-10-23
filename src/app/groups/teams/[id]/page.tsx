@@ -43,7 +43,6 @@ export default function TeamDetailPage() {
         const playerDetails = groupPlayers.find(p => p.id === playerId);
         const memberInfo = team.members?.find(m => m.playerId === playerId);
         if (!playerDetails) return null;
-        // Fallback for old teams that don't have number
         const number = memberInfo?.number !== undefined ? memberInfo.number : index + 1;
         return { ...playerDetails, number };
     }).filter((p: (Player & { number: number; }) | null): p is Player & { number: number } => p !== null).sort((a: Player & { number: number }, b: Player & { number: number }) => a.number - b.number);
@@ -89,7 +88,7 @@ export default function TeamDetailPage() {
         <div className="space-y-4">
              <h2 className="text-xl font-bold">Plantel</h2>
              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {teamPlayersWithDetails.map(player => (
+                {teamPlayersWithDetails.map((player: Player & { number: number }) => (
                     <TeamRosterPlayer key={player.id} player={player} number={player.number} />
                 ))}
              </div>
