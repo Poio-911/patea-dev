@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -143,6 +144,7 @@ export function CreateTeamDialog({
         const members: GroupTeamMember[] = data.playerIds.map((playerId, index) => ({
             playerId,
             number: index + 1, // Assign sequential numbers as default
+            status: 'titular', // Default status for new members
         }));
 
       const newTeam: Omit<GroupTeam, 'id'> = {
