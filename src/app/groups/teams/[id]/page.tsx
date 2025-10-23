@@ -32,9 +32,7 @@ export default function TeamDetailPage() {
     return doc(firestore, 'teams', teamId as string);
   }, [firestore, teamId]);
 
-  const { data: team, loading: teamLoading } = useDoc<GroupTeam>(teamRef, {
-    key: refreshKey,
-  });
+  const { data: team, loading: teamLoading } = useDoc<GroupTeam>(teamRef);
 
   const groupPlayersQuery = useMemo(() => {
     if (!firestore || !team?.groupId) return null;
@@ -97,6 +95,8 @@ export default function TeamDetailPage() {
   }, [team, groupPlayers, loading]);
   
   const handlePlayerUpdate = () => {
+    // This function can be used to trigger a refresh if needed,
+    // though Firestore's real-time updates should handle it.
     setRefreshKey(prev => prev + 1);
   }
 
@@ -138,21 +138,13 @@ export default function TeamDetailPage() {
         
         <Separator />
         
-        {/* Upcoming Matches */}
-        <div className="space-y-4">
-            {upcomingMatches.length > 0 ? (
+        {upcomingMatches.length > 0 && (
+            <>
                 <UpcomingMatchesFeed matches={upcomingMatches} teamName={team.name} />
-            ) : (
-                <Alert variant="default">
-                    <AlertTitle>Sin Próximos Partidos</AlertTitle>
-                    <AlertDescription>
-                        Este equipo no tiene partidos programados. ¡Armá uno desde la sección de Partidos!
-                    </AlertDescription>
-                </Alert>
-            )}
-        </div>
-
-        <Separator />
+                <Separator />
+            </>
+        )}
+        
 
         {/* Starting Lineup */}
         <div className="space-y-4">
@@ -162,7 +154,14 @@ export default function TeamDetailPage() {
                     <TeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={handlePlayerUpdate} />
                 ))}
              </div>
-             {titulares.length === 0 && <p className="text-sm text-muted-foreground">No hay jugadores definidos como titulares.</p>}
+             {titulares.length === 0 && (
+                 <Alert variant="default">
+                    <AlertTitle>Sin Titulares Definidos</AlertTitle>
+                    <AlertDescription>
+                        Aún no has asignado jugadores al equipo titular. Puedes hacerlo desde el menú de cada jugador.
+                    </AlertDescription>
+                </Alert>
+            )}
         </div>
         
         <Separator />

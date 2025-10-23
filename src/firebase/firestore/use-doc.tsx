@@ -52,7 +52,7 @@ export const useDoc = <T extends DocumentData>(
     );
 
     return () => unsubscribe();
-  }, [ref]);
+  }, [ref?.path]); // Use ref.path to ensure re-subscription if the ref path changes
 
   return { data, loading, error };
 };
