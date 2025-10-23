@@ -12,7 +12,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { format, parseISO } from 'date-fns';
@@ -228,8 +227,8 @@ export function MatchDetailsDialog({ match: initialMatch, isOwner, children }: M
                                 <div className="flex justify-center items-center h-full">
                                     <Loader2 className="h-6 w-6 animate-spin"/>
                                 </div>
-                            ) : currentMatch.players.length > 0 ? currentMatch.players.map(player => (
-                                <div key={player.uid} className="flex items-center justify-between p-2 rounded-md bg-background">
+                            ) : currentMatch.players.length > 0 ? currentMatch.players.map((player, index) => (
+                                <div key={`${player.uid}-${index}`} className="flex items-center justify-between p-2 rounded-md bg-background">
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-8 w-8">
                                             <AvatarImage src={player.photoUrl} alt={player.displayName} />
