@@ -79,24 +79,27 @@ export default function EvaluationsPage() {
             const matchesMap = new Map(matchesSnapshot.docs.map(doc => [doc.id, doc.data() as Match]));
 
             // Set initial state for all items
-            const initialItems = allRelevantMatchIds.map(matchId => {
+            const initialItems: (PendingItem | null)[] = allRelevantMatchIds.map(matchId => {
                  const match = matchesMap.get(matchId);
                  if (!match || match.status === 'evaluated') return null;
 
                  const userAssignmentCount = userAssignments?.filter(a => a.matchId === matchId).length || 0;
 
-                 return {
+                 const item: PendingItem = {
                     matchId,
                     matchTitle: match.title,
                     matchDate: match.date,
                     matchLocation: match.location?.address || 'Ubicación desconocida',
-                    submission: submissionsMap.get(matchId) || undefined,
+                    submission: submissionsMap.get(matchId),
                     userAssignmentCount,
                     totalAssignments: 0, // Will be updated by listener
                     completedAssignments: 0, // Will be updated by listener
                  };
-            }).filter((item): item is PendingItem => item !== null);
-            setPendingItems(initialItems.sort((a, b) => new Date(b.matchDate).getTime() - new Date(a.matchDate).getTime()));
+                 return item;
+            });
+            
+            const validItems = initialItems.filter((item): item is PendingItem => item !== null);
+            setPendingItems(validItems.sort((a, b) => new Date(b.matchDate).getTime() - new Date(a.matchDate).getTime()));
             setIsLoadingItems(false);
 
 
@@ -232,5 +235,3 @@ export default function EvaluationsPage() {
         </div>
     );
 }
-
-    
