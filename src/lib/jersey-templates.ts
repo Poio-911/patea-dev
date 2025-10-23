@@ -67,10 +67,10 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
   lines: {
     type: 'lines',
     label: 'Lineas',
-    description: 'Camiseta con lineas rojas',
+    description: 'Camiseta con lineas azules',
     svgPath: '/jerseys/opcion-7.svg',
     colorMapping: {
-      primary: ['#f41616'],
+      primary: ['#33f'],
       secondary: ['#ffffff'],
     },
   },
@@ -104,7 +104,6 @@ export function applyColorsToSvg(
   const replaceColor = (content: string, oldColors: string[], newColor: string) => {
     let modifiedContent = content;
     oldColors.forEach(oldColor => {
-      // Usar una expresión regular para reemplazar el color, ignorando mayúsculas/minúsculas.
       const regex = new RegExp(`(fill|stroke)="${oldColor}"`, 'gi');
       modifiedContent = modifiedContent.replace(regex, `$1="${newColor}"`);
     });
