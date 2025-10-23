@@ -40,7 +40,7 @@ export const getMatchDayForecast = ai.defineFlow(
     outputSchema: GetMatchDayForecastOutputSchema,
   },
   async (input) => {
-    const { output } = await forecastPrompt(input, { model: 'googleai/gemini-2.5-flash' });
+    const { output } = await forecastPrompt(input, { model: googleAI.model('gemini-2.5-flash') });
     if (!output) throw new Error('No se obtuvo respuesta válida del modelo.');
     return output;
   }
