@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -386,8 +387,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         };
     });
 
-    const newMatchRef = doc(collection(firestore, 'matches'));
-    const newMatch = {
+    const newMatchData = {
       title: data.title,
       date: data.date.toISOString(),
       time: data.time,
@@ -404,7 +404,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       weather: weather || undefined,
     };
     
-    await addDoc(collection(firestore, 'matches'), newMatch);
+    await addDoc(collection(firestore, 'matches'), newMatchData);
   };
 
 
