@@ -1,12 +1,18 @@
 'use server';
 
+/**
+ * @fileOverview Coach conversation AI agent for personalized football coaching.
+ *
+ * - coachConversation - A function that handles conversational coaching interactions.
+ * - CoachConversationInput - The input type for the coachConversation function.
+ * - CoachConversationOutput - The return type for the coachConversation function.
+ */
+
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-// ── SCHEMA DE INPUT ──────────────────────────────────────────
 const CoachConversationInputSchema = z.object({
   userMessage: z.string().describe('El mensaje del usuario al entrenador.'),
-
   conversationHistory: z.array(
     z.object({
       role: z.enum(['user', 'coach']).describe('El rol del mensaje (usuario o entrenador).'),
@@ -14,7 +20,6 @@ const CoachConversationInputSchema = z.object({
       timestamp: z.string().optional().describe('La marca de tiempo del mensaje.'),
     })
   ).optional().describe('El historial de conversación previo para mantener el contexto.'),
-
   playerContext: z.object({
     playerId: z.string().describe('El ID del jugador.'),
     playerName: z.string().describe('El nombre del jugador.'),
@@ -31,10 +36,8 @@ const CoachConversationInputSchema = z.object({
     weaknesses: z.array(z.string()).optional().describe('Debilidades identificadas del jugador.'),
   }).describe('El contexto completo del jugador para personalizar la conversación.'),
 });
-
 export type CoachConversationInput = z.infer<typeof CoachConversationInputSchema>;
 
-// ── SCHEMA DE OUTPUT ─────────────────────────────────────────
 const CoachConversationOutputSchema = z.object({
   response: z.string().describe('La respuesta del entrenador al jugador.'),
   suggestedActions: z.array(
@@ -42,14 +45,16 @@ const CoachConversationOutputSchema = z.object({
   ).optional().describe('Acciones específicas que el jugador puede tomar.'),
   mood: z.enum(['motivational', 'analytical', 'supportive', 'critical']).describe('El tono de la respuesta.'),
 });
-
 export type CoachConversationOutput = z.infer<typeof CoachConversationOutputSchema>;
 
+export async function coachConversation(input: CoachConversationInput): Promise<CoachConversationOutput> {
+  return coachConversationFlow(input);
+}
 
 const prompt = ai.definePrompt({
   name: 'coachConversationPrompt',
-  inputSchema: CoachConversationInputSchema,
-  outputSchema: CoachConversationOutputSchema,
+  input: {schema: CoachConversationInputSchema},
+  output: {schema: CoachConversationOutputSchema},
   prompt: `Sos un DT de fútbol profesional que habla en español rioplatense. Tu estilo es directo, motivador y personal.
 Estás conversando con {{playerContext.playerName}}, un jugador {{playerContext.position}} con OVR {{playerContext.ovr}}.
 
@@ -111,7 +116,3 @@ const coachConversationFlow = ai.defineFlow(
     return output!;
   }
 );
-
-export async function coachConversation(input: CoachConversationInput): Promise<CoachConversationOutput> {
-  return coachConversationFlow(input);
-}
