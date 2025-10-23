@@ -53,6 +53,29 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
       secondary: ['#ffffff'], // Blanco -> secundario
     },
   },
+
+  thirds: {
+    type: 'thirds',
+    label: 'Tercios',
+    description: 'Camiseta dividida en tercios',
+    svgPath: '/jerseys/thirds-red-white-football-shirt-svgrepo-com.svg',
+    colorMapping: {
+      primary: ['#d00'], // Rojo -> primario
+      secondary: ['#ffffff'], // Blanco -> secundario
+    },
+  },
+
+  lines: {
+    type: 'lines',
+    label: 'Lineas',
+    description: 'Camiseta con lineas rojas',
+    svgPath: '/jerseys/opcion-7.svg',
+    colorMapping: {
+      primary: ['#f41616'],
+      secondary: ['#fff'],
+    },
+  },
+
 };
 
 /**

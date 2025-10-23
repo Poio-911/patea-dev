@@ -1,4 +1,0 @@
-<svg viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
-  <path class="primary-fill" d="M90 4.5C60.7 4.5 36.9 28.3 36.9 57.6v104.4h106.2V57.6C143.1 28.3 119.3 4.5 90 4.5z"/>
-  <path fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" d="M79 8.5c0 0-1.8 7.5 11 7.5s11-7.5 11-7.5" class="primary-stroke" style="color: var(--primary-color, black);"/>
-</svg>
