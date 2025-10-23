@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
