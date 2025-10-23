@@ -112,7 +112,8 @@ export type Team = {
   balanceMetrics?: {
     ovrDifference: number;
     fairnessPercentage: number;
-  }
+  };
+  jersey?: Jersey;
 };
 
 export type JerseyType = 'plain' | 'vertical' | 'band' | 'chevron' | 'thirds' | 'hoops' | 'sash' | 'checkered' | 'stripes';

@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -12,10 +13,12 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle as UiCardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import type { Match, Player } from '@/lib/types';
+import type { Match, Player, Jersey } from '@/lib/types';
 import { Star, Scale, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TeamsIcon } from './icons/teams-icon';
+import { JerseyPreview } from './team-builder/jersey-preview';
+
 
 type MatchTeamsDialogProps = {
   match: Match;
@@ -46,12 +49,12 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
               <Card key={team.name}>
                 <CardHeader>
                     <div className="flex justify-between items-start">
-                        <div>
-                            <UiCardTitle className="text-lg">{team.name}</UiCardTitle>
-                            <Badge variant="secondary" className="mt-1">OVR Promedio: {team.averageOVR.toFixed(1)}</Badge>
-                        </div>
-                        <div className={cn("p-2 rounded-full", index === 0 ? 'bg-blue-100 dark:bg-blue-900/50' : 'bg-red-100 dark:bg-red-900/50')}>
-                            <TeamsIcon className={cn("h-8 w-8", index === 0 ? 'text-blue-600' : 'text-red-600')} />
+                        <div className="flex items-center gap-3">
+                            {team.jersey && <JerseyPreview jersey={team.jersey} size="sm" />}
+                            <div>
+                                <UiCardTitle className="text-lg">{team.name}</UiCardTitle>
+                                <Badge variant="secondary" className="mt-1">OVR Promedio: {team.averageOVR.toFixed(1)}</Badge>
+                            </div>
                         </div>
                     </div>
                 </CardHeader>

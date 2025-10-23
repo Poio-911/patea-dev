@@ -359,7 +359,6 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     const allTeamMembers = selectedTeamsData.flatMap(t => t.members);
     const allPlayerIds = [...new Set(allTeamMembers.map(m => m.playerId))];
     
-    // Fetch all needed players at once to get their details
     const playersQuery = query(collection(firestore, 'players'), where('__name__', 'in', allPlayerIds));
     const playersSnap = await getDocs(playersQuery);
     const playersMap = new Map(playersSnap.docs.map(d => [d.id, {id: d.id, ...d.data()} as Player]));
@@ -380,6 +379,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
 
         return {
             name: teamData.name,
+            jersey: teamData.jersey,
             players: teamPlayers,
             totalOVR,
             averageOVR,
@@ -487,8 +487,8 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
             Armar Partido
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+      <DialogContent className="max-h-[90dvh] sm:max-h-[80vh] w-[95vw] sm:max-w-4xl flex flex-col">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
           <DialogHeader>
             <DialogTitle>Armar un Partido Nuevo</DialogTitle>
             <DialogDescription>
@@ -496,7 +496,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
             </DialogDescription>
           </DialogHeader>
 
-          <div className={cn("py-4 transition-all duration-300", step !== 1 && "hidden")}>
+          <div className={cn("py-4 flex-grow overflow-y-auto pr-2", step !== 1 && "hidden")}>
                 <div className="space-y-4">
                 <div>
                     <Label htmlFor="title">Título del Partido</Label>
@@ -510,7 +510,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                     {formState.errors.location && <p className="text-xs text-destructive mt-1">{formState.errors.location.address?.message}</p>}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label>Fecha</Label>
                       <Controller
@@ -590,7 +590,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                          <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                                    <button type="button"><HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" /></button>
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-xs">
                                     <p><b>Manual:</b> El DT elige los jugadores, la IA arma los equipos.</p>
@@ -648,7 +648,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 </div>
           </div>
           
-          <div className={cn("py-4 transition-all duration-300", step !== 2 && "hidden")}>
+          <div className={cn("py-4 flex-grow overflow-y-auto pr-2", step !== 2 && "hidden")}>
                {matchType === 'manual' && (
                     <div className="space-y-4">
                         <div className="space-y-2">
@@ -724,9 +724,9 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 )}
           </div>
           
-          <DialogFooter>
+          <DialogFooter className="mt-auto pt-4 border-t">
             {step === 1 && (
-                 <Button type="button" onClick={goToNextStep}>
+                 <Button type="button" onClick={goToNextStep} className="w-full">
                     {matchType === 'collaborative' ? 'Armar Partido' : 'Siguiente'}
                  </Button>
             )}
