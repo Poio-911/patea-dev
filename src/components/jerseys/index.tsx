@@ -22,19 +22,17 @@ const jerseyComponents: Record<JerseyType, React.FC<JerseyProps>> = {
   band: HoopsJersey,
   chevron: SashJersey,
   thirds: HalvesJersey,
-  solid: SolidJersey,
-  stripes: StripesJersey,
-  sash: SashJersey,
-  halves: HalvesJersey,
   hoops: HoopsJersey,
+  sash: SashJersey,
   checkered: CheckeredJersey,
+  stripes: StripesJersey,
 };
 
 interface JerseyIconProps extends JerseyProps {
   style?: JerseyType;
 }
 
-export function JerseyIcon({ style = 'solid', ...props }: JerseyIconProps) {
+export function JerseyIcon({ style = 'plain', ...props }: JerseyIconProps) {
   const JerseyComponent = jerseyComponents[style] || SolidJersey;
   return <JerseyComponent {...props} />;
 }

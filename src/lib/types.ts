@@ -1,5 +1,4 @@
 
-
 import { DocumentData, DocumentReference } from "firebase/firestore";
 import type { PerformanceTag as Pt } from "./performance-tags";
 
@@ -115,7 +114,7 @@ export type Team = {
   }
 };
 
-export type JerseyType = 'plain' | 'vertical' | 'band' | 'chevron' | 'thirds';
+export type JerseyType = 'plain' | 'vertical' | 'band' | 'chevron' | 'thirds' | 'hoops' | 'sash' | 'checkered' | 'stripes';
 
 export type Jersey = {
   type: JerseyType;
