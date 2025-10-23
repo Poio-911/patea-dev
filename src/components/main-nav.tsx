@@ -246,10 +246,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           </Sidebar>
 
           <main className={cn(
-              "h-screen overflow-y-auto pt-16 pb-16 md:pb-0 md:pl-[var(--sidebar-width)] transition-[padding] duration-300 ease-in-out",
+              "h-screen overflow-y-auto pt-16 md:pl-[var(--sidebar-width)] transition-[padding] duration-300 ease-in-out",
               "group-data-[state=collapsed]/sidebar-wrapper:md:pl-[var(--sidebar-width-icon)]"
           )}>
-            <div className="p-4 md:p-6">
+            <div className="p-4 md:p-6 pb-24">
                 {children}
             </div>
           </main>
@@ -279,3 +279,4 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+
