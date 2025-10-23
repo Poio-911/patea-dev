@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useDoc, useCollection, useFirestore } from '@/firebase';
 import { doc, collection, query, where } from 'firebase/firestore';
-import type { GroupTeam, Player, GroupTeamMember } from '@/lib/types';
+import type { GroupTeam, Player, GroupTeamMember, Match } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Loader2, Users, ArrowLeft, ShieldCheck, UserCheck, CalendarDays, History } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -15,13 +15,17 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { UpcomingMatchesFeed } from '@/components/groups/upcoming-matches-feed';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export type DetailedTeamPlayer = Player & { number: number; status: 'titular' | 'suplente' };
 
 export default function TeamDetailPage() {
   const { id: teamId } = useParams();
   const firestore = useFirestore();
-  const [refreshKey, setRefreshKey] = useState(0); // State to force re-render
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const teamRef = useMemo(() => {
     if (!firestore || !teamId) return null;
@@ -29,17 +33,35 @@ export default function TeamDetailPage() {
   }, [firestore, teamId]);
 
   const { data: team, loading: teamLoading } = useDoc<GroupTeam>(teamRef, {
-    key: refreshKey, // Re-fetch when this key changes
+    key: refreshKey,
   });
 
   const groupPlayersQuery = useMemo(() => {
     if (!firestore || !team?.groupId) return null;
     return query(collection(firestore, 'players'), where('groupId', '==', team.groupId));
   }, [firestore, team?.groupId]);
-
   const { data: groupPlayers, loading: playersLoading } = useCollection<Player>(groupPlayersQuery);
+
+  const teamMatchesQuery = useMemo(() => {
+    if (!firestore || !team?.groupId || !team?.name) return null;
+    return query(
+        collection(firestore, 'matches'),
+        where('groupId', '==', team.groupId),
+        where('teams.name', 'array-contains', team.name)
+    );
+  }, [firestore, team?.groupId, team?.name]);
+
+  const { data: teamMatches, loading: matchesLoading } = useCollection<Match>(teamMatchesQuery);
   
-  const loading = teamLoading || playersLoading;
+  const { upcomingMatches, pastMatches } = useMemo(() => {
+      if (!teamMatches) return { upcomingMatches: [], pastMatches: [] };
+      const upcoming = teamMatches.filter(m => m.status === 'upcoming' || m.status === 'active').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      const past = teamMatches.filter(m => m.status === 'completed' || m.status === 'evaluated').sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      return { upcomingMatches: upcoming, pastMatches: past };
+  }, [teamMatches]);
+
+  
+  const loading = teamLoading || playersLoading || matchesLoading;
   
   const { titulares, suplentes } = useMemo(() => {
     if (loading || !team || !groupPlayers || !team.members) return { titulares: [], suplentes: [] };
@@ -65,7 +87,7 @@ export default function TeamDetailPage() {
   }, [team, groupPlayers, loading]);
   
   const handlePlayerUpdate = () => {
-    setRefreshKey(prev => prev + 1); // Increment key to trigger re-fetch in useDoc
+    setRefreshKey(prev => prev + 1);
   }
 
   if (loading) {
@@ -105,6 +127,23 @@ export default function TeamDetailPage() {
         </div>
         
         <Separator />
+        
+        {/* Upcoming Matches */}
+        <div className="space-y-4">
+            <h2 className="text-xl font-bold flex items-center gap-2"><CalendarDays className="h-6 w-6 text-primary"/> Próximos Partidos</h2>
+            {upcomingMatches.length > 0 ? (
+                <UpcomingMatchesFeed matches={upcomingMatches} />
+            ) : (
+                <Alert variant="default">
+                    <AlertTitle>Sin Próximos Partidos</AlertTitle>
+                    <AlertDescription>
+                        Este equipo no tiene partidos programados. ¡Armá uno desde la sección de Partidos!
+                    </AlertDescription>
+                </Alert>
+            )}
+        </div>
+
+        <Separator />
 
         {/* Starting Lineup */}
         <div className="space-y-4">
@@ -132,24 +171,31 @@ export default function TeamDetailPage() {
         
         <Separator />
 
-        {/* Matches */}
-        <div className="space-y-4">
-            <h2 className="text-xl font-bold flex items-center gap-2"><CalendarDays className="h-6 w-6 text-primary"/> Próximos Partidos</h2>
-             <Alert variant="default">
-                <AlertTitle>Próximamente</AlertTitle>
-                <AlertDescription>
-                    Acá vas a poder ver los próximos partidos programados para este equipo.
-                </AlertDescription>
-            </Alert>
-        </div>
+        {/* Matches History */}
         <div className="space-y-4">
             <h2 className="text-xl font-bold flex items-center gap-2"><History className="h-6 w-6 text-muted-foreground"/> Historial de Partidos</h2>
-            <Alert variant="default">
-                <AlertTitle>Próximamente</AlertTitle>
-                <AlertDescription>
-                    Acá vas a poder ver el historial de partidos jugados por este equipo.
-                </AlertDescription>
-            </Alert>
+            {pastMatches.length > 0 ? (
+                 <div className="space-y-3">
+                    {pastMatches.map(match => (
+                        <Card key={match.id}>
+                            <CardHeader className="flex flex-row items-center justify-between p-4">
+                                <div>
+                                    <CardTitle className="text-base">{match.title}</CardTitle>
+                                    <CardDescription>{format(new Date(match.date), "dd MMM yyyy", {locale: es})}</CardDescription>
+                                </div>
+                                <Badge variant="outline">Finalizado</Badge>
+                            </CardHeader>
+                        </Card>
+                    ))}
+                 </div>
+            ) : (
+                <Alert variant="default">
+                    <AlertTitle>Sin Historial</AlertTitle>
+                    <AlertDescription>
+                        Este equipo todavía no ha jugado ningún partido.
+                    </AlertDescription>
+                </Alert>
+            )}
         </div>
 
     </div>
