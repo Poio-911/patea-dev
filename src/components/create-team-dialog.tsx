@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm, useFieldArray, Controller, FormProvider, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -31,7 +31,7 @@ interface CreateTeamDialogProps {
 
 const memberSchema = z.object({
   playerId: z.string(),
-  number: z.coerce.number().min(1, 'El dorsal debe ser mayor a 0').max(99, 'El dorsal no puede ser mayor a 99'),
+  number: z.coerce.number().min(1, 'El dorsal debe ser mayor a 0.').max(99, 'El dorsal no puede ser mayor a 99.'),
 });
 
 const createTeamSchema = z.object({
@@ -149,9 +149,10 @@ const RosterManager = ({ groupPlayers }: { groupPlayers: Player[] }) => {
                             <AvatarFallback>{field.playerDetails?.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <p className="flex-1 font-medium">{field.playerDetails?.name}</p>
+                        {errors.members?.[index]?.number && <p className="text-xs text-destructive">{errors.members[index]?.number?.message}</p>}
                      </div>
                 ))}
-                 {errors.members && <p className="text-xs text-destructive mt-2">{errors.members.root?.message}</p>}
+                 {errors.members && errors.members.root && <p className="text-xs text-destructive mt-2">{errors.members.root.message}</p>}
             </div>
         </ScrollArea>
     )
@@ -171,6 +172,7 @@ export function CreateTeamDialog({
 
   const form = useForm<CreateTeamFormData>({
     resolver: zodResolver(createTeamSchema),
+    mode: 'onChange',
     defaultValues: {
       name: '',
       members: [],
@@ -182,7 +184,7 @@ export function CreateTeamDialog({
     },
   });
   
-   const { control, trigger } = form;
+   const { control, trigger, formState } = form;
 
   const handleNext = async () => {
     let isValid = false;
@@ -278,7 +280,7 @@ export function CreateTeamDialog({
                         <div className="space-y-4">
                              <Label htmlFor="team-name">Nombre del Equipo</Label>
                              <Input id="team-name" {...form.register('name')} placeholder="Ej: Los Cracks" autoFocus />
-                             {form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}
+                             {formState.errors.name && <p className="text-xs text-destructive">{formState.errors.name.message}</p>}
                         </div>
                         <Controller
                             control={control}
@@ -309,7 +311,7 @@ export function CreateTeamDialog({
                         Siguiente <ChevronRight className="ml-2 h-4 w-4" />
                       </Button>
                     ) : (
-                      <Button type="submit" disabled={isCreating}>
+                      <Button type="submit" disabled={isCreating || !formState.isValid}>
                         {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Crear Equipo
                       </Button>
