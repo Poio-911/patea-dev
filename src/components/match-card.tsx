@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import type { Match, Player, EvaluationAssignment, Notification, UserProfile, Invitation } from '@/lib/types';
+import type { Match, Player, EvaluationAssignment, Notification, UserProfile, Invitation, Jersey } from '@/lib/types';
 import { doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -60,6 +60,18 @@ const weatherIcons: Record<string, React.ElementType> = {
 
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
+
+// Client component to render team info, including the JerseyPreview
+const TeamDisplay = ({ jersey, name }: { jersey: Jersey; name: string }) => {
+    'use client';
+    return (
+        <div className="flex flex-col items-center gap-2">
+            <JerseyPreview jersey={jersey} size="sm" />
+            <p className="text-sm font-semibold truncate max-w-[100px]">{name}</p>
+        </div>
+    );
+};
+
 
 export function MatchCard({ match, allPlayers }: MatchCardProps) {
     const firestore = useFirestore();
@@ -391,15 +403,9 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 
                 {match.type === 'by_teams' && match.teams && match.teams.length === 2 ? (
                     <div className="flex items-center justify-around gap-2 text-center">
-                        <div className="flex flex-col items-center gap-2">
-                           {match.teams[0].jersey && <JerseyPreview jersey={match.teams[0].jersey} size="sm" />}
-                           <p className="text-sm font-semibold truncate max-w-[100px]">{match.teams[0].name}</p>
-                        </div>
+                        <TeamDisplay jersey={match.teams[0].jersey!} name={match.teams[0].name} />
                         <p className="text-sm font-bold text-muted-foreground">vs</p>
-                         <div className="flex flex-col items-center gap-2">
-                           {match.teams[1].jersey && <JerseyPreview jersey={match.teams[1].jersey} size="sm" />}
-                           <p className="text-sm font-semibold truncate max-w-[100px]">{match.teams[1].name}</p>
-                        </div>
+                        <TeamDisplay jersey={match.teams[1].jersey!} name={match.teams[1].name} />
                     </div>
                 ) : (
                     <div className="flex items-center gap-2 text-muted-foreground">
@@ -450,5 +456,3 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         </Card>
     );
 }
-
-    
