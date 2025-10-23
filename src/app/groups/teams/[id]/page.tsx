@@ -42,23 +42,33 @@ export default function TeamDetailPage() {
   }, [firestore, team?.groupId]);
   const { data: groupPlayers, loading: playersLoading } = useCollection<Player>(groupPlayersQuery);
 
-  const teamMatchesQuery = useMemo(() => {
-    if (!firestore || !team?.groupId || !team?.name) return null;
+  const groupMatchesQuery = useMemo(() => {
+    if (!firestore || !team?.groupId) return null;
     return query(
         collection(firestore, 'matches'),
-        where('groupId', '==', team.groupId),
-        where('teams.name', 'array-contains', team.name)
+        where('groupId', '==', team.groupId)
     );
-  }, [firestore, team?.groupId, team?.name]);
+  }, [firestore, team?.groupId]);
 
-  const { data: teamMatches, loading: matchesLoading } = useCollection<Match>(teamMatchesQuery);
+  const { data: allGroupMatches, loading: matchesLoading } = useCollection<Match>(groupMatchesQuery);
   
   const { upcomingMatches, pastMatches } = useMemo(() => {
-      if (!teamMatches) return { upcomingMatches: [], pastMatches: [] };
-      const upcoming = teamMatches.filter(m => m.status === 'upcoming' || m.status === 'active').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-      const past = teamMatches.filter(m => m.status === 'completed' || m.status === 'evaluated').sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      if (!allGroupMatches || !team?.name) return { upcomingMatches: [], pastMatches: [] };
+      
+      const teamMatches = allGroupMatches.filter(match => 
+        match.teams?.some(t => t.name === team.name)
+      );
+      
+      const upcoming = teamMatches
+        .filter(m => m.status === 'upcoming' || m.status === 'active')
+        .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      const past = teamMatches
+        .filter(m => m.status === 'completed' || m.status === 'evaluated')
+        .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
       return { upcomingMatches: upcoming, pastMatches: past };
-  }, [teamMatches]);
+  }, [allGroupMatches, team?.name]);
 
   
   const loading = teamLoading || playersLoading || matchesLoading;
