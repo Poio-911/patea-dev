@@ -9,7 +9,7 @@ import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-
 import { generatePlayerCardImage } from '@/ai/flows/generate-player-card-image';
 import { coachConversation, type CoachConversationInput } from '@/ai/flows/coach-conversation';
 import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '@/ai/flows/detect-player-patterns';
-import { Player, Evaluation, OvrHistory } from './types';
+import { Player, Evaluation, OvrHistory, PerformanceTag } from './types';
 import { getFirestore as getAdminFirestore, FieldValue } from 'firebase-admin/firestore';
 import { initializeApp, getApps, App as AdminApp, cert } from 'firebase-admin/app';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
@@ -236,14 +236,17 @@ export async function coachConversationAction(
     }
 
     const player = playerDocSnap.data() as Player;
-    const evaluations = await getPlayerEvaluationsAction(playerId, groupId);
+    const evaluations = await getPlayerEvaluationsAction(playerId, groupId) as Evaluation[];
+
     const recentTags = evaluations
-      .flatMap((e: any) => e.performanceTags?.map((t: any) => t.name) || [])
+      .flatMap((e) => e.performanceTags?.map((t: PerformanceTag) => t.name) || [])
       .slice(0, 10);
+      
     const positiveTags = evaluations
-      .flatMap((e: any) => e.performanceTags?.filter((t: any) => t.effects.some((ef: any) => ef.change > 0)).map((t: any) => t.name) || []);
+      .flatMap((e) => e.performanceTags?.filter((t: PerformanceTag) => t.effects.some((ef) => ef.change > 0)).map((t: PerformanceTag) => t.name) || []);
+      
     const negativeTags = evaluations
-      .flatMap((e: any) => e.performanceTags?.filter((t: any) => t.effects.some((ef: any) => ef.change < 0)).map((t: any) => t.name) || []);
+      .flatMap((e) => e.performanceTags?.filter((t: PerformanceTag) => t.effects.some((ef) => ef.change < 0)).map((t: PerformanceTag) => t.name) || []);
 
     const input: CoachConversationInput = {
       userMessage,
@@ -283,7 +286,7 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
     }
     const player = playerDocSnap.data() as Player;
 
-    const evaluations = await getPlayerEvaluationsAction(playerId, groupId);
+    const evaluations = await getPlayerEvaluationsAction(playerId, groupId) as Evaluation[];
 
     const ovrHistorySnapshot = await adminDb
       .collection(`players/${playerId}/ovrHistory`)
@@ -292,17 +295,15 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
       .get();
     const ovrHistory = ovrHistorySnapshot.docs.map(doc => doc.data() as OvrHistory);
 
-    const recentEvaluations = evaluations.slice(0, 15).map((e: any) => ({
-      matchDate: e.evaluatedAt || '',
-      rating: e.rating,
-      performanceTags: (e.performanceTags || []).map((t: any) => ({
-        name: t.name,
-        impact: t.effects.some((ef: any) => ef.change > 0) ? 'positive' as const :
-               t.effects.some((ef: any) => ef.change < 0) ? 'negative' as const :
-               'neutral' as const,
-      })),
-      goals: e.goals || 0,
-    }));
+    const recentEvaluations = evaluations.slice(0, 15).map(e => ({
+        matchDate: e.evaluatedAt || new Date().toISOString(),
+        rating: e.rating,
+        performanceTags: (e.performanceTags || []).map((tag: PerformanceTag) => ({
+          name: tag.name,
+          impact: tag.impact,
+        })),
+        goals: e.goals || 0,
+      }));
 
     const input: DetectPlayerPatternsInput = {
       playerId,
