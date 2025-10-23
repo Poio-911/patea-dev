@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -7,7 +6,7 @@ import { getJerseyTemplate, applyColorsToSvg } from '@/lib/jersey-templates';
 import { cn } from '@/lib/utils';
 
 interface JerseyPreviewProps {
-  jersey: Jersey;
+  jersey?: Jersey; // Make jersey optional
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
@@ -19,7 +18,13 @@ const SIZE_CLASSES = {
   xl: 'h-48 w-48',
 };
 
-export function JerseyPreview({ jersey, size = 'md', className }: JerseyPreviewProps) {
+const DEFAULT_JERSEY: Jersey = {
+  type: 'plain',
+  primaryColor: '#cccccc',
+  secondaryColor: '#aaaaaa',
+};
+
+export function JerseyPreview({ jersey = DEFAULT_JERSEY, size = 'md', className }: JerseyPreviewProps) {
   const [svgContent, setSvgContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -28,9 +33,11 @@ export function JerseyPreview({ jersey, size = 'md', className }: JerseyPreviewP
     const loadAndApplyColors = async () => {
       setLoading(true);
       setError(false);
+      
+      const currentJersey = jersey || DEFAULT_JERSEY;
 
       try {
-        const template = getJerseyTemplate(jersey.type);
+        const template = getJerseyTemplate(currentJersey.type);
 
         // Fetch the SVG content
         const response = await fetch(template.svgPath);
@@ -44,8 +51,8 @@ export function JerseyPreview({ jersey, size = 'md', className }: JerseyPreviewP
         const coloredSvg = applyColorsToSvg(
           svgText,
           template,
-          jersey.primaryColor,
-          jersey.secondaryColor
+          currentJersey.primaryColor,
+          currentJersey.secondaryColor
         );
 
         setSvgContent(coloredSvg);
