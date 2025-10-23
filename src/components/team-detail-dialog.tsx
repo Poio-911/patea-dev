@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo } from 'react';
@@ -10,7 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
+import { Separator } from './ui/separator';
 import type { GroupTeam, Player, DetailedTeamPlayer } from '@/lib/types';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Users } from 'lucide-react';
@@ -28,19 +29,19 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
   
   const teamPlayersWithDetails = useMemo(() => {
     // Defensive coding: Check for `team.members` and fallback to `team.playerIds` (old structure)
-    const teamPlayerIds = team.members ? team.members.map(m => m.playerId) : (team as any).playerIds || [];
+    const teamPlayerIds = team.members ? team.members.map(m => m.playerId) : [];
 
     return teamPlayerIds
-      .map((playerId: string, index: number) => {
+      .map((playerId: string) => {
         const playerDetails = allGroupPlayers.find((p: Player) => p.id === playerId);
         if (!playerDetails) return null;
 
-        const memberInfo = team.members ? team.members.find(m => m.playerId === playerId) : null;
+        const memberInfo = team.members.find(m => m.playerId === playerId);
         
         return {
           ...playerDetails,
-          number: memberInfo ? memberInfo.number : index + 1, // Fallback to index if number not present
-           status: memberInfo ? memberInfo.status : 'suplente',
+          number: memberInfo ? memberInfo.number : 0,
+          status: memberInfo ? memberInfo.status : 'suplente',
         };
       })
       .filter((p: DetailedTeamPlayer | null): p is DetailedTeamPlayer => p !== null)
@@ -74,7 +75,7 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
                         Plantel ({teamPlayersWithDetails.length})
                     </h3>
                     <div className="space-y-1">
-                        {teamPlayersWithDetails.map((player: DetailedTeamPlayer) => (
+                        {teamPlayersWithDetails.map((player) => (
                             <TeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={() => {}} />
                         ))}
                     </div>

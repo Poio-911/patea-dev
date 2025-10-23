@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -14,8 +15,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Loader2 } from 'lucide-react';
-import type { GroupTeam, GroupTeamMember, PlayerStatus } from '@/lib/types';
-import type { DetailedTeamPlayer } from '@/app/groups/teams/[id]/page';
+import type { GroupTeam, GroupTeamMember, PlayerStatus, DetailedTeamPlayer } from '@/lib/types';
 
 const playerStatusSchema = z.object({
   number: z.coerce.number().min(1, "El dorsal debe ser mayor a 0").max(99, "El dorsal no puede ser mayor a 99"),
