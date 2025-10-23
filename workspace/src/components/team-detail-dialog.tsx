@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -16,7 +15,7 @@ import { Badge } from './ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Users } from 'lucide-react';
 import { JerseyPreview } from './team-builder/jersey-preview';
-import { DetailedTeamPlayer, TeamRosterPlayer } from './team-roster-player';
+import { TeamRosterPlayer, DetailedTeamPlayer } from './team-roster-player';
 
 
 interface TeamDetailDialogProps {
@@ -33,7 +32,7 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
 
     return teamPlayerIds
       .map((playerId: string, index: number) => {
-        const playerDetails = allGroupPlayers.find(p => p.id === playerId);
+        const playerDetails = allGroupPlayers.find((p: Player) => p.id === playerId);
         if (!playerDetails) return null;
 
         const memberInfo = team.members ? team.members.find(m => m.playerId === playerId) : null;
@@ -41,10 +40,11 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
         return {
           ...playerDetails,
           number: memberInfo ? memberInfo.number : index + 1, // Fallback to index if number not present
+          status: memberInfo ? memberInfo.status : 'titular',
         };
       })
-      .filter((p: (Player & { number: number; }) | null): p is Player & { number: number } => p !== null)
-      .sort((a: Player & { number: number }, b: Player & { number: number }) => a.number - b.number);
+      .filter((p: DetailedTeamPlayer | null): p is DetailedTeamPlayer => p !== null)
+      .sort((a: DetailedTeamPlayer, b: DetailedTeamPlayer) => a.number - b.number);
   }, [team, allGroupPlayers]);
 
   return (
@@ -75,7 +75,7 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
                     </h3>
                     <div className="space-y-1">
                         {teamPlayersWithDetails.map((player: DetailedTeamPlayer) => (
-                            <TeamRosterPlayer key={player.id} player={player} number={player.number} />
+                            <TeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={() => {}} />
                         ))}
                     </div>
                 </div>
@@ -85,4 +85,3 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
     </Dialog>
   );
 }
-
