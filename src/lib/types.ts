@@ -1,7 +1,9 @@
 
 
 import { DocumentData, DocumentReference } from "firebase/firestore";
-import { PerformanceTag } from "./performance-tags";
+import type { PerformanceTag as Pt } from "./performance-tags";
+
+export type PerformanceTag = Pt;
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
 
@@ -113,11 +115,10 @@ export type Team = {
   }
 };
 
-export type JerseyStyle = 'solid' | 'stripes' | 'sash' | 'halves' | 'hoops' | 'checkered';
-
+export type JerseyType = 'plain' | 'vertical' | 'band' | 'chevron' | 'thirds';
 
 export type Jersey = {
-  type: JerseyStyle;
+  type: JerseyType;
   primaryColor: string;
   secondaryColor: string;
 };
