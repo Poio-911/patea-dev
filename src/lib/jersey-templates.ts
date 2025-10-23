@@ -39,8 +39,8 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
     description: 'Camiseta con franja horizontal',
     svgPath: '/jerseys/band-red-white-football-shirt-svgrepo-com.svg',
     colorMapping: {
-      primary: ['#ffffff'], // Blanco -> primario
-      secondary: ['#d00'], // Rojo -> secundario
+      primary: ['#d00'], // Rojo -> primario
+      secondary: ['#ffffff'], // Blanco -> secundario
     },
   },
   chevron: {
@@ -57,10 +57,10 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
     type: 'thirds',
     label: 'Tercios',
     description: 'Camiseta dividida en tercios',
-    svgPath: '/jerseys/thirds-red-white-football-shirt-svgrepo-com.svg',
+    svgPath: '/jerseys/thirds-pink-white-football-shirt-svgrepo-com.svg',
     colorMapping: {
-      primary: ['#d00'], // Rojo -> primario
-      secondary: ['#ffffff'], // Blanco -> secundario
+      primary: ['#f41616'], // Rojo -> primario
+      secondary: ['#fff'], // Blanco -> secundario
     },
   },
 };
