@@ -104,8 +104,15 @@ export function applyColorsToSvg(
   const replaceColor = (content: string, oldColors: string[], newColor: string) => {
     let modifiedContent = content;
     oldColors.forEach(oldColor => {
-      const regex = new RegExp(`(fill|stroke)="${oldColor}"`, 'gi');
-      modifiedContent = modifiedContent.replace(regex, `$1="${newColor}"`);
+        // Busca tanto el formato de 6 como el de 3 caracteres
+        const longRegex = new RegExp(`(fill|stroke)="${oldColor}"`, 'gi');
+        modifiedContent = modifiedContent.replace(longRegex, `$1="${newColor}"`);
+        
+        if (oldColor.startsWith('#') && oldColor.length === 7 && oldColor[1] === oldColor[2] && oldColor[3] === oldColor[4] && oldColor[5] === oldColor[6]) {
+            const shortColor = `#${oldColor[1]}${oldColor[3]}${oldColor[5]}`;
+            const shortRegex = new RegExp(`(fill|stroke)="${shortColor}"`, 'gi');
+            modifiedContent = modifiedContent.replace(shortRegex, `$1="${newColor}"`);
+        }
     });
     return modifiedContent;
   };
