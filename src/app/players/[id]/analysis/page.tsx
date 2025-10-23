@@ -1,14 +1,14 @@
+
 'use client';
 
 import { useParams } from 'next/navigation';
 import { useDoc, useUser, useFirestore } from '@/firebase';
+import { doc } from 'firebase/firestore';
 import type { Player } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { CoachChatView } from '@/components/coach-chat-view';
 import { PlayerInsightsPanel } from '@/components/player-insights-panel';
 import { PageHeader } from '@/components/page-header';
-import { Separator } from '@/components/ui/separator';
-import { AnalysisIcon } from '@/components/icons/analysis-icon';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
