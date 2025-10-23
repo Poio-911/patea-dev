@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Globe, Check } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Globe, Check, HelpCircle } from 'lucide-react';
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -41,6 +41,8 @@ import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { JerseyPreview } from './team-builder/jersey-preview';
 import { TeamsIcon } from './icons/teams-icon';
+import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 const matchLocationSchema = z.object({
   name: z.string(),
@@ -103,7 +105,9 @@ const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: Matc
         setValue,
         clearSuggestions,
     } = usePlacesAutocomplete({
-        requestOptions: { /* Define options here, like componentRestrictions */ },
+        requestOptions: { 
+            componentRestrictions: { country: 'UY' } // Restringir a Uruguay
+         },
         debounce: 300,
     });
 
@@ -133,13 +137,11 @@ const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: Matc
         <Popover open={status === 'OK' && value.length > 2}>
             <PopoverTrigger asChild>
                 <div className="relative">
-                    <SoccerPlayerIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         value={value}
                         onChange={(e) => setValue(e.target.value)}
                         disabled={!ready}
                         placeholder="Buscá la dirección de la cancha..."
-                        className="pl-10"
                         autoComplete="off"
                     />
                 </div>
@@ -501,8 +503,14 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                     <Input id="title" {...form.register('title')} />
                     {formState.errors.title && <p className="text-xs text-destructive mt-1">{formState.errors.title.message}</p>}
                 </div>
+                
+                <div>
+                    <Label>Ubicación</Label>
+                    <LocationInput onSelectLocation={(location) => setValue('location', location, { shouldValidate: true })} />
+                    {formState.errors.location && <p className="text-xs text-destructive mt-1">{formState.errors.location.address?.message}</p>}
+                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label>Fecha</Label>
                       <Controller
@@ -542,12 +550,6 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                     </div>
                 </div>
                 
-                <div>
-                    <Label>Ubicación</Label>
-                    <LocationInput onSelectLocation={(location) => setValue('location', location, { shouldValidate: true })} />
-                    {formState.errors.location && <p className="text-xs text-destructive mt-1">{formState.errors.location.address?.message}</p>}
-                </div>
-                
                 <div className="p-3 bg-muted/50 rounded-lg min-h-[60px] flex items-center justify-center">
                     {isFetchingWeather ? (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -573,54 +575,47 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                         name="matchSize"
                         control={form.control}
                         render={({ field }) => (
-                            <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-3 gap-2">
-                                <Label className="group flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
-                                    <RadioGroupItem value="10" className="sr-only" />
-                                    <SoccerPlayerIcon className="h-5 w-5 text-muted-foreground group-hover:text-accent-foreground group-has-[:checked]:text-primary-foreground" />
-                                    <span className="font-bold text-sm">Fútbol 5</span>
-                                </Label>
-                                <Label className="group flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
-                                    <RadioGroupItem value="14" className="sr-only" />
-                                    <SoccerPlayerIcon className="h-5 w-5 text-muted-foreground group-hover:text-accent-foreground group-has-[:checked]:text-primary-foreground" />
-                                    <span className="font-bold text-sm">Fútbol 7</span>
-                                </Label>
-                                <Label className="group flex flex-col items-center justify-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
-                                    <RadioGroupItem value="22" className="sr-only" />
-                                    <SoccerPlayerIcon className="h-5 w-5 text-muted-foreground group-hover:text-accent-foreground group-has-[:checked]:text-primary-foreground" />
-                                    <span className="font-bold text-sm">Fútbol 11</span>
-                                </Label>
-                            </RadioGroup>
+                            <ToggleGroup type="single" onValueChange={field.onChange} value={field.value} className="w-full justify-start" variant="outline">
+                                <ToggleGroupItem value="10" aria-label="Fútbol 5">Fútbol 5</ToggleGroupItem>
+                                <ToggleGroupItem value="14" aria-label="Fútbol 7">Fútbol 7</ToggleGroupItem>
+                                <ToggleGroupItem value="22" aria-label="Fútbol 11">Fútbol 11</ToggleGroupItem>
+                            </ToggleGroup>
                         )}
                     />
                 </div>
                 
                 <div className="space-y-2">
-                    <Label>Tipo de Partido</Label>
+                    <div className="flex items-center gap-2">
+                        <Label>Tipo de Partido</Label>
+                         <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                    <p><b>Manual:</b> El DT elige los jugadores, la IA arma los equipos.</p>
+                                    <p><b>Colaborativo:</b> Los jugadores se apuntan solos.</p>
+                                    <p><b>Por Equipos:</b> Enfrenta a 2 equipos ya creados.</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
                      <Controller
                         name="type"
                         control={form.control}
                         render={({ field }) => (
-                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <Label className="flex gap-4 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
-                                    <div className="flex-shrink-0 mt-1"><RadioGroupItem value="manual" /></div>
-                                    <div className="flex flex-col gap-1">
-                                        <div className="flex items-center gap-2 font-bold"><UserCheck className="h-5 w-5" /><span>Manual</span></div>
-                                        <span className="text-xs font-normal leading-tight">El organizador elige a todos los jugadores.</span>
-                                    </div>
+                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                <Label className="flex items-center gap-3 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
+                                    <RadioGroupItem value="manual" />
+                                    <div className="flex items-center gap-2 font-bold"><UserCheck className="h-4 w-4" /><span>Manual</span></div>
                                 </Label>
-                                <Label className="flex gap-4 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
-                                    <div className="flex-shrink-0 mt-1"><RadioGroupItem value="collaborative" /></div>
-                                    <div className="flex flex-col gap-1">
-                                         <div className="flex items-center gap-2 font-bold"><Users className="h-5 w-5" /><span>Colaborativo</span></div>
-                                        <span className="text-xs font-normal leading-tight">Los jugadores del grupo se apuntan para participar.</span>
-                                    </div>
+                                <Label className="flex items-center gap-3 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
+                                    <RadioGroupItem value="collaborative" />
+                                    <div className="flex items-center gap-2 font-bold"><Users className="h-4 w-4" /><span>Colaborativo</span></div>
                                 </Label>
-                                <Label className="flex gap-4 border rounded-md p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
-                                    <div className="flex-shrink-0 mt-1"><RadioGroupItem value="by_teams" /></div>
-                                    <div className="flex flex-col gap-1">
-                                         <div className="flex items-center gap-2 font-bold"><TeamsIcon className="h-5 w-5" /><span>Por Equipos</span></div>
-                                        <span className="text-xs font-normal leading-tight">Enfrenta a dos equipos ya creados en el grupo.</span>
-                                    </div>
+                                <Label className="flex items-center gap-3 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
+                                    <RadioGroupItem value="by_teams" />
+                                    <div className="flex items-center gap-2 font-bold"><TeamsIcon className="h-4 w-4" /><span>Por Equipos</span></div>
                                 </Label>
                             </RadioGroup>
                         )}
