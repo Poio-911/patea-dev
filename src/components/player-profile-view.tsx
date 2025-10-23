@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
@@ -18,7 +17,7 @@ import type { Player, Evaluation, Match, OvrHistory, UserProfile, PerformanceTag
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, BarChart2, Star, Goal, Upload, Eye, ChevronDown, CheckCircle } from 'lucide-react';
+import { Loader2, BarChart2, Star, Goal, Upload, Eye, ChevronDown, CheckCircle, BrainCircuit } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -31,9 +30,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { CoachChatDialog } from '@/components/coach-chat-dialog';
-import { PlayerInsightsPanel } from '@/components/player-insights-panel';
 import { FirstTimeInfoDialog } from './first-time-info-dialog';
+import Link from 'next/link';
+import { AnalysisIcon } from './icons/analysis-icon';
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -355,6 +354,16 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                             <Stat label="DEF" value={player.def} />
                             <Stat label="FIS" value={player.phy} />
                         </div>
+                        {isCurrentUserProfile && (
+                             <div className="mt-6 text-center">
+                                 <Button asChild>
+                                    <Link href={`/players/${playerId}/analysis`}>
+                                        <AnalysisIcon className="mr-2 h-5 w-5" />
+                                        Análisis Avanzado con IA
+                                    </Link>
+                                 </Button>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -669,13 +678,6 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                 </Card>
             )}
         </div>
-        {isCurrentUserProfile && player && user?.activeGroupId && (
-            <div className="fixed bottom-24 right-6 z-30 flex flex-col gap-2 items-end md:bottom-6">
-                <PlayerInsightsPanel playerId={playerId} playerName={player.name} groupId={user.activeGroupId} />
-                <CoachChatDialog playerId={playerId} groupId={user.activeGroupId} />
-            </div>
-        )}
     </>
   );
 }
-

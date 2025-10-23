@@ -1,19 +1,19 @@
-
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { coachConversationAction } from '@/lib/actions';
 import type { CoachConversationInput, CoachConversationOutput } from '@/ai/flows/coach-conversation';
 import { useUser } from '@/firebase';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MessageCircle, Send, Sparkles } from 'lucide-react';
+import { Loader2, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { CoachIcon } from './icons/coach-icon';
 
 type Message = {
   role: 'user' | 'coach';
@@ -35,25 +35,24 @@ interface Props {
   groupId: string;
 }
 
-export function CoachChatDialog({ playerId, groupId }: Props) {
+export function CoachChatView({ playerId, groupId }: Props) {
   const { user } = useUser();
-  const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (open && messages.length === 0) {
+    if (messages.length === 0) {
       const welcomeMessage: Message = {
         role: 'coach',
-        content: '¡Hola! Soy tu DT virtual. ¿En qué puedo ayudarte hoy? Podés preguntarme sobre tu rendimiento, pedir consejos tácticos, o charlar sobre cómo mejorar tu juego.',
+        content: `¡Hola, ${user?.displayName?.split(' ')[0]}! Soy tu DT virtual. ¿En qué te puedo ayudar hoy?`,
         timestamp: new Date().toISOString(),
         mood: 'supportive',
       };
       setMessages([welcomeMessage]);
     }
-  }, [open, messages.length]);
+  }, [messages.length, user]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -108,23 +107,14 @@ export function CoachChatDialog({ playerId, groupId }: Props) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="rounded-full shadow-lg hover:shadow-xl transition-shadow" size="lg">
-          <MessageCircle className="mr-2 h-5 w-5" />
-          Hablar con el DT
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="h-[600px] max-w-2xl flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Tu Entrenador Virtual
-          </DialogTitle>
-          <DialogDescription>Chateá con tu DT personal para recibir consejos personalizados</DialogDescription>
-        </DialogHeader>
-
-        <div ref={scrollRef} className="flex-1 overflow-y-auto pr-4 -mx-6 px-6">
+    <Card className="h-full flex flex-col">
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+                <CoachIcon className="h-6 w-6 text-primary" />
+                Charla con el DT
+            </CardTitle>
+        </CardHeader>
+        <CardContent ref={scrollRef} className="flex-1 overflow-y-auto pr-4 -mx-6 px-6">
             <div className="space-y-4">
             {messages.map((message, index) => (
                 <div key={index} className={cn('flex gap-3', message.role === 'user' ? 'justify-end' : 'justify-start')}>
@@ -165,15 +155,13 @@ export function CoachChatDialog({ playerId, groupId }: Props) {
                 </div>
             )}
             </div>
-        </div>
-
-        <div className="border-t pt-4 flex gap-2">
+        </CardContent>
+        <div className="border-t p-4 flex gap-2">
           <Input value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}} placeholder="Escribí tu mensaje..." disabled={isLoading} className="flex-1" />
           <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon">
             <Send className="h-4 w-4" />
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+    </Card>
   );
 }
