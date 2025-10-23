@@ -66,8 +66,8 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
   },
   lines: {
     type: 'lines',
-    label: 'Lineas',
-    description: 'Camiseta con lineas azules',
+    label: 'Líneas',
+    description: 'Camiseta con líneas azules',
     svgPath: '/jerseys/opcion-7.svg',
     colorMapping: {
       primary: ['#33f'],
@@ -104,15 +104,8 @@ export function applyColorsToSvg(
   const replaceColor = (content: string, oldColors: string[], newColor: string) => {
     let modifiedContent = content;
     oldColors.forEach(oldColor => {
-        // Busca tanto el formato de 6 como el de 3 caracteres
         const longRegex = new RegExp(`(fill|stroke)="${oldColor}"`, 'gi');
         modifiedContent = modifiedContent.replace(longRegex, `$1="${newColor}"`);
-        
-        if (oldColor.startsWith('#') && oldColor.length === 7 && oldColor[1] === oldColor[2] && oldColor[3] === oldColor[4] && oldColor[5] === oldColor[6]) {
-            const shortColor = `#${oldColor[1]}${oldColor[3]}${oldColor[5]}`;
-            const shortRegex = new RegExp(`(fill|stroke)="${shortColor}"`, 'gi');
-            modifiedContent = modifiedContent.replace(shortRegex, `$1="${newColor}"`);
-        }
     });
     return modifiedContent;
   };
