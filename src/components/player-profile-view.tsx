@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
@@ -19,7 +20,7 @@ import { updateProfile } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -49,7 +50,8 @@ const Stat = ({ label, value }: { label: string; value: number }) => (
 type DetailedEvaluation = Evaluation & { evaluatorName?: string; evaluatorPhoto?: string };
 type MatchEvaluationSummary = {
     match: Match;
-    avgRating: number; // Será 0 si no hay ratings numéricos
+    teamName: string;
+    avgRating: number;
     hasNumericRatings: boolean;
     goals: number;
     individualEvaluations: DetailedEvaluation[];
@@ -120,7 +122,6 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
 
             const matchIds = [...new Set(playerEvals.map(e => e.matchId))];
             if (matchIds.length > 0) {
-                // Firestore 'in' queries are limited to 30 elements. Chunk if necessary.
                 const matchChunks: string[][] = [];
                 for (let i = 0; i < matchIds.length; i += 30) {
                     matchChunks.push(matchIds.slice(i, i + 30));
@@ -187,9 +188,11 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
         const goals = summary.evaluations.reduce((sum, ev) => sum + (ev.goals || 0), 0);
         const hasNumericRatings = ratings.length > 0;
         const avgRating = hasNumericRatings ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+        const team = summary.match.teams?.find(t => t.players.some(p => p.uid === playerId));
         
         return {
             match: summary.match,
+            teamName: team?.name || '',
             avgRating,
             hasNumericRatings,
             goals,
@@ -197,7 +200,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
         };
     }).sort((a,b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime());
 
-  }, [evaluations, matches, evaluatorProfiles, isLoading]);
+  }, [evaluations, matches, evaluatorProfiles, isLoading, playerId]);
 
   const chartData = useMemo(() => {
     if (!ovrHistory) return [];
@@ -208,6 +211,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
       name: `P. ${index + 1}`,
       OVR: entry.newOVR,
       Fecha: format(new Date(entry.date), 'dd/MM'),
+      ...entry.attributeChanges
     }));
   }, [ovrHistory, player]);
 
@@ -345,12 +349,18 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                     <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
-                    <YAxis domain={['dataMin - 2', 'dataMax + 2']} />
+                    <YAxis domain={([dataMin, dataMax]) => [Math.max(0, dataMin - 5), Math.min(100, dataMax + 5)]} />
                     <Tooltip
                         content={({ active, payload, label }) => {
                             if (active && payload && payload.length) {
+                                const data = payload[0].payload;
+                                const changes = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'].map(attr => ({
+                                    key: attr,
+                                    value: data[attr]
+                                })).filter(item => item.value !== undefined && item.value !== 0);
+
                                 return (
-                                    <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                    <div className="rounded-lg border bg-background p-3 shadow-sm">
                                         <div className="grid grid-cols-2 gap-2">
                                             <div className="flex flex-col">
                                             <span className="text-[0.70rem] uppercase text-muted-foreground">
@@ -368,6 +378,14 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                                 {payload[0].value}
                                             </span>
                                             </div>
+                                        </div>
+                                        {changes.length > 0 && <Separator className="my-2" />}
+                                        <div className="grid grid-cols-3 gap-x-4 gap-y-1">
+                                            {changes.map(change => (
+                                                <div key={change.key} className={cn("text-xs font-medium", change.value > 0 ? 'text-green-600' : 'text-red-600')}>
+                                                    {change.key.toUpperCase()}: {change.value > 0 ? '+' : ''}{change.value}
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 );
@@ -406,20 +424,20 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                             <TableRow>
                                                 <TableHead className="w-12"></TableHead>
                                                 <TableHead>Partido</TableHead>
-                                                <TableHead>Fecha</TableHead>
-                                                <TableHead className="text-center">Rating Prom.</TableHead>
+                                                <TableHead>Equipo</TableHead>
+                                                <TableHead className="text-center">Rating</TableHead>
                                                 <TableHead className="text-center">Goles</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {filteredEvaluationsByMatch.map(({ match, avgRating, goals, hasNumericRatings, individualEvaluations }) => {
+                                            {filteredEvaluationsByMatch.map(({ match, teamName, avgRating, goals, hasNumericRatings, individualEvaluations }) => {
                                                 const isOpen = openAccordion === match.id;
                                                 return (
                                                     <React.Fragment key={match.id}>
                                                         <TableRow onClick={() => setOpenAccordion(isOpen ? null : match.id)} className="cursor-pointer">
                                                             <TableCell><ChevronDown className={cn("transition-transform", isOpen && "rotate-180")} /></TableCell>
                                                             <TableCell className="font-medium">{match.title}</TableCell>
-                                                            <TableCell>{format(new Date(match.date), 'dd MMM, yyyy', { locale: es })}</TableCell>
+                                                            <TableCell><Badge variant="outline">{teamName}</Badge></TableCell>
                                                             <TableCell className="text-center">
                                                                 {hasNumericRatings ? (
                                                                     <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'}>
@@ -463,9 +481,30 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                                                                         </TableCell>
                                                                                         <TableCell>
                                                                                             <div className="flex gap-1 flex-wrap">
-                                                                                                {ev.performanceTags?.map((tag, idx) => {
+                                                                                                {(ev.performanceTags || []).map((tag, idx) => {
                                                                                                     if (typeof tag === 'object' && tag && 'name' in tag) {
-                                                                                                        return <Badge key={tag.id || idx} variant="outline">{tag.name}</Badge>;
+                                                                                                        const typedTag = tag as PerformanceTag;
+                                                                                                        return (
+                                                                                                            <TooltipProvider key={typedTag.id || idx}>
+                                                                                                                <UiTooltip>
+                                                                                                                    <TooltipTrigger asChild>
+                                                                                                                        <Badge variant="outline" className="cursor-help">{typedTag.name}</Badge>
+                                                                                                                    </TooltipTrigger>
+                                                                                                                    <TooltipContent>
+                                                                                                                        <p className="font-semibold mb-1">{typedTag.description}</p>
+                                                                                                                        {typedTag.effects && typedTag.effects.length > 0 && (
+                                                                                                                            <div className="text-xs space-y-0.5">
+                                                                                                                                {typedTag.effects.map((effect, i) => (
+                                                                                                                                    <p key={i} className={cn(effect.change > 0 ? 'text-green-600' : 'text-red-600')}>
+                                                                                                                                        {effect.attribute.toUpperCase()}: {effect.change > 0 ? '+' : ''}{effect.change}
+                                                                                                                                    </p>
+                                                                                                                                ))}
+                                                                                                                            </div>
+                                                                                                                        )}
+                                                                                                                    </TooltipContent>
+                                                                                                                </UiTooltip>
+                                                                                                            </TooltipProvider>
+                                                                                                        );
                                                                                                     }
                                                                                                     return null;
                                                                                                 })}
@@ -578,12 +617,13 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                     <CardDescription>Rendimiento del jugador en los últimos partidos evaluados.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                     {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, avgRating, hasNumericRatings }) => (
+                     {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, teamName, avgRating, hasNumericRatings }) => (
                         <Card key={match.id} className="bg-muted/50">
                              <CardHeader className="flex flex-row items-center justify-between p-4">
                                 <div>
                                     <CardTitle className="text-lg">{match.title}</CardTitle>
                                     <CardDescription>{format(new Date(match.date), 'dd MMM, yyyy', { locale: es })}</CardDescription>
+                                    <Badge variant="outline" className="mt-2">{teamName}</Badge>
                                 </div>
                                 <div className="flex items-center gap-4">
                                      {hasNumericRatings ? (

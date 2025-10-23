@@ -79,10 +79,8 @@ function DashboardContent() {
     
     const allMatchesMap = new Map<string, Match>();
     
-    // Add all matches from the active group first
     (groupMatches || []).forEach(match => allMatchesMap.set(match.id, match));
 
-    // Add joined matches (public or from other groups), avoiding duplicates
     (joinedMatches || []).forEach(match => {
         if (!allMatchesMap.has(match.id)) {
             allMatchesMap.set(match.id, match);
@@ -319,25 +317,32 @@ function DashboardContent() {
                 <CardTitle className="flex items-center gap-2">
                     <Star className="h-5 w-5 text-primary" />
                     Los Cracks del Grupo
+                    <Badge variant="outline" className="text-xs font-normal">Por OVR</Badge>
                 </CardTitle>
                 <CardDescription>El Top 5 de jugadores por OVR.</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {top5Players.length > 0 ? top5Players.map((player, index) => (
-                    <div key={player.id} className="flex items-center gap-4">
-                      <div className="text-muted-foreground font-bold w-4">{index + 1}.</div>
-                      <Avatar className="h-10 w-10 border-2 border-primary/50">
-                        <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
-                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <p className="font-semibold">{player.name}</p>
-                        <p className="text-sm text-muted-foreground">{player.position}</p>
-                      </div>
-                      <div className="text-lg font-bold text-primary">{player.ovr}</div>
-                    </div>
-                  )) : <p className="text-sm text-muted-foreground text-center py-4">Aún no hay jugadores en este grupo.</p>}
+                  {top5Players.length > 0 ? top5Players.map((player, index) => {
+                      const isManualPlayer = player.id !== player.ownerUid;
+                      return (
+                        <div key={player.id} className="flex items-center gap-4">
+                          <div className="text-muted-foreground font-bold w-4">{index + 1}.</div>
+                          <Avatar className={cn("h-10 w-10 border-2 border-primary/50", isManualPlayer && "border-dashed border-muted-foreground")}>
+                            <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
+                            <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                                <p className="font-semibold truncate">{player.name}</p>
+                                {isManualPlayer && <Badge variant="outline" className="text-xs">Manual</Badge>}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{player.position}</p>
+                          </div>
+                          <div className="text-lg font-bold text-primary">{player.ovr}</div>
+                        </div>
+                      )
+                  }) : <p className="text-sm text-muted-foreground text-center py-4">Aún no hay jugadores en este grupo.</p>}
                 </div>
               </CardContent>
             </Card>
