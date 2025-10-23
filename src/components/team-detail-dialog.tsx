@@ -58,7 +58,7 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
           number: memberInfo ? memberInfo.number : index + 1, // Fallback to index if number not present
         };
       })
-      .filter((p): p is Player & { number: number } => p !== null)
+      .filter((p: (Player & { number: number; }) | null): p is Player & { number: number } => p !== null)
       .sort((a, b) => a.number - b.number);
   }, [team, allGroupPlayers]);
 
