@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -59,17 +60,6 @@ const weatherIcons: Record<string, React.ElementType> = {
 
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
-
-const TeamDisplay = ({ jersey, name }: { jersey?: Jersey, name: string }) => {
-    'use client';
-    return (
-        <div className="flex flex-col items-center gap-2">
-            {jersey && <JerseyPreview jersey={jersey} size="sm" />}
-            <p className="text-sm font-semibold truncate max-w-[100px]">{name}</p>
-        </div>
-    );
-};
-
 
 export function MatchCard({ match, allPlayers }: MatchCardProps) {
     const firestore = useFirestore();
@@ -401,9 +391,15 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 
                 {match.type === 'by_teams' && match.teams && match.teams.length === 2 ? (
                      <div className="flex items-center justify-around gap-2 text-center">
-                        <TeamDisplay jersey={match.teams[0].jersey} name={match.teams[0].name} />
+                        <div className="flex flex-col items-center gap-2">
+                           <JerseyPreview jersey={match.teams[0].jersey} size="sm" />
+                           <p className="text-sm font-semibold truncate max-w-[100px]">{match.teams[0].name}</p>
+                        </div>
                         <p className="text-sm font-bold text-muted-foreground">vs</p>
-                        <TeamDisplay jersey={match.teams[1].jersey} name={match.teams[1].name} />
+                        <div className="flex flex-col items-center gap-2">
+                            <JerseyPreview jersey={match.teams[1].jersey} size="sm" />
+                           <p className="text-sm font-semibold truncate max-w-[100px]">{match.teams[1].name}</p>
+                        </div>
                     </div>
                 ) : (
                     <div className="flex items-center gap-2 text-muted-foreground">
