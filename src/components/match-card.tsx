@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -451,3 +450,5 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         </Card>
     );
 }
+
+    
