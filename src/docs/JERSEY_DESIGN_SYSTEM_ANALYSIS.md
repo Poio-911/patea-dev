@@ -17,7 +17,7 @@ El sistema está diseñado para ser modular y extensible. Se basa en la combinac
 El flujo es el siguiente:
 - El usuario interactúa con `JerseyDesigner.tsx`.
 - Este componente lee la configuración desde `jersey-templates.ts` para mostrar los diseños y colores.
-- Cuando el usuario selecciona un diseño y colores, el componente `JerseyPreview.tsx` carga el archivo SVG correspondiente desde la carpeta `public/jerseys/`.
+- Cuando el usuario selecciona un diseño y colores, el componente `JerseyPreview.tsx` carga el archivo SVG correspondiente desde la carpeta `public/`.
 - `JerseyPreview` aplica dinámicamente los colores seleccionados al contenido del SVG y lo renderiza en tiempo real.
 
 ---
@@ -67,7 +67,62 @@ Este es el cerebro del sistema.
 
 ---
 
-## 3. Guía para Añadir un Nuevo Diseño de Camiseta
+## 3. Análisis Comparativo: 'chevron' vs. 'lines'
+
+Para entender por qué el diseño `lines` no funcionaba correctamente, comparemos su configuración original con la de un diseño que sí funciona, como `chevron`.
+
+### a. Configuración en `jersey-templates.ts`
+
+-   **`chevron` (Funcional):**
+    ```typescript
+    chevron: {
+      type: 'chevron',
+      label: 'Chevron (V)',
+      svgPath: '/jerseys/chevron-blue-white-football-shirt-svgrepo-com.svg',
+      colorMapping: {
+        primary: ['#33f'],
+        secondary: ['#ffffff'],
+      },
+    },
+    ```
+-   **`lines` (Configuración inicial, defectuosa):**
+    ```typescript
+    lines: {
+      type: 'lines',
+      label: 'Lineas',
+      svgPath: '/jerseys/opcion-7.svg',
+      colorMapping: {
+        primary: ['#f41616'],  // <-- Color incorrecto
+        secondary: ['#fff'],   // <-- Formato corto incorrecto
+      },
+    },
+    ```
+
+**Diferencia clave**: El `colorMapping` de `chevron` utiliza los colores base estándar que el sistema espera (`#33f` y `#ffffff`). La configuración inicial de `lines` apuntaba a los colores que venían en su SVG original (`#f41616` y `#fff`), los cuales eran diferentes a los del resto del sistema.
+
+### b. Análisis de los Archivos SVG
+
+-   **`chevron-blue-white-football-shirt-svgrepo-com.svg` (Funcional):**
+    -   Dentro de este archivo, las formas que deben ser del color primario usan `fill="#33f"`.
+    -   Las formas que deben ser del color secundario usan `fill="#ffffff"`.
+    -   Esto **coincide perfectamente** con su `colorMapping`.
+
+-   **`opcion-7.svg` (Original, defectuoso):**
+    -   Dentro de este archivo, las formas principales usaban `fill="#f41616"` (un rojo específico).
+    -   Las formas secundarias usaban `fill="#fff"` (formato corto para blanco).
+    -   Esto **NO coincide** con los colores base estándar que el sistema (`JerseyDesigner` y `applyColorsToSvg`) está programado para reemplazar.
+
+### c. Conclusión del Problema
+
+El fallo se producía por una **doble inconsistencia**:
+1.  El archivo `opcion-7.svg` no estaba "estandarizado". Usaba colores (`#f41616` y `#fff`) que no eran los colores base del sistema (`#33f` y `#ffffff`).
+2.  La configuración de `lines` en `jersey-templates.ts` intentaba compensar esto apuntando a los colores incorrectos, lo que causaba que la función `applyColorsToSvg` no pudiera reemplazarlos por los colores elegidos por el usuario, ni por los grises de la vista previa.
+
+La solución correcta fue editar el archivo `opcion-7.svg` para que use los mismos colores base (`#33f` y `#ffffff`) que los demás y ajustar su `colorMapping` para que apunte a dichos colores estándar.
+
+---
+
+## 4. Guía para Añadir un Nuevo Diseño de Camiseta
 
 Para añadir un nuevo diseño sin errores, sigue estos pasos:
 
