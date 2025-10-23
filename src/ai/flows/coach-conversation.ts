@@ -109,7 +109,7 @@ const coachConversationFlow = ai.defineFlow(
     outputSchema: CoachConversationOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input, { model: googleAI.model('gemini-2.5-flash') });
+    const {output} = await prompt(input, { model: 'googleai/gemini-2.5-flash' });
     return output!;
   }
 );
