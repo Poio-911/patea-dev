@@ -41,6 +41,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import { JerseyPreview } from './team-builder/jersey-preview';
 
 
 type MatchCardProps = {
@@ -347,8 +348,8 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                         <User className="h-3 w-3"/> Organizado por {ownerName || 'Cargando...'}
                     </CardDescription>
                     <Badge variant="secondary" className="capitalize text-xs">
-                        {match.type === 'manual' ? <UserCheck className="mr-1.5 h-3 w-3"/> : <Users className="mr-1.5 h-3 w-3"/>}
-                        {match.type}
+                        {match.type === 'manual' ? <UserCheck className="mr-1.5 h-3 w-3"/> : match.type === 'by_teams' ? <TeamsIcon className="mr-1.5 h-3 w-3" /> : <Users className="mr-1.5 h-3 w-3"/>}
+                        {match.type === 'by_teams' ? 'Por Equipos' : match.type}
                     </Badge>
                      <Badge variant="outline" className={cn("whitespace-nowrap uppercase text-xs z-10", currentStatus.className)}>
                         {currentStatus.label}
@@ -390,11 +391,25 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 
                 <Separator />
                 
-                <div className="flex items-center gap-2 text-muted-foreground">
-                    <Users className="h-5 w-5" />
-                    <span className="text-xl font-bold text-foreground">{match.players.length} / {match.matchSize}</span>
-                    <span className="text-sm">Jugadores</span>
-                </div>
+                {match.type === 'by_teams' && match.teams && match.teams.length === 2 ? (
+                    <div className="flex items-center justify-around gap-2 text-center">
+                        <div className="flex flex-col items-center gap-2">
+                           {match.teams[0].jersey && <JerseyPreview jersey={match.teams[0].jersey} size="sm" />}
+                           <p className="text-sm font-semibold truncate max-w-[100px]">{match.teams[0].name}</p>
+                        </div>
+                        <p className="text-sm font-bold text-muted-foreground">vs</p>
+                         <div className="flex flex-col items-center gap-2">
+                           {match.teams[1].jersey && <JerseyPreview jersey={match.teams[1].jersey} size="sm" />}
+                           <p className="text-sm font-semibold truncate max-w-[100px]">{match.teams[1].name}</p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <Users className="h-5 w-5" />
+                        <span className="text-xl font-bold text-foreground">{match.players.length} / {match.matchSize}</span>
+                        <span className="text-sm">Jugadores</span>
+                    </div>
+                )}
             </CardContent>
 
             <CardFooter className="flex flex-col items-stretch gap-2 p-3 bg-muted/50 mt-auto">
