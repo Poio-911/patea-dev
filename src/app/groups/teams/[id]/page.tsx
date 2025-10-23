@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useDoc, useCollection, useFirestore } from '@/firebase';
 import { doc, collection, query, where } from 'firebase/firestore';
-import type { GroupTeam, Player } from '@/lib/types';
+import type { GroupTeam, Player, GroupTeamMember } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Loader2, Users, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,8 @@ import { TeamRosterPlayer } from '@/components/team-roster-player';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+
+type DetailedTeamPlayer = Player & { number: number };
 
 export default function TeamDetailPage() {
   const { id: teamId } = useParams();
@@ -35,18 +37,20 @@ export default function TeamDetailPage() {
   const loading = teamLoading || playersLoading;
   
   const teamPlayersWithDetails = useMemo(() => {
-    if (loading || !team || !groupPlayers) return [];
+    if (loading || !team || !groupPlayers || !team.members) return [];
 
-    const playerIds = team.members ? team.members.map(m => m.playerId) : (team as any).playerIds || [];
-
-    return playerIds.map((playerId: string, index: number) => {
-        const playerDetails = groupPlayers.find(p => p.id === playerId);
-        const memberInfo = team.members?.find(m => m.playerId === playerId);
+    return team.members
+      .map((member: GroupTeamMember) => {
+        const playerDetails = groupPlayers.find((p: Player) => p.id === member.playerId);
         if (!playerDetails) return null;
-        const number = memberInfo?.number !== undefined ? memberInfo.number : index + 1;
-        return { ...playerDetails, number };
-    }).filter((p: (Player & { number: number; }) | null): p is Player & { number: number } => p !== null).sort((a: Player & { number: number }, b: Player & { number: number }) => a.number - b.number);
-
+        return { 
+          ...playerDetails, 
+          number: member.number !== undefined ? member.number : 0 
+        };
+      })
+      .filter((p: DetailedTeamPlayer | null): p is DetailedTeamPlayer => p !== null)
+      .sort((a: DetailedTeamPlayer, b: DetailedTeamPlayer) => a.number - b.number);
+      
   }, [team, groupPlayers, loading]);
 
   if (loading) {
@@ -57,7 +61,7 @@ export default function TeamDetailPage() {
     return <div className="text-center">No se encontró el equipo.</div>;
   }
   
-  const memberCount = team.members?.length || (team as any).playerIds?.length || 0;
+  const memberCount = team.members?.length || 0;
 
   return (
     <div className="flex flex-col gap-8">
@@ -88,7 +92,7 @@ export default function TeamDetailPage() {
         <div className="space-y-4">
              <h2 className="text-xl font-bold">Plantel</h2>
              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {teamPlayersWithDetails.map((player: Player & { number: number }) => (
+                {teamPlayersWithDetails.map((player: DetailedTeamPlayer) => (
                     <TeamRosterPlayer key={player.id} player={player} number={player.number} />
                 ))}
              </div>

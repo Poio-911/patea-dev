@@ -113,12 +113,18 @@ export type Team = {
   }
 };
 
-export type JerseyType = 'plain' | 'vertical' | 'band' | 'chevron' | 'thirds';
+export type JerseyStyle = 'solid' | 'stripes' | 'sash' | 'halves' | 'hoops' | 'checkered' | 'plain' | 'vertical' | 'band' | 'chevron' | 'thirds';
+
 
 export type Jersey = {
-  type: JerseyType;
+  type: JerseyStyle;
   primaryColor: string;
   secondaryColor: string;
+};
+
+export type GroupTeamMember = {
+  playerId: string;
+  number: number;
 };
 
 export type GroupTeam = {
@@ -126,13 +132,11 @@ export type GroupTeam = {
   name: string;
   groupId: string;
   jersey: Jersey;
-  members: {
-    playerId: string;
-    number: number;
-  }[];
+  members: GroupTeamMember[];
   createdBy: string;
   createdAt: string;
 } & DocumentData;
+
 
 export type Group = {
   id: string;
@@ -196,6 +200,17 @@ export type SelfEvaluation = {
   reportedAt: string;
 } & DocumentData;
 
+export type PlayerEvaluationFormData = {
+  assignmentId: string;
+  subjectId: string;
+  displayName: string;
+  photoUrl: string;
+  position: string;
+  evaluationType: 'points' | 'tags';
+  rating?: number;
+  performanceTags?: PerformanceTag[];
+};
+
 export type EvaluationSubmission = {
     id: string;
     evaluatorId: string;
@@ -204,16 +219,7 @@ export type EvaluationSubmission = {
     submittedAt: string;
     submission: {
         evaluatorGoals: number;
-        evaluations: {
-            assignmentId: string;
-            subjectId: string;
-            displayName: string;
-            photoUrl: string;
-            position: string;
-            evaluationType: 'points' | 'tags';
-            rating?: number;
-            performanceTags?: PerformanceTag[];
-        }[];
+        evaluations: PlayerEvaluationFormData[];
     }
 } & DocumentData;
 
