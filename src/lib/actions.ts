@@ -9,7 +9,7 @@ import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-
 import { generatePlayerCardImage } from '@/ai/flows/generate-player-card-image';
 import { coachConversation, type CoachConversationInput } from '@/ai/flows/coach-conversation';
 import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '@/ai/flows/detect-player-patterns';
-import { Player, Evaluation, OvrHistory, PerformanceTag } from './types';
+import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation } from './types';
 import { getFirestore as getAdminFirestore, FieldValue } from 'firebase-admin/firestore';
 import { initializeApp, getApps, App as AdminApp, cert } from 'firebase-admin/app';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
@@ -294,16 +294,38 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
       .limit(20)
       .get();
     const ovrHistory = ovrHistorySnapshot.docs.map(doc => doc.data() as OvrHistory);
+    
+    // Extract match IDs from recent evaluations to fetch self-reported goals
+    const recentMatchIds = [...new Set(evaluations.slice(0, 15).map(e => e.matchId))];
+    
+    // Fetch self-evaluations for these matches
+    const selfEvalsByMatchId = new Map<string, SelfEvaluation>();
+    if (recentMatchIds.length > 0) {
+        const selfEvalsPromises = recentMatchIds.map(matchId => 
+            adminDb.collection(`matches/${matchId}/selfEvaluations`).where('playerId', '==', playerId).get()
+        );
+        const selfEvalsSnapshots = await Promise.all(selfEvalsPromises);
+        
+        selfEvalsSnapshots.forEach(snapshot => {
+            snapshot.forEach(doc => {
+                const selfEval = doc.data() as SelfEvaluation;
+                selfEvalsByMatchId.set(selfEval.matchId, selfEval);
+            });
+        });
+    }
 
-    const recentEvaluations = evaluations.slice(0, 15).map(e => ({
-        matchDate: e.evaluatedAt || new Date().toISOString(),
-        rating: e.rating,
-        performanceTags: (e.performanceTags || []).map((tag: PerformanceTag) => ({
-          name: tag.name,
-          impact: tag.impact,
-        })),
-        goals: e.goals || 0,
-      }));
+    const recentEvaluations = evaluations.slice(0, 15).map(e => {
+        const selfEval = selfEvalsByMatchId.get(e.matchId);
+        return {
+            matchDate: e.evaluatedAt || new Date().toISOString(),
+            rating: e.rating,
+            performanceTags: (e.performanceTags || []).map((tag: PerformanceTag) => ({
+                name: tag.name,
+                impact: tag.impact,
+            })),
+            goals: selfEval?.goals || 0, // Include goals from self-evaluation
+        };
+    });
 
     const input: DetectPlayerPatternsInput = {
       playerId,
