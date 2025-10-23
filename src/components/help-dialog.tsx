@@ -19,6 +19,7 @@ import { MatchIcon } from './icons/match-icon';
 import { EvaluationIcon } from './icons/evaluation-icon';
 import { FindMatchIcon } from './icons/find-match-icon';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './ui/carousel';
+import { TeamsIcon } from './icons/teams-icon';
 
 interface HelpDialogProps {
   forceOpen?: boolean;
@@ -29,27 +30,27 @@ const tutorialContent = [
     {
         icon: Users,
         title: "Paso 1: Armá o unite a un Grupo",
-        content: "Todo arranca acá. Un 'grupo' es tu cuadro de amigos. Podés crear el tuyo o sumarte a uno existente con un código. Tu 'grupo activo' es donde pasa toda la movida.",
+        content: "Todo arranca acá. Un 'grupo' es tu cuadro. Podés crear el tuyo o sumarte a uno existente con un código. Tu 'grupo activo' es donde pasa toda la movida.",
     },
     {
-        icon: SoccerPlayerIcon,
-        title: "Paso 2: Manejá tu Plantel",
-        content: "En 'Jugadores', agregá perfiles 'manuales' para los que no usan la app. Los que se registran aparecen acá automáticamente, y su carta de jugador evoluciona con el tiempo.",
+        icon: TeamsIcon,
+        title: "Paso 2: Creá Equipos y Planteles",
+        content: "En 'Grupos', podés crear equipos persistentes con su propia camiseta y plantel. En 'Jugadores', agregá perfiles para quienes no usan la app. ¡Las cartas de cada integrante evolucionan con el tiempo!",
     },
     {
         icon: MatchIcon,
         title: "Paso 3: Organizá Partidos",
-        content: "Hay dos formas: 'Manual' (elegís los jugadores y la IA arma los equipos) o 'Colaborativo' (la gente de tu grupo se anota). ¡Incluso podés hacerlos públicos!",
+        content: "Hay tres formas: 'Manual' (elegís l@s participantes), 'Colaborativo' (la gente de tu grupo se anota) o 'Por Equipos' (enfrentá a dos de tus equipos creados).",
     },
     {
         icon: EvaluationIcon,
         title: "Paso 4: Evaluá y Subí de Nivel",
-        content: "Después de cada partido, en 'Evaluaciones', puntuás a tus compañeros. En base a eso, el sistema actualiza solo el OVR y los atributos de cada uno. ¡Como en el FIFA!",
+        content: "Después de cada partido, en 'Evaluaciones', puntuás a tus compañer@s. En base a eso, el sistema actualiza solo el OVR y los atributos de cada un@. ¡Como en el FIFA!",
     },
     {
         icon: FindMatchIcon,
-        title: "Paso 5: Buscá Partidos y Jugadores",
-        content: "En 'Buscar' tenés el mercado. Encontrá partidos públicos cerca o jugadores libres para completar tu equipo cuando te falte uno. Hacete visible para que otros te encuentren.",
+        title: "Paso 5: Buscá Partidos y Jugador@s",
+        content: "En 'Buscar' tenés el mercado. Encontrá partidos públicos cerca o jugador@s libres para completar tu equipo. Hacete visible para que otr@s te encuentren.",
     }
 ];
 
@@ -89,7 +90,7 @@ export function HelpDialog({ forceOpen = false, onExplicitClose }: HelpDialogPro
       {!forceOpen && DialogTriggerButton}
       <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-            <DialogTitle className="text-2xl font-bold font-headline text-center">¡Bienvenido a Pateá!</DialogTitle>
+            <DialogTitle className="text-2xl font-bold font-headline text-center">¡Bienvenid@ a Pateá!</DialogTitle>
             <DialogDescription className="text-center">Acá tenés una guía rápida para que le saques todo el jugo a la app.</DialogDescription>
         </DialogHeader>
 
