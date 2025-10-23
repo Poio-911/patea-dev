@@ -259,7 +259,10 @@ export default function EvaluateMatchPage() {
                 const goalsInMatch = playerSelfEval?.goals || 0;
                 const newMatchesPlayed = (player.stats.matchesPlayed || 0) + 1;
                 const newTotalGoals = (player.stats.goals || 0) + goalsInMatch;
+
+                // Clarification: averageRating represents the average rating PER MATCH, not per individual evaluation.
                 const avgRatingFromPoints = pointBasedEvals.length > 0 ? pointBasedEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0) / pointBasedEvals.length : player.stats.averageRating;
+                // Weighted average: (previous_avg * prev_matches + new_match_avg) / total_matches
                 const newAvgRating = pointBasedEvals.length > 0 ? ((player.stats.averageRating || 0) * (player.stats.matchesPlayed || 0) + avgRatingFromPoints) / newMatchesPlayed : player.stats.averageRating;
                 
                 const playerDocRef = doc(firestore, 'players', playerId);

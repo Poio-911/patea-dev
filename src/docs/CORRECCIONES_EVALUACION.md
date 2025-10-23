@@ -84,6 +84,23 @@ El formulario de evaluación es más robusto y la lógica de procesamiento de da
 
 ---
 
-### Próximos Pasos
+## 🐞 Errores #6 y #8: Claridad del Código y Balance de Juego (BAJO)
 
-Solo quedan los errores de prioridad baja: documentar el cálculo del `averageRating` y rebalancear los tags negativos para mejorar la experiencia de usuario. ¡Ya casi estamos
+### Problema
+- **Error #6**: El cálculo del `averageRating` de un jugador era funcionalmente correcto pero conceptualmente confuso, ya que no estaba claro si era un promedio por partido o por evaluación individual.
+- **Error #8**: Una de las etiquetas de rendimiento negativo ("Espectador de Lujo") era desproporcionadamente más severa que las etiquetas positivas, afectando negativamente la percepción de justicia del sistema.
+
+### Solución Aplicada
+1.  **Documentación del Cálculo (Error #6)**:
+    -   **Archivo modificado**: `src/app/matches/[id]/evaluate/page.tsx`.
+    -   **Cambio**: Se añadieron comentarios explicativos directamente sobre la línea de código que calcula el `newAvgRating`, clarificando que el sistema usa un **promedio de rendimiento por partido**, lo cual es más justo si el número de evaluadores varía entre partidos.
+
+2.  **Rebalanceo de Etiqueta Negativa (Error #8)**:
+    -   **Archivo modificado**: `src/lib/performance-tags.ts`.
+    -   **Cambio**: Se ajustaron los efectos del tag "Espectador de Lujo". En lugar de restar `-1` a los 6 atributos (un impacto total de -6), ahora resta `-1` a `PAC` y `-2` a `PHY`, sumando un impacto total de **-3**. Esto la pone a la par con las etiquetas positivas más fuertes, manteniendo su carácter punitivo pero de una forma mucho más balanceada y justa.
+
+### Resultado
+El código es ahora más fácil de entender para futuros mantenimientos y el sistema de progresión de atributos es más justo y balanceado, mejorando la experiencia del usuario. Con esto, **todos los puntos del informe de evaluación han sido solucionados.**
+
+---
+**Estado Final**: ¡Módulo de Evaluaciones 100% Corregido y Fortalecido!

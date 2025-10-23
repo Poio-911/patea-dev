@@ -425,7 +425,7 @@ export const performanceTagsDb: PerformanceTag[] = [
         id: 'miro_el_partido_de_adentro',
         name: 'Espectador de Lujo',
         description: 'No participó, estuvo desconectado y no influyó en el juego.',
-        effects: [{ attribute: 'pac', change: -1}, { attribute: 'sho', change: -1}, { attribute: 'pas', change: -1}, { attribute: 'dri', change: -1}, { attribute: 'def', change: -1}, { attribute: 'phy', change: -1}],
+        effects: [{ attribute: 'pac', change: -1 }, { attribute: 'phy', change: -2 }],
         impact: 'negative',
         positions: ['ALL']
     }
