@@ -538,7 +538,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                     <CardDescription>Rendimiento del jugador en los últimos partidos evaluados.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                     {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, avgRating, individualEvaluations }) => (
+                     {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, avgRating }) => (
                         <Card key={match.id} className="bg-muted/50">
                              <CardHeader className="flex flex-row items-center justify-between p-4">
                                 <div>
@@ -563,3 +563,5 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     </div>
   );
 }
+
+    
