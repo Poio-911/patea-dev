@@ -27,8 +27,8 @@ export default function AnalysisPage() {
   if (!player) {
     return <div className="text-center">Jugador no encontrado.</div>;
   }
-  
-  if (user?.uid !== playerId) {
+
+  if (!user || user.uid !== playerId) {
     return <div className="text-center">Solo puedes acceder a tu propio análisis avanzado.</div>;
   }
 
@@ -42,11 +42,11 @@ export default function AnalysisPage() {
                 </Link>
             </Button>
         </div>
-        <PageHeader 
+        <PageHeader
             title="Análisis Avanzado con IA"
             description={`Explorá tu rendimiento y recibí consejos del DT virtual para ${player.name}.`}
         />
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="flex flex-col gap-4">
             <CoachChatView playerId={playerId as string} groupId={user.activeGroupId || ''} />
