@@ -1,8 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc:*)",
-      "Bash(git merge backup-mis-cambios -m \"$(cat <<''EOF''\nmerge: integrar correcciones críticas del sistema de evaluaciones\n\nFusionando branch backup-mis-cambios con 6 correcciones críticas:\n\n✅ Fix evaluación por puntos bloqueada\n✅ Fix procesamiento de tags  \n✅ Transaction lock para race conditions\n✅ Resolver inconsistencia OVR vs Atributos\n✅ Validar asignaciones de evaluación\n✅ Mejorar soft delete de submissions\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(npm run dev:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(git pull:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

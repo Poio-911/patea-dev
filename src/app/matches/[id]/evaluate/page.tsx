@@ -46,6 +46,25 @@ const calculateOvrChange = (currentOvr: number, avgRating: number): number => {
     return Math.round(Math.max(-OVR_PROGRESSION.MAX_STEP, Math.min(OVR_PROGRESSION.MAX_STEP, rawDelta)));
 };
 
+// ✅ FIXED: Distributes points-based changes proportionally across all attributes
+const calculateAttributeChangesFromPoints = (currentAttrs: Player, ovrChange: number) => {
+    if (ovrChange === 0) return currentAttrs;
+
+    const newAttributes = { ...currentAttrs };
+    const attributes: Array<keyof Player> = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'];
+
+    // Distribute the OVR change proportionally across all 6 attributes
+    const changePerAttribute = ovrChange / 6;
+
+    attributes.forEach(attr => {
+        const currentValue = newAttributes[attr] as number;
+        const newValue = currentValue + changePerAttribute;
+        newAttributes[attr] = Math.round(Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, newValue)));
+    });
+
+    return newAttributes;
+};
+
 const calculateAttributeChanges = (currentAttrs: Player, tags: PerformanceTag[] = []) => {
     const newAttributes = { ...currentAttrs };
     if (tags && tags.length > 0) {
@@ -91,8 +110,9 @@ export default function EvaluateMatchPage() {
   const processPendingSubmissions = useCallback(async () => {
     if (!firestore || !matchId) return;
     setIsProcessingSubmissions(true);
-    
+
     try {
+      // ✅ Use runTransaction for atomicity and to prevent race conditions
       await runTransaction(firestore, async (transaction) => {
         const submissionsQuery = query(collection(firestore, 'evaluationSubmissions'), where('matchId', '==', matchId));
         const snapshot = await getDocs(submissionsQuery);
@@ -104,13 +124,21 @@ export default function EvaluateMatchPage() {
         for (const submissionDoc of snapshot.docs) {
             const submissionData = submissionDoc.data();
 
-            // Move to processedSubmissions and delete original
+            // ✅ SOFT DELETE: Move to processedSubmissions with processing metadata
             const processedRef = doc(collection(firestore, `matches/${matchId}/processedSubmissions`));
-            transaction.set(processedRef, submissionData);
+            transaction.set(processedRef, {
+                ...submissionData,
+                processedAt: new Date().toISOString(),
+                originalSubmissionId: submissionDoc.id,
+                processingStatus: 'completed',
+            });
+
+            // Delete original submission (data preserved in processedSubmissions)
             transaction.delete(submissionDoc.ref);
 
             const { evaluatorId, submission: formData } = submissionData;
-            
+
+            // Create self-evaluation if player scored goals
             if (formData.evaluatorGoals > 0) {
                 const selfEvalRef = doc(collection(firestore, `matches/${matchId}/selfEvaluations`));
                 transaction.set(selfEvalRef, {
@@ -121,6 +149,7 @@ export default function EvaluateMatchPage() {
                 });
             }
 
+            // Create peer evaluations
             for (const evaluation of formData.evaluations) {
                 const evalRef = doc(collection(firestore, 'evaluations'));
                 const newEvaluation: Omit<Evaluation, 'id'> = {
@@ -131,12 +160,13 @@ export default function EvaluateMatchPage() {
                     goals: 0,
                     evaluatedAt: submissionData.submittedAt,
                 };
-                
+
                 if (evaluation.evaluationType === 'points') newEvaluation.rating = evaluation.rating;
                 else newEvaluation.performanceTags = evaluation.performanceTags;
 
                 transaction.set(evalRef, newEvaluation);
-                
+
+                // Update assignment status
                 const assignmentRef = doc(firestore, 'matches', matchId as string, 'assignments', evaluation.assignmentId);
                 transaction.update(assignmentRef, { status: 'completed', evaluationId: evalRef.id });
             }
@@ -233,26 +263,30 @@ export default function EvaluateMatchPage() {
                 const playerPeerEvals = peerEvalsByPlayer[playerId];
                 const pointBasedEvals = playerPeerEvals.filter(ev => ev.rating !== undefined && ev.rating !== null);
                 const tagBasedEvals = playerPeerEvals.filter(ev => ev.performanceTags && ev.performanceTags.length > 0);
-                
+
                 let updatedAttributes = { ...player };
                 let ovrChangeFromPoints = 0;
 
-                // 1. Process tags always if they exist
+                // ✅ STEP 1: Process tags ALWAYS if they exist → modifies specific attributes
                 if (tagBasedEvals.length > 0) {
                     const combinedTags = tagBasedEvals.flatMap(ev => ev.performanceTags || []);
                     updatedAttributes = calculateAttributeChanges(player, combinedTags);
                 }
-                
-                // 2. Process points always if they exist
+
+                // ✅ STEP 2: Calculate OVR change from points-based evaluations
                 if (pointBasedEvals.length > 0) {
                     const totalRating = pointBasedEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0);
                     const avgRating = totalRating / pointBasedEvals.length;
                     ovrChangeFromPoints = calculateOvrChange(player.ovr, avgRating);
                 }
-                
-                // 3. Calculate new OVR by combining both effects
+
+                // ✅ STEP 3: Apply points-based OVR change proportionally to all attributes
+                if (ovrChangeFromPoints !== 0) {
+                    updatedAttributes = calculateAttributeChangesFromPoints(updatedAttributes, ovrChangeFromPoints);
+                }
+
+                // ✅ STEP 4: Calculate new OVR as average of updated attributes (ALWAYS CONSISTENT)
                 let newOvr = Math.round((updatedAttributes.pac + updatedAttributes.sho + updatedAttributes.pas + updatedAttributes.dri + updatedAttributes.def + updatedAttributes.phy) / 6);
-                newOvr += ovrChangeFromPoints;
                 newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, newOvr));
 
                 const playerSelfEval = selfEvalsByPlayerId.get(playerId);

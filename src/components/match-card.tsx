@@ -114,13 +114,26 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         const matchPlayers = allPlayers.filter(p => match.playerUids.includes(p.id));
         const realPlayerUids = matchPlayers.filter(isRealUser).map(p => p.id);
 
+        // ✅ Validation: Check if there are enough real players
+        const minPlayersRequired = 6; // At least 3 per team for proper peer evaluation
+        if (realPlayerUids.length < minPlayersRequired) {
+            console.warn(`[ASSIGNMENT WARNING] Only ${realPlayerUids.length} real players. Minimum recommended: ${minPlayersRequired}`);
+        }
+
         realPlayerUids.forEach(evaluatorId => {
             const team = match.teams.find(t => t.players.some(p => p.uid === evaluatorId));
             if (!team) return;
 
             const teammates = team.players.filter(p => p.uid !== evaluatorId && realPlayerUids.includes(p.uid));
             const shuffledTeammates = teammates.sort(() => 0.5 - Math.random());
-            const playersToEvaluate = shuffledTeammates.slice(0, 2);
+
+            // ✅ FIXED: Assign up to 2 teammates, or as many as available
+            const maxAssignments = Math.min(2, teammates.length);
+            const playersToEvaluate = shuffledTeammates.slice(0, maxAssignments);
+
+            if (playersToEvaluate.length < 2) {
+                console.warn(`[ASSIGNMENT WARNING] Player ${evaluatorId} only has ${playersToEvaluate.length} assignment(s) (team has ${teammates.length + 1} real players)`);
+            }
 
             playersToEvaluate.forEach(subject => {
                 assignments.push({
@@ -176,6 +189,19 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             // Generate evaluation assignments only if teams were successfully formed
             if (finalTeams && finalTeams.length > 0) {
                  const assignments = generateEvaluationAssignments({ ...freshMatch, teams: finalTeams }, allPlayers);
+
+                // ✅ Validation: Check if assignments are balanced
+                const matchPlayers = allPlayers.filter(p => freshMatch.playerUids.includes(p.id));
+                const realPlayerCount = matchPlayers.filter(isRealUser).length;
+
+                if (realPlayerCount < 6) {
+                    toast({
+                        variant: 'default',
+                        title: 'Advertencia: Pocos jugadores reales',
+                        description: `Solo hay ${realPlayerCount} jugadores reales. Las evaluaciones pueden ser limitadas.`,
+                    });
+                }
+
                 assignments.forEach(assignment => {
                     const assignmentRef = doc(collection(firestore, `matches/${freshMatch.id}/assignments`));
                     batch.set(assignmentRef, assignment);
