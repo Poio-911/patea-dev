@@ -40,7 +40,7 @@ const pointsEvaluationSchema = z.object({
   photoUrl: z.string(),
   position: z.string(),
   evaluationType: z.literal('points'),
-  rating: z.coerce.number().min(1).max(10), // Requerido
+  rating: z.coerce.number().min(1, 'El rating debe ser al menos 1').max(10, 'El rating debe ser máximo 10'), // ✅ Requerido y con mensajes
   performanceTags: z.array(z.custom<PerformanceTag>()).optional(), // Puede no estar
 });
 
@@ -52,7 +52,7 @@ const tagsEvaluationSchema = z.object({
   position: z.string(),
   evaluationType: z.literal('tags'),
   rating: z.coerce.number().optional(), // Puede no estar
-  performanceTags: z.array(z.custom<PerformanceTag>()).min(3, 'Debes seleccionar al menos 3 etiquetas.'), // Requerido
+  performanceTags: z.array(z.custom<PerformanceTag>()).min(3, 'Debes seleccionar al menos 3 etiquetas.'), // ✅ Requerido
 });
 
 const playerEvaluationSchema = z.discriminatedUnion('evaluationType', [
@@ -205,7 +205,7 @@ export default function PerformEvaluationPage() {
               photoUrl: subject.photoUrl || '',
               position: subject.position,
               evaluationType: 'points',
-              rating: 5,
+              rating: 5, // ✅ Valor inicial explícito
               performanceTags: [],
             })
             tagsForPlayers[subject.id] = getRandomTagsForPosition(subject.position)
@@ -361,7 +361,7 @@ export default function PerformEvaluationPage() {
                             name={`evaluations.${index}.rating`}
                             render={({ field: ratingField }) => (
                               <FormItem>
-                                <FormLabel>Rating: {ratingField.value || 5}</FormLabel>
+                                <FormLabel>Rating: {ratingField.value ?? 5}</FormLabel>
                                 <FormControl>
                                   <div className="flex items-center gap-2 pt-2">
                                     <span className="text-xs text-muted-foreground">1</span>
@@ -369,7 +369,7 @@ export default function PerformEvaluationPage() {
                                       min={1}
                                       max={10}
                                       step={1}
-                                      value={[ratingField.value || 5]}
+                                      value={[ratingField.value ?? 5]}
                                       onValueChange={(value) => ratingField.onChange(value[0])}
                                     />
                                     <span className="text-xs text-muted-foreground">10</span>
