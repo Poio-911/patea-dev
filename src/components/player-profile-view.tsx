@@ -35,6 +35,7 @@ import Link from 'next/link';
 import { AnalysisIcon } from './icons/analysis-icon';
 import { generatePlayerCardImageAction } from '@/lib/actions';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { logger } from '@/lib/logger';
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -176,7 +177,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                 setEvaluatorProfiles({});
             }
         } catch (error) {
-            console.error("Error fetching evaluation data:", error);
+            logger.error("Error fetching evaluation data", error, { playerId });
         } finally {
             setIsLoading(false);
         }
@@ -278,7 +279,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
         });
 
     } catch (error: any) {
-        console.error('Error updating photo:', error);
+        logger.error('Error updating photo', error, { playerId, userId: user?.uid });
         toast({
             variant: 'destructive',
             title: 'Error al subir la imagen',
@@ -358,7 +359,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
       // Reload page data to show new photo
       window.location.reload();
     } catch (error: any) {
-      console.error('Error generating AI photo:', error);
+      logger.error('Error generating AI photo', error, { userId: user?.uid });
       toast({
         variant: 'destructive',
         title: 'Error al generar imagen',
@@ -409,7 +410,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
 
       setShowImageDialog(false);
     } catch (error: any) {
-      console.error('Error saving crop:', error);
+      logger.error('Error saving crop', error, { playerId, userId: user?.uid });
       toast({
         variant: 'destructive',
         title: 'Error al guardar',
@@ -890,32 +891,55 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                     </Button>
                   </div>
 
-                  {/* Contenedor de imagen con drag */}
-                  <div
-                    className="relative overflow-hidden rounded-lg border-2 border-muted bg-muted/20"
-                    style={{ height: '500px' }}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
-                  >
-                    <img
-                      src={player.photoUrl}
-                      alt={player.name}
-                      className={cn(
-                        "absolute max-w-none",
-                        isDragging ? "cursor-grabbing" : "cursor-grab"
-                      )}
-                      style={{
-                        transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageZoom})`,
-                        transformOrigin: 'center center',
-                        left: '50%',
-                        top: '50%',
-                        marginLeft: '-50%',
-                        marginTop: '-50%',
-                      }}
-                      onMouseDown={handleMouseDown}
-                      draggable={false}
-                    />
+                  {/* Contenedor principal: editor + preview */}
+                  <div className="flex gap-4">
+                    {/* Contenedor de imagen con drag */}
+                    <div
+                      className="relative overflow-hidden rounded-lg border-2 border-muted bg-muted/20 flex-1"
+                      style={{ height: '500px' }}
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                    >
+                      <img
+                        src={player.photoUrl}
+                        alt={player.name}
+                        className={cn(
+                          "absolute max-w-none",
+                          isDragging ? "cursor-grabbing" : "cursor-grab"
+                        )}
+                        style={{
+                          transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageZoom})`,
+                          transformOrigin: 'center center',
+                          left: '50%',
+                          top: '50%',
+                          marginLeft: '-50%',
+                          marginTop: '-50%',
+                        }}
+                        onMouseDown={handleMouseDown}
+                        draggable={false}
+                      />
+                    </div>
+
+                    {/* Preview circular */}
+                    <div className="flex flex-col items-center justify-center gap-3 min-w-[180px]">
+                      <p className="text-sm font-medium text-center">Previsualización</p>
+                      <div className="relative w-32 h-32 rounded-full border-4 border-primary/50 overflow-hidden bg-muted/20">
+                        <img
+                          src={player.photoUrl}
+                          alt="Preview"
+                          className="absolute w-full h-full object-cover"
+                          style={{
+                            objectPosition: `${50 + (imagePosition.x / 500) * 100}% ${50 + (imagePosition.y / 500) * 100}%`,
+                            transform: `scale(${imageZoom})`,
+                            transformOrigin: 'center center',
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground text-center">
+                        Así se verá tu avatar
+                      </p>
+                    </div>
                   </div>
 
                   {/* Instrucciones y botón guardar */}

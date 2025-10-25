@@ -162,8 +162,18 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="relative h-12 w-12 rounded-full">
-                              <Avatar className="h-12 w-12 border">
-                                  <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} data-ai-hint="user avatar" />
+                              <Avatar className="h-12 w-12 border overflow-hidden">
+                                  <AvatarImage
+                                    src={user?.photoURL || ''}
+                                    alt={user?.displayName || 'User'}
+                                    data-ai-hint="user avatar"
+                                    style={{
+                                      objectFit: 'cover',
+                                      objectPosition: `${player?.cropPosition?.x || 50}% ${player?.cropPosition?.y || 50}%`,
+                                      transform: `scale(${player?.cropZoom || 1})`,
+                                      transformOrigin: 'center center',
+                                    }}
+                                  />
                                   <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
                               </Avatar>
                           </Button>

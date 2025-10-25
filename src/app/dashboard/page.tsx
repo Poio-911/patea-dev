@@ -28,6 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { MateIcon } from '@/components/icons/mate-icon';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
+import { logger } from '@/lib/logger';
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
     upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
@@ -43,14 +44,32 @@ function DashboardContent() {
   const [isToggling, setIsToggling] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  const playersQuery = useMemo(() => {
+  // ✅ Query optimizada: Solo traemos top 5 jugadores ordenados por OVR
+  const top5PlayersQuery = useMemo(() => {
+    if (!firestore || !user?.activeGroupId) return null;
+    return query(
+      collection(firestore, 'players'),
+      where('groupId', '==', user.activeGroupId),
+      orderBy('ovr', 'desc'),
+      limit(5)
+    );
+  }, [firestore, user?.activeGroupId]);
+
+  // Query para contar jugadores del grupo (sin traer todos los datos)
+  const allPlayersQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
     return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
   }, [firestore, user?.activeGroupId]);
 
+  // ✅ Query optimizada: Solo últimos 10 partidos (suficiente para próximo + 2 recientes)
   const groupMatchesQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
-    return query(collection(firestore, 'matches'), where('groupId', '==', user.activeGroupId), orderBy('date', 'desc'));
+    return query(
+      collection(firestore, 'matches'),
+      where('groupId', '==', user.activeGroupId),
+      orderBy('date', 'desc'),
+      limit(10)
+    );
   }, [firestore, user?.activeGroupId]);
   
   const joinedMatchesQuery = useMemo(() => {
@@ -71,8 +90,11 @@ function DashboardContent() {
   const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(groupMatchesQuery);
   const { data: joinedMatches, loading: joinedMatchesLoading } = useCollection<Match>(joinedMatchesQuery);
 
+  // ✅ Top 5 ya viene ordenado y limitado desde Firestore
+  const { data: top5Players, loading: top5Loading } = useCollection<Player>(top5PlayersQuery);
 
-  const { data: players, loading: playersLoading } = useCollection<Player>(playersQuery);
+  // Para contar jugadores del grupo
+  const { data: allPlayers, loading: allPlayersLoading } = useCollection<Player>(allPlayersQuery);
   
   const matches = useMemo(() => {
     if (!groupMatches && !joinedMatches) return null;
@@ -90,15 +112,15 @@ function DashboardContent() {
     return Array.from(allMatchesMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [groupMatches, joinedMatches]);
 
-  const loading = playersLoading || groupMatchesLoading || joinedMatchesLoading || playerLoading || availablePlayerLoading;
+  const loading = top5Loading || allPlayersLoading || groupMatchesLoading || joinedMatchesLoading || playerLoading || availablePlayerLoading;
 
   const { nextMatch, recentMatches } = useMemo(() => {
     if (!matches) return { nextMatch: null, recentMatches: [] };
-    
+
     const upcoming = matches
       .filter(m => m.status === 'upcoming' && new Date(m.date) >= new Date())
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    
+
     const recent = matches.filter(m => m.status !== 'upcoming').slice(0, 2);
 
     return {
@@ -106,11 +128,6 @@ function DashboardContent() {
       recentMatches: recent,
     };
   }, [matches]);
-
-  const top5Players = useMemo(() => {
-    if (!players) return [];
-    return [...players].sort((a, b) => b.ovr - a.ovr).slice(0, 5);
-  }, [players]);
 
   const requestLocationAndToggle = () => {
     if (!firestore || !user || !player) return;
@@ -157,9 +174,9 @@ function DashboardContent() {
             toast({ title: 'Ya no estás visible', description: 'Has sido eliminado de la lista de jugadores libres.' });
             setLocationError(null);
         } catch (error) {
-            console.error('Error turning off availability:', error);
+            logger.error('Error turning off availability', error, { userId: user.uid });
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cambiar tu visibilidad.' });
-        } finally {
+        } finally{
             setIsToggling(false);
         }
     }
@@ -276,7 +293,7 @@ function DashboardContent() {
                         <div className="space-y-4">
                             {recentMatches.map((match, index) => {
                                 const statusInfo = statusConfig[match.status];
-                                const owner = players?.find(p => p.id === match.ownerUid)
+                                const owner = allPlayers?.find(p => p.id === match.ownerUid)
                                 const ownerName = owner?.name || (match.ownerUid === user?.uid ? user.displayName : null) || 'Organizador';
                                 
                                 return (
@@ -359,7 +376,7 @@ function DashboardContent() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-4xl font-bold">{players?.length || 0}</div>
+                    <div className="text-4xl font-bold">{allPlayers?.length || 0}</div>
                     <p className="text-xs text-muted-foreground">jugadores en el grupo</p>
                 </CardContent>
             </Card>

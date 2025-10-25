@@ -14,6 +14,9 @@ import { getFirestore as getAdminFirestore, FieldValue } from 'firebase-admin/fi
 import { initializeApp, getApps, App as AdminApp, cert } from 'firebase-admin/app';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getStorage as getAdminStorage } from 'firebase-admin/storage';
+import { logger } from './logger';
+import { handleServerActionError, createError, formatErrorResponse, ErrorCodes } from './errors';
+import { validatePlayerAccessInGroup } from './auth-helpers';
 
 
 // Desactivar emuladores de Firebase para forzar conexión a producción
@@ -67,7 +70,7 @@ export async function generateTeamsAction(players: Player[]) {
 
     return result;
   } catch (error) {
-    console.error('Error generating teams:', error);
+    logger.error('Error generating teams', error);
     return { error: 'La IA no pudo generar los equipos. Inténtalo de nuevo.' };
   }
 }
@@ -91,7 +94,7 @@ export async function getPlayerEvaluationsAction(playerId: string, groupId: stri
         return evaluations;
 
     } catch (error) {
-        console.error("Error fetching player evaluations:", error);
+        logger.error("Error fetching player evaluations", error);
         return [];
     }
 }
@@ -126,7 +129,7 @@ export async function getPlayerImprovementSuggestionsAction(playerId: string, gr
         return result;
 
     } catch (error) {
-        console.error('Error getting player improvement suggestions:', error);
+        logger.error('Error getting player improvement suggestions', error);
         return { error: 'No se pudieron obtener las sugerencias de la IA.' };
     }
 }
@@ -136,7 +139,7 @@ export async function getWeatherForecastAction(input: GetMatchDayForecastInput) 
         const result = await getMatchDayForecast(input);
         return result;
     } catch (error) {
-        console.error('Error getting weather forecast:', error);
+        logger.error('Error getting weather forecast', error);
         return { error: 'No se pudo obtener el pronóstico del tiempo.' };
     }
 }
@@ -149,12 +152,7 @@ export async function findBestFitPlayerAction(input: Omit<FindBestFitPlayerInput
         }
         return result;
     } catch (error: any) {
-        console.error('Error finding best fit player:', error);
-        // This is a safeguard against invalid JSON responses from the LLM
-        if (error instanceof SyntaxError || error.message.includes('Unexpected token')) {
-             return { error: 'La IA devolvió una respuesta inesperada. Por favor, inténtalo de nuevo.' };
-        }
-        return { error: error.message || 'La IA no pudo procesar la solicitud en este momento.' };
+        return handleServerActionError(error, { matchId: input.match.id, action: 'findBestFitPlayer' });
     }
 }
 
@@ -165,22 +163,25 @@ export async function generatePlayerCardImageAction(userId: string) {
         const playerSnap = await playerRef.get();
 
         if (!playerSnap.exists) {
-            return { error: "No se encontró tu perfil de jugador." };
+            const error = createError(ErrorCodes.DATA_NOT_FOUND, { userId });
+            return formatErrorResponse(error);
         }
 
         const player = playerSnap.data() as Player;
         const credits = player.cardGenerationCredits === undefined ? 3 : player.cardGenerationCredits;
 
         if (credits <= 0) {
-            return { error: "No te quedan créditos para generar imágenes." };
+            const error = createError(ErrorCodes.AI_NO_CREDITS, { userId, credits });
+            return formatErrorResponse(error);
         }
 
         if (!player.photoUrl) {
-            return { error: "Primero debes subir una foto de perfil." };
+            const error = createError(ErrorCodes.VAL_MISSING_FIELD, { userId, field: 'photoUrl' });
+            return formatErrorResponse(error);
         }
-        
+
         if (player.photoUrl.includes('picsum.photos')) {
-            return { error: "La generación de imágenes no funciona con fotos de marcador de posición. Por favor, sube una foto tuya real." };
+            return { error: "La generación de imágenes no funciona con fotos de marcador de posición. Por favor, sube una foto tuya real.", code: ErrorCodes.VAL_INVALID_FORMAT };
         }
 
         const generatedImageDataUri = await generatePlayerCardImage(player.photoUrl);
@@ -221,8 +222,7 @@ export async function generatePlayerCardImageAction(userId: string) {
 
         return { success: true, newPhotoURL };
     } catch (error: any) {
-        console.error("Error generating player card image:", error);
-        return { error: error.message || "La IA no pudo generar la imagen. Inténtalo más tarde." };
+        return handleServerActionError(error, { userId, action: 'generatePlayerCardImage' });
     }
 }
 
@@ -230,14 +230,22 @@ export async function coachConversationAction(
   playerId: string,
   groupId: string,
   userMessage: string,
-  conversationHistory?: CoachConversationInput['conversationHistory']
+  conversationHistory?: CoachConversationInput['conversationHistory'],
+  userId?: string // Agregar userId para validación
 ) {
   try {
+    // ✅ Validar permisos: solo el dueño del jugador puede chatear con su DT
+    if (userId) {
+      const { valid, error } = await validatePlayerAccessInGroup(userId, playerId, groupId);
+      if (error) return error;
+    }
+
     const playerDocRef = adminDb.doc(`players/${playerId}`);
     const playerDocSnap = await playerDocRef.get();
 
     if (!playerDocSnap.exists) {
-      return { error: 'No se pudo encontrar al jugador.' };
+      const error = createError(ErrorCodes.DATA_NOT_FOUND, { playerId });
+      return formatErrorResponse(error);
     }
 
     const player = playerDocSnap.data() as Player;
@@ -276,18 +284,25 @@ export async function coachConversationAction(
     const result = await coachConversation(input);
     return result;
   } catch (error: any) {
-    console.error('Error in coach conversation:', error);
+    logger.error('Error in coach conversation', error, { playerId, groupId });
     return { error: error.message || 'Error al generar la respuesta del entrenador.' };
   }
 }
 
-export async function detectPlayerPatternsAction(playerId: string, groupId: string) {
+export async function detectPlayerPatternsAction(playerId: string, groupId: string, userId?: string) {
   try {
+    // ✅ Validar permisos: solo el dueño del jugador puede ver sus patrones
+    if (userId) {
+      const { valid, error } = await validatePlayerAccessInGroup(userId, playerId, groupId);
+      if (error) return error;
+    }
+
     const playerDocRef = adminDb.doc(`players/${playerId}`);
     const playerDocSnap = await playerDocRef.get();
 
     if (!playerDocSnap.exists) {
-      return { error: 'No se pudo encontrar al jugador.' };
+      const error = createError(ErrorCodes.DATA_NOT_FOUND, { playerId });
+      return formatErrorResponse(error);
     }
     const player = playerDocSnap.data() as Player;
 
@@ -350,7 +365,7 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
     const result = await detectPlayerPatterns(input);
     return result;
   } catch (error: any) {
-    console.error('Error detecting player patterns:', error);
+    logger.error('Error detecting player patterns', error, { playerId, groupId });
     return { error: error.message || 'No se pudo analizar el rendimiento del jugador.' };
   }
 }

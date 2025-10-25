@@ -34,8 +34,17 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
   return (
     <Card className="overflow-hidden border-2 shadow-lg border-border h-full flex flex-col bg-card">
       <CardHeader className="p-4 text-center items-center bg-muted/50">
-        <Avatar className="h-24 w-24 border-4 border-background mb-2">
-          <AvatarImage src={player.photoUrl} alt={playerName} />
+        <Avatar className="h-24 w-24 border-4 border-background mb-2 overflow-hidden">
+          <AvatarImage
+            src={player.photoUrl}
+            alt={playerName}
+            style={{
+              objectFit: 'cover',
+              objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`,
+              transform: `scale(${player.cropZoom || 1})`,
+              transformOrigin: 'center center',
+            }}
+          />
           <AvatarFallback>{playerName.charAt(0)}</AvatarFallback>
         </Avatar>
         <CardTitle className="text-2xl font-bold font-headline">{playerName}</CardTitle>

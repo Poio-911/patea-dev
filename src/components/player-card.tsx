@@ -149,8 +149,18 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
         </div>
 
       <CardContent className="p-4 text-center bg-card flex-grow flex flex-col">
-        <Avatar className="mx-auto -mt-12 h-24 w-24 border-4 border-background">
-          <AvatarImage src={player.photoUrl} alt={playerName} data-ai-hint="player portrait" />
+        <Avatar className="mx-auto -mt-12 h-24 w-24 border-4 border-background overflow-hidden">
+          <AvatarImage
+            src={player.photoUrl}
+            alt={playerName}
+            data-ai-hint="player portrait"
+            style={{
+              objectFit: 'cover',
+              objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`,
+              transform: `scale(${player.cropZoom || 1})`,
+              transformOrigin: 'center center',
+            }}
+          />
           <AvatarFallback>{playerName.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="mt-2 text-center">
