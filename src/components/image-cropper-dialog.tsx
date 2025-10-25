@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,7 @@ import { useUser, useAuth, initializeFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
-import { doc, writeBatch, updateDoc } from 'firebase/firestore';
+import { doc, writeBatch } from 'firebase/firestore';
 import { Loader2, Upload, Scissors, Sparkles } from 'lucide-react';
 import ReactCrop, { type Crop, type PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -30,38 +30,33 @@ interface ImageCropperDialogProps {
   children: React.ReactNode;
 }
 
-// Function to get the cropped image as a Blob
+// ✅ CORREGIDO: La función ahora acepta el elemento de la imagen para calcular la escala
 async function getCroppedImg(
-  imageSrc: string,
+  image: HTMLImageElement,
   pixelCrop: PixelCrop,
 ): Promise<Blob | null> {
-  const image = new Image();
-  image.crossOrigin = 'anonymous'; // This is important for CORS
-  image.src = imageSrc;
-  await new Promise((resolve, reject) => {
-    image.onload = resolve;
-    image.onerror = reject;
-  });
-
   const canvas = document.createElement('canvas');
-  canvas.width = pixelCrop.width;
-  canvas.height = pixelCrop.height;
-  const ctx = canvas.getContext('2d');
+  const scaleX = image.naturalWidth / image.width;
+  const scaleY = image.naturalHeight / image.height;
 
+  canvas.width = pixelCrop.width * scaleX;
+  canvas.height = pixelCrop.height * scaleY;
+
+  const ctx = canvas.getContext('2d');
   if (!ctx) {
     return null;
   }
 
   ctx.drawImage(
     image,
-    pixelCrop.x,
-    pixelCrop.y,
-    pixelCrop.width,
-    pixelCrop.height,
+    pixelCrop.x * scaleX,
+    pixelCrop.y * scaleY,
+    pixelCrop.width * scaleX,
+    pixelCrop.height * scaleY,
     0,
     0,
-    pixelCrop.width,
-    pixelCrop.height
+    canvas.width,
+    canvas.height
   );
 
   return new Promise((resolve) => {
@@ -71,6 +66,7 @@ async function getCroppedImg(
   });
 }
 
+
 export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, children }: ImageCropperDialogProps) {
   const [open, setOpen] = useState(false);
   const [imgSrc, setImgSrc] = useState(player.photoUrl || '');
@@ -78,6 +74,7 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, child
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null); // ✅ Referencia al elemento <img>
   const { user } = useUser();
   const auth = useAuth();
   const { toast } = useToast();
@@ -97,11 +94,12 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, child
   };
 
   const handleSaveCrop = async () => {
-    if (!completedCrop || !imgSrc || !user || !auth?.currentUser) return;
+    // ✅ CORREGIDO: Se pasa el elemento de la imagen a la función de recorte
+    if (!completedCrop || !imgRef.current || !user || !auth?.currentUser) return;
 
     setIsUploading(true);
     try {
-      const croppedImageBlob = await getCroppedImg(imgSrc, completedCrop);
+      const croppedImageBlob = await getCroppedImg(imgRef.current, completedCrop);
       if (!croppedImageBlob) {
         throw new Error('No se pudo recortar la imagen.');
       }
@@ -155,8 +153,8 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, child
               aspect={1}
               circularCrop
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
+                ref={imgRef} // ✅ Asignar la referencia
                 src={imgSrc}
                 alt="Crop preview"
                 onLoad={onImageLoad}
