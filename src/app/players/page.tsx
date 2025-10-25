@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import type { Player } from '@/lib/types';
 import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
+import { motion } from 'framer-motion';
 
 export default function PlayersPage() {
   const { user, loading: userLoading } = useUser();
@@ -83,8 +84,15 @@ export default function PlayersPage() {
       )}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {sortedPlayers?.map((player) => (
-          <PlayerCard key={player.id} player={player} />
+        {sortedPlayers?.map((player, index) => (
+          <motion.div
+            key={player.id}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: index * 0.05, type: "spring", stiffness: 100 }}
+          >
+            <PlayerCard player={player} />
+          </motion.div>
         ))}
       </div>
     </div>

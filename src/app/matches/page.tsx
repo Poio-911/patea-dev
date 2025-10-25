@@ -2,10 +2,10 @@
 'use client';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Users2, Calendar, Loader2, Info } from 'lucide-react';
+import { Users2, Calendar, Loader2, Info, LayoutGrid, CalendarDays } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { AddMatchDialog } from '@/components/add-match-dialog';
@@ -14,6 +14,8 @@ import { MatchCard } from '@/components/match-card';
 import { InvitationsSheet } from '@/components/invitations-sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
+import { MatchesCalendar } from '@/components/matches-calendar';
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Tooltip,
   TooltipContent,
@@ -25,6 +27,7 @@ import {
 export default function MatchesPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
+    const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
     const playersQuery = useMemo(() => {
         if (!firestore || !user?.activeGroupId) return null;
@@ -111,6 +114,14 @@ export default function MatchesPage() {
                 description="Programa, visualiza y gestiona todos tus partidos."
             >
                 <div className="flex items-center gap-2">
+                   <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'list' | 'calendar')}>
+                       <ToggleGroupItem value="list" aria-label="Vista de lista">
+                           <LayoutGrid className="h-4 w-4" />
+                       </ToggleGroupItem>
+                       <ToggleGroupItem value="calendar" aria-label="Vista de calendario">
+                           <CalendarDays className="h-4 w-4" />
+                       </ToggleGroupItem>
+                   </ToggleGroup>
                    <AddMatchDialog allPlayers={sortedPlayers} disabled={!user?.activeGroupId} />
                    <InvitationsSheet />
                 </div>
@@ -157,50 +168,54 @@ export default function MatchesPage() {
             )}
 
             {user?.activeGroupId && (
-                <Tabs defaultValue="upcoming" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="upcoming">Próximos</TabsTrigger>
-                        <TabsTrigger value="history">Historial</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="upcoming" className="mt-6">
-                        <div className="flex flex-col gap-6">
-                            {upcomingMatches.length > 0 ? (
+                viewMode === 'calendar' ? (
+                    <MatchesCalendar matches={matches} allPlayers={sortedPlayers} />
+                ) : (
+                    <Tabs defaultValue="upcoming" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="upcoming">Próximos</TabsTrigger>
+                            <TabsTrigger value="history">Historial</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="upcoming" className="mt-6">
+                            <div className="flex flex-col gap-6">
+                                {upcomingMatches.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {upcomingMatches.map((match) => (
+                                            <MatchCard key={match.id} match={match} allPlayers={sortedPlayers} />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center text-center border-2 border-dashed border-muted-foreground/30 rounded-xl p-12">
+                                        <Calendar className="h-12 w-12 text-muted-foreground/50" />
+                                        <h2 className="mt-4 text-xl font-semibold">No hay partidos programados</h2>
+                                        <p className="mt-2 text-sm text-muted-foreground">
+                                            ¡Usa el botón de arriba para empezar a jugar!
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="history" className="mt-6">
+                             {pastMatches.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {upcomingMatches.map((match) => (
+                                    {pastMatches.map((match) => (
                                         <MatchCard key={match.id} match={match} allPlayers={sortedPlayers} />
                                     ))}
                                 </div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center text-center border-2 border-dashed border-muted-foreground/30 rounded-xl p-12">
+                                 <div className="flex flex-col items-center justify-center text-center border-2 border-dashed border-muted-foreground/30 rounded-xl p-12">
                                     <Calendar className="h-12 w-12 text-muted-foreground/50" />
-                                    <h2 className="mt-4 text-xl font-semibold">No hay partidos programados</h2>
+                                    <h2 className="mt-4 text-xl font-semibold">Sin Historial de Partidos</h2>
                                     <p className="mt-2 text-sm text-muted-foreground">
-                                        ¡Usa el botón de arriba para empezar a jugar!
+                                        Cuando completes tu primer partido, aparecerá aquí.
                                     </p>
                                 </div>
                             )}
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent value="history" className="mt-6">
-                         {pastMatches.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {pastMatches.map((match) => (
-                                    <MatchCard key={match.id} match={match} allPlayers={sortedPlayers} />
-                                ))}
-                            </div>
-                        ) : (
-                             <div className="flex flex-col items-center justify-center text-center border-2 border-dashed border-muted-foreground/30 rounded-xl p-12">
-                                <Calendar className="h-12 w-12 text-muted-foreground/50" />
-                                <h2 className="mt-4 text-xl font-semibold">Sin Historial de Partidos</h2>
-                                <p className="mt-2 text-sm text-muted-foreground">
-                                    Cuando completes tu primer partido, aparecerá aquí.
-                                </p>
-                            </div>
-                        )}
-                    </TabsContent>
-                </Tabs>
+                        </TabsContent>
+                    </Tabs>
+                )
             )}
         </div>
     );

@@ -7,7 +7,21 @@
       "Bash(taskkill:*)",
       "Bash(git pull:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(tasklist:*)",
+      "Bash(if exist .next rmdir /s /q .next)",
+      "Bash(cat:*)",
+      "Bash(curl:*)",
+      "WebSearch",
+      "WebFetch(domain:genkit.dev)",
+      "WebFetch(domain:firebase.google.com)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(npm install:*)",
+      "Bash(timeout /t 3)",
+      "Bash(npx kill-port:*)",
+      "Bash(set PORT=3006)",
+      "Bash(npx next dev -p 3006)"
     ],
     "deny": [],
     "ask": []

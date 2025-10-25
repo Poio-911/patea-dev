@@ -96,6 +96,55 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
 
   const isCurrentUserProfile = user?.uid === playerId;
 
+  // Keyboard shortcuts for crop editor
+  useEffect(() => {
+    if (!showImageDialog || !isCurrentUserProfile) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const MOVE_STEP = 10;
+      const ZOOM_STEP = 0.1;
+
+      switch (e.key) {
+        case 'ArrowUp':
+          e.preventDefault();
+          setImagePosition(prev => ({ ...prev, y: prev.y - MOVE_STEP }));
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          setImagePosition(prev => ({ ...prev, y: prev.y + MOVE_STEP }));
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          setImagePosition(prev => ({ ...prev, x: prev.x - MOVE_STEP }));
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          setImagePosition(prev => ({ ...prev, x: prev.x + MOVE_STEP }));
+          break;
+        case '+':
+        case '=':
+          e.preventDefault();
+          setImageZoom(prev => Math.min(prev + ZOOM_STEP, 3));
+          break;
+        case '-':
+        case '_':
+          e.preventDefault();
+          setImageZoom(prev => Math.max(prev - ZOOM_STEP, 0.5));
+          break;
+        case 'r':
+        case 'R':
+          if (!e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            handleResetView();
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showImageDialog, isCurrentUserProfile]);
+
   const playerRef = useMemo(() => firestore && playerId ? doc(firestore, 'players', playerId) : null, [firestore, playerId]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
 
@@ -317,6 +366,10 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
 
   const handleZoomOut = () => {
     setImageZoom(prev => Math.max(prev - 0.2, 0.5));
+  };
+
+  const handleSetZoom = (zoom: number) => {
+    setImageZoom(zoom);
   };
 
   const handleResetView = () => {
@@ -860,35 +913,61 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                 <>
                   {/* MODO EDICIÓN - Mi perfil */}
                   {/* Controles de zoom */}
-                  <div className="flex items-center justify-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleZoomOut}
-                      disabled={imageZoom <= 0.5}
-                    >
-                      <ZoomOut className="h-4 w-4" />
-                    </Button>
-                    <span className="text-sm font-medium min-w-[60px] text-center">
-                      {Math.round(imageZoom * 100)}%
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleZoomIn}
-                      disabled={imageZoom >= 3}
-                    >
-                      <ZoomIn className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleResetView}
-                      className="ml-2"
-                    >
-                      <RotateCcw className="h-4 w-4 mr-1" />
-                      Reset
-                    </Button>
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleZoomOut}
+                        disabled={imageZoom <= 0.5}
+                        title="Alejar (-)"
+                      >
+                        <ZoomOut className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm font-medium min-w-[60px] text-center">
+                        {Math.round(imageZoom * 100)}%
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleZoomIn}
+                        disabled={imageZoom >= 3}
+                        title="Acercar (+)"
+                      >
+                        <ZoomIn className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleResetView}
+                        className="ml-2"
+                        title="Resetear (R)"
+                      >
+                        <RotateCcw className="h-4 w-4 mr-1" />
+                        Reset
+                      </Button>
+                    </div>
+
+                    {/* Presets de zoom */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Presets:</span>
+                      {[1, 1.5, 2, 2.5].map(zoom => (
+                        <Button
+                          key={zoom}
+                          size="sm"
+                          variant={Math.abs(imageZoom - zoom) < 0.1 ? "default" : "ghost"}
+                          onClick={() => handleSetZoom(zoom)}
+                          className="h-7 px-3"
+                        >
+                          {zoom}x
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* Ayuda de teclado */}
+                    <p className="text-xs text-muted-foreground text-center">
+                      Usa las flechas ← ↑ ↓ → para mover, +/- para zoom, R para resetear
+                    </p>
                   </div>
 
                   {/* Contenedor principal: editor + preview */}
@@ -942,11 +1021,8 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                     </div>
                   </div>
 
-                  {/* Instrucciones y botón guardar */}
-                  <div className="flex items-center justify-between gap-4">
-                    <p className="text-xs text-muted-foreground">
-                      Hacé clic y arrastrá para mover la imagen
-                    </p>
+                  {/* Botón guardar */}
+                  <div className="flex items-center justify-end gap-4">
                     <Button onClick={handleSaveCrop} disabled={isSavingCrop}>
                       {isSavingCrop ? (
                         <>

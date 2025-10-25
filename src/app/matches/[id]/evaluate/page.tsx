@@ -8,11 +8,13 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, Check, BarChart, UserCheck, UserX, Star, AlertTriangle, FileClock } from 'lucide-react';
+import { Loader2, Check, BarChart, UserCheck, UserX, Star, AlertTriangle, FileClock, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Progress } from '@/components/ui/progress';
+import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
 
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
@@ -204,6 +206,17 @@ export default function EvaluateMatchPage() {
       setIsPageLoading(false);
     }
   }, [matchLoading, assignmentsLoading, playersLoading]);
+
+  // 🎉 Celebrate when 100% of evaluations are complete
+  useEffect(() => {
+    if (evaluationProgress === 100 && totalPossibleEvaluators > 0 && match?.status !== 'evaluated') {
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.7 }
+      });
+    }
+  }, [evaluationProgress, totalPossibleEvaluators, match?.status]);
   
   const handleFinalizeEvaluation = async () => {
     if (!firestore || !match || !match.id) return;
@@ -325,6 +338,13 @@ export default function EvaluateMatchPage() {
             transaction.update(matchRef, { status: 'evaluated' });
         });
 
+        // 🎉 Confetti celebration on successful finalization
+        confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+        });
+
         toast({
             title: "¡Evaluación Finalizada!",
             description: "Los OVRs y estadísticas de los jugadores han sido actualizados."
@@ -419,27 +439,58 @@ export default function EvaluateMatchPage() {
             <CardContent className="space-y-6">
                 <div className="flex items-center gap-4">
                     <span className="text-3xl font-bold text-primary">{completedEvaluatorsCount}</span>
-                    <span className="text-muted-foreground">de</span> 
+                    <span className="text-muted-foreground">de</span>
                     <span className="text-3xl font-bold text-primary">{totalPossibleEvaluators}</span>
                     <span className="text-muted-foreground">jugadores reales han evaluado</span>
                 </div>
-                <Progress value={evaluationProgress} />
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Progreso</span>
+                        <span className="text-sm font-semibold text-primary">{Math.round(evaluationProgress)}%</span>
+                    </div>
+                    <Progress value={evaluationProgress} />
+                </div>
                 
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {realPlayersInMatch.map(player => (
-                        <div key={player.id} className="flex items-center gap-3 p-2 rounded-md border">
-                            <Avatar className="h-8 w-8">
-                                <AvatarImage src={player.photoUrl} alt={player.name}/>
-                                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <span className="flex-1 font-medium">{player.name}</span>
-                            {evaluatorsWhoHaveVoted.has(player.id) ? (
-                                <UserCheck className="h-5 w-5 text-green-500" />
-                            ) : (
-                                <UserX className="h-5 w-5 text-red-500" />
-                            )}
-                        </div>
-                    ))}
+                    <AnimatePresence mode="popLayout">
+                        {realPlayersInMatch.map((player, index) => (
+                            <motion.div
+                                key={player.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.05 }}
+                                className="flex items-center gap-3 p-2 rounded-md border"
+                            >
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={player.photoUrl} alt={player.name}/>
+                                    <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <span className="flex-1 font-medium">{player.name}</span>
+                                <AnimatePresence mode="wait">
+                                    {evaluatorsWhoHaveVoted.has(player.id) ? (
+                                        <motion.div
+                                            key="checked"
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            exit={{ scale: 0 }}
+                                            transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                                        >
+                                            <UserCheck className="h-5 w-5 text-green-500" />
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div
+                                            key="unchecked"
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            exit={{ scale: 0 }}
+                                        >
+                                            <UserX className="h-5 w-5 text-red-500" />
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
                  </div>
                  {completedEvaluatorsCount === 0 && (
                     <Alert>
@@ -450,11 +501,27 @@ export default function EvaluateMatchPage() {
                     </Alert>
                  )}
             </CardContent>
-            <CardFooter>
-                <Button size="lg" onClick={handleFinalizeEvaluation} disabled={isFinalizing || completedEvaluatorsCount === 0}>
-                    {isFinalizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Star className="mr-2 h-4 w-4" />}
-                    {isFinalizing ? "Procesando..." : "Finalizar y Calcular OVRs"}
+            <CardFooter className="flex flex-col gap-2">
+                <Button
+                    size="lg"
+                    onClick={handleFinalizeEvaluation}
+                    disabled={isFinalizing || completedEvaluatorsCount === 0}
+                    className={evaluationProgress === 100 ? "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700" : ""}
+                >
+                    {isFinalizing ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                    ) : evaluationProgress === 100 ? (
+                        <Sparkles className="mr-2 h-4 w-4" />
+                    ) : (
+                        <Star className="mr-2 h-4 w-4" />
+                    )}
+                    {isFinalizing ? "Procesando..." : evaluationProgress === 100 ? "¡Listo para Finalizar!" : "Finalizar y Calcular OVRs"}
                 </Button>
+                {evaluationProgress >= 80 && evaluationProgress < 100 && (
+                    <p className="text-xs text-muted-foreground text-center">
+                        Ya puedes finalizar, aunque no todos hayan evaluado (≥80%)
+                    </p>
+                )}
             </CardFooter>
         </Card>
     </div>

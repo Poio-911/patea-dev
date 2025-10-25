@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { MatchTeamsDialog } from '@/components/match-teams-dialog';
+import { EditableTeamsDialog } from '@/components/editable-teams-dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -447,7 +448,23 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                         </Button>
                     </MatchDetailsDialog>
                     {isUserInMatch && <MatchChatSheet match={match}><Button variant="outline" size="sm" className="w-full"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button></MatchChatSheet>}
-                    {match.teams && match.teams.length > 0 && <MatchTeamsDialog match={match}><Button variant="outline" size="sm" className="w-full"><TeamsIcon className="mr-2 h-4 w-4" />Equipos</Button></MatchTeamsDialog>}
+                    {match.teams && match.teams.length > 0 && (
+                        isOwner && match.status === 'completed' ? (
+                            <EditableTeamsDialog match={match}>
+                                <Button variant="outline" size="sm" className="w-full">
+                                    <TeamsIcon className="mr-2 h-4 w-4" />
+                                    Editar Equipos
+                                </Button>
+                            </EditableTeamsDialog>
+                        ) : (
+                            <MatchTeamsDialog match={match}>
+                                <Button variant="outline" size="sm" className="w-full">
+                                    <TeamsIcon className="mr-2 h-4 w-4" />
+                                    Equipos
+                                </Button>
+                            </MatchTeamsDialog>
+                        )
+                    )}
                     
                     {isOwner && match.status === 'completed' && (
                         <Button asChild size="sm" className="w-full bg-amber-500 hover:bg-amber-600 text-white col-span-2">

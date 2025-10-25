@@ -1,3 +1,5 @@
+'use server';
+
 /**
  * Helpers de autenticación y autorización para Server Actions
  *
@@ -10,10 +12,18 @@ import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 import { getApps } from 'firebase-admin/app';
 import { ErrorCodes, createError, formatErrorResponse, type ErrorResponse } from './errors';
 
-// Obtener instancias admin (deben estar inicializadas en actions.ts)
-const adminApp = getApps()[0];
-const adminAuth = getAdminAuth(adminApp);
-const adminDb = getAdminFirestore(adminApp);
+// Función lazy para obtener instancias admin solo cuando se necesitan
+function getAdminInstances() {
+  const apps = getApps();
+  if (!apps.length) {
+    throw new Error('Firebase Admin no está inicializado. Llama a esta función desde una Server Action.');
+  }
+  const adminApp = apps[0];
+  return {
+    adminAuth: getAdminAuth(adminApp),
+    adminDb: getAdminFirestore(adminApp),
+  };
+}
 
 // ──────────────────────────────────────────────────────────────
 // VALIDACIÓN DE AUTENTICACIÓN
@@ -30,6 +40,7 @@ export async function validateUser(userId: string): Promise<{ user?: any; error?
   }
 
   try {
+    const { adminAuth } = getAdminInstances();
     const user = await adminAuth.getUser(userId);
     return { user };
   } catch (error: any) {
@@ -60,6 +71,7 @@ export async function validatePlayerOwnership(
   }
 
   try {
+    const { adminDb } = getAdminInstances();
     const playerDoc = await adminDb.doc(`players/${playerId}`).get();
 
     if (!playerDoc.exists) {
@@ -99,6 +111,7 @@ export async function validateMatchOwnership(
   }
 
   try {
+    const { adminDb } = getAdminInstances();
     const matchDoc = await adminDb.doc(`matches/${matchId}`).get();
 
     if (!matchDoc.exists) {
@@ -138,6 +151,7 @@ export async function validateGroupAdmin(
   }
 
   try {
+    const { adminDb } = getAdminInstances();
     const groupDoc = await adminDb.doc(`groups/${groupId}`).get();
 
     if (!groupDoc.exists) {
@@ -181,6 +195,7 @@ export async function validatePlayerInGroup(
   }
 
   try {
+    const { adminDb } = getAdminInstances();
     const playerDoc = await adminDb.doc(`players/${playerId}`).get();
 
     if (!playerDoc.exists) {

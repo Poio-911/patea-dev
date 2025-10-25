@@ -29,6 +29,7 @@ import { Label } from '@/components/ui/label';
 import { MateIcon } from '@/components/icons/mate-icon';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 import { logger } from '@/lib/logger';
+import { motion } from 'framer-motion';
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
     upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
@@ -211,7 +212,12 @@ function DashboardContent() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="flex flex-col gap-8"
+    >
       <FirstTimeInfoDialog
         featureKey="hasSeenDashboardInfo"
         title="¡Bienvenid@ a tu Vestuario!"
@@ -295,9 +301,14 @@ function DashboardContent() {
                                 const statusInfo = statusConfig[match.status];
                                 const owner = allPlayers?.find(p => p.id === match.ownerUid)
                                 const ownerName = owner?.name || (match.ownerUid === user?.uid ? user.displayName : null) || 'Organizador';
-                                
+
                                 return (
-                                    <div key={match.id}>
+                                    <motion.div
+                                      key={match.id}
+                                      initial={{ opacity: 0, y: 10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      transition={{ delay: index * 0.1 }}
+                                    >
                                         <div className="flex justify-between items-start gap-4">
                                             <div className="flex-1">
                                                 <p className="font-semibold">{match.title}</p>
@@ -315,7 +326,7 @@ function DashboardContent() {
                                             <Badge variant="outline" className={cn("text-xs shrink-0", statusInfo.className)}>{statusInfo.label}</Badge>
                                         </div>
                                         {index < recentMatches.length - 1 && <Separator className="mt-4" />}
-                                    </div>
+                                    </motion.div>
                                 )
                             })}
                         </div>
@@ -348,7 +359,13 @@ function DashboardContent() {
                   {top5Players.length > 0 ? top5Players.map((player: Player, index: number) => {
                       const isManualPlayer = player.id !== player.ownerUid;
                       return (
-                        <div key={player.id} className="flex items-center gap-4">
+                        <motion.div
+                          key={player.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1, type: "spring", stiffness: 100 }}
+                          className="flex items-center gap-4"
+                        >
                           <div className="text-muted-foreground font-bold w-4">{index + 1}.</div>
                           <Avatar className={cn("h-10 w-10 border-2 border-primary/50", isManualPlayer && "border-dashed border-muted-foreground")}>
                             <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
@@ -361,8 +378,15 @@ function DashboardContent() {
                             </div>
                             <p className="text-sm text-muted-foreground">{player.position}</p>
                           </div>
-                          <div className="text-lg font-bold text-primary">{player.ovr}</div>
-                        </div>
+                          <motion.div
+                            className="text-lg font-bold text-primary"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: index * 0.1 + 0.2, type: "spring", stiffness: 200 }}
+                          >
+                            {player.ovr}
+                          </motion.div>
+                        </motion.div>
                       )
                   }) : <p className="text-sm text-muted-foreground text-center py-4">Aún no hay jugadores en este grupo.</p>}
                 </div>
@@ -382,7 +406,7 @@ function DashboardContent() {
             </Card>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
