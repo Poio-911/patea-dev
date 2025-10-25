@@ -43,6 +43,7 @@ import { JerseyPreview } from './team-builder/jersey-preview';
 import { TeamsIcon } from './icons/teams-icon';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { Badge } from './ui/badge';
 
 const matchLocationSchema = z.object({
   name: z.string(),
@@ -752,4 +753,3 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     </Dialog>
   );
 }
-
