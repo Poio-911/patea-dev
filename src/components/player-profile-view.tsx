@@ -1,8 +1,8 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useDoc, useCollection, useFirestore, useUser, initializeFirebase, useAuth } from '@/firebase';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
 import { 
   doc, 
   collection, 
@@ -10,15 +10,12 @@ import {
   where, 
   orderBy, 
   getDocs, 
-  getDoc,
-  writeBatch, 
-  updateDoc 
 } from 'firebase/firestore';
-import type { Player, Evaluation, Match, OvrHistory, UserProfile, PerformanceTag } from '@/lib/types';
+import type { Player, Evaluation, Match, OvrHistory, UserProfile, PerformanceTag, AttributeKey } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, BarChart2, Star, Goal, Upload, Eye, ChevronDown, CheckCircle, BrainCircuit, Sparkles } from 'lucide-react';
+import { Loader2, BarChart2, Star, Goal, Eye, ChevronDown, CheckCircle, BrainCircuit, Sparkles, Gauge, Crosshair, ArrowRightLeft, Footprints, Shield, HeartPulse } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -32,8 +29,9 @@ import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger }
 import { FirstTimeInfoDialog } from './first-time-info-dialog';
 import Link from 'next/link';
 import { AnalysisIcon } from './icons/analysis-icon';
-import { generatePlayerCardImageAction } from '@/lib/actions';
 import { ImageCropperDialog } from '@/components/image-cropper-dialog';
+import { generatePlayerCardImageAction } from '@/lib/actions';
+import { AttributesHelpDialog } from './attributes-help-dialog';
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -53,12 +51,26 @@ const statusConfig: Record<Match['status'], { label: string; className: string }
     evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' },
 };
 
-const Stat = ({ label, value }: { label: string; value: number }) => (
-  <div className="flex items-center justify-between text-sm py-1">
-    <span className="font-semibold text-muted-foreground">{label}</span>
-    <span className="font-bold">{value}</span>
-  </div>
+const attributeDetails: Record<AttributeKey, { name: string, icon: React.ElementType, color: string }> = {
+  PAC: { name: 'Ritmo', icon: Gauge, color: 'text-green-500' },
+  SHO: { name: 'Tiro', icon: Crosshair, color: 'text-red-500' },
+  PAS: { name: 'Pase', icon: ArrowRightLeft, color: 'text-blue-500' },
+  DRI: { name: 'Regate', icon: Footprints, color: 'text-orange-500' },
+  DEF: { name: 'Defensa', icon: Shield, color: 'text-indigo-500' },
+  PHY: { name: 'Físico', icon: HeartPulse, color: 'text-pink-500' },
+};
+
+
+const Stat = ({ label, value, icon: Icon, color }: { label: string; value: number; icon: React.ElementType; color: string }) => (
+    <div className="flex items-center justify-between text-base py-2">
+        <div className={cn("flex items-center gap-2 font-semibold", color)}>
+            <Icon className="h-5 w-5"/>
+            <span>{label}</span>
+        </div>
+        <span className="font-bold text-lg">{value}</span>
+    </div>
 );
+
 
 type DetailedEvaluation = Evaluation & { evaluatorName?: string; evaluatorPhoto?: string };
 type MatchEvaluationSummary = {
@@ -73,7 +85,6 @@ type MatchEvaluationSummary = {
 export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
   const { user } = useUser();
   const firestore = useFirestore();
-  const auth = useAuth();
   const { toast } = useToast();
 
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
@@ -286,16 +297,23 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <Card className="lg:col-span-1">
                     <CardContent className="pt-6">
-                        <div className="flex flex-col sm:flex-row items-center gap-6">
-                            <div className="relative">
+                        <div className="flex flex-col items-center gap-4">
+                             <div className="text-center">
+                                <h2 className="text-3xl font-bold font-headline">{player.name}</h2>
+                                <div className="flex items-center justify-center gap-4 mt-2">
+                                    <span className={cn("text-5xl font-bold", positionColors[player.position])}>{player.ovr}</span>
+                                    <Badge variant="secondary" className="text-lg">{player.position}</Badge>
+                                </div>
+                            </div>
+                            <div className="relative w-full max-w-[200px]">
                                 {isCurrentUserProfile ? (
                                     <ImageCropperDialog
                                         player={player}
                                         onGenerateAI={handleGenerateAIPhoto}
                                         isGeneratingAI={isGeneratingAI}
                                     >
-                                        <button className="group relative">
-                                            <Avatar className="h-32 w-32 border-4 border-primary/50 group-hover:scale-105 group-hover:ring-4 group-hover:ring-primary/50 transition-all duration-300">
+                                        <button className="group relative mx-auto block">
+                                            <Avatar className="h-40 w-40 border-4 border-primary/50 group-hover:scale-105 group-hover:ring-4 group-hover:ring-primary/50 transition-all duration-300">
                                                 <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
                                                 <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
                                             </Avatar>
@@ -305,28 +323,33 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                         </button>
                                     </ImageCropperDialog>
                                 ) : (
-                                    <Avatar className="h-32 w-32 border-4 border-primary/50">
+                                    <Avatar className="h-40 w-40 border-4 border-primary/50 mx-auto">
                                         <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
                                         <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                 )}
                             </div>
                         </div>
-                        <div className="text-center mt-6">
-                            <h2 className="text-2xl font-bold font-headline">{player.name}</h2>
-                            <div className="flex items-center justify-center gap-4 mt-1">
-                                <span className={cn("text-4xl font-bold", positionColors[player.position])}>{player.ovr}</span>
-                                <Badge variant="secondary" className="text-lg">{player.position}</Badge>
+                        
+                        <Separator className="my-6"/>
+                        <div className="w-full px-4">
+                            <div className="flex items-center gap-2 mb-2">
+                                <h4 className="font-bold text-lg">Atributos</h4>
+                                <AttributesHelpDialog>
+                                    <span />
+                                </AttributesHelpDialog>
                             </div>
-                        </div>
-                        <Separator className="my-4"/>
-                        <div className="w-full grid grid-cols-2 gap-x-8 gap-y-3 px-4">
-                            <Stat label="RIT" value={player.pac} />
-                            <Stat label="TIR" value={player.sho} />
-                            <Stat label="PAS" value={player.pas} />
-                            <Stat label="REG" value={player.dri} />
-                            <Stat label="DEF" value={player.def} />
-                            <Stat label="FIS" value={player.phy} />
+                            <div className="space-y-1">
+                                {(Object.keys(attributeDetails) as AttributeKey[]).map(key => (
+                                    <Stat
+                                        key={key}
+                                        label={attributeDetails[key].name}
+                                        value={player[key.toLowerCase() as keyof Player] as number}
+                                        icon={attributeDetails[key].icon}
+                                        color={attributeDetails[key].color}
+                                    />
+                                ))}
+                            </div>
                         </div>
                         {isCurrentUserProfile && (
                              <div className="mt-6 text-center">

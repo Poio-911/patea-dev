@@ -11,11 +11,21 @@ import {
 } from '@/components/ui/dialog';
 import { attributeDescriptions, AttributeKey } from '@/lib/data';
 import { Separator } from './ui/separator';
+import { Button } from './ui/button';
+import { HelpCircle } from 'lucide-react';
 
-export function AttributesHelpDialog({ children }: { children: React.ReactNode }) {
+export function AttributesHelpDialog({ children }: { children?: React.ReactNode }) {
   return (
     <Dialog>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogTrigger asChild>
+        {children ? (
+            children
+        ) : (
+            <Button variant="ghost" size="icon" className="h-5 w-5">
+                <HelpCircle className="h-4 w-4" />
+            </Button>
+        )}
+      </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>¿Qué significan los atributos?</DialogTitle>
