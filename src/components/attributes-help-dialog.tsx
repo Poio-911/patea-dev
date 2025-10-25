@@ -9,7 +9,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { attributeDescriptions, AttributeKey } from '@/lib/data';
+import { attributeDescriptions } from '@/lib/data';
+import type { AttributeKey } from '@/lib/types';
 import { Separator } from './ui/separator';
 import { Button } from './ui/button';
 import { HelpCircle } from 'lucide-react';
