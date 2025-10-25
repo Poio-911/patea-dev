@@ -169,7 +169,7 @@ export async function generatePlayerCardImageAction(userId: string) {
         }
 
         const player = playerSnap.data() as Player;
-        const credits = player.cardGenerationCredits === undefined ? 2 : player.cardGenerationCredits;
+        const credits = player.cardGenerationCredits === undefined ? 3 : player.cardGenerationCredits;
 
         if (credits <= 0) {
             return { error: "No te quedan créditos para generar imágenes." };

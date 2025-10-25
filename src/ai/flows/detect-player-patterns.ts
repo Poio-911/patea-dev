@@ -160,7 +160,7 @@ const detectPlayerPatternsFlow = ai.defineFlow(
     outputSchema: DetectPlayerPatternsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input, { model: 'gemini-2.5-flash' });
+    const {output} = await prompt(input, { model: 'googleai/gemini-2.5-flash' });
     return output!;
   }
 );

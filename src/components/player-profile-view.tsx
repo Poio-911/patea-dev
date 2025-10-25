@@ -17,7 +17,7 @@ import type { Player, Evaluation, Match, OvrHistory, UserProfile, PerformanceTag
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, BarChart2, Star, Goal, Upload, Eye, ChevronDown, CheckCircle, BrainCircuit, Sparkles } from 'lucide-react';
+import { Loader2, BarChart2, Star, Goal, Upload, Eye, ChevronDown, CheckCircle, BrainCircuit, Sparkles, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -34,6 +34,7 @@ import { FirstTimeInfoDialog } from './first-time-info-dialog';
 import Link from 'next/link';
 import { AnalysisIcon } from './icons/analysis-icon';
 import { generatePlayerCardImageAction } from '@/lib/actions';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -84,6 +85,12 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
 
   const [isUploading, setIsUploading] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  const [imageZoom, setImageZoom] = useState(1);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isSavingCrop, setIsSavingCrop] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isCurrentUserProfile = user?.uid === playerId;
@@ -286,6 +293,47 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     fileInputRef.current?.click();
   };
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setImagePosition({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y,
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleZoomIn = () => {
+    setImageZoom(prev => Math.min(prev + 0.2, 3));
+  };
+
+  const handleZoomOut = () => {
+    setImageZoom(prev => Math.max(prev - 0.2, 0.5));
+  };
+
+  const handleResetView = () => {
+    // Si hay crop guardado, volver a esa configuración; si no, volver a defaults
+    if (player?.cropPosition || player?.cropZoom) {
+      // Convertir porcentajes de vuelta a píxeles para el Dialog
+      const DIALOG_SIZE = 500;
+      const xPixels = player.cropPosition ? ((player.cropPosition.x - 50) / 100) * DIALOG_SIZE : 0;
+      const yPixels = player.cropPosition ? ((player.cropPosition.y - 50) / 100) * DIALOG_SIZE : 0;
+
+      setImagePosition({ x: xPixels, y: yPixels });
+      setImageZoom(player.cropZoom || 1);
+    } else {
+      setImagePosition({ x: 0, y: 0 });
+      setImageZoom(1);
+    }
+  };
+
   const handleGenerateAIPhoto = async () => {
     if (!user?.uid) return;
 
@@ -321,6 +369,57 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     }
   };
 
+  const handleOpenImageDialog = () => {
+    // Cargar configuración de crop guardada o valores por defecto
+    if (player?.cropPosition || player?.cropZoom) {
+      // Convertir porcentajes de vuelta a píxeles para el Dialog
+      const DIALOG_SIZE = 500;
+      const xPixels = player.cropPosition ? ((player.cropPosition.x - 50) / 100) * DIALOG_SIZE : 0;
+      const yPixels = player.cropPosition ? ((player.cropPosition.y - 50) / 100) * DIALOG_SIZE : 0;
+
+      setImagePosition({ x: xPixels, y: yPixels });
+      setImageZoom(player.cropZoom || 1);
+    } else {
+      setImagePosition({ x: 0, y: 0 });
+      setImageZoom(1);
+    }
+    setShowImageDialog(true);
+  };
+
+  const handleSaveCrop = async () => {
+    if (!playerRef) return;
+
+    setIsSavingCrop(true);
+    try {
+      // Convertir píxeles a porcentajes para que funcione en cualquier tamaño
+      // El contenedor del Dialog es 500px, convertimos a porcentaje relativo al centro (50%)
+      const DIALOG_SIZE = 500;
+      const xPercent = 50 + (imagePosition.x / DIALOG_SIZE) * 100;
+      const yPercent = 50 + (imagePosition.y / DIALOG_SIZE) * 100;
+
+      await updateDoc(playerRef, {
+        cropPosition: { x: xPercent, y: yPercent }, // Guardamos como porcentajes
+        cropZoom: imageZoom,
+      });
+
+      toast({
+        title: 'Configuración guardada',
+        description: 'El ajuste de tu foto ha sido guardado.',
+      });
+
+      setShowImageDialog(false);
+    } catch (error: any) {
+      console.error('Error saving crop:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error al guardar',
+        description: error.message || 'No se pudo guardar la configuración.',
+      });
+    } finally {
+      setIsSavingCrop(false);
+    }
+  };
+
   const loading = playerLoading || historyLoading || isLoading || (isCurrentUserProfile && (createdMatchesLoading || createdPlayersLoading));
 
 
@@ -349,8 +448,21 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                     <CardContent className="pt-6">
                         <div className="flex flex-col sm:flex-row items-center gap-6">
                             <div className="relative">
-                                <Avatar className="h-32 w-32 border-4 border-primary/50">
-                                    <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
+                                <Avatar
+                                    className="h-32 w-32 border-4 border-primary/50 cursor-pointer hover:border-primary transition-all overflow-hidden"
+                                    onClick={handleOpenImageDialog}
+                                >
+                                    <AvatarImage
+                                        src={player.photoUrl}
+                                        alt={player.name}
+                                        data-ai-hint="player portrait"
+                                        style={{
+                                            objectFit: 'cover',
+                                            objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`,
+                                            transform: `scale(${player.cropZoom || 1})`,
+                                            transformOrigin: 'center center',
+                                        }}
+                                    />
                                     <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 {isUploading && (
@@ -730,6 +842,114 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                 </Card>
             )}
         </div>
+
+        <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>{player.name}</DialogTitle>
+              <DialogDescription>
+                {isCurrentUserProfile
+                  ? 'Arrastrá la imagen para moverla y usá los controles para hacer zoom. Guardá tu configuración para que se aplique al círculo de tu perfil.'
+                  : 'Hacé clic en la imagen para verla más grande'}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex flex-col gap-4">
+              {isCurrentUserProfile ? (
+                <>
+                  {/* MODO EDICIÓN - Mi perfil */}
+                  {/* Controles de zoom */}
+                  <div className="flex items-center justify-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleZoomOut}
+                      disabled={imageZoom <= 0.5}
+                    >
+                      <ZoomOut className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm font-medium min-w-[60px] text-center">
+                      {Math.round(imageZoom * 100)}%
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleZoomIn}
+                      disabled={imageZoom >= 3}
+                    >
+                      <ZoomIn className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleResetView}
+                      className="ml-2"
+                    >
+                      <RotateCcw className="h-4 w-4 mr-1" />
+                      Reset
+                    </Button>
+                  </div>
+
+                  {/* Contenedor de imagen con drag */}
+                  <div
+                    className="relative overflow-hidden rounded-lg border-2 border-muted bg-muted/20"
+                    style={{ height: '500px' }}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                  >
+                    <img
+                      src={player.photoUrl}
+                      alt={player.name}
+                      className={cn(
+                        "absolute max-w-none",
+                        isDragging ? "cursor-grabbing" : "cursor-grab"
+                      )}
+                      style={{
+                        transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageZoom})`,
+                        transformOrigin: 'center center',
+                        left: '50%',
+                        top: '50%',
+                        marginLeft: '-50%',
+                        marginTop: '-50%',
+                      }}
+                      onMouseDown={handleMouseDown}
+                      draggable={false}
+                    />
+                  </div>
+
+                  {/* Instrucciones y botón guardar */}
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-xs text-muted-foreground">
+                      Hacé clic y arrastrá para mover la imagen
+                    </p>
+                    <Button onClick={handleSaveCrop} disabled={isSavingCrop}>
+                      {isSavingCrop ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Guardando...
+                        </>
+                      ) : (
+                        'Guardar configuración'
+                      )}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* MODO VISTA - Otros perfiles */}
+                  <div className="relative overflow-hidden rounded-lg border-2 border-muted bg-muted/20 flex items-center justify-center" style={{ height: '500px' }}>
+                    <img
+                      src={player.photoUrl}
+                      alt={player.name}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
     </>
   );
 }

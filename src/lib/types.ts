@@ -40,6 +40,8 @@ export type Player = {
   ownerUid: string; // The UID of the user who created this player
   groupId: string | null;
   cardGenerationCredits?: number;
+  cropPosition?: { x: number; y: number };
+  cropZoom?: number;
 } & DocumentData;
 
 export type DetailedTeamPlayer = Player & { number: number; status: 'titular' | 'suplente' };
