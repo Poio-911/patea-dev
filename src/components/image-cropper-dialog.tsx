@@ -36,6 +36,7 @@ async function getCroppedImg(
   pixelCrop: PixelCrop,
 ): Promise<Blob | null> {
   const image = new Image();
+  image.crossOrigin = 'anonymous'; // This is important for CORS
   image.src = imageSrc;
   await new Promise((resolve, reject) => {
     image.onload = resolve;
@@ -160,6 +161,7 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, child
                 alt="Crop preview"
                 onLoad={onImageLoad}
                 style={{ maxHeight: '60vh' }}
+                crossOrigin="anonymous" 
               />
             </ReactCrop>
           ) : (
@@ -205,4 +207,3 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, child
     </Dialog>
   );
 }
-
