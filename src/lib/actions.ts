@@ -16,6 +16,11 @@ import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getStorage as getAdminStorage } from 'firebase-admin/storage';
 
 
+// Desactivar emuladores de Firebase para forzar conexión a producción
+delete process.env.FIRESTORE_EMULATOR_HOST;
+delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
+delete process.env.FIREBASE_STORAGE_EMULATOR_HOST;
+
 let adminApp: AdminApp;
 if (!getApps().length) {
   adminApp = initializeApp();
@@ -25,7 +30,7 @@ if (!getApps().length) {
 
 const adminDb = getAdminFirestore(adminApp);
 const adminAuth = getAdminAuth(adminApp);
-const adminStorage = getAdminStorage(adminApp).bucket('mil-disculpis.appspot.com');
+const adminStorage = getAdminStorage(adminApp).bucket('mil-disculpis.firebasestorage.app');
 
 export async function generateTeamsAction(players: Player[]) {
   if (!players || players.length < 2) {

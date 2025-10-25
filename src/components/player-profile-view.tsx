@@ -17,7 +17,7 @@ import type { Player, Evaluation, Match, OvrHistory, UserProfile, PerformanceTag
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, BarChart2, Star, Goal, Upload, Eye, ChevronDown, CheckCircle, BrainCircuit } from 'lucide-react';
+import { Loader2, BarChart2, Star, Goal, Upload, Eye, ChevronDown, CheckCircle, BrainCircuit, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -33,6 +33,7 @@ import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger }
 import { FirstTimeInfoDialog } from './first-time-info-dialog';
 import Link from 'next/link';
 import { AnalysisIcon } from './icons/analysis-icon';
+import { generatePlayerCardImageAction } from '@/lib/actions';
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -82,6 +83,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
 
   const [isUploading, setIsUploading] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isCurrentUserProfile = user?.uid === playerId;
@@ -132,14 +134,14 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
             const playerEvals = evalsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Evaluation));
             setEvaluations(playerEvals);
 
-            const matchIds = [...new Set(playerEvals.map(e => e.matchId))];
+            const matchIds = [...new Set(playerEvals.map(e => e.matchId).filter(id => id))];
             if (matchIds.length > 0) {
                 const matchChunks: string[][] = [];
                 for (let i = 0; i < matchIds.length; i += 30) {
                     matchChunks.push(matchIds.slice(i, i + 30));
                 }
 
-                const matchPromises = matchChunks.map(chunk => 
+                const matchPromises = matchChunks.map(chunk =>
                     getDocs(query(collection(firestore, 'matches'), where('__name__', 'in', chunk)))
                 );
                 
@@ -150,7 +152,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                 setMatches([]);
             }
 
-            const evaluatorIds = [...new Set(playerEvals.map(e => e.evaluatorId))];
+            const evaluatorIds = [...new Set(playerEvals.map(e => e.evaluatorId).filter(id => id))];
             if (evaluatorIds.length > 0) {
                 const usersQuery = query(collection(firestore, 'users'), where('__name__', 'in', evaluatorIds));
                 const usersSnapshot = await getDocs(usersQuery);
@@ -284,6 +286,41 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     fileInputRef.current?.click();
   };
 
+  const handleGenerateAIPhoto = async () => {
+    if (!user?.uid) return;
+
+    setIsGeneratingAI(true);
+    try {
+      const result = await generatePlayerCardImageAction(user.uid);
+
+      if ('error' in result) {
+        toast({
+          variant: 'destructive',
+          title: 'Error al generar imagen',
+          description: result.error,
+        });
+        return;
+      }
+
+      toast({
+        title: 'Foto generada con éxito',
+        description: 'Tu foto profesional ha sido creada con IA.',
+      });
+
+      // Reload page data to show new photo
+      window.location.reload();
+    } catch (error: any) {
+      console.error('Error generating AI photo:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error al generar imagen',
+        description: error.message || 'No se pudo generar la imagen con IA.',
+      });
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
   const loading = playerLoading || historyLoading || isLoading || (isCurrentUserProfile && (createdMatchesLoading || createdPlayersLoading));
 
 
@@ -324,16 +361,31 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                             </div>
                             {isCurrentUserProfile && (
                                 <div className="flex flex-col gap-2 w-full sm:w-auto">
-                                    <input 
-                                        type="file" 
-                                        ref={fileInputRef} 
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
                                         onChange={handlePhotoUpload}
                                         className="hidden"
-                                        accept="image/png, image/jpeg, image/gif" 
+                                        accept="image/png, image/jpeg, image/gif"
                                     />
-                                    <Button onClick={handleButtonClick} size="sm" variant="outline" disabled={isUploading} className="w-full">
+                                    <Button onClick={handleButtonClick} size="sm" variant="outline" disabled={isUploading || isGeneratingAI} className="w-full">
                                         {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                                         {isUploading ? "Subiendo..." : "Cambiar Foto"}
+                                    </Button>
+                                    <Button
+                                        onClick={handleGenerateAIPhoto}
+                                        size="sm"
+                                        variant="default"
+                                        disabled={isUploading || isGeneratingAI}
+                                        className="w-full relative"
+                                    >
+                                        {isGeneratingAI ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                                        {isGeneratingAI ? "Generando..." : "Generar Foto Pro"}
+                                        {player?.cardGenerationCredits !== undefined && !isGeneratingAI && (
+                                            <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+                                                {player.cardGenerationCredits}
+                                            </Badge>
+                                        )}
                                     </Button>
                                 </div>
                             )}
