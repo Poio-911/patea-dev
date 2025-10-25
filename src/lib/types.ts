@@ -1,11 +1,14 @@
 
 
+
 import { DocumentData, DocumentReference } from "firebase/firestore";
 import type { PerformanceTag as Pt } from "./performance-tags";
 
 export type PerformanceTag = Pt;
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
+
+export type AttributeKey = 'PAC' | 'SHO' | 'PAS' | 'DRI' | 'DEF' | 'PHY';
 
 export type PlayerStats = {
   matchesPlayed: number;
