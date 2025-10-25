@@ -298,21 +298,21 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                 <Card className="lg:col-span-1">
                     <CardContent className="pt-6">
                         <div className="flex flex-col items-center gap-4">
-                             <div className="text-center">
+                            <div className="text-center">
                                 <h2 className="text-3xl font-bold font-headline">{player.name}</h2>
                                 <div className="flex items-center justify-center gap-4 mt-2">
                                     <span className={cn("text-5xl font-bold", positionColors[player.position])}>{player.ovr}</span>
                                     <Badge variant="secondary" className="text-lg">{player.position}</Badge>
                                 </div>
                             </div>
-                            <div className="relative w-full max-w-[200px]">
+                            <div className="relative w-full flex justify-center">
                                 {isCurrentUserProfile ? (
                                     <ImageCropperDialog
                                         player={player}
                                         onGenerateAI={handleGenerateAIPhoto}
                                         isGeneratingAI={isGeneratingAI}
                                     >
-                                        <button className="group relative mx-auto block">
+                                        <button className="group relative">
                                             <Avatar className="h-40 w-40 border-4 border-primary/50 group-hover:scale-105 group-hover:ring-4 group-hover:ring-primary/50 transition-all duration-300">
                                                 <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
                                                 <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
@@ -323,7 +323,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                         </button>
                                     </ImageCropperDialog>
                                 ) : (
-                                    <Avatar className="h-40 w-40 border-4 border-primary/50 mx-auto">
+                                    <Avatar className="h-40 w-40 border-4 border-primary/50">
                                         <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
                                         <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
@@ -335,11 +335,9 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                         <div className="w-full px-4">
                             <div className="flex items-center gap-2 mb-2">
                                 <h4 className="font-bold text-lg">Atributos</h4>
-                                <AttributesHelpDialog>
-                                    <span />
-                                </AttributesHelpDialog>
+                                <AttributesHelpDialog />
                             </div>
-                            <div className="space-y-1">
+                            <div className="grid grid-cols-2 gap-x-8">
                                 {(Object.keys(attributeDetails) as AttributeKey[]).map(key => (
                                     <Stat
                                         key={key}
