@@ -79,8 +79,8 @@ export type DetectPlayerPatternsOutput = z.infer<typeof DetectPlayerPatternsOutp
 
 const prompt = ai.definePrompt({
   name: 'detectPlayerPatternsPrompt',
-  inputSchema: DetectPlayerPatternsInputSchema,
-  outputSchema: DetectPlayerPatternsOutputSchema,
+  input: { schema: DetectPlayerPatternsInputSchema },
+  output: { schema: DetectPlayerPatternsOutputSchema },
   prompt: `Sos un analista de datos de fútbol experto. Habla en español rioplatense.
 Analiza el rendimiento histórico de {{playerName}} y detecta patrones significativos.
 
@@ -160,7 +160,7 @@ const detectPlayerPatternsFlow = ai.defineFlow(
     outputSchema: DetectPlayerPatternsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input, { model: 'gemini-2.5-flash' });
+    const {output} = await prompt(input, { model: 'googleai/gemini-2.5-flash' });
     return output!;
   }
 );
