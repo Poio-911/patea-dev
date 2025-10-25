@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -75,6 +74,7 @@ const prompt = ai.definePrompt({
   name: 'generateBalancedTeamsPrompt',
   input: {schema: GenerateBalancedTeamsInputSchema},
   output: {schema: GenerateBalancedTeamsOutputSchema},
+  model: 'googleai/gemini-2.5-flash',
   prompt: `Sos un DT experto en fútbol amateur del Río de la Plata, de esos que saben armar los equipos para el picado de los sábados.
 
 Con esta lista de jugadores, con sus puestos y valoraciones (OVR), tu laburo es armar {{teamCount}} equipos que queden lo más parejos posible.
@@ -104,7 +104,7 @@ const generateBalancedTeamsFlow = ai.defineFlow(
     outputSchema: GenerateBalancedTeamsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input, { model: 'googleai/gemini-2.5-flash' });
+    const {output} = await prompt(input);
     return output!;
   }
 );

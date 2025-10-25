@@ -1,0 +1,127 @@
+'use server';
+
+import { adminApp, adminDb, adminAuth, adminStorage } from '@/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
+import { generatePlayerCardImage } from '@/ai/flows/generate-player-card-image';
+import type { Player } from '@/lib/types';
+
+/**
+ * Extracts the file path from a Firebase Storage URL.
+ * Example URL: https://storage.googleapis.com/your-bucket-name.appspot.com/path/to/your/file.jpg
+ * Returns: path/to/your/file.jpg
+ * @param url The full URL of the file in Firebase Storage.
+ * @returns The file path within the bucket.
+ */
+function getStoragePathFromUrl(url: string): string | null {
+  try {
+    const urlObject = new URL(url);
+    // The path starts with a '/', so we remove it.
+    // Then we decode the URI component to handle special characters in file names.
+    const path = decodeURIComponent(urlObject.pathname.substring(1));
+    
+    // The path from the URL includes the bucket name as the first segment.
+    // We need to remove it to get the path *within* the bucket.
+    const bucketName = adminStorage.name;
+    const bucketPrefix = `${bucketName}/`;
+    
+    if (path.startsWith(bucketPrefix)) {
+      return path.substring(bucketPrefix.length);
+    }
+    
+    console.warn("URL path does not start with the expected bucket name.");
+    return null;
+
+  } catch (error) {
+    console.error('Invalid URL for storage path extraction:', error);
+    return null;
+  }
+}
+
+export async function generatePlayerCardImageAction(userId: string) {
+  const playerRef = adminDb.doc(`players/${userId}`);
+
+  try {
+    const playerSnap = await playerRef.get();
+
+    if (!playerSnap.exists) {
+      return { error: 'No se encontró tu perfil de jugador.' };
+    }
+
+    const player = playerSnap.data() as Player;
+    const credits = player.cardGenerationCredits === undefined ? 1 : player.cardGenerationCredits;
+
+    if (credits <= 0) {
+      return { error: 'No te quedan créditos para generar imágenes.' };
+    }
+
+    if (!player.photoUrl) {
+      return { error: 'Primero debes subir una foto de perfil.' };
+    }
+    
+    if (player.photoUrl.includes('picsum.photos')) {
+      return { error: 'La generación de imágenes no funciona con fotos de marcador de posición. Por favor, sube una foto tuya real.' };
+    }
+
+    // --- ROBUST FILE HANDLING ---
+    let imageBuffer: Buffer;
+    let contentType: string;
+
+    try {
+      const filePath = getStoragePathFromUrl(player.photoUrl);
+      if (!filePath) {
+        throw new Error("Could not determine file path from the photo URL.");
+      }
+
+      const file = adminStorage.file(filePath);
+      const [buffer] = await file.download();
+      const [metadata] = await file.getMetadata();
+      imageBuffer = buffer;
+      contentType = metadata.contentType || 'image/jpeg';
+    } catch (downloadError) {
+      console.error("Error downloading image from storage:", downloadError);
+      return { error: "No se pudo acceder a tu foto de perfil actual. Intenta subirla de nuevo." };
+    }
+    
+    const photoDataUri = `data:${contentType};base64,${imageBuffer.toString('base64')}`;
+    // --- END ROBUST FILE HANDLING ---
+
+    const generatedImageDataUri = await generatePlayerCardImage(photoDataUri);
+
+    const generatedImageBuffer = Buffer.from(generatedImageDataUri.split(',')[1], 'base64');
+    const newFilePath = `profile-images/${userId}/generated_${Date.now()}.png`;
+    const newFile = adminStorage.file(newFilePath);
+    
+    await newFile.save(generatedImageBuffer, {
+      metadata: { contentType: 'image/png' },
+    });
+    
+    // Make the file public to get a predictable URL
+    await newFile.makePublic();
+
+    // The public URL has a predictable format
+    const newPhotoURL = `https://storage.googleapis.com/${adminStorage.name}/${newFilePath}`;
+
+    const batch = adminDb.batch();
+    const userRef = adminDb.doc(`users/${userId}`);
+    batch.update(userRef, { photoURL: newPhotoURL });
+    batch.update(playerRef, {
+      photoUrl: newPhotoURL,
+      cardGenerationCredits: FieldValue.increment(-1),
+    });
+
+    const availablePlayerRef = adminDb.doc(`availablePlayers/${userId}`);
+    const availablePlayerSnap = await availablePlayerRef.get();
+    if (availablePlayerSnap.exists) {
+      batch.update(availablePlayerRef, { photoUrl: newPhotoURL });
+    }
+
+    await batch.commit();
+    await adminAuth.updateUser(userId, { photoURL: newPhotoURL });
+
+    return { success: true, newPhotoURL };
+  } catch (error: any) {
+    console.error("Error in generatePlayerCardImageAction:", error);
+    // Return a structured error to prevent the server from crashing
+    return { error: error.message || "Un error inesperado ocurrió en el servidor." };
+  }
+}

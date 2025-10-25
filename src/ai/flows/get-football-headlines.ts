@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -33,6 +32,7 @@ export async function getFootballHeadlines(): Promise<FootballHeadlinesOutput> {
 const prompt = ai.definePrompt({
   name: 'footballHeadlinesPrompt',
   output: { schema: FootballHeadlinesOutputSchema },
+  model: 'googleai/gemini-2.5-flash',
   prompt: `
     Eres un periodista deportivo de un importante diario del Río de la Plata.
     Tu tarea es generar 3 o 4 titulares de noticias de fútbol que parezcan recientes y relevantes.
@@ -54,7 +54,7 @@ const getFootballHeadlinesFlow = ai.defineFlow(
     outputSchema: FootballHeadlinesOutputSchema,
   },
   async () => {
-    const { output } = await prompt({}, { model: 'googleai/gemini-2.5-flash' });
+    const { output } = await prompt({});
     return output!;
   }
 );

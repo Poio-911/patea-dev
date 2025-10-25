@@ -1,6 +1,6 @@
 
 import { config } from 'dotenv';
-config();
+config({ path: './.env' }); // Make sure to specify the path to your .env file
 
 import '@/ai/flows/suggest-player-improvements.ts';
 import '@/ai/flows/generate-balanced-teams.ts';

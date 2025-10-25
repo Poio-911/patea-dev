@@ -3,10 +3,10 @@ import { ai } from '@/ai/genkit';
 
 export async function generatePlayerCardImage(photoDataUri: string): Promise<string> {
     const { media } = await ai.generate({
-        model: 'googleai/gemini-2.5-flash-image',
+        model: 'googleai/gemini-1.5-flash-image-preview', // Reverted to the older, more compatible model name as per further analysis
         prompt: [
           { media: { url: photoDataUri, contentType: 'image/jpeg' } },
-          { text: 'Create a professional studio portrait of the same person from the reference image. Recreate their facial structure, skin tone, and expression so it clearly represents the same individual, but as a natural reinterpretation, not a direct copy. The person should be facing forward with arms crossed, wearing a random modern football (soccer) jersey (any color or design). Use soft studio lighting, realistic shadows on the person only, and no visible background. Render with an actual transparent background (alpha channel) — not simulated transparency — and export as a real PNG with alpha channel. There must be no white, gray, black, or colored backdrop, and no shadows extending outside the person. The final output must be a high-resolution PNG with a real transparent background. AVOID: solid background, fake transparency, white background, black background, gray background, colored backdrop, halo, glow, frame, floor, shadow on background, border, watermark, text, blur, low quality.' },
+          { text: 'Toma a la persona de esta foto y transfórmala en un retrato de estudio profesional, al estilo de una carta de jugador de fútbol. Agrega un fondo de estadio desenfocado, iluminación dramática y un estilo artístico vibrante, como en las cartas de FC24. Mantén los rasgos faciales del jugador. Asegúrate de que el resultado sea una imagen de alta calidad.' },
         ],
         config: {
           responseModalities: ['IMAGE']
@@ -17,5 +17,5 @@ export async function generatePlayerCardImage(photoDataUri: string): Promise<str
         throw new Error('La IA no pudo generar la imagen.');
     }
 
-    return media.url; // Retorna el data URI de la imagen generada
+    return media.url;
 }

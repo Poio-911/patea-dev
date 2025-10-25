@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -48,6 +47,7 @@ const prompt = ai.definePrompt({
   name: 'suggestPlayerImprovementsPrompt',
   input: {schema: SuggestPlayerImprovementsInputSchema},
   output: {schema: SuggestPlayerImprovementsOutputSchema},
+  model: 'googleai/gemini-2.5-flash',
   prompt: `Eres un DT de fútbol profesional, directo y motivador. Habla en español rioplatense.
   Analiza los datos del jugador y da 2 o 3 consejos MUY CONCISOS y accionables para que mejore.
 
@@ -74,7 +74,7 @@ const suggestPlayerImprovementsFlow = ai.defineFlow(
     outputSchema: SuggestPlayerImprovementsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input, { model: 'googleai/gemini-2.5-flash' });
+    const {output} = await prompt(input);
     return output!;
   }
 );
