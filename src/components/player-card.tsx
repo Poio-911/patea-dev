@@ -1,4 +1,6 @@
 
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,9 +59,9 @@ const positionColors: Record<Player['position'], string> = {
 };
 
 const Stat = ({ label, value }: { label: string; value: number }) => (
-  <div className="flex items-center justify-between text-sm">
-    <span className="font-semibold text-muted-foreground">{label}</span>
-    <span className="font-bold">{value}</span>
+  <div className="flex flex-col items-center justify-center rounded-lg bg-muted/50 p-2 text-center">
+    <span className="text-xl font-bold">{value}</span>
+    <span className="text-xs font-semibold text-muted-foreground">{label}</span>
   </div>
 );
 
@@ -174,7 +176,7 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
             <Badge variant="secondary" className={cn("mt-1", positionColors[player.position])}>{player.position}</Badge>
         </div>
         
-        <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 flex-grow">
+        <div className="mt-4 grid grid-cols-3 gap-2 flex-grow content-center">
           <Stat label="RIT" value={player.pac} />
           <Stat label="TIR" value={player.sho} />
           <Stat label="PAS" value={player.pas} />
