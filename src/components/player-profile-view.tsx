@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -51,19 +50,19 @@ const statusConfig: Record<Match['status'], { label: string; className: string }
     evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' },
 };
 
-const attributeDetails: Record<AttributeKey, { name: string, icon: React.ElementType, color: string }> = {
-  PAC: { name: 'Ritmo', icon: Gauge, color: 'text-green-500' },
-  SHO: { name: 'Tiro', icon: Crosshair, color: 'text-red-500' },
-  PAS: { name: 'Pase', icon: ArrowRightLeft, color: 'text-blue-500' },
-  DRI: { name: 'Regate', icon: Footprints, color: 'text-orange-500' },
-  DEF: { name: 'Defensa', icon: Shield, color: 'text-indigo-500' },
-  PHY: { name: 'Físico', icon: HeartPulse, color: 'text-pink-500' },
+const attributeDetails: Record<AttributeKey, { name: string, icon: React.ElementType }> = {
+  PAC: { name: 'Ritmo', icon: Gauge },
+  SHO: { name: 'Tiro', icon: Crosshair },
+  PAS: { name: 'Pase', icon: ArrowRightLeft },
+  DRI: { name: 'Regate', icon: Footprints },
+  DEF: { name: 'Defensa', icon: Shield },
+  PHY: { name: 'Físico', icon: HeartPulse },
 };
 
 
-const Stat = ({ label, value, icon: Icon, color }: { label: string; value: number; icon: React.ElementType; color: string }) => (
+const Stat = ({ label, value, icon: Icon }: { label: string; value: number; icon: React.ElementType; }) => (
     <div className="flex items-center justify-between text-base py-2">
-        <div className={cn("flex items-center gap-2 font-semibold", color)}>
+        <div className="flex items-center gap-2 font-semibold text-muted-foreground">
             <Icon className="h-5 w-5"/>
             <span>{label}</span>
         </div>
@@ -337,14 +336,13 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                 <h4 className="font-bold text-lg">Atributos</h4>
                                 <AttributesHelpDialog />
                             </div>
-                            <div className="grid grid-cols-2 gap-x-8">
+                            <div className="grid grid-cols-2 md:grid-cols-1 gap-x-8">
                                 {(Object.keys(attributeDetails) as AttributeKey[]).map(key => (
                                     <Stat
                                         key={key}
                                         label={attributeDetails[key].name}
                                         value={player[key.toLowerCase() as keyof Player] as number}
                                         icon={attributeDetails[key].icon}
-                                        color={attributeDetails[key].color}
                                     />
                                 ))}
                             </div>
