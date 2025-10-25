@@ -37,7 +37,7 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import React from 'react';
 import { Badge } from './ui/badge';
-import { AttributeKey } from '@/lib/data';
+import type { AttributeKey } from '@/lib/types';
 
 type PlayerCardProps = {
   player: Player & { displayName?: string }; // Allow displayName for compatibility
