@@ -18,7 +18,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import { doc, writeBatch } from 'firebase/firestore';
 import { Loader2, Upload, Scissors, Sparkles } from 'lucide-react';
-import ReactCrop, { type Crop, type PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
+import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
 interface ImageCropperDialogProps {
@@ -30,7 +30,6 @@ interface ImageCropperDialogProps {
   children: React.ReactNode;
 }
 
-// ✅ CORREGIDO: La función ahora acepta el elemento de la imagen para calcular la escala
 async function getCroppedImg(
   image: HTMLImageElement,
   pixelCrop: PixelCrop,
@@ -74,15 +73,10 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, child
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const imgRef = useRef<HTMLImageElement>(null); // ✅ Referencia al elemento <img>
+  const imgRef = useRef<HTMLImageElement>(null);
   const { user } = useUser();
   const auth = useAuth();
   const { toast } = useToast();
-
-  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const { width, height } = e.currentTarget;
-    setCrop(centerCrop(makeAspectCrop({ unit: '%', width: 90 }, 1, width, height), width, height));
-  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -94,7 +88,6 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, child
   };
 
   const handleSaveCrop = async () => {
-    // ✅ CORREGIDO: Se pasa el elemento de la imagen a la función de recorte
     if (!completedCrop || !imgRef.current || !user || !auth?.currentUser) return;
 
     setIsUploading(true);
@@ -154,10 +147,9 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, child
               circularCrop
             >
               <img
-                ref={imgRef} // ✅ Asignar la referencia
+                ref={imgRef}
                 src={imgSrc}
                 alt="Crop preview"
-                onLoad={onImageLoad}
                 style={{ maxHeight: '60vh' }}
                 crossOrigin="anonymous" 
               />
