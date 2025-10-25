@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
@@ -24,8 +25,6 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { updateProfile } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -34,6 +33,7 @@ import { FirstTimeInfoDialog } from './first-time-info-dialog';
 import Link from 'next/link';
 import { AnalysisIcon } from './icons/analysis-icon';
 import { generatePlayerCardImageAction } from '@/lib/actions';
+import { ImageCropperDialog } from '@/components/image-cropper-dialog';
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -81,10 +81,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   const [evaluatorProfiles, setEvaluatorProfiles] = useState<Record<string, {displayName: string, photoURL: string}>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
-
-  const [isUploading, setIsUploading] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isCurrentUserProfile = user?.uid === playerId;
 
@@ -229,63 +226,6 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     }));
   }, [ovrHistory, player]);
 
-  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user || !auth?.currentUser || !firestore) return;
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    
-    try {
-        const { firebaseApp } = initializeFirebase();
-        const storage = getStorage(firebaseApp);
-
-        const fileExtension = file.name.split('.').pop();
-        const fileName = `${user.uid}-${Date.now()}.${fileExtension}`;
-        const filePath = `profile-images/${user.uid}/${fileName}`;
-        
-        const storageRef = ref(storage, filePath);
-        const uploadResult = await uploadBytes(storageRef, file);
-        const newPhotoURL = await getDownloadURL(uploadResult.ref);
-
-        const userDocRef = doc(firestore, 'users', user.uid);
-        const playerDocRef = doc(firestore, 'players', user.uid);
-
-        const batch = writeBatch(firestore);
-        batch.update(userDocRef, { photoURL: newPhotoURL });
-        batch.update(playerDocRef, { photoUrl: newPhotoURL });
-        
-        const availablePlayerRef = doc(firestore, 'availablePlayers', user.uid);
-        const availablePlayerSnap = await getDoc(availablePlayerRef);
-        if (availablePlayerSnap.exists()) {
-            batch.update(availablePlayerRef, { photoUrl: newPhotoURL });
-        }
-        
-        await batch.commit();
-
-        await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
-
-        toast({
-            title: '¡Foto actualizada!',
-            description: 'Tu foto de perfil ha cambiado.'
-        });
-
-    } catch (error: any) {
-        console.error('Error updating photo:', error);
-        toast({
-            variant: 'destructive',
-            title: 'Error al subir la imagen',
-            description: error.message || 'No se pudo actualizar la foto de perfil.',
-        });
-    } finally {
-        setIsUploading(false);
-    }
-  };
-
-  const handleButtonClick = () => {
-    fileInputRef.current?.click();
-  };
-
   const handleGenerateAIPhoto = async () => {
     if (!user?.uid) return;
 
@@ -307,7 +247,6 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
         description: 'Tu foto profesional ha sido creada con IA.',
       });
 
-      // Reload page data to show new photo
       window.location.reload();
     } catch (error: any) {
       console.error('Error generating AI photo:', error);
@@ -349,46 +288,29 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                     <CardContent className="pt-6">
                         <div className="flex flex-col sm:flex-row items-center gap-6">
                             <div className="relative">
-                                <Avatar className="h-32 w-32 border-4 border-primary/50">
-                                    <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
-                                    <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                {isUploading && (
-                                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                                        <Loader2 className="h-8 w-8 animate-spin text-white" />
-                                    </div>
+                                {isCurrentUserProfile ? (
+                                    <ImageCropperDialog
+                                        player={player}
+                                        onGenerateAI={handleGenerateAIPhoto}
+                                        isGeneratingAI={isGeneratingAI}
+                                    >
+                                        <button className="group relative">
+                                            <Avatar className="h-32 w-32 border-4 border-primary/50 group-hover:scale-105 group-hover:ring-4 group-hover:ring-primary/50 transition-all duration-300">
+                                                <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
+                                                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Eye className="h-10 w-10 text-white" />
+                                            </div>
+                                        </button>
+                                    </ImageCropperDialog>
+                                ) : (
+                                    <Avatar className="h-32 w-32 border-4 border-primary/50">
+                                        <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
+                                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
                                 )}
                             </div>
-                            {isCurrentUserProfile && (
-                                <div className="flex flex-col gap-2 w-full sm:w-auto">
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        onChange={handlePhotoUpload}
-                                        className="hidden"
-                                        accept="image/png, image/jpeg, image/gif"
-                                    />
-                                    <Button onClick={handleButtonClick} size="sm" variant="outline" disabled={isUploading || isGeneratingAI} className="w-full">
-                                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                                        {isUploading ? "Subiendo..." : "Cambiar Foto"}
-                                    </Button>
-                                    <Button
-                                        onClick={handleGenerateAIPhoto}
-                                        size="sm"
-                                        variant="default"
-                                        disabled={isUploading || isGeneratingAI}
-                                        className="w-full relative"
-                                    >
-                                        {isGeneratingAI ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                        {isGeneratingAI ? "Generando..." : "Generar Foto Pro"}
-                                        {player?.cardGenerationCredits !== undefined && !isGeneratingAI && (
-                                            <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
-                                                {player.cardGenerationCredits}
-                                            </Badge>
-                                        )}
-                                    </Button>
-                                </div>
-                            )}
                         </div>
                         <div className="text-center mt-6">
                             <h2 className="text-2xl font-bold font-headline">{player.name}</h2>
@@ -570,25 +492,23 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                                                                                         if (typeof tag === 'object' && tag && 'name' in tag) {
                                                                                                             const typedTag = tag as PerformanceTag;
                                                                                                             return (
-                                                                                                                <TooltipProvider key={typedTag.id || idx}>
-                                                                                                                    <UiTooltip>
-                                                                                                                        <TooltipTrigger asChild>
-                                                                                                                            <Badge variant="outline" className="cursor-help">{typedTag.name}</Badge>
-                                                                                                                        </TooltipTrigger>
-                                                                                                                        <TooltipContent>
-                                                                                                                            <p className="font-semibold mb-1">{typedTag.description}</p>
-                                                                                                                            {typedTag.effects && typedTag.effects.length > 0 && (
-                                                                                                                                <div className="text-xs space-y-0.5">
-                                                                                                                                    {typedTag.effects.map((effect, i) => (
-                                                                                                                                        <p key={i} className={cn(effect.change > 0 ? 'text-green-600' : 'text-red-600')}>
-                                                                                                                                            {effect.attribute.toUpperCase()}: {effect.change > 0 ? '+' : ''}{effect.change}
-                                                                                                                                        </p>
-                                                                                                                                    ))}
-                                                                                                                                </div>
-                                                                                                                            )}
-                                                                                                                        </TooltipContent>
-                                                                                                                    </UiTooltip>
-                                                                                                                </TooltipProvider>
+                                                                                                                <UiTooltip key={typedTag.id || idx}>
+                                                                                                                    <TooltipTrigger asChild>
+                                                                                                                        <Badge variant="outline" className="cursor-help">{typedTag.name}</Badge>
+                                                                                                                    </TooltipTrigger>
+                                                                                                                    <TooltipContent>
+                                                                                                                        <p className="font-semibold mb-1">{typedTag.description}</p>
+                                                                                                                        {typedTag.effects && typedTag.effects.length > 0 && (
+                                                                                                                            <div className="text-xs space-y-0.5">
+                                                                                                                                {typedTag.effects.map((effect, i) => (
+                                                                                                                                    <p key={i} className={cn(effect.change > 0 ? 'text-green-600' : 'text-red-600')}>
+                                                                                                                                        {effect.attribute.toUpperCase()}: {effect.change > 0 ? '+' : ''}{effect.change}
+                                                                                                                                    </p>
+                                                                                                                                ))}
+                                                                                                                            </div>
+                                                                                                                        )}
+                                                                                                                    </TooltipContent>
+                                                                                                                </UiTooltip>
                                                                                                             );
                                                                                                         }
                                                                                                         return null;

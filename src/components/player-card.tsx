@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { WandSparkles, MoreVertical, Trash2, Pencil } from 'lucide-react';
+import { WandSparkles, MoreVertical, Trash2, Pencil, Eye } from 'lucide-react';
 import type { Player } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { EditPlayerDialog } from './edit-player-dialog';
@@ -25,6 +25,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { useFirestore, useUser } from '@/firebase';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -67,8 +72,6 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
   
   const playerName = player.name || player.displayName || 'Jugador';
 
-  // A manual player is one whose document ID is not the same as the UID of the user who created them.
-  // Registered users have their player ID === their user UID.
   const isManualPlayer = player.id !== player.ownerUid;
   const canDelete = isManualPlayer && user?.uid === player.ownerUid;
   const canEdit = isManualPlayer && user?.uid === player.ownerUid;
@@ -149,10 +152,23 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
         </div>
 
       <CardContent className="p-4 text-center bg-card flex-grow flex flex-col">
-        <Avatar className="mx-auto -mt-12 h-24 w-24 border-4 border-background">
-          <AvatarImage src={player.photoUrl} alt={playerName} data-ai-hint="player portrait" />
-          <AvatarFallback>{playerName.charAt(0)}</AvatarFallback>
-        </Avatar>
+        <Dialog>
+          <DialogTrigger asChild>
+            <button className="mx-auto -mt-12 group relative">
+              <Avatar className="h-24 w-24 border-4 border-background group-hover:scale-105 group-hover:ring-4 group-hover:ring-primary transition-all duration-200">
+                <AvatarImage src={player.photoUrl} alt={playerName} data-ai-hint="player portrait" />
+                <AvatarFallback>{playerName.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Eye className="h-8 w-8 text-white" />
+              </div>
+            </button>
+          </DialogTrigger>
+          <DialogContent className="p-0 border-0 max-w-lg">
+            <img src={player.photoUrl} alt={playerName} className="w-full h-auto rounded-lg" />
+          </DialogContent>
+        </Dialog>
+        
         <div className="mt-2 text-center">
             <h3 className="text-xl font-bold font-headline truncate">{playerName}</h3>
             <Badge variant="secondary" className={cn("mt-1", positionColors[player.position])}>{player.position}</Badge>
