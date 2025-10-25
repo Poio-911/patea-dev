@@ -4,7 +4,7 @@
 import { useState, useMemo } from 'react';
 import { useUser, useFirestore } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, where, doc, updateDoc, deleteDoc, getDocs, writeBatch, addDoc, arrayUnion } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
 import type { Group } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from '../ui/button';
@@ -12,50 +12,17 @@ import { Badge } from '../ui/badge';
 import { Loader2, CheckCircle, PlusCircle, LogIn, Copy, Trash2, Edit, Users2, Eye, EyeOff, Crown, UserCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { nanoid } from 'nanoid';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
-
-
-const joinGroupSchema = z.object({
-  inviteCode: z.string().min(1, 'El código de invitación es obligatorio.'),
-});
-type JoinGroupForm = z.infer<typeof joinGroupSchema>;
-
-const createGroupSchema = z.object({
-  name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
-});
-type CreateGroupForm = z.infer<typeof createGroupSchema>;
-
-const editGroupSchema = z.object({
-  name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
-});
-type EditGroupForm = z.infer<typeof editGroupSchema>;
+import { CreateGroupDialog, JoinGroupDialog, EditGroupDialog } from './group-dialogs';
 
 
 export function UserGroupsList() {
-  const { user, loading: userLoading } = useUser();
-  const firestore = useFirestore();
-  const { toast } = useToast();
-  
+  const { user } = useUser();
   const [isChangingGroup, setIsChangingGroup] = useState<string | null>(null);
   const [isDeletingGroup, setIsDeletingGroup] = useState<string | null>(null);
-  const [isEditingGroup, setIsEditingGroup] = useState<string | null>(null);
-  const [isJoining, setIsJoining] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState<{ type: 'create' | 'join' | 'edit' | null, data?: any }>({ type: null });
   const [showCodeForGroup, setShowCodeForGroup] = useState<string | null>(null);
-
-
-  const joinForm = useForm<JoinGroupForm>({ resolver: zodResolver(joinGroupSchema) });
-  const createForm = useForm<CreateGroupForm>({ resolver: zodResolver(createGroupSchema) });
-  const editForm = useForm<EditGroupForm>();
-
+  const { toast } = useToast();
+  const firestore = useFirestore();
 
   const groupsQuery = useMemo(() => {
     if (!firestore || !user?.uid) return null;
@@ -93,20 +60,16 @@ export function UserGroupsList() {
     const batch = writeBatch(firestore);
 
     try {
-        // Delete all players in the group
         const playersQuery = query(collection(firestore, 'players'), where('groupId', '==', groupId));
         const playersSnap = await getDocs(playersQuery);
         playersSnap.forEach(playerDoc => batch.delete(playerDoc.ref));
 
-        // Delete all matches in the group
         const matchesQuery = query(collection(firestore, 'matches'), where('groupId', '==', groupId));
         const matchesSnap = await getDocs(matchesQuery);
         matchesSnap.forEach(matchDoc => batch.delete(matchDoc.ref));
 
-        // Delete the group itself
         batch.delete(doc(firestore, 'groups', groupId));
 
-        // Remove group from user's list and set active group to null if it was the one deleted
         const userRef = doc(firestore, 'users', user.uid);
         const userUpdate: any = {
             groups: user.groups?.filter(id => id !== groupId)
@@ -125,99 +88,6 @@ export function UserGroupsList() {
         setIsDeletingGroup(null);
     }
   };
-  
-  const handleCreateGroup = async (data: CreateGroupForm) => {
-      if (!firestore || !user?.uid) return;
-      setIsCreating(true);
-
-      try {
-          const inviteCode = nanoid(8).toUpperCase();
-          const groupData: Omit<Group, 'id'> = {
-              name: data.name,
-              ownerUid: user.uid,
-              inviteCode,
-              members: [user.uid],
-          };
-
-          const groupRef = await addDoc(collection(firestore, 'groups'), groupData);
-
-          // Update user's active group
-          await updateDoc(doc(firestore, 'users', user.uid), {
-              activeGroupId: groupRef.id,
-              groups: arrayUnion(groupRef.id)
-          });
-
-          toast({ title: "Grupo creado", description: `"${data.name}" ha sido creado exitosamente.` });
-          setDialogOpen({ type: null });
-          createForm.reset();
-      } catch (error) {
-          console.error("Error creating group:", error);
-          toast({ variant: 'destructive', title: "Error", description: "No se pudo crear el grupo." });
-      } finally {
-          setIsCreating(false);
-      }
-  };
-  
-  const handleJoinGroup = async (data: JoinGroupForm) => {
-      if (!firestore || !user?.uid) return;
-      setIsJoining(true);
-
-      try {
-          const groupsQuery = query(
-              collection(firestore, 'groups'),
-              where('inviteCode', '==', data.inviteCode.toUpperCase())
-          );
-          const snapshot = await getDocs(groupsQuery);
-
-          if (snapshot.empty) {
-              toast({ variant: 'destructive', title: "Código inválido", description: "No existe un grupo con ese código." });
-              setIsJoining(false);
-              return;
-          }
-
-          const groupDoc = snapshot.docs[0];
-          const groupData = groupDoc.data() as Group;
-
-          if (groupData.members.includes(user.uid)) {
-              toast({ variant: 'destructive', title: "Ya eres miembro", description: "Ya perteneces a este grupo." });
-              setIsJoining(false);
-              return;
-          }
-
-          await updateDoc(groupDoc.ref, {
-              members: arrayUnion(user.uid)
-          });
-
-          await updateDoc(doc(firestore, 'users', user.uid), {
-              activeGroupId: groupDoc.id,
-              groups: arrayUnion(groupDoc.id)
-          });
-
-          toast({ title: "¡Te has unido!", description: `Ahora eres miembro de "${groupData.name}".` });
-          setDialogOpen({ type: null });
-          joinForm.reset();
-      } catch (error) {
-          console.error("Error joining group:", error);
-          toast({ variant: 'destructive', title: "Error", description: "No se pudo unir al grupo." });
-      } finally {
-          setIsJoining(false);
-      }
-  };
-  
-  const handleEditGroup = async (data: EditGroupForm) => {
-    if (!firestore || !dialogOpen.data?.id) return;
-    setIsEditingGroup(dialogOpen.data.id);
-    try {
-        await updateDoc(doc(firestore, 'groups', dialogOpen.data.id), { name: data.name });
-        toast({ title: "Grupo actualizado" });
-        setDialogOpen({ type: null });
-    } catch (error) {
-        toast({ variant: 'destructive', title: "Error", description: "No se pudo actualizar el nombre del grupo."});
-    } finally {
-        setIsEditingGroup(null);
-    }
-  }
-
 
   return (
     <>
@@ -325,14 +195,12 @@ export function UserGroupsList() {
 
                     {isOwner && (
                       <>
-                        <Button
-                          size="default"
-                          variant="outline"
-                          onClick={() => { editForm.reset({ name: group.name }); setDialogOpen({ type: 'edit', data: group })}}
-                        >
-                          <Edit className="mr-2 h-4 w-4"/>
-                          Editar
-                        </Button>
+                        <EditGroupDialog group={group}>
+                             <Button size="default" variant="outline">
+                                <Edit className="mr-2 h-4 w-4"/>
+                                Editar
+                            </Button>
+                        </EditGroupDialog>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button size="default" variant="outline" className="text-destructive hover:text-destructive">
@@ -353,6 +221,7 @@ export function UserGroupsList() {
                                 onClick={() => handleDeleteGroup(group.id, group.name)}
                                 className="bg-destructive hover:bg-destructive/90"
                               >
+                                {isDeletingGroup === group.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
                                 Borrar
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -378,102 +247,21 @@ export function UserGroupsList() {
         )}
 
         <div className="flex gap-3 pt-2">
-          <Button
-            variant="default"
-            size="lg"
-            className="flex-1"
-            onClick={() => { createForm.reset(); setDialogOpen({ type: 'create'})}}
-          >
-            <PlusCircle className="mr-2 h-5 w-5"/>
-            Crear Grupo
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="flex-1"
-            onClick={() => { joinForm.reset(); setDialogOpen({ type: 'join' })}}
-          >
-            <LogIn className="mr-2 h-5 w-5"/>
-            Unirse a Grupo
-          </Button>
+          <CreateGroupDialog>
+            <Button variant="default" size="lg" className="flex-1">
+                <PlusCircle className="mr-2 h-5 w-5"/>
+                Crear Grupo
+            </Button>
+          </CreateGroupDialog>
+          <JoinGroupDialog>
+            <Button variant="outline" size="lg" className="flex-1">
+                <LogIn className="mr-2 h-5 w-5"/>
+                Unirse a Grupo
+            </Button>
+          </JoinGroupDialog>
         </div>
       </CardContent>
     </Card>
-
-    <Dialog open={dialogOpen.type === 'create'} onOpenChange={(open) => !open && setDialogOpen({ type: null })}>
-          <DialogContent>
-              <DialogHeader>
-                  <DialogTitle>Crear Nuevo Grupo</DialogTitle>
-                  <DialogDescription>Ingresá un nombre para tu nuevo grupo de fútbol.</DialogDescription>
-              </DialogHeader>
-              <form onSubmit={createForm.handleSubmit(handleCreateGroup)}>
-                  <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                          <Label htmlFor="create-name">Nombre del Grupo</Label>
-                          <Input id="create-name" placeholder="Mi Grupo de Fútbol" {...createForm.register('name')} />
-                          {createForm.formState.errors.name && <p className="text-sm text-destructive">{createForm.formState.errors.name.message}</p>}
-                      </div>
-                  </div>
-                  <DialogFooter>
-                      <Button type="button" variant="outline" onClick={() => setDialogOpen({ type: null })}>Cancelar</Button>
-                      <Button type="submit" disabled={isCreating}>
-                          {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                          Crear Grupo
-                      </Button>
-                  </DialogFooter>
-              </form>
-          </DialogContent>
-    </Dialog>
-
-    <Dialog open={dialogOpen.type === 'join'} onOpenChange={(open) => !open && setDialogOpen({ type: null })}>
-          <DialogContent>
-              <DialogHeader>
-                  <DialogTitle>Unirse a un Grupo</DialogTitle>
-                  <DialogDescription>Ingresá el código de invitación del grupo.</DialogDescription>
-              </DialogHeader>
-              <form onSubmit={joinForm.handleSubmit(handleJoinGroup)}>
-                  <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                          <Label htmlFor="join-code">Código de Invitación</Label>
-                          <Input id="join-code" placeholder="ABC123XY" {...joinForm.register('inviteCode')} className="uppercase" />
-                          {joinForm.formState.errors.inviteCode && <p className="text-sm text-destructive">{joinForm.formState.errors.inviteCode.message}</p>}
-                      </div>
-                  </div>
-                  <DialogFooter>
-                      <Button type="button" variant="outline" onClick={() => setDialogOpen({ type: null })}>Cancelar</Button>
-                      <Button type="submit" disabled={isJoining}>
-                          {isJoining && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                          Unirse
-                      </Button>
-                  </DialogFooter>
-              </form>
-          </DialogContent>
-    </Dialog>
-
-    <Dialog open={dialogOpen.type === 'edit'} onOpenChange={(open) => !open && setDialogOpen({ type: null })}>
-          <DialogContent>
-              <DialogHeader>
-                  <DialogTitle>Editar Grupo</DialogTitle>
-                  <DialogDescription>Cambiá el nombre de tu grupo.</DialogDescription>
-              </DialogHeader>
-              <form onSubmit={editForm.handleSubmit(handleEditGroup)}>
-                  <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                          <Label htmlFor="edit-name">Nombre del Grupo</Label>
-                          <Input id="edit-name" {...editForm.register('name')} />
-                          {editForm.formState.errors.name && <p className="text-sm text-destructive">{editForm.formState.errors.name.message}</p>}
-                      </div>
-                  </div>
-                  <DialogFooter>
-                      <Button type="button" variant="outline" onClick={() => setDialogOpen({ type: null })}>Cancelar</Button>
-                      <Button type="submit" disabled={!!isEditingGroup}>
-                          {isEditingGroup && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                          Guardar
-                      </Button>
-                  </DialogFooter>
-              </form>
-          </DialogContent>
-      </Dialog>
     </>
   )
 }

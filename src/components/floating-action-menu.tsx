@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -6,7 +7,7 @@ import { Plus, X, Users2, LogIn, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase';
 import { HelpChatDialog } from './help-chat-dialog';
-import { UserGroupsList } from './groups/user-groups-list'; // To reuse its dialogs
+import { CreateGroupDialog, JoinGroupDialog } from './groups/group-dialogs';
 
 export function FloatingActionMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -36,6 +37,19 @@ export function FloatingActionMenu() {
     open: { opacity: 1, y: 0 },
   };
 
+  const FabItem = ({ icon: Icon, label, onClick }: { icon: React.ElementType, label: string, onClick: () => void }) => (
+     <motion.div variants={itemVariants} className="flex items-center gap-3 justify-end">
+        <span className="text-sm font-semibold p-2 rounded-md shadow-md bg-background/70 backdrop-blur-lg">{label}</span>
+        <Button
+            size="icon"
+            className="rounded-full w-12 h-12 bg-background/70 backdrop-blur-lg border-2 border-primary/50 text-primary shadow-lg hover:bg-background/90"
+            onClick={onClick}
+        >
+            <Icon className="h-5 w-5" />
+        </Button>
+    </motion.div>
+  );
+
   return (
     <>
       <div className="fixed bottom-20 right-6 z-40 md:bottom-6">
@@ -48,15 +62,15 @@ export function FloatingActionMenu() {
               exit="closed"
               className="flex flex-col items-end gap-3"
             >
-              <UserGroupsList renderAs="fab-actions" />
-              <motion.div variants={itemVariants}>
-                <HelpChatDialog>
-                  <Button variant="outline" className="h-auto p-3 flex items-center gap-2 bg-background/90 backdrop-blur-lg shadow-lg">
-                    <span className="text-sm font-semibold">Ayuda IA</span>
-                    <HelpCircle className="h-5 w-5 text-primary" />
-                  </Button>
-                </HelpChatDialog>
-              </motion.div>
+              <HelpChatDialog>
+                 <FabItem icon={HelpCircle} label="Ayuda IA" onClick={() => {}} />
+              </HelpChatDialog>
+              <JoinGroupDialog>
+                 <FabItem icon={LogIn} label="Unirse a Grupo" onClick={() => {}} />
+              </JoinGroupDialog>
+              <CreateGroupDialog>
+                <FabItem icon={Users2} label="Crear Grupo" onClick={() => {}} />
+              </CreateGroupDialog>
             </motion.div>
           )}
         </AnimatePresence>
