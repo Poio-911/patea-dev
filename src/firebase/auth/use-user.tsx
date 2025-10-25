@@ -34,25 +34,37 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           if (userDoc.exists()) {
              const userData = userDoc.data() as UserProfile;
              
-             // --- DATA REPAIR & SYNC LOGIC ---
-             // This logic checks if the player's groupId is out of sync with the user's activeGroupId and repairs it.
-             if (userData.activeGroupId) {
-                const playerRef = doc(firestore, 'players', firebaseUser.uid);
-                try {
-                    const playerDoc = await getDoc(playerRef);
-                    if (playerDoc.exists()) {
-                        const playerData = playerDoc.data() as Player;
-                        // If groupId is missing OR different from the active one, update it.
-                        if (playerData.groupId !== userData.activeGroupId) {
-                            console.log(`Syncing player groupId for ${userData.displayName}: setting groupId to ${userData.activeGroupId}`);
-                            await updateDoc(playerRef, { groupId: userData.activeGroupId });
-                        }
+             // --- DATA REPAIR & CREDIT RESET LOGIC ---
+             const playerRef = doc(firestore, 'players', firebaseUser.uid);
+             try {
+                const playerDoc = await getDoc(playerRef);
+                if (playerDoc.exists()) {
+                    const playerData = playerDoc.data() as Player;
+                    const updates: Partial<Player> = {};
+
+                    // Sync player's groupId if out of sync with user's activeGroupId
+                    if (userData.activeGroupId && playerData.groupId !== userData.activeGroupId) {
+                        updates.groupId = userData.activeGroupId;
                     }
-                } catch (e) {
-                    console.error("Failed to sync player data:", e);
+
+                    // Monthly credit reset logic
+                    const now = new Date();
+                    const lastReset = playerData.lastCreditReset ? new Date(playerData.lastCreditReset) : null;
+
+                    if (!lastReset || (lastReset.getMonth() !== now.getMonth() || lastReset.getFullYear() !== now.getFullYear())) {
+                        updates.cardGenerationCredits = 3;
+                        updates.lastCreditReset = now.toISOString();
+                    }
+
+                    if (Object.keys(updates).length > 0) {
+                        console.log(`Syncing player data for ${userData.displayName}:`, updates);
+                        await updateDoc(playerRef, updates);
+                    }
                 }
+             } catch (e) {
+                console.error("Failed to sync player data or reset credits:", e);
              }
-             // --- END REPAIR & SYNC LOGIC ---
+             // --- END REPAIR & CREDIT RESET LOGIC ---
 
              setUser(userData);
              setLoading(false);

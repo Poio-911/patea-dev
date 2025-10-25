@@ -1,6 +1,7 @@
 
 
 
+
 import { DocumentData, DocumentReference } from "firebase/firestore";
 import type { PerformanceTag as Pt } from "./performance-tags";
 
@@ -42,7 +43,8 @@ export type Player = {
   stats: PlayerStats;
   ownerUid: string; // The UID of the user who created this player
   groupId: string | null;
-  cardGenerationCredits?: number;
+  cardGenerationCredits: number;
+  lastCreditReset?: string; // ISO 8601 string
 } & DocumentData;
 
 export type DetailedTeamPlayer = Player & { number: number; status: 'titular' | 'suplente' };

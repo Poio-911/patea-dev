@@ -144,7 +144,8 @@ export default function RegisterPage() {
             stats: { matchesPlayed: 0, goals: 0, assists: 0, averageRating: 0 },
             ownerUid: newUser.uid,
             groupId: null, // No group initially
-            cardGenerationCredits: 1, // Give 1 credit on registration
+            cardGenerationCredits: 3, // Give 3 credits on registration
+            lastCreditReset: new Date().toISOString(),
         };
         batch.set(playerRef, newPlayer);
 
@@ -296,4 +297,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-

@@ -1,3 +1,4 @@
+
 'use server';
 
 import { adminApp, adminDb, adminAuth, adminStorage } from '@/firebase/admin';
@@ -48,10 +49,10 @@ export async function generatePlayerCardImageAction(userId: string) {
     }
 
     const player = playerSnap.data() as Player;
-    const credits = player.cardGenerationCredits === undefined ? 1 : player.cardGenerationCredits;
+    const credits = player.cardGenerationCredits;
 
     if (credits <= 0) {
-      return { error: 'No te quedan créditos para generar imágenes.' };
+      return { error: 'No te quedan créditos para generar imágenes este mes.' };
     }
 
     if (!player.photoUrl) {
