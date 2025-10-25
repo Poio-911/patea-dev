@@ -1,13 +1,14 @@
+
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { getAppHelpAction } from '@/lib/actions';
-import type { AppHelpInput, AppHelpOutput } from '@/ai/flows/get-app-help';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import type { AppHelpInput } from '@/ai/flows/get-app-help';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, Send, Bot, User as UserIcon } from 'lucide-react';
+import { Loader2, Send, Bot, HelpCircle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 
@@ -16,12 +17,8 @@ type Message = {
   content: string;
 };
 
-interface HelpChatDialogProps {
-  children: React.ReactNode;
-}
-
-export function HelpChatDialog({ children }: HelpChatDialogProps) {
-  const [open, setOpen] = useState(false);
+export function HelpChatDialog() {
+  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -32,9 +29,9 @@ export function HelpChatDialog({ children }: HelpChatDialogProps) {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, []);
-
+  
   useEffect(() => {
-    if (open && messages.length === 0) {
+    if (isOpen && messages.length === 0) {
       setMessages([
         {
           role: 'agent',
@@ -42,7 +39,7 @@ export function HelpChatDialog({ children }: HelpChatDialogProps) {
         },
       ]);
     }
-  }, [open, messages.length]);
+  }, [isOpen, messages.length]);
 
   useEffect(() => {
     scrollToBottom();
@@ -78,57 +75,74 @@ export function HelpChatDialog({ children }: HelpChatDialogProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="h-[70vh] w-[90vw] max-w-lg flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Asistente de Ayuda</DialogTitle>
-          <DialogDescription>Preguntale a la IA cómo usar la aplicación.</DialogDescription>
-        </DialogHeader>
-        <div className="flex-grow overflow-y-auto -mx-6 px-4">
-            <ScrollArea className="h-full" ref={scrollRef}>
-                <div className="space-y-4 py-4 pr-4">
-                {messages.map((message, index) => (
-                    <div key={index} className={cn('flex items-start gap-2 text-sm', message.role === 'user' ? 'justify-end' : 'justify-start')}>
-                    {message.role === 'agent' && (
-                        <Avatar className="h-8 w-8">
-                            <AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></AvatarFallback>
-                        </Avatar>
-                    )}
-                    <div className={cn('rounded-lg px-3 py-2 max-w-[85%]', message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
-                        <p className="whitespace-pre-wrap">{message.content}</p>
+    <div>
+        <AnimatePresence>
+            {isOpen && (
+                 <motion.div
+                    initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 50, scale: 0.9 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                    className="w-80 h-[28rem] flex flex-col bg-background/70 backdrop-blur-lg rounded-xl shadow-2xl border border-primary/20 overflow-hidden"
+                >
+                    <div className="flex-grow overflow-y-auto">
+                        <ScrollArea className="h-full" ref={scrollRef}>
+                             <div className="p-4 space-y-4">
+                                {messages.map((message, index) => (
+                                    <div key={index} className={cn('flex items-start gap-2 text-sm', message.role === 'user' ? 'justify-end' : 'justify-start')}>
+                                        {message.role === 'agent' && <Avatar className="h-6 w-6"><AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-4 w-4" /></AvatarFallback></Avatar>}
+                                        <div className={cn('rounded-lg px-3 py-2 max-w-[85%]', message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-background/80')}>
+                                            <p className="whitespace-pre-wrap">{message.content}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                                {isLoading && (
+                                    <div className="flex items-start gap-2 justify-start">
+                                        <Avatar className="h-6 w-6"><AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-4 w-4" /></AvatarFallback></Avatar>
+                                        <div className="bg-background/80 rounded-lg px-3 py-2"><Loader2 className="h-5 w-5 animate-spin" /></div>
+                                    </div>
+                                )}
+                            </div>
+                        </ScrollArea>
                     </div>
-                    {message.role === 'user' && (
-                        <Avatar className="h-8 w-8">
-                            <AvatarFallback><UserIcon className="h-5 w-5" /></AvatarFallback>
-                        </Avatar>
-                    )}
+                     <div className="border-t p-2">
+                        <div className="flex w-full items-center space-x-2">
+                            <Input
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
+                                placeholder="Escribe tu duda..."
+                                disabled={isLoading}
+                                className="bg-background/80 border-primary/20"
+                            />
+                            <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon">
+                                <Send className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
-                ))}
-                {isLoading && (
-                    <div className="flex items-start gap-2 justify-start">
-                    <Avatar className="h-8 w-8"><AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></AvatarFallback></Avatar>
-                    <div className="bg-muted rounded-lg px-3 py-2"><Loader2 className="h-5 w-5 animate-spin" /></div>
-                    </div>
-                )}
-                </div>
-            </ScrollArea>
-        </div>
-        <div className="border-t pt-4 -mx-6 px-6">
-          <div className="flex w-full items-center space-x-2">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
-              placeholder="Ej: ¿Cómo se actualiza mi OVR?"
-              disabled={isLoading}
-            />
-            <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon">
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+                </motion.div>
+            )}
+        </AnimatePresence>
+        
+        <Button
+            className="rounded-full w-auto h-14 bg-background/70 backdrop-blur-lg border-2 border-primary/50 text-primary shadow-lg hover:bg-background/90 hover:scale-105 active:scale-95 transition-all px-4 mt-4"
+            onClick={() => setIsOpen(!isOpen)}
+            aria-label="Toggle help chat"
+        >
+             <AnimatePresence initial={false} mode="wait">
+                <motion.div
+                    key={isOpen ? 'x' : 'help'}
+                    initial={{ rotate: -45, opacity: 0, scale: 0.5 }}
+                    animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                    exit={{ rotate: 45, opacity: 0, scale: 0.5 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center gap-2"
+                >
+                    {isOpen ? <X className="h-6 w-6" /> : <><HelpCircle className="h-5 w-5" /> <span className="font-semibold">Ayuda</span></>}
+                </motion.div>
+            </AnimatePresence>
+        </Button>
+    </div>
   );
 }
+
