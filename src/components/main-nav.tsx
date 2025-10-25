@@ -45,6 +45,7 @@ import { HelpDialog } from '@/components/help-dialog';
 import { WelcomeDialog } from '@/components/welcome-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { isToday, parseISO } from 'date-fns';
+import { FloatingActionMenu } from './floating-action-menu';
 
 
 const navItems = [
@@ -254,6 +255,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             </div>
           </main>
           
+          <FloatingActionMenu />
+          
           <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg md:hidden">
               <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
               {navItems.map((item) => {
@@ -279,4 +282,3 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
-
