@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useFirestore, useUser } from '@/firebase';
-import { collection, addDoc, updateDoc, doc, query, where, getDocs, arrayUnion } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, query, where, getDocs, arrayUnion, writeBatch } from 'firebase/firestore';
 import { nanoid } from 'nanoid';
 import { useToast } from '@/hooks/use-toast';
 import type { Group } from '@/lib/types';
@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const createGroupSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
@@ -33,18 +34,26 @@ export function CreateGroupDialog({ children }: { children: React.ReactNode }) {
     if (!firestore || !user?.uid) return;
     setIsCreating(true);
     try {
-      const inviteCode = nanoid(8).toUpperCase();
+      const inviteCode = nanoid(8); // Genera un código con mayúsculas, minúsculas y números
+      const batch = writeBatch(firestore);
+      
+      const newGroupRef = doc(collection(firestore, 'groups'));
       const groupData: Omit<Group, 'id'> = {
         name: data.name,
         ownerUid: user.uid,
         inviteCode,
         members: [user.uid],
       };
-      const groupRef = await addDoc(collection(firestore, 'groups'), groupData);
-      await updateDoc(doc(firestore, 'users', user.uid), {
-        activeGroupId: groupRef.id,
-        groups: arrayUnion(groupRef.id)
+      batch.set(newGroupRef, groupData);
+      
+      const userRef = doc(firestore, 'users', user.uid);
+      batch.update(userRef, {
+        activeGroupId: newGroupRef.id,
+        groups: arrayUnion(newGroupRef.id)
       });
+      
+      await batch.commit();
+
       toast({ title: "Grupo creado", description: `"${data.name}" ha sido creado.` });
       setOpen(false);
       form.reset();
@@ -101,12 +110,12 @@ export function JoinGroupDialog({ children }: { children: React.ReactNode }) {
         if (!firestore || !user?.uid) return;
         setIsJoining(true);
         try {
-            const codeToSearch = data.inviteCode.replace(/-/g, '').toUpperCase();
+            const codeToSearch = data.inviteCode;
             const groupsQuery = query(collection(firestore, 'groups'), where('inviteCode', '==', codeToSearch));
             const snapshot = await getDocs(groupsQuery);
 
             if (snapshot.empty) {
-                toast({ variant: 'destructive', title: "Código inválido", description: "No existe un grupo con ese código." });
+                toast({ variant: 'destructive', title: "Código inválido", description: "No se encontró ningún grupo con ese código. Verificá que esté escrito exactamente igual." });
                 setIsJoining(false);
                 return;
             }
@@ -145,7 +154,7 @@ export function JoinGroupDialog({ children }: { children: React.ReactNode }) {
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label htmlFor="join-code">Código de Invitación</Label>
-                            <Input id="join-code" placeholder="ABC123XY" {...form.register('inviteCode')} className="uppercase" />
+                            <Input id="join-code" placeholder="Ej: GYpGe-7e" {...form.register('inviteCode')} />
                             {form.formState.errors.inviteCode && <p className="text-sm text-destructive">{form.formState.errors.inviteCode.message}</p>}
                         </div>
                     </div>
