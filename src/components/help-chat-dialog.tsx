@@ -75,17 +75,17 @@ export function HelpChatDialog() {
   };
 
   return (
-    <div>
+    <div className="relative">
         <AnimatePresence>
             {isOpen && (
                  <motion.div
-                    initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 50, scale: 0.9 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                    className="w-80 h-[28rem] flex flex-col bg-background/70 backdrop-blur-lg rounded-xl shadow-2xl border border-primary/20 overflow-hidden mb-4"
+                    exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    className="absolute bottom-full right-0 w-80 h-[28rem] flex flex-col bg-background/70 backdrop-blur-lg rounded-xl shadow-2xl border border-primary/20 overflow-hidden mb-4"
                 >
-                    <header className="p-2 border-b flex justify-between items-center">
+                    <header className="p-2 border-b flex justify-between items-center flex-shrink-0">
                         <div className="flex items-center gap-2">
                              <Avatar className="h-6 w-6"><AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-4 w-4" /></AvatarFallback></Avatar>
                              <h3 className="font-semibold text-sm">Asistente Pateá</h3>
@@ -114,7 +114,7 @@ export function HelpChatDialog() {
                             </div>
                         </ScrollArea>
                     </div>
-                     <div className="border-t p-2">
+                     <div className="border-t p-2 flex-shrink-0">
                         <div className="flex w-full items-center space-x-2">
                             <Input
                                 value={input}
