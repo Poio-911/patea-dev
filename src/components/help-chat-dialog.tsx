@@ -83,8 +83,17 @@ export function HelpChatDialog() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 50, scale: 0.9 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                    className="w-80 h-[28rem] flex flex-col bg-background/70 backdrop-blur-lg rounded-xl shadow-2xl border border-primary/20 overflow-hidden"
+                    className="w-80 h-[28rem] flex flex-col bg-background/70 backdrop-blur-lg rounded-xl shadow-2xl border border-primary/20 overflow-hidden mb-4"
                 >
+                    <header className="p-2 border-b flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                             <Avatar className="h-6 w-6"><AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-4 w-4" /></AvatarFallback></Avatar>
+                             <h3 className="font-semibold text-sm">Asistente Pateá</h3>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsOpen(false)}>
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </header>
                     <div className="flex-grow overflow-y-auto">
                         <ScrollArea className="h-full" ref={scrollRef}>
                              <div className="p-4 space-y-4">
@@ -125,24 +134,15 @@ export function HelpChatDialog() {
         </AnimatePresence>
         
         <Button
-            className="rounded-full w-auto h-14 bg-background/70 backdrop-blur-lg border-2 border-primary/50 text-primary shadow-lg hover:bg-background/90 hover:scale-105 active:scale-95 transition-all px-4 mt-4"
+            className="rounded-full w-auto h-14 bg-background/70 backdrop-blur-lg border-2 border-primary/50 text-primary shadow-lg hover:bg-background/90 hover:scale-105 active:scale-95 transition-all px-4"
             onClick={() => setIsOpen(!isOpen)}
             aria-label="Toggle help chat"
         >
-             <AnimatePresence initial={false} mode="wait">
-                <motion.div
-                    key={isOpen ? 'x' : 'help'}
-                    initial={{ rotate: -45, opacity: 0, scale: 0.5 }}
-                    animate={{ rotate: 0, opacity: 1, scale: 1 }}
-                    exit={{ rotate: 45, opacity: 0, scale: 0.5 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex items-center gap-2"
-                >
-                    {isOpen ? <X className="h-6 w-6" /> : <><HelpCircle className="h-5 w-5" /> <span className="font-semibold">Ayuda</span></>}
-                </motion.div>
-            </AnimatePresence>
+             <div className="flex items-center gap-2">
+                <HelpCircle className="h-5 w-5" />
+                <span className="font-semibold">Ayuda</span>
+             </div>
         </Button>
     </div>
   );
 }
-
