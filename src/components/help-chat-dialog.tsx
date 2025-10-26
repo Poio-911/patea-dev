@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -134,9 +133,12 @@ export function HelpChatDialog() {
         </AnimatePresence>
         
         <Button
-            className="rounded-full w-auto h-14 bg-background/70 backdrop-blur-lg border-2 border-primary/50 text-primary shadow-lg hover:bg-background/90 hover:scale-105 active:scale-95 transition-all px-4"
-            onClick={() => setIsOpen(!isOpen)}
-            aria-label="Toggle help chat"
+          className={cn(
+            "rounded-full w-auto h-14 bg-background/70 backdrop-blur-lg border-2 border-primary/50 text-primary shadow-lg hover:bg-background/90 hover:scale-105 active:scale-95 transition-all px-4",
+            isOpen && "bg-primary/20 border-primary/70"
+          )}
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Toggle help chat"
         >
              <div className="flex items-center gap-2">
                 <HelpCircle className="h-5 w-5" />
