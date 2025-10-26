@@ -101,7 +101,8 @@ export function JoinGroupDialog({ children }: { children: React.ReactNode }) {
         if (!firestore || !user?.uid) return;
         setIsJoining(true);
         try {
-            const groupsQuery = query(collection(firestore, 'groups'), where('inviteCode', '==', data.inviteCode.toUpperCase()));
+            const codeToSearch = data.inviteCode.toUpperCase();
+            const groupsQuery = query(collection(firestore, 'groups'), where('inviteCode', '==', codeToSearch));
             const snapshot = await getDocs(groupsQuery);
 
             if (snapshot.empty) {

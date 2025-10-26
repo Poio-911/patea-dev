@@ -246,7 +246,7 @@ export function UserGroupsList() {
           </div>
         )}
 
-        <div className="flex gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <CreateGroupDialog>
             <Button variant="default" size="lg" className="flex-1">
                 <PlusCircle className="mr-2 h-5 w-5"/>
