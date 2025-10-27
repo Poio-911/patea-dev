@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -69,39 +70,39 @@ export function MatchesCalendar({ matches, allPlayers }: MatchesCalendarProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header con navegación */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={goToPreviousMonth}>
+          <Button variant="outline" size="icon" onClick={goToPreviousMonth} className="h-8 w-8">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h2 className="text-2xl font-bold capitalize min-w-[200px] text-center">
+          <h2 className="text-lg font-bold capitalize w-40 text-center">
             {format(currentMonth, 'MMMM yyyy', { locale: es })}
           </h2>
-          <Button variant="outline" size="icon" onClick={goToNextMonth}>
+          <Button variant="outline" size="icon" onClick={goToNextMonth} className="h-8 w-8">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <Button variant="outline" onClick={goToToday}>
+        <Button variant="outline" size="sm" onClick={goToToday}>
           Hoy
         </Button>
       </div>
 
       {/* Grid del calendario */}
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="p-2">
           {/* Encabezados de días */}
-          <div className="grid grid-cols-7 gap-2 mb-2">
+          <div className="grid grid-cols-7 gap-1 mb-2">
             {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => (
-              <div key={day} className="text-center text-sm font-semibold text-muted-foreground p-2">
+              <div key={day} className="text-center text-xs font-semibold text-muted-foreground p-1">
                 {day}
               </div>
             ))}
           </div>
 
           {/* Días del calendario */}
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-1">
             {calendarDays.map(day => {
               const dateKey = format(day, 'yyyy-MM-dd');
               const dayMatches = matchesByDate.get(dateKey) || [];
@@ -116,7 +117,7 @@ export function MatchesCalendar({ matches, allPlayers }: MatchesCalendarProps) {
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSelectedDate(day)}
                   className={cn(
-                    "relative aspect-square p-2 rounded-lg border-2 transition-colors",
+                    "relative aspect-square p-1 rounded-md border-2 transition-colors flex items-center justify-center",
                     "hover:border-primary/50 hover:bg-accent",
                     isCurrentMonth ? "bg-background" : "bg-muted/30 text-muted-foreground",
                     isSelected && "border-primary bg-primary/10",
@@ -124,25 +125,22 @@ export function MatchesCalendar({ matches, allPlayers }: MatchesCalendarProps) {
                     !isCurrentMonth && "opacity-50"
                   )}
                 >
-                  <div className="text-sm font-medium">{format(day, 'd')}</div>
+                  <div className="text-xs font-medium">{format(day, 'd')}</div>
 
                   {/* Indicadores de partidos */}
                   {dayMatches.length > 0 && (
-                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
+                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
                       {dayMatches.slice(0, 3).map((match, i) => (
                         <div
                           key={i}
                           className={cn(
-                            "h-1.5 w-1.5 rounded-full",
+                            "h-1 w-1 rounded-full",
                             match.status === 'upcoming' || match.status === 'active'
                               ? "bg-green-500"
                               : "bg-gray-400"
                           )}
                         />
                       ))}
-                      {dayMatches.length > 3 && (
-                        <span className="text-[8px] font-bold">+{dayMatches.length - 3}</span>
-                      )}
                     </div>
                   )}
                 </motion.button>
@@ -157,28 +155,29 @@ export function MatchesCalendar({ matches, allPlayers }: MatchesCalendarProps) {
         {selectedDate && (
           <motion.div
             key={selectedDate.toISOString()}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
           >
             <Card>
-              <CardHeader>
+              <CardHeader className="p-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="capitalize">
-                    {format(selectedDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
+                  <CardTitle className="capitalize text-base">
+                    {format(selectedDate, "EEEE, d 'de' MMMM", { locale: es })}
                   </CardTitle>
                   <Badge variant="secondary">{selectedDateMatches.length} partido(s)</Badge>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 {selectedDateMatches.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     {selectedDateMatches.map(match => (
                       <MatchCard key={match.id} match={match} allPlayers={allPlayers} />
                     ))}
                   </div>
                 ) : (
-                  <p className="text-center text-muted-foreground py-8">
+                  <p className="text-center text-sm text-muted-foreground py-4">
                     No hay partidos programados para esta fecha.
                   </p>
                 )}
