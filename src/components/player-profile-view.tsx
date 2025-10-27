@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip as UiTooltip, TooltipContent, TooltipProvider as UiTooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { FirstTimeInfoDialog } from './first-time-info-dialog';
 import Link from 'next/link';
 import { AnalysisIcon } from './icons/analysis-icon';
@@ -100,6 +100,7 @@ const getPerformanceFromRating = (rating: number): { level: PerformanceLevel; co
 const getPerformanceFromTags = (tags: PerformanceTag[]): { level: PerformanceLevel; color: string } => {
     if (!tags || tags.length === 0) return { level: 'Medio', color: 'bg-yellow-500' };
     const score = tags.reduce((acc, tag) => {
+        if (!tag || typeof tag !== 'object' || !('impact' in tag)) return acc;
         if (tag.impact === 'positive') return acc + 1;
         if (tag.impact === 'negative') return acc - 1;
         return acc;
