@@ -3,25 +3,33 @@ import { initializeApp, getApps, App as AdminApp, cert } from 'firebase-admin/ap
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 import { getStorage as getAdminStorage } from 'firebase-admin/storage';
-import 'dotenv/config';
 
 let adminApp: AdminApp;
 
-const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 
-    ? JSON.parse(Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64, 'base64').toString())
-    : undefined;
+const serviceAccountKeyBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64;
+const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
 
 if (!getApps().length) {
-    if (serviceAccountKey) {
-        adminApp = initializeApp({
-            credential: cert(serviceAccountKey),
-            storageBucket: 'mil-disculpis.appspot.com', 
-        });
+    if (serviceAccountKeyBase64) {
+        try {
+            const serviceAccount = JSON.parse(Buffer.from(serviceAccountKeyBase64, 'base64').toString('utf-8'));
+            adminApp = initializeApp({
+                credential: cert(serviceAccount),
+                projectId: projectId,
+                storageBucket: storageBucket,
+            });
+        } catch (error) {
+            console.error("Error parsing FIREBASE_SERVICE_ACCOUNT_KEY_BASE64:", error);
+            throw new Error("Failed to initialize Firebase Admin SDK. Service account key is malformed.");
+        }
     } else {
+        // This will only work in environments with Application Default Credentials (like Google Cloud Run/Functions)
+        console.warn("Firebase Admin SDK is initializing without an explicit service account. This is expected in a Google Cloud environment.");
         adminApp = initializeApp({
-            storageBucket: 'mil-disculpis.appspot.com',
+            projectId: projectId,
+            storageBucket: storageBucket,
         });
-        console.warn("Firebase Admin SDK initialized without explicit service account. This will only work in cloud environments with Application Default Credentials.");
     }
 } else {
   adminApp = getApps()[0];
