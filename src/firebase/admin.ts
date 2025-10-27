@@ -18,11 +18,10 @@ if (!getApps().length) {
             storageBucket: 'mil-disculpis.appspot.com', 
         });
     } else {
-        // Fallback for environments where Application Default Credentials are available
         adminApp = initializeApp({
             storageBucket: 'mil-disculpis.appspot.com',
         });
-        console.warn("Firebase Admin SDK initialized without explicit service account. Relying on application default credentials.");
+        console.warn("Firebase Admin SDK initialized without explicit service account. This will only work in cloud environments with Application Default Credentials.");
     }
 } else {
   adminApp = getApps()[0];

@@ -1,12 +1,11 @@
 
 'use client';
 
-import { useUser } from '@/firebase';
+import { useUser, useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { useAuth } from '@/firebase';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -18,6 +17,7 @@ import Link from 'next/link';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { Mail } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
+import { createSessionCookie } from '@/lib/auth-actions';
 
 const loginSchema = z.object({
     email: z.string().email('Por favor, introduce un correo electrónico válido.'),
@@ -49,7 +49,9 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     if (!auth) return;
     try {
-        await signInWithEmailAndPassword(auth, data.email, data.password);
+        const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+        const idToken = await userCredential.user.getIdToken();
+        await createSessionCookie(idToken);
         // The useEffect will handle the redirect
     } catch (error: any) {
         toast({
