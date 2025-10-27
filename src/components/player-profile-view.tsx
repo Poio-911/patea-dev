@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -219,7 +220,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
             goals,
             individualEvaluations: summary.evaluations
         };
-    }).sort((a,b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime());
+    }).sort((a,b) => new Date(b.match.date).getTime() - new Date(a.date).getTime());
 
   }, [evaluations, matches, evaluatorProfiles, isLoading, playerId]);
 
