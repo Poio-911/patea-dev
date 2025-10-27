@@ -18,6 +18,8 @@ import { Loader2, Send, MessageCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from './ui/scroll-area';
+
 
 interface MatchChatViewProps {
   match: Match;
@@ -98,7 +100,7 @@ export function MatchChatView({ match }: MatchChatViewProps) {
       scrollToBottom();
       
       if (messages && messages.length > 0) {
-        const lastSeenTimestamp = localStorage.getItem(lastSeenKey) || 0;
+        const lastSeenTimestamp = parseInt(localStorage.getItem(lastSeenKey) || '0', 10);
         const newMessages = messages.filter(msg => {
             const msgTimestamp = msg.createdAt?.toDate ? msg.createdAt.toDate().getTime() : 0;
             return msgTimestamp > lastSeenTimestamp;
@@ -163,7 +165,7 @@ export function MatchChatView({ match }: MatchChatViewProps) {
   };
 
   return (
-    <Card className="flex flex-col h-[600px]">
+    <Card className="flex flex-col">
         <CardHeader>
             <CardTitle className="flex items-center gap-2">
                 <MessageCircle className="h-5 w-5" />
@@ -173,8 +175,12 @@ export function MatchChatView({ match }: MatchChatViewProps) {
                 )}
             </CardTitle>
         </CardHeader>
-        <CardContent ref={scrollAreaRef} className="flex-1 overflow-y-auto space-y-4 p-4" onFocus={handleFocus} tabIndex={0}>
-          {renderContent()}
+        <CardContent className="flex-1 flex flex-col p-4 overflow-hidden min-h-[300px]" onFocus={handleFocus} tabIndex={0}>
+          <ScrollArea className="flex-1 pr-2 max-h-[400px]" ref={scrollAreaRef}>
+            <div className="space-y-4">
+              {renderContent()}
+            </div>
+          </ScrollArea>
         </CardContent>
         <CardFooter className="p-4 border-t">
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex w-full items-center space-x-2">
