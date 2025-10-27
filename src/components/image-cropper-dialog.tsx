@@ -27,6 +27,7 @@ interface ImageCropperDialogProps {
   };
   onGenerateAI: () => void;
   isGeneratingAI: boolean;
+  onSaveComplete?: (newUrl: string) => void;
   children: React.ReactNode;
 }
 
@@ -66,9 +67,9 @@ async function getCroppedImg(
 }
 
 
-export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, children }: ImageCropperDialogProps) {
+export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, onSaveComplete, children }: ImageCropperDialogProps) {
   const [open, setOpen] = useState(false);
-  const [imgSrc, setImgSrc] = useState(player.photoUrl || '');
+  const [imgSrc, setImgSrc] = useState('');
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [isUploading, setIsUploading] = useState(false);
@@ -86,9 +87,36 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, child
       reader.readAsDataURL(e.target.files[0]);
     }
   };
+  
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (isOpen) {
+        setImgSrc(player.photoUrl || '');
+    }
+  }
 
   const handleSaveCrop = async () => {
-    if (!completedCrop || !imgRef.current || !user || !auth?.currentUser) return;
+    if (!completedCrop || !imgRef.current) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Por favor, recortá la imagen primero.' });
+        return;
+    }
+    
+    // If not logged in (e.g., registration page), just pass the data URL back
+    if (!user || !auth?.currentUser) {
+        const croppedImageBlob = await getCroppedImg(imgRef.current, completedCrop);
+        if (croppedImageBlob) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                if (onSaveComplete) {
+                    onSaveComplete(reader.result as string);
+                }
+                setOpen(false);
+            };
+            reader.readAsDataURL(croppedImageBlob);
+        }
+        return;
+    }
+
 
     setIsUploading(true);
     try {
@@ -114,10 +142,13 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, child
       await batch.commit();
 
       await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
+      
+      if(onSaveComplete) {
+        onSaveComplete(newPhotoURL);
+      }
 
       toast({ title: '¡Foto actualizada!', description: 'Tu foto de perfil ha sido recortada y guardada.' });
       setOpen(false);
-      window.location.reload(); // To reflect changes everywhere
 
     } catch (error: any) {
       console.error("Error saving cropped image:", error);
@@ -128,7 +159,7 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, child
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
@@ -175,15 +206,17 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, child
                 <Upload className="mr-2 h-4 w-4" />
                 Cambiar Imagen
             </Button>
-            <Button
-                type="button"
-                onClick={onGenerateAI}
-                disabled={isUploading || isGeneratingAI}
-                className="relative"
-            >
-                 {isGeneratingAI ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                 {isGeneratingAI ? "Generando..." : "Generar con IA"}
-            </Button>
+            {user && ( // Only show AI generation for logged-in users
+              <Button
+                  type="button"
+                  onClick={onGenerateAI}
+                  disabled={isUploading || isGeneratingAI}
+                  className="relative"
+              >
+                  {isGeneratingAI ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                  {isGeneratingAI ? "Generando..." : "Generar con IA"}
+              </Button>
+            )}
             <Button
                 type="button"
                 onClick={handleSaveCrop}
