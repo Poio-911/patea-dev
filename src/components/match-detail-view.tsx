@@ -39,6 +39,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { EditableTeamsDialog } from './editable-teams-dialog';
 import { InvitePlayerDialog } from './invite-player-dialog';
