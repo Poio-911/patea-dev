@@ -17,7 +17,6 @@ import Link from 'next/link';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { Mail } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
-import { createSessionCookie } from '@/lib/auth-actions';
 
 const loginSchema = z.object({
     email: z.string().email('Por favor, introduce un correo electrónico válido.'),

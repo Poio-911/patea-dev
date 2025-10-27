@@ -8,8 +8,9 @@ import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import { UserProvider } from '@/firebase/auth/use-user';
 import { MainNav } from '@/components/main-nav';
-import { useJsApiLoader, GoogleMapProvider } from '@react-google-maps/api';
+import { useJsApiLoader } from '@react-google-maps/api';
 import { libraries } from '@/lib/google-maps';
+import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 
 type FirebaseClientProviderProps = {
   children: React.ReactNode;
@@ -22,13 +23,11 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
     firestore: Firestore;
   } | null>(null);
 
-  const loaderOptions = useMemo(() => ({
+  const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
     libraries,
-  }), []);
-
-  const { isLoaded, loadError } = useJsApiLoader(loaderOptions);
+  });
 
   useEffect(() => {
     const instances = initializeFirebase();
@@ -36,14 +35,17 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
   }, []);
 
   if (!firebaseInstances || !isLoaded) {
-    return null; // Or a loading spinner
+    return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
+        </div>
+    );
   }
   
   if (loadError) {
     console.error("Google Maps API failed to load: ", loadError);
     // You can render a fallback UI here
   }
-
 
   return (
     <FirebaseProvider
