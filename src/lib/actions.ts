@@ -8,7 +8,6 @@ import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-ma
 import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-fit-player';
 import { coachConversation, type CoachConversationInput } from '@/ai/flows/coach-conversation';
 import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '@/ai/flows/detect-player-patterns';
-import { getAppHelp, AppHelpInput } from '@/ai/flows/get-app-help';
 import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation } from './types';
 import { adminApp, adminDb, adminAuth, adminStorage } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
@@ -274,22 +273,6 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
   } catch (error: any) {
     logger.error('Error detecting player patterns', error, { playerId });
     return { error: error.message || 'No se pudo analizar el rendimiento del jugador.' };
-  }
-}
-
-export async function getAppHelpAction(
-  userMessage: string,
-  conversationHistory?: AppHelpInput['conversationHistory']
-) {
-  try {
-    const result = await getAppHelp({
-      userMessage,
-      conversationHistory: conversationHistory || [],
-    });
-    return result;
-  } catch (error: any) {
-    logger.error('Error in app help action', error);
-    return { error: 'El asistente de ayuda no está disponible en este momento.' };
   }
 }
 

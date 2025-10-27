@@ -18,6 +18,7 @@ if (!getApps().length) {
             storageBucket: 'mil-disculpis.appspot.com', 
         });
     } else {
+        // Fallback for environments where Application Default Credentials are available
         adminApp = initializeApp({
             storageBucket: 'mil-disculpis.appspot.com',
         });

@@ -1,35 +1,43 @@
 'use client';
 
-import { useJsApiLoader } from '@react-google-maps/api';
-import { libraries } from '@/lib/google-maps';
-import { FirebaseClientProvider } from '@/firebase/client-provider';
-import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
+import React, { useState, useEffect } from 'react';
+import { FirebaseProvider } from '@/firebase/provider';
+import { initializeFirebase } from '@/firebase/index';
+import type { FirebaseApp } from 'firebase/app';
+import type { Auth } from 'firebase/auth';
+import type { Firestore } from 'firebase/firestore';
+import { UserProvider } from '@/firebase/auth/use-user';
 import { MainNav } from '@/components/main-nav';
 
-const loaderOptions = {
-  id: 'google-map-script',
-  googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-  libraries,
+type FirebaseClientProviderProps = {
+  children: React.ReactNode;
 };
 
-export function ClientProviders({ children }: { children: React.ReactNode }) {
-  const { isLoaded, loadError } = useJsApiLoader(loaderOptions);
+export function ClientProviders({ children }: FirebaseClientProviderProps) {
+  const [firebaseInstances, setFirebaseInstances] = useState<{
+    firebaseApp: FirebaseApp;
+    auth: Auth;
+    firestore: Firestore;
+  } | null>(null);
 
-  if (loadError) {
-    return <div>Error al cargar Google Maps. Por favor, revisa la configuración de tu API Key.</div>;
-  }
+  useEffect(() => {
+    const instances = initializeFirebase();
+    setFirebaseInstances(instances);
+  }, []);
 
-  if (!isLoaded) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
-      </div>
-    );
+  if (!firebaseInstances) {
+    return null; // Or a loading spinner
   }
 
   return (
-    <FirebaseClientProvider>
-      <MainNav>{children}</MainNav>
-    </FirebaseClientProvider>
+    <FirebaseProvider
+      firebaseApp={firebaseInstances.firebaseApp}
+      auth={firebaseInstances.auth}
+      firestore={firebaseInstances.firestore}
+    >
+      <UserProvider>
+       <MainNav>{children}</MainNav>
+      </UserProvider>
+    </FirebaseProvider>
   );
 }
