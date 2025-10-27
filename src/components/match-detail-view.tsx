@@ -1,26 +1,22 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import type { Match, Player, EvaluationAssignment, Notification, UserProfile, Invitation, Jersey, Team } from '@/lib/types';
+import type { Match, Player, EvaluationAssignment, Notification } from '@/lib/types';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, FileSignature, CheckCircle, UserPlus, LogOut, Shuffle, Trash2, MessageCircle, Eye, MoreVertical, Edit } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, FileSignature, CheckCircle, UserPlus, LogOut, Shuffle, Trash2, Eye, Edit } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { MatchChatView } from './match-chat-view';
-import { MatchTeamsDialog } from './match-teams-dialog';
 import { TeamsIcon } from './icons/teams-icon';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from './ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { WhatsAppIcon } from './icons/whatsapp-icon';
-import { MatchChronicleCard } from './match-chronicle-card';
 import { Separator } from './ui/separator';
 import { generateTeamsAction } from '@/lib/actions';
 import {
@@ -34,15 +30,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
 import { EditableTeamsDialog } from './editable-teams-dialog';
 import { InvitePlayerDialog } from './invite-player-dialog';
+import { WhatsAppIcon } from './icons/whatsapp-icon';
+import { MatchChronicleCard } from './match-chronicle-card';
 
 interface MatchDetailViewProps {
   matchId: string;
@@ -57,7 +48,6 @@ const positionBadgeStyles: Record<Player['position'], string> = {
 
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
-
 
 export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const firestore = useFirestore();
@@ -79,6 +69,22 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
 
     const googleMapsUrl = match ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location.address)}&query_place_id=${match.location.placeId}` : '';
     
+    const whatsAppShareText = useMemo(() => {
+        if (!match || !match.teams || match.teams.length < 2) return '';
+        
+        let message = `*Equipos para el partido "${match.title}"*:\n\n`;
+
+        match.teams.forEach(team => {
+            message += `*${team.name} (OVR ${team.averageOVR.toFixed(1)})*\n`;
+            team.players.forEach(p => {
+                message += `- ${p.displayName} (OVR ${p.ovr})\n`;
+            });
+            message += '\n';
+        });
+
+        return encodeURIComponent(message);
+    }, [match]);
+
     const generateEvaluationAssignments = (match: Match, allPlayers: Player[]): Omit<EvaluationAssignment, 'id'>[] => {
         const assignments: Omit<EvaluationAssignment, 'id'>[] = [];
         const matchPlayers = allPlayers.filter(p => match.playerUids.includes(p.id));
@@ -200,61 +206,10 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 </Button>
             </div>
             
-            <PageHeader title={match.title}>
-              {isOwner && (
-                <div className="flex items-center gap-2">
-                    {canFinalize && (
-                        <Button onClick={handleFinishMatch} disabled={isFinishing}>
-                            {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
-                            Finalizar Partido
-                        </Button>
-                    )}
-                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                         {match.teams && match.teams.length > 0 && (
-                            <EditableTeamsDialog match={match}>
-                                <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                                    <Shuffle className="mr-2 h-4 w-4"/> Editar Equipos
-                                </DropdownMenuItem>
-                            </EditableTeamsDialog>
-                         )}
-                         <InvitePlayerDialog userMatches={[match]} allGroupPlayers={allGroupPlayers || []} match={match} disabled={isMatchFull}>
-                            <DropdownMenuItem onSelect={e => e.preventDefault()} disabled={isMatchFull}>
-                                <UserPlus className="mr-2 h-4 w-4"/> Invitar Jugadores
-                            </DropdownMenuItem>
-                         </InvitePlayerDialog>
-                         <DropdownMenuSeparator />
-                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4"/> Eliminar Partido
-                                </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>¿Borrar este partido?</AlertDialogTitle>
-                                    <AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting}>
-                                        {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                                        Eliminar
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                         </AlertDialog>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-              )}
-            </PageHeader>
+            <PageHeader title={match.title} />
 
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground border-t border-b py-3">
-                 <Badge variant="default" className="text-base py-1 px-3">
+                <Badge variant="default" className="text-base py-1 px-3">
                     <Calendar className="mr-2 h-4 w-4"/>
                     <span className="font-semibold">{format(new Date(match.date), "EEEE, d 'de' MMMM", { locale: es })}</span>
                 </Badge>
@@ -266,6 +221,50 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     <Button asChild variant="link" className="p-0 h-auto text-sm text-muted-foreground"><Link href={googleMapsUrl} target="_blank" rel="noopener noreferrer">{match.location.name}</Link></Button>
                 </div>
             </div>
+
+            {isOwner && (
+                <Card>
+                    <CardHeader><CardTitle>Acciones del Organizador</CardTitle></CardHeader>
+                    <CardContent className="flex flex-wrap gap-2">
+                        {canFinalize && (
+                            <Button onClick={handleFinishMatch} disabled={isFinishing}>
+                                {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
+                                Finalizar Partido
+                            </Button>
+                        )}
+                        {match.teams && match.teams.length > 0 && (
+                            <EditableTeamsDialog match={match}>
+                                <Button variant="outline"><Shuffle className="mr-2 h-4 w-4"/> Editar Equipos</Button>
+                            </EditableTeamsDialog>
+                         )}
+                         <InvitePlayerDialog userMatches={[match]} allGroupPlayers={allGroupPlayers || []} match={match} disabled={isMatchFull}>
+                            <Button variant="outline" disabled={isMatchFull}>
+                                <UserPlus className="mr-2 h-4 w-4"/> Invitar Jugadores
+                            </Button>
+                         </InvitePlayerDialog>
+                         {match.teams && match.teams.length > 0 && (
+                            <Button asChild variant="outline">
+                                <a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer">
+                                    <WhatsAppIcon className="mr-2 h-4 w-4" />
+                                    Compartir Equipos
+                                </a>
+                            </Button>
+                         )}
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" disabled={isDeleting}><Trash2 className="mr-2 h-4 w-4"/></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader><AlertDialogTitle>¿Borrar este partido?</AlertDialogTitle><AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogFooter><AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting}>
+                                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                    Eliminar
+                                </AlertDialogAction></AlertDialogFooter>
+                            </AlertDialogContent>
+                         </AlertDialog>
+                    </CardContent>
+                </Card>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
@@ -288,13 +287,8 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                                 <div className="space-y-1">
                                                     {team.players.map(player => (
                                                         <div key={player.uid} className="flex items-center gap-3 p-2 border-b last:border-b-0">
-                                                            <Avatar className="h-9 w-9">
-                                                                <AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoUrl} alt={player.displayName} />
-                                                                <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
-                                                            </Avatar>
-                                                            <div className="flex-1">
-                                                                <p className="font-semibold text-sm">{player.displayName}</p>
-                                                            </div>
+                                                            <Avatar className="h-9 w-9"><AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoUrl} alt={player.displayName} /><AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback></Avatar>
+                                                            <div className="flex-1"><p className="font-semibold text-sm">{player.displayName}</p></div>
                                                             <div className="flex items-center gap-1.5">
                                                                 <Badge variant="outline" className={cn("text-xs", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
                                                                 <Badge variant="secondary" className="text-xs">{player.ovr}</Badge>
