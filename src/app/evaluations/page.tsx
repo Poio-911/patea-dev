@@ -18,6 +18,7 @@ import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 import { MatchTeamsDialog } from '@/components/match-teams-dialog';
 import { TeamsIcon } from '@/components/icons/teams-icon';
 import { ViewSubmissionDialog } from '@/components/view-submission-dialog';
+import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
 
 type PendingItem = {
     match: Match;
