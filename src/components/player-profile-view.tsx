@@ -240,8 +240,9 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
       const ratings = summary.evaluations.map(ev => ev.rating).filter((r): r is number => typeof r === 'number' && !isNaN(r));
       const hasNumericRatings = ratings.length > 0;
       const goals = summary.evaluations.reduce((sum, ev) => sum + (ev.goals || 0), 0);
-      const allTags = summary.evaluations.flatMap(ev => ev.performanceTags || [])
-          .filter((tag): tag is PerformanceTag => typeof tag === 'object' && tag !== null && 'impact' in tag);
+      
+      const allTags = summary.evaluations.flatMap(ev => ev.performanceTags)
+        .filter((tag): tag is PerformanceTag => tag && typeof tag === 'object' && 'impact' in tag);
       
       let performance: { level: PerformanceLevel; color: string };
       if (hasNumericRatings) {
@@ -374,18 +375,19 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                         </div>
                         
                         <Separator className="my-6"/>
+                        
                         <div className="w-full px-4">
                             <div className="flex items-center gap-2 mb-2">
                                 <h4 className="font-bold text-lg">Atributos</h4>
                                 <AttributesHelpDialog />
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-1 gap-x-8">
-                                <Stat label="RIT" value={player.pac} icon={statIcons.RIT} />
-                                <Stat label="TIR" value={player.sho} icon={statIcons.TIR} />
-                                <Stat label="PAS" value={player.pas} icon={statIcons.PAS} />
-                                <Stat label="REG" value={player.dri} icon={statIcons.REG} />
-                                <Stat label="DEF" value={player.def} icon={statIcons.DEF} />
-                                <Stat label="FIS" value={player.phy} icon={statIcons.FIS} />
+                                <Stat label="RIT" value={player.pac} />
+                                <Stat label="TIR" value={player.sho} />
+                                <Stat label="PAS" value={player.pas} />
+                                <Stat label="REG" value={player.dri} />
+                                <Stat label="DEF" value={player.def} />
+                                <Stat label="FIS" value={player.phy} />
                             </div>
                         </div>
                         {isCurrentUserProfile && (
