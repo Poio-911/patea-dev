@@ -5,7 +5,7 @@ import { useMemo, useState, useEffect } from 'react';
 import type { Match, Player, EvaluationAssignment, Notification, UserProfile, Invitation, Jersey, Team } from '@/lib/types';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, FileSignature, CheckCircle, UserPlus, LogOut, Shuffle, Trash2, MessageCircle, Eye } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, FileSignature, CheckCircle, UserPlus, LogOut, Shuffle, Trash2, MessageCircle, Eye, MoreVertical, Edit } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
 import Link from 'next/link';
@@ -34,6 +34,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { EditableTeamsDialog } from './editable-teams-dialog';
 import { InvitePlayerDialog } from './invite-player-dialog';
 
@@ -48,15 +54,9 @@ const positionBadgeStyles: Record<Player['position'], string> = {
   POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
 };
 
-const statusConfig: Record<Match['status'], { label: string; className: string }> = {
-    upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
-    active: { label: 'Activo', className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
-    completed: { label: 'Finalizado', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' },
-    evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' },
-};
-
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
+
 
 export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const firestore = useFirestore();
@@ -177,25 +177,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
         }
     };
 
-    const handleShareTeams = () => {
-        if (!match || !match.teams || match.teams.length < 2) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Los equipos aún no han sido generados.' });
-            return;
-        }
-
-        const teamA = match.teams[0];
-        const teamB = match.teams[1];
-
-        const formatTeam = (team: any) => 
-            `*${team.name} (OVR ${team.averageOVR.toFixed(1)})*\n` +
-            team.players.map((p: any) => `- ${p.displayName} (OVR ${p.ovr})`).join('\n');
-
-        const message = `*¡Equipos para el partido "${match.title}"!* ⚽\n\n${formatTeam(teamA)}\n\n${formatTeam(teamB)}`;
-        
-        const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-        window.open(whatsappUrl, '_blank');
-    };
-
     if (matchLoading) {
         return <div className="flex justify-center items-center h-full"><Loader2 className="h-12 w-12 animate-spin" /></div>;
     }
@@ -203,8 +184,9 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     if (!match) {
         return <div className="text-center p-8"><h2 className="text-xl font-bold">Partido no encontrado</h2></div>;
     }
-    
-    const currentStatus = statusConfig[match.status] || statusConfig.completed;
+
+    const isMatchFull = match.players.length >= match.matchSize;
+    const canFinalize = isOwner && match.status === 'upcoming' && isMatchFull;
 
     return (
         <div className="flex flex-col gap-6">
@@ -217,7 +199,58 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 </Button>
             </div>
             
-            <PageHeader title={match.title} />
+            <PageHeader title={match.title}>
+              {isOwner && (
+                <div className="flex items-center gap-2">
+                    {canFinalize && (
+                        <Button onClick={handleFinishMatch} disabled={isFinishing}>
+                            {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
+                            Finalizar Partido
+                        </Button>
+                    )}
+                     <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                         {match.teams && match.teams.length > 0 && (
+                            <EditableTeamsDialog match={match}>
+                                <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                                    <Shuffle className="mr-2 h-4 w-4"/> Editar Equipos
+                                </DropdownMenuItem>
+                            </EditableTeamsDialog>
+                         )}
+                         <InvitePlayerDialog userMatches={[match]} allGroupPlayers={allGroupPlayers || []} match={match} disabled={isMatchFull}>
+                            <DropdownMenuItem onSelect={e => e.preventDefault()} disabled={isMatchFull}>
+                                <UserPlus className="mr-2 h-4 w-4"/> Invitar Jugadores
+                            </DropdownMenuItem>
+                         </InvitePlayerDialog>
+                         <DropdownMenuSeparator />
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4"/> Eliminar Partido
+                                </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Borrar este partido?</AlertDialogTitle>
+                                    <AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting}>
+                                        {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                        Eliminar
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                         </AlertDialog>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+              )}
+            </PageHeader>
 
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground border-t border-b py-3">
                  <Badge variant="default" className="text-base py-1 px-3">
@@ -239,11 +272,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                         <CardHeader>
                             <CardTitle className="flex items-center justify-between">
                                 <span>Plantel ({match.players.length} / {match.matchSize})</span>
-                                {isOwner && match.status === 'upcoming' && (
-                                     <InvitePlayerDialog userMatches={[match]} allGroupPlayers={allGroupPlayers || []} match={match}>
-                                        <Button size="sm" variant="outline"><UserPlus className="mr-2 h-4 w-4"/>Invitar</Button>
-                                    </InvitePlayerDialog>
-                                )}
                             </CardTitle>
                         </CardHeader>
                          <CardContent>
