@@ -15,7 +15,7 @@ import type { Player, Evaluation, Match, OvrHistory, UserProfile, PerformanceTag
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, BarChart2, Star, Goal, Eye, ChevronDown, CheckCircle, BrainCircuit, Sparkles, Gauge, Crosshair, ArrowRightLeft, Footprints, Shield, HeartPulse } from 'lucide-react';
+import { Loader2, BarChart2, Star, Goal, Eye, ChevronDown, CheckCircle, BrainCircuit, Sparkles, Zap, Target, Send, Footprints, Shield, Dumbbell } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -50,25 +50,27 @@ const statusConfig: Record<Match['status'], { label: string; className: string }
     evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' },
 };
 
-const attributeDetails: Record<AttributeKey, { name: string, icon: React.ElementType }> = {
-  PAC: { name: 'Ritmo', icon: Gauge },
-  SHO: { name: 'Tiro', icon: Crosshair },
-  PAS: { name: 'Pase', icon: ArrowRightLeft },
-  DRI: { name: 'Regate', icon: Footprints },
-  DEF: { name: 'Defensa', icon: Shield },
-  PHY: { name: 'Físico', icon: HeartPulse },
+const statIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  RIT: Zap,
+  TIR: Target,
+  PAS: Send,
+  REG: Footprints,
+  DEF: Shield,
+  FIS: Dumbbell,
 };
 
-
-const Stat = ({ label, value, icon: Icon }: { label: string; value: number; icon: React.ElementType; }) => (
-    <div className="flex items-center justify-between text-base py-2">
+const Stat = ({ label, value }: { label: string; value: number }) => {
+  const Icon = statIcons[label] || Zap;
+  return (
+    <div className="flex items-center justify-between text-base py-2 group">
         <div className="flex items-center gap-2 font-semibold text-muted-foreground">
-            <Icon className="h-5 w-5"/>
+            <Icon className="h-5 w-5 group-hover:text-primary transition-colors" />
             <span>{label}</span>
         </div>
         <span className="font-bold text-lg">{value}</span>
     </div>
-);
+  );
+};
 
 
 type DetailedEvaluation = Evaluation & { evaluatorName?: string; evaluatorPhoto?: string };
@@ -78,6 +80,7 @@ type PerformanceLevel = 'Excelente' | 'Bueno' | 'Medio' | 'Regular' | 'Bajo';
 type MatchEvaluationSummary = {
     match: Match;
     teamName: string;
+    hasNumericRatings: boolean;
     performance: {
         level: PerformanceLevel;
         color: string;
@@ -235,12 +238,13 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
 
     return Object.values(evalsByMatch).map(summary => {
       const ratings = summary.evaluations.map(ev => ev.rating).filter((r): r is number => typeof r === 'number' && !isNaN(r));
+      const hasNumericRatings = ratings.length > 0;
       const goals = summary.evaluations.reduce((sum, ev) => sum + (ev.goals || 0), 0);
       const allTags = summary.evaluations.flatMap(ev => ev.performanceTags || [])
           .filter((tag): tag is PerformanceTag => typeof tag === 'object' && tag !== null && 'impact' in tag);
       
       let performance: { level: PerformanceLevel; color: string };
-      if (ratings.length > 0) {
+      if (hasNumericRatings) {
           const avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
           performance = getPerformanceFromRating(avgRating);
       } else {
@@ -252,6 +256,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
       return {
         match: summary.match,
         teamName: team?.name || '',
+        hasNumericRatings,
         performance,
         goals,
         individualEvaluations: summary.evaluations,
@@ -375,14 +380,12 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                 <AttributesHelpDialog />
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-1 gap-x-8">
-                                {(Object.keys(attributeDetails) as AttributeKey[]).map(key => (
-                                    <Stat
-                                        key={key}
-                                        label={attributeDetails[key].name}
-                                        value={player[key.toLowerCase() as keyof Player] as number}
-                                        icon={attributeDetails[key].icon}
-                                    />
-                                ))}
+                                <Stat label="RIT" value={player.pac} icon={statIcons.RIT} />
+                                <Stat label="TIR" value={player.sho} icon={statIcons.TIR} />
+                                <Stat label="PAS" value={player.pas} icon={statIcons.PAS} />
+                                <Stat label="REG" value={player.dri} icon={statIcons.REG} />
+                                <Stat label="DEF" value={player.def} icon={statIcons.DEF} />
+                                <Stat label="FIS" value={player.phy} icon={statIcons.FIS} />
                             </div>
                         </div>
                         {isCurrentUserProfile && (
@@ -462,122 +465,122 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                         </ResponsiveContainer>
                         </CardContent>
                     </Card>
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Historial de Evaluaciones</CardTitle>
-                            <CardDescription>Rendimiento del jugador en los últimos partidos evaluados. Haz clic en un partido para ver el detalle.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {filteredEvaluationsByMatch.length > 0 ? (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Partido</TableHead>
-                                            <TableHead>Fecha</TableHead>
-                                            <TableHead className="text-right">Acciones</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {filteredEvaluationsByMatch.map(({ match, teamName, performance, goals, individualEvaluations }) => {
-                                            const isOpen = openAccordion === match.id;
-                                            return (
-                                                <React.Fragment key={match.id}>
-                                                    <TableRow onClick={() => setOpenAccordion(isOpen ? null : match.id)} className="cursor-pointer">
-                                                        <TableCell className="font-medium">{match.title}</TableCell>
-                                                        <TableCell>{format(new Date(match.date), 'dd MMM', { locale: es })}</TableCell>
-                                                        <TableCell className="text-right">
-                                                            <Button variant="ghost" size="sm">
-                                                                Ver Detalles
-                                                                <ChevronDown className={cn("ml-2 h-4 w-4 transition-transform", isOpen && "rotate-180")} />
-                                                            </Button>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                    {isOpen && (
-                                                        <TableRow>
-                                                            <TableCell colSpan={3} className="p-0">
-                                                                <div className="p-4 bg-muted/50 rounded-md">
-                                                                    <div className="flex justify-between items-center mb-2">
-                                                                        <div className="flex items-center gap-4">
-                                                                            <Badge variant="outline">Equipo: {teamName}</Badge>
-                                                                            <Badge variant="outline"><Goal className="mr-1 h-3 w-3" /> {goals} Goles</Badge>
-                                                                        </div>
-                                                                         <Badge style={{ backgroundColor: performance.color }} className="text-white">
-                                                                            {performance.level}
-                                                                        </Badge>
-                                                                    </div>
-                                                                    <h4 className="font-semibold mb-2 mt-4">Detalle de Evaluaciones:</h4>
-                                                                    <Table>
-                                                                        <TableHeader>
-                                                                            <TableRow>
-                                                                                <TableHead>Evaluador</TableHead>
-                                                                                <TableHead className="text-center">Rating</TableHead>
-                                                                                <TableHead>Etiquetas</TableHead>
-                                                                            </TableRow>
-                                                                        </TableHeader>
-                                                                        <TableBody>
-                                                                            {individualEvaluations.map(ev => (
-                                                                                <TableRow key={ev.id}>
-                                                                                    <TableCell>
-                                                                                        <div className="flex items-center gap-2">
-                                                                                            <Avatar className="h-8 w-8">
-                                                                                                <AvatarImage src={ev.evaluatorPhoto} alt={ev.evaluatorName} />
-                                                                                                <AvatarFallback>{ev.evaluatorName?.charAt(0)}</AvatarFallback>
-                                                                                            </Avatar>
-                                                                                            <span>{ev.evaluatorName}</span>
-                                                                                        </div>
-                                                                                    </TableCell>
-                                                                                    <TableCell className="text-center">
-                                                                                        {ev.rating !== undefined ? <Badge variant="secondary">{ev.rating}</Badge> : <span className="text-muted-foreground text-xs">-</span>}
-                                                                                    </TableCell>
-                                                                                    <TableCell>
-                                                                                        <div className="flex gap-1 flex-wrap">
-                                                                                            {(ev.performanceTags || []).map((tag, idx) => {
-                                                                                                if (tag && typeof tag === 'object' && 'name' in tag) {
-                                                                                                    const typedTag = tag as PerformanceTag;
-                                                                                                    return (
-                                                                                                        <UiTooltipProvider key={typedTag.id || idx}>
-                                                                                                            <UiTooltip>
-                                                                                                                <TooltipTrigger asChild>
-                                                                                                                    <Badge variant="outline" className="cursor-help">{typedTag.name}</Badge>
-                                                                                                                </TooltipTrigger>
-                                                                                                                <TooltipContent>
-                                                                                                                    <p className="font-semibold mb-1">{typedTag.description}</p>
-                                                                                                                    {typedTag.effects && typedTag.effects.length > 0 && (
-                                                                                                                        <div className="text-xs space-y-0.5">
-                                                                                                                            {typedTag.effects.map((effect, i) => (
-                                                                                                                                <p key={i} className={cn(effect.change > 0 ? 'text-green-600' : 'text-red-600')}>
-                                                                                                                                    {effect.attribute.toUpperCase()}: {effect.change > 0 ? '+' : ''}{effect.change}
-                                                                                                                                </p>
-                                                                                                                            ))}
-                                                                                                                        </div>
-                                                                                                                    )}
-                                                                                                                </TooltipContent>
-                                                                                                            </UiTooltip>
-                                                                                                        </UiTooltipProvider>
-                                                                                                    );
-                                                                                                }
-                                                                                                return null;
-                                                                                            })}
-                                                                                            {(!ev.performanceTags || ev.performanceTags.length === 0) && <span className="text-muted-foreground text-xs">-</span>}
-                                                                                        </div>
-                                                                                    </TableCell>
-                                                                                </TableRow>
-                                                                            ))}
-                                                                        </TableBody>
-                                                                    </Table>
-                                                                </div>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    )}
-                                                </React.Fragment>
-                                            )
-                                        })}
-                                    </TableBody>
-                                </Table>
-                            ) : (
-                                <div className="text-center text-muted-foreground py-10">Este jugador aún no tiene evaluaciones registradas.</div>
-                            )}
-                        </CardContent>
+                    <Card>
+                      <CardHeader>
+                          <CardTitle>Historial de Evaluaciones</CardTitle>
+                          <CardDescription>Rendimiento del jugador en los últimos partidos evaluados. Haz clic en un partido para ver el detalle.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                          {filteredEvaluationsByMatch.length > 0 ? (
+                              <Table>
+                                  <TableHeader>
+                                      <TableRow>
+                                          <TableHead>Partido</TableHead>
+                                          <TableHead>Fecha</TableHead>
+                                          <TableHead className="text-right">Acciones</TableHead>
+                                      </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                      {filteredEvaluationsByMatch.map(({ match, teamName, hasNumericRatings, performance, goals, individualEvaluations }) => {
+                                          const isOpen = openAccordion === match.id;
+                                          return (
+                                              <React.Fragment key={match.id}>
+                                                  <TableRow onClick={() => setOpenAccordion(isOpen ? null : match.id)} className="cursor-pointer">
+                                                      <TableCell className="font-medium">{match.title}</TableCell>
+                                                      <TableCell>{format(new Date(match.date), 'dd MMM', { locale: es })}</TableCell>
+                                                      <TableCell className="text-right">
+                                                          <Button variant="ghost" size="sm">
+                                                              Ver Detalles
+                                                              <ChevronDown className={cn("ml-2 h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+                                                          </Button>
+                                                      </TableCell>
+                                                  </TableRow>
+                                                  {isOpen && (
+                                                      <TableRow>
+                                                          <TableCell colSpan={3} className="p-0">
+                                                              <div className="p-4 bg-muted/50 rounded-md">
+                                                                  <div className="flex justify-between items-center mb-2">
+                                                                      <div className="flex items-center gap-4">
+                                                                          <Badge variant="outline">Equipo: {teamName}</Badge>
+                                                                          <Badge variant="outline"><Goal className="mr-1 h-3 w-3" /> {goals} Goles</Badge>
+                                                                      </div>
+                                                                       <Badge style={{ backgroundColor: performance.color }} className="text-white">
+                                                                          {performance.level}
+                                                                      </Badge>
+                                                                  </div>
+                                                                  <h4 className="font-semibold mb-2 mt-4">Detalle de Evaluaciones:</h4>
+                                                                  <Table>
+                                                                      <TableHeader>
+                                                                          <TableRow>
+                                                                              <TableHead>Evaluador</TableHead>
+                                                                              <TableHead className="text-center">Rating</TableHead>
+                                                                              <TableHead>Etiquetas</TableHead>
+                                                                          </TableRow>
+                                                                      </TableHeader>
+                                                                      <TableBody>
+                                                                          {individualEvaluations.map(ev => (
+                                                                              <TableRow key={ev.id}>
+                                                                                  <TableCell>
+                                                                                      <div className="flex items-center gap-2">
+                                                                                          <Avatar className="h-8 w-8">
+                                                                                              <AvatarImage src={ev.evaluatorPhoto} alt={ev.evaluatorName} />
+                                                                                              <AvatarFallback>{ev.evaluatorName?.charAt(0)}</AvatarFallback>
+                                                                                          </Avatar>
+                                                                                          <span>{ev.evaluatorName}</span>
+                                                                                      </div>
+                                                                                  </TableCell>
+                                                                                  <TableCell className="text-center">
+                                                                                    {ev.rating !== undefined ? <Badge variant="secondary">{ev.rating}</Badge> : <span className="text-muted-foreground text-xs">-</span>}
+                                                                                  </TableCell>
+                                                                                  <TableCell>
+                                                                                      <div className="flex gap-1 flex-wrap">
+                                                                                        {(ev.performanceTags || []).map((tag, idx) => {
+                                                                                            if (tag && typeof tag === 'object' && 'name' in tag) {
+                                                                                                const typedTag = tag as PerformanceTag;
+                                                                                                return (
+                                                                                                    <UiTooltipProvider key={typedTag.id || idx}>
+                                                                                                        <UiTooltip>
+                                                                                                            <TooltipTrigger asChild>
+                                                                                                                <Badge variant="outline" className="cursor-help">{typedTag.name}</Badge>
+                                                                                                            </TooltipTrigger>
+                                                                                                            <TooltipContent>
+                                                                                                                <p className="font-semibold mb-1">{typedTag.description}</p>
+                                                                                                                {typedTag.effects && typedTag.effects.length > 0 && (
+                                                                                                                    <div className="text-xs space-y-0.5">
+                                                                                                                        {typedTag.effects.map((effect, i) => (
+                                                                                                                            <p key={i} className={cn(effect.change > 0 ? 'text-green-600' : 'text-red-600')}>
+                                                                                                                                {effect.attribute.toUpperCase()}: {effect.change > 0 ? '+' : ''}{effect.change}
+                                                                                                                            </p>
+                                                                                                                        ))}
+                                                                                                                    </div>
+                                                                                                                )}
+                                                                                                            </TooltipContent>
+                                                                                                        </UiTooltip>
+                                                                                                    </UiTooltipProvider>
+                                                                                                );
+                                                                                            }
+                                                                                            return null;
+                                                                                        })}
+                                                                                        {(!ev.performanceTags || ev.performanceTags.length === 0) && <span className="text-muted-foreground text-xs">-</span>}
+                                                                                      </div>
+                                                                                  </TableCell>
+                                                                              </TableRow>
+                                                                          ))}
+                                                                      </TableBody>
+                                                                  </Table>
+                                                              </div>
+                                                          </TableCell>
+                                                      </TableRow>
+                                                  )}
+                                              </React.Fragment>
+                                          )
+                                      })}
+                                  </TableBody>
+                              </Table>
+                          ) : (
+                              <div className="text-center text-muted-foreground py-10">Este jugador aún no tiene evaluaciones registradas.</div>
+                          )}
+                      </CardContent>
                     </Card>
                     <Card>
                       <CardHeader>
