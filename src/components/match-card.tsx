@@ -30,7 +30,6 @@ import { InvitePlayerDialog } from './invite-player-dialog';
 import Link from 'next/link';
 import { SoccerPlayerIcon } from './icons/soccer-player-icon';
 import { MatchChatSheet } from './match-chat-sheet';
-import { MatchDetailsDialog } from './match-details-dialog';
 import { TeamsIcon } from './icons/teams-icon';
 import {
   DropdownMenu,
@@ -336,37 +335,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     <CardTitle className={cn("text-xl font-bold", currentStatus.neonClass)}>
                         {match.title}
                     </CardTitle>
-                    
-                    {isOwner && (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2 text-foreground/80 hover:bg-foreground/10">
-                                    <MoreVertical className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                {isOwner && match.status === 'upcoming' && (
-                                    <DropdownMenuItem onClick={handleFinishMatch} disabled={isFinishing}>
-                                        <CheckCircle className="mr-2 h-4 w-4" />
-                                        Finalizar Partido
-                                    </DropdownMenuItem>
-                                )}
-                                {(isOwner && match.status !== 'upcoming') && (
-                                    <DropdownMenuItem disabled>
-                                        <FileSignature className="mr-2 h-4 w-4" />
-                                        <span>Acciones no disponibles</span>
-                                    </DropdownMenuItem>
-                                )}
-                                {(isOwner && match.status === 'upcoming') && <DropdownMenuSeparator />}
-                                {isOwner && (
-                                    <DropdownMenuItem disabled>
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Eliminar (Pronto)
-                                    </DropdownMenuItem>
-                                )}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
                 </div>
                  <div className="flex items-center gap-2 flex-wrap">
                     <CardDescription className="flex items-center gap-2 text-xs text-foreground/80">
@@ -438,58 +406,12 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             </CardContent>
 
             <CardFooter className="flex flex-col items-stretch gap-2 p-3 bg-muted/50 mt-auto">
-                <div className="grid grid-cols-2 gap-2">
-                    <JoinLeaveButton />
-                    <MatchDetailsDialog match={match} isOwner={isOwner}>
-                        <Button variant="outline" size="sm" className="w-full">
-                            <Eye className="mr-2 h-4 w-4" />
-                            Detalles
-                        </Button>
-                    </MatchDetailsDialog>
-                    {isUserInMatch && <MatchChatSheet match={match}><Button variant="outline" size="sm" className="w-full"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button></MatchChatSheet>}
-                    
-                    {match.teams && match.teams.length > 0 && (
-                        <MatchTeamsDialog match={match}>
-                            <Button variant="outline" size="sm" className="w-full">
-                                <TeamsIcon className="mr-2 h-4 w-4" />
-                                Equipos
-                            </Button>
-                        </MatchTeamsDialog>
-                    )}
-                    
-                    {isOwner && match.type !== 'by_teams' && match.teams && match.teams.length > 0 && (
-                        <EditableTeamsDialog match={match}>
-                            <Button variant="outline" size="sm" className="w-full">
-                                <Shuffle className="mr-2 h-4 w-4" />
-                                Editar Equipos
-                            </Button>
-                        </EditableTeamsDialog>
-                    )}
-                    
-                    {isOwner && match.status === 'completed' && (
-                        <Button asChild size="sm" className="w-full bg-amber-500 hover:bg-amber-600 text-white col-span-2">
-                            <Link href={`/matches/${match.id}/evaluate`}>
-                                <FileSignature className="mr-2 h-4 w-4" />
-                                Supervisar Evaluaciones
-                            </Link>
-                        </Button>
-                    )}
-
-                    {isOwner && match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic) && (
-                        <InvitePlayerDialog 
-                            playerToInvite={null} 
-                            userMatches={[]} 
-                            match={match} 
-                            allGroupPlayers={allPlayers}
-                            disabled={isMatchFull}
-                        >
-                            <Button variant="outline" size="sm" className="w-full" disabled={isMatchFull}>
-                                <UserPlus className="mr-2 h-4 w-4" />
-                                Invitar
-                            </Button>
-                        </InvitePlayerDialog>
-                    )}
-                </div>
+                <Button asChild className="w-full">
+                    <Link href={`/matches/${match.id}`}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Ver Detalles del Partido
+                    </Link>
+                </Button>
             </CardFooter>
         </Card>
     );
