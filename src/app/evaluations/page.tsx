@@ -5,7 +5,7 @@ import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, collectionGroup, getDocs, onSnapshot, Unsubscribe } from 'firebase/firestore';
-import type { Match, EvaluationAssignment, EvaluationSubmission } from '@/lib/types';
+import type { Match, Player, EvaluationAssignment, EvaluationSubmission } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,9 @@ type PendingItem = {
     totalAssignments: number;
     completedAssignments: number;
 };
+
+// Helper to determine if a player is a "real user"
+const isRealUser = (player: Player) => player.id === player.ownerUid;
 
 export default function EvaluationsPage() {
     const { user, loading: userLoading } = useUser();
@@ -57,10 +60,7 @@ export default function EvaluationsPage() {
         setIsLoadingItems(true);
 
         const processItems = async () => {
-            // 1. Get all matches where the user has PENDING assignments
             const pendingMatchIds = new Set(userAssignments?.map(a => a.matchId) || []);
-
-            // 2. Get all matches where the user has already SUBMITTED an evaluation
             const submissionsQuery = query(collection(firestore, 'evaluationSubmissions'), where('evaluatorId', '==', user.uid));
             const submissionsSnapshot = await getDocs(submissionsQuery);
             const submissionMatchIds = new Set(submissionsSnapshot.docs.map(doc => doc.data().matchId));
@@ -74,12 +74,10 @@ export default function EvaluationsPage() {
                 return;
             }
 
-            // 3. Fetch data for all relevant matches in one go
             const matchesQuery = query(collection(firestore, 'matches'), where('__name__', 'in', allRelevantMatchIds));
             const matchesSnapshot = await getDocs(matchesQuery);
             const matchesMap = new Map(matchesSnapshot.docs.map(doc => [doc.id, doc.data() as Match]));
 
-            // Set initial state for all items
             const initialItems: (PendingItem | null)[] = allRelevantMatchIds.map(matchId => {
                  const match = matchesMap.get(matchId);
                  if (!match || match.status === 'evaluated') return null;
@@ -93,8 +91,8 @@ export default function EvaluationsPage() {
                     matchLocation: match.location?.address || 'Ubicación desconocida',
                     submission: submissionsMap.get(matchId),
                     userAssignmentCount,
-                    totalAssignments: 0, // Will be updated by listener
-                    completedAssignments: 0, // Will be updated by listener
+                    totalAssignments: 0, 
+                    completedAssignments: 0,
                  };
                  return item;
             });
@@ -103,8 +101,6 @@ export default function EvaluationsPage() {
             setPendingItems(validItems.sort((a, b) => new Date(b.matchDate).getTime() - new Date(a.matchDate).getTime()));
             setIsLoadingItems(false);
 
-
-            // 4. Setup listeners for each match's assignments
             const unsubscribers: Unsubscribe[] = [];
             allRelevantMatchIds.forEach(matchId => {
                 const assignmentsCollectionRef = collection(firestore, 'matches', matchId, 'assignments');
@@ -199,7 +195,7 @@ export default function EvaluationsPage() {
                                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                                         <div className="flex items-center gap-1.5">
                                             <Users className="h-4 w-4"/>
-                                            <span>Progreso de Evaluación</span>
+                                            <span>Progreso General</span>
                                         </div>
                                         <span>{item.completedAssignments} / {item.totalAssignments}</span>
                                     </div>
