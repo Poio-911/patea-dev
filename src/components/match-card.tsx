@@ -406,12 +406,23 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             </CardContent>
 
             <CardFooter className="flex flex-col items-stretch gap-2 p-3 bg-muted/50 mt-auto">
-                <Button asChild className="w-full">
-                    <Link href={`/matches/${match.id}`}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Ver Detalles del Partido
-                    </Link>
-                </Button>
+                 <div className="flex gap-2">
+                    <Button asChild className="w-full">
+                        <Link href={`/matches/${match.id}`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Ver Detalles
+                        </Link>
+                    </Button>
+                     {match.teams && match.teams.length > 0 && (
+                        <MatchTeamsDialog match={match}>
+                             <Button variant="secondary" className="w-full">
+                                <TeamsIcon className="mr-2 h-4 w-4" />
+                                Equipos
+                             </Button>
+                        </MatchTeamsDialog>
+                    )}
+                </div>
+                 <JoinLeaveButton />
             </CardFooter>
         </Card>
     );

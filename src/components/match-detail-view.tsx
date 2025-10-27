@@ -2,10 +2,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { Match, Player, Evaluation, UserProfile } from '@/lib/types';
-import { doc, getDoc } from 'firebase/firestore';
+import type { Match, Player } from '@/lib/types';
+import { doc } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser } from '@/firebase';
-import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, Info, Edit, Trash2, CheckCircle, FileSignature, MessageCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, Edit, Trash2, MessageCircle, Navigation } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
 import Link from 'next/link';
@@ -13,9 +13,7 @@ import { Badge } from './ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
-import { Separator } from './ui/separator';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { ScrollArea } from './ui/scroll-area';
+import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { MatchChatSheet } from './match-chat-sheet';
 import { MatchTeamsDialog } from './match-teams-dialog';
 import { TeamsIcon } from './icons/teams-icon';
@@ -29,9 +27,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import Image from 'next/image';
 
 interface MatchDetailViewProps {
   matchId: string;
@@ -51,6 +49,16 @@ const positionBadgeStyles: Record<Player['position'], string> = {
   POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
 };
 
+const weatherImageMap: Record<string, { url: string; hint: string }> = {
+    Sun: { url: 'https://picsum.photos/seed/sunny-day/1200/400', hint: 'sunny day' },
+    Cloud: { url: 'https://picsum.photos/seed/cloudy-sky/1200/400', hint: 'cloudy sky' },
+    Cloudy: { url: 'https://picsum.photos/seed/overcast/1200/400', hint: 'overcast sky' },
+    CloudRain: { url: 'https://picsum.photos/seed/rainy-pitch/1200/400', hint: 'rainy pitch' },
+    Wind: { url: 'https://picsum.photos/seed/windy-day/1200/400', hint: 'windy day' },
+    Zap: { url: 'https://picsum.photos/seed/stormy-sky/1200/400', hint: 'stormy sky' },
+    default: { url: 'https://picsum.photos/seed/football-stadium/1200/400', hint: 'football stadium' }
+};
+
 export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const firestore = useFirestore();
     const { user } = useUser();
@@ -67,7 +75,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const isOwner = user?.uid === match?.ownerUid;
 
     const handleDeleteMatch = async () => {
-        // Implement delete logic
         toast({ title: "Función no implementada", description: "La eliminación de partidos estará disponible pronto." });
     };
 
@@ -89,6 +96,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     
     const statusInfo = statusConfig[match.status];
     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location.address)}&query_place_id=${match.location.placeId}`;
+    const weatherImageData = weatherImageMap[match.weather?.icon || 'default'] || weatherImageMap.default;
 
     return (
         <div className="flex flex-col gap-6">
@@ -100,30 +108,110 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     </Link>
                 </Button>
             </div>
-            <PageHeader title={match.title}>
-                <Badge variant="outline" className={cn("text-sm", statusInfo.className)}>{statusInfo.label}</Badge>
-            </PageHeader>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Columna Izquierda - Información y Acciones */}
-                <div className="md:col-span-1 space-y-6">
-                    <Card>
+
+            {/* Weather Image Header */}
+            <div className="relative h-48 w-full rounded-xl overflow-hidden shadow-lg">
+                <Image
+                    src={weatherImageData.url}
+                    alt={match.title}
+                    fill
+                    className="object-cover"
+                    data-ai-hint={weatherImageData.hint}
+                />
+                <div className="absolute inset-0 bg-black/50" />
+                <div className="absolute inset-0 flex flex-col justify-center items-center text-center text-white p-4">
+                    <h1 className="text-4xl font-bold font-headline" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.7)' }}>
+                        {match.title}
+                    </h1>
+                </div>
+            </div>
+
+            {/* Match Info Section */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-muted/50">
+                    <Calendar className="h-6 w-6 text-muted-foreground mb-1"/>
+                    <p className="font-bold text-sm">{format(new Date(match.date), "EEEE d MMM", { locale: es })}</p>
+                </div>
+                <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-muted/50">
+                    <Clock className="h-6 w-6 text-muted-foreground mb-1"/>
+                    <p className="font-bold text-sm">{match.time} hs</p>
+                </div>
+                <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-muted/50">
+                    <MapPin className="h-6 w-6 text-muted-foreground mb-1"/>
+                    <p className="font-bold text-sm truncate">{match.location.name}</p>
+                </div>
+                <Button asChild size="sm" className="h-full flex-col gap-1 p-2">
+                    <Link href={googleMapsUrl} target="_blank" rel="noopener noreferrer">
+                         <Navigation className="h-6 w-6"/>
+                         <span className="text-sm">Ir al mapa</span>
+                    </Link>
+                </Button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Roster Column */}
+                <div className="lg:col-span-2 space-y-6">
+                     <Card>
                         <CardHeader>
-                            <CardTitle>Detalles del Evento</CardTitle>
+                            <CardTitle className="flex items-center justify-between">
+                                <span>Plantel ({match.players.length} / {match.matchSize})</span>
+                                <MatchChatSheet match={match}>
+                                    <Button variant="outline">
+                                        <MessageCircle className="mr-2 h-4 w-4"/>
+                                        Chat del Partido
+                                    </Button>
+                                </MatchChatSheet>
+                            </CardTitle>
+                            <CardDescription>Lista de jugadores apuntados al partido.</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-start gap-3"><Calendar className="h-5 w-5 text-muted-foreground mt-0.5"/><p className="font-bold">{format(new Date(match.date), "EEEE, d 'de' MMMM", { locale: es })}</p></div>
-                            <div className="flex items-start gap-3"><Clock className="h-5 w-5 text-muted-foreground mt-0.5"/><p className="font-bold">{match.time} hs</p></div>
-                            <div className="flex items-start gap-3"><MapPin className="h-5 w-5 text-muted-foreground mt-0.5"/><p className="font-bold">{match.location.name}</p></div>
-                             <Button asChild size="sm" className="w-full">
-                                <Link href={googleMapsUrl} target="_blank" rel="noopener noreferrer">
-                                    Ir en Google Maps
-                                </Link>
-                            </Button>
+                        <CardContent>
+                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                {match.players.map((player, idx) => (
+                                    <div key={`${player.uid}-${idx}`} className="flex flex-col items-center text-center p-3 gap-2 border rounded-lg">
+                                        <Avatar className="h-16 w-16">
+                                            <AvatarImage src={player.photoUrl} alt={player.displayName} />
+                                            <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="font-bold text-sm truncate w-24">{player.displayName}</p>
+                                            <p className={cn("text-xs font-semibold", positionBadgeStyles[player.position])}>{player.position} / {player.ovr}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </CardContent>
                     </Card>
 
-                    {isOwner && (
+                    {match.teams && match.teams.length > 0 && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center justify-between">
+                                    <span>Equipos Generados</span>
+                                     <MatchTeamsDialog match={match}>
+                                        <Button variant="outline" size="sm">
+                                            <TeamsIcon className="mr-2 h-4 w-4"/>Ver en Detalle
+                                        </Button>
+                                    </MatchTeamsDialog>
+                                </CardTitle>
+                                <CardDescription>Equipos balanceados por la IA.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {match.teams.map(team => (
+                                        <div key={team.name} className="border p-4 rounded-lg">
+                                            <h4 className="font-bold text-lg text-center mb-2">{team.name}</h4>
+                                            <p className="text-center text-sm text-muted-foreground">OVR Promedio: <span className="font-bold text-foreground">{team.averageOVR.toFixed(1)}</span></p>
+                                        </div>
+                                    ))}
+                               </div>
+                            </CardContent>
+                        </Card>
+                    )}
+                </div>
+
+                {/* Owner Actions Column */}
+                {isOwner && (
+                    <div className="lg:col-span-1 space-y-4">
                         <Card>
                              <CardHeader>
                                 <CardTitle>Acciones de DT</CardTitle>
@@ -158,71 +246,8 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                  )}
                             </CardContent>
                         </Card>
-                    )}
-                </div>
-
-                {/* Columna Derecha - Jugadores y Equipos */}
-                <div className="md:col-span-2 space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center justify-between">
-                                <span>Plantel ({match.players.length} / {match.matchSize})</span>
-                                <MatchChatSheet match={match}>
-                                    <Button variant="outline">
-                                        <MessageCircle className="mr-2 h-4 w-4"/>
-                                        Chat del Partido
-                                    </Button>
-                                </MatchChatSheet>
-                            </CardTitle>
-                            <CardDescription>Lista de jugadores apuntados al partido.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <ScrollArea className="h-64">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pr-4">
-                                    {match.players.map((player, idx) => (
-                                        <div key={`${player.uid}-${idx}`} className="flex items-center gap-3 p-2 rounded-md border">
-                                            <Avatar className="h-9 w-9">
-                                                <AvatarImage src={player.photoUrl} alt={player.displayName} />
-                                                <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-1">
-                                                <p className="font-semibold text-sm truncate">{player.displayName}</p>
-                                                <p className={cn("text-xs font-medium", positionBadgeStyles[player.position])}>{player.position}</p>
-                                            </div>
-                                            <Badge variant="secondary">{player.ovr}</Badge>
-                                        </div>
-                                    ))}
-                                </div>
-                            </ScrollArea>
-                        </CardContent>
-                    </Card>
-
-                    {match.teams && match.teams.length > 0 && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center justify-between">
-                                    <span>Equipos Generados</span>
-                                     <MatchTeamsDialog match={match}>
-                                        <Button variant="outline" size="sm">
-                                            <TeamsIcon className="mr-2 h-4 w-4"/>Ver en Detalle
-                                        </Button>
-                                    </MatchTeamsDialog>
-                                </CardTitle>
-                                <CardDescription>Equipos balanceados por la IA.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {match.teams.map(team => (
-                                        <div key={team.name} className="border p-4 rounded-lg">
-                                            <h4 className="font-bold text-lg text-center mb-2">{team.name}</h4>
-                                            <p className="text-center text-sm text-muted-foreground">OVR Promedio: <span className="font-bold text-foreground">{team.averageOVR.toFixed(1)}</span></p>
-                                        </div>
-                                    ))}
-                               </div>
-                            </CardContent>
-                        </Card>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
         </div>
     );
