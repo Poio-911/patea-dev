@@ -6,25 +6,27 @@ import { getStorage as getAdminStorage } from 'firebase-admin/storage';
 
 let adminApp: AdminApp;
 
-const serviceAccountKeyBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64;
+// Lee las variables de entorno proporcionadas por Next.js
+const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
 
 if (!getApps().length) {
-    if (serviceAccountKeyBase64) {
+    if (serviceAccountKey) {
         try {
-            const serviceAccount = JSON.parse(Buffer.from(serviceAccountKeyBase64, 'base64').toString('utf-8'));
+            // Parsea directamente el JSON de la variable de entorno
+            const serviceAccount = JSON.parse(serviceAccountKey);
             adminApp = initializeApp({
                 credential: cert(serviceAccount),
                 projectId: projectId,
                 storageBucket: storageBucket,
             });
         } catch (error) {
-            console.error("Error parsing FIREBASE_SERVICE_ACCOUNT_KEY_BASE64:", error);
+            console.error("Error parsing FIREBASE_SERVICE_ACCOUNT_KEY:", error);
             throw new Error("Failed to initialize Firebase Admin SDK. Service account key is malformed.");
         }
     } else {
-        // This will only work in environments with Application Default Credentials (like Google Cloud Run/Functions)
+        // Fallback para entornos de Google Cloud con credenciales por defecto
         console.warn("Firebase Admin SDK is initializing without an explicit service account. This is expected in a Google Cloud environment.");
         adminApp = initializeApp({
             projectId: projectId,
