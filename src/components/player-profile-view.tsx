@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -435,11 +436,9 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="w-12"></TableHead>
                                             <TableHead>Partido</TableHead>
-                                            <TableHead>Equipo</TableHead>
-                                            <TableHead className="text-center">Rating</TableHead>
-                                            <TableHead className="text-center">Goles</TableHead>
+                                            <TableHead>Fecha</TableHead>
+                                            <TableHead className="text-right">Acciones</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -448,27 +447,33 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                             return (
                                                 <React.Fragment key={match.id}>
                                                     <TableRow onClick={() => setOpenAccordion(isOpen ? null : match.id)} className="cursor-pointer">
-                                                        <TableCell><ChevronDown className={cn("transition-transform", isOpen && "rotate-180")} /></TableCell>
                                                         <TableCell className="font-medium">{match.title}</TableCell>
-                                                        <TableCell><Badge variant="outline">{teamName}</Badge></TableCell>
-                                                        <TableCell className="text-center">
-                                                            {hasNumericRatings ? (
-                                                                <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'}>
-                                                                    <Star className="mr-1 h-3 w-3" /> {avgRating.toFixed(2)}
-                                                                </Badge>
-                                                            ) : (
-                                                                <Badge variant="outline" className="text-muted-foreground">N/A</Badge>
-                                                            )}
-                                                        </TableCell>
-                                                        <TableCell className="text-center">
-                                                            <Badge variant="outline"><Goal className="mr-1 h-3 w-3" /> {goals}</Badge>
+                                                        <TableCell>{format(new Date(match.date), 'dd MMM', { locale: es })}</TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button variant="ghost" size="sm">
+                                                                Ver Detalles
+                                                                <ChevronDown className={cn("ml-2 h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+                                                            </Button>
                                                         </TableCell>
                                                     </TableRow>
                                                     {isOpen && (
                                                         <TableRow>
-                                                            <TableCell colSpan={5} className="p-0">
+                                                            <TableCell colSpan={3} className="p-0">
                                                                 <div className="p-4 bg-muted/50 rounded-md">
-                                                                    <h4 className="font-semibold mb-2">Detalle de Evaluaciones:</h4>
+                                                                    <div className="flex justify-between items-center mb-2">
+                                                                        <div className="flex items-center gap-4">
+                                                                            <Badge variant="outline">Equipo: {teamName}</Badge>
+                                                                            <Badge variant="outline"><Goal className="mr-1 h-3 w-3" /> {goals} Goles</Badge>
+                                                                        </div>
+                                                                        {hasNumericRatings ? (
+                                                                            <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'}>
+                                                                                <Star className="mr-1 h-3 w-3" /> Rating Prom: {avgRating.toFixed(2)}
+                                                                            </Badge>
+                                                                        ) : (
+                                                                            <Badge variant="outline" className="text-muted-foreground">Sin Rating Numérico</Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    <h4 className="font-semibold mb-2 mt-4">Detalle de Evaluaciones:</h4>
                                                                     <Table>
                                                                         <TableHeader>
                                                                             <TableRow>
