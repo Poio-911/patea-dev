@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User, MessageCircle, FileSignature, MoreVertical, Users, UserCheck } from 'lucide-react';
+import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User, MessageCircle, FileSignature, MoreVertical, Users, UserCheck, Shuffle } from 'lucide-react';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import Link from 'next/link';
 import { SoccerPlayerIcon } from './icons/soccer-player-icon';
@@ -40,6 +40,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { JerseyPreview } from './team-builder/jersey-preview';
+import { EditableTeamsDialog } from './editable-teams-dialog';
 
 
 type MatchCardProps = {
@@ -169,8 +170,8 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             if (!finalTeams || finalTeams.length === 0) {
                  const playerIdsInMatch = freshMatch.playerUids;
                  if (playerIdsInMatch.length >= freshMatch.matchSize) {
-                    const playersInMatchQuery = query(collection(firestore, 'players'), where('__name__', 'in', playerIdsInMatch));
-                    const playersSnapshot = await getDocs(playersInMatchQuery);
+                    const playersQuery = query(collection(firestore, 'players'), where('__name__', 'in', playerIdsInMatch));
+                    const playersSnapshot = await getDocs(playersQuery);
                     const selectedPlayersData = playersSnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as Player));
                     
                     const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
@@ -446,7 +447,23 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                         </Button>
                     </MatchDetailsDialog>
                     {isUserInMatch && <MatchChatSheet match={match}><Button variant="outline" size="sm" className="w-full"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button></MatchChatSheet>}
-                    {match.teams && match.teams.length > 0 && <MatchTeamsDialog match={match}><Button variant="outline" size="sm" className="w-full"><TeamsIcon className="mr-2 h-4 w-4" />Equipos</Button></MatchTeamsDialog>}
+                    {match.teams && match.teams.length > 0 && (
+                        isOwner && match.type !== 'by_teams' ? (
+                            <EditableTeamsDialog match={match}>
+                                <Button variant="outline" size="sm" className="w-full">
+                                    <Shuffle className="mr-2 h-4 w-4" />
+                                    Editar Equipos
+                                </Button>
+                            </EditableTeamsDialog>
+                        ) : (
+                            <MatchTeamsDialog match={match}>
+                                <Button variant="outline" size="sm" className="w-full">
+                                    <TeamsIcon className="mr-2 h-4 w-4" />
+                                    Equipos
+                                </Button>
+                            </MatchTeamsDialog>
+                        )
+                    )}
                     
                     {isOwner && match.status === 'completed' && (
                         <Button asChild size="sm" className="w-full bg-amber-500 hover:bg-amber-600 text-white col-span-2">
