@@ -2,6 +2,7 @@
 
 
 
+
 import { DocumentData, DocumentReference } from "firebase/firestore";
 import type { PerformanceTag as Pt } from "./performance-tags";
 
@@ -263,4 +264,12 @@ export type UserProfile = {
   photoURL: string | null;
   groups?: string[];
   activeGroupId?: string | null;
+};
+
+export type AppHelpInput = {
+    userMessage: string;
+    conversationHistory?: {
+        role: 'user' | 'agent';
+        content: string;
+    }[];
 };

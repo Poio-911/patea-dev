@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -40,7 +41,6 @@ import { FindMatchIcon } from '@/components/icons/find-match-icon';
 import { EvaluationIcon } from '@/components/icons/evaluation-icon';
 import { NotificationBell } from '@/components/notification-bell';
 import { useFcm } from '@/hooks/use-fcm';
-import { HelpDialog } from '@/components/help-dialog';
 import { WelcomeDialog } from '@/components/welcome-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { isToday, parseISO } from 'date-fns';
@@ -140,7 +140,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   <div className="hidden md:block">
                       <SidebarTrigger />
                   </div>
-                  <HelpDialog />
                   <NotificationBell />
               </div>
 
