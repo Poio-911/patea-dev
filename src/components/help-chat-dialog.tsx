@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { getAppHelpAction } from '@/lib/actions';
-import type { AppHelpInput } from '@/lib/types';
+// import { getAppHelpAction } from '@/lib/actions'; // Eliminado
+// import type { AppHelpInput } from '@/lib/types'; // Eliminado
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -49,26 +50,21 @@ export function HelpChatDialog() {
 
     const userMessage: Message = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = input;
     setInput('');
     setIsLoading(true);
 
     try {
-      const conversationHistory = messages.map(msg => ({
-        role: msg.role,
-        content: msg.content,
-      }));
-
-      const result = await getAppHelpAction(input, conversationHistory);
-
-      if ('error' in result) throw new Error(result.error);
-      
-      const agentMessage: Message = { role: 'agent', content: result.response };
-      setMessages(prev => [...prev, agentMessage]);
+      // Simulación de respuesta de IA ya que la función real fue eliminada
+      setTimeout(() => {
+        const agentMessage: Message = { role: 'agent', content: `No puedo procesar tu pregunta sobre "${currentInput}" en este momento. La función de ayuda está en mantenimiento.` };
+        setMessages(prev => [...prev, agentMessage]);
+        setIsLoading(false);
+      }, 1000);
 
     } catch (error: any) {
       const errorMessage: Message = { role: 'agent', content: `Lo siento, tuve un problema. ${error.message}` };
       setMessages(prev => [...prev, errorMessage]);
-    } finally {
       setIsLoading(false);
     }
   };
