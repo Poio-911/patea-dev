@@ -24,7 +24,6 @@ import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { FirstTimeInfoDialog } from './first-time-info-dialog';
 import Link from 'next/link';
@@ -228,7 +227,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   const chartData = useMemo(() => {
     if (!ovrHistory) return [];
     if (ovrHistory.length === 0 && player) {
-        return [{name: 'Inicial', OVR: player.ovr}]
+        return [{name: 'Inicial', OVR: player.ovr, Fecha: format(new Date(), 'dd/MM')}]
     }
     return ovrHistory.map((entry, index) => ({
       name: `P. ${index + 1}`,
@@ -471,7 +470,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                                                                 <Star className="mr-1 h-3 w-3" /> Rating Prom: {avgRating.toFixed(2)}
                                                                             </Badge>
                                                                         ) : (
-                                                                            <Badge variant="outline" className="text-muted-foreground">Sin Rating Numérico</Badge>
+                                                                            <Badge variant="outline" className="text-muted-foreground">N/A</Badge>
                                                                         )}
                                                                     </div>
                                                                     <h4 className="font-semibold mb-2 mt-4">Detalle de Evaluaciones:</h4>
@@ -550,8 +549,8 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                     </Card>
                     <Card>
                       <CardHeader>
-                          <CardTitle>Actividad del Jugador</CardTitle>
-                          <CardDescription>Partidos y jugadores creados por {player.name}.</CardDescription>
+                          <CardTitle>Actividad de {isCurrentUserProfile ? 'Mi' : 'su'} Actividad</CardTitle>
+                          <CardDescription>Partidos y jugadores creados por {isCurrentUserProfile ? 'vos' : player.name}.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
                           <h3 className="font-semibold">Partidos Organizados ({sortedCreatedMatches.length})</h3>
