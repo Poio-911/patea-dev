@@ -106,6 +106,7 @@ const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: Matc
         setValue,
         clearSuggestions,
     } = usePlacesAutocomplete({
+        apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
         requestOptions: { 
             componentRestrictions: { country: 'UY' } // Restringir a Uruguay
          },

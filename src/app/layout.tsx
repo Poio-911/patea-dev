@@ -1,28 +1,13 @@
-
-'use client';
-
 import './globals.css';
-import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
-import { FirebaseClientProvider } from '@/firebase/client-provider';
-import { useJsApiLoader } from '@react-google-maps/api';
-import { libraries } from '@/lib/google-maps';
-import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
-import { MainNav } from '@/components/main-nav';
-
-const loaderOptions = {
-  id: 'google-map-script',
-  googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-  libraries: libraries,
-};
+import { ClientProviders } from '@/components/client-providers';
+import { cn } from '@/lib/utils';
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { isLoaded, loadError } = useJsApiLoader(loaderOptions);
-
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
@@ -44,18 +29,10 @@ export default function RootLayout({
           'min-h-[100svh] bg-background font-body antialiased'
         )}
       >
-        <FirebaseClientProvider>
-          <Toaster />
-          {isLoaded ? (
-            <MainNav>{children}</MainNav>
-          ) : loadError ? (
-            <div>Error al cargar Google Maps. Por favor, revisa la configuración de tu API Key.</div>
-          ) : (
-            <div className="flex h-screen w-full items-center justify-center">
-              <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
-            </div>
-          )}
-        </FirebaseClientProvider>
+        <ClientProviders>
+          {children}
+        </ClientProviders>
+        <Toaster />
       </body>
     </html>
   );
