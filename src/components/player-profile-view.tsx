@@ -72,13 +72,41 @@ const Stat = ({ label, value, icon: Icon }: { label: string; value: number; icon
 
 
 type DetailedEvaluation = Evaluation & { evaluatorName?: string; evaluatorPhoto?: string };
+
+type PerformanceLevel = 'Excelente' | 'Bueno' | 'Medio' | 'Regular' | 'Bajo';
+
 type MatchEvaluationSummary = {
     match: Match;
     teamName: string;
-    avgRating: number;
-    hasNumericRatings: boolean;
+    performance: {
+        level: PerformanceLevel;
+        color: string;
+    };
     goals: number;
     individualEvaluations: DetailedEvaluation[];
+};
+
+const getPerformanceFromRating = (rating: number): { level: PerformanceLevel; color: string } => {
+    if (rating >= 9) return { level: 'Excelente', color: 'bg-green-500' };
+    if (rating >= 7) return { level: 'Bueno', color: 'bg-green-400' };
+    if (rating >= 5) return { level: 'Medio', color: 'bg-yellow-500' };
+    if (rating >= 3) return { level: 'Regular', color: 'bg-orange-500' };
+    return { level: 'Bajo', color: 'bg-red-500' };
+};
+
+const getPerformanceFromTags = (tags: PerformanceTag[]): { level: PerformanceLevel; color: string } => {
+    if (!tags || tags.length === 0) return { level: 'Medio', color: 'bg-yellow-500' };
+    const score = tags.reduce((acc, tag) => {
+        if (tag.impact === 'positive') return acc + 1;
+        if (tag.impact === 'negative') return acc - 1;
+        return acc;
+    }, 0);
+
+    if (score >= 3) return { level: 'Excelente', color: 'bg-green-500' };
+    if (score > 0) return { level: 'Bueno', color: 'bg-green-400' };
+    if (score === 0) return { level: 'Medio', color: 'bg-yellow-500' };
+    if (score < 0) return { level: 'Regular', color: 'bg-orange-500' };
+    return { level: 'Bajo', color: 'bg-red-500' };
 };
 
 export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
@@ -187,40 +215,48 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
 
   const filteredEvaluationsByMatch: MatchEvaluationSummary[] = useMemo(() => {
     if (isLoading || evaluations.length === 0) return [];
-    
+
     const evalsByMatch: Record<string, { match: Match; evaluations: DetailedEvaluation[] }> = {};
 
     evaluations.forEach(ev => {
-        const matchForEval = matches.find(m => m.id === ev.matchId);
-        if (matchForEval) {
-            if (!evalsByMatch[ev.matchId]) {
-                evalsByMatch[ev.matchId] = { match: matchForEval, evaluations: [] };
-            }
-            const detailedEval: DetailedEvaluation = {
-                ...ev,
-                evaluatorName: evaluatorProfiles[ev.evaluatorId]?.displayName || 'Cargando...',
-                evaluatorPhoto: evaluatorProfiles[ev.evaluatorId]?.photoURL || '',
-            };
-            evalsByMatch[ev.matchId].evaluations.push(detailedEval);
+      const matchForEval = matches.find(m => m.id === ev.matchId);
+      if (matchForEval) {
+        if (!evalsByMatch[ev.matchId]) {
+          evalsByMatch[ev.matchId] = { match: matchForEval, evaluations: [] };
         }
+        const detailedEval: DetailedEvaluation = {
+          ...ev,
+          evaluatorName: evaluatorProfiles[ev.evaluatorId]?.displayName || 'Cargando...',
+          evaluatorPhoto: evaluatorProfiles[ev.evaluatorId]?.photoURL || '',
+        };
+        evalsByMatch[ev.matchId].evaluations.push(detailedEval);
+      }
     });
 
     return Object.values(evalsByMatch).map(summary => {
-        const ratings = summary.evaluations.map(ev => ev.rating).filter((r): r is number => typeof r === 'number' && !isNaN(r));
-        const goals = summary.evaluations.reduce((sum, ev) => sum + (ev.goals || 0), 0);
-        const hasNumericRatings = ratings.length > 0;
-        const avgRating = hasNumericRatings ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
-        const team = summary.match.teams?.find(t => t.players.some(p => p.uid === playerId));
-        
-        return {
-            match: summary.match,
-            teamName: team?.name || '',
-            avgRating,
-            hasNumericRatings,
-            goals,
-            individualEvaluations: summary.evaluations
-        };
-    }).sort((a,b) => new Date(b.match.date).getTime() - new Date(a.date).getTime());
+      const ratings = summary.evaluations.map(ev => ev.rating).filter((r): r is number => typeof r === 'number' && !isNaN(r));
+      const goals = summary.evaluations.reduce((sum, ev) => sum + (ev.goals || 0), 0);
+      const allTags = summary.evaluations.flatMap(ev => ev.performanceTags || [])
+          .filter((tag): tag is PerformanceTag => typeof tag === 'object' && tag !== null && 'impact' in tag);
+      
+      let performance: { level: PerformanceLevel; color: string };
+      if (ratings.length > 0) {
+          const avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+          performance = getPerformanceFromRating(avgRating);
+      } else {
+          performance = getPerformanceFromTags(allTags);
+      }
+
+      const team = summary.match.teams?.find(t => t.players.some(p => p.uid === playerId));
+
+      return {
+        match: summary.match,
+        teamName: team?.name || '',
+        performance,
+        goals,
+        individualEvaluations: summary.evaluations,
+      };
+    }).sort((a, b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime());
 
   }, [evaluations, matches, evaluatorProfiles, isLoading, playerId]);
 
@@ -426,7 +462,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                         </ResponsiveContainer>
                         </CardContent>
                     </Card>
-                    <Card>
+                     <Card>
                         <CardHeader>
                             <CardTitle>Historial de Evaluaciones</CardTitle>
                             <CardDescription>Rendimiento del jugador en los últimos partidos evaluados. Haz clic en un partido para ver el detalle.</CardDescription>
@@ -442,7 +478,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {filteredEvaluationsByMatch.map(({ match, teamName, avgRating, goals, hasNumericRatings, individualEvaluations }) => {
+                                        {filteredEvaluationsByMatch.map(({ match, teamName, performance, goals, individualEvaluations }) => {
                                             const isOpen = openAccordion === match.id;
                                             return (
                                                 <React.Fragment key={match.id}>
@@ -465,13 +501,9 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                                                             <Badge variant="outline">Equipo: {teamName}</Badge>
                                                                             <Badge variant="outline"><Goal className="mr-1 h-3 w-3" /> {goals} Goles</Badge>
                                                                         </div>
-                                                                        {hasNumericRatings ? (
-                                                                            <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'}>
-                                                                                <Star className="mr-1 h-3 w-3" /> Rating Prom: {avgRating.toFixed(2)}
-                                                                            </Badge>
-                                                                        ) : (
-                                                                            <Badge variant="outline" className="text-muted-foreground">N/A</Badge>
-                                                                        )}
+                                                                         <Badge style={{ backgroundColor: performance.color }} className="text-white">
+                                                                            {performance.level}
+                                                                        </Badge>
                                                                     </div>
                                                                     <h4 className="font-semibold mb-2 mt-4">Detalle de Evaluaciones:</h4>
                                                                     <Table>
