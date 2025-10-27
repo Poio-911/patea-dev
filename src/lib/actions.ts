@@ -6,47 +6,16 @@ import { generateBalancedTeams, GenerateBalancedTeamsInput } from '@/ai/flows/ge
 import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/flows/suggest-player-improvements';
 import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-match-day-forecast';
 import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-fit-player';
-import { generatePlayerCardImage } from '@/ai/flows/generate-player-card-image';
 import { coachConversation, type CoachConversationInput } from '@/ai/flows/coach-conversation';
 import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '@/ai/flows/detect-player-patterns';
 import { getAppHelp, AppHelpInput } from '@/ai/flows/get-app-help';
 import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation } from './types';
-import { getFirestore as getAdminFirestore, FieldValue } from 'firebase-admin/firestore';
-import { initializeApp, getApps, App as AdminApp, cert } from 'firebase-admin/app';
-import { getAuth as getAdminAuth } from 'firebase-admin/auth';
-import { getStorage as getAdminStorage } from 'firebase-admin/storage';
-
-
-// Desactivar emuladores de Firebase para forzar conexión a producción
-delete process.env.FIRESTORE_EMULATOR_HOST;
-delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
-delete process.env.FIREBASE_STORAGE_EMULATOR_HOST;
-
-let adminApp: AdminApp;
-
-const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 
-    ? JSON.parse(Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64, 'base64').toString())
-    : undefined;
-
-if (!getApps().length) {
-    if (serviceAccountKey) {
-        adminApp = initializeApp({
-            credential: cert(serviceAccountKey),
-            storageBucket: 'mil-disculpis.appspot.com', 
-        });
-    } else {
-        adminApp = initializeApp({
-            storageBucket: 'mil-disculpis.appspot.com',
-        });
-        console.warn("Firebase Admin SDK initialized without explicit service account. Relying on application default credentials.");
-    }
-} else {
-  adminApp = getApps()[0];
-}
-
-const adminDb = getAdminFirestore(adminApp);
-const adminAuth = getAdminAuth(adminApp);
-const adminStorage = getAdminStorage(adminApp).bucket();
+import { adminApp, adminDb, adminAuth, adminStorage } from '@/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
+import { logger } from './logger';
+import { AppError, ErrorCodes, ErrorMessages, createError } from './errors';
+import { getAuthenticatedUser, validatePlayerOwnership } from './auth-helpers';
+import { generatePlayerCardImageAction as generatePlayerCardImageActionInternal } from './actions/image-generation';
 
 export async function generateTeamsAction(players: Player[]) {
   if (!players || players.length < 2) {
@@ -83,7 +52,7 @@ export async function generateTeamsAction(players: Player[]) {
 
     return result;
   } catch (error) {
-    console.error('Error generating teams:', error);
+    logger.error('Error generating teams', error);
     return { error: 'La IA no pudo generar los equipos. Inténtalo de nuevo.' };
   }
 }
@@ -107,7 +76,7 @@ export async function getPlayerEvaluationsAction(playerId: string, groupId: stri
         return evaluations;
 
     } catch (error) {
-        console.error("Error fetching player evaluations:", error);
+        logger.error("Error fetching player evaluations", error, { playerId, groupId });
         return [];
     }
 }
@@ -142,7 +111,7 @@ export async function getPlayerImprovementSuggestionsAction(playerId: string, gr
         return result;
 
     } catch (error) {
-        console.error('Error getting player improvement suggestions:', error);
+        logger.error('Error getting player improvement suggestions', error, { playerId });
         return { error: 'No se pudieron obtener las sugerencias de la IA.' };
     }
 }
@@ -152,7 +121,7 @@ export async function getWeatherForecastAction(input: GetMatchDayForecastInput) 
         const result = await getMatchDayForecast(input);
         return result;
     } catch (error) {
-        console.error('Error getting weather forecast:', error);
+        logger.error('Error getting weather forecast', error, { location: input.location });
         return { error: 'No se pudo obtener el pronóstico del tiempo.' };
     }
 }
@@ -165,7 +134,7 @@ export async function findBestFitPlayerAction(input: Omit<FindBestFitPlayerInput
         }
         return result;
     } catch (error: any) {
-        console.error('Error finding best fit player:', error);
+        logger.error('Error finding best fit player', error);
         // This is a safeguard against invalid JSON responses from the LLM
         if (error instanceof SyntaxError || error.message.includes('Unexpected token')) {
              return { error: 'La IA devolvió una respuesta inesperada. Por favor, inténtalo de nuevo.' };
@@ -174,109 +143,10 @@ export async function findBestFitPlayerAction(input: Omit<FindBestFitPlayerInput
     }
 }
 
-function getStoragePathFromUrl(url: string): string | null {
-  try {
-    const urlObject = new URL(url);
-    const path = decodeURIComponent(urlObject.pathname.substring(1));
-    const bucketName = adminStorage.name;
-    const bucketPrefix = `${bucketName}/`;
-    
-    if (path.startsWith(bucketPrefix)) {
-      return path.substring(bucketPrefix.length);
-    }
-    
-    console.warn("URL path does not start with the expected bucket name.");
-    return null;
-
-  } catch (error) {
-    console.error('Invalid URL for storage path extraction:', error);
-    return null;
-  }
-}
-
 export async function generatePlayerCardImageAction(userId: string) {
-  const playerRef = adminDb.doc(`players/${userId}`);
-
-  try {
-    const playerSnap = await playerRef.get();
-
-    if (!playerSnap.exists) {
-      return { error: 'No se encontró tu perfil de jugador.' };
-    }
-
-    const player = playerSnap.data() as Player;
-    const credits = player.cardGenerationCredits === undefined ? 3 : player.cardGenerationCredits;
-
-    if (credits <= 0) {
-      return { error: 'No te quedan créditos para generar imágenes este mes.' };
-    }
-
-    if (!player.photoUrl) {
-      return { error: 'Primero debes subir una foto de perfil.' };
-    }
-    
-    if (player.photoUrl.includes('picsum.photos')) {
-      return { error: 'La generación de imágenes no funciona con fotos de marcador de posición. Por favor, sube una foto tuya real.' };
-    }
-
-    let imageBuffer: Buffer;
-    let contentType: string;
-
-    try {
-      const filePath = getStoragePathFromUrl(player.photoUrl);
-      if (!filePath) {
-        throw new Error("Could not determine file path from the photo URL.");
-      }
-
-      const file = adminStorage.file(filePath);
-      const [buffer] = await file.download();
-      const [metadata] = await file.getMetadata();
-      imageBuffer = buffer;
-      contentType = metadata.contentType || 'image/jpeg';
-    } catch (downloadError) {
-      console.error("Error downloading image from storage:", downloadError);
-      return { error: "No se pudo acceder a tu foto de perfil actual. Intenta subirla de nuevo." };
-    }
-    
-    const photoDataUri = `data:${contentType};base64,${imageBuffer.toString('base64')}`;
-
-    const generatedImageDataUri = await generatePlayerCardImage(photoDataUri);
-
-    const generatedImageBuffer = Buffer.from(generatedImageDataUri.split(',')[1], 'base64');
-    const newFilePath = `profile-images/${userId}/generated_${Date.now()}.png`;
-    const newFile = adminStorage.file(newFilePath);
-    
-    await newFile.save(generatedImageBuffer, {
-      metadata: { contentType: 'image/png' },
-    });
-    
-    await newFile.makePublic();
-
-    const newPhotoURL = `https://storage.googleapis.com/${adminStorage.name}/${newFilePath}`;
-
-    const batch = adminDb.batch();
-    const userRef = adminDb.doc(`users/${userId}`);
-    batch.update(userRef, { photoURL: newPhotoURL });
-    batch.update(playerRef, {
-      photoUrl: newPhotoURL,
-      cardGenerationCredits: FieldValue.increment(-1),
-    });
-
-    const availablePlayerRef = adminDb.doc(`availablePlayers/${userId}`);
-    const availablePlayerSnap = await availablePlayerRef.get();
-    if (availablePlayerSnap.exists) {
-      batch.update(availablePlayerRef, { photoUrl: newPhotoURL });
-    }
-
-    await batch.commit();
-    await adminAuth.updateUser(userId, { photoURL: newPhotoURL });
-
-    return { success: true, newPhotoURL };
-  } catch (error: any) {
-    console.error("Error in generatePlayerCardImageAction:", error);
-    return { error: error.message || "Un error inesperado ocurrió en el servidor." };
-  }
+    return generatePlayerCardImageActionInternal(userId);
 }
+
 
 export async function coachConversationAction(
   playerId: string,
@@ -328,7 +198,7 @@ export async function coachConversationAction(
     const result = await coachConversation(input);
     return result;
   } catch (error: any) {
-    console.error('Error in coach conversation:', error);
+    logger.error('Error in coach conversation', error, { playerId });
     return { error: error.message || 'Error al generar la respuesta del entrenador.' };
   }
 }
@@ -402,7 +272,7 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
     const result = await detectPlayerPatterns(input);
     return result;
   } catch (error: any) {
-    console.error('Error detecting player patterns:', error);
+    logger.error('Error detecting player patterns', error, { playerId });
     return { error: error.message || 'No se pudo analizar el rendimiento del jugador.' };
   }
 }
@@ -418,7 +288,33 @@ export async function getAppHelpAction(
     });
     return result;
   } catch (error: any) {
-    console.error('Error in app help action:', error);
+    logger.error('Error in app help action', error);
     return { error: 'El asistente de ayuda no está disponible en este momento.' };
+  }
+}
+
+export async function updatePlayerAction(playerId: string, updates: Partial<Player>) {
+  try {
+    const user = await getAuthenticatedUser();
+    logger.info('Updating player', { playerId, userId: user.uid, updates });
+
+    const player = await validatePlayerOwnership(playerId, user.uid);
+
+    if (updates.ovr && (updates.ovr < 1 || updates.ovr > 99)) {
+      throw createError(ErrorCodes.VAL_OUT_OF_RANGE, 'El OVR debe estar entre 1 y 99', 400, { ovr: updates.ovr });
+    }
+
+    await adminDb.collection('players').doc(playerId).update(updates);
+
+    logger.info('Player updated successfully', { playerId });
+    return { success: true, player: { ...player, ...updates } };
+  } catch (error) {
+    logger.error('Failed to update player', error, { playerId });
+
+    if (error instanceof AppError) {
+      return { success: false, error: ErrorMessages[error.code], code: error.code };
+    }
+
+    return { success: false, error: ErrorMessages.UNKNOWN_ERROR, code: ErrorCodes.UNKNOWN_ERROR };
   }
 }
