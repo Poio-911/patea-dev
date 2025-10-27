@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import type { Match, Player, Evaluation, UserProfile } from '@/lib/types';
 import { doc, getDoc } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser } from '@/firebase';
-import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, Info, Edit, Trash2, CheckCircle, FileSignature } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, Info, Edit, Trash2, CheckCircle, FileSignature, MessageCircle } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
 import Link from 'next/link';
