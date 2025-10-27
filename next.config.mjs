@@ -1,4 +1,3 @@
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -18,6 +17,9 @@ const nextConfig = {
       },
     ],
   },
+  experimental: {
+    allowedDevOrigins: ["https://studio.web.app"]
+  }
 };
 
 export default nextConfig;
