@@ -5,42 +5,25 @@ import { useMemo, useState } from 'react';
 import type { Match, Player } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser } from '@/firebase';
-import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, Edit, Trash2, MessageCircle, Navigation } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, Navigation, Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
 import Link from 'next/link';
-import { Badge } from './ui/badge';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { MatchChatSheet } from './match-chat-sheet';
 import { MatchTeamsDialog } from './match-teams-dialog';
 import { TeamsIcon } from './icons/teams-icon';
 import { cn } from '@/lib/utils';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
+import { Badge } from './ui/badge';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface MatchDetailViewProps {
   matchId: string;
 }
-
-const statusConfig: Record<Match['status'], { label: string; className: string }> = {
-    upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
-    active: { label: 'Activo', className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
-    completed: { label: 'Finalizado', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' },
-    evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' },
-};
 
 const positionBadgeStyles: Record<Player['position'], string> = {
   DEL: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
@@ -49,15 +32,20 @@ const positionBadgeStyles: Record<Player['position'], string> = {
   POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
 };
 
-const weatherImageMap: Record<string, { url: string; hint: string }> = {
-    Sun: { url: 'https://picsum.photos/seed/sunny-day/1200/400', hint: 'sunny day' },
-    Cloud: { url: 'https://picsum.photos/seed/cloudy-sky/1200/400', hint: 'cloudy sky' },
-    Cloudy: { url: 'https://picsum.photos/seed/overcast/1200/400', hint: 'overcast sky' },
-    CloudRain: { url: 'https://picsum.photos/seed/rainy-pitch/1200/400', hint: 'rainy pitch' },
-    Wind: { url: 'https://picsum.photos/seed/windy-day/1200/400', hint: 'windy day' },
-    Zap: { url: 'https://picsum.photos/seed/stormy-sky/1200/400', hint: 'stormy sky' },
-    default: { url: 'https://picsum.photos/seed/football-stadium/1200/400', hint: 'football stadium' }
+const weatherIcons: Record<string, React.ElementType> = {
+    Sun, Cloud, Cloudy, CloudRain, Wind, Zap,
 };
+
+const weatherImageMap: Record<string, { url: string; hint: string }> = {
+    Sun: { url: 'https://picsum.photos/seed/sunny-pitch/1200/400', hint: 'sunny football' },
+    Cloud: { url: 'https://picsum.photos/seed/cloudy-pitch/1200/400', hint: 'cloudy football' },
+    Cloudy: { url: 'https://picsum.photos/seed/overcast-pitch/1200/400', hint: 'overcast football' },
+    CloudRain: { url: 'https://picsum.photos/seed/rainy-pitch/1200/400', hint: 'rainy football' },
+    Wind: { url: 'https://picsum.photos/seed/windy-pitch/1200/400', hint: 'windy football' },
+    Zap: { url: 'https://picsum.photos/seed/stormy-pitch/1200/400', hint: 'stormy football' },
+    default: { url: 'https://picsum.photos/seed/stadium-default/1200/400', hint: 'football stadium' }
+};
+
 
 export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const firestore = useFirestore();
@@ -94,9 +82,9 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
         );
     }
     
-    const statusInfo = statusConfig[match.status];
     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location.address)}&query_place_id=${match.location.placeId}`;
     const weatherImageData = weatherImageMap[match.weather?.icon || 'default'] || weatherImageMap.default;
+    const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
 
     return (
         <div className="flex flex-col gap-6">
@@ -109,7 +97,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 </Button>
             </div>
 
-            {/* Weather Image Header */}
             <div className="relative h-48 w-full rounded-xl overflow-hidden shadow-lg">
                 <Image
                     src={weatherImageData.url}
@@ -126,31 +113,37 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 </div>
             </div>
 
-            {/* Match Info Section */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-muted/50">
+                 <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-muted/50">
                     <Calendar className="h-6 w-6 text-muted-foreground mb-1"/>
-                    <p className="font-bold text-sm">{format(new Date(match.date), "EEEE d MMM", { locale: es })}</p>
+                    <p className="font-bold text-sm capitalize">{format(new Date(match.date), "EEEE d MMM", { locale: es })}</p>
                 </div>
                 <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-muted/50">
                     <Clock className="h-6 w-6 text-muted-foreground mb-1"/>
                     <p className="font-bold text-sm">{match.time} hs</p>
                 </div>
-                <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-muted/50">
-                    <MapPin className="h-6 w-6 text-muted-foreground mb-1"/>
-                    <p className="font-bold text-sm truncate">{match.location.name}</p>
-                </div>
-                <Button asChild size="sm" className="h-full flex-col gap-1 p-2">
+                {WeatherIcon && match.weather && (
+                    <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-muted/50">
+                        <WeatherIcon className="h-6 w-6 text-muted-foreground mb-1 text-blue-400"/>
+                        <p className="font-bold text-sm">{match.weather.temperature}°C</p>
+                    </div>
+                )}
+                 <Button asChild size="sm" className="h-full flex-col gap-1 p-2">
                     <Link href={googleMapsUrl} target="_blank" rel="noopener noreferrer">
                          <Navigation className="h-6 w-6"/>
                          <span className="text-sm">Ir al mapa</span>
                     </Link>
                 </Button>
             </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground border-t border-b py-2 px-4">
+                <MapPin className="h-4 w-4"/>
+                <span className="font-semibold">{match.location.name}</span>
+                <span className="hidden sm:inline">- {match.location.address}</span>
+            </div>
+
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Roster Column */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className="lg:col-span-3 space-y-6">
                      <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center justify-between">
@@ -165,7 +158,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                             <CardDescription>Lista de jugadores apuntados al partido.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                                 {match.players.map((player, idx) => (
                                     <div key={`${player.uid}-${idx}`} className="flex flex-col items-center text-center p-3 gap-2 border rounded-lg">
                                         <Avatar className="h-16 w-16">
@@ -208,46 +201,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                         </Card>
                     )}
                 </div>
-
-                {/* Owner Actions Column */}
-                {isOwner && (
-                    <div className="lg:col-span-1 space-y-4">
-                        <Card>
-                             <CardHeader>
-                                <CardTitle>Acciones de DT</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2">
-                                <Button className="w-full" disabled><Edit className="mr-2 h-4 w-4"/>Editar Partido (Pronto)</Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="destructive" className="w-full" disabled={isDeleting}>
-                                            <Trash2 className="mr-2 h-4 w-4"/>Eliminar Partido
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                     <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>¿Borrar "{match.title}"?</AlertDialogTitle>
-                                            <AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting}>
-                                                {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : 'Sí, eliminar'}
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                                 {match.status === 'completed' && (
-                                     <Button asChild className="w-full" variant="secondary">
-                                        <Link href={`/matches/${matchId}/evaluate`}>
-                                            <FileSignature className="mr-2 h-4 w-4"/>Supervisar Evaluaciones
-                                        </Link>
-                                    </Button>
-                                 )}
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
             </div>
         </div>
     );
