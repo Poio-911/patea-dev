@@ -5,38 +5,7 @@ import { adminApp, adminDb, adminAuth, adminStorage } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { generatePlayerCardImage } from '@/ai/flows/generate-player-card-image';
 import type { Player } from '@/lib/types';
-
-/**
- * Extracts the file path from a Firebase Storage URL.
- * Example URL: https://storage.googleapis.com/your-bucket-name.appspot.com/path/to/your/file.jpg
- * Returns: path/to/your/file.jpg
- * @param url The full URL of the file in Firebase Storage.
- * @returns The file path within the bucket.
- */
-function getStoragePathFromUrl(url: string): string | null {
-  try {
-    const urlObject = new URL(url);
-    // The path starts with a '/', so we remove it.
-    // Then we decode the URI component to handle special characters in file names.
-    const path = decodeURIComponent(urlObject.pathname.substring(1));
-    
-    // The path from the URL includes the bucket name as the first segment.
-    // We need to remove it to get the path *within* the bucket.
-    const bucketName = adminStorage.name;
-    const bucketPrefix = `${bucketName}/`;
-    
-    if (path.startsWith(bucketPrefix)) {
-      return path.substring(bucketPrefix.length);
-    }
-    
-    console.warn("URL path does not start with the expected bucket name.");
-    return null;
-
-  } catch (error) {
-    console.error('Invalid URL for storage path extraction:', error);
-    return null;
-  }
-}
+import { logger } from '@/lib/logger';
 
 export async function generatePlayerCardImageAction(userId: string) {
   const playerRef = adminDb.doc(`players/${userId}`);
@@ -68,18 +37,28 @@ export async function generatePlayerCardImageAction(userId: string) {
     let contentType: string;
 
     try {
-      const filePath = getStoragePathFromUrl(player.photoUrl);
+      const bucket = adminStorage;
+      // Extract the object path from the full gs:// or https:// URL
+      // Example URL: https://storage.googleapis.com/your-bucket.appspot.com/path/to/file.jpg
+      const url = new URL(player.photoUrl);
+      const filePath = url.pathname.split(`/${bucket.name}/`)[1];
+      
       if (!filePath) {
         throw new Error("Could not determine file path from the photo URL.");
       }
 
-      const file = adminStorage.file(filePath);
+      logger.info('Attempting to download file from path:', { filePath });
+
+      const file = bucket.file(decodeURIComponent(filePath));
       const [buffer] = await file.download();
       const [metadata] = await file.getMetadata();
       imageBuffer = buffer;
       contentType = metadata.contentType || 'image/jpeg';
+
+      logger.info('File downloaded successfully', { size: imageBuffer.length, contentType });
+
     } catch (downloadError) {
-      console.error("Error downloading image from storage:", downloadError);
+      logger.error("Error downloading image from storage", downloadError, { photoUrl: player.photoUrl });
       return { error: "No se pudo acceder a tu foto de perfil actual. Intenta subirla de nuevo." };
     }
     
@@ -121,7 +100,7 @@ export async function generatePlayerCardImageAction(userId: string) {
 
     return { success: true, newPhotoURL };
   } catch (error: any) {
-    console.error("Error in generatePlayerCardImageAction:", error);
+    logger.error("Error in generatePlayerCardImageAction", error);
     // Return a structured error to prevent the server from crashing
     return { error: error.message || "Un error inesperado ocurrió en el servidor." };
   }
