@@ -6,7 +6,7 @@ import { useCollection, useDoc } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, Users2, Calendar, MapPin, User, UserRound, Eye, Loader2, Locate, AlertCircle } from 'lucide-react';
+import { Star, Users2, Calendar, MapPin, User, UserRound, Eye, Loader2, LocateFixed, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, limit, doc, setDoc, deleteDoc } from 'firebase/firestore';
@@ -64,9 +64,14 @@ function DashboardContent() {
   const [isToggling, setIsToggling] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  const playersQuery = useMemo(() => {
+  const top5PlayersQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
-    return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
+    return query(
+      collection(firestore, 'players'), 
+      where('groupId', '==', user.activeGroupId),
+      orderBy('ovr', 'desc'),
+      limit(5)
+    );
   }, [firestore, user?.activeGroupId]);
 
   const groupMatchesQuery = useMemo(() => {
@@ -88,13 +93,16 @@ function DashboardContent() {
   const availablePlayerRef = useMemo(() => firestore && user?.uid ? doc(firestore, 'availablePlayers', user.uid) : null, [firestore, user?.uid]);
   const { data: availablePlayerData, loading: availablePlayerLoading } = useDoc<AvailablePlayer>(availablePlayerRef);
 
+  const { data: top5Players, loading: top5PlayersLoading } = useCollection<Player>(top5PlayersQuery);
+  const { data: allPlayersInGroup, loading: allPlayersLoading } = useCollection<Player>(useMemo(() => {
+    if (!firestore || !user?.activeGroupId) return null;
+    return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
+  }, [firestore, user?.activeGroupId]));
 
   const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(groupMatchesQuery);
   const { data: joinedMatches, loading: joinedMatchesLoading } = useCollection<Match>(joinedMatchesQuery);
 
 
-  const { data: players, loading: playersLoading } = useCollection<Player>(playersQuery);
-  
   const matches = useMemo(() => {
     if (!groupMatches && !joinedMatches) return null;
     
@@ -111,7 +119,7 @@ function DashboardContent() {
     return Array.from(allMatchesMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [groupMatches, joinedMatches]);
 
-  const loading = playersLoading || groupMatchesLoading || joinedMatchesLoading || playerLoading || availablePlayerLoading;
+  const loading = top5PlayersLoading || allPlayersLoading || groupMatchesLoading || joinedMatchesLoading || playerLoading || availablePlayerLoading;
 
   const { nextMatch, recentMatches } = useMemo(() => {
     if (!matches) return { nextMatch: null, recentMatches: [] };
@@ -127,11 +135,6 @@ function DashboardContent() {
       recentMatches: recent,
     };
   }, [matches]);
-
-  const top5Players = useMemo(() => {
-    if (!players) return [];
-    return [...players].sort((a, b) => b.ovr - a.ovr).slice(0, 5);
-  }, [players]);
 
   const requestLocationAndToggle = () => {
     if (!firestore || !user || !player) return;
@@ -302,7 +305,7 @@ function DashboardContent() {
                         <div className="space-y-4">
                             {recentMatches.map((match, index) => {
                                 const statusInfo = statusConfig[match.status];
-                                const owner = players?.find(p => p.id === match.ownerUid)
+                                const owner = allPlayersInGroup?.find(p => p.id === match.ownerUid)
                                 const ownerName = owner?.name || (match.ownerUid === user?.uid ? user.displayName : null) || 'Organizador';
                                 
                                 return (
@@ -359,7 +362,7 @@ function DashboardContent() {
                     initial="hidden"
                     animate="visible"
                 >
-                  {top5Players.length > 0 ? top5Players.map((player: Player, index: number) => {
+                  {top5Players && top5Players.length > 0 ? top5Players.map((player: Player, index: number) => {
                       const isManualPlayer = player.id !== player.ownerUid;
                       return (
                         <motion.div key={player.id} variants={itemVariants}>
@@ -392,7 +395,7 @@ function DashboardContent() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-4xl font-bold">{players?.length || 0}</div>
+                    <div className="text-4xl font-bold">{allPlayersInGroup?.length || 0}</div>
                     <p className="text-xs text-muted-foreground">jugadores en el grupo</p>
                 </CardContent>
             </Card>
