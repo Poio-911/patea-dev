@@ -36,16 +36,6 @@ const weatherIcons: Record<string, React.ElementType> = {
     Sun, Cloud, Cloudy, CloudRain, Wind, Zap,
 };
 
-const weatherImageMap: Record<string, { url: string; hint: string }> = {
-    Sun: { url: 'https://picsum.photos/seed/sunny-pitch/1200/400', hint: 'sunny football' },
-    Cloud: { url: 'https://picsum.photos/seed/cloudy-pitch/1200/400', hint: 'cloudy football' },
-    Cloudy: { url: 'https://picsum.photos/seed/overcast-pitch/1200/400', hint: 'overcast football' },
-    CloudRain: { url: 'https://picsum.photos/seed/rainy-pitch/1200/400', hint: 'rainy football' },
-    Wind: { url: 'https://picsum.photos/seed/windy-pitch/1200/400', hint: 'windy football' },
-    Zap: { url: 'https://picsum.photos/seed/stormy-pitch/1200/400', hint: 'stormy football' },
-    default: { url: 'https://picsum.photos/seed/stadium-default/1200/400', hint: 'football stadium' }
-};
-
 
 export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const firestore = useFirestore();
@@ -83,7 +73,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     }
     
     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location.address)}&query_place_id=${match.location.placeId}`;
-    const weatherImageData = weatherImageMap[match.weather?.icon || 'default'] || weatherImageMap.default;
     const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
 
     return (
@@ -97,21 +86,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 </Button>
             </div>
 
-            <div className="relative h-48 w-full rounded-xl overflow-hidden shadow-lg">
-                <Image
-                    src={weatherImageData.url}
-                    alt={match.title}
-                    fill
-                    className="object-cover"
-                    data-ai-hint={weatherImageData.hint}
-                />
-                <div className="absolute inset-0 bg-black/50" />
-                <div className="absolute inset-0 flex flex-col justify-center items-center text-center text-white p-4">
-                    <h1 className="text-4xl font-bold font-headline" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.7)' }}>
-                        {match.title}
-                    </h1>
-                </div>
-            </div>
+            <PageHeader title={match.title} />
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                  <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-muted/50">
