@@ -28,12 +28,33 @@ import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { MateIcon } from '@/components/icons/mate-icon';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
+import { motion } from 'framer-motion';
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
     upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
     active: { label: 'Activo', className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
     completed: { label: 'Finalizado', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' },
     evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' },
+};
+
+const pageVariants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { duration: 0.5 } },
+};
+
+const listVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
 };
 
 function DashboardContent() {
@@ -50,7 +71,7 @@ function DashboardContent() {
 
   const groupMatchesQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
-    return query(collection(firestore, 'matches'), where('groupId', '==', user.activeGroupId), orderBy('date', 'desc'));
+    return query(collection(firestore, 'matches'), where('groupId', '==', user.activeGroupId), orderBy('date', 'desc'), limit(10));
   }, [firestore, user?.activeGroupId]);
   
   const joinedMatchesQuery = useMemo(() => {
@@ -194,7 +215,12 @@ function DashboardContent() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <motion.div 
+        className="flex flex-col gap-8"
+        variants={pageVariants}
+        initial="initial"
+        animate="animate"
+    >
       <FirstTimeInfoDialog
         featureKey="hasSeenDashboardInfo"
         title="¡Bienvenid@ a tu Vestuario!"
@@ -327,28 +353,35 @@ function DashboardContent() {
                 <CardDescription>El Top 5 de jugadores por OVR.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <motion.div 
+                    className="space-y-4"
+                    variants={listVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
                   {top5Players.length > 0 ? top5Players.map((player: Player, index: number) => {
                       const isManualPlayer = player.id !== player.ownerUid;
                       return (
-                        <div key={player.id} className="flex items-center gap-4">
-                          <div className="text-muted-foreground font-bold w-4">{index + 1}.</div>
-                          <Avatar className={cn("h-10 w-10 border-2 border-primary/50", isManualPlayer && "border-dashed border-muted-foreground")}>
-                            <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
-                            <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                                <p className="font-semibold truncate">{player.name}</p>
-                                {isManualPlayer && <Badge variant="outline" className="text-xs">Manual</Badge>}
+                        <motion.div key={player.id} variants={itemVariants}>
+                            <div className="flex items-center gap-4">
+                              <div className="text-muted-foreground font-bold w-4">{index + 1}.</div>
+                              <Avatar className={cn("h-10 w-10 border-2 border-primary/50", isManualPlayer && "border-dashed border-muted-foreground")}>
+                                <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
+                                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                    <p className="font-semibold truncate">{player.name}</p>
+                                    {isManualPlayer && <Badge variant="outline" className="text-xs">Manual</Badge>}
+                                </div>
+                                <p className="text-sm text-muted-foreground">{player.position}</p>
+                              </div>
+                              <div className="text-lg font-bold text-primary">{player.ovr}</div>
                             </div>
-                            <p className="text-sm text-muted-foreground">{player.position}</p>
-                          </div>
-                          <div className="text-lg font-bold text-primary">{player.ovr}</div>
-                        </div>
+                        </motion.div>
                       )
                   }) : <p className="text-sm text-muted-foreground text-center py-4">Aún no hay jugadores en este grupo.</p>}
-                </div>
+                </motion.div>
               </CardContent>
             </Card>
             <Card>
@@ -365,7 +398,7 @@ function DashboardContent() {
             </Card>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

@@ -20,7 +20,22 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { motion } from 'framer-motion';
 
+const listVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.07,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
 
 export default function MatchesPage() {
     const { user, loading: userLoading } = useUser();
@@ -164,11 +179,18 @@ export default function MatchesPage() {
                     </TabsList>
                     
                     <TabsContent value="upcoming" className="mt-6">
-                        <div className="flex flex-col gap-6">
+                        <motion.div 
+                            className="flex flex-col gap-6"
+                            variants={listVariants}
+                            initial="hidden"
+                            animate="visible"
+                        >
                             {upcomingMatches.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {upcomingMatches.map((match) => (
-                                        <MatchCard key={match.id} match={match} allPlayers={sortedPlayers} />
+                                        <motion.div key={match.id} variants={itemVariants}>
+                                            <MatchCard match={match} allPlayers={sortedPlayers} />
+                                        </motion.div>
                                     ))}
                                 </div>
                             ) : (
@@ -180,16 +202,23 @@ export default function MatchesPage() {
                                     </p>
                                 </div>
                             )}
-                        </div>
+                        </motion.div>
                     </TabsContent>
 
                     <TabsContent value="history" className="mt-6">
                          {pastMatches.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <motion.div 
+                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                variants={listVariants}
+                                initial="hidden"
+                                animate="visible"
+                            >
                                 {pastMatches.map((match) => (
-                                    <MatchCard key={match.id} match={match} allPlayers={sortedPlayers} />
+                                    <motion.div key={match.id} variants={itemVariants}>
+                                        <MatchCard match={match} allPlayers={sortedPlayers} />
+                                    </motion.div>
                                 ))}
-                            </div>
+                            </motion.div>
                         ) : (
                              <div className="flex flex-col items-center justify-center text-center border-2 border-dashed border-muted-foreground/30 rounded-xl p-12">
                                 <Calendar className="h-12 w-12 text-muted-foreground/50" />
