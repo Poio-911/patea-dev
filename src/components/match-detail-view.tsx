@@ -5,7 +5,7 @@ import { useMemo, useState, useEffect } from 'react';
 import type { Match, Player, EvaluationAssignment, Notification, UserProfile } from '@/lib/types';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, CheckCircle, Shuffle, Trash2, UserPlus, Eye, MessageCircle, MoreVertical } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, CheckCircle, Shuffle, Trash2, UserPlus, LogOut, MessageCircle, MoreVertical } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
 import Link from 'next/link';
@@ -78,6 +78,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const { user } = useUser();
     const { toast } = useToast();
     const [isFinishing, setIsFinishing] = useState(false);
+    const [isJoining, setIsJoining] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [ownerProfile, setOwnerProfile] = useState<UserProfile | null>(null);
     
@@ -104,6 +105,11 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     }, [firestore, match, ownerProfile]);
 
     const isOwner = user?.uid === match?.ownerUid;
+
+    const isUserInMatch = useMemo(() => {
+        if (!user || !match) return false;
+        return match.playerUids.includes(user.uid);
+    }, [match, user]);
 
     const googleMapsUrl = match ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location.address)}&query_place_id=${match.location.placeId}` : '';
     
@@ -202,6 +208,78 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
         }
     };
     
+    const handleJoinOrLeaveMatch = async () => {
+        if (!firestore || !user || !match) return;
+        setIsJoining(true);
+        
+        const batch = writeBatch(firestore);
+        const matchRef = doc(firestore, 'matches', match.id);
+
+        try {
+            if(isUserInMatch) {
+                const playerToRemove = match.players.find(p => p.uid === user.uid);
+                if (playerToRemove) {
+                    batch.update(matchRef, {
+                        players: arrayRemove(playerToRemove),
+                        playerUids: arrayRemove(user.uid)
+                    });
+                }
+                toast({ title: 'Te has dado de baja', description: `Ya no estás apuntado a "${match.title}".` });
+            } else {
+                if (match.players.length >= match.matchSize) {
+                    toast({ variant: 'destructive', title: 'Partido Lleno', description: 'No quedan plazas disponibles en este partido.' });
+                    setIsJoining(false);
+                    return;
+                }
+                
+                const playerProfileRef = doc(firestore, 'players', user.uid);
+                const playerSnap = await getDoc(playerProfileRef);
+
+                if (!playerSnap.exists()) {
+                    toast({ variant: 'destructive', title: 'Error', description: 'No se encontró tu perfil de jugador.' });
+                    setIsJoining(false);
+                    return;
+                }
+                
+                const playerProfile = playerSnap.data() as Player;
+
+                const playerPayload = { 
+                    uid: user.uid,
+                    displayName: playerProfile.name,
+                    ovr: playerProfile.ovr,
+                    position: playerProfile.position,
+                    photoUrl: playerProfile.photoUrl || ''
+                };
+                
+                batch.update(matchRef, {
+                    players: arrayUnion(playerPayload),
+                    playerUids: arrayUnion(user.uid)
+                });
+                
+                if (match.ownerUid !== user.uid) {
+                    const notificationRef = doc(collection(firestore, `users/${match.ownerUid}/notifications`));
+                    const notification: Omit<Notification, 'id'> = {
+                        type: 'new_joiner',
+                        title: '¡Nuevo Jugador!',
+                        message: `${user.displayName} se ha apuntado a tu partido "${match.title}".`,
+                        link: `/matches`,
+                        isRead: false,
+                        createdAt: new Date().toISOString(),
+                    };
+                    batch.set(notificationRef, notification);
+                }
+
+                toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${match.title}".` });
+            }
+            await batch.commit();
+        } catch (error) {
+            console.error("Error joining/leaving match: ", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo completar la operación.' });
+        } finally {
+            setIsJoining(false);
+        }
+    }
+    
     const handleDeleteMatch = async () => {
         if (!firestore || !match) return;
         setIsDeleting(true);
@@ -227,7 +305,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const isMatchFull = match.players.length >= match.matchSize;
     const canFinalize = isOwner && match.status === 'upcoming' && isMatchFull;
     const canInvite = isOwner || match.type === 'collaborative';
-
+    
     return (
         <div className="flex flex-col gap-8">
             <div className="flex w-full items-center justify-between">
@@ -243,7 +321,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
 
             <Card>
                 <CardContent className="pt-6 space-y-4">
-                    <div className="flex flex-col sm:flex-row gap-4 justify-between">
+                     <div className="flex flex-col sm:flex-row gap-4 justify-between">
                         <div className="space-y-3">
                             <div className="flex items-center gap-3 text-lg">
                                 <Calendar className="h-5 w-5 text-primary"/>
@@ -286,6 +364,18 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                             <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">Ir a la cancha</a>
                         </Button>
                      </div>
+                     {match.type === 'collaborative' && match.status === 'upcoming' && (
+                        <div className="border-t pt-4">
+                            {isMatchFull && !isUserInMatch ? (
+                                <Button variant="outline" size="lg" className="w-full" disabled>Partido Lleno</Button>
+                            ) : (
+                                <Button variant={isUserInMatch ? 'secondary' : 'default'} size="lg" onClick={handleJoinOrLeaveMatch} disabled={isJoining} className="w-full">
+                                    {isJoining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isUserInMatch ? <LogOut className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />)}
+                                    {isUserInMatch ? 'Darse de baja' : 'Apuntarse'}
+                                </Button>
+                            )}
+                        </div>
+                     )}
                 </CardContent>
             </Card>
 
