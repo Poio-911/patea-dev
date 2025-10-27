@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -408,8 +407,8 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                             {changes.length > 0 && <Separator className="my-2" />}
                                             <div className="grid grid-cols-3 gap-x-4 gap-y-1">
                                                 {changes.map(change => (
-                                                    <div key={change.key} className={cn("text-xs font-medium", change.value > 0 ? 'text-green-600' : 'text-red-600')}>
-                                                        {change.key.toUpperCase()}: {change.value > 0 ? '+' : ''}{change.value}
+                                                    <div key={change.key} className={cn("text-xs font-medium", (change.value || 0) > 0 ? 'text-green-600' : 'text-red-600')}>
+                                                        {change.key.toUpperCase()}: {(change.value || 0) > 0 ? '+' : ''}{change.value}
                                                     </div>
                                                 ))}
                                             </div>
