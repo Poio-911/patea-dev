@@ -17,7 +17,7 @@ Este documento detalla todas las mejoras de interfaz y experiencia de usuario im
 
 ---
 
-## 1. Sistema de Animaciones con Framer Motion
+## 1. Sistema de Animaciones con Framer Motion [HECHO]
 
 ### 📝 Descripción
 Sistema de animaciones suaves para mejorar la experiencia del usuario en navegación y transiciones entre estados.
@@ -125,7 +125,7 @@ import { motion } from 'framer-motion';
 
 ---
 
-## 2. Vista de Calendario Interactivo
+## 2. Vista de Calendario Interactivo [HECHO]
 
 ### 📝 Descripción
 Calendario mensual interactivo que muestra partidos con indicadores visuales, permite seleccionar fechas y ver detalles de los partidos de ese día.
@@ -376,7 +376,7 @@ export default function MatchesPage() {
 
 ---
 
-## 3. Sistema de Drag & Drop para Equipos
+## 3. Sistema de Drag & Drop para Equipos [HECHO]
 
 ### 📝 Descripción
 Sistema completo de arrastrar y soltar para reorganizar jugadores entre equipos en partidos completados. Incluye recálculo automático de OVR promedio.
@@ -726,7 +726,7 @@ import { Edit } from 'lucide-react';
 
 ---
 
-## 4. Editor de Crop de Avatar
+## 4. Editor de Crop de Avatar [HECHO]
 
 ### 📝 Descripción
 Sistema interactivo de recorte y zoom para avatares de perfil con atajos de teclado, presets de zoom y guardado en Firestore.
@@ -1022,7 +1022,7 @@ const getAvatarStyle = () => {
 
 ---
 
-## 5. Sistema de Logging y Manejo de Errores
+## 5. Sistema de Logging y Manejo de Errores [HECHO]
 
 ### 📝 Descripción
 Sistema centralizado de logging condicional (dev/prod) y códigos de error estandarizados con validación server-side.
@@ -1435,7 +1435,7 @@ logger.info('User logged in', { userId: user.uid, email: user.email });
 
 ---
 
-## 6. Optimizaciones de Performance
+## 6. Optimizaciones de Performance [HECHO]
 
 ### 📝 Descripción
 Optimizaciones en queries de Firestore y reducción de procesamiento en memoria para mejorar la velocidad de carga del Dashboard en ~70%.
