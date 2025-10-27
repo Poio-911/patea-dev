@@ -447,22 +447,23 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                         </Button>
                     </MatchDetailsDialog>
                     {isUserInMatch && <MatchChatSheet match={match}><Button variant="outline" size="sm" className="w-full"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button></MatchChatSheet>}
+                    
                     {match.teams && match.teams.length > 0 && (
-                        isOwner && match.type !== 'by_teams' ? (
-                            <EditableTeamsDialog match={match}>
-                                <Button variant="outline" size="sm" className="w-full">
-                                    <Shuffle className="mr-2 h-4 w-4" />
-                                    Editar Equipos
-                                </Button>
-                            </EditableTeamsDialog>
-                        ) : (
-                            <MatchTeamsDialog match={match}>
-                                <Button variant="outline" size="sm" className="w-full">
-                                    <TeamsIcon className="mr-2 h-4 w-4" />
-                                    Equipos
-                                </Button>
-                            </MatchTeamsDialog>
-                        )
+                        <MatchTeamsDialog match={match}>
+                            <Button variant="outline" size="sm" className="w-full">
+                                <TeamsIcon className="mr-2 h-4 w-4" />
+                                Equipos
+                            </Button>
+                        </MatchTeamsDialog>
+                    )}
+                    
+                    {isOwner && match.type !== 'by_teams' && match.teams && match.teams.length > 0 && (
+                        <EditableTeamsDialog match={match}>
+                            <Button variant="outline" size="sm" className="w-full">
+                                <Shuffle className="mr-2 h-4 w-4" />
+                                Editar Equipos
+                            </Button>
+                        </EditableTeamsDialog>
                     )}
                     
                     {isOwner && match.status === 'completed' && (
