@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import type { Match, Player } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser } from '@/firebase';
-import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, Navigation, Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, Navigation, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, MessageCircle } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
 import Link from 'next/link';
