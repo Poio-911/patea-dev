@@ -4,8 +4,8 @@
 import { useMemo, useState, useEffect } from 'react';
 import type { Match, Player, EvaluationAssignment, Notification, UserProfile } from '@/lib/types';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
-import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, FileSignature, MessageCircle, MoreVertical, UserCheck, Shuffle, Trash2, CheckCircle, UserPlus, Eye } from 'lucide-react';
+import { useDoc, useFirestore, useUser } from '@/firebase';
+import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, FileSignature, CheckCircle, UserPlus, LogOut, Shuffle, Trash2 } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
 import Link from 'next/link';
@@ -23,7 +23,7 @@ import { WhatsAppIcon } from './icons/whatsapp-icon';
 import { MatchChronicleCard } from './match-chronicle-card';
 import { Separator } from './ui/separator';
 import { generateTeamsAction } from '@/lib/actions';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { EditableTeamsDialog } from './editable-teams-dialog';
 import { InvitePlayerDialog } from './invite-player-dialog';
 
@@ -47,6 +47,7 @@ const statusConfig: Record<Match['status'], { label: string; className: string }
 
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
+
 
 export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const firestore = useFirestore();
@@ -204,8 +205,8 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                         Volver a Partidos
                     </Link>
                 </Button>
-                {isOwner && (
-                    <div className="flex items-center gap-2">
+                 {isOwner && (
+                     <div className="flex items-center gap-2">
                          {match.status === 'upcoming' && match.players.length >= match.matchSize && (
                             <Button onClick={handleFinishMatch} disabled={isFinishing} size="sm">
                                 {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
@@ -234,7 +235,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     </div>
                  )}
             </div>
-
+            
             <PageHeader title={match.title} />
 
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground border-t border-b py-3">
@@ -254,20 +255,39 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
                     <Card>
-                        <CardHeader><CardTitle className="flex items-center justify-between"><span>Plantel ({match.players.length} / {match.matchSize})</span></CardTitle></CardHeader>
-                        <CardContent>
+                        <CardHeader>
+                            <CardTitle className="flex items-center justify-between">
+                                <span>Plantel ({match.players.length} / {match.matchSize})</span>
+                            </CardTitle>
+                        </CardHeader>
+                         <CardContent>
                              {match.teams && match.teams.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {match.teams.map(team => (
-                                        <Card key={team.name}><CardHeader className="flex flex-row items-center justify-between"><CardTitle>{team.name}</CardTitle><Badge variant="secondary">OVR {team.averageOVR.toFixed(1)}</Badge></CardHeader>
-                                            <CardContent><div className="space-y-2">{team.players.map(player => (
-                                                <div key={player.uid} className="flex items-center gap-3 p-2 border-b last:border-b-0">
-                                                    <Avatar className="h-9 w-9"><AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoUrl} alt={player.displayName} /><AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback></Avatar>
-                                                    <div className="flex-1"><p className="font-semibold text-sm">{player.displayName}</p>
-                                                        <div className="flex items-center gap-1.5 mt-1"><Badge variant="outline" className={cn("text-xs", positionBadgeStyles[player.position])}>{player.position}</Badge><Badge variant="secondary" className="text-xs">{player.ovr}</Badge></div>
-                                                    </div>
+                                        <Card key={team.name}>
+                                            <CardHeader className="flex flex-row items-center justify-between">
+                                                <CardTitle>{team.name}</CardTitle>
+                                                <Badge variant="secondary">OVR {team.averageOVR.toFixed(1)}</Badge>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="space-y-2">
+                                                    {team.players.map(player => (
+                                                        <div key={player.uid} className="flex items-center gap-3 p-2 border-b last:border-b-0">
+                                                            <Avatar className="h-9 w-9">
+                                                                <AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoUrl} alt={player.displayName} />
+                                                                <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
+                                                            </Avatar>
+                                                            <div className="flex-1">
+                                                                <p className="font-semibold text-sm">{player.displayName}</p>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Badge variant="outline" className={cn("text-xs", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
+                                                                <Badge variant="secondary" className="text-xs">{player.ovr}</Badge>
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            ))}</div></CardContent>
+                                            </CardContent>
                                         </Card>
                                     ))}
                                 </div>
@@ -276,7 +296,13 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                     {match.players.map((player, idx) => (
                                         <div key={`${player.uid}-${idx}`} className="flex flex-col items-center text-center p-3 gap-2 border rounded-lg">
                                             <Avatar className="h-16 w-16"><AvatarImage src={player.photoUrl} alt={player.displayName} /><AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback></Avatar>
-                                            <div><p className="font-bold text-sm truncate w-24">{player.displayName}</p><div className="flex items-center justify-center gap-1.5 mt-1"><Badge variant="outline" className={cn("text-xs", positionBadgeStyles[player.position])}>{player.position}</Badge><Badge variant="secondary">{player.ovr}</Badge></div></div>
+                                            <div>
+                                                <p className="font-bold text-sm truncate w-24">{player.displayName}</p>
+                                                <div className="flex items-center justify-center gap-1.5 mt-1">
+                                                    <Badge variant="outline" className={cn("text-xs", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
+                                                    <Badge variant="secondary">{player.ovr}</Badge>
+                                                </div>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
