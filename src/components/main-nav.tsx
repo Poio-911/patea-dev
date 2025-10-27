@@ -45,6 +45,7 @@ import { WelcomeDialog } from '@/components/welcome-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { isToday, parseISO } from 'date-fns';
 import { FloatingActionMenu } from './floating-action-menu';
+import { HelpDialog } from './help-dialog';
 
 
 const navItems = [
@@ -140,6 +141,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   <div className="hidden md:block">
                       <SidebarTrigger />
                   </div>
+                  <HelpDialog />
                   <NotificationBell />
               </div>
 
