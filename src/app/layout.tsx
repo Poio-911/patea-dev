@@ -10,16 +10,18 @@ import { libraries } from '@/lib/google-maps';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { MainNav } from '@/components/main-nav';
 
+const loaderOptions = {
+  id: 'google-map-script',
+  googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+  libraries: libraries,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-    libraries: libraries,
-  });
+  const { isLoaded, loadError } = useJsApiLoader(loaderOptions);
 
   return (
     <html lang="es" suppressHydrationWarning>
