@@ -1,10 +1,10 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import type { Match, Player, EvaluationAssignment, Notification } from '@/lib/types';
+import type { Match, Player, EvaluationAssignment, Notification, UserProfile } from '@/lib/types';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, FileSignature, CheckCircle, UserPlus, LogOut, Shuffle, Trash2, Eye, Edit } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, CheckCircle, Shuffle, Trash2, UserPlus } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
 import Link from 'next/link';
@@ -46,8 +46,24 @@ const positionBadgeStyles: Record<Player['position'], string> = {
   POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
 };
 
-// Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
+
+const ActionCard = ({ icon: Icon, title, description, children, iconClassName }: { icon: React.ElementType, title: string, description: string, children: React.ReactNode, iconClassName?: string }) => (
+    <Card className="flex flex-col">
+        <CardHeader className="flex-row items-center gap-4 space-y-0 pb-2">
+            <div className={cn("p-2 rounded-full", iconClassName)}>
+                <Icon className="h-6 w-6 text-white" />
+            </div>
+            <div>
+                <CardTitle>{title}</CardTitle>
+                <CardDescription>{description}</CardDescription>
+            </div>
+        </CardHeader>
+        <CardContent className="mt-auto">
+            {children}
+        </CardContent>
+    </Card>
+);
 
 export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const firestore = useFirestore();
@@ -71,9 +87,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     
     const whatsAppShareText = useMemo(() => {
         if (!match || !match.teams || match.teams.length < 2) return '';
-        
         let message = `*Equipos para el partido "${match.title}"*:\n\n`;
-
         match.teams.forEach(team => {
             message += `*${team.name} (OVR ${team.averageOVR.toFixed(1)})*\n`;
             team.players.forEach(p => {
@@ -81,7 +95,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
             });
             message += '\n';
         });
-
         return encodeURIComponent(message);
     }, [match]);
 
@@ -89,18 +102,14 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
         const assignments: Omit<EvaluationAssignment, 'id'>[] = [];
         const matchPlayers = allPlayers.filter(p => match.playerUids.includes(p.id));
         const realPlayerUids = matchPlayers.filter(isRealUser).map(p => p.id);
-
         realPlayerUids.forEach(evaluatorId => {
             if (!match.teams) return;
             const team = match.teams.find(t => t.players.some(p => p.uid === evaluatorId));
             if (!team) return;
-
             const teammates = team.players.filter(p => p.uid !== evaluatorId && realPlayerUids.includes(p.uid));
             const shuffledTeammates = teammates.sort(() => 0.5 - Math.random());
-            
             const maxAssignments = Math.min(2, teammates.length);
             const playersToEvaluate = shuffledTeammates.slice(0, maxAssignments);
-
             playersToEvaluate.forEach(subject => {
                 assignments.push({
                     matchId: match.id,
@@ -118,16 +127,12 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
         setIsFinishing(true);
         const batch = writeBatch(firestore);
         const matchRef = doc(firestore, 'matches', match.id);
-
         try {
             const freshMatchSnap = await getDoc(matchRef);
             if (!freshMatchSnap.exists()) throw new Error("El partido ya no existe.");
-            
             const freshMatch = { id: freshMatchSnap.id, ...freshMatchSnap.data() } as Match;
-            
             let finalTeams = freshMatch.teams;
             let matchUpdateData: any = { status: 'completed' };
-
             if (!finalTeams || finalTeams.length === 0) {
                  const playerIdsInMatch = freshMatch.playerUids;
                  if (playerIdsInMatch.length >= freshMatch.matchSize) {
@@ -139,15 +144,12 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     matchUpdateData.teams = finalTeams;
                  }
             }
-
             batch.update(matchRef, matchUpdateData);
-
             if (finalTeams && finalTeams.length > 0) {
                  const assignments = generateEvaluationAssignments({ ...freshMatch, teams: finalTeams }, allGroupPlayers);
                 assignments.forEach(assignment => {
                     const assignmentRef = doc(collection(firestore, `matches/${freshMatch.id}/assignments`));
                     batch.set(assignmentRef, assignment);
-
                     const notificationRef = doc(collection(firestore, `users/${assignment.evaluatorId}/notifications`));
                     const notification: Omit<Notification, 'id'> = {
                         type: 'evaluation_pending',
@@ -160,7 +162,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     batch.set(notificationRef, notification);
                 });
             }
-           
             await batch.commit();
             toast({ title: 'Partido Finalizado', description: `Ahora los jugadores pueden realizar las evaluaciones.` });
         } catch (error: any) {
@@ -176,7 +177,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
         try {
             await deleteDoc(doc(firestore, 'matches', match.id));
             toast({ title: "Partido Eliminado", description: "El partido ha sido eliminado con éxito." });
-            // Redirect or update UI
         } catch (error) {
             toast({ variant: "destructive", title: "Error", description: "No se pudo eliminar el partido." });
         } finally {
@@ -196,7 +196,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const canFinalize = isOwner && match.status === 'upcoming' && isMatchFull;
 
     return (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-8">
             <div className="flex w-full items-center justify-between">
                 <Button asChild variant="outline" className="self-start">
                     <Link href="/matches">
@@ -208,62 +208,61 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
             
             <PageHeader title={match.title} />
 
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground border-t border-b py-3">
-                <Badge variant="default" className="text-base py-1 px-3">
-                    <Calendar className="mr-2 h-4 w-4"/>
-                    <span className="font-semibold">{format(new Date(match.date), "EEEE, d 'de' MMMM", { locale: es })}</span>
-                </Badge>
-                <div className="flex items-center gap-2"><Clock className="h-4 w-4"/><span className="font-semibold">{match.time} hs</span></div>
-                <div className="flex items-center gap-2"><User className="h-4 w-4" /><span className="font-semibold">Organiza: {isOwner ? 'Vos' : 'Otro'}</span></div>
-                <div className="flex items-center gap-2"><Badge variant="outline" className="capitalize">{match.type === 'by_teams' ? 'Por Equipos' : match.type}</Badge></div>
-                <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4"/>
-                    <Button asChild variant="link" className="p-0 h-auto text-sm text-muted-foreground"><Link href={googleMapsUrl} target="_blank" rel="noopener noreferrer">{match.location.name}</Link></Button>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                    <Calendar className="h-6 w-6 text-primary"/>
+                    <div>
+                        <p className="font-bold">{format(new Date(match.date), "EEEE, d MMM", { locale: es })}</p>
+                        <p className="text-muted-foreground">{new Date(match.date).getFullYear()}</p>
+                    </div>
+                </div>
+                 <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                    <Clock className="h-6 w-6 text-primary"/>
+                    <div>
+                        <p className="font-bold">{match.time} hs</p>
+                        <p className="text-muted-foreground">Hora de inicio</p>
+                    </div>
+                </div>
+                 <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                    <User className="h-6 w-6 text-primary"/>
+                    <div>
+                        <p className="font-bold">{isOwner ? 'Vos' : 'Otro'}</p>
+                        <p className="text-muted-foreground">Organizador</p>
+                    </div>
+                </div>
+                 <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                    <Badge variant="outline" className="capitalize text-sm h-full">{match.type === 'by_teams' ? 'Por Equipos' : match.type}</Badge>
                 </div>
             </div>
+            
+            <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                <MapPin className="h-6 w-6 text-primary flex-shrink-0 mt-1"/>
+                <div>
+                    <p className="font-bold">{match.location.name}</p>
+                    <p className="text-sm text-muted-foreground">{match.location.address}</p>
+                </div>
+            </a>
+
 
             {isOwner && (
-                <Card>
-                    <CardHeader><CardTitle>Acciones del Organizador</CardTitle></CardHeader>
-                    <CardContent className="flex flex-wrap gap-2">
-                        {canFinalize && (
-                            <Button onClick={handleFinishMatch} disabled={isFinishing}>
-                                {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
-                                Finalizar Partido
-                            </Button>
-                        )}
-                        {match.teams && match.teams.length > 0 && (
-                            <EditableTeamsDialog match={match}>
-                                <Button variant="outline"><Shuffle className="mr-2 h-4 w-4"/> Editar Equipos</Button>
-                            </EditableTeamsDialog>
-                         )}
-                         <InvitePlayerDialog userMatches={[match]} allGroupPlayers={allGroupPlayers || []} match={match} disabled={isMatchFull}>
-                            <Button variant="outline" disabled={isMatchFull}>
-                                <UserPlus className="mr-2 h-4 w-4"/> Invitar Jugadores
-                            </Button>
-                         </InvitePlayerDialog>
-                         {match.teams && match.teams.length > 0 && (
-                            <Button asChild variant="outline">
-                                <a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer">
-                                    <WhatsAppIcon className="mr-2 h-4 w-4" />
-                                    Compartir Equipos
-                                </a>
-                            </Button>
-                         )}
-                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="destructive" disabled={isDeleting}><Trash2 className="mr-2 h-4 w-4"/></Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader><AlertDialogTitle>¿Borrar este partido?</AlertDialogTitle><AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
-                                <AlertDialogFooter><AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting}>
-                                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                                    Eliminar
-                                </AlertDialogAction></AlertDialogFooter>
-                            </AlertDialogContent>
-                         </AlertDialog>
-                    </CardContent>
-                </Card>
+                <div className="space-y-4">
+                    <h2 className="text-xl font-bold">Panel del Organizador</h2>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {canFinalize && <ActionCard icon={CheckCircle} title="Finalizar Partido" description="Genera equipos y abre las evaluaciones." iconClassName="bg-green-500"><Button onClick={handleFinishMatch} disabled={isFinishing} className="w-full">{isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null} Finalizar</Button></ActionCard>}
+                        {match.teams && match.teams.length > 0 && <ActionCard icon={Shuffle} title="Editar Equipos" description="Reorganizá los equipos arrastrando jugadores." iconClassName="bg-blue-500"><EditableTeamsDialog match={match}><Button variant="outline" className="w-full">Editar</Button></EditableTeamsDialog></ActionCard>}
+                        {!isMatchFull && <ActionCard icon={UserPlus} title="Invitar Jugadores" description="Completá el plantel para el partido." iconClassName="bg-purple-500"><InvitePlayerDialog userMatches={[match]} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" className="w-full">Invitar</Button></InvitePlayerDialog></ActionCard>}
+                        {match.teams && match.teams.length > 0 && <ActionCard icon={WhatsAppIcon} title="Compartir Equipos" description="Enviá la formación por WhatsApp." iconClassName="bg-[#25D366]"><Button variant="whatsapp" asChild className="w-full"><a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer">Compartir</a></Button></ActionCard>}
+                        <ActionCard icon={Trash2} title="Eliminar Partido" description="Esta acción es permanente." iconClassName="bg-red-500">
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild><Button variant="destructive" className="w-full" disabled={isDeleting}>Eliminar</Button></AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader><AlertDialogTitle>¿Borrar este partido?</AlertDialogTitle><AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogFooter><AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting}>{isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Eliminar</AlertDialogAction></AlertDialogFooter>
+                                </AlertDialogContent>
+                             </AlertDialog>
+                        </ActionCard>
+                     </div>
+                </div>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -271,7 +270,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center justify-between">
-                                <span>Plantel ({match.players.length} / {match.matchSize})</span>
+                                <span className="flex items-center gap-2"><Users className="h-5 w-5 text-primary"/>Plantel ({match.players.length} / {match.matchSize})</span>
                             </CardTitle>
                         </CardHeader>
                          <CardContent>
