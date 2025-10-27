@@ -42,6 +42,8 @@ export type Player = {
   groupId: string | null;
   cardGenerationCredits: number;
   lastCreditReset?: string; // ISO 8601 string
+  cropPosition?: { x: number; y: number };
+  cropZoom?: number;
 } & DocumentData;
 
 export type DetailedTeamPlayer = Player & { number: number; status: 'titular' | 'suplente' };
@@ -99,6 +101,7 @@ export type Match = {
     icon: string;
     temperature: number;
   };
+  chronicle?: string; // AI-generated match summary
 } & DocumentData;
 
 export type Team = {
