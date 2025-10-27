@@ -312,6 +312,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                         player={player}
                                         onGenerateAI={handleGenerateAIPhoto}
                                         isGeneratingAI={isGeneratingAI}
+                                        onSaveComplete={() => window.location.reload()}
                                     >
                                         <button className="group relative">
                                             <Avatar className="h-40 w-40 border-4 border-primary/50 group-hover:scale-105 group-hover:ring-4 group-hover:ring-primary/50 transition-all duration-300">
@@ -500,26 +501,28 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                                                                     <TableCell>
                                                                                         <div className="flex gap-1 flex-wrap">
                                                                                             {(ev.performanceTags || []).map((tag, idx) => {
-                                                                                                if (typeof tag === 'object' && tag && 'name' in tag) {
+                                                                                                if (tag && typeof tag === 'object' && 'name' in tag) {
                                                                                                     const typedTag = tag as PerformanceTag;
                                                                                                     return (
-                                                                                                        <UiTooltip key={typedTag.id || idx}>
-                                                                                                            <TooltipTrigger asChild>
-                                                                                                                <Badge variant="outline" className="cursor-help">{typedTag.name}</Badge>
-                                                                                                            </TooltipTrigger>
-                                                                                                            <TooltipContent>
-                                                                                                                <p className="font-semibold mb-1">{typedTag.description}</p>
-                                                                                                                {typedTag.effects && typedTag.effects.length > 0 && (
-                                                                                                                    <div className="text-xs space-y-0.5">
-                                                                                                                        {typedTag.effects.map((effect, i) => (
-                                                                                                                            <p key={i} className={cn(effect.change > 0 ? 'text-green-600' : 'text-red-600')}>
-                                                                                                                                {effect.attribute.toUpperCase()}: {effect.change > 0 ? '+' : ''}{effect.change}
-                                                                                                                            </p>
-                                                                                                                        ))}
-                                                                                                                    </div>
-                                                                                                                )}
-                                                                                                            </TooltipContent>
-                                                                                                        </UiTooltip>
+                                                                                                        <UiTooltipProvider key={typedTag.id || idx}>
+                                                                                                            <UiTooltip>
+                                                                                                                <TooltipTrigger asChild>
+                                                                                                                    <Badge variant="outline" className="cursor-help">{typedTag.name}</Badge>
+                                                                                                                </TooltipTrigger>
+                                                                                                                <TooltipContent>
+                                                                                                                    <p className="font-semibold mb-1">{typedTag.description}</p>
+                                                                                                                    {typedTag.effects && typedTag.effects.length > 0 && (
+                                                                                                                        <div className="text-xs space-y-0.5">
+                                                                                                                            {typedTag.effects.map((effect, i) => (
+                                                                                                                                <p key={i} className={cn(effect.change > 0 ? 'text-green-600' : 'text-red-600')}>
+                                                                                                                                    {effect.attribute.toUpperCase()}: {effect.change > 0 ? '+' : ''}{effect.change}
+                                                                                                                                </p>
+                                                                                                                            ))}
+                                                                                                                        </div>
+                                                                                                                    )}
+                                                                                                                </TooltipContent>
+                                                                                                            </UiTooltip>
+                                                                                                        </UiTooltipProvider>
                                                                                                     );
                                                                                                 }
                                                                                                 return null;
