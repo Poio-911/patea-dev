@@ -2,10 +2,10 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import type { Match, Player, EvaluationAssignment, Notification, UserProfile } from '@/lib/types';
+import type { Match, Player, EvaluationAssignment, Notification, UserProfile, Invitation, Jersey, Team } from '@/lib/types';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
-import { useDoc, useFirestore, useUser } from '@/firebase';
-import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, FileSignature, CheckCircle, UserPlus, LogOut, Shuffle, Trash2 } from 'lucide-react';
+import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
+import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, FileSignature, CheckCircle, UserPlus, LogOut, Shuffle, Trash2, MessageCircle, Eye } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
 import Link from 'next/link';
@@ -23,7 +23,17 @@ import { WhatsAppIcon } from './icons/whatsapp-icon';
 import { MatchChronicleCard } from './match-chronicle-card';
 import { Separator } from './ui/separator';
 import { generateTeamsAction } from '@/lib/actions';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { EditableTeamsDialog } from './editable-teams-dialog';
 import { InvitePlayerDialog } from './invite-player-dialog';
 
@@ -47,7 +57,6 @@ const statusConfig: Record<Match['status'], { label: string; className: string }
 
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
-
 
 export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const firestore = useFirestore();
@@ -75,6 +84,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
         const realPlayerUids = matchPlayers.filter(isRealUser).map(p => p.id);
 
         realPlayerUids.forEach(evaluatorId => {
+            if (!match.teams) return;
             const team = match.teams.find(t => t.players.some(p => p.uid === evaluatorId));
             if (!team) return;
 
@@ -205,35 +215,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                         Volver a Partidos
                     </Link>
                 </Button>
-                 {isOwner && (
-                     <div className="flex items-center gap-2">
-                         {match.status === 'upcoming' && match.players.length >= match.matchSize && (
-                            <Button onClick={handleFinishMatch} disabled={isFinishing} size="sm">
-                                {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
-                                Finalizar y Armar Equipos
-                            </Button>
-                         )}
-                         {match.status === 'completed' && (
-                             <Link href={`/matches/${match.id}/evaluate`}>
-                                <Button size="sm"><FileSignature className="mr-2 h-4 w-4"/>Supervisar Evaluaciones</Button>
-                            </Link>
-                         )}
-                         {match.teams && match.teams.length > 0 && (
-                            <EditableTeamsDialog match={match}>
-                                <Button variant="outline" size="sm"><Shuffle className="mr-2 h-4 w-4"/>Editar Equipos</Button>
-                            </EditableTeamsDialog>
-                         )}
-                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="icon" disabled={isDeleting}><Trash2 className="h-4 w-4"/></Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader><AlertDialogTitle>¿Borrar "{match.title}"?</AlertDialogTitle><AlertDialogDescription>Esta acción es permanente.</AlertDialogDescription></AlertDialogHeader>
-                                <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting}>Borrar</AlertDialogAction></AlertDialogFooter>
-                            </AlertDialogContent>
-                         </AlertDialog>
-                    </div>
-                 )}
             </div>
             
             <PageHeader title={match.title} />
@@ -258,6 +239,11 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                         <CardHeader>
                             <CardTitle className="flex items-center justify-between">
                                 <span>Plantel ({match.players.length} / {match.matchSize})</span>
+                                {isOwner && match.status === 'upcoming' && (
+                                     <InvitePlayerDialog userMatches={[match]} allGroupPlayers={allGroupPlayers || []} match={match}>
+                                        <Button size="sm" variant="outline"><UserPlus className="mr-2 h-4 w-4"/>Invitar</Button>
+                                    </InvitePlayerDialog>
+                                )}
                             </CardTitle>
                         </CardHeader>
                          <CardContent>
@@ -270,7 +256,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                                 <Badge variant="secondary">OVR {team.averageOVR.toFixed(1)}</Badge>
                                             </CardHeader>
                                             <CardContent>
-                                                <div className="space-y-2">
+                                                <div className="space-y-1">
                                                     {team.players.map(player => (
                                                         <div key={player.uid} className="flex items-center gap-3 p-2 border-b last:border-b-0">
                                                             <Avatar className="h-9 w-9">
