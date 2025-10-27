@@ -43,7 +43,7 @@ export default function AnalysisPage() {
             </Button>
         </div>
         <PageHeader 
-            title="Análisis Avanzado con IA"
+            title="Estadísticas Avanzadas"
             description={`Explorá tu rendimiento y recibí consejos del DT virtual para ${player.name}.`}
         />
       
