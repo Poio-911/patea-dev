@@ -99,21 +99,22 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
 
  const createdPlayersQuery = useMemo(() => {
-    if (!firestore || !isCurrentUserProfile || !playerId) return null;
+    if (!firestore || !playerId) return null;
     return query(collection(firestore, 'players'), where('ownerUid', '==', playerId));
-  }, [firestore, playerId, isCurrentUserProfile]);
+  }, [firestore, playerId]);
   const { data: createdPlayers, loading: createdPlayersLoading } = useCollection<Player>(createdPlayersQuery);
   
   const createdMatchesQuery = useMemo(() => {
-    if (!firestore || !isCurrentUserProfile || !playerId) return null;
+    if (!firestore || !playerId) return null;
     return query(collection(firestore, 'matches'), where('ownerUid', '==', playerId));
-  }, [firestore, playerId, isCurrentUserProfile]);
+  }, [firestore, playerId]);
   const { data: createdMatches, loading: createdMatchesLoading } = useCollection<Match>(createdMatchesQuery);
   
   const manualPlayers = useMemo(() => {
-    if(!createdPlayers || !user) return [];
-    return createdPlayers.filter(p => p.id !== user.uid);
-  }, [createdPlayers, user]);
+    if(!createdPlayers) return [];
+    // Filter out the player's own profile if they are the owner
+    return createdPlayers.filter(p => p.id !== p.ownerUid);
+  }, [createdPlayers]);
   
   const sortedCreatedMatches = useMemo(() => {
     if (!createdMatches) return [];
@@ -270,7 +271,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     }
   };
 
-  const loading = playerLoading || historyLoading || isLoading || (isCurrentUserProfile && (createdMatchesLoading || createdPlayersLoading));
+  const loading = playerLoading || historyLoading || isLoading || createdMatchesLoading || createdPlayersLoading;
 
 
   if (loading) {
@@ -360,314 +361,222 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                     </CardContent>
                 </Card>
 
-                <div className="lg:col-span-2">
-                <Card>
-                    <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <BarChart2 className="h-6 w-6" />
-                        Progresión de OVR
-                    </CardTitle>
-                    <CardDescription>Evolución del OVR del jugador a lo largo de los últimos partidos.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis domain={([dataMin, dataMax]) => [Math.max(0, dataMin - 5), Math.min(100, dataMax + 5)]} />
-                        <Tooltip
-                            content={({ active, payload, label }) => {
-                                if (active && payload && payload.length) {
-                                    const data = payload[0].payload;
-                                    const changes = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'].map(attr => ({
-                                        key: attr,
-                                        value: data[attr]
-                                    })).filter(item => item.value !== undefined && item.value !== 0);
+                <div className="lg:col-span-2 space-y-8">
+                    <Card>
+                        <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <BarChart2 className="h-6 w-6" />
+                            Progresión de OVR
+                        </CardTitle>
+                        <CardDescription>Evolución del OVR del jugador a lo largo de los últimos partidos.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis domain={([dataMin, dataMax]) => [Math.max(0, dataMin - 5), Math.min(100, dataMax + 5)]} />
+                            <Tooltip
+                                content={({ active, payload, label }) => {
+                                    if (active && payload && payload.length) {
+                                        const data = payload[0].payload;
+                                        const changes = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'].map(attr => ({
+                                            key: attr,
+                                            value: data[attr]
+                                        })).filter(item => item.value !== undefined && item.value !== 0);
 
-                                    return (
-                                        <div className="rounded-lg border bg-background p-3 shadow-sm">
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <div className="flex flex-col">
-                                                <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                                    Partido
-                                                </span>
-                                                <span className="font-bold text-muted-foreground">
-                                                    {label} ({payload[0].payload.Fecha})
-                                                </span>
-                                                </div>
-                                                <div className="flex flex-col">
-                                                <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                                    OVR
-                                                </span>
-                                                <span className="font-bold text-foreground">
-                                                    {payload[0].value}
-                                                </span>
-                                                </div>
-                                            </div>
-                                            {changes.length > 0 && <Separator className="my-2" />}
-                                            <div className="grid grid-cols-3 gap-x-4 gap-y-1">
-                                                {changes.map(change => (
-                                                    <div key={change.key} className={cn("text-xs font-medium", (change.value || 0) > 0 ? 'text-green-600' : 'text-red-600')}>
-                                                        {change.key.toUpperCase()}: {(change.value || 0) > 0 ? '+' : ''}{change.value}
+                                        return (
+                                            <div className="rounded-lg border bg-background p-3 shadow-sm">
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div className="flex flex-col">
+                                                    <span className="text-[0.70rem] uppercase text-muted-foreground">
+                                                        Partido
+                                                    </span>
+                                                    <span className="font-bold text-muted-foreground">
+                                                        {label} ({payload[0].payload.Fecha})
+                                                    </span>
                                                     </div>
-                                                ))}
+                                                    <div className="flex flex-col">
+                                                    <span className="text-[0.70rem] uppercase text-muted-foreground">
+                                                        OVR
+                                                    </span>
+                                                    <span className="font-bold text-foreground">
+                                                        {payload[0].value}
+                                                    </span>
+                                                    </div>
+                                                </div>
+                                                {changes.length > 0 && <Separator className="my-2" />}
+                                                <div className="grid grid-cols-3 gap-x-4 gap-y-1">
+                                                    {changes.map(change => (
+                                                        <div key={change.key} className={cn("text-xs font-medium", (change.value || 0) > 0 ? 'text-green-600' : 'text-red-600')}>
+                                                            {change.key.toUpperCase()}: {(change.value || 0) > 0 ? '+' : ''}{change.value}
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                }
-                                return null;
-                            }}
-                        />
-                        <Legend />
-                        <Line type="monotone" dataKey="OVR" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }} />
-                        </LineChart>
-                    </ResponsiveContainer>
-                    </CardContent>
-                </Card>
-                </div>
-            </div>
-            
-
-            {isCurrentUserProfile ? (
-                <div className="lg:col-span-3">
-                    <Tabs defaultValue="evaluations" className="w-full">
-                        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
-                            <TabsTrigger value="evaluations">Mi Historial</TabsTrigger>
-                            <TabsTrigger value="created-matches">Partidos Creados</TabsTrigger>
-                            <TabsTrigger value="created-players">Jugadores Creados</TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="evaluations" className="mt-6">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Historial de Evaluaciones</CardTitle>
-                                    <CardDescription>Rendimiento del jugador en los últimos partidos evaluados. Haz clic en un partido para ver el detalle.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    {filteredEvaluationsByMatch.length > 0 ? (
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead className="w-12"></TableHead>
-                                                    <TableHead>Partido</TableHead>
-                                                    <TableHead>Equipo</TableHead>
-                                                    <TableHead className="text-center">Rating</TableHead>
-                                                    <TableHead className="text-center">Goles</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {filteredEvaluationsByMatch.map(({ match, teamName, avgRating, goals, hasNumericRatings, individualEvaluations }) => {
-                                                    const isOpen = openAccordion === match.id;
-                                                    return (
-                                                        <React.Fragment key={match.id}>
-                                                            <TableRow onClick={() => setOpenAccordion(isOpen ? null : match.id)} className="cursor-pointer">
-                                                                <TableCell><ChevronDown className={cn("transition-transform", isOpen && "rotate-180")} /></TableCell>
-                                                                <TableCell className="font-medium">{match.title}</TableCell>
-                                                                <TableCell><Badge variant="outline">{teamName}</Badge></TableCell>
-                                                                <TableCell className="text-center">
-                                                                    {hasNumericRatings ? (
-                                                                        <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'}>
-                                                                            <Star className="mr-1 h-3 w-3" /> {avgRating.toFixed(2)}
-                                                                        </Badge>
-                                                                    ) : (
-                                                                        <Badge variant="outline" className="text-muted-foreground">N/A</Badge>
-                                                                    )}
-                                                                </TableCell>
-                                                                <TableCell className="text-center">
-                                                                    <Badge variant="outline"><Goal className="mr-1 h-3 w-3" /> {goals}</Badge>
-                                                                </TableCell>
-                                                            </TableRow>
-                                                            {isOpen && (
-                                                                <TableRow>
-                                                                    <TableCell colSpan={5}>
-                                                                        <div className="p-4 bg-muted/50 rounded-md">
-                                                                            <h4 className="font-semibold mb-2">Detalle de Evaluaciones:</h4>
-                                                                            <Table>
-                                                                                <TableHeader>
-                                                                                    <TableRow>
-                                                                                        <TableHead>Evaluador</TableHead>
-                                                                                        <TableHead className="text-center">Rating</TableHead>
-                                                                                        <TableHead>Etiquetas</TableHead>
-                                                                                    </TableRow>
-                                                                                </TableHeader>
-                                                                                <TableBody>
-                                                                                    {individualEvaluations.map(ev => (
-                                                                                        <TableRow key={ev.id}>
-                                                                                            <TableCell>
-                                                                                                <div className="flex items-center gap-2">
-                                                                                                    <Avatar className="h-8 w-8">
-                                                                                                        <AvatarImage src={ev.evaluatorPhoto} alt={ev.evaluatorName} />
-                                                                                                        <AvatarFallback>{ev.evaluatorName?.charAt(0)}</AvatarFallback>
-                                                                                                    </Avatar>
-                                                                                                    <span>{ev.evaluatorName}</span>
-                                                                                                </div>
-                                                                                            </TableCell>
-                                                                                            <TableCell className="text-center">
-                                                                                                {ev.rating !== undefined ? <Badge variant="secondary">{ev.rating}</Badge> : <span className="text-muted-foreground text-xs">-</span>}
-                                                                                            </TableCell>
-                                                                                            <TableCell>
-                                                                                                <div className="flex gap-1 flex-wrap">
-                                                                                                    {(ev.performanceTags || []).map((tag, idx) => {
-                                                                                                        if (typeof tag === 'object' && tag && 'name' in tag) {
-                                                                                                            const typedTag = tag as PerformanceTag;
-                                                                                                            return (
-                                                                                                                <UiTooltip key={typedTag.id || idx}>
-                                                                                                                    <TooltipTrigger asChild>
-                                                                                                                        <Badge variant="outline" className="cursor-help">{typedTag.name}</Badge>
-                                                                                                                    </TooltipTrigger>
-                                                                                                                    <TooltipContent>
-                                                                                                                        <p className="font-semibold mb-1">{typedTag.description}</p>
-                                                                                                                        {typedTag.effects && typedTag.effects.length > 0 && (
-                                                                                                                            <div className="text-xs space-y-0.5">
-                                                                                                                                {typedTag.effects.map((effect, i) => (
-                                                                                                                                    <p key={i} className={cn(effect.change > 0 ? 'text-green-600' : 'text-red-600')}>
-                                                                                                                                        {effect.attribute.toUpperCase()}: {effect.change > 0 ? '+' : ''}{effect.change}
-                                                                                                                                    </p>
-                                                                                                                                ))}
-                                                                                                                            </div>
-                                                                                                                        )}
-                                                                                                                    </TooltipContent>
-                                                                                                                </UiTooltip>
-                                                                                                            );
-                                                                                                        }
-                                                                                                        return null;
-                                                                                                    })}
-                                                                                                    {(!ev.performanceTags || ev.performanceTags.length === 0) && <span className="text-muted-foreground text-xs">-</span>}
-                                                                                                </div>
-                                                                                            </TableCell>
-                                                                                        </TableRow>
-                                                                                    ))}
-                                                                                </TableBody>
-                                                                            </Table>
-                                                                        </div>
-                                                                    </TableCell>
-                                                                </TableRow>
+                                        );
+                                    }
+                                    return null;
+                                }}
+                            />
+                            <Legend />
+                            <Line type="monotone" dataKey="OVR" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Historial de Evaluaciones</CardTitle>
+                            <CardDescription>Rendimiento del jugador en los últimos partidos evaluados. Haz clic en un partido para ver el detalle.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {filteredEvaluationsByMatch.length > 0 ? (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="w-12"></TableHead>
+                                            <TableHead>Partido</TableHead>
+                                            <TableHead>Equipo</TableHead>
+                                            <TableHead className="text-center">Rating</TableHead>
+                                            <TableHead className="text-center">Goles</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {filteredEvaluationsByMatch.map(({ match, teamName, avgRating, goals, hasNumericRatings, individualEvaluations }) => {
+                                            const isOpen = openAccordion === match.id;
+                                            return (
+                                                <React.Fragment key={match.id}>
+                                                    <TableRow onClick={() => setOpenAccordion(isOpen ? null : match.id)} className="cursor-pointer">
+                                                        <TableCell><ChevronDown className={cn("transition-transform", isOpen && "rotate-180")} /></TableCell>
+                                                        <TableCell className="font-medium">{match.title}</TableCell>
+                                                        <TableCell><Badge variant="outline">{teamName}</Badge></TableCell>
+                                                        <TableCell className="text-center">
+                                                            {hasNumericRatings ? (
+                                                                <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'}>
+                                                                    <Star className="mr-1 h-3 w-3" /> {avgRating.toFixed(2)}
+                                                                </Badge>
+                                                            ) : (
+                                                                <Badge variant="outline" className="text-muted-foreground">N/A</Badge>
                                                             )}
-                                                        </React.Fragment>
-                                                    )
-                                                })}
-                                            </TableBody>
-                                        </Table>
-                                    ) : (
-                                        <CardContent className="text-center text-muted-foreground py-10">
-                                            Este jugador aún no tiene evaluaciones registradas.
-                                        </CardContent>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-
-                        <TabsContent value="created-matches" className="mt-6">
-                            <Card>
-                                <CardContent className="pt-6">
-                                    <div className="relative w-full overflow-auto">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Partido</TableHead>
-                                                    <TableHead>Fecha</TableHead>
-                                                    <TableHead>Estado</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {sortedCreatedMatches && sortedCreatedMatches.length > 0 ? sortedCreatedMatches.map(match => {
-                                                    const statusInfo = statusConfig[match.status] || statusConfig.completed;
-                                                    return (
-                                                        <TableRow key={match.id}>
-                                                            <TableCell className="font-medium">{match.title}</TableCell>
-                                                            <TableCell>{format(new Date(match.date), 'dd/MM/yyyy', { locale: es })}</TableCell>
-                                                            <TableCell>
-                                                                <Badge variant="outline" className={cn(statusInfo.className)}>{statusInfo.label}</Badge>
+                                                        </TableCell>
+                                                        <TableCell className="text-center">
+                                                            <Badge variant="outline"><Goal className="mr-1 h-3 w-3" /> {goals}</Badge>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                    {isOpen && (
+                                                        <TableRow>
+                                                            <TableCell colSpan={5} className="p-0">
+                                                                <div className="p-4 bg-muted/50 rounded-md">
+                                                                    <h4 className="font-semibold mb-2">Detalle de Evaluaciones:</h4>
+                                                                    <Table>
+                                                                        <TableHeader>
+                                                                            <TableRow>
+                                                                                <TableHead>Evaluador</TableHead>
+                                                                                <TableHead className="text-center">Rating</TableHead>
+                                                                                <TableHead>Etiquetas</TableHead>
+                                                                            </TableRow>
+                                                                        </TableHeader>
+                                                                        <TableBody>
+                                                                            {individualEvaluations.map(ev => (
+                                                                                <TableRow key={ev.id}>
+                                                                                    <TableCell>
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <Avatar className="h-8 w-8">
+                                                                                                <AvatarImage src={ev.evaluatorPhoto} alt={ev.evaluatorName} />
+                                                                                                <AvatarFallback>{ev.evaluatorName?.charAt(0)}</AvatarFallback>
+                                                                                            </Avatar>
+                                                                                            <span>{ev.evaluatorName}</span>
+                                                                                        </div>
+                                                                                    </TableCell>
+                                                                                    <TableCell className="text-center">
+                                                                                        {ev.rating !== undefined ? <Badge variant="secondary">{ev.rating}</Badge> : <span className="text-muted-foreground text-xs">-</span>}
+                                                                                    </TableCell>
+                                                                                    <TableCell>
+                                                                                        <div className="flex gap-1 flex-wrap">
+                                                                                            {(ev.performanceTags || []).map((tag, idx) => {
+                                                                                                if (typeof tag === 'object' && tag && 'name' in tag) {
+                                                                                                    const typedTag = tag as PerformanceTag;
+                                                                                                    return (
+                                                                                                        <UiTooltip key={typedTag.id || idx}>
+                                                                                                            <TooltipTrigger asChild>
+                                                                                                                <Badge variant="outline" className="cursor-help">{typedTag.name}</Badge>
+                                                                                                            </TooltipTrigger>
+                                                                                                            <TooltipContent>
+                                                                                                                <p className="font-semibold mb-1">{typedTag.description}</p>
+                                                                                                                {typedTag.effects && typedTag.effects.length > 0 && (
+                                                                                                                    <div className="text-xs space-y-0.5">
+                                                                                                                        {typedTag.effects.map((effect, i) => (
+                                                                                                                            <p key={i} className={cn(effect.change > 0 ? 'text-green-600' : 'text-red-600')}>
+                                                                                                                                {effect.attribute.toUpperCase()}: {effect.change > 0 ? '+' : ''}{effect.change}
+                                                                                                                            </p>
+                                                                                                                        ))}
+                                                                                                                    </div>
+                                                                                                                )}
+                                                                                                            </TooltipContent>
+                                                                                                        </UiTooltip>
+                                                                                                    );
+                                                                                                }
+                                                                                                return null;
+                                                                                            })}
+                                                                                            {(!ev.performanceTags || ev.performanceTags.length === 0) && <span className="text-muted-foreground text-xs">-</span>}
+                                                                                        </div>
+                                                                                    </TableCell>
+                                                                                </TableRow>
+                                                                            ))}
+                                                                        </TableBody>
+                                                                    </Table>
+                                                                </div>
                                                             </TableCell>
                                                         </TableRow>
-                                                    );
-                                                }) : (
-                                                    <TableRow>
-                                                        <TableCell colSpan={3} className="text-center h-24">No has creado ningún partido.</TableCell>
-                                                    </TableRow>
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-                        <TabsContent value="created-players" className="mt-6">
-                            <Card>
-                                <CardContent className="pt-6">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Jugador</TableHead>
-                                                <TableHead>Posición</TableHead>
-                                                <TableHead>OVR</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {manualPlayers && manualPlayers.length > 0 ? manualPlayers.map(player => (
-                                                <TableRow key={player.id}>
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-3">
-                                                            <Avatar className="h-9 w-9">
-                                                                <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
-                                                                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                                            </Avatar>
-                                                            <span className="font-medium">{player.name}</span>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant="outline">{player.position}</Badge>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge>{player.ovr}</Badge>
-                                                    </TableCell>
-                                                </TableRow>
-                                            )) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={3} className="text-center h-24">No has creado ningún jugador manual.</TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-                    </Tabs>
+                                                    )}
+                                                </React.Fragment>
+                                            )
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            ) : (
+                                <div className="text-center text-muted-foreground py-10">Este jugador aún no tiene evaluaciones registradas.</div>
+                            )}
+                        </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader>
+                          <CardTitle>Actividad del Jugador</CardTitle>
+                          <CardDescription>Partidos y jugadores creados por {player.name}.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                          <h3 className="font-semibold">Partidos Organizados ({sortedCreatedMatches.length})</h3>
+                          {sortedCreatedMatches.length > 0 ? (
+                            <Table>
+                                <TableHeader><TableRow><TableHead>Partido</TableHead><TableHead>Fecha</TableHead><TableHead>Estado</TableHead></TableRow></TableHeader>
+                                <TableBody>{sortedCreatedMatches.slice(0, 3).map(match => {
+                                      const statusInfo = statusConfig[match.status] || statusConfig.completed;
+                                      return (<TableRow key={match.id}><TableCell className="font-medium">{match.title}</TableCell><TableCell>{format(new Date(match.date), 'dd/MM/yyyy', { locale: es })}</TableCell><TableCell><Badge variant="outline" className={cn(statusInfo.className)}>{statusInfo.label}</Badge></TableCell></TableRow>);
+                                  })}
+                                </TableBody>
+                            </Table>
+                          ) : <p className="text-sm text-muted-foreground">Este jugador no ha creado ningún partido.</p>}
+                          
+                          <Separator />
+
+                          <h3 className="font-semibold">Jugadores Manuales Creados ({manualPlayers.length})</h3>
+                           {manualPlayers.length > 0 ? (
+                                <Table>
+                                    <TableHeader><TableRow><TableHead>Jugador</TableHead><TableHead>Posición</TableHead><TableHead>OVR</TableHead></TableRow></TableHeader>
+                                    <TableBody>{manualPlayers.slice(0, 3).map(p => (
+                                          <TableRow key={p.id}>
+                                              <TableCell><div className="flex items-center gap-3"><Avatar className="h-9 w-9"><AvatarImage src={p.photoUrl} alt={p.name} /><AvatarFallback>{p.name.charAt(0)}</AvatarFallback></Avatar><span className="font-medium">{p.name}</span></div></TableCell>
+                                              <TableCell><Badge variant="outline">{p.position}</Badge></TableCell>
+                                              <TableCell><Badge>{p.ovr}</Badge></TableCell>
+                                          </TableRow>
+                                    ))}</TableBody>
+                                </Table>
+                           ) : <p className="text-sm text-muted-foreground">Este jugador no ha creado jugadores manuales.</p>}
+                      </CardContent>
+                    </Card>
                 </div>
-            ) : (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Historial de Evaluaciones</CardTitle>
-                        <CardDescription>Rendimiento del jugador en los últimos partidos evaluados.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {filteredEvaluationsByMatch.length > 0 ? filteredEvaluationsByMatch.map(({ match, teamName, avgRating, hasNumericRatings }) => (
-                            <Card key={match.id} className="bg-muted/50">
-                                <CardHeader className="flex flex-row items-center justify-between p-4">
-                                    <div>
-                                        <CardTitle className="text-lg">{match.title}</CardTitle>
-                                        <CardDescription>{format(new Date(match.date), 'dd MMM, yyyy', { locale: es })}</CardDescription>
-                                        <Badge variant="outline" className="mt-2">{teamName}</Badge>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        {hasNumericRatings ? (
-                                            <Badge variant={avgRating >= 7 ? 'default' : avgRating >= 5 ? 'secondary' : 'destructive'} className="text-base">
-                                                <Star className="mr-1 h-3 w-3" /> {avgRating.toFixed(2)}
-                                            </Badge>
-                                        ) : (
-                                            <Badge variant="outline" className="text-muted-foreground">N/A</Badge>
-                                        )}
-                                    </div>
-                                </CardHeader>
-                            </Card>
-                        )) : (
-                            <CardContent className="text-center text-muted-foreground py-10">
-                                Este jugador aún no tiene evaluaciones registradas.
-                            </CardContent>
-                        )}
-                    </CardContent>
-                </Card>
-            )}
+            </div>
         </div>
     </>
   );
