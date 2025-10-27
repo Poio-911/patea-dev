@@ -50,9 +50,7 @@ export default function LoginPage() {
     if (!auth) return;
     try {
         const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-        const idToken = await userCredential.user.getIdToken();
-        await createSessionCookie(idToken);
-        // The useEffect will handle the redirect
+        // Let the useUser hook handle the redirect via onAuthStateChanged
     } catch (error: any) {
         toast({
             variant: 'destructive',

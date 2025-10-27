@@ -1,8 +1,11 @@
+
 'use server';
 
 import { adminAuth } from '@/firebase/admin';
 import { logger } from '@/lib/logger';
 import { cookies } from 'next/headers';
+import { createError, ErrorCodes } from './errors';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
 
