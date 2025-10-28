@@ -2,7 +2,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { googleAI } from '@genkit-ai/googleai';
+import { googleAI } from '@genkit-ai/google-genai';
 
 const GetMatchDayForecastInputSchema = z.object({
   location: z.string(),
@@ -21,7 +21,6 @@ const forecastPrompt = ai.definePrompt({
   name: 'matchDayForecast',
   input: { schema: GetMatchDayForecastInputSchema },
   output: { schema: GetMatchDayForecastOutputSchema },
-  model: googleAI.model('gemini-1.5-flash-latest'),
   prompt: `
     Eres un asistente meteorológico para una app de fútbol amateur.
     Proporciona un resumen del clima en ESPAÑOL. La descripción debe ser muy concisa, de 2 a 3 palabras.
@@ -40,7 +39,7 @@ export const getMatchDayForecast = ai.defineFlow(
     outputSchema: GetMatchDayForecastOutputSchema,
   },
   async (input) => {
-    const { output } = await forecastPrompt(input);
+    const { output } = await forecastPrompt(input, { model: 'googleai/gemini-2.5-flash'});
     if (!output) throw new Error('No se obtuvo respuesta válida del modelo.');
     return output;
   }

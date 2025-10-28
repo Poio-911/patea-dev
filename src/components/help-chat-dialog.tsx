@@ -1,10 +1,6 @@
-
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-// import { getAppHelpAction } from '@/lib/actions'; // Eliminado
-// import type { AppHelpInput } from '@/lib/types'; // Eliminado
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -71,76 +67,64 @@ export function HelpChatDialog() {
 
   return (
     <div className="relative">
-        <AnimatePresence>
-            {isOpen && (
-                 <motion.div
-                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                    className="absolute bottom-full right-0 w-80 h-[28rem] flex flex-col bg-background/70 backdrop-blur-lg rounded-xl shadow-2xl border border-primary/20 overflow-hidden mb-4"
-                >
-                    <header className="p-2 border-b flex justify-between items-center flex-shrink-0">
-                        <div className="flex items-center gap-2">
-                             <Avatar className="h-6 w-6"><AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-4 w-4" /></AvatarFallback></Avatar>
-                             <h3 className="font-semibold text-sm">Asistente Pateá</h3>
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsOpen(false)}>
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </header>
-                    <div className="flex-grow overflow-y-auto">
-                        <ScrollArea className="h-full" ref={scrollRef}>
-                             <div className="p-4 space-y-4">
-                                {messages.map((message, index) => (
-                                    <div key={index} className={cn('flex items-start gap-2 text-sm', message.role === 'user' ? 'justify-end' : 'justify-start')}>
-                                        {message.role === 'agent' && <Avatar className="h-6 w-6"><AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-4 w-4" /></AvatarFallback></Avatar>}
-                                        <div className={cn('rounded-lg px-3 py-2 max-w-[85%]', message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-background/80')}>
-                                            <p className="whitespace-pre-wrap">{message.content}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                                {isLoading && (
-                                    <div className="flex items-start gap-2 justify-start">
-                                        <Avatar className="h-6 w-6"><AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-4 w-4" /></AvatarFallback></Avatar>
-                                        <div className="bg-background/80 rounded-lg px-3 py-2"><Loader2 className="h-5 w-5 animate-spin" /></div>
-                                    </div>
-                                )}
+        <div className={cn("fixed bottom-4 right-4 z-40 transition-all", isOpen ? "opacity-0 scale-90 pointer-events-none" : "opacity-100 scale-100")}>
+            <Button
+                className="rounded-full w-auto h-14 bg-background/70 backdrop-blur-lg border-2 border-primary/50 text-primary shadow-lg hover:bg-background/90 hover:scale-105 active:scale-95 transition-all px-4"
+                onClick={() => setIsOpen(!isOpen)}
+                aria-label="Open help chat"
+            >
+                <div className="flex items-center gap-2">
+                    <HelpCircle className="h-5 w-5" />
+                    <span className="font-semibold">Ayuda</span>
+                </div>
+            </Button>
+        </div>
+
+        <div className={cn("fixed bottom-4 right-4 z-50 w-80 h-[28rem] flex flex-col bg-background/70 backdrop-blur-lg rounded-xl shadow-2xl border border-primary/20 overflow-hidden transition-all", isOpen ? "opacity-100 scale-100" : "opacity-0 scale-90 pointer-events-none")}>
+            <header className="p-2 border-b flex justify-between items-center flex-shrink-0">
+                <div className="flex items-center gap-2">
+                     <Avatar className="h-6 w-6"><AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-4 w-4" /></AvatarFallback></Avatar>
+                     <h3 className="font-semibold text-sm">Asistente Pateá</h3>
+                </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsOpen(false)}>
+                    <X className="h-4 w-4" />
+                </Button>
+            </header>
+            <div className="flex-grow overflow-y-auto">
+                <ScrollArea className="h-full" ref={scrollRef}>
+                     <div className="p-4 space-y-4">
+                        {messages.map((message, index) => (
+                            <div key={index} className={cn('flex items-start gap-2 text-sm', message.role === 'user' ? 'justify-end' : 'justify-start')}>
+                                {message.role === 'agent' && <Avatar className="h-6 w-6"><AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-4 w-4" /></AvatarFallback></Avatar>}
+                                <div className={cn('rounded-lg px-3 py-2 max-w-[85%]', message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-background/80')}>
+                                    <p className="whitespace-pre-wrap">{message.content}</p>
+                                </div>
                             </div>
-                        </ScrollArea>
+                        ))}
+                        {isLoading && (
+                            <div className="flex items-start gap-2 justify-start">
+                                <Avatar className="h-6 w-6"><AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-4 w-4" /></AvatarFallback></Avatar>
+                                <div className="bg-background/80 rounded-lg px-3 py-2"><Loader2 className="h-5 w-5 animate-spin" /></div>
+                            </div>
+                        )}
                     </div>
-                     <div className="border-t p-2 flex-shrink-0">
-                        <div className="flex w-full items-center space-x-2">
-                            <Input
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
-                                placeholder="Escribe tu duda..."
-                                disabled={isLoading}
-                                className="bg-background/80 border-primary/20"
-                            />
-                            <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon">
-                                <Send className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </div>
-                </motion.div>
-            )}
-        </AnimatePresence>
-        
-        <Button
-          className={cn(
-            "rounded-full w-auto h-14 bg-background/70 backdrop-blur-lg border-2 border-primary/50 text-primary shadow-lg hover:bg-background/90 hover:scale-105 active:scale-95 transition-all px-4",
-            isOpen && "bg-primary/20 border-primary/70"
-          )}
-          onClick={() => setIsOpen(!isOpen)}
-          aria-label="Toggle help chat"
-        >
-             <div className="flex items-center gap-2">
-                <HelpCircle className="h-5 w-5" />
-                <span className="font-semibold">Ayuda</span>
-             </div>
-        </Button>
+                </ScrollArea>
+            </div>
+             <div className="border-t p-2 flex-shrink-0">
+                <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex w-full items-center space-x-2">
+                    <Input
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder="Escribe tu duda..."
+                        disabled={isLoading}
+                        className="bg-background/80 border-primary/20"
+                    />
+                    <Button type="submit" disabled={isLoading || !input.trim()} size="icon">
+                        <Send className="h-4 w-4" />
+                    </Button>
+                </form>
+            </div>
+        </div>
     </div>
   );
 }

@@ -98,7 +98,7 @@ export async function getPlayerImprovementSuggestionsAction(playerId: string, gr
             playerStats: player.stats,
             evaluations: evaluations.map(e => ({
                 rating: e.rating || 0,
-                performanceTags: e.performanceTags?.map(t => t.name) || [],
+                performanceTags: e.performanceTags?.map((t: any) => t.name) || [],
                 evaluatedBy: e.evaluatorId || '',
                 evaluatedAt: e.evaluatedAt || '',
                 matchId: e.matchId || ''
@@ -244,7 +244,7 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
         return {
             matchDate: e.evaluatedAt || new Date().toISOString(),
             rating: e.rating,
-            performanceTags: (e.performanceTags || []).map((tag: PerformanceTag) => ({
+            performanceTags: (e.performanceTags || []).map((tag: any) => ({
                 name: tag.name,
                 impact: tag.impact,
             })),

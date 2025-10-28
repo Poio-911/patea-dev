@@ -1,4 +1,3 @@
-
 'use client';
 import { useEffect, useState, createContext, useContext } from 'react';
 import type { User } from 'firebase/auth';
@@ -6,6 +5,7 @@ import { useAuth } from '@/firebase';
 import { doc, setDoc, getDoc, serverTimestamp, onSnapshot, FieldValue, updateDoc, getFirestore } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { UserProfile, Player } from '@/lib/types';
+import { logger } from '@/lib/logger';
 
 const UserContext = createContext<{ user: UserProfile | null; loading: boolean }>({
   user: null,
@@ -57,12 +57,12 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                     }
 
                     if (Object.keys(updates).length > 0) {
-                        console.log(`Syncing player data for ${userData.displayName}:`, updates);
+                        logger.info('Syncing player data', { userId: firebaseUser.uid, updates });
                         await updateDoc(playerRef, updates);
                     }
                 }
              } catch (e) {
-                console.error("Failed to sync player data or reset credits:", e);
+                logger.error("Failed to sync player data or reset credits:", e, { userId: firebaseUser.uid });
              }
              // --- END REPAIR & CREDIT RESET LOGIC ---
 
@@ -84,14 +84,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                 setUser(newUserProfile);
               })
               .catch(e => {
-                console.error("[useUser] Error creating user profile:", e);
+                logger.error("[useUser] Error creating user profile:", e, { uid: firebaseUser.uid });
               })
               .finally(() => {
                 setLoading(false);
               });
           }
         }, (error) => {
-          console.error("[useUser] Error listening to user document:", error);
+          logger.error("[useUser] Error listening to user document:", error, { uid: firebaseUser.uid });
           setUser(null);
           setLoading(false);
         });
