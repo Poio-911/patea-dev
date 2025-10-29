@@ -19,7 +19,7 @@ import { doc, writeBatch } from 'firebase/firestore';
 import { Loader2, Upload, Scissors, Sparkles } from 'lucide-react';
 import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
+import { generatePlayerCardImageAction } from '@/lib/actions/server-actions';
 
 interface ImageCropperDialogProps {
   player: {

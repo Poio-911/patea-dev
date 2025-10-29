@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -29,7 +30,7 @@ import { FirstTimeInfoDialog } from './first-time-info-dialog';
 import Link from 'next/link';
 import { AnalysisIcon } from './icons/analysis-icon';
 import { ImageCropperDialog } from '@/components/image-cropper-dialog';
-import { generatePlayerCardImageAction } from '@/lib/actions';
+import { generatePlayerCardImageAction } from '@/lib/actions/server-actions';
 import { AttributesHelpDialog } from './attributes-help-dialog';
 
 type PlayerProfileViewProps = {

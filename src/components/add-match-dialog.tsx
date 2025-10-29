@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -31,9 +32,9 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Checkbox } from './ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { generateTeamsAction } from '@/lib/actions';
+import { generateTeamsAction, getWeatherForecastAction } from '@/lib/actions/server-actions';
 import { Progress } from './ui/progress';
-import { getMatchDayForecast, GetMatchDayForecastOutput } from '@/ai/flows/get-match-day-forecast';
+import { GetMatchDayForecastOutput } from '@/ai/flows/get-match-day-forecast';
 import { Switch } from './ui/switch';
 import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
@@ -243,11 +244,13 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 const matchDateTime = new Date(dateObj);
                 matchDateTime.setHours(hours, minutes);
 
-                const forecast = await getMatchDayForecast({
+                const forecast = await getWeatherForecastAction({
                     location: watchedLocation.address,
                     date: matchDateTime.toISOString(),
                 });
-                setWeather(forecast);
+                if('description' in forecast) {
+                    setWeather(forecast);
+                }
             } catch (error) {
                 console.error("Failed to fetch weather", error);
                 setWeather(null);
@@ -429,7 +432,10 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         if ('error' in teamGenerationResult) {
             throw new Error(teamGenerationResult.error || 'No se pudieron generar los equipos.');
         }
-        finalTeams = teamGenerationResult.teams || [];
+        if (!teamGenerationResult.teams) {
+            throw new Error('La respuesta de la IA no contiene equipos.');
+        }
+        finalTeams = teamGenerationResult.teams;
     }
 
     const newMatchRef = doc(collection(firestore, 'matches'));
