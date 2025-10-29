@@ -19,12 +19,14 @@ import { doc, writeBatch } from 'firebase/firestore';
 import { Loader2, Upload, Scissors, Sparkles } from 'lucide-react';
 import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import { generatePlayerCardImageAction } from '@/lib/actions';
+import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
 
 interface ImageCropperDialogProps {
   player: {
     photoUrl?: string;
   };
+  onGenerateAI: () => Promise<void>;
+  isGeneratingAI: boolean;
   onSaveComplete?: (newUrl: string) => void;
   children: React.ReactNode;
 }
@@ -65,13 +67,12 @@ async function getCroppedImg(
 }
 
 
-export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCropperDialogProps) {
+export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, onSaveComplete, children }: ImageCropperDialogProps) {
   const [open, setOpen] = useState(false);
   const [imgSrc, setImgSrc] = useState('');
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [isUploading, setIsUploading] = useState(false);
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const { user } = useUser();
@@ -93,44 +94,6 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
         setImgSrc(player.photoUrl || '');
     }
   }
-
-  const handleGenerateAIPhoto = async () => {
-    if (!user?.uid) return;
-
-    setIsGeneratingAI(true);
-    try {
-      const result = await generatePlayerCardImageAction(user.uid);
-
-      if ('error' in result) {
-        toast({
-          variant: 'destructive',
-          title: 'Error al generar imagen',
-          description: result.error,
-        });
-        return;
-      }
-      
-      if (result.newPhotoURL && onSaveComplete) {
-        onSaveComplete(result.newPhotoURL);
-      }
-
-      toast({
-        title: 'Foto generada con éxito',
-        description: 'Tu foto profesional ha sido creada con IA.',
-      });
-
-      setOpen(false);
-    } catch (error: any) {
-      console.error('Error generating AI photo:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error al generar imagen',
-        description: error.message || 'No se pudo generar la imagen con IA.',
-      });
-    } finally {
-      setIsGeneratingAI(false);
-    }
-  };
 
   const handleSaveCrop = async () => {
     if (!completedCrop || !imgRef.current) {
@@ -246,7 +209,7 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
             {user && ( // Only show AI generation for logged-in users
               <Button
                   type="button"
-                  onClick={handleGenerateAIPhoto}
+                  onClick={onGenerateAI}
                   disabled={isUploading || isGeneratingAI}
                   className="relative"
               >

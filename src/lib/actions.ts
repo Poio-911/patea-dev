@@ -1,4 +1,3 @@
-
 'use server';
 
 import { generateBalancedTeams, GenerateBalancedTeamsInput } from '@/ai/flows/generate-balanced-teams';
@@ -8,12 +7,16 @@ import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-
 import { coachConversation, type CoachConversationInput } from '@/ai/flows/coach-conversation';
 import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '@/ai/flows/detect-player-patterns';
 import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation } from './types';
-import { adminApp, adminDb, adminAuth, adminStorage } from '@/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
 import { logger } from './logger';
-import { AppError, ErrorCodes, ErrorMessages, createError } from './errors';
-import { getAuthenticatedUser, validatePlayerOwnership } from './auth-helpers';
-import { generatePlayerCardImageAction as generatePlayerCardImageActionInternal } from './actions/image-generation';
+
+// NOTE: This file should only contain actions safe for both client and server import.
+// Server-only logic (using firebase-admin) has been moved to sub-directories (e.g., /actions/image-generation.ts).
+
+// This function is kept here as an example, but its implementation using firebase-admin
+// should ideally be in a separate, server-only file if it were complex.
+// For now, we assume getPlayerEvaluationsAction and other DB logic will be handled
+// by client-side SDK calls or other server actions.
+import { adminDb } from '@/firebase/admin';
 
 export async function generateTeamsAction(players: Player[]) {
   if (!players || players.length < 2) {
@@ -39,6 +42,7 @@ export async function generateTeamsAction(players: Player[]) {
       throw new Error('La respuesta de la IA no contiene equipos.');
     }
     
+    // This logic ensures the original player UIDs are preserved.
     result.teams.forEach(team => {
         team.players.forEach(player => {
             const originalPlayer = players.find(p => p.name === player.displayName && p.position === player.position);
@@ -140,11 +144,6 @@ export async function findBestFitPlayerAction(input: Omit<FindBestFitPlayerInput
         return { error: error.message || 'La IA no pudo procesar la solicitud en este momento.' };
     }
 }
-
-export async function generatePlayerCardImageAction(userId: string) {
-    return generatePlayerCardImageActionInternal(userId);
-}
-
 
 export async function coachConversationAction(
   playerId: string,
@@ -272,31 +271,5 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
   } catch (error: any) {
     logger.error('Error detecting player patterns', error, { playerId });
     return { error: error.message || 'No se pudo analizar el rendimiento del jugador.' };
-  }
-}
-
-export async function updatePlayerAction(playerId: string, updates: Partial<Player>) {
-  try {
-    const user = await getAuthenticatedUser();
-    logger.info('Updating player', { playerId, userId: user.uid, updates });
-
-    const player = await validatePlayerOwnership(playerId, user.uid);
-
-    if (updates.ovr && (updates.ovr < 1 || updates.ovr > 99)) {
-      throw createError(ErrorCodes.VAL_OUT_OF_RANGE, 'El OVR debe estar entre 1 y 99', 400, { ovr: updates.ovr });
-    }
-
-    await adminDb.collection('players').doc(playerId).update(updates);
-
-    logger.info('Player updated successfully', { playerId });
-    return { success: true, player: { ...player, ...updates } };
-  } catch (error) {
-    logger.error('Failed to update player', error, { playerId });
-
-    if (error instanceof AppError) {
-      return { success: false, error: ErrorMessages[error.code], code: error.code };
-    }
-
-    return { success: false, error: ErrorMessages.UNKNOWN_ERROR, code: ErrorCodes.UNKNOWN_ERROR };
   }
 }
