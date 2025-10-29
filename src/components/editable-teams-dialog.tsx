@@ -27,6 +27,15 @@ interface EditableTeamsDialogProps {
   open: boolean;
 }
 
+// This is the simpler player type used within the Match.teams array
+type TeamPlayer = {
+  uid: string;
+  displayName: string;
+  position: string;
+  ovr: number;
+};
+
+
 export function EditableTeamsDialog({ match, onOpenChange, open }: EditableTeamsDialogProps) {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
@@ -73,9 +82,9 @@ export function EditableTeamsDialog({ match, onOpenChange, open }: EditableTeams
               <div key={team.id} className="p-4 border rounded-lg">
                 <h3 className="font-bold text-lg mb-2">{(team as Team).name}</h3>
                 <div className="space-y-2">
-                  {(team as Team).players.map((player: Player) => (
-                     <div key={player.id} className="p-2 border rounded-md bg-background">
-                       {player.name}
+                  {(team as Team).players.map((player: TeamPlayer) => (
+                     <div key={player.uid} className="p-2 border rounded-md bg-background">
+                       {player.displayName}
                      </div>
                   ))}
                 </div>
