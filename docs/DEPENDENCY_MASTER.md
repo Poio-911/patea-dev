@@ -29,7 +29,6 @@ Define las dependencias del proyecto, los scripts de `npm` y la metadata general
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
-    "@dnd-kit/sortable": "^8.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@genkit-ai/google-genai": "1.21.0",
     "@genkit-ai/next": "1.21.0",

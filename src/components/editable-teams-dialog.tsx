@@ -1,292 +1,85 @@
-'use client';
+# Lógica de Grupos y Equipos
 
-import { useState } from 'react';
-import {
-  DndContext,
-  DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  closestCenter,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import type { Match, Player } from '@/lib/types';
-import { GripVertical, Save, X, Info } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { JerseyPreview } from './team-builder/jersey-preview';
-import { useToast } from '@/hooks/use-toast';
-import { doc, updateDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+## 1. Resumen
 
-type EditableTeamsDialogProps = {
-  match: Match;
-  children: React.ReactNode;
-};
+La gestión de grupos y equipos es una funcionalidad central de la aplicación. Permite a los usuarios crear comunidades cerradas (`Grupos`), añadir jugadores a ellas y, más importante, formar `Equipos` persistentes dentro de esos grupos, con su propia identidad (nombre y camiseta).
 
-// Estilos para badges de posiciones
-const positionBadgeStyles: Record<Player['position'], string> = {
-  DEL: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
-  MED: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300',
-  DEF: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
-  POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
-};
+---
 
-// Componente para cada jugador arrastrable
-interface SortablePlayerProps {
-  player: any;
-  matchPlayer?: any;
-}
+## 2. Gestión de Grupos
 
-function SortablePlayer({ player, matchPlayer }: SortablePlayerProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: player.uid,
-  });
+-   **Creación y Unión**: Los usuarios pueden crear sus propios grupos o unirse a los de otros mediante un código de invitación.
+-   **Grupo Activo**: La aplicación siempre opera en el contexto de un "grupo activo". El usuario puede cambiar entre sus grupos desde el menú de perfil.
+-   **Página Principal (`/groups`)**: Este es el centro de mando. Aquí, el usuario ve los equipos de su grupo activo, estadísticas de los jugadores (Top OVR, Goleadores) y tiene los botones para crear o unirse a un grupo.
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
+---
 
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        "flex items-center justify-between p-2 rounded-md bg-background border-2",
-        isDragging ? "border-primary shadow-lg" : "border-transparent hover:bg-muted"
-      )}
-    >
-      <div className="flex items-center gap-3 flex-1">
-        {/* Icono de drag */}
-        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
-        </div>
-        <Avatar className="h-9 w-9">
-          <AvatarImage src={matchPlayer?.photoUrl} alt={player.displayName} />
-          <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <p className="font-medium">{player.displayName}</p>
-      </div>
-      <Badge
-        variant="outline"
-        className={cn("text-sm", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}
-      >
-        {player.ovr} <span className="ml-1 opacity-75">{player.position}</span>
-      </Badge>
-    </div>
-  );
-}
+## 3. Gestión de Equipos Persistentes
 
-export function EditableTeamsDialog({ match, children }: EditableTeamsDialogProps) {
-  const [teams, setTeams] = useState(match.teams || []);
-  const [activePlayer, setActivePlayer] = useState<any>(null);
-  const [open, setOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const { toast } = useToast();
-  const firestore = useFirestore();
+Esta funcionalidad permite crear "clubes" o "plantillas" fijas dentro de un grupo más grande.
 
-  // Configurar sensores para el drag
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // Mover 8px antes de activar drag
-      },
-    })
-  );
+### a. Flujo de Creación de Equipo (`CreateTeamDialog.tsx`)
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    const player = teams.flatMap(t => t.players).find(p => p.uid === active.id);
-    setActivePlayer(player);
-  };
+Se activa desde la página `/groups` y consta de un proceso de 2 pasos:
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActivePlayer(null);
+1.  **Paso 1: Identidad del Equipo**
+    -   **Nombre del Equipo**: El usuario ingresa un nombre para su equipo.
+    -   **Diseño de Camiseta**: Se presenta una interfaz visual (`JerseyDesigner.tsx`) para diseñar la camiseta.
 
-    if (!over) return;
+2.  **Paso 2: Selección de Jugadores**
+    -   El usuario ve una lista de todos los jugadores del grupo activo.
+    -   Puede seleccionar quiénes formarán parte del plantel de este nuevo equipo.
+    -   Se requiere seleccionar al menos un jugador.
 
-    // Encontrar equipo de origen y destino
-    const activePlayerId = active.id as string;
-    let sourceTeamIndex = -1;
-    let playerIndex = -1;
+Al finalizar, se crea un nuevo documento en la colección `/teams` de Firestore. El paso de asignar dorsales se eliminó para agilizar la creación.
 
-    teams.forEach((team, teamIdx) => {
-      const pIdx = team.players.findIndex(p => p.uid === activePlayerId);
-      if (pIdx !== -1) {
-        sourceTeamIndex = teamIdx;
-        playerIndex = pIdx;
-      }
-    });
+### b. Diseño de Camisetas (`JerseyDesigner.tsx`)
 
-    const overTeamId = over.data.current?.sortable?.containerId || over.id;
-    const targetTeamIndex = teams.findIndex(t => t.name === overTeamId);
+-   **Selección de Patrón**: En lugar de una lista de texto, el usuario ve una **grilla visual** con íconos que representan cada diseño (lisa, franjas, etc.).
+-   **Selección de Colores**: Paletas de colores predefinidas y un selector de color personalizado para los colores primario y secundario.
+-   **Vista Previa en Vivo (`JerseyPreview.tsx`)**: Un componente muestra en tiempo real cómo se verá la camiseta con el patrón y los colores seleccionados.
 
-    if (sourceTeamIndex === -1 || targetTeamIndex === -1) return;
-    if (sourceTeamIndex === targetTeamIndex) return; // Mismo equipo
+### c. Visualización de Equipos
 
-    // Mover jugador entre equipos
-    const newTeams = [...teams];
-    const [movedPlayer] = newTeams[sourceTeamIndex].players.splice(playerIndex, 1);
-    newTeams[targetTeamIndex].players.push(movedPlayer);
+-   **Tarjeta de Equipo (`TeamCard.tsx`)**: En la página de grupos, cada equipo se muestra en una tarjeta que incluye:
+    -   Una vista previa de su camiseta.
+    -   Nombre y cantidad de jugadores.
+    -   Una lista de avatares de algunos de sus miembros.
+    -   Es **clickeable** y lleva a la página de detalle del equipo.
 
-    // Recalcular OVR promedio de ambos equipos
-    newTeams[sourceTeamIndex].averageOVR =
-      newTeams[sourceTeamIndex].players.reduce((sum, p) => sum + p.ovr, 0) /
-      newTeams[sourceTeamIndex].players.length;
+-   **Página de Detalle del Equipo (`/groups/teams/[id]`)**:
+    -   Muestra la camiseta en un tamaño más grande.
+    -   Presenta el plantel completo del equipo, dividido en **Titulares** y **Suplentes**.
+    -   Cada jugador (`TeamRosterPlayer.tsx`) muestra su **dorsal, avatar, nombre y OVR**.
+    -   Un menú de 3 puntos en cada jugador permite al organizador **editar el dorsal y el estado** (titular/suplente) a través de un diálogo (`SetPlayerStatusDialog.tsx`).
+    -   Muestra los **próximos partidos** del equipo y su **historial**.
 
-    newTeams[targetTeamIndex].averageOVR =
-      newTeams[targetTeamIndex].players.reduce((sum, p) => sum + p.ovr, 0) /
-      newTeams[targetTeamIndex].players.length;
+---
 
-    setTeams(newTeams);
-  };
+## 4. Estructura de Datos (`backend.json`)
 
-  const handleSave = async () => {
-    if (!firestore) return;
-    setIsSaving(true);
+La entidad clave para esta funcionalidad es `groupTeam`.
 
-    try {
-      const matchRef = doc(firestore, 'matches', match.id);
-      await updateDoc(matchRef, { teams });
+-   **`/teams/{teamId}`** (`groupTeam`):
+    -   `name`: Nombre del equipo.
+    -   `groupId`: A qué grupo pertenece.
+    -   `jersey`: Objeto con `type`, `primaryColor` y `secondaryColor`.
+    -   `members`: Un **array de objetos**, donde cada objeto contiene el `playerId`, su `number` (dorsal) y su `status` ('titular' o 'suplente').
+    -   `createdBy`: El UID del usuario que creó el equipo.
+    -   `createdAt`: Fecha de creación.
 
-      toast({
-        title: '¡Equipos actualizados!',
-        description: 'Los cambios en los equipos se guardaron correctamente.',
-      });
-      setOpen(false);
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error al guardar',
-        description: 'No se pudieron guardar los cambios en los equipos.',
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
+---
 
-  const handleCancel = () => {
-    setTeams(match.teams || []);
-    setOpen(false);
-  };
+## 5. Componentes Clave
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{match.title} - Editor de Equipos</DialogTitle>
-          <DialogDescription>
-            Arrastra y suelta jugadores entre equipos para reorganizarlos
-          </DialogDescription>
-        </DialogHeader>
-
-        <Alert className="my-4">
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            Arrastra los jugadores de un equipo a otro para equilibrar las formaciones.
-            El OVR promedio se actualiza automáticamente.
-          </AlertDescription>
-        </Alert>
-
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-            {teams.map((team, index) => (
-              <Card key={team.name} className="border-2">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-3">
-                      {team.jersey && <JerseyPreview jersey={team.jersey} size="sm" />}
-                      <div>
-                        <CardTitle className="text-lg">{team.name}</CardTitle>
-                        <Badge variant="secondary" className="mt-1">
-                          OVR Promedio: {team.averageOVR.toFixed(1)}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <SortableContext
-                    id={team.name}
-                    items={team.players.map(p => p.uid)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div className="space-y-2">
-                      {team.players.map(player => {
-                        const matchPlayer = match.players.find(p => p.uid === player.uid);
-                        return (
-                          <SortablePlayer
-                            key={player.uid}
-                            player={player}
-                            matchPlayer={matchPlayer}
-                          />
-                        );
-                      })}
-                    </div>
-                  </SortableContext>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Overlay durante el drag */}
-          <DragOverlay>
-            {activePlayer && (
-              <div className="flex items-center gap-3 p-2 rounded-md bg-primary text-primary-foreground shadow-lg">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage
-                    src={match.players.find(p => p.uid === activePlayer.uid)?.photoUrl}
-                    alt={activePlayer.displayName}
-                  />
-                  <AvatarFallback>{activePlayer.displayName.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <p className="font-medium">{activePlayer.displayName}</p>
-                <Badge variant="secondary">{activePlayer.ovr}</Badge>
-              </div>
-            )}
-          </DragOverlay>
-        </DndContext>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
-            <X className="mr-2 h-4 w-4" />
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            <Save className="mr-2 h-4 w-4" />
-            {isSaving ? 'Guardando...' : 'Guardar Cambios'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+-   `src/app/groups/page.tsx`: Página principal que orquesta la vista.
+-   `src/components/team-builder/team-list.tsx`: Muestra la lista de equipos y el botón para crear uno nuevo.
+-   `src/components/create-team-dialog.tsx`: El diálogo modal con el flujo de creación de 2 pasos.
+-   `src/components/team-builder/jersey-designer.tsx`: La interfaz para diseñar la camiseta.
+-   `src/components/team-builder/jersey-preview.tsx`: Muestra la camiseta en SVG.
+-   `src/components/team-builder/team-card.tsx`: La tarjeta de resumen de cada equipo.
+-   `src/app/groups/teams/[id]/page.tsx`: La página de detalle de un equipo, que es el centro de gestión táctica.
+-   `src/components/team-roster-player.tsx`: La tarjeta individual para cada jugador en el plantel del equipo.
+-   `src/components/set-player-status-dialog.tsx`: El diálogo para editar el estado y dorsal de un jugador.
+-   `src/components/groups/upcoming-matches-feed.tsx`: Componente que muestra los próximos partidos de un equipo.
+-   `src/lib/jersey-templates.ts`: Archivo central que define todos los patrones de camisetas y sus SVGs.

@@ -83,4 +83,3 @@ La entidad clave para esta funcionalidad es `groupTeam`.
 -   `src/components/set-player-status-dialog.tsx`: El diálogo para editar el estado y dorsal de un jugador.
 -   `src/components/groups/upcoming-matches-feed.tsx`: Componente que muestra los próximos partidos de un equipo.
 -   `src/lib/jersey-templates.ts`: Archivo central que define todos los patrones de camisetas y sus SVGs.
-
