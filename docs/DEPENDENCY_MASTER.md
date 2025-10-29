@@ -13,7 +13,6 @@ Define las dependencias del proyecto, los scripts de `npm` y la metadata general
   "name": "nextn",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "next dev",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
@@ -28,10 +27,8 @@ Define las dependencias del proyecto, los scripts de `npm` y la metadata general
     "test:debug": "playwright test --debug"
   },
   "dependencies": {
-    "@dnd-kit/core": "^6.1.0",
-    "@dnd-kit/utilities": "^3.2.2",
-    "@genkit-ai/google-genai": "1.21.0",
-    "@genkit-ai/next": "1.21.0",
+    "@genkit-ai/google-genai": "0.5.2",
+    "@genkit-ai/next": "0.5.2",
     "@hookform/resolvers": "3.10.0",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
@@ -67,7 +64,7 @@ Define las dependencias del proyecto, los scripts de `npm` y la metadata general
     "firebase": "^11.9.1",
     "firebase-admin": "^12.2.0",
     "framer-motion": "^11.18.2",
-    "genkit": "1.21.0",
+    "genkit": "0.5.2",
     "lucide-react": "^0.475.0",
     "nanoid": "^5.0.7",
     "next": "14.2.5",
@@ -92,7 +89,7 @@ Define las dependencias del proyecto, los scripts de `npm` y la metadata general
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.1",
     "@types/uuid": "^10.0.0",
-    "genkit-cli": "1.21.0",
+    "genkit-cli": "0.5.2",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"

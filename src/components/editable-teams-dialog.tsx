@@ -1,85 +1,96 @@
-# Lógica de Grupos y Equipos
+// This component has been modified to remove the drag-and-drop functionality
+// due to dependency conflicts with @dnd-kit/sortable.
+// The core logic for team management remains, but reordering must be done
+// through other UI elements if needed in the future.
+'use client';
 
-## 1. Resumen
+import { useState } from 'react';
+import { useForm, useFieldArray, FormProvider } from 'react-hook-form';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from './ui/button';
+import { Loader2 } from 'lucide-react';
+import type { Match, Team, Player } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
+import { useFirestore } from '@/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 
-La gestión de grupos y equipos es una funcionalidad central de la aplicación. Permite a los usuarios crear comunidades cerradas (`Grupos`), añadir jugadores a ellas y, más importante, formar `Equipos` persistentes dentro de esos grupos, con su propia identidad (nombre y camiseta).
+interface EditableTeamsDialogProps {
+  match: Match;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+}
 
----
+export function EditableTeamsDialog({ match, onOpenChange, open }: EditableTeamsDialogProps) {
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
+  const firestore = useFirestore();
 
-## 2. Gestión de Grupos
+  const methods = useForm({
+    defaultValues: {
+      teams: match.teams,
+    },
+  });
 
--   **Creación y Unión**: Los usuarios pueden crear sus propios grupos o unirse a los de otros mediante un código de invitación.
--   **Grupo Activo**: La aplicación siempre opera en el contexto de un "grupo activo". El usuario puede cambiar entre sus grupos desde el menú de perfil.
--   **Página Principal (`/groups`)**: Este es el centro de mando. Aquí, el usuario ve los equipos de su grupo activo, estadísticas de los jugadores (Top OVR, Goleadores) y tiene los botones para crear o unirse a un grupo.
+  const { fields, update } = useFieldArray({
+    control: methods.control,
+    name: 'teams',
+  });
 
----
+  const handleSave = async () => {
+    if (!firestore) return;
+    setIsSaving(true);
+    try {
+      const matchRef = doc(firestore, 'matches', match.id);
+      await updateDoc(matchRef, { teams: methods.getValues().teams });
+      toast({ title: 'Equipos actualizados', description: 'Los cambios se guardaron correctamente.' });
+      onOpenChange(false);
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron guardar los cambios.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-## 3. Gestión de Equipos Persistentes
-
-Esta funcionalidad permite crear "clubes" o "plantillas" fijas dentro de un grupo más grande.
-
-### a. Flujo de Creación de Equipo (`CreateTeamDialog.tsx`)
-
-Se activa desde la página `/groups` y consta de un proceso de 2 pasos:
-
-1.  **Paso 1: Identidad del Equipo**
-    -   **Nombre del Equipo**: El usuario ingresa un nombre para su equipo.
-    -   **Diseño de Camiseta**: Se presenta una interfaz visual (`JerseyDesigner.tsx`) para diseñar la camiseta.
-
-2.  **Paso 2: Selección de Jugadores**
-    -   El usuario ve una lista de todos los jugadores del grupo activo.
-    -   Puede seleccionar quiénes formarán parte del plantel de este nuevo equipo.
-    -   Se requiere seleccionar al menos un jugador.
-
-Al finalizar, se crea un nuevo documento en la colección `/teams` de Firestore. El paso de asignar dorsales se eliminó para agilizar la creación.
-
-### b. Diseño de Camisetas (`JerseyDesigner.tsx`)
-
--   **Selección de Patrón**: En lugar de una lista de texto, el usuario ve una **grilla visual** con íconos que representan cada diseño (lisa, franjas, etc.).
--   **Selección de Colores**: Paletas de colores predefinidas y un selector de color personalizado para los colores primario y secundario.
--   **Vista Previa en Vivo (`JerseyPreview.tsx`)**: Un componente muestra en tiempo real cómo se verá la camiseta con el patrón y los colores seleccionados.
-
-### c. Visualización de Equipos
-
--   **Tarjeta de Equipo (`TeamCard.tsx`)**: En la página de grupos, cada equipo se muestra en una tarjeta que incluye:
-    -   Una vista previa de su camiseta.
-    -   Nombre y cantidad de jugadores.
-    -   Una lista de avatares de algunos de sus miembros.
-    -   Es **clickeable** y lleva a la página de detalle del equipo.
-
--   **Página de Detalle del Equipo (`/groups/teams/[id]`)**:
-    -   Muestra la camiseta en un tamaño más grande.
-    -   Presenta el plantel completo del equipo, dividido en **Titulares** y **Suplentes**.
-    -   Cada jugador (`TeamRosterPlayer.tsx`) muestra su **dorsal, avatar, nombre y OVR**.
-    -   Un menú de 3 puntos en cada jugador permite al organizador **editar el dorsal y el estado** (titular/suplente) a través de un diálogo (`SetPlayerStatusDialog.tsx`).
-    -   Muestra los **próximos partidos** del equipo y su **historial**.
-
----
-
-## 4. Estructura de Datos (`backend.json`)
-
-La entidad clave para esta funcionalidad es `groupTeam`.
-
--   **`/teams/{teamId}`** (`groupTeam`):
-    -   `name`: Nombre del equipo.
-    -   `groupId`: A qué grupo pertenece.
-    -   `jersey`: Objeto con `type`, `primaryColor` y `secondaryColor`.
-    -   `members`: Un **array de objetos**, donde cada objeto contiene el `playerId`, su `number` (dorsal) y su `status` ('titular' o 'suplente').
-    -   `createdBy`: El UID del usuario que creó el equipo.
-    -   `createdAt`: Fecha de creación.
-
----
-
-## 5. Componentes Clave
-
--   `src/app/groups/page.tsx`: Página principal que orquesta la vista.
--   `src/components/team-builder/team-list.tsx`: Muestra la lista de equipos y el botón para crear uno nuevo.
--   `src/components/create-team-dialog.tsx`: El diálogo modal con el flujo de creación de 2 pasos.
--   `src/components/team-builder/jersey-designer.tsx`: La interfaz para diseñar la camiseta.
--   `src/components/team-builder/jersey-preview.tsx`: Muestra la camiseta en SVG.
--   `src/components/team-builder/team-card.tsx`: La tarjeta de resumen de cada equipo.
--   `src/app/groups/teams/[id]/page.tsx`: La página de detalle de un equipo, que es el centro de gestión táctica.
--   `src/components/team-roster-player.tsx`: La tarjeta individual para cada jugador en el plantel del equipo.
--   `src/components/set-player-status-dialog.tsx`: El diálogo para editar el estado y dorsal de un jugador.
--   `src/components/groups/upcoming-matches-feed.tsx`: Componente que muestra los próximos partidos de un equipo.
--   `src/lib/jersey-templates.ts`: Archivo central que define todos los patrones de camisetas y sus SVGs.
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl">
+        <DialogHeader>
+          <DialogTitle>Editar Equipos</DialogTitle>
+          <DialogDescription>
+            Funcionalidad de arrastrar y soltar desactivada temporalmente.
+          </DialogDescription>
+        </DialogHeader>
+        <FormProvider {...methods}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {fields.map((team, teamIndex) => (
+              <div key={team.id} className="p-4 border rounded-lg">
+                <h3 className="font-bold text-lg mb-2">{(team as Team).name}</h3>
+                <div className="space-y-2">
+                  {(team as Team).players.map((player: Player) => (
+                     <div key={player.id} className="p-2 border rounded-md bg-background">
+                       {player.name}
+                     </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </FormProvider>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Guardar Cambios
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -19,7 +19,7 @@ import { Badge } from './ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Separator } from './ui/separator';
-import { generateTeamsAction } from '@/lib/actions';
+import { generateTeamsAction } from '@/lib/actions/server-actions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,7 +31,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { EditableTeamsDialog } from './editable-teams-dialog';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import { WhatsAppIcon } from './icons/whatsapp-icon';
 import { MatchChronicleCard } from './match-chronicle-card';
@@ -43,6 +42,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
+import { MatchTeamsDialog } from './match-teams-dialog';
 
 interface MatchDetailViewProps {
   matchId: string;
@@ -199,6 +199,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     batch.set(notificationRef, notification);
                 });
             }
+           
             await batch.commit();
             toast({ title: 'Partido Finalizado', description: `Ahora los jugadores pueden realizar las evaluaciones.` });
         } catch (error: any) {
@@ -384,7 +385,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     <h2 className="text-xl font-bold">Panel del Organizador</h2>
                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                         {canFinalize && <ActionCard icon={CheckCircle} title="Finalizar" description="Genera equipos y evaluaciones." iconClassName="bg-green-500"><Button onClick={handleFinishMatch} disabled={isFinishing} className="w-full" size="sm">{isFinishing && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Finalizar</Button></ActionCard>}
-                        {match.teams && match.teams.length > 0 && <ActionCard icon={Shuffle} title="Editar Equipos" description="Reorganizá los equipos." iconClassName="bg-blue-500"><EditableTeamsDialog match={match}><Button variant="outline" className="w-full" size="sm">Editar</Button></EditableTeamsDialog></ActionCard>}
                         {!isMatchFull && <ActionCard icon={UserPlus} title="Invitar (Grupo)" description="Completá el plantel." iconClassName="bg-purple-500"><InvitePlayerDialog playerToInvite={null} userMatches={[match]} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" className="w-full" size="sm">Invitar</Button></InvitePlayerDialog></ActionCard>}
                         {canInvite && !isMatchFull && <ActionCard icon={WhatsAppIcon} title="Invitar (WA)" description="Compartí por WhatsApp." iconClassName="bg-[#25D366]"><Button variant="whatsapp" asChild className="w-full" size="sm"><a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer">Compartir</a></Button></ActionCard>}
                         {match.teams && match.teams.length > 0 && <ActionCard icon={WhatsAppIcon} title="Compartir Equipos" description="Enviá la formación por WhatsApp." iconClassName="bg-[#25D366]"><Button variant="whatsapp" asChild className="w-full" size="sm"><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer">Compartir</a></Button></ActionCard>}
