@@ -4,10 +4,8 @@
  * It is marked with 'use server' to ensure it only runs on the server.
  */
 
-import { initializeApp, getApps, App as AdminApp, cert } from 'firebase-admin/app';
-import { getAuth as getAdminAuth } from 'firebase-admin/auth';
-import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
-import { getStorage as getAdminStorage } from 'firebase-admin/storage';
+import { adminDb, adminAuth, adminStorage } from '@/firebase/admin-init';
+import { FieldValue } from 'firebase-admin/firestore';
 import { generateBalancedTeams, GenerateBalancedTeamsInput } from '@/ai/flows/generate-balanced-teams';
 import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/flows/suggest-player-improvements';
 import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-match-day-forecast';
@@ -17,41 +15,7 @@ import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '@/ai/flows
 import { generatePlayerCardImage } from '@/ai/flows/generate-player-card-image';
 import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation } from '../types';
 import { logger } from '../logger';
-import { FieldValue } from 'firebase-admin/firestore';
 
-// --- Firebase Admin Initialization ---
-let adminApp: AdminApp;
-
-const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-
-if (!getApps().length) {
-    if (serviceAccountKey) {
-        try {
-            const serviceAccount = JSON.parse(serviceAccountKey);
-            adminApp = initializeApp({
-                credential: cert(serviceAccount),
-                projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-                storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-            });
-        } catch (error) {
-            console.error("Error parsing FIREBASE_SERVICE_ACCOUNT_KEY:", error);
-            throw new Error("Failed to initialize Firebase Admin SDK. Service account key is malformed.");
-        }
-    } else {
-        // This path is for environments like Google Cloud Run where the SDK can auto-initialize.
-        adminApp = initializeApp({
-            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-            storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-        });
-    }
-} else {
-  adminApp = getApps()[0];
-}
-
-const adminDb = getAdminFirestore(adminApp);
-const adminAuth = getAdminAuth(adminApp);
-const adminStorage = getAdminStorage(adminApp).bucket();
-// --- End Firebase Admin Initialization ---
 
 // --- Server Actions ---
 
@@ -304,98 +268,5 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
   } catch (error: any) {
     logger.error('Error detecting player patterns', error, { playerId });
     return { error: error.message || 'No se pudo analizar el rendimiento del jugador.' };
-  }
-}
-
-
-export async function generatePlayerCardImageAction(userId: string) {
-  const playerRef = adminDb.doc(`players/${userId}`);
-
-  try {
-    const playerSnap = await playerRef.get();
-
-    if (!playerSnap.exists) {
-      return { error: 'No se encontró tu perfil de jugador.' };
-    }
-
-    const player = playerSnap.data() as Player;
-    const credits = player.cardGenerationCredits;
-
-    if (credits !== undefined && credits <= 0) {
-      return { error: 'No te quedan créditos para generar imágenes este mes.' };
-    }
-
-    if (!player.photoUrl) {
-      return { error: 'Primero debes subir una foto de perfil.' };
-    }
-    
-    if (player.photoUrl.includes('picsum.photos')) {
-      return { error: 'La generación de imágenes no funciona con fotos de marcador de posición. Por favor, sube una foto tuya real.' };
-    }
-
-    let imageBuffer: Buffer;
-    let contentType: string;
-
-    try {
-      const bucket = adminStorage;
-      const url = new URL(player.photoUrl);
-      const filePath = url.pathname.split(`/${bucket.name}/`)[1];
-      
-      if (!filePath) {
-        throw new Error("Could not determine file path from the photo URL.");
-      }
-
-      logger.info('Attempting to download file from path:', { filePath });
-
-      const file = bucket.file(decodeURIComponent(filePath));
-      const [buffer] = await file.download();
-      const [metadata] = await file.getMetadata();
-      imageBuffer = buffer;
-      contentType = metadata.contentType || 'image/jpeg';
-
-      logger.info('File downloaded successfully', { size: imageBuffer.length, contentType });
-
-    } catch (downloadError) {
-      logger.error("Error downloading image from storage", downloadError, { photoUrl: player.photoUrl });
-      return { error: "No se pudo acceder a tu foto de perfil actual. Intenta subirla de nuevo." };
-    }
-    
-    const photoDataUri = `data:${contentType};base64,${imageBuffer.toString('base64')}`;
-
-    const generatedImageDataUri = await generatePlayerCardImage(photoDataUri);
-
-    const generatedImageBuffer = Buffer.from(generatedImageDataUri.split(',')[1], 'base64');
-    const newFilePath = `profile-images/${userId}/generated_${Date.now()}.png`;
-    const newFile = adminStorage.file(newFilePath);
-    
-    await newFile.save(generatedImageBuffer, {
-      metadata: { contentType: 'image/png' },
-    });
-    
-    await newFile.makePublic();
-
-    const newPhotoURL = `https://storage.googleapis.com/${adminStorage.name}/${newFilePath}`;
-
-    const batch = adminDb.batch();
-    const userRef = adminDb.doc(`users/${userId}`);
-    batch.update(userRef, { photoURL: newPhotoURL });
-    batch.update(playerRef, {
-      photoUrl: newPhotoURL,
-      cardGenerationCredits: FieldValue.increment(-1),
-    });
-
-    const availablePlayerRef = adminDb.doc(`availablePlayers/${userId}`);
-    const availablePlayerSnap = await availablePlayerRef.get();
-    if (availablePlayerSnap.exists) {
-      batch.update(availablePlayerRef, { photoUrl: newPhotoURL });
-    }
-
-    await batch.commit();
-    await adminAuth.updateUser(userId, { photoURL: newPhotoURL });
-
-    return { success: true, newPhotoURL };
-  } catch (error: any) {
-    logger.error("Error in generatePlayerCardImageAction", error);
-    return { error: error.message || "Un error inesperado ocurrió en el servidor." };
   }
 }

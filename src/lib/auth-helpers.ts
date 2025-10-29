@@ -1,5 +1,5 @@
 import { headers } from 'next/headers';
-import { adminAuth, adminDb } from '@/firebase/admin';
+import { adminAuth, adminDb } from '@/firebase/admin-init';
 import { logger } from './logger';
 import { createError, ErrorCodes } from './errors';
 import type { Player, Match, User } from './types';

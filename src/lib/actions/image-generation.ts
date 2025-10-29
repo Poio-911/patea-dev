@@ -1,6 +1,6 @@
 'use server';
 
-import { adminApp, adminDb, adminAuth, adminStorage } from '@/firebase/admin';
+import { adminDb, adminAuth, adminStorage } from '@/firebase/admin-init';
 import { FieldValue } from 'firebase-admin/firestore';
 import { generatePlayerCardImage } from '@/ai/flows/generate-player-card-image';
 import type { Player } from '@/lib/types';
