@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { coachConversationAction } from '@/lib/actions';
+import { coachConversationAction } from '@/lib/actions/server-actions';
 import type { CoachConversationInput, CoachConversationOutput } from '@/ai/flows/coach-conversation';
 import { useUser } from '@/firebase';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
