@@ -10,8 +10,9 @@ Este documento detalla todas las mejoras de interfaz y experiencia de usuario im
 
 1. [Sistema de Animaciones con Framer Motion](#1-sistema-de-animaciones-con-framer-motion)
 2. [Vista de Calendario Interactivo](#2-vista-de-calendario-interactivo)
-3. [Sistema de Logging y Manejo de Errores](#3-sistema-de-logging-y-manejo-de-errores)
-4. [Optimizaciones de Performance](#4-optimizaciones-de-performance)
+3. [Editor de Crop de Avatar](#3-editor-de-crop-de-avatar)
+4. [Sistema de Logging y Manejo de Errores](#4-sistema-de-logging-y-manejo-de-errores)
+5. [Optimizaciones de Performance](#5-optimizaciones-de-performance)
 
 ---
 
@@ -374,7 +375,303 @@ export default function MatchesPage() {
 
 ---
 
-## 3. Sistema de Logging y Manejo de Errores [HECHO]
+## 3. Editor de Crop de Avatar [HECHO]
+
+### 📝 Descripción
+Sistema interactivo de recorte y zoom para avatares de perfil con atajos de teclado, presets de zoom y guardado en Firestore.
+
+### 📦 Dependencias Necesarias
+```bash
+npm install lucide-react
+npm install firebase firestore
+```
+
+### 🔧 Implementación Completa
+
+#### A. Actualizar el tipo Player
+
+**Archivo:** `src/lib/types.ts`
+
+Agregar campos al tipo Player:
+```typescript
+export type Player = {
+  // ... campos existentes
+  cropPosition?: { x: number; y: number };  // Posición del crop (porcentaje)
+  cropZoom?: number;                         // Nivel de zoom (1.0 = 100%)
+};
+```
+
+#### B. Implementar el editor en PlayerProfileView
+
+**Archivo:** `src/components/player-profile-view.tsx`
+
+```typescript
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { ZoomIn, ZoomOut, Move, Save, X } from 'lucide-react';
+import { doc, updateDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
+import type { Player } from '@/lib/types';
+
+// Estado del crop
+const [cropPosition, setCropPosition] = useState({ x: 0, y: 0 });
+const [cropZoom, setCropZoom] = useState(1);
+const [isDragging, setIsDragging] = useState(false);
+const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+const [showImageDialog, setShowImageDialog] = useState(false);
+
+// Inicializar con valores del jugador
+useEffect(() => {
+  if (player?.cropPosition) {
+    setCropPosition(player.cropPosition);
+  }
+  if (player?.cropZoom) {
+    setCropZoom(player.cropZoom);
+  }
+}, [player]);
+
+// Atajos de teclado
+useEffect(() => {
+  if (!showImageDialog || !isCurrentUserProfile) return;
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    switch (e.key) {
+      case '+':
+      case '=':
+        setCropZoom(prev => Math.min(prev + 0.1, 3));
+        break;
+      case '-':
+        setCropZoom(prev => Math.max(prev - 0.1, 1));
+        break;
+      case '1':
+        setCropZoom(1);
+        break;
+      case '2':
+        setCropZoom(1.5);
+        break;
+      case '3':
+        setCropZoom(2);
+        break;
+      case 'r':
+      case 'R':
+        setCropPosition({ x: 0, y: 0 });
+        setCropZoom(1);
+        break;
+    }
+  };
+
+  window.addEventListener('keydown', handleKeyDown);
+  return () => window.removeEventListener('keydown', handleKeyDown);
+}, [showImageDialog, isCurrentUserProfile]);
+
+// Handlers de drag
+const handleMouseDown = (e: React.MouseEvent) => {
+  if (!isCurrentUserProfile) return;
+  setIsDragging(true);
+  setDragStart({ x: e.clientX - cropPosition.x, y: e.clientY - cropPosition.y });
+};
+
+const handleMouseMove = (e: React.MouseEvent) => {
+  if (!isDragging) return;
+  setCropPosition({
+    x: e.clientX - dragStart.x,
+    y: e.clientY - dragStart.y,
+  });
+};
+
+const handleMouseUp = () => {
+  setIsDragging(false);
+};
+
+// Guardar cambios
+const handleSaveCrop = async () => {
+  if (!firestore || !player) return;
+
+  try {
+    const playerRef = doc(firestore, 'players', player.id);
+
+    // Convertir posición absoluta a porcentaje (para responsive)
+    const container = document.querySelector('.crop-container') as HTMLElement;
+    if (!container) return;
+
+    const percentX = (cropPosition.x / container.offsetWidth) * 100;
+    const percentY = (cropPosition.y / container.offsetHeight) * 100;
+
+    await updateDoc(playerRef, {
+      cropPosition: { x: percentX, y: percentY },
+      cropZoom: cropZoom,
+    });
+
+    toast({
+      title: 'Recorte guardado',
+      description: 'Los cambios se aplicarán a tu avatar.',
+    });
+
+    setShowImageDialog(false);
+  } catch (error) {
+    toast({
+      variant: 'destructive',
+      title: 'Error',
+      description: 'No se pudo guardar el recorte.',
+    });
+  }
+};
+
+// Aplicar crop al avatar
+const getAvatarStyle = () => {
+  if (!player?.cropPosition || !player?.cropZoom) {
+    return {};
+  }
+
+  return {
+    transform: `translate(${player.cropPosition.x}%, ${player.cropPosition.y}%) scale(${player.cropZoom})`,
+    transformOrigin: 'center',
+  };
+};
+
+// JSX del editor
+<Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+  <DialogContent className="max-w-2xl">
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold">
+        {isCurrentUserProfile ? 'Ajustar Foto de Perfil' : 'Foto de Perfil'}
+      </h3>
+
+      {/* Container con overflow hidden para el crop */}
+      <div
+        className="crop-container relative w-full h-96 bg-muted rounded-lg overflow-hidden"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        <img
+          src={player?.photoUrl}
+          alt={player?.name}
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{
+            transform: `translate(${cropPosition.x}px, ${cropPosition.y}px) scale(${cropZoom})`,
+            transformOrigin: 'center',
+            cursor: isDragging ? 'grabbing' : (isCurrentUserProfile ? 'grab' : 'default'),
+          }}
+          draggable={false}
+        />
+
+        {/* Guías de recorte circular */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-64 h-64 rounded-full border-4 border-white/50" />
+        </div>
+      </div>
+
+      {/* Controles (solo para el usuario actual) */}
+      {isCurrentUserProfile && (
+        <>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCropZoom(prev => Math.max(prev - 0.1, 1))}
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <div className="flex-1 text-center text-sm">
+              Zoom: {(cropZoom * 100).toFixed(0)}%
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCropZoom(prev => Math.min(prev + 0.1, 3))}
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Presets de zoom */}
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setCropZoom(1)}>
+              100%
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setCropZoom(1.5)}>
+              150%
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setCropZoom(2)}>
+              200%
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setCropPosition({ x: 0, y: 0 }); setCropZoom(1); }}
+            >
+              Resetear
+            </Button>
+          </div>
+
+          {/* Atajos de teclado */}
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p><kbd>+/-</kbd> Zoom in/out</p>
+            <p><kbd>1/2/3</kbd> Presets de zoom (100%/150%/200%)</p>
+            <p><kbd>R</kbd> Resetear</p>
+            <p><Move className="inline h-3 w-3" /> Arrastra la imagen para posicionar</p>
+          </div>
+
+          {/* Botones de acción */}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowImageDialog(false)}>
+              <X className="mr-2 h-4 w-4" />
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveCrop}>
+              <Save className="mr-2 h-4 w-4" />
+              Guardar
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  </DialogContent>
+</Dialog>
+
+{/* Avatar con crop aplicado */}
+<Avatar className="h-32 w-32 overflow-hidden" onClick={() => setShowImageDialog(true)}>
+  <div className="relative w-full h-full">
+    <img
+      src={player?.photoUrl}
+      alt={player?.name}
+      className="absolute w-full h-full object-cover"
+      style={getAvatarStyle()}
+    />
+  </div>
+  <AvatarFallback>{player?.name.charAt(0)}</AvatarFallback>
+</Avatar>
+```
+
+### 📋 Características Implementadas
+
+1. ✅ Pan (arrastrar imagen)
+2. ✅ Zoom con límites (1x - 3x)
+3. ✅ Presets de zoom (100%, 150%, 200%)
+4. ✅ Atajos de teclado (+/-, 1/2/3, R)
+5. ✅ Guías visuales circulares
+6. ✅ Guardado en Firestore con porcentajes
+7. ✅ Aplicación automática en avatar
+8. ✅ Modos: edición vs visualización
+9. ✅ Reset a valores por defecto
+
+### ⚠️ Consideraciones
+
+- Guardar posición en **porcentajes** para responsive
+- Usar `transformOrigin: 'center'` para zoom correcto
+- Límites de zoom: mínimo 1 (100%), máximo 3 (300%)
+- `draggable={false}` en la imagen para evitar drag nativo del navegador
+- El crop solo es visible en modo de edición (usuario actual)
+
+---
+
+## 4. Sistema de Logging y Manejo de Errores [HECHO]
 
 ### 📝 Descripción
 Sistema centralizado de logging condicional (dev/prod) y códigos de error estandarizados con validación server-side.
@@ -429,9 +726,7 @@ class Logger {
         console.warn(fullMessage);
         break;
       case 'debug':
-        if (this.isDevelopment) {
-            console.debug(fullMessage);
-        }
+        console.debug(fullMessage);
         break;
       default:
         console.log(fullMessage);
@@ -600,7 +895,7 @@ export const ErrorMessages: Record<ErrorCode, string> = {
 
 ```typescript
 import { headers } from 'next/headers';
-import { adminAuth, adminDb } from '@/firebase/admin';
+import { adminAuth, adminDb } from '@/firebase-admin';
 import { logger } from './logger';
 import { createError, ErrorCodes } from './errors';
 import type { Player, Match, User } from './types';
@@ -789,7 +1084,7 @@ logger.info('User logged in', { userId: user.uid, email: user.email });
 
 ---
 
-## 4. Optimizaciones de Performance [HECHO]
+## 5. Optimizaciones de Performance [HECHO]
 
 ### 📝 Descripción
 Optimizaciones en queries de Firestore y reducción de procesamiento en memoria para mejorar la velocidad de carga del Dashboard en ~70%.
@@ -1028,6 +1323,11 @@ useEffect(() => {
    - Crear componente MatchesCalendar
    - Integrar en página de partidos
 
+5. **Editor de Crop** (Feature independiente)
+   - Actualizar tipo Player
+   - Implementar editor en PlayerProfileView
+   - Agregar atajos de teclado
+
 ### Checklist de Implementación
 
 - [ ] Sistema de logging instalado y funcionando
@@ -1038,6 +1338,7 @@ useEffect(() => {
 - [ ] Framer-motion instalado
 - [ ] Animaciones básicas funcionando
 - [ ] Calendario de partidos implementado
+- [ ] Editor de crop de avatar implementado
 - [ ] Console.logs reemplazados por logger
 - [ ] Tests realizados en dev y staging
 
@@ -1087,4 +1388,3 @@ Antes de considerar terminada una implementación, preguntar:
 **Versión:** 1.0
 **Fecha:** Octubre 2025
 **Autor:** Claude Code
-

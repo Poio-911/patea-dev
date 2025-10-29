@@ -1,11 +1,15 @@
+
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
+import { config } from 'dotenv';
 
-// Esta configuración se aplica al entorno del servidor (Next.js server-side, Cloud Functions)
-// Genkit es lo suficientemente inteligente como para usar las Credenciales por Defecto de la Aplicación
-// cuando se ejecuta en un entorno de Google Cloud, por lo que no es necesario pasar una API key explícita.
+// Cargar variables de entorno desde .env
+config({ path: './.env' });
+
 export const ai = genkit({
   plugins: [
-    googleAI(),
+    googleAI({
+      apiKey: process.env.GOOGLE_GENAI_API_KEY,
+    }),
   ],
 });

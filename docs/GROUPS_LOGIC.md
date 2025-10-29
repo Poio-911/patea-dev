@@ -20,7 +20,7 @@ Esta funcionalidad permite crear "clubes" o "plantillas" fijas dentro de un grup
 
 ### a. Flujo de Creación de Equipo (`CreateTeamDialog.tsx`)
 
-Se activa desde la página `/groups` y consta de un proceso de 3 pasos:
+Se activa desde la página `/groups` y consta de un proceso de 2 pasos:
 
 1.  **Paso 1: Identidad del Equipo**
     -   **Nombre del Equipo**: El usuario ingresa un nombre para su equipo.
@@ -31,14 +31,11 @@ Se activa desde la página `/groups` y consta de un proceso de 3 pasos:
     -   Puede seleccionar quiénes formarán parte del plantel de este nuevo equipo.
     -   Se requiere seleccionar al menos un jugador.
 
-3.  **Paso 3: Asignación de Dorsales**
-    -   Para cada jugador seleccionado, el usuario debe asignar un número de camiseta (dorsal).
-
-Al finalizar, se crea un nuevo documento en la colección `/teams` de Firestore.
+Al finalizar, se crea un nuevo documento en la colección `/teams` de Firestore. El paso de asignar dorsales se eliminó para agilizar la creación.
 
 ### b. Diseño de Camisetas (`JerseyDesigner.tsx`)
 
--   **Selección de Patrón**: En lugar de una lista de texto, el usuario ve una **grilla visual** con íconos grises que representan cada diseño (lisa, franjas, etc.). Esto permite entender el patrón sin la distracción del color.
+-   **Selección de Patrón**: En lugar de una lista de texto, el usuario ve una **grilla visual** con íconos que representan cada diseño (lisa, franjas, etc.).
 -   **Selección de Colores**: Paletas de colores predefinidas y un selector de color personalizado para los colores primario y secundario.
 -   **Vista Previa en Vivo (`JerseyPreview.tsx`)**: Un componente muestra en tiempo real cómo se verá la camiseta con el patrón y los colores seleccionados.
 
@@ -52,8 +49,10 @@ Al finalizar, se crea un nuevo documento en la colección `/teams` de Firestore.
 
 -   **Página de Detalle del Equipo (`/groups/teams/[id]`)**:
     -   Muestra la camiseta en un tamaño más grande.
-    -   Presenta el plantel completo del equipo (`TeamRosterPlayer.tsx`), mostrando a cada jugador con su **dorsal, avatar, nombre y posición**.
-    -   La lista de jugadores está organizada en una grilla responsiva.
+    -   Presenta el plantel completo del equipo, dividido en **Titulares** y **Suplentes**.
+    -   Cada jugador (`TeamRosterPlayer.tsx`) muestra su **dorsal, avatar, nombre y OVR**.
+    -   Un menú de 3 puntos en cada jugador permite al organizador **editar el dorsal y el estado** (titular/suplente) a través de un diálogo (`SetPlayerStatusDialog.tsx`).
+    -   Muestra los **próximos partidos** del equipo y su **historial**.
 
 ---
 
@@ -65,7 +64,7 @@ La entidad clave para esta funcionalidad es `groupTeam`.
     -   `name`: Nombre del equipo.
     -   `groupId`: A qué grupo pertenece.
     -   `jersey`: Objeto con `type`, `primaryColor` y `secondaryColor`.
-    -   `members`: Un **array de objetos**, donde cada objeto contiene el `playerId` y su `number` (dorsal).
+    -   `members`: Un **array de objetos**, donde cada objeto contiene el `playerId`, su `number` (dorsal) y su `status` ('titular' o 'suplente').
     -   `createdBy`: El UID del usuario que creó el equipo.
     -   `createdAt`: Fecha de creación.
 
@@ -75,10 +74,13 @@ La entidad clave para esta funcionalidad es `groupTeam`.
 
 -   `src/app/groups/page.tsx`: Página principal que orquesta la vista.
 -   `src/components/team-builder/team-list.tsx`: Muestra la lista de equipos y el botón para crear uno nuevo.
--   `src/components/create-team-dialog.tsx`: El diálogo modal con el flujo de creación de 3 pasos.
+-   `src/components/create-team-dialog.tsx`: El diálogo modal con el flujo de creación de 2 pasos.
 -   `src/components/team-builder/jersey-designer.tsx`: La interfaz para diseñar la camiseta.
 -   `src/components/team-builder/jersey-preview.tsx`: Muestra la camiseta en SVG.
 -   `src/components/team-builder/team-card.tsx`: La tarjeta de resumen de cada equipo.
--   `src/app/groups/teams/[id]/page.tsx`: La página de detalle de un equipo.
+-   `src/app/groups/teams/[id]/page.tsx`: La página de detalle de un equipo, que es el centro de gestión táctica.
 -   `src/components/team-roster-player.tsx`: La tarjeta individual para cada jugador en el plantel del equipo.
--   `src/lib/jersey-templates.ts`: Archivo central que define todos los patrones de camisetas, sus SVGs y la lógica de colores.
+-   `src/components/set-player-status-dialog.tsx`: El diálogo para editar el estado y dorsal de un jugador.
+-   `src/components/groups/upcoming-matches-feed.tsx`: Componente que muestra los próximos partidos de un equipo.
+-   `src/lib/jersey-templates.ts`: Archivo central que define todos los patrones de camisetas y sus SVGs.
+
