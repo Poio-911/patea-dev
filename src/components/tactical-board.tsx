@@ -2,9 +2,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
-import { arrayMove, SortableContext, useSortable, rectSortingStrategy } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import type { Match, Team, Player } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,8 +10,16 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { Loader2, Save, Users, Shuffle } from 'lucide-react';
-import { DroppablePitchZone } from './droppable-pitch-zone';
+import { Loader2, Save, Users, MoreVertical, ArrowLeftRight, UserX } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { JerseyPreview } from './team-builder/jersey-preview';
+import { cn } from '@/lib/utils';
+import { ScrollArea } from './ui/scroll-area';
 
 interface TacticalBoardProps {
   match: Match;
@@ -27,22 +32,45 @@ const positionBadgeStyles: Record<string, string> = {
   POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
 };
 
-function SortablePlayerItem({ player, teamColor }: { player: any, teamColor: string }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: player.uid });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    borderColor: teamColor,
-  };
-
+function PlayerItem({ player, onMove, currentTeamName, otherTeam, canMove }: { player: any; onMove: (playerId: string, targetContainer: string) => void; currentTeamName: string; otherTeam: Team | null; canMove: boolean }) {
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative p-1 rounded-full bg-background border-2 shadow-lg w-14 h-14 flex items-center justify-center cursor-grab active:cursor-grabbing">
-        <Avatar className="h-12 w-12">
-            <AvatarImage src={player.photoUrl} alt={player.displayName} />
-            <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <Badge className="absolute -bottom-1 -right-1 text-[9px] px-1 h-4 border-2 border-background font-bold">{player.ovr}</Badge>
+    <div className="flex items-center justify-between p-2 rounded-md bg-background border hover:bg-muted/50">
+        <div className="flex items-center gap-3 flex-1">
+            <Avatar className="h-9 w-9">
+                <AvatarImage src={player.photoUrl} alt={player.displayName} />
+                <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="overflow-hidden">
+                <p className="font-medium truncate">{player.displayName}</p>
+                <div className="flex items-center gap-1.5">
+                    <Badge variant="outline" className={cn("text-xs", positionBadgeStyles[player.position])}>{player.position}</Badge>
+                    <Badge variant="secondary" className="text-xs">{player.ovr}</Badge>
+                </div>
+            </div>
+        </div>
+        {canMove && (
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    {otherTeam && (
+                        <DropdownMenuItem onClick={() => onMove(player.uid, otherTeam.name)}>
+                            <ArrowLeftRight className="mr-2 h-4 w-4" />
+                            Mover a {otherTeam.name}
+                        </DropdownMenuItem>
+                    )}
+                    {currentTeamName !== 'unassigned' && (
+                         <DropdownMenuItem onClick={() => onMove(player.uid, 'unassigned')}>
+                            <UserX className="mr-2 h-4 w-4" />
+                            Mover a Suplentes
+                        </DropdownMenuItem>
+                    )}
+                </DropdownMenuContent>
+            </DropdownMenu>
+        )}
     </div>
   );
 }
@@ -53,76 +81,48 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
     const assignedPlayerIds = new Set(initialMatch.teams?.flatMap(t => t.players.map(p => p.uid)));
     return initialMatch.players.filter(p => !assignedPlayerIds.has(p.uid));
   });
-  const [activeId, setActiveId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 250,
-        tolerance: 5,
-      },
-    })
-  );
-  
-  const allPlayerIds = useMemo(() => teams.flatMap(t => t.players.map(p => p.uid)).concat(unassignedPlayers.map(p => p.uid)), [teams, unassignedPlayers]);
-
-  const findContainer = (id: string) => {
-    if (unassignedPlayers.some(p => p.uid === id)) return 'unassigned';
-    for (const team of teams) {
-      if (team.players.some(p => p.uid === id)) return team.name;
-    }
-    return null;
-  };
-  
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  };
-  
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveId(null);
-    if (!over || active.id === over.id) return;
-
-    const sourceContainer = findContainer(active.id as string);
-    const targetContainer = over.data.current?.sortable?.containerId || over.id;
-    
-    if (!sourceContainer || !targetContainer || sourceContainer === targetContainer) return;
-    
+  const handleMovePlayer = (playerId: string, targetContainer: string) => {
     let playerToMove: any;
-    let newTeams = [...teams];
+    let sourceContainer: string | null = null;
+    const newTeams = JSON.parse(JSON.stringify(teams)) as Team[];
     let newUnassigned = [...unassignedPlayers];
 
-    // Remove from source
-    if (sourceContainer === 'unassigned') {
-        const index = newUnassigned.findIndex(p => p.uid === active.id);
+    // Find and remove from source
+    if (unassignedPlayers.some(p => p.uid === playerId)) {
+        sourceContainer = 'unassigned';
+        const index = newUnassigned.findIndex(p => p.uid === playerId);
         playerToMove = newUnassigned.splice(index, 1)[0];
     } else {
-        const teamIndex = newTeams.findIndex(t => t.name === sourceContainer);
-        const index = newTeams[teamIndex].players.findIndex(p => p.uid === active.id);
-        playerToMove = newTeams[teamIndex].players.splice(index, 1)[0];
+        for (const team of newTeams) {
+            const index = team.players.findIndex(p => p.uid === playerId);
+            if (index !== -1) {
+                sourceContainer = team.name;
+                playerToMove = team.players.splice(index, 1)[0];
+                break;
+            }
+        }
     }
+
+    if (!playerToMove) return;
 
     // Add to target
     if (targetContainer === 'unassigned') {
         newUnassigned.push(playerToMove);
     } else {
         const teamIndex = newTeams.findIndex(t => t.name === targetContainer);
-        newTeams[teamIndex].players.push(playerToMove);
+        if (teamIndex !== -1) {
+            newTeams[teamIndex].players.push(playerToMove);
+        }
     }
 
-    // Update state
     setTeams(newTeams);
     setUnassignedPlayers(newUnassigned);
   };
-
+  
   const handleSave = async () => {
     if (!firestore) return;
     setIsSaving(true);
@@ -146,56 +146,76 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
       setIsSaving(false);
     }
   };
-  
-  const activePlayer = useMemo(() => {
-    if (!activeId) return null;
-    return initialMatch.players.find(p => p.uid === activeId);
-  }, [activeId, initialMatch.players]);
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-3">
-                 <div className="relative aspect-[7/5] bg-green-700 bg-[url('/pitch-texture.svg')] bg-blend-multiply rounded-lg p-4 flex flex-col justify-between border-4 border-white/50">
-                    {/* Zones for each team */}
-                    {teams.map((team, index) => (
-                        <DroppablePitchZone key={team.name} id={team.name} team={team} teamColor={index === 0 ? 'border-blue-400' : 'border-red-400'} initialMatch={initialMatch} />
-                    ))}
-                 </div>
-            </div>
-            <div className="lg:col-span-1 space-y-4">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/>Suplentes</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <SortableContext id="unassigned" items={unassignedPlayers.map(p => p.uid)} strategy={rectSortingStrategy}>
-                            <div className="min-h-[100px] p-2 bg-muted/50 rounded-lg flex flex-wrap gap-2">
-                                {unassignedPlayers.map(player => {
-                                    const matchPlayer = initialMatch.players.find(p => p.uid === player.uid);
-                                    return <SortablePlayerItem key={player.uid} player={{ ...player, ...matchPlayer}} teamColor="border-gray-400" />;
-                                })}
+    <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {teams.map((team, index) => {
+                const otherTeam = teams.find(t => t.name !== team.name) || null;
+                return (
+                    <Card key={team.name}>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                {team.jersey && <JerseyPreview jersey={team.jersey} size="sm" />}
+                                <CardTitle>{team.name}</CardTitle>
                             </div>
-                        </SortableContext>
-                    </CardContent>
-                </Card>
-                <Button onClick={handleSave} disabled={isSaving} className="w-full">
+                            <Badge variant="secondary">OVR: {team.players.length > 0 ? (team.players.reduce((sum, p) => sum + p.ovr, 0) / team.players.length).toFixed(1) : 0}</Badge>
+                        </CardHeader>
+                        <CardContent>
+                             <ScrollArea className="h-96">
+                                <div className="space-y-2 pr-4">
+                                {team.players.map(player => {
+                                    const matchPlayer = initialMatch.players.find(p => p.uid === player.uid);
+                                    return (
+                                        <PlayerItem 
+                                            key={player.uid} 
+                                            player={{...player, ...matchPlayer}} 
+                                            onMove={handleMovePlayer} 
+                                            currentTeamName={team.name}
+                                            otherTeam={otherTeam}
+                                            canMove={initialMatch.status === 'upcoming'}
+                                        />
+                                    );
+                                })}
+                                </div>
+                             </ScrollArea>
+                        </CardContent>
+                    </Card>
+                );
+            })}
+        </div>
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/>Suplentes / No Asignados</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <ScrollArea className="h-48">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pr-4">
+                        {unassignedPlayers.map(player => {
+                            const matchPlayer = initialMatch.players.find(p => p.uid === player.uid);
+                            return (
+                                <PlayerItem 
+                                    key={player.uid} 
+                                    player={{...player, ...matchPlayer}} 
+                                    onMove={handleMovePlayer} 
+                                    currentTeamName="unassigned"
+                                    otherTeam={teams[0] || null} // Move to team 1 by default
+                                    canMove={initialMatch.status === 'upcoming'}
+                                />
+                            );
+                        })}
+                    </div>
+                </ScrollArea>
+            </CardContent>
+        </Card>
+        {initialMatch.status === 'upcoming' && (
+            <div className="flex justify-end">
+                <Button onClick={handleSave} disabled={isSaving}>
                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
                     Guardar Formaciones
                 </Button>
             </div>
-        </div>
-      <DragOverlay>
-        {activePlayer ? (
-            <div className="relative p-1 rounded-full bg-background border-2 shadow-lg w-14 h-14 flex items-center justify-center border-primary ring-2 ring-primary">
-                <Avatar className="h-12 w-12">
-                    <AvatarImage src={activePlayer.photoUrl} alt={activePlayer.displayName} />
-                    <AvatarFallback>{activePlayer.displayName.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <Badge className="absolute -bottom-1 -right-1 text-[9px] px-1 h-4 border-2 border-background font-bold">{activePlayer.ovr}</Badge>
-            </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+        )}
+    </div>
   );
 }
