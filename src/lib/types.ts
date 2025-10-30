@@ -40,10 +40,7 @@ export type Player = {
   ownerUid: string; // The UID of the user who created this player
   groupId: string | null;
   cardGenerationCredits?: number;
-<<<<<<< HEAD
   lastCreditReset?: string; // ISO 8601 string
-=======
->>>>>>> 0dc5ba21398c98eb64a7ee9065c8a1c496ed7551
   cropPosition?: { x: number; y: number };
   cropZoom?: number;
 } & DocumentData;
@@ -82,6 +79,10 @@ export type MatchLocation = {
     lng: number;
     placeId: string;
 }
+
+export type TeamFormation = {
+  [key: string]: { x: number, y: number } // player.uid -> {x, y} percentage coordinates
+};
 
 export type Match = {
   id: string;
@@ -124,6 +125,7 @@ export type Team = {
     fairnessPercentage: number;
   };
   jersey?: Jersey;
+  formation?: TeamFormation;
 };
 
 export type JerseyType = 'plain' | 'vertical' | 'band' | 'chevron' | 'thirds' | 'lines';
