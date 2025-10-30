@@ -232,9 +232,9 @@ export default function EvaluationsPage() {
                                                             <FileClock className="h-5 w-5" />
                                                             Pendiente
                                                         </div>
-                                                        <Button asChild>
+                                                        <Button asChild variant="secondary">
                                                             <Link href={`/evaluations/${match.id}?assignments=${assignmentIds}`}>
-                                                                <Edit className="mr-2 h-4 w-4" />
+                                                                <FileClock className="mr-2 h-4 w-4 text-yellow-500" />
                                                                 Evaluar Jugadores
                                                             </Link>
                                                         </Button>
