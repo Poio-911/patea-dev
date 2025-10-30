@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from './ui/badge';
+import { Label } from './ui/label';
 import { Separator } from './ui/separator';
 import { SwapPlayerDialog } from './swap-player-dialog';
 import { SoccerPlayerIcon } from './icons/soccer-player-icon';
@@ -112,18 +113,20 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
         // Remove player B from its team
         newTeams[targetTeamIndex].players = newTeams[targetTeamIndex].players.filter((p: any) => p.uid !== playerB.id);
         // Add player A to player B's team
-        newTeams[targetTeamIndex].players.push(playerA);
+        newTeams[targetTeamIndex].players.push({ uid: playerA.id, displayName: playerA.name, ovr: playerA.ovr, position: playerA.position });
         // Add player B to player A's original team
-        newTeams[fromTeamIndex].players.push(playerB);
+        newTeams[fromTeamIndex].players.push({ uid: playerB.id, displayName: playerB.name, ovr: playerB.ovr, position: playerB.position });
     } else { // If target is a sub
-        newTeams[fromTeamIndex].players.push(allPlayersMap.get(targetPlayerId)!);
+        const playerB = allPlayersMap.get(targetPlayerId);
+        if(!playerB) return;
+        newTeams[fromTeamIndex].players.push({ uid: playerB.id, displayName: playerB.name, ovr: playerB.ovr, position: playerB.position });
     }
     
     // Recalculate OVRs
     newTeams.forEach((team: Team) => {
         const teamPlayers = team.players.map(p => allPlayersMap.get(p.uid)).filter(Boolean) as PlayerType[];
         const totalOVR = teamPlayers.reduce((sum, p) => sum + p.ovr, 0);
-        team.averageOVR = teamPlayers.length > 0 ? totalOVR / teamPlayers.length : 0;
+        team.averageOVR = teamPlayers.length > 0 ? Math.round(totalOVR / teamPlayers.length) : 0;
     });
 
     setTeams(newTeams);
