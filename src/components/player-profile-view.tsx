@@ -30,7 +30,7 @@ import { FirstTimeInfoDialog } from './first-time-info-dialog';
 import Link from 'next/link';
 import { AnalysisIcon } from './icons/analysis-icon';
 import { ImageCropperDialog } from '@/components/image-cropper-dialog';
-import { generatePlayerCardImageAction } from '@/lib/actions/server-actions';
+import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
 import { AttributesHelpDialog } from './attributes-help-dialog';
 
 type PlayerProfileViewProps = {
