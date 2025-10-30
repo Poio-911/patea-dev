@@ -255,7 +255,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             </div>
           </main>
           
-          <FloatingActionMenu />
+          {/* <FloatingActionMenu /> */}
           
           <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg md:hidden">
               <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
