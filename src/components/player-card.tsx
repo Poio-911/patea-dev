@@ -182,7 +182,11 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
       </div>
 
       <CardContent className="p-4 text-center bg-card flex-grow flex flex-col">
+<<<<<<< HEAD
         <Avatar className="mx-auto -mt-12 h-24 w-24 border-4 border-background shadow-lg transition-transform duration-300 group-hover:scale-105 overflow-hidden">
+=======
+        <Avatar className="mx-auto -mt-12 h-24 w-24 border-4 border-background overflow-hidden">
+>>>>>>> 0dc5ba21398c98eb64a7ee9065c8a1c496ed7551
           <AvatarImage
             src={player.photoUrl}
             alt={playerName}

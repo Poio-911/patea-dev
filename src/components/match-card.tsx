@@ -9,11 +9,13 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { generateTeamsAction } from '@/lib/actions/server-actions';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { MatchTeamsDialog } from '@/components/match-teams-dialog';
+import { EditableTeamsDialog } from '@/components/editable-teams-dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -116,7 +118,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         // ✅ Validation: Check if there are enough real players
         const minPlayersRequired = 6; // At least 3 per team for proper peer evaluation
         if (realPlayerUids.length < minPlayersRequired) {
-            console.warn(`[ASSIGNMENT WARNING] Only ${realPlayerUids.length} real players. Minimum recommended: ${minPlayersRequired}`);
+            logger.warn(`[ASSIGNMENT WARNING] Only ${realPlayerUids.length} real players. Minimum recommended: ${minPlayersRequired}`);
         }
 
         realPlayerUids.forEach(evaluatorId => {
@@ -131,7 +133,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             const playersToEvaluate = shuffledTeammates.slice(0, maxAssignments);
 
             if (playersToEvaluate.length < 2) {
-                console.warn(`[ASSIGNMENT WARNING] Player ${evaluatorId} only has ${playersToEvaluate.length} assignment(s) (team has ${teammates.length + 1} real players)`);
+                logger.warn(`[ASSIGNMENT WARNING] Player ${evaluatorId} only has ${playersToEvaluate.length} assignment(s) (team has ${teammates.length + 1} real players)`);
             }
 
             playersToEvaluate.forEach(subject => {
@@ -179,7 +181,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     finalTeams = teamGenerationResult.teams;
                     matchUpdateData.teams = finalTeams;
                  } else {
-                     console.warn("Finishing match without full player list. Teams not generated.");
+                     logger.warn("Finishing match without full player list. Teams not generated.");
                  }
             }
 
@@ -226,7 +228,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             });
 
         } catch (error: any) {
-             console.error("Error finishing match: ", error);
+             logger.error("Error finishing match", error, { matchId: match.id });
              toast({
                 variant: 'destructive',
                 title: 'Error',
@@ -303,7 +305,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             }
             await batch.commit();
         } catch (error) {
-            console.error("Error joining/leaving match: ", error);
+            logger.error("Error joining/leaving match", error, { matchId: match.id, userId: user?.uid });
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo completar la operación.' });
         } finally {
             setIsJoining(false);
@@ -409,6 +411,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     <Button asChild className="w-full">
                         <Link href={`/matches/${match.id}`}>
                             <Eye className="mr-2 h-4 w-4" />
+<<<<<<< HEAD
                             Ver Detalles
                         </Link>
                     </Button>
@@ -419,6 +422,52 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                                 Equipos
                              </Button>
                         </MatchTeamsDialog>
+=======
+                            Detalles
+                        </Button>
+                    </MatchDetailsDialog>
+                    {isUserInMatch && <MatchChatSheet match={match}><Button variant="outline" size="sm" className="w-full"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button></MatchChatSheet>}
+                    {match.teams && match.teams.length > 0 && (
+                        isOwner && match.status === 'completed' ? (
+                            <EditableTeamsDialog match={match}>
+                                <Button variant="outline" size="sm" className="w-full">
+                                    <TeamsIcon className="mr-2 h-4 w-4" />
+                                    Editar Equipos
+                                </Button>
+                            </EditableTeamsDialog>
+                        ) : (
+                            <MatchTeamsDialog match={match}>
+                                <Button variant="outline" size="sm" className="w-full">
+                                    <TeamsIcon className="mr-2 h-4 w-4" />
+                                    Equipos
+                                </Button>
+                            </MatchTeamsDialog>
+                        )
+                    )}
+                    
+                    {isOwner && match.status === 'completed' && (
+                        <Button asChild size="sm" className="w-full bg-amber-500 hover:bg-amber-600 text-white col-span-2">
+                            <Link href={`/matches/${match.id}/evaluate`}>
+                                <FileSignature className="mr-2 h-4 w-4" />
+                                Supervisar Evaluaciones
+                            </Link>
+                        </Button>
+                    )}
+
+                    {isOwner && match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic) && (
+                        <InvitePlayerDialog 
+                            playerToInvite={null} 
+                            userMatches={[]} 
+                            match={match} 
+                            allGroupPlayers={allPlayers}
+                            disabled={isMatchFull}
+                        >
+                            <Button variant="outline" size="sm" className="w-full" disabled={isMatchFull}>
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                Invitar
+                            </Button>
+                        </InvitePlayerDialog>
+>>>>>>> 0dc5ba21398c98eb64a7ee9065c8a1c496ed7551
                     )}
                 </div>
                  <JoinLeaveButton />

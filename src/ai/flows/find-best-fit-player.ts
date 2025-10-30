@@ -97,7 +97,11 @@ const findBestFitPlayerFlow = ai.defineFlow(
     if (input.availablePlayers.length === 0 || input.spotsToFill <= 0) {
         return { recommendations: [] };
     }
+<<<<<<< HEAD
     const { output } = await prompt(input);
+=======
+    const { output } = await prompt(input, { model: 'googleai/gemini-2.5-flash' });
+>>>>>>> 0dc5ba21398c98eb64a7ee9065c8a1c496ed7551
     return output!;
   }
 );

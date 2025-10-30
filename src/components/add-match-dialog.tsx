@@ -398,7 +398,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         };
     });
 
-    const newMatchData = {
+    const newMatchData: any = {
       title: data.title,
       date: data.date.toISOString(),
       time: data.time,
@@ -412,9 +412,12 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       players: finalTeams.flatMap(t => t.players),
       playerUids: finalTeams.flatMap(t => t.players.map(p => p.uid)),
       teams: finalTeams,
-      weather: weather || undefined,
     };
-    
+
+    if (weather) {
+      newMatchData.weather = weather;
+    }
+
     await addDoc(collection(firestore, 'matches'), newMatchData);
   };
 
@@ -439,7 +442,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     }
 
     const newMatchRef = doc(collection(firestore, 'matches'));
-    const newMatch = {
+    const newMatch: any = {
       ...data,
       date: data.date.toISOString(),
       isPublic: false,
@@ -450,8 +453,12 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       players: selectedPlayersData.map(p => ({ uid: p.id, displayName: p.name, ovr: p.ovr, position: p.position, photoUrl: p.photoUrl || '' })),
       playerUids: selectedPlayersData.map(p => p.id),
       teams: finalTeams,
-      weather: weather || undefined,
     };
+
+    if (weather) {
+      newMatch.weather = weather;
+    }
+
     batch.set(newMatchRef, newMatch);
 
     selectedPlayersData.forEach(player => {
@@ -473,7 +480,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
 
   const createCollaborativeMatch = async (data: MatchFormData) => {
     if (!user?.uid || !user.activeGroupId) throw new Error("User not authenticated");
-    const newMatch = {
+    const newMatch: any = {
       ...data,
       date: data.date.toISOString(),
       isPublic: data.isPublic,
@@ -481,11 +488,14 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       status: 'upcoming' as const,
       ownerUid: user.uid,
       groupId: user.activeGroupId,
-      players: [], 
+      players: [],
       playerUids: [],
       teams: [],
-      weather: weather || undefined,
     };
+
+    if (weather) {
+      newMatch.weather = weather;
+    }
 
     await addDoc(collection(firestore!, 'matches'), newMatch);
   }

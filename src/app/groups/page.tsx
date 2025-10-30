@@ -22,8 +22,12 @@ import { UserGroupsList } from '@/components/groups/user-groups-list';
 import { GroupStatsCards } from '@/components/groups/group-stats-cards';
 import { UpcomingMatchesFeed } from '@/components/groups/upcoming-matches-feed';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
+<<<<<<< HEAD
 import { CreateGroupDialog, JoinGroupDialog } from '@/components/groups/group-dialogs';
 import { Separator } from '@/components/ui/separator';
+=======
+import { motion } from 'framer-motion';
+>>>>>>> 0dc5ba21398c98eb64a7ee9065c8a1c496ed7551
 
 export default function GroupsPage() {
   const { user, loading: userLoading } = useUser();
@@ -91,25 +95,60 @@ export default function GroupsPage() {
               <AlertDescription>Creá un grupo o unite a uno desde la sección de arriba para empezar.</AlertDescription>
             </Alert>
         ) : (
+<<<<<<< HEAD
             <>
                 <PageHeader
                     title={activeGroup.name}
                     description={`Gestioná los equipos, estadísticas y partidos de tu grupo activo.`}
+=======
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+            >
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+>>>>>>> 0dc5ba21398c98eb64a7ee9065c8a1c496ed7551
                 >
-                    <Button asChild>
-                        <a href={`https://wa.me/?text=${shareText}`} target="_blank" rel="noopener noreferrer">
-                            <WhatsAppIcon className="mr-2 h-4 w-4" />
-                            Compartir Código
-                        </a>
-                    </Button>
-                </PageHeader>
-                
-                <TeamList groupId={activeGroup.id} players={groupPlayers || []} currentUserId={user.uid} />
+                    <PageHeader
+                        title={activeGroup.name}
+                        description={`Gestioná los equipos, estadísticas y partidos de tu grupo.`}
+                    >
+                        <Button asChild>
+                            <a href={`https://wa.me/?text=${shareText}`} target="_blank" rel="noopener noreferrer">
+                                <WhatsAppIcon className="mr-2 h-4 w-4" />
+                                Compartir Código
+                            </a>
+                        </Button>
+                    </PageHeader>
+                </motion.div>
 
-                <UpcomingMatchesFeed matches={upcomingMatches || []} />
-                
-                <GroupStatsCards players={groupPlayers || []} />
-            </>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                    <TeamList groupId={activeGroup.id} players={groupPlayers || []} currentUserId={user.uid} />
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                    <UpcomingMatchesFeed matches={upcomingMatches || []} />
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
+                    <GroupStatsCards players={groupPlayers || []} />
+                </motion.div>
+            </motion.div>
         )}
     </div>
   );

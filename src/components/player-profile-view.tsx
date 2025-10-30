@@ -16,7 +16,11 @@ import type { Player, Evaluation, Match, OvrHistory, UserProfile, PerformanceTag
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+<<<<<<< HEAD
 import { Loader2, BarChart2, Star, Goal, Eye, ChevronDown, CheckCircle, BrainCircuit, Sparkles, Zap, Target, Send, Footprints, Shield, Dumbbell } from 'lucide-react';
+=======
+import { Loader2, BarChart2, Star, Goal, Upload, Eye, ChevronDown, CheckCircle, BrainCircuit, Sparkles, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+>>>>>>> 0dc5ba21398c98eb64a7ee9065c8a1c496ed7551
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -29,9 +33,15 @@ import { Tooltip as UiTooltip, TooltipContent, TooltipProvider as UiTooltipProvi
 import { FirstTimeInfoDialog } from './first-time-info-dialog';
 import Link from 'next/link';
 import { AnalysisIcon } from './icons/analysis-icon';
+<<<<<<< HEAD
 import { ImageCropperDialog } from '@/components/image-cropper-dialog';
 import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
 import { AttributesHelpDialog } from './attributes-help-dialog';
+=======
+import { generatePlayerCardImageAction } from '@/lib/actions';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { logger } from '@/lib/logger';
+>>>>>>> 0dc5ba21398c98eb64a7ee9065c8a1c496ed7551
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -125,8 +135,67 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   const [isLoading, setIsLoading] = useState(true);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+<<<<<<< HEAD
+=======
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  const [imageZoom, setImageZoom] = useState(1);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isSavingCrop, setIsSavingCrop] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+>>>>>>> 0dc5ba21398c98eb64a7ee9065c8a1c496ed7551
 
   const isCurrentUserProfile = user?.uid === playerId;
+
+  // Keyboard shortcuts for crop editor
+  useEffect(() => {
+    if (!showImageDialog || !isCurrentUserProfile) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const MOVE_STEP = 10;
+      const ZOOM_STEP = 0.1;
+
+      switch (e.key) {
+        case 'ArrowUp':
+          e.preventDefault();
+          setImagePosition(prev => ({ ...prev, y: prev.y - MOVE_STEP }));
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          setImagePosition(prev => ({ ...prev, y: prev.y + MOVE_STEP }));
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          setImagePosition(prev => ({ ...prev, x: prev.x - MOVE_STEP }));
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          setImagePosition(prev => ({ ...prev, x: prev.x + MOVE_STEP }));
+          break;
+        case '+':
+        case '=':
+          e.preventDefault();
+          setImageZoom(prev => Math.min(prev + ZOOM_STEP, 3));
+          break;
+        case '-':
+        case '_':
+          e.preventDefault();
+          setImageZoom(prev => Math.max(prev - ZOOM_STEP, 0.5));
+          break;
+        case 'r':
+        case 'R':
+          if (!e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            handleResetView();
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showImageDialog, isCurrentUserProfile]);
 
   const playerRef = useMemo(() => firestore && playerId ? doc(firestore, 'players', playerId) : null, [firestore, playerId]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
@@ -210,7 +279,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                 setEvaluatorProfiles({});
             }
         } catch (error) {
-            console.error("Error fetching evaluation data:", error);
+            logger.error("Error fetching evaluation data", error, { playerId });
         } finally {
             setIsLoading(false);
         }
@@ -281,6 +350,111 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     }));
   }, [ovrHistory, player]);
 
+<<<<<<< HEAD
+=======
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user || !auth?.currentUser || !firestore) return;
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    
+    try {
+        const { firebaseApp } = initializeFirebase();
+        const storage = getStorage(firebaseApp);
+
+        const fileExtension = file.name.split('.').pop();
+        const fileName = `${user.uid}-${Date.now()}.${fileExtension}`;
+        const filePath = `profile-images/${user.uid}/${fileName}`;
+        
+        const storageRef = ref(storage, filePath);
+        const uploadResult = await uploadBytes(storageRef, file);
+        const newPhotoURL = await getDownloadURL(uploadResult.ref);
+
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const playerDocRef = doc(firestore, 'players', user.uid);
+
+        const batch = writeBatch(firestore);
+        batch.update(userDocRef, { photoURL: newPhotoURL });
+        batch.update(playerDocRef, { photoUrl: newPhotoURL });
+        
+        const availablePlayerRef = doc(firestore, 'availablePlayers', user.uid);
+        const availablePlayerSnap = await getDoc(availablePlayerRef);
+        if (availablePlayerSnap.exists()) {
+            batch.update(availablePlayerRef, { photoUrl: newPhotoURL });
+        }
+        
+        await batch.commit();
+
+        await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
+
+        toast({
+            title: '¡Foto actualizada!',
+            description: 'Tu foto de perfil ha cambiado.'
+        });
+
+    } catch (error: any) {
+        logger.error('Error updating photo', error, { playerId, userId: user?.uid });
+        toast({
+            variant: 'destructive',
+            title: 'Error al subir la imagen',
+            description: error.message || 'No se pudo actualizar la foto de perfil.',
+        });
+    } finally {
+        setIsUploading(false);
+    }
+  };
+
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setImagePosition({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y,
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleZoomIn = () => {
+    setImageZoom(prev => Math.min(prev + 0.2, 3));
+  };
+
+  const handleZoomOut = () => {
+    setImageZoom(prev => Math.max(prev - 0.2, 0.5));
+  };
+
+  const handleSetZoom = (zoom: number) => {
+    setImageZoom(zoom);
+  };
+
+  const handleResetView = () => {
+    // Si hay crop guardado, volver a esa configuración; si no, volver a defaults
+    if (player?.cropPosition || player?.cropZoom) {
+      // Convertir porcentajes de vuelta a píxeles para el Dialog
+      const DIALOG_SIZE = 500;
+      const xPixels = player.cropPosition ? ((player.cropPosition.x - 50) / 100) * DIALOG_SIZE : 0;
+      const yPixels = player.cropPosition ? ((player.cropPosition.y - 50) / 100) * DIALOG_SIZE : 0;
+
+      setImagePosition({ x: xPixels, y: yPixels });
+      setImageZoom(player.cropZoom || 1);
+    } else {
+      setImagePosition({ x: 0, y: 0 });
+      setImageZoom(1);
+    }
+  };
+
+>>>>>>> 0dc5ba21398c98eb64a7ee9065c8a1c496ed7551
   const handleGenerateAIPhoto = async () => {
     if (!user?.uid) return;
 
@@ -304,7 +478,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
 
       window.location.reload();
     } catch (error: any) {
-      console.error('Error generating AI photo:', error);
+      logger.error('Error generating AI photo', error, { userId: user?.uid });
       toast({
         variant: 'destructive',
         title: 'Error al generar imagen',
@@ -315,7 +489,62 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     }
   };
 
+<<<<<<< HEAD
   const loading = playerLoading || historyLoading || isLoading || createdMatchesLoading || createdPlayersLoading;
+=======
+  const handleOpenImageDialog = () => {
+    // Cargar configuración de crop guardada o valores por defecto
+    if (player?.cropPosition || player?.cropZoom) {
+      // Convertir porcentajes de vuelta a píxeles para el Dialog
+      const DIALOG_SIZE = 500;
+      const xPixels = player.cropPosition ? ((player.cropPosition.x - 50) / 100) * DIALOG_SIZE : 0;
+      const yPixels = player.cropPosition ? ((player.cropPosition.y - 50) / 100) * DIALOG_SIZE : 0;
+
+      setImagePosition({ x: xPixels, y: yPixels });
+      setImageZoom(player.cropZoom || 1);
+    } else {
+      setImagePosition({ x: 0, y: 0 });
+      setImageZoom(1);
+    }
+    setShowImageDialog(true);
+  };
+
+  const handleSaveCrop = async () => {
+    if (!playerRef) return;
+
+    setIsSavingCrop(true);
+    try {
+      // Convertir píxeles a porcentajes para que funcione en cualquier tamaño
+      // El contenedor del Dialog es 500px, convertimos a porcentaje relativo al centro (50%)
+      const DIALOG_SIZE = 500;
+      const xPercent = 50 + (imagePosition.x / DIALOG_SIZE) * 100;
+      const yPercent = 50 + (imagePosition.y / DIALOG_SIZE) * 100;
+
+      await updateDoc(playerRef, {
+        cropPosition: { x: xPercent, y: yPercent }, // Guardamos como porcentajes
+        cropZoom: imageZoom,
+      });
+
+      toast({
+        title: 'Configuración guardada',
+        description: 'El ajuste de tu foto ha sido guardado.',
+      });
+
+      setShowImageDialog(false);
+    } catch (error: any) {
+      logger.error('Error saving crop', error, { playerId, userId: user?.uid });
+      toast({
+        variant: 'destructive',
+        title: 'Error al guardar',
+        description: error.message || 'No se pudo guardar la configuración.',
+      });
+    } finally {
+      setIsSavingCrop(false);
+    }
+  };
+
+  const loading = playerLoading || historyLoading || isLoading || (isCurrentUserProfile && (createdMatchesLoading || createdPlayersLoading));
+>>>>>>> 0dc5ba21398c98eb64a7ee9065c8a1c496ed7551
 
 
   if (loading) {
@@ -341,6 +570,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <Card className="lg:col-span-1">
                     <CardContent className="pt-6">
+<<<<<<< HEAD
                         <div className="flex flex-col items-center gap-4">
                             <div className="text-center">
                                 <h2 className="text-3xl font-bold font-headline">{player.name}</h2>
@@ -372,6 +602,31 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                         <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
                                         <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
+=======
+                        <div className="flex flex-col sm:flex-row items-center gap-6">
+                            <div className="relative">
+                                <Avatar
+                                    className="h-32 w-32 border-4 border-primary/50 cursor-pointer hover:border-primary transition-all overflow-hidden"
+                                    onClick={handleOpenImageDialog}
+                                >
+                                    <AvatarImage
+                                        src={player.photoUrl}
+                                        alt={player.name}
+                                        data-ai-hint="player portrait"
+                                        style={{
+                                            objectFit: 'cover',
+                                            objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`,
+                                            transform: `scale(${player.cropZoom || 1})`,
+                                            transformOrigin: 'center center',
+                                        }}
+                                    />
+                                    <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                {isUploading && (
+                                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                                        <Loader2 className="h-8 w-8 animate-spin text-white" />
+                                    </div>
+>>>>>>> 0dc5ba21398c98eb64a7ee9065c8a1c496ed7551
                                 )}
                             </div>
                         </div>
@@ -624,6 +879,160 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                 </div>
             </div>
         </div>
+
+        <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>{player.name}</DialogTitle>
+              <DialogDescription>
+                {isCurrentUserProfile
+                  ? 'Arrastrá la imagen para moverla y usá los controles para hacer zoom. Guardá tu configuración para que se aplique al círculo de tu perfil.'
+                  : 'Hacé clic en la imagen para verla más grande'}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex flex-col gap-4">
+              {isCurrentUserProfile ? (
+                <>
+                  {/* MODO EDICIÓN - Mi perfil */}
+                  {/* Controles de zoom */}
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleZoomOut}
+                        disabled={imageZoom <= 0.5}
+                        title="Alejar (-)"
+                      >
+                        <ZoomOut className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm font-medium min-w-[60px] text-center">
+                        {Math.round(imageZoom * 100)}%
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleZoomIn}
+                        disabled={imageZoom >= 3}
+                        title="Acercar (+)"
+                      >
+                        <ZoomIn className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleResetView}
+                        className="ml-2"
+                        title="Resetear (R)"
+                      >
+                        <RotateCcw className="h-4 w-4 mr-1" />
+                        Reset
+                      </Button>
+                    </div>
+
+                    {/* Presets de zoom */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Presets:</span>
+                      {[1, 1.5, 2, 2.5].map(zoom => (
+                        <Button
+                          key={zoom}
+                          size="sm"
+                          variant={Math.abs(imageZoom - zoom) < 0.1 ? "default" : "ghost"}
+                          onClick={() => handleSetZoom(zoom)}
+                          className="h-7 px-3"
+                        >
+                          {zoom}x
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* Ayuda de teclado */}
+                    <p className="text-xs text-muted-foreground text-center">
+                      Usa las flechas ← ↑ ↓ → para mover, +/- para zoom, R para resetear
+                    </p>
+                  </div>
+
+                  {/* Contenedor principal: editor + preview */}
+                  <div className="flex gap-4">
+                    {/* Contenedor de imagen con drag */}
+                    <div
+                      className="relative overflow-hidden rounded-lg border-2 border-muted bg-muted/20 flex-1"
+                      style={{ height: '500px' }}
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                    >
+                      <img
+                        src={player.photoUrl}
+                        alt={player.name}
+                        className={cn(
+                          "absolute max-w-none",
+                          isDragging ? "cursor-grabbing" : "cursor-grab"
+                        )}
+                        style={{
+                          transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageZoom})`,
+                          transformOrigin: 'center center',
+                          left: '50%',
+                          top: '50%',
+                          marginLeft: '-50%',
+                          marginTop: '-50%',
+                        }}
+                        onMouseDown={handleMouseDown}
+                        draggable={false}
+                      />
+                    </div>
+
+                    {/* Preview circular */}
+                    <div className="flex flex-col items-center justify-center gap-3 min-w-[180px]">
+                      <p className="text-sm font-medium text-center">Previsualización</p>
+                      <div className="relative w-32 h-32 rounded-full border-4 border-primary/50 overflow-hidden bg-muted/20">
+                        <img
+                          src={player.photoUrl}
+                          alt="Preview"
+                          className="absolute w-full h-full object-cover"
+                          style={{
+                            objectPosition: `${50 + (imagePosition.x / 500) * 100}% ${50 + (imagePosition.y / 500) * 100}%`,
+                            transform: `scale(${imageZoom})`,
+                            transformOrigin: 'center center',
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground text-center">
+                        Así se verá tu avatar
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Botón guardar */}
+                  <div className="flex items-center justify-end gap-4">
+                    <Button onClick={handleSaveCrop} disabled={isSavingCrop}>
+                      {isSavingCrop ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Guardando...
+                        </>
+                      ) : (
+                        'Guardar configuración'
+                      )}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* MODO VISTA - Otros perfiles */}
+                  <div className="relative overflow-hidden rounded-lg border-2 border-muted bg-muted/20 flex items-center justify-center" style={{ height: '500px' }}>
+                    <img
+                      src={player.photoUrl}
+                      alt={player.name}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
     </>
   );
 }

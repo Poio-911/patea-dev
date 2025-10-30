@@ -14,6 +14,7 @@ import type { Player } from '@/lib/types';
 import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 import { motion } from 'framer-motion';
+<<<<<<< HEAD
 
 const listVariants = {
   hidden: { opacity: 0 },
@@ -29,6 +30,8 @@ const itemVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0 },
 };
+=======
+>>>>>>> 0dc5ba21398c98eb64a7ee9065c8a1c496ed7551
 
 export default function PlayersPage() {
   const { user, loading: userLoading } = useUser();
@@ -98,6 +101,7 @@ export default function PlayersPage() {
         </Alert>
       )}
 
+<<<<<<< HEAD
       <motion.div 
         className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
         variants={listVariants}
@@ -106,6 +110,16 @@ export default function PlayersPage() {
       >
         {sortedPlayers?.map((player) => (
           <motion.div key={player.id} variants={itemVariants}>
+=======
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        {sortedPlayers?.map((player, index) => (
+          <motion.div
+            key={player.id}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: index * 0.05, type: "spring", stiffness: 100 }}
+          >
+>>>>>>> 0dc5ba21398c98eb64a7ee9065c8a1c496ed7551
             <PlayerCard player={player} />
           </motion.div>
         ))}

@@ -40,7 +40,10 @@ export type Player = {
   ownerUid: string; // The UID of the user who created this player
   groupId: string | null;
   cardGenerationCredits?: number;
+<<<<<<< HEAD
   lastCreditReset?: string; // ISO 8601 string
+=======
+>>>>>>> 0dc5ba21398c98eb64a7ee9065c8a1c496ed7551
   cropPosition?: { x: number; y: number };
   cropZoom?: number;
 } & DocumentData;
