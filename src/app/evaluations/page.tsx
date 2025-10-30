@@ -108,6 +108,19 @@ export default function EvaluationsPage() {
         processAssignments();
     }, [userAssignments, firestore, user, userLoading, assignmentsLoading]);
 
+    const assignmentsByMatch = useMemo(() => {
+        const grouped: Record<string, { match: Match, assignments: UnifiedAssignment[] }> = {};
+        unifiedAssignments.forEach(assignment => {
+            if (!assignment.match) return;
+            if (!grouped[assignment.matchId]) {
+                grouped[assignment.matchId] = { match: assignment.match, assignments: [] };
+            }
+            grouped[assignment.matchId].assignments.push(assignment);
+        });
+        return Object.values(grouped);
+    }, [unifiedAssignments]);
+
+
     const loading = userLoading || isLoading;
     
     if (loading) {
@@ -141,7 +154,7 @@ export default function EvaluationsPage() {
                 <Button variant="link" className="p-0 h-auto self-start">¿Qué significan los atributos de evaluación?</Button>
             </AttributesHelpDialog>
 
-            {unifiedAssignments.length === 0 ? (
+            {assignmentsByMatch.length === 0 ? (
                 <Alert>
                     <ShieldQuestion className="h-4 w-4" />
                     <AlertTitle>¡Todo al día!</AlertTitle>
@@ -153,35 +166,41 @@ export default function EvaluationsPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Tareas de Evaluación Pendientes ({unifiedAssignments.length})</CardTitle>
-                        <CardDescription>Esta es la lista de compañeros que te falta evaluar. Se ordena por el partido más antiguo primero.</CardDescription>
+                        <CardDescription>Esta es la lista de compañeros que te falta evaluar, agrupados por partido.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-2">
-                           {unifiedAssignments.map((assignment, index) => (
-                                <div key={assignment.id}>
-                                    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <Avatar className="h-12 w-12 border">
-                                                <AvatarImage src={assignment.subject?.photoUrl} alt={assignment.subject?.name} />
-                                                <AvatarFallback>{assignment.subject?.name.charAt(0)}</AvatarFallback>
-                                            </Avatar>
+                        <div className="space-y-4">
+                           {assignmentsByMatch.map(({ match, assignments }) => {
+                                const assignmentIds = assignments.map(a => a.id).join(',');
+                                return (
+                                    <div key={match.id} className="border p-4 rounded-lg">
+                                        <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="font-semibold text-base">{assignment.subject?.name}</p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    Del partido: <strong>{assignment.match?.title}</strong> ({format(new Date(assignment.match!.date), "dd/MM")})
-                                                </p>
+                                                <h3 className="font-bold text-lg">{match.title}</h3>
+                                                <p className="text-sm text-muted-foreground">{format(new Date(match.date), "dd/MM/yyyy", { locale: es })}</p>
                                             </div>
+                                            <Button asChild>
+                                                <Link href={`/evaluations/${match.id}?assignments=${assignmentIds}`}>
+                                                    <Edit className="mr-2 h-4 w-4" />
+                                                    Evaluar Partido ({assignments.length})
+                                                </Link>
+                                            </Button>
                                         </div>
-                                        <Button asChild variant="secondary" size="sm">
-                                            <Link href={`/evaluations/${assignment.matchId}`}>
-                                                <Edit className="mr-2 h-4 w-4" />
-                                                Evaluar
-                                            </Link>
-                                        </Button>
+                                        <Separator className="my-3" />
+                                        <div className="flex flex-wrap gap-4">
+                                            {assignments.map(assignment => (
+                                                <div key={assignment.id} className="flex items-center gap-2">
+                                                    <Avatar className="h-9 w-9 border">
+                                                        <AvatarImage src={assignment.subject?.photoUrl} alt={assignment.subject?.name} />
+                                                        <AvatarFallback>{assignment.subject?.name.charAt(0)}</AvatarFallback>
+                                                    </Avatar>
+                                                    <p className="text-sm font-medium">{assignment.subject?.name}</p>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                    {index < unifiedAssignments.length - 1 && <Separator />}
-                                </div>
-                           ))}
+                                );
+                           })}
                         </div>
                     </CardContent>
                 </Card>

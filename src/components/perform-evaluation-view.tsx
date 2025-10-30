@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
@@ -12,6 +13,8 @@ import {
   where, 
   addDoc, 
   getDocs, 
+  doc,
+  getDoc
 } from 'firebase/firestore'
 import { Loader2, Save, ShieldCheck, Goal, Plus, Minus, FileClock } from 'lucide-react'
 
@@ -39,8 +42,8 @@ const pointsEvaluationSchema = z.object({
   photoUrl: z.string(),
   position: z.string(),
   evaluationType: z.literal('points'),
-  rating: z.coerce.number().min(1).max(10), // Requerido
-  performanceTags: z.array(z.custom<PerformanceTag>()).optional(), // Puede no estar
+  rating: z.coerce.number().min(1, 'El rating debe ser al menos 1').max(10, 'El rating debe ser máximo 10'),
+  performanceTags: z.array(z.custom<PerformanceTag>()).optional(),
 });
 
 const tagsEvaluationSchema = z.object({
@@ -50,8 +53,8 @@ const tagsEvaluationSchema = z.object({
   photoUrl: z.string(),
   position: z.string(),
   evaluationType: z.literal('tags'),
-  rating: z.coerce.number().optional(), // Puede no estar
-  performanceTags: z.array(z.custom<PerformanceTag>()).min(3, 'Debes seleccionar al menos 3 etiquetas.'), // Requerido
+  rating: z.coerce.number().optional(),
+  performanceTags: z.array(z.custom<PerformanceTag>()).min(3, 'Debes seleccionar al menos 3 etiquetas.'),
 });
 
 const playerEvaluationSchema = z.discriminatedUnion('evaluationType', [
@@ -123,7 +126,7 @@ const TagCheckbox = ({
 }
 
 // --- MAIN COMPONENT ---
-export default function PerformEvaluationView({ matchId }: { matchId: string }) {
+export default function PerformEvaluationView({ matchId, assignmentIds }: { matchId: string, assignmentIds: string[] }) {
   const firestore = useFirestore()
   const { user } = useUser()
   const router = useRouter()
@@ -132,6 +135,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isPageLoading, setIsPageLoading] = useState(true)
   const [submissionIsPending, setSubmissionIsPending] = useState(false);
+  const [assignments, setAssignments] = useState<EvaluationAssignment[]>([]);
   const [randomTags, setRandomTags] = useState<Record<string, PerformanceTag[]>>({})
 
   const allGroupPlayersQuery = useMemo(
@@ -142,18 +146,6 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
     [firestore, user?.activeGroupId]
   )
   const { data: allGroupPlayers, loading: playersLoading } = useCollection<Player>(allGroupPlayersQuery)
-
-  const userAssignmentsQuery = useMemo(() => {
-    if (!firestore || !user?.uid || !matchId) return null
-    return query(
-      collection(firestore, 'matches', matchId, 'assignments'),
-      where('evaluatorId', '==', user.uid),
-      where('status', '==', 'pending')
-    )
-  }, [firestore, user, matchId])
-
-  const { data: assignments, loading: assignmentsLoading } =
-    useCollection<EvaluationAssignment>(userAssignmentsQuery)
 
   const form = useForm<EvaluationFormData>({
     resolver: zodResolver(evaluationSchema),
@@ -172,24 +164,51 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
   }, [])
 
   useEffect(() => {
-    async function checkPendingSubmission() {
-      if (!firestore || !user?.uid || !matchId) return;
-      const submissionsQuery = query(
-        collection(firestore, 'evaluationSubmissions'),
-        where('matchId', '==', matchId),
-        where('evaluatorId', '==', user.uid)
-      );
-      const snapshot = await getDocs(submissionsQuery);
-      setSubmissionIsPending(!snapshot.empty);
+    async function fetchInitialData() {
+        if (!firestore || !user?.uid || !matchId) return;
+        
+        setIsPageLoading(true);
+
+        // 1. Check for existing pending submissions from this user for this match
+        const submissionsQuery = query(
+            collection(firestore, 'evaluationSubmissions'),
+            where('matchId', '==', matchId),
+            where('evaluatorId', '==', user.uid)
+        );
+        const snapshot = await getDocs(submissionsQuery);
+        if (!snapshot.empty) {
+            setSubmissionIsPending(true);
+            setIsPageLoading(false);
+            return;
+        }
+
+        // 2. Fetch the specific assignments to be performed
+        if (assignmentIds.length > 0) {
+            const assignmentPromises = assignmentIds.map(id => getDoc(doc(firestore, `matches/${matchId}/assignments`, id)));
+            const assignmentSnaps = await Promise.all(assignmentPromises);
+            const fetchedAssignments = assignmentSnaps
+                .filter(snap => snap.exists() && snap.data().status === 'pending')
+                .map(snap => ({ id: snap.id, ...snap.data() } as EvaluationAssignment));
+            
+            setAssignments(fetchedAssignments);
+        } else {
+             // If no assignmentIds are passed, check for any pending for this match
+            const allPendingQuery = query(
+              collection(firestore, 'matches', matchId, 'assignments'),
+              where('evaluatorId', '==', user.uid),
+              where('status', '==', 'pending')
+            );
+            const allPendingSnapshot = await getDocs(allPendingQuery);
+            setAssignments(allPendingSnapshot.docs.map(d => ({id: d.id, ...d.data()} as EvaluationAssignment)));
+        }
     }
 
-    checkPendingSubmission();
-  }, [firestore, user, matchId, isPageLoading]);
+    fetchInitialData();
+  }, [firestore, user, matchId, assignmentIds]);
 
 
   useEffect(() => {
-    if (assignments && allGroupPlayers) {
-      if (assignments.length > 0) {
+    if (assignments.length > 0 && allGroupPlayers) {
         const initialFormValues: PlayerEvaluationFormData[] = []
         const tagsForPlayers: Record<string, PerformanceTag[]> = {}
 
@@ -209,15 +228,13 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
             tagsForPlayers[subject.id] = getRandomTagsForPosition(subject.position)
           }
         }
-
-        replace(initialFormValues as any)
-        setRandomTags(tagsForPlayers)
-      }
-      setIsPageLoading(false)
-    } else if (!assignmentsLoading && !playersLoading) {
-      setIsPageLoading(false)
+        replace(initialFormValues as any);
+        setRandomTags(tagsForPlayers);
+        setIsPageLoading(false);
+    } else if (!playersLoading) {
+        setIsPageLoading(false);
     }
-  }, [assignments, allGroupPlayers, replace, assignmentsLoading, playersLoading, getRandomTagsForPosition])
+  }, [assignments, allGroupPlayers, replace, playersLoading, getRandomTagsForPosition])
 
   const onSubmit = async (data: EvaluationFormData) => {
     if (!firestore || !user || !matchId) return
@@ -250,7 +267,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
     }
   }
 
-  if (isPageLoading || assignmentsLoading || playersLoading)
+  if (isPageLoading || playersLoading)
     return (
       <div className="flex justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin" />
