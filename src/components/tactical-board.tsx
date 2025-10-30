@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { Match, Team, Player as PlayerType, TeamFormation } from '@/lib/types';
 import { formationsByMatchSize, Formation } from '@/lib/formations';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -42,7 +42,7 @@ interface TacticalBoardProps {
 }
 
 const PlayerAvatar = ({ player }: { player: PlayerType | { displayName: string, photoUrl?: string } }) => (
-  <div className="flex flex-col items-center gap-1">
+  <div className="flex flex-col items-center gap-1 cursor-grab active:cursor-grabbing">
     <Avatar className="h-10 w-10 border-2 border-background shadow-md">
       <AvatarImage src={player.photoUrl} alt={player.displayName} />
       <AvatarFallback>{player.displayName?.charAt(0)}</AvatarFallback>
@@ -53,7 +53,7 @@ const PlayerAvatar = ({ player }: { player: PlayerType | { displayName: string, 
   </div>
 );
 
-const DroppableSlot = ({ slotName, player, children }: { slotName: string, player?: PlayerType, children: React.ReactNode }) => {
+const DroppableSlot = ({ slotName, children }: { slotName: string, children: React.ReactNode }) => {
   const { setNodeRef, isOver } = useDroppable({ id: slotName });
   return (
     <div
@@ -64,12 +64,30 @@ const DroppableSlot = ({ slotName, player, children }: { slotName: string, playe
       )}
       style={{ left: `${children.props.style.left}`, top: `${children.props.style.top}` }}
     >
-      <div className={cn("h-16 w-16 rounded-full flex items-center justify-center transition-colors", player ? 'bg-primary/20' : 'bg-foreground/10 border-2 border-dashed border-foreground/20')}>
-        {!player && <p className="text-xs font-bold text-muted-foreground">{slotName}</p>}
+      <div className={cn("h-16 w-16 rounded-full flex items-center justify-center transition-colors bg-foreground/10 border-2 border-dashed border-foreground/20")}>
+        <p className="text-xs font-bold text-muted-foreground">{slotName}</p>
       </div>
     </div>
   );
 };
+
+
+const DraggablePlayer = ({ player }: { player: PlayerType }) => {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: player.id,
+  });
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  } : undefined;
+
+  return (
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+      <PlayerAvatar player={player} />
+    </div>
+  );
+};
+
 
 export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
   const [teams, setTeams] = useState<Team[]>(initialMatch.teams || []);
@@ -100,9 +118,7 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActivePlayerId(null);
-    // Logic to update player positions will go here
   };
-
 
   const handleSave = async () => {
     if (!firestore) return;
@@ -125,6 +141,23 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
     }
   };
 
+  const getPlayerById = (playerId: string) => {
+    for (const team of teams) {
+      const playerInfo = team.players.find(p => p.uid === playerId);
+      if (playerInfo) {
+        const fullPlayer = initialMatch.players.find(p => p.uid === playerId);
+        return {
+          ...fullPlayer,
+          id: playerInfo.uid,
+          displayName: playerInfo.displayName
+        };
+      }
+    }
+    return null;
+  };
+  
+  const activePlayer = activePlayerId ? getPlayerById(activePlayerId) : null;
+
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="space-y-6">
@@ -138,49 +171,71 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
                  </div>
             </div>
 
-            {teams.map((team, teamIndex) => (
-                <Card key={team.name}>
-                    <CardHeader>
-                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                            <CardTitle>{team.name}</CardTitle>
-                             <div className="flex items-center gap-2">
-                               <label htmlFor={`formation-select-${teamIndex}`} className="text-sm font-medium">Formación</label>
-                               <Select onValueChange={handleFormationChange} defaultValue={selectedFormation}>
-                                  <SelectTrigger id={`formation-select-${teamIndex}`} className="w-[180px]">
-                                    <SelectValue placeholder="Elegir formación" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {Object.values(formationsByMatchSize[initialMatch.matchSize as keyof typeof formationsByMatchSize]).map(f => (
-                                      <SelectItem key={f.name} value={f.name}>{f.name}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                             </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="md:col-span-2 relative aspect-[7/10] bg-green-600 rounded-lg overflow-hidden flex items-center justify-center">
-                                <PitchIcon className="w-full h-full text-white/20" />
-                                 {currentFormation.slots.map(slot => (
-                                    <div key={slot.name} style={{ left: `${slot.x}%`, top: `${slot.y}%` }} className="absolute -translate-x-1/2 -translate-y-1/2">
-                                         <div className="h-16 w-16 rounded-full flex items-center justify-center bg-black/10 border-2 border-dashed border-white/20">
-                                            <p className="text-xs font-bold text-white/70">{slot.name}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <div>
-                                <h3 className="font-semibold mb-2">Suplentes</h3>
-                                 <div className="p-4 bg-muted rounded-lg h-full min-h-[200px]">
-                                    {/* Bench players will go here */}
+            {teams.map((team, teamIndex) => {
+                const teamPlayerIds = new Set(team.players.map(p => p.uid));
+                const teamPlayers = initialMatch.players.filter(p => teamPlayerIds.has(p.uid));
+                
+                const assignedPlayers = new Set(Object.values(team.formation || {}));
+                const benchPlayers = teamPlayers.filter(p => !assignedPlayers.has(p.uid));
+                const formationAssignments = team.formation || {};
+
+                return (
+                    <Card key={team.name}>
+                        <CardHeader>
+                            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                                <CardTitle>{team.name}</CardTitle>
+                                 <div className="flex items-center gap-2">
+                                   <label htmlFor={`formation-select-${teamIndex}`} className="text-sm font-medium">Formación</label>
+                                   <Select onValueChange={handleFormationChange} defaultValue={selectedFormation}>
+                                      <SelectTrigger id={`formation-select-${teamIndex}`} className="w-[180px]">
+                                        <SelectValue placeholder="Elegir formación" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {Object.values(formationsByMatchSize[initialMatch.matchSize as keyof typeof formationsByMatchSize]).map(f => (
+                                          <SelectItem key={f.name} value={f.name}>{f.name}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
                                  </div>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            ))}
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="md:col-span-2 relative aspect-[7/10] bg-green-600 rounded-lg overflow-hidden flex items-center justify-center">
+                                    <PitchIcon className="w-full h-full text-white/20" />
+                                     {currentFormation.slots.map(slot => {
+                                         const playerIdInSlot = Object.entries(formationAssignments).find(([, s]) => s === slot.name)?.[0];
+                                         const playerInSlot = playerIdInSlot ? teamPlayers.find(p => p.uid === playerIdInSlot) : undefined;
+                                         return (
+                                             <DroppableSlot key={slot.name} slotName={slot.name}>
+                                                 <div style={{ left: `${slot.x}%`, top: `${slot.y}%` }}>
+                                                    {playerInSlot && <DraggablePlayer player={playerInSlot as PlayerType} />}
+                                                 </div>
+                                             </DroppableSlot>
+                                         );
+                                    })}
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold mb-2">Suplentes ({benchPlayers.length})</h3>
+                                     <div className="p-4 bg-muted rounded-lg h-full min-h-[200px]">
+                                        <ScrollArea className="h-full">
+                                            <div className="space-y-4">
+                                                {benchPlayers.map(player => (
+                                                    <DraggablePlayer key={player.uid} player={player as PlayerType} />
+                                                ))}
+                                            </div>
+                                        </ScrollArea>
+                                     </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            })}
         </div>
+        <DragOverlay>
+            {activePlayer ? <PlayerAvatar player={activePlayer} /> : null}
+        </DragOverlay>
     </DndContext>
   );
 }
