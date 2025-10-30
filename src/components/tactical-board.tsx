@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { Match, Team, Player as PlayerType, TeamFormation } from '@/lib/types';
+import type { Match, Team, Player as PlayerType } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -10,18 +10,17 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { Loader2, Save, Users, Shuffle } from 'lucide-react';
+import { Loader2, Save, Users, Shuffle, MoreVertical } from 'lucide-react';
 import {
   DndContext,
   DragEndEvent,
   DragStartEvent,
   DragOverlay,
-  useDraggable,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   closestCenter,
-  TouchSensor,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -29,51 +28,14 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { formationsByMatchSize } from '@/lib/formations';
 import { cn } from '@/lib/utils';
 import { generateTeamsAction } from '@/lib/actions/server-actions';
 import { ScrollArea } from './ui/scroll-area';
-import { MoreVertical } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 
 
 interface TacticalBoardProps {
   match: Match;
-}
-
-function PlayerOnBoard({ player }: { player: PlayerType }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useSortable({
-    id: player.id,
-    data: { player },
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 10 : 1,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative">
-      <PlayerAvatar player={player} />
-    </div>
-  );
-}
-
-
-function PlayerAvatar({ player, className }: { player: PlayerType; className?: string }) {
-  return (
-    <div className={cn("relative group cursor-grab", className)}>
-      <Avatar className="h-12 w-12 border-2 border-background shadow-md">
-        <AvatarImage src={player.photoUrl} alt={player.name} />
-        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-      </Avatar>
-      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-background/80 text-foreground text-[10px] font-bold px-1 rounded-sm shadow-sm whitespace-nowrap">
-        {player.name.split(' ')[0]}
-      </div>
-    </div>
-  );
 }
 
 
@@ -112,7 +74,7 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
 
     // Add to target
     if (targetTeamName === 'unassigned') {
-        newUnassigned.push(playerToMove);
+        newUnassigned.push(playerToMove as PlayerType);
     } else {
         const teamIndex = newTeams.findIndex(t => t.name === targetTeamName);
         if (teamIndex !== -1) {
@@ -171,7 +133,6 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
       
       const updatedMatchData = {
           teams: updatedTeams,
-          players: initialMatch.players,
       };
 
       await updateDoc(matchRef, updatedMatchData);
@@ -185,8 +146,32 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
 
   const otherTeams = (currentTeamName: string) => teams.filter(t => t.name !== currentTeamName);
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const allPlayers = [...teams.flatMap(t => t.players), ...unassignedPlayers];
+    const player = allPlayers.find(p => (p.uid || p.id) === active.id) as PlayerType | undefined;
+    if (player) {
+      setActivePlayer(player);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActivePlayer(null);
+
+    if (over && active.id !== over.id) {
+        const targetTeamName = typeof over.id === 'string' && over.id.startsWith('team-droppable-')
+            ? over.id.replace('team-droppable-', '')
+            : over.data?.current?.sortable?.containerId;
+        
+        if (targetTeamName) {
+            movePlayer(active.id as string, targetTeamName);
+        }
+    }
+  };
+
   return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={() => {}}>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                  <h2 className="text-2xl font-bold">Pizarra Táctica</h2>
@@ -205,7 +190,7 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
            
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                 {teams.map(team => (
-                    <Card key={team.name}>
+                    <Card key={team.name} id={`team-droppable-${team.name}`}>
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <CardTitle>{team.name}</CardTitle>
@@ -247,7 +232,7 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
                     </Card>
                 ))}
             </div>
-            <Card>
+            <Card id="team-droppable-unassigned">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/>Suplentes / No Asignados ({unassignedPlayers.length})</CardTitle>
                 </CardHeader>
@@ -284,6 +269,21 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
                 </CardContent>
             </Card>
         </div>
+        <DragOverlay>
+            {activePlayer ? (
+              <div className="flex items-center gap-3 p-2 rounded-md bg-primary text-primary-foreground shadow-lg">
+                <Avatar className="h-9 w-9">
+                  <AvatarImage
+                    src={(initialMatch.players.find(p => p.uid === activePlayer.id) as any)?.photoUrl}
+                    alt={activePlayer.name}
+                  />
+                  <AvatarFallback>{activePlayer.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <p className="font-medium">{activePlayer.name}</p>
+                <Badge variant="secondary">{activePlayer.ovr}</Badge>
+              </div>
+            ) : null}
+        </DragOverlay>
     </DndContext>
   );
 }
