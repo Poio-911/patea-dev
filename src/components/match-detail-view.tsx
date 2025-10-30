@@ -5,7 +5,7 @@ import { useMemo, useState, useEffect } from 'react';
 import type { Match, Player, EvaluationAssignment, Notification, UserProfile } from '@/lib/types';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, CheckCircle, Shuffle, Trash2, UserPlus, LogOut, MessageCircle, MoreVertical } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, CheckCircle, Shuffle, Trash2, UserPlus, LogOut, MessageCircle, MoreVertical, Share2, ClipboardCopy } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
 import Link from 'next/link';
@@ -34,13 +34,6 @@ import {
 import { InvitePlayerDialog } from './invite-player-dialog';
 import { WhatsAppIcon } from './icons/whatsapp-icon';
 import { MatchChronicleCard } from './match-chronicle-card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
 import { MatchTeamsDialog } from './match-teams-dialog';
 
@@ -61,18 +54,6 @@ const weatherIcons: Record<string, React.ElementType> = {
 
 const isRealUser = (player: Player) => player.id === player.ownerUid;
 
-const ActionCard = ({ icon: Icon, title, description, children, iconClassName }: { icon: React.ElementType, title: string, description: string, children: React.ReactNode, iconClassName?: string }) => (
-    <Card className="flex flex-col text-center items-center p-3">
-        <div className={cn("p-2 rounded-full mb-2", iconClassName)}>
-            <Icon className="h-5 w-5 text-white" />
-        </div>
-        <h3 className="font-semibold text-xs mb-1">{title}</h3>
-        <div className="mt-auto w-full">
-            {children}
-        </div>
-    </Card>
-);
-
 export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const firestore = useFirestore();
     const { user } = useUser();
@@ -80,6 +61,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const [isFinishing, setIsFinishing] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isShuffling, setIsShuffling] = useState(false);
     const [ownerProfile, setOwnerProfile] = useState<UserProfile | null>(null);
     
     const matchRef = useMemo(() => firestore ? doc(firestore, 'matches', matchId) : null, [firestore, matchId]);
@@ -293,6 +275,30 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
             setIsDeleting(false);
         }
     };
+    
+    const handleShuffleTeams = async () => {
+        if (!firestore || !match || !allGroupPlayers) return;
+        setIsShuffling(true);
+
+        try {
+            const playersToBalance = allGroupPlayers.filter(p => match.playerUids.includes(p.id));
+            const teamGenerationResult = await generateTeamsAction(playersToBalance);
+
+            if ('error' in teamGenerationResult) throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
+            if (!teamGenerationResult.teams) throw new Error('La respuesta de la IA no contiene equipos.');
+
+            await updateDoc(doc(firestore, 'matches', match.id), {
+                teams: teamGenerationResult.teams
+            });
+
+            toast({ title: "¡Equipos Sorteados!", description: "La IA ha generado nuevas formaciones." });
+
+        } catch (error: any) {
+            toast({ variant: "destructive", title: "Error", description: error.message || "No se pudieron volver a sortear los equipos."});
+        } finally {
+            setIsShuffling(false);
+        }
+    };
 
     if (matchLoading) {
         return <div className="flex justify-center items-center h-full"><Loader2 className="h-12 w-12 animate-spin" /></div>;
@@ -305,7 +311,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
     const isMatchFull = match.players.length >= match.matchSize;
     const canFinalize = isOwner && match.status === 'upcoming' && isMatchFull;
-    const canInvite = isOwner || match.type === 'collaborative';
+    const canInvite = isOwner && match.type !== 'by_teams';
     
     return (
         <div className="flex flex-col gap-8">
@@ -379,27 +385,58 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                      )}
                 </CardContent>
             </Card>
-
-            {isOwner && (
+            
+            {isOwner && match.status === 'upcoming' && (
                 <div className="space-y-4">
                     <h2 className="text-xl font-bold">Panel del Organizador</h2>
-                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                        {canFinalize && <ActionCard icon={CheckCircle} title="Finalizar" description="Genera equipos y evaluaciones." iconClassName="bg-green-500"><Button onClick={handleFinishMatch} disabled={isFinishing} className="w-full" size="sm">{isFinishing && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Finalizar</Button></ActionCard>}
-                        {!isMatchFull && <ActionCard icon={UserPlus} title="Invitar (Grupo)" description="Completá el plantel." iconClassName="bg-purple-500"><InvitePlayerDialog playerToInvite={null} userMatches={[match]} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" className="w-full" size="sm">Invitar</Button></InvitePlayerDialog></ActionCard>}
-                        {canInvite && !isMatchFull && <ActionCard icon={WhatsAppIcon} title="Invitar (WA)" description="Compartí por WhatsApp." iconClassName="bg-[#25D366]"><Button variant="whatsapp" asChild className="w-full" size="sm"><a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer">Compartir</a></Button></ActionCard>}
-                        {match.teams && match.teams.length > 0 && <ActionCard icon={WhatsAppIcon} title="Compartir Equipos" description="Enviá la formación por WhatsApp." iconClassName="bg-[#25D366]"><Button variant="whatsapp" asChild className="w-full" size="sm"><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer">Compartir</a></Button></ActionCard>}
-                        <ActionCard icon={Trash2} title="Eliminar" description="Esta acción es permanente." iconClassName="bg-red-500">
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild><Button variant="destructive" className="w-full" size="sm" disabled={isDeleting}>Eliminar</Button></AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader><AlertDialogTitle>¿Borrar este partido?</AlertDialogTitle><AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
-                                    <AlertDialogFooter><AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting}>{isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Eliminar</AlertDialogAction></AlertDialogFooter>
-                                </AlertDialogContent>
-                             </AlertDialog>
-                        </ActionCard>
-                     </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Card className="md:col-span-2 border-primary">
+                            <CardHeader>
+                                <CardTitle>Estado del Partido</CardTitle>
+                                <CardDescription>Gestioná el ciclo de vida del partido. Finalizá el encuentro cuando termine para poder iniciar las evaluaciones.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {canFinalize ? (
+                                    <Button onClick={handleFinishMatch} disabled={isFinishing} size="lg">
+                                        {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                        Finalizar Partido
+                                    </Button>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">El partido debe estar lleno para poder finalizarlo.</p>
+                                )}
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Plantel y Equipos</CardTitle>
+                                <CardDescription>Gestioná los jugadores y la formación de los equipos.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex flex-col gap-2">
+                                {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" className="w-full">Invitar Jugadores del Grupo</Button></InvitePlayerDialog>}
+                                {match.teams && match.teams.length > 0 && <Button variant="outline" className="w-full" onClick={handleShuffleTeams} disabled={isShuffling}>{isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<Shuffle className="mr-2 h-4 w-4"/>Volver a Sortear Equipos</Button>}
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Difusión y Acciones</CardTitle>
+                                <CardDescription>Compartí el partido o tomá acciones administrativas.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex flex-col gap-2">
+                                <Button variant="outline" className="w-full" asChild><a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Partido</a></Button>
+                                {match.teams && match.teams.length > 0 && <Button variant="outline" className="w-full" asChild><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Equipos</a></Button>}
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild><Button variant="destructive" className="w-full" disabled={isDeleting}><Trash2 className="mr-2 h-4 w-4"/>Eliminar Partido</Button></AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader><AlertDialogTitle>¿Borrar este partido?</AlertDialogTitle><AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
+                                        <AlertDialogFooter><AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">{isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Eliminar</AlertDialogAction></AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
             )}
+
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
