@@ -81,6 +81,17 @@ export type MatchLocation = {
     placeId: string;
 }
 
+export type FormationSlot = {
+  name: string; // e.g., 'POR', 'DFC', 'MC', 'DEL'
+  x: number; // percentage from left (0-100)
+  y: number; // percentage from top (0-100)
+};
+
+export type Formation = {
+  name: string;
+  slots: FormationSlot[];
+};
+
 export type TeamFormation = {
   [slotName: string]: string; // e.g., { "POR": "player1-uid", "DFC": "player2-uid" }
 };
@@ -91,8 +102,8 @@ export type Team = {
   players: {
     uid: string;
     displayName: string;
-    position: string;
     ovr: number;
+    position: PlayerPosition;
   }[];
   totalOVR: number;
   averageOVR: number;
