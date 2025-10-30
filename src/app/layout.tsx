@@ -26,7 +26,7 @@ export default function RootLayout({
       </head>
       <body
         className={cn(
-          'min-h-[100svh] bg-background font-body antialiased'
+          'min-h-[100svh] bg-background text-foreground font-body antialiased'
         )}
       >
         <ClientProviders>

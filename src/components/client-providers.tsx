@@ -36,7 +36,7 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
 
   if (!firebaseInstances || !isLoaded) {
     return (
-        <div className="flex h-screen w-full items-center justify-center">
+        <div className="flex h-screen w-full items-center justify-center bg-background">
             <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
         </div>
     );
@@ -44,7 +44,7 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
   
   if (loadError) {
     console.error("Google Maps API failed to load: ", loadError);
-    // You can render a fallback UI here
+    // You can render a fallback UI here, but for now we'll log and continue.
   }
 
   return (
