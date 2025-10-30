@@ -4,39 +4,31 @@
 import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, collectionGroup, getDocs, onSnapshot, Unsubscribe } from 'firebase/firestore';
-import type { Match, Player, EvaluationAssignment, EvaluationSubmission } from '@/lib/types';
+import { collection, query, where, collectionGroup, getDocs } from 'firebase/firestore';
+import type { Match, Player, EvaluationAssignment } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ShieldQuestion, Calendar, Edit, Eye, FileClock, Users, MapPin } from 'lucide-react';
+import { Loader2, ShieldQuestion, Edit } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Progress } from '@/components/ui/progress';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
-import { MatchTeamsDialog } from '@/components/match-teams-dialog';
-import { TeamsIcon } from '@/components/icons/teams-icon';
-import { ViewSubmissionDialog } from '@/components/view-submission-dialog';
 import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 
-type PendingItem = {
-    match: Match;
-    submission?: EvaluationSubmission;
-    userAssignmentCount: number;
-    totalAssignments: number;
-    completedAssignments: number;
+type UnifiedAssignment = EvaluationAssignment & {
+  subject?: Player;
+  match?: Match;
 };
-
-// Helper to determine if a player is a "real user"
-const isRealUser = (player: Player) => player.id === player.ownerUid;
 
 export default function EvaluationsPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
 
-    const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
-    const [isLoadingItems, setIsLoadingItems] = useState(true);
+    const [unifiedAssignments, setUnifiedAssignments] = useState<UnifiedAssignment[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     const userAssignmentsQuery = useMemo(() => {
         if (!firestore || !user?.uid) return null;
@@ -49,91 +41,74 @@ export default function EvaluationsPage() {
     const { data: userAssignments, loading: assignmentsLoading } = useCollection<EvaluationAssignment>(userAssignmentsQuery);
 
     useEffect(() => {
-        if (userLoading || assignmentsLoading) return;
-        if (!user || !firestore) {
-            setIsLoadingItems(false);
-            return;
-        }
-
-        setIsLoadingItems(true);
-
-        const processItems = async () => {
-            const userPendingAssignments = userAssignments || [];
-            const pendingMatchIds = new Set(userPendingAssignments.map(a => a.matchId));
-
-            const submissionsQuery = query(collection(firestore, 'evaluationSubmissions'), where('evaluatorId', '==', user.uid));
-            const submissionsSnapshot = await getDocs(submissionsQuery);
-            const submissionMatchIds = new Set(submissionsSnapshot.docs.map(doc => doc.data().matchId));
-            const submissionsMap = new Map(submissionsSnapshot.docs.map(doc => [doc.data().matchId, doc.data() as EvaluationSubmission]));
-            
-            const allRelevantMatchIds = [...new Set([...pendingMatchIds, ...submissionMatchIds])];
-
-            if (allRelevantMatchIds.length === 0) {
-                setPendingItems([]);
-                setIsLoadingItems(false);
+        const processAssignments = async () => {
+            if (userLoading || assignmentsLoading) return;
+            if (!user || !firestore || !userAssignments) {
+                setIsLoading(false);
                 return;
             }
 
-            const matchesQuery = query(collection(firestore, 'matches'), where('__name__', 'in', allRelevantMatchIds));
-            const matchesSnapshot = await getDocs(matchesQuery);
-            const matchesMap = new Map(matchesSnapshot.docs.map(doc => [doc.id, { id: doc.id, ...doc.data() } as Match]));
+            setIsLoading(true);
 
-            const initialItems: (PendingItem | null)[] = allRelevantMatchIds.map(matchId => {
-                 const match = matchesMap.get(matchId);
-                 if (!match || match.status === 'evaluated') return null;
-
-                 const userAssignmentCount = userPendingAssignments.filter(a => a.matchId === matchId).length;
-                 const isSubmitted = submissionsMap.has(matchId);
-
-                 // Si ya se envió y no hay pendientes, no mostrar
-                 if (isSubmitted && userAssignmentCount === 0) return null;
-
-                 const item: PendingItem = {
-                    match,
-                    submission: submissionsMap.get(matchId),
-                    userAssignmentCount,
-                    totalAssignments: 0, 
-                    completedAssignments: 0,
-                 };
-                 return item;
-            });
-            
-            const validItems = initialItems.filter((item): item is PendingItem => item !== null);
-            setPendingItems(validItems.sort((a, b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime()));
-            setIsLoadingItems(false);
-
-            const unsubscribers: Unsubscribe[] = validItems.map(item => {
-                const assignmentsCollectionRef = collection(firestore, 'matches', item.match.id, 'assignments');
-                return onSnapshot(assignmentsCollectionRef, (snapshot) => {
-                    const total = snapshot.size;
-                    const completed = snapshot.docs.filter(d => d.data().status === 'completed').length;
-                    setPendingItems(currentItems => 
-                        currentItems.map(currentItem => 
-                            currentItem.match.id === item.match.id
-                                ? { ...currentItem, totalAssignments: total, completedAssignments: completed }
-                                : currentItem
-                        )
-                    );
-                });
-            });
-
-            return () => unsubscribers.forEach(unsub => unsub());
-        };
-
-        let cleanup: (() => void) | undefined;
-        processItems().then(unsubFunc => {
-            cleanup = unsubFunc;
-        }).catch(console.error);
-
-        return () => {
-            if (cleanup) {
-                cleanup();
+            if (userAssignments.length === 0) {
+                setUnifiedAssignments([]);
+                setIsLoading(false);
+                return;
             }
+
+            const subjectIds = [...new Set(userAssignments.map(a => a.subjectId))];
+            const matchIds = [...new Set(userAssignments.map(a => a.matchId))];
+
+            let playersMap = new Map<string, Player>();
+            let matchesMap = new Map<string, Match>();
+
+            // Fetch players in chunks of 30 (Firestore 'in' query limit)
+            if (subjectIds.length > 0) {
+                const playerChunks: string[][] = [];
+                for (let i = 0; i < subjectIds.length; i += 30) {
+                    playerChunks.push(subjectIds.slice(i, i + 30));
+                }
+                const playerPromises = playerChunks.map(chunk =>
+                    getDocs(query(collection(firestore, 'players'), where('__name__', 'in', chunk)))
+                );
+                const playerSnapshots = await Promise.all(playerPromises);
+                playerSnapshots.forEach(snapshot => 
+                    snapshot.docs.forEach(doc => playersMap.set(doc.id, { id: doc.id, ...doc.data() } as Player))
+                );
+            }
+            
+            // Fetch matches in chunks of 30
+            if (matchIds.length > 0) {
+                const matchChunks: string[][] = [];
+                for (let i = 0; i < matchIds.length; i += 30) {
+                    matchChunks.push(matchIds.slice(i, i + 30));
+                }
+                const matchPromises = matchChunks.map(chunk =>
+                    getDocs(query(collection(firestore, 'matches'), where('__name__', 'in', chunk)))
+                );
+                const matchSnapshots = await Promise.all(matchPromises);
+                matchSnapshots.forEach(snapshot =>
+                    snapshot.docs.forEach(doc => matchesMap.set(doc.id, { id: doc.id, ...doc.data() } as Match))
+                );
+            }
+
+            const processed: UnifiedAssignment[] = userAssignments
+                .map(assignment => ({
+                    ...assignment,
+                    subject: playersMap.get(assignment.subjectId),
+                    match: matchesMap.get(assignment.matchId),
+                }))
+                .filter(item => item.subject && item.match) // Filter out items where data might be missing
+                .sort((a, b) => new Date(a.match!.date).getTime() - new Date(b.match!.date).getTime()); // Oldest first
+
+            setUnifiedAssignments(processed);
+            setIsLoading(false);
         };
 
-    }, [userAssignments, firestore, user, assignmentsLoading, userLoading]);
-    
-    const loading = userLoading || isLoadingItems;
+        processAssignments();
+    }, [userAssignments, firestore, user, userLoading, assignmentsLoading]);
+
+    const loading = userLoading || isLoading;
     
     if (loading) {
         return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -166,7 +141,7 @@ export default function EvaluationsPage() {
                 <Button variant="link" className="p-0 h-auto self-start">¿Qué significan los atributos de evaluación?</Button>
             </AttributesHelpDialog>
 
-            {pendingItems.length === 0 ? (
+            {unifiedAssignments.length === 0 ? (
                 <Alert>
                     <ShieldQuestion className="h-4 w-4" />
                     <AlertTitle>¡Todo al día!</AlertTitle>
@@ -175,77 +150,41 @@ export default function EvaluationsPage() {
                     </AlertDescription>
                 </Alert>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                   {pendingItems.map((item) => {
-                       const isEvaluationSent = !!item.submission;
-                       const evaluationProgress = item.totalAssignments > 0 ? (item.completedAssignments / item.totalAssignments) * 100 : 0;
-                       
-                       return (
-                         <Card key={item.match.id} className="flex flex-col">
-                            <CardHeader>
-                                <CardTitle>{item.match.title}</CardTitle>
-                                <div className="space-y-1.5 text-sm text-muted-foreground pt-1">
-                                    <div className="flex items-center gap-2">
-                                        <Calendar className="h-4 w-4"/>
-                                        <span>{format(new Date(item.match.date), 'E, d MMM, yyyy', { locale: es })}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <MapPin className="h-4 w-4"/>
-                                        <span>{item.match.location.name}</span>
-                                    </div>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4 flex-grow">
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                        <div className="flex items-center gap-1.5">
-                                            <Users className="h-4 w-4"/>
-                                            <span>Progreso General</span>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Tareas de Evaluación Pendientes ({unifiedAssignments.length})</CardTitle>
+                        <CardDescription>Esta es la lista de compañeros que te falta evaluar. Se ordena por el partido más antiguo primero.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-2">
+                           {unifiedAssignments.map((assignment, index) => (
+                                <div key={assignment.id}>
+                                    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                                        <div className="flex items-center gap-4">
+                                            <Avatar className="h-12 w-12 border">
+                                                <AvatarImage src={assignment.subject?.photoUrl} alt={assignment.subject?.name} />
+                                                <AvatarFallback>{assignment.subject?.name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p className="font-semibold text-base">{assignment.subject?.name}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Del partido: <strong>{assignment.match?.title}</strong> ({format(new Date(assignment.match!.date), "dd/MM")})
+                                                </p>
+                                            </div>
                                         </div>
-                                        <span>{item.completedAssignments} / {item.totalAssignments}</span>
+                                        <Button asChild variant="secondary" size="sm">
+                                            <Link href={`/evaluations/${assignment.matchId}`}>
+                                                <Edit className="mr-2 h-4 w-4" />
+                                                Evaluar
+                                            </Link>
+                                        </Button>
                                     </div>
-                                    <Progress value={evaluationProgress} />
+                                    {index < unifiedAssignments.length - 1 && <Separator />}
                                 </div>
-                               
-                               <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-                                 {isEvaluationSent ? <FileClock className="h-4 w-4"/> : <Edit className="h-4 w-4"/>}
-                                 <span>
-                                    {isEvaluationSent 
-                                        ? 'Tu evaluación fue enviada' 
-                                        : `${item.userAssignmentCount} evaluaciones pendientes`
-                                    }
-                                 </span>
-                               </div>
-                            </CardContent>
-                            <CardContent className="flex flex-col sm:flex-row gap-2">
-                                {isEvaluationSent && item.submission ? (
-                                    <ViewSubmissionDialog submission={item.submission}>
-                                        <Button variant="outline" className="w-full">
-                                            <Eye className="mr-2 h-4 w-4" />
-                                            Ver mi Evaluación
-                                        </Button>
-                                    </ViewSubmissionDialog>
-                                ) : (
-                                     <Button asChild className="w-full">
-                                        <Link href={`/evaluations/${item.match.id}`}>
-                                            <Edit className="mr-2 h-4 w-4"/>
-                                            Ir a Evaluar
-                                        </Link>
-                                     </Button>
-                                )}
-                                {item.match.teams && item.match.teams.length > 0 && (
-                                    <MatchTeamsDialog match={item.match}>
-                                        <Button variant="secondary" className="w-full">
-                                            <TeamsIcon className="mr-2 h-4 w-4" />
-                                            Ver Equipos
-                                        </Button>
-                                    </MatchTeamsDialog>
-                                )}
-                            </CardContent>
-                         </Card>
-                       )
-                   })}
-                </div>
+                           ))}
+                        </div>
+                    </CardContent>
+                </Card>
             )}
         </div>
     );
