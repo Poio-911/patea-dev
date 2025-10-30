@@ -2,7 +2,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { Match, Team, Player as PlayerType } from '@/lib/types';
+import type { Match, Team, Player as PlayerType, TeamFormation } from '@/lib/types';
+import { formationsByMatchSize, Formation } from '@/lib/formations';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { Loader2, Save, Users, Shuffle, MoreVertical } from 'lucide-react';
+import { Loader2, Save, Users, Shuffle } from 'lucide-react';
 import {
   DndContext,
   DragEndEvent,
@@ -21,99 +22,87 @@ import {
   useSensor,
   useSensors,
   closestCenter,
+  useDraggable,
+  useDroppable,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { generateTeamsAction } from '@/lib/actions/server-actions';
 import { ScrollArea } from './ui/scroll-area';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
-
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { PitchIcon } from './icons/pitch-icon';
 
 interface TacticalBoardProps {
   match: Match;
 }
 
+const PlayerAvatar = ({ player }: { player: PlayerType | { displayName: string, photoUrl?: string } }) => (
+  <div className="flex flex-col items-center gap-1">
+    <Avatar className="h-10 w-10 border-2 border-background shadow-md">
+      <AvatarImage src={player.photoUrl} alt={player.displayName} />
+      <AvatarFallback>{player.displayName?.charAt(0)}</AvatarFallback>
+    </Avatar>
+    <p className="text-xs font-semibold bg-black/50 text-white px-1.5 py-0.5 rounded">
+      {player.displayName}
+    </p>
+  </div>
+);
+
+const DroppableSlot = ({ slotName, player, children }: { slotName: string, player?: PlayerType, children: React.ReactNode }) => {
+  const { setNodeRef, isOver } = useDroppable({ id: slotName });
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        'absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-1 transition-all',
+        isOver && 'scale-110'
+      )}
+      style={{ left: `${children.props.style.left}`, top: `${children.props.style.top}` }}
+    >
+      <div className={cn("h-16 w-16 rounded-full flex items-center justify-center transition-colors", player ? 'bg-primary/20' : 'bg-foreground/10 border-2 border-dashed border-foreground/20')}>
+        {!player && <p className="text-xs font-bold text-muted-foreground">{slotName}</p>}
+      </div>
+    </div>
+  );
+};
 
 export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
   const [teams, setTeams] = useState<Team[]>(initialMatch.teams || []);
-  const [unassignedPlayers, setUnassignedPlayers] = useState<PlayerType[]>(() => {
-    const assignedPlayerIds = new Set(initialMatch.teams?.flatMap(t => t.players.map(p => p.uid)));
-    return initialMatch.players.filter(p => !assignedPlayerIds.has(p.uid)).map(p => ({
-        ...p,
-        id: p.uid,
-        name: p.displayName
-    } as PlayerType));
-  });
-
-  const [activePlayer, setActivePlayer] = useState<PlayerType | null>(null);
+  const [selectedFormation, setSelectedFormation] = useState<string>(initialMatch.teams?.[0]?.suggestedFormation || Object.keys(formationsByMatchSize[initialMatch.matchSize as keyof typeof formationsByMatchSize])[0]);
   const [isSaving, setIsSaving] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
+  const [activePlayerId, setActivePlayerId] = useState<string | null>(null);
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const sensors = useSensors(useSensor(PointerSensor), useSensor(TouchSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
+  );
 
-  const movePlayer = (playerId: string, targetTeamName: string) => {
-    const playerToMove = teams.flatMap(t => t.players).find(p => p.uid === playerId) || unassignedPlayers.find(p => p.id === playerId);
-    if (!playerToMove) return;
-
-    let newTeams = JSON.parse(JSON.stringify(teams)) as Team[];
-    let newUnassigned = [...unassignedPlayers];
-
-    // Remove from source
-    newTeams = newTeams.map(team => ({
-        ...team,
-        players: team.players.filter(p => p.uid !== playerId),
-    }));
-    newUnassigned = newUnassigned.filter(p => p.id !== playerId);
-
-    // Add to target
-    if (targetTeamName === 'unassigned') {
-        newUnassigned.push(playerToMove as PlayerType);
-    } else {
-        const teamIndex = newTeams.findIndex(t => t.name === targetTeamName);
-        if (teamIndex !== -1) {
-            newTeams[teamIndex].players.push(playerToMove);
-        }
-    }
-
+  const handleFormationChange = (formationName: string) => {
+    setSelectedFormation(formationName);
+    // You might want to reset player positions when formation changes
+    const newTeams = teams.map(team => ({...team, formation: {}}));
     setTeams(newTeams);
-    setUnassignedPlayers(newUnassigned);
   };
   
-  const handleShuffleTeams = async () => {
-    if (!firestore || !initialMatch || !initialMatch.players) return;
-    setIsShuffling(true);
+  const currentFormation = formationsByMatchSize[initialMatch.matchSize as keyof typeof formationsByMatchSize][selectedFormation];
 
-    try {
-        const playersToBalance = initialMatch.players.map(p => ({
-            id: p.uid,
-            name: p.displayName,
-            position: p.position,
-            ovr: p.ovr,
-        } as PlayerType));
-        
-        const result = await generateTeamsAction(playersToBalance);
+  const handleDragStart = (event: DragStartEvent) => {
+    setActivePlayerId(event.active.id as string);
+  };
 
-        if ('error' in result) throw new Error(result.error);
-        if (!result.teams) throw new Error('No se generaron equipos');
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActivePlayerId(null);
+    // Logic to update player positions will go here
+  };
 
-        setTeams(result.teams);
-        setUnassignedPlayers([]);
-        
-        toast({ title: "¡Equipos Sorteados!", description: "La IA ha creado nuevos equipos." });
-
-    } catch (error: any) {
-        toast({ variant: "destructive", title: "Error", description: error.message || "No se pudieron volver a sortear los equipos."});
-    } finally {
-        setIsShuffling(false);
-    }
-};
 
   const handleSave = async () => {
     if (!firestore) return;
@@ -121,169 +110,77 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
     try {
       const matchRef = doc(firestore, 'matches', initialMatch.id);
       
-      const updatedTeams = teams.map(team => {
-        const totalOVR = team.players.reduce((sum, p) => sum + p.ovr, 0);
-        return {
-            ...team,
-            players: team.players.map(({id, name, ...rest}) => rest), // Remove temp 'id' and 'name' fields before saving
-            averageOVR: team.players.length > 0 ? totalOVR / team.players.length : 0,
-            totalOVR: totalOVR,
-        };
-      });
-      
-      const updatedMatchData = {
-          teams: updatedTeams,
-      };
+      const updatedTeams = teams.map(team => ({
+          ...team,
+          suggestedFormation: selectedFormation,
+          formation: team.formation || {}
+      }));
 
-      await updateDoc(matchRef, updatedMatchData);
-      toast({ title: 'Equipos guardados', description: 'La distribución de jugadores ha sido actualizada.' });
+      await updateDoc(matchRef, { teams: updatedTeams });
+      toast({ title: 'Tácticas guardadas', description: 'La formación y alineación han sido actualizadas.' });
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudieron guardar los cambios.' });
+      toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudieron guardar las tácticas.' });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const otherTeams = (currentTeamName: string) => teams.filter(t => t.name !== currentTeamName);
-
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    const allPlayers = [...teams.flatMap(t => t.players), ...unassignedPlayers];
-    const player = allPlayers.find(p => (p.uid || p.id) === active.id) as PlayerType | undefined;
-    if (player) {
-      setActivePlayer(player);
-    }
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActivePlayer(null);
-
-    if (over && active.id !== over.id) {
-        const targetTeamName = typeof over.id === 'string' && over.id.startsWith('team-droppable-')
-            ? over.id.replace('team-droppable-', '')
-            : over.data?.current?.sortable?.containerId;
-        
-        if (targetTeamName) {
-            movePlayer(active.id as string, targetTeamName);
-        }
-    }
-  };
-
   return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                  <h2 className="text-2xl font-bold">Pizarra Táctica</h2>
                  <div className="flex gap-2">
-                    <Button onClick={handleShuffleTeams} variant="outline" disabled={isShuffling}>
-                        {isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                        <Shuffle className="mr-2 h-4 w-4" />
-                        Sortear Equipos (IA)
-                    </Button>
-                    <Button onClick={handleSave} disabled={isSaving}>
-                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
-                        Guardar Cambios
-                    </Button>
+                     <Button onClick={handleSave} disabled={isSaving}>
+                         {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                         Guardar Formaciones
+                     </Button>
                  </div>
             </div>
-           
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                {teams.map(team => (
-                    <Card key={team.name} id={`team-droppable-${team.name}`}>
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <CardTitle>{team.name}</CardTitle>
-                                <Badge variant="secondary">OVR Promedio: {(team.players.reduce((s, p) => s + p.ovr, 0) / (team.players.length || 1)).toFixed(1)}</Badge>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                             <ScrollArea className="h-72">
-                                <div className="space-y-2 pr-4">
-                                {team.players.map(player => (
-                                    <div key={player.uid} className="flex items-center justify-between p-2 rounded-md bg-background border hover:bg-muted">
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="h-9 w-9">
-                                                <AvatarImage src={(initialMatch.players.find(p => p.uid === player.uid) as any)?.photoUrl} alt={player.displayName} />
-                                                <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <p className="font-medium">{player.displayName}</p>
+
+            {teams.map((team, teamIndex) => (
+                <Card key={team.name}>
+                    <CardHeader>
+                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                            <CardTitle>{team.name}</CardTitle>
+                             <div className="flex items-center gap-2">
+                               <label htmlFor={`formation-select-${teamIndex}`} className="text-sm font-medium">Formación</label>
+                               <Select onValueChange={handleFormationChange} defaultValue={selectedFormation}>
+                                  <SelectTrigger id={`formation-select-${teamIndex}`} className="w-[180px]">
+                                    <SelectValue placeholder="Elegir formación" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {Object.values(formationsByMatchSize[initialMatch.matchSize as keyof typeof formationsByMatchSize]).map(f => (
+                                      <SelectItem key={f.name} value={f.name}>{f.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                             </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="md:col-span-2 relative aspect-[7/10] bg-green-600 rounded-lg overflow-hidden flex items-center justify-center">
+                                <PitchIcon className="w-full h-full text-white/20" />
+                                 {currentFormation.slots.map(slot => (
+                                    <div key={slot.name} style={{ left: `${slot.x}%`, top: `${slot.y}%` }} className="absolute -translate-x-1/2 -translate-y-1/2">
+                                         <div className="h-16 w-16 rounded-full flex items-center justify-center bg-black/10 border-2 border-dashed border-white/20">
+                                            <p className="text-xs font-bold text-white/70">{slot.name}</p>
                                         </div>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                {otherTeams(team.name).map(otherTeam => (
-                                                    <DropdownMenuItem key={otherTeam.name} onClick={() => movePlayer(player.uid, otherTeam.name)}>
-                                                        Mover a {otherTeam.name}
-                                                    </DropdownMenuItem>
-                                                ))}
-                                                <DropdownMenuItem onClick={() => movePlayer(player.uid, 'unassigned')}>
-                                                    Mover a Suplentes
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
                                     </div>
                                 ))}
-                                </div>
-                            </ScrollArea>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-            <Card id="team-droppable-unassigned">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/>Suplentes / No Asignados ({unassignedPlayers.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <ScrollArea className="h-48">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 pr-4">
-                            {unassignedPlayers.map(player => (
-                                <div key={player.id} className="p-2 rounded-md bg-background border hover:bg-muted">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarImage src={player.photoUrl} alt={player.name} />
-                                                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <p className="text-sm font-medium truncate">{player.name}</p>
-                                        </div>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical className="h-4 w-4" /></Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                {teams.map(team => (
-                                                    <DropdownMenuItem key={team.name} onClick={() => movePlayer(player.id, team.name)}>
-                                                        Mover a {team.name}
-                                                    </DropdownMenuItem>
-                                                ))}
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                </div>
-                            ))}
+                            </div>
+                            <div>
+                                <h3 className="font-semibold mb-2">Suplentes</h3>
+                                 <div className="p-4 bg-muted rounded-lg h-full min-h-[200px]">
+                                    {/* Bench players will go here */}
+                                 </div>
+                            </div>
                         </div>
-                    </ScrollArea>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+            ))}
         </div>
-        <DragOverlay>
-            {activePlayer ? (
-              <div className="flex items-center gap-3 p-2 rounded-md bg-primary text-primary-foreground shadow-lg">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage
-                    src={(initialMatch.players.find(p => p.uid === activePlayer.id) as any)?.photoUrl}
-                    alt={activePlayer.name}
-                  />
-                  <AvatarFallback>{activePlayer.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <p className="font-medium">{activePlayer.name}</p>
-                <Badge variant="secondary">{activePlayer.ovr}</Badge>
-              </div>
-            ) : null}
-        </DragOverlay>
     </DndContext>
   );
 }

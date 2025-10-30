@@ -1,3 +1,4 @@
+
 import { DocumentData, DocumentReference } from "firebase/firestore";
 import type { PerformanceTag as Pt } from "./performance-tags";
 
@@ -81,31 +82,8 @@ export type MatchLocation = {
 }
 
 export type TeamFormation = {
-  [key: string]: { x: number, y: number } // player.uid -> {x, y} percentage coordinates
+  [slotName: string]: string; // e.g., { "POR": "player1-uid", "DFC": "player2-uid" }
 };
-
-export type Match = {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  location: MatchLocation;
-  type: MatchType;
-  matchSize: MatchSize;
-  players: { uid: string; displayName: string; ovr: number; position: PlayerPosition; photoUrl: string }[];
-  playerUids: string[]; // Added for simpler queries
-  teams: Team[];
-  status: MatchStatus;
-  ownerUid: string;
-  groupId: string;
-  isPublic?: boolean;
-  weather?: {
-    description: string;
-    icon: string;
-    temperature: number;
-  };
-  chronicle?: string; // AI-generated match summary
-} & DocumentData;
 
 export type Team = {
   id?: string;
@@ -154,6 +132,28 @@ export type GroupTeam = {
   createdAt: string;
 } & DocumentData;
 
+export type Match = {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  location: MatchLocation;
+  type: MatchType;
+  matchSize: MatchSize;
+  players: { uid: string; displayName: string; ovr: number; position: PlayerPosition; photoUrl: string }[];
+  playerUids: string[]; // Added for simpler queries
+  teams: Team[];
+  status: MatchStatus;
+  ownerUid: string;
+  groupId: string;
+  isPublic?: boolean;
+  weather?: {
+    description: string;
+    icon: string;
+    temperature: number;
+  };
+  chronicle?: string; // AI-generated match summary
+} & DocumentData;
 
 export type Group = {
   id: string;
