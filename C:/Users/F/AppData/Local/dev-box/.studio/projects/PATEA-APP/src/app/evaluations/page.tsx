@@ -17,6 +17,7 @@ import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { ViewSubmissionDialog } from '@/components/view-submission-dialog';
+import { Badge } from '@/components/ui/badge';
 
 type UnifiedAssignment = EvaluationAssignment & {
   subject?: Player;
@@ -174,7 +175,14 @@ export default function EvaluationsPage() {
                 title="Bandeja de Evaluaciones"
                 description="Después de cada partido, acá aparecerán tus tareas de evaluación. Tenés que puntuar el rendimiento de un par de compañer@s para que el sistema pueda actualizar los OVRs de tod@s. ¡Tu opinión es clave!"
             />
-            <PageHeader title={`Tareas de Evaluación (${assignmentsByMatch.length} pendiente(s))`} description="Esta es la lista de compañeros que te falta evaluar, agrupados por partido." />
+            <div className="flex items-center gap-3">
+                <PageHeader title="Evaluaciones" description="Esta es la lista de partidos con evaluaciones pendientes o completadas." />
+                {assignmentsByMatch.length > 0 && (
+                    <Badge variant="destructive" className="h-7 w-7 flex items-center justify-center rounded-full text-base">
+                        {assignmentsByMatch.length}
+                    </Badge>
+                )}
+            </div>
             
             <AttributesHelpDialog>
                 <Button variant="link" className="p-0 h-auto self-start">¿Qué significan los atributos de evaluación?</Button>
