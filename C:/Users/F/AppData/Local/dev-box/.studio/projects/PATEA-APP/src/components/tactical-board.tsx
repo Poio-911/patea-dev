@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { Match, Team, Player as PlayerType, Formation } from '@/lib/types';
 import { formationsByMatchSize } from '@/lib/formations';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -8,10 +9,15 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { Loader2, Save, MoreVertical, Repeat, Users, Shirt, UserPlus } from 'lucide-react';
+import { Loader2, Save, MoreVertical, Users, Shirt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Badge } from './ui/badge';
 import { Label } from './ui/label';
 import { Separator } from './ui/separator';
@@ -32,15 +38,19 @@ const positionBadgeStyles: Record<PlayerType['position'], string> = {
 };
 
 const TacticalPlayer = ({ player, onOpenMenu }: { player: PlayerType, onOpenMenu: () => void }) => (
-    <div className="flex flex-col items-center text-center gap-1 w-24">
+    <div className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors w-full">
+        <div className="flex items-center gap-3 flex-1">
+            <SoccerPlayerIcon className="w-8 h-8 text-primary" />
+            <div className="flex-1">
+                <p className="text-sm font-bold text-foreground/90 uppercase truncate">{player.name}</p>
+                <p className={cn("text-xs font-semibold uppercase", positionBadgeStyles[player.position])}>{player.position}</p>
+            </div>
+        </div>
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <button className="relative group">
-                    <SoccerPlayerIcon className="w-10 h-10 text-primary group-hover:scale-110 transition-transform" />
-                    <div className="absolute top-0 right-0 -mt-1 -mr-1">
-                        <MoreVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"/>
-                    </div>
-                </button>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
                 <DropdownMenuItem onClick={onOpenMenu}>
@@ -48,8 +58,6 @@ const TacticalPlayer = ({ player, onOpenMenu }: { player: PlayerType, onOpenMenu
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
-        <p className="text-xs font-bold text-foreground/80 uppercase truncate w-full">{player.name}</p>
-        <p className={cn("text-[10px] font-semibold uppercase px-1 rounded", positionBadgeStyles[player.position])}>{player.position}</p>
     </div>
 );
 
@@ -124,9 +132,9 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
     
     // Recalculate OVRs
     newTeams.forEach((team: Team) => {
-        const teamPlayers = team.players.map(p => allPlayersMap.get(p.uid)).filter(Boolean) as PlayerType[];
-        const totalOVR = teamPlayers.reduce((sum, p) => sum + p.ovr, 0);
-        team.averageOVR = teamPlayers.length > 0 ? Math.round(totalOVR / teamPlayers.length) : 0;
+        const teamPlayersList = team.players.map(p => allPlayersMap.get(p.uid)).filter(Boolean) as PlayerType[];
+        const totalOVR = teamPlayersList.reduce((sum, p) => sum + p.ovr, 0);
+        team.averageOVR = teamPlayersList.length > 0 ? Math.round(totalOVR / teamPlayersList.length) : 0;
     });
 
     setTeams(newTeams);
@@ -162,7 +170,7 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 p-4 border rounded-lg bg-card">
         <div className="flex items-center gap-2">
-          <Label htmlFor="formation-select" className="text-sm font-medium">Formación:</Label>
+          <Label htmlFor="formation-select" className="text-sm font-medium">Formación Sugerida:</Label>
           <Select onValueChange={handleFormationChange} defaultValue={formation.name}>
             <SelectTrigger id="formation-select" className="w-[180px]">
               <SelectValue placeholder="Elegir formación" />
@@ -176,7 +184,7 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
         </div>
         <Button onClick={handleSave} disabled={isSaving}>
           {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-          Guardar Formaciones
+          Guardar Alineaciones
         </Button>
       </div>
 
@@ -187,17 +195,15 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
               <CardTitle>{team.name}</CardTitle>
               <Badge variant="secondary">OVR {team.averageOVR.toFixed(1)}</Badge>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-2">
               <Separator />
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {(teamPlayers[teamIndex] || []).map(player => (
-                  <TacticalPlayer
-                    key={player.id}
-                    player={player}
-                    onOpenMenu={() => handleOpenSwapDialog(player, teamIndex)}
-                  />
-                ))}
-              </div>
+              {(teamPlayers[teamIndex] || []).map(player => (
+                <TacticalPlayer
+                  key={player.id}
+                  player={player}
+                  onOpenMenu={() => handleOpenSwapDialog(player, teamIndex)}
+                />
+              ))}
             </CardContent>
           </Card>
         ))}
@@ -211,11 +217,17 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
                 Suplentes ({benchPlayers.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
+          <CardContent className="space-y-2">
             {benchPlayers.map(player => (
-              <TacticalPlayer key={player.id} player={player} onOpenMenu={() => {
-                  toast({title: "Función no disponible", description: "Los suplentes no se pueden cambiar desde aquí por ahora."});
-              }} />
+                <div key={player.id} className="flex items-center justify-between p-2 rounded-md">
+                    <div className="flex items-center gap-3 flex-1">
+                        <SoccerPlayerIcon className="w-8 h-8 text-muted-foreground" />
+                        <div>
+                            <p className="text-sm font-bold text-foreground/90 uppercase">{player.name}</p>
+                            <p className={cn("text-xs font-semibold uppercase", positionBadgeStyles[player.position])}>{player.position}</p>
+                        </div>
+                    </div>
+                </div>
             ))}
           </CardContent>
         </Card>
