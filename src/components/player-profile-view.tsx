@@ -244,7 +244,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
       const goals = summary.evaluations.reduce((sum, ev) => sum + (ev.goals || 0), 0);
       
       const allTags = summary.evaluations.flatMap(ev => ev.performanceTags)
-        .filter((tag): tag is PerformanceTag => tag && typeof tag === 'object' && 'impact' in tag);
+        .filter((tag): tag is PerformanceTag => Boolean(tag && typeof tag === 'object' && 'impact' in tag));
       
       let performance: { level: PerformanceLevel; color: string };
       if (hasNumericRatings) {
