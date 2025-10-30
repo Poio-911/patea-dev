@@ -10,13 +10,14 @@ import { PageHeader } from '@/components/page-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ShieldQuestion, Edit, FileClock, CheckCircle } from 'lucide-react';
+import { Loader2, ShieldQuestion, Edit, FileClock, CheckCircle, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { ViewSubmissionDialog } from '@/components/view-submission-dialog';
 
 type UnifiedAssignment = EvaluationAssignment & {
   subject?: Player;
@@ -49,6 +50,11 @@ export default function EvaluationsPage() {
         );
     }, [firestore, user?.uid]);
     const { data: userSubmissions, loading: submissionsLoading } = useCollection<EvaluationSubmission>(userSubmissionsQuery);
+
+    const submissionsMap = useMemo(() => {
+        if (!userSubmissions) return new Map();
+        return new Map(userSubmissions.map(sub => [sub.matchId, sub]));
+    }, [userSubmissions]);
 
 
     useEffect(() => {
@@ -195,6 +201,7 @@ export default function EvaluationsPage() {
                                 const assignmentIds = assignments.map(a => a.id).join(',');
                                 const isSubmitted = submittedMatchIds.has(match.id);
                                 const hasPending = assignments.length > 0;
+                                const submissionData = submissionsMap.get(match.id);
 
                                 return (
                                     <div key={match.id} className="border p-4 rounded-lg">
@@ -203,24 +210,42 @@ export default function EvaluationsPage() {
                                                 <h3 className="font-bold text-lg">{match.title}</h3>
                                                 <p className="text-sm text-muted-foreground">{format(new Date(match.date), "dd/MM/yyyy", { locale: es })}</p>
                                             </div>
-                                            {isSubmitted ? (
-                                                <div className="flex items-center gap-2 text-green-600 font-semibold text-sm">
-                                                    <CheckCircle className="h-5 w-5" />
-                                                    Evaluado
-                                                </div>
-                                            ) : hasPending ? (
-                                                <Button asChild>
-                                                    <Link href={`/evaluations/${match.id}?assignments=${assignmentIds}`}>
-                                                        <Edit className="mr-2 h-4 w-4" />
-                                                        Evaluar Partido ({assignments.length})
-                                                    </Link>
-                                                </Button>
-                                            ) : (
-                                                 <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm">
-                                                    <FileClock className="h-5 w-5" />
-                                                    Enviado
-                                                </div>
-                                            )}
+                                            <div className="flex items-center gap-2">
+                                                {isSubmitted ? (
+                                                    <>
+                                                        {submissionData && (
+                                                            <ViewSubmissionDialog submission={submissionData}>
+                                                                <Button variant="outline" size="sm">
+                                                                    <Eye className="mr-2 h-4 w-4" />
+                                                                    Ver mi Envío
+                                                                </Button>
+                                                            </ViewSubmissionDialog>
+                                                        )}
+                                                        <div className="flex items-center gap-2 text-green-600 font-semibold text-sm">
+                                                            <CheckCircle className="h-5 w-5" />
+                                                            Evaluado
+                                                        </div>
+                                                    </>
+                                                ) : hasPending ? (
+                                                    <>
+                                                        <div className="hidden sm:flex items-center gap-2 text-yellow-600 font-semibold text-sm">
+                                                            <FileClock className="h-5 w-5" />
+                                                            Pendiente
+                                                        </div>
+                                                        <Button asChild>
+                                                            <Link href={`/evaluations/${match.id}?assignments=${assignmentIds}`}>
+                                                                <Edit className="mr-2 h-4 w-4" />
+                                                                Evaluar Jugadores
+                                                            </Link>
+                                                        </Button>
+                                                    </>
+                                                ) : (
+                                                     <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm">
+                                                        <FileClock className="h-5 w-5" />
+                                                        Enviado
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                         <Separator className="my-3" />
                                         <div className="flex flex-wrap gap-4">
@@ -234,7 +259,7 @@ export default function EvaluationsPage() {
                                                 </div>
                                             ))}
                                             {isSubmitted && (
-                                                <p className="text-sm text-muted-foreground italic">Tus evaluaciones para este partido ya fueron enviadas.</p>
+                                                <p className="text-sm text-muted-foreground italic">Tus evaluaciones para este partido ya fueron enviadas y están a la espera de ser procesadas por el organizador.</p>
                                             )}
                                         </div>
                                     </div>
@@ -247,4 +272,3 @@ export default function EvaluationsPage() {
         </div>
     );
 }
-
