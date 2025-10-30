@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, rectSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Match, Team, Player } from '@/lib/types';
@@ -36,7 +37,7 @@ function SortablePlayerItem({ player, teamColor }: { player: any, teamColor: str
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative p-1 rounded-full bg-background border-2 shadow-lg w-14 h-14 flex items-center justify-center">
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative p-1 rounded-full bg-background border-2 shadow-lg w-14 h-14 flex items-center justify-center cursor-grab active:cursor-grabbing">
         <Avatar className="h-12 w-12">
             <AvatarImage src={player.photoUrl} alt={player.displayName} />
             <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
@@ -57,7 +58,19 @@ export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
   
   const allPlayerIds = useMemo(() => teams.flatMap(t => t.players.map(p => p.uid)).concat(unassignedPlayers.map(p => p.uid)), [teams, unassignedPlayers]);
 
