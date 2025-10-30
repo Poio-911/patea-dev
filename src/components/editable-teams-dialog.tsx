@@ -1,5 +1,6 @@
+
 // This component has been modified to remove the drag-and-drop functionality
-// due to dependency conflicts with @dnd-kit/sortable.
+// due to dependency conflicts.
 // The core logic for team management remains, but reordering must be done
 // through other UI elements if needed in the future.
 'use client';
@@ -78,7 +79,7 @@ export function EditableTeamsDialog({ match, onOpenChange, open }: EditableTeams
         </DialogHeader>
         <FormProvider {...methods}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {fields.map((team, teamIndex) => (
+            {fields.map((team) => (
               <div key={team.id} className="p-4 border rounded-lg">
                 <h3 className="font-bold text-lg mb-2">{(team as Team).name}</h3>
                 <div className="space-y-2">

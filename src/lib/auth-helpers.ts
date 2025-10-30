@@ -2,12 +2,12 @@ import { headers } from 'next/headers';
 import { adminAuth, adminDb } from '@/firebase/admin-init';
 import { logger } from './logger';
 import { createError, ErrorCodes } from './errors';
-import type { Player, Match, User } from './types';
+import type { Player, Match, UserProfile } from './types';
 
 /**
  * Obtiene y valida el usuario autenticado desde el token
  */
-export async function getAuthenticatedUser(): Promise<User> {
+export async function getAuthenticatedUser(): Promise<UserProfile> {
   const headersList = headers();
   const authHeader = headersList.get('authorization');
 
@@ -27,7 +27,7 @@ export async function getAuthenticatedUser(): Promise<User> {
       throw createError(ErrorCodes.AUTH_INVALID_USER, 'Usuario no encontrado', 404);
     }
 
-    return { uid, ...userDoc.data() } as User;
+    return { uid, ...userDoc.data() } as UserProfile;
   } catch (error) {
     logger.error('Error verifying auth token', error);
     throw createError(ErrorCodes.AUTH_UNAUTHORIZED, 'Token inválido o expirado', 401);
@@ -85,7 +85,7 @@ export async function validateMatchOwnership(matchId: string, userId: string): P
 /**
  * Valida que el usuario tenga un grupo activo
  */
-export function validateActiveGroup(user: User): string {
+export function validateActiveGroup(user: UserProfile): string {
   if (!user.activeGroupId) {
     throw createError(ErrorCodes.AUTH_NO_ACTIVE_GROUP, 'No tienes un grupo activo', 400);
   }
