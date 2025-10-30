@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
@@ -11,6 +10,7 @@ import {
   where, 
   orderBy, 
   getDocs,
+  getDoc,
   updateDoc,
   writeBatch
 } from 'firebase/firestore';
@@ -857,4 +857,3 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     </>
   );
 }
-
