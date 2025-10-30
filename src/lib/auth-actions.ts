@@ -1,7 +1,7 @@
 
 'use server';
 
-import { adminAuth } from '@/firebase/admin';
+import { adminAuth } from '@/firebase/admin-init';
 import { logger } from '@/lib/logger';
 import { cookies } from 'next/headers';
 import { createError, ErrorCodes } from './errors';
