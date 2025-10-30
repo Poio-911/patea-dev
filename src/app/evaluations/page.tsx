@@ -5,12 +5,12 @@ import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, collectionGroup, getDocs } from 'firebase/firestore';
-import type { Match, Player, EvaluationAssignment } from '@/lib/types';
+import type { Match, Player, EvaluationAssignment, EvaluationSubmission } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ShieldQuestion, Edit } from 'lucide-react';
+import { Loader2, ShieldQuestion, Edit, FileClock, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
@@ -29,6 +29,7 @@ export default function EvaluationsPage() {
 
     const [unifiedAssignments, setUnifiedAssignments] = useState<UnifiedAssignment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [submittedMatchIds, setSubmittedMatchIds] = useState<Set<string>>(new Set());
 
     const userAssignmentsQuery = useMemo(() => {
         if (!firestore || !user?.uid) return null;
@@ -39,6 +40,23 @@ export default function EvaluationsPage() {
         );
     }, [firestore, user?.uid]);
     const { data: userAssignments, loading: assignmentsLoading } = useCollection<EvaluationAssignment>(userAssignmentsQuery);
+    
+    const userSubmissionsQuery = useMemo(() => {
+        if (!firestore || !user?.uid) return null;
+        return query(
+            collection(firestore, 'evaluationSubmissions'),
+            where('evaluatorId', '==', user.uid)
+        );
+    }, [firestore, user?.uid]);
+    const { data: userSubmissions, loading: submissionsLoading } = useCollection<EvaluationSubmission>(userSubmissionsQuery);
+
+
+    useEffect(() => {
+        if (userSubmissions) {
+            const ids = new Set(userSubmissions.map(sub => sub.matchId));
+            setSubmittedMatchIds(ids);
+        }
+    }, [userSubmissions]);
 
     useEffect(() => {
         const processAssignments = async () => {
@@ -62,7 +80,6 @@ export default function EvaluationsPage() {
             let playersMap = new Map<string, Player>();
             let matchesMap = new Map<string, Match>();
 
-            // Fetch players in chunks of 30 (Firestore 'in' query limit)
             if (subjectIds.length > 0) {
                 const playerChunks: string[][] = [];
                 for (let i = 0; i < subjectIds.length; i += 30) {
@@ -77,7 +94,6 @@ export default function EvaluationsPage() {
                 );
             }
             
-            // Fetch matches in chunks of 30
             if (matchIds.length > 0) {
                 const matchChunks: string[][] = [];
                 for (let i = 0; i < matchIds.length; i += 30) {
@@ -98,8 +114,8 @@ export default function EvaluationsPage() {
                     subject: playersMap.get(assignment.subjectId),
                     match: matchesMap.get(assignment.matchId),
                 }))
-                .filter(item => item.subject && item.match) // Filter out items where data might be missing
-                .sort((a, b) => new Date(a.match!.date).getTime() - new Date(b.match!.date).getTime()); // Oldest first
+                .filter(item => item.subject && item.match) 
+                .sort((a, b) => new Date(a.match!.date).getTime() - new Date(b.match!.date).getTime()); 
 
             setUnifiedAssignments(processed);
             setIsLoading(false);
@@ -121,7 +137,7 @@ export default function EvaluationsPage() {
     }, [unifiedAssignments]);
 
 
-    const loading = userLoading || isLoading;
+    const loading = userLoading || assignmentsLoading || submissionsLoading;
     
     if (loading) {
         return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -141,6 +157,11 @@ export default function EvaluationsPage() {
         )
     }
     
+    const allMatches = [...assignmentsByMatch, ...userSubmissions?.filter(sub => !assignmentsByMatch.some(am => am.match.id === sub.matchId)).map(sub => ({ match: sub.match as Match, assignments: [] })) || []]
+    .filter(item => item.match)
+    .sort((a, b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime());
+
+
     return (
         <div className="flex flex-col gap-8">
             <FirstTimeInfoDialog
@@ -154,7 +175,7 @@ export default function EvaluationsPage() {
                 <Button variant="link" className="p-0 h-auto self-start">¿Qué significan los atributos de evaluación?</Button>
             </AttributesHelpDialog>
 
-            {assignmentsByMatch.length === 0 ? (
+            {assignmentsByMatch.length === 0 && userSubmissions?.length === 0 ? (
                 <Alert>
                     <ShieldQuestion className="h-4 w-4" />
                     <AlertTitle>¡Todo al día!</AlertTitle>
@@ -165,13 +186,16 @@ export default function EvaluationsPage() {
             ) : (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Tareas de Evaluación Pendientes ({unifiedAssignments.length})</CardTitle>
+                        <CardTitle>Tareas de Evaluación ({assignmentsByMatch.length} pendiente(s))</CardTitle>
                         <CardDescription>Esta es la lista de compañeros que te falta evaluar, agrupados por partido.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                           {assignmentsByMatch.map(({ match, assignments }) => {
+                           {allMatches.map(({ match, assignments }) => {
                                 const assignmentIds = assignments.map(a => a.id).join(',');
+                                const isSubmitted = submittedMatchIds.has(match.id);
+                                const hasPending = assignments.length > 0;
+
                                 return (
                                     <div key={match.id} className="border p-4 rounded-lg">
                                         <div className="flex items-center justify-between">
@@ -179,12 +203,24 @@ export default function EvaluationsPage() {
                                                 <h3 className="font-bold text-lg">{match.title}</h3>
                                                 <p className="text-sm text-muted-foreground">{format(new Date(match.date), "dd/MM/yyyy", { locale: es })}</p>
                                             </div>
-                                            <Button asChild>
-                                                <Link href={`/evaluations/${match.id}?assignments=${assignmentIds}`}>
-                                                    <Edit className="mr-2 h-4 w-4" />
-                                                    Evaluar Partido ({assignments.length})
-                                                </Link>
-                                            </Button>
+                                            {isSubmitted ? (
+                                                <div className="flex items-center gap-2 text-green-600 font-semibold text-sm">
+                                                    <CheckCircle className="h-5 w-5" />
+                                                    Evaluado
+                                                </div>
+                                            ) : hasPending ? (
+                                                <Button asChild>
+                                                    <Link href={`/evaluations/${match.id}?assignments=${assignmentIds}`}>
+                                                        <Edit className="mr-2 h-4 w-4" />
+                                                        Evaluar Partido ({assignments.length})
+                                                    </Link>
+                                                </Button>
+                                            ) : (
+                                                 <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm">
+                                                    <FileClock className="h-5 w-5" />
+                                                    Enviado
+                                                </div>
+                                            )}
                                         </div>
                                         <Separator className="my-3" />
                                         <div className="flex flex-wrap gap-4">
@@ -197,6 +233,9 @@ export default function EvaluationsPage() {
                                                     <p className="text-sm font-medium">{assignment.subject?.name}</p>
                                                 </div>
                                             ))}
+                                            {isSubmitted && (
+                                                <p className="text-sm text-muted-foreground italic">Tus evaluaciones para este partido ya fueron enviadas.</p>
+                                            )}
                                         </div>
                                     </div>
                                 );
@@ -208,3 +247,4 @@ export default function EvaluationsPage() {
         </div>
     );
 }
+
