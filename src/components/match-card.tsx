@@ -327,7 +327,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             );
         }
         return null;
-    }
+    };
 
     return (
         <Card className="flex flex-col overflow-hidden shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
@@ -411,7 +411,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     <Button asChild className="w-full">
                         <Link href={`/matches/${match.id}`}>
                             <Eye className="mr-2 h-4 w-4" />
-<<<<<<< HEAD
                             Ver Detalles
                         </Link>
                     </Button>
@@ -422,52 +421,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                                 Equipos
                              </Button>
                         </MatchTeamsDialog>
-=======
-                            Detalles
-                        </Button>
-                    </MatchDetailsDialog>
-                    {isUserInMatch && <MatchChatSheet match={match}><Button variant="outline" size="sm" className="w-full"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button></MatchChatSheet>}
-                    {match.teams && match.teams.length > 0 && (
-                        isOwner && match.status === 'completed' ? (
-                            <EditableTeamsDialog match={match}>
-                                <Button variant="outline" size="sm" className="w-full">
-                                    <TeamsIcon className="mr-2 h-4 w-4" />
-                                    Editar Equipos
-                                </Button>
-                            </EditableTeamsDialog>
-                        ) : (
-                            <MatchTeamsDialog match={match}>
-                                <Button variant="outline" size="sm" className="w-full">
-                                    <TeamsIcon className="mr-2 h-4 w-4" />
-                                    Equipos
-                                </Button>
-                            </MatchTeamsDialog>
-                        )
-                    )}
-                    
-                    {isOwner && match.status === 'completed' && (
-                        <Button asChild size="sm" className="w-full bg-amber-500 hover:bg-amber-600 text-white col-span-2">
-                            <Link href={`/matches/${match.id}/evaluate`}>
-                                <FileSignature className="mr-2 h-4 w-4" />
-                                Supervisar Evaluaciones
-                            </Link>
-                        </Button>
-                    )}
-
-                    {isOwner && match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic) && (
-                        <InvitePlayerDialog 
-                            playerToInvite={null} 
-                            userMatches={[]} 
-                            match={match} 
-                            allGroupPlayers={allPlayers}
-                            disabled={isMatchFull}
-                        >
-                            <Button variant="outline" size="sm" className="w-full" disabled={isMatchFull}>
-                                <UserPlus className="mr-2 h-4 w-4" />
-                                Invitar
-                            </Button>
-                        </InvitePlayerDialog>
->>>>>>> 0dc5ba21398c98eb64a7ee9065c8a1c496ed7551
                     )}
                 </div>
                  <JoinLeaveButton />

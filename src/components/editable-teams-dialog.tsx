@@ -286,5 +286,3 @@ export function EditableTeamsDialog({ match, children }: EditableTeamsDialogProp
     </Dialog>
   );
 }
-
-    
