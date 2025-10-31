@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from 'react';
 import type { Match, Player, EvaluationAssignment, Notification, UserProfile } from '@/lib/types';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, CheckCircle, Shuffle, Trash2, UserPlus, LogOut, MessageCircle, MoreVertical, Share2, ClipboardCopy } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, CheckCircle, Shuffle, Trash2, UserPlus, LogOut, MessageCircle, MoreVertical, Share2, ClipboardCopy, Replace } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
 import Link from 'next/link';
@@ -30,11 +30,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import { WhatsAppIcon } from './icons/whatsapp-icon';
 import { MatchChronicleCard } from './match-chronicle-card';
 import { Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
 import { MatchTeamsDialog } from './match-teams-dialog';
+import { SwapPlayerDialog } from './swap-player-dialog';
 
 interface MatchDetailViewProps {
   matchId: string;
@@ -64,7 +66,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const [ownerProfile, setOwnerProfile] = useState<UserProfile | null>(null);
     
     const matchRef = useMemo(() => firestore ? doc(firestore, 'matches', matchId) : null, [firestore, matchId]);
-    const { data: match, loading: matchLoading } = useDoc<Match>(matchRef);
+    const { data: match, loading: matchLoading, error } = useDoc<Match>(matchRef);
 
     const allGroupPlayersQuery = useMemo(() => {
       if (!firestore || !match?.groupId) return null;
@@ -457,16 +459,26 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                             </CardHeader>
                                             <CardContent>
                                                 <div className="space-y-1">
-                                                    {team.players.map(player => (
-                                                        <div key={player.uid} className="flex items-center gap-3 p-2 border-b last:border-b-0">
-                                                            <Avatar className="h-9 w-9"><AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoUrl} alt={player.displayName} /><AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback></Avatar>
-                                                            <div className="flex-1"><p className="font-semibold text-sm">{player.displayName}</p></div>
-                                                            <div className="flex items-center gap-1.5">
-                                                                <Badge variant="outline" className={cn("text-xs", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
-                                                                <Badge variant="secondary" className="text-xs">{player.ovr}</Badge>
+                                                    {team.players.map(player => {
+                                                        const fullPlayer = match.players.find(p => p.uid === player.uid);
+                                                        return (
+                                                            <div key={player.uid} className="flex items-center gap-3 p-2 border-b last:border-b-0">
+                                                                <Avatar className="h-9 w-9"><AvatarImage src={fullPlayer?.photoUrl} alt={player.displayName} /><AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback></Avatar>
+                                                                <div className="flex-1"><p className="font-semibold text-sm">{player.displayName}</p></div>
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <Badge variant="outline" className={cn("text-xs", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
+                                                                    <Badge variant="secondary" className="text-xs">{player.ovr}</Badge>
+                                                                </div>
+                                                                {isOwner && (
+                                                                    <SwapPlayerDialog match={match} playerToSwap={player} allPlayers={match.players}>
+                                                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                            <Replace className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </SwapPlayerDialog>
+                                                                )}
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </div>
                                             </CardContent>
                                         </Card>
