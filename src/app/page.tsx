@@ -7,8 +7,8 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
-import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
-import { Mail } from 'lucide-react';
+import { MainNav } from '@/components/main-nav';
+
 
 export default function HomePage() {
   const { user, loading } = useUser();
@@ -23,9 +23,9 @@ export default function HomePage() {
 
   if (loading || user) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
-      </div>
+        <div className="flex h-screen w-full items-center justify-center">
+            <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
+        </div>
     );
   }
 

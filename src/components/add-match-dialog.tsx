@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Globe, Check, HelpCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Globe, Check, HelpCircle, ChevronRight } from 'lucide-react';
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -23,7 +23,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useFirestore, useUser } from '@/firebase';
 import { addDoc, collection, writeBatch, doc, getDocs, query, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Player, MatchLocation, Notification, Team, MatchType, GroupTeam } from '@/lib/types';
+import { Player, MatchLocation, Notification, Team, MatchType, GroupTeam, PlayerPosition } from '@/lib/types';
 import { Alert, AlertDescription } from './ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
@@ -32,9 +32,9 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Checkbox } from './ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { generateTeamsAction } from '@/lib/actions';
+import { generateTeamsAction, getWeatherForecastAction } from '@/lib/actions/server-actions';
 import { Progress } from './ui/progress';
-import { getMatchDayForecast, GetMatchDayForecastOutput } from '@/ai/flows/get-match-day-forecast';
+import { GetMatchDayForecastOutput } from '@/ai/flows/get-match-day-forecast';
 import { Switch } from './ui/switch';
 import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
@@ -44,6 +44,7 @@ import { JerseyPreview } from './team-builder/jersey-preview';
 import { TeamsIcon } from './icons/teams-icon';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { Badge } from './ui/badge';
 
 const matchLocationSchema = z.object({
   name: z.string(),
@@ -243,11 +244,13 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 const matchDateTime = new Date(dateObj);
                 matchDateTime.setHours(hours, minutes);
 
-                const forecast = await getMatchDayForecast({
+                const forecast = await getWeatherForecastAction({
                     location: watchedLocation.address,
                     date: matchDateTime.toISOString(),
                 });
-                setWeather(forecast);
+                if('description' in forecast) {
+                    setWeather(forecast);
+                }
             } catch (error) {
                 console.error("Failed to fetch weather", error);
                 setWeather(null);
@@ -310,13 +313,21 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   }, [allPlayers, searchTerm]);
 
   const goToNextStep = async () => {
-    const fieldsToValidate: (keyof MatchFormData)[] = ['title', 'date', 'time', 'location', 'type', 'matchSize'];
+    let fieldsToValidate: (keyof MatchFormData)[];
+    if (step === 1) {
+        fieldsToValidate = ['title', 'date', 'time', 'location'];
+    } else if (step === 2) {
+        fieldsToValidate = ['matchSize', 'type'];
+    } else {
+        return;
+    }
+
     const result = await trigger(fieldsToValidate);
     if (result) {
-        if (matchType === 'collaborative') {
-            form.handleSubmit(onSubmit)();
+        if (step === 2 && getValues('type') === 'collaborative') {
+            form.handleSubmit(onSubmit)(); // Submit form directly if collaborative
         } else {
-            setStep(2);
+            setStep(s => s + 1);
         }
     }
   };
@@ -371,7 +382,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 uid: member.playerId,
                 displayName: playerDetails?.name || 'Jugador',
                 ovr: playerDetails?.ovr || 50,
-                position: playerDetails?.position || 'MED'
+                position: (playerDetails?.position || 'MED') as PlayerPosition
             };
         });
 
@@ -424,7 +435,10 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         if ('error' in teamGenerationResult) {
             throw new Error(teamGenerationResult.error || 'No se pudieron generar los equipos.');
         }
-        finalTeams = teamGenerationResult.teams || [];
+        if (!teamGenerationResult.teams) {
+            throw new Error('La respuesta de la IA no contiene equipos.');
+        }
+        finalTeams = teamGenerationResult.teams as Team[];
     }
 
     const newMatchRef = doc(collection(firestore, 'matches'));
@@ -497,260 +511,257 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
             Armar Partido
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90dvh] sm:max-h-[80vh] w-[95vw] sm:max-w-4xl flex flex-col">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] w-[95vw] flex flex-col">
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
           <DialogHeader>
             <DialogTitle>Armar un Partido Nuevo</DialogTitle>
-            <DialogDescription>
-              {step === 1 ? 'Meté los detalles del partido y elegí cómo se arma.' : 'Elegí los jugadores o equipos para el partido.'}
+             <DialogDescription>
+              Paso {step} de {getValues('type') === 'collaborative' ? 2 : 3}: {
+                step === 1 ? 'Detalles del evento.' :
+                step === 2 ? 'Formato del partido.' :
+                'Selección de participantes.'
+              }
             </DialogDescription>
           </DialogHeader>
 
-          <div className={cn("py-4 flex-grow overflow-y-auto pr-2", step !== 1 && "hidden")}>
+          <div className="flex-grow py-4 overflow-y-auto pr-2 -mx-2 px-2">
+            {step === 1 && (
                 <div className="space-y-4">
-                <div>
-                    <Label htmlFor="title">Título del Partido</Label>
-                    <Input id="title" {...form.register('title')} />
-                    {formState.errors.title && <p className="text-xs text-destructive mt-1">{formState.errors.title.message}</p>}
-                </div>
-                
-                <div>
-                    <Label>Ubicación</Label>
-                    <LocationInput onSelectLocation={(location) => setValue('location', location, { shouldValidate: true })} />
-                    {formState.errors.location && <p className="text-xs text-destructive mt-1">{formState.errors.location.address?.message}</p>}
-                </div>
+                    <div>
+                        <Label htmlFor="title">Título del Partido</Label>
+                        <Input id="title" {...form.register('title')} />
+                        {formState.errors.title && <p className="text-xs text-destructive mt-1">{formState.errors.title.message}</p>}
+                    </div>
+                    
+                    <div>
+                        <Label>Ubicación</Label>
+                        <LocationInput onSelectLocation={(location) => setValue('location', location, { shouldValidate: true })} />
+                        {formState.errors.location && <p className="text-xs text-destructive mt-1">{formState.errors.location.address?.message}</p>}
+                    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label>Fecha</Label>
-                      <Controller
-                          name="date"
-                          control={control}
-                          render={({ field }) => (
-                              <Popover>
-                                  <PopoverTrigger asChild>
-                                      <Button
-                                          variant={"outline"}
-                                          className={cn(
-                                              "w-full justify-start text-left font-normal",
-                                              !field.value && "text-muted-foreground"
-                                          )}
-                                      >
-                                          <CalendarIcon className="mr-2 h-4 w-4" />
-                                          {field.value ? format(field.value, "PPP", { locale: es }) : <span>Elegí una fecha</span>}
-                                      </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-auto p-0" align="start">
-                                      <Calendar
-                                          mode="single"
-                                          selected={field.value}
-                                          onSelect={field.onChange}
-                                          initialFocus
-                                      />
-                                  </PopoverContent>
-                              </Popover>
-                          )}
-                      />
-                      {formState.errors.date && <p className="text-xs text-destructive mt-1">{formState.errors.date.message}</p>}
-                    </div>
-                    <div>
-                        <Label htmlFor="time">Hora</Label>
-                        <Input id="time" {...form.register('time')} />
-                        {formState.errors.time && <p className="text-xs text-destructive mt-1">{formState.errors.time.message}</p>}
-                    </div>
-                </div>
-                
-                <div className="p-3 bg-muted/50 rounded-lg min-h-[60px] flex items-center justify-center">
-                    {isFetchingWeather ? (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Viendo el pronóstico...</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <Label>Fecha</Label>
+                          <Controller
+                              name="date"
+                              control={control}
+                              render={({ field }) => (
+                                  <Popover>
+                                      <PopoverTrigger asChild>
+                                          <Button
+                                              variant={"outline"}
+                                              className={cn(
+                                                  "w-full justify-start text-left font-normal",
+                                                  !field.value && "text-muted-foreground"
+                                              )}
+                                          >
+                                              <CalendarIcon className="mr-2 h-4 w-4" />
+                                              {field.value ? format(field.value, "PPP", { locale: es }) : <span>Elegí una fecha</span>}
+                                          </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto p-0" align="start">
+                                          <Calendar
+                                              mode="single"
+                                              selected={field.value}
+                                              onSelect={field.onChange}
+                                              initialFocus
+                                          />
+                                      </PopoverContent>
+                                  </Popover>
+                              )}
+                          />
+                          {formState.errors.date && <p className="text-xs text-destructive mt-1">{formState.errors.date.message}</p>}
                         </div>
-                    ) : weather && WeatherIcon ? (
-                        <div className="flex items-center justify-center gap-4 text-sm w-full">
-                            <div className="flex items-center gap-2">
-                                <WeatherIcon className="h-6 w-6 text-primary"/>
-                                <p className="font-bold text-lg">{weather.temperature}°C</p>
+                        <div>
+                            <Label htmlFor="time">Hora</Label>
+                            <Input id="time" {...form.register('time')} />
+                            {formState.errors.time && <p className="text-xs text-destructive mt-1">{formState.errors.time.message}</p>}
+                        </div>
+                    </div>
+                    
+                    <div className="p-3 bg-muted/50 rounded-lg min-h-[60px] flex items-center justify-center">
+                        {isFetchingWeather ? (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span>Viendo el pronóstico...</span>
                             </div>
-                            <p className="font-medium text-muted-foreground">{weather.description}</p>
-                        </div>
-                    ) : (
-                        <p className="text-sm text-muted-foreground text-center">Poné fecha y lugar para ver el pronóstico del tiempo.</p>
-                    )}
-                </div>
-
-                <div className="space-y-2">
-                    <Label>Tamaño del Partido</Label>
-                    <Controller
-                        name="matchSize"
-                        control={form.control}
-                        render={({ field }) => (
-                            <ToggleGroup type="single" onValueChange={field.onChange} value={field.value} className="w-full justify-start" variant="outline">
-                                <ToggleGroupItem value="10" aria-label="Fútbol 5">Fútbol 5</ToggleGroupItem>
-                                <ToggleGroupItem value="14" aria-label="Fútbol 7">Fútbol 7</ToggleGroupItem>
-                                <ToggleGroupItem value="22" aria-label="Fútbol 11">Fútbol 11</ToggleGroupItem>
-                            </ToggleGroup>
-                        )}
-                    />
-                </div>
-                
-                <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                        <Label>Tipo de Partido</Label>
-                         <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button type="button"><HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" /></button>
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
-                                    <p><b>Manual:</b> El DT elige los jugadores, la IA arma los equipos.</p>
-                                    <p><b>Colaborativo:</b> Los jugadores se apuntan solos.</p>
-                                    <p><b>Por Equipos:</b> Enfrenta a 2 equipos ya creados.</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
-                     <Controller
-                        name="type"
-                        control={form.control}
-                        render={({ field }) => (
-                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                <Label className="flex items-center gap-3 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
-                                    <RadioGroupItem value="manual" />
-                                    <div className="flex items-center gap-2 font-bold"><UserCheck className="h-4 w-4" /><span>Manual</span></div>
-                                </Label>
-                                <Label className="flex items-center gap-3 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
-                                    <RadioGroupItem value="collaborative" />
-                                    <div className="flex items-center gap-2 font-bold"><Users className="h-4 w-4" /><span>Colaborativo</span></div>
-                                </Label>
-                                <Label className="flex items-center gap-3 border rounded-md p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
-                                    <RadioGroupItem value="by_teams" />
-                                    <div className="flex items-center gap-2 font-bold"><TeamsIcon className="h-4 w-4" /><span>Por Equipos</span></div>
-                                </Label>
-                            </RadioGroup>
-                        )}
-                    />
-                </div>
-
-                {watchedType === 'collaborative' && (
-                  <Controller
-                    name="isPublic"
-                    control={form.control}
-                    render={({ field }) => (
-                      <div className="flex items-center space-x-4 rounded-md border p-4">
-                        <Globe />
-                        <div className="flex-1 space-y-1">
-                          <p className="text-sm font-medium leading-none">
-                            Hacer Partido Público
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Permite que jugadores de afuera de tu grupo lo encuentren y se sumen.
-                          </p>
-                        </div>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </div>
-                    )}
-                  />
-                )}
-                </div>
-          </div>
-          
-          <div className={cn("py-4 flex-grow overflow-y-auto pr-2", step !== 2 && "hidden")}>
-               {matchType === 'manual' && (
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Jugadores ({selectedPlayersCount} / {selectedMatchSize})</Label>
-                            <Progress value={(selectedPlayersCount / selectedMatchSize) * 100} />
-                        </div>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Buscar jugador por nombre..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10"
-                            />
-                        </div>
-                        {allPlayers.length > 0 ? (
-                            <div className="max-h-[350px] md:max-h-full overflow-y-auto space-y-2 border p-2 rounded-md">
-                                {filteredPlayers.map(player => (
-                                    <div key={player.id} className="flex items-center space-x-3 rounded-md border p-3 hover:bg-accent/50 has-[:checked]:bg-accent has-[:checked]:text-accent-foreground">
-                                        <Checkbox
-                                            id={`player-${player.id}`}
-                                            onCheckedChange={(checked) => handlePlayerSelect(player.id, !!checked)}
-                                            checked={form.getValues('players').includes(player.id)}
-                                        />
-                                        <Avatar className="h-9 w-9">
-                                            <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
-                                            <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <Label htmlFor={`player-${player.id}`} className="flex-1 cursor-pointer flex items-center gap-2">
-                                            <span className="font-semibold">{player.name}</span>
-                                            <SoccerPlayerIcon className={cn("h-4 w-4", positionColors[player.position])} />
-                                            <span className={cn("text-xs font-semibold", positionColors[player.position])}>{player.position}</span>
-                                        </Label>
-                                    </div>
-                                ))}
-                                {filteredPlayers.length === 0 && (
-                                    <p className="p-4 text-center text-sm text-muted-foreground">
-                                        No se encontraron jugadores con ese nombre.
-                                    </p>
-                                )}
+                        ) : weather && WeatherIcon ? (
+                            <div className="flex items-center justify-center gap-4 text-sm w-full">
+                                <div className="flex items-center gap-2">
+                                    <WeatherIcon className="h-6 w-6 text-primary"/>
+                                    <p className="font-bold text-lg">{weather.temperature}°C</p>
+                                </div>
+                                <p className="font-medium text-muted-foreground">{weather.description}</p>
                             </div>
                         ) : (
-                            <Alert>
-                                <AlertDescription>
-                                    No hay jugadores en tu grupo. Andá a la página de Jugadores para agregar.
-                                </AlertDescription>
-                            </Alert>
+                            <p className="text-sm text-muted-foreground text-center">Poné fecha y lugar para ver el pronóstico.</p>
                         )}
-                        {formState.errors.players && <p className="text-xs text-destructive mt-1">{formState.errors.players.message}</p>}
                     </div>
-               )}
-               {matchType === 'by_teams' && (
-                    <div className="space-y-4">
-                        <Label>Seleccioná dos equipos para el partido</Label>
-                        {teamsLoading && <Loader2 className="mx-auto h-6 w-6 animate-spin" />}
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-96 overflow-y-auto p-1">
-                            {groupTeams?.map(team => (
-                                <div key={team.id} onClick={() => handleTeamSelect(team.id)} className={cn("rounded-lg border-2 cursor-pointer transition-all", getValues('selectedTeams')?.includes(team.id) ? 'border-primary ring-2 ring-primary/50' : 'hover:border-primary/50')}>
-                                    <div className="flex flex-col items-center p-4 gap-2">
-                                        <JerseyPreview jersey={team.jersey} size="md" />
-                                        <p className="font-bold text-center text-sm">{team.name}</p>
-                                    </div>
-                                    {getValues('selectedTeams')?.includes(team.id) && (
-                                        <div className="absolute top-2 right-2 h-5 w-5 bg-primary rounded-full flex items-center justify-center text-primary-foreground">
-                                            <Check className="h-4 w-4" />
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                </div>
+            )}
+            
+            {step === 2 && (
+                <div className="space-y-6">
+                    <div className="space-y-2">
+                        <Label>Tamaño del Partido</Label>
+                        <Controller
+                            name="matchSize"
+                            control={form.control}
+                            render={({ field }) => (
+                                <ToggleGroup type="single" onValueChange={field.onChange} value={field.value} className="w-full justify-start" variant="outline">
+                                    <ToggleGroupItem value="10" aria-label="Fútbol 5">Fútbol 5</ToggleGroupItem>
+                                    <ToggleGroupItem value="14" aria-label="Fútbol 7">Fútbol 7</ToggleGroupItem>
+                                    <ToggleGroupItem value="22" aria-label="Fútbol 11">Fútbol 11</ToggleGroupItem>
+                                </ToggleGroup>
+                            )}
+                        />
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                            <Label>Tipo de Partido</Label>
+                             <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild><button type="button"><HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" /></button></TooltipTrigger>
+                                    <TooltipContent className="max-w-xs">
+                                        <p><b>Manual:</b> El DT elige, la IA arma equipos.</p>
+                                        <p><b>Colaborativo:</b> Los jugadores se apuntan.</p>
+                                        <p><b>Por Equipos:</b> Duelo de equipos creados.</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         </div>
-                        {formState.errors.selectedTeams && <p className="text-xs text-destructive mt-1">{formState.errors.selectedTeams.message}</p>}
+                         <Controller
+                            name="type"
+                            control={form.control}
+                            render={({ field }) => (
+                                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    <Label className="flex items-center gap-3 border rounded-md p-3 cursor-pointer hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
+                                        <RadioGroupItem value="manual" />
+                                        <div className="flex items-center gap-2 font-bold"><UserCheck className="h-4 w-4" /><span>Manual</span></div>
+                                    </Label>
+                                    <Label className="flex items-center gap-3 border rounded-md p-3 cursor-pointer hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
+                                        <RadioGroupItem value="collaborative" />
+                                        <div className="flex items-center gap-2 font-bold"><Users className="h-4 w-4" /><span>Colaborativo</span></div>
+                                    </Label>
+                                    <Label className="flex items-center gap-3 border rounded-md p-3 cursor-pointer hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
+                                        <RadioGroupItem value="by_teams" />
+                                        <div className="flex items-center gap-2 font-bold"><TeamsIcon className="h-4 w-4" /><span>Por Equipos</span></div>
+                                    </Label>
+                                </RadioGroup>
+                            )}
+                        />
                     </div>
-                )}
+                    {watchedType === 'collaborative' && (
+                      <Controller
+                        name="isPublic"
+                        control={form.control}
+                        render={({ field }) => (
+                          <div className="flex items-center space-x-4 rounded-md border p-4">
+                            <Globe />
+                            <div className="flex-1 space-y-1">
+                              <p className="text-sm font-medium leading-none">Hacer Partido Público</p>
+                              <p className="text-sm text-muted-foreground">Permite que jugadores de afuera se sumen.</p>
+                            </div>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </div>
+                        )}
+                      />
+                    )}
+                </div>
+            )}
+            {step === 3 && (
+                <>
+                   {matchType === 'manual' && (
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Jugadores ({selectedPlayersCount} / {selectedMatchSize})</Label>
+                                <Progress value={(selectedPlayersCount / selectedMatchSize) * 100} />
+                            </div>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Buscar jugador por nombre..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-10"
+                                />
+                            </div>
+                            {allPlayers.length > 0 ? (
+                                <div className="max-h-[350px] md:max-h-full overflow-y-auto space-y-2 border p-2 rounded-md">
+                                    {filteredPlayers.map(player => (
+                                        <div key={player.id} className="flex items-center space-x-3 rounded-md border p-3 hover:bg-accent/50 has-[:checked]:bg-accent">
+                                            <Checkbox
+                                                id={`player-${player.id}`}
+                                                onCheckedChange={(checked) => handlePlayerSelect(player.id, !!checked)}
+                                                checked={form.getValues('players').includes(player.id)}
+                                            />
+                                            <Avatar className="h-9 w-9">
+                                                <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
+                                                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <Label htmlFor={`player-${player.id}`} className="flex-1 cursor-pointer flex items-center gap-2">
+                                                <span className="font-semibold">{player.name}</span>
+                                                <Badge variant="outline" className={cn("text-xs", positionColors[player.position])}>{player.position}</Badge>
+                                            </Label>
+                                        </div>
+                                    ))}
+                                    {filteredPlayers.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No se encontraron jugadores.</p>}
+                                </div>
+                            ) : (
+                                <Alert><AlertDescription>No hay jugadores en tu grupo.</AlertDescription></Alert>
+                            )}
+                            {formState.errors.players && <p className="text-xs text-destructive mt-1">{formState.errors.players.message}</p>}
+                        </div>
+                   )}
+                   {matchType === 'by_teams' && (
+                        <div className="space-y-4">
+                            <Label>Seleccioná dos equipos para el partido</Label>
+                            {teamsLoading && <Loader2 className="mx-auto h-6 w-6 animate-spin" />}
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-96 overflow-y-auto p-1">
+                                {groupTeams?.map(team => (
+                                    <div key={team.id} onClick={() => handleTeamSelect(team.id)} className={cn("rounded-lg border-2 cursor-pointer transition-all", getValues('selectedTeams')?.includes(team.id) ? 'border-primary ring-2 ring-primary/50' : 'hover:border-primary/50')}>
+                                        <div className="flex flex-col items-center p-4 gap-2">
+                                            <JerseyPreview jersey={team.jersey} size="md" />
+                                            <p className="font-bold text-center text-sm">{team.name}</p>
+                                        </div>
+                                        {getValues('selectedTeams')?.includes(team.id) && (
+                                            <div className="absolute top-2 right-2 h-5 w-5 bg-primary rounded-full flex items-center justify-center text-primary-foreground">
+                                                <Check className="h-4 w-4" />
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            {formState.errors.selectedTeams && <p className="text-xs text-destructive mt-1">{formState.errors.selectedTeams.message}</p>}
+                        </div>
+                    )}
+                </>
+            )}
           </div>
           
           <DialogFooter className="mt-auto pt-4 border-t">
-            {step === 1 && (
-                 <Button type="button" onClick={goToNextStep} className="w-full">
-                    {matchType === 'collaborative' ? 'Armar Partido' : 'Siguiente'}
+            {step > 1 && (
+                <Button type="button" variant="outline" onClick={() => setStep(s => s - 1)} disabled={isPending}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Atrás
+                </Button>
+            )}
+            {step < 3 && matchType !== 'collaborative' && (
+                 <Button type="button" onClick={goToNextStep} className="w-full sm:w-auto" disabled={isPending}>
+                    Siguiente <ChevronRight className="ml-2 h-4 w-4" />
                  </Button>
             )}
-            {step === 2 && (
-                <div className="flex w-full justify-between">
-                    <Button type="button" variant="outline" onClick={() => setStep(1)}>
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Volver
-                    </Button>
-                    <Button type="submit" disabled={isPending || (watchedType === 'manual' && watchedPlayers.length < selectedMatchSize / 2)}>
-                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {isPending ? 'Armando...' : 'Armar Partido'}
-                    </Button>
-                </div>
+             {step === 2 && matchType === 'collaborative' && (
+                 <Button type="submit" className="w-full sm:w-auto" disabled={isPending}>
+                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Armar Partido'}
+                 </Button>
+            )}
+            {step === 3 && (
+                <Button type="submit" className="w-full sm:w-auto" disabled={isPending || (watchedType === 'manual' && watchedPlayers.length < selectedMatchSize / 2)}>
+                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isPending ? 'Armando...' : 'Armar Partido'}
+                </Button>
             )}
           </DialogFooter>
         </form>
@@ -758,4 +769,3 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     </Dialog>
   );
 }
-

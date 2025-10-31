@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -13,7 +12,6 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
   SidebarHeader,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
 } from '@/components/ui/sidebar';
@@ -42,10 +40,11 @@ import { FindMatchIcon } from '@/components/icons/find-match-icon';
 import { EvaluationIcon } from '@/components/icons/evaluation-icon';
 import { NotificationBell } from '@/components/notification-bell';
 import { useFcm } from '@/hooks/use-fcm';
-import { HelpDialog } from '@/components/help-dialog';
 import { WelcomeDialog } from '@/components/welcome-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { isToday, parseISO } from 'date-fns';
+import { FloatingActionMenu } from './floating-action-menu';
+import { HelpDialog } from './help-dialog';
 
 
 const navItems = [
@@ -88,10 +87,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
 
   React.useEffect(() => {
-    if (!userLoading && !user) {
+    if (!userLoading && !user && pathname !== '/' && pathname !== '/login' && pathname !== '/register' && pathname !== '/forgot-password') {
       router.push('/login');
     }
-  }, [user, userLoading, router]);
+  }, [user, userLoading, pathname, router]);
   
   React.useEffect(() => {
     if (user) {
@@ -118,6 +117,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     }
   };
 
+  if (pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password') {
+    return <>{children}</>;
+  }
+
   const loading = userLoading || playerLoading || availablePlayerLoading;
 
   if (loading || !user) {
@@ -131,40 +134,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <WelcomeDialog />
-      <Sidebar>
-        <SidebarHeader>
-          <div className="flex items-center gap-2">
-            <SoccerPlayerIcon className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold font-headline">Pateá</span>
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
-                  <SidebarMenuButton
-                    isActive={pathname.startsWith(item.href)}
-                    tooltip={item.label}
-                  >
-                    <item.icon />
-                    {item.label}
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter>
-          <Separator className="my-2" />
-           <SidebarGroup>
-            <SidebarGroupLabel>Mi Grupo</SidebarGroupLabel>
-            <GroupSwitcher />
-          </SidebarGroup>
-        </SidebarFooter>
-      </Sidebar>
-      <div className="relative flex h-screen w-full flex-col">
-          <header className="fixed top-0 left-0 right-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background/70 px-4 backdrop-blur-lg sm:px-6 md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:pl-14 md:pl-72">
+      <div className="relative h-screen w-full">
+          <header className="fixed top-0 left-0 right-0 z-20 flex h-16 shrink-0 items-center justify-between border-b bg-background/70 px-4 backdrop-blur-lg sm:px-6 md:left-[var(--sidebar-width)] md:data-[state=collapsed]:left-[var(--sidebar-width-icon)] transition-all duration-300 ease-in-out">
               <div className="flex items-center gap-2">
                   <div className="hidden md:block">
                       <SidebarTrigger />
@@ -191,8 +162,18 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="relative h-12 w-12 rounded-full">
-                              <Avatar className="h-12 w-12 border">
-                                  <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} data-ai-hint="user avatar" />
+                              <Avatar className="h-12 w-12 border overflow-hidden">
+                                  <AvatarImage
+                                    src={user?.photoURL || ''}
+                                    alt={user?.displayName || 'User'}
+                                    data-ai-hint="user avatar"
+                                    style={{
+                                      objectFit: 'cover',
+                                      objectPosition: `${player?.cropPosition?.x || 50}% ${player?.cropPosition?.y || 50}%`,
+                                      transform: `scale(${player?.cropZoom || 1})`,
+                                      transformOrigin: 'center center',
+                                    }}
+                                  />
                                   <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
                               </Avatar>
                           </Button>
@@ -241,22 +222,50 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               </div>
           </header>
 
-          {availablePlayerData && (
-            <div className="fixed top-16 left-0 right-0 z-10 h-8 bg-gradient-to-r from-green-500/80 to-emerald-600/80 text-white flex items-center justify-center shadow-md animate-in fade-in-0 slide-in-from-top-2 duration-500 md:left-72 md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:left-14">
-                <CheckCircle className="mr-2 h-4 w-4" />
-                <p className="text-xs font-semibold">Estás visible para otros partidos</p>
-            </div>
-          )}
+          <Sidebar>
+            <SidebarHeader>
+                <div className="flex items-center gap-2">
+                    <SoccerPlayerIcon className="h-8 w-8 text-primary" />
+                    <span className="text-xl font-bold font-headline">Pateá</span>
+                </div>
+            </SidebarHeader>
+            <SidebarContent>
+                <SidebarMenu>
+                    {navItems.map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                        <Link href={item.href}>
+                        <SidebarMenuButton
+                            isActive={pathname.startsWith(item.href)}
+                            tooltip={item.label}
+                        >
+                            <item.icon />
+                            <span>{item.label}</span>
+                        </SidebarMenuButton>
+                        </Link>
+                    </SidebarMenuItem>
+                    ))}
+                </SidebarMenu>
+                 <div className="mt-auto">
+                    <Separator className="my-2" />
+                    <SidebarGroup>
+                        <SidebarGroupLabel>Mi Grupo</SidebarGroupLabel>
+                        <GroupSwitcher />
+                    </SidebarGroup>
+                </div>
+            </SidebarContent>
+          </Sidebar>
 
           <main className={cn(
-            "flex-1 overflow-y-auto p-4 pt-20 pb-20 md:p-6 md:pt-24 md:pb-24 md:pl-72 md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:pl-14",
-            availablePlayerData && "pt-[104px] md:pt-[120px]"
+              "h-screen overflow-y-auto pt-16 md:pl-[var(--sidebar-width)] transition-[padding] duration-300 ease-in-out",
+              "group-data-[state=collapsed]/sidebar-wrapper:md:pl-[var(--sidebar-width-icon)]"
           )}>
-            {children}
+            <div className="p-4 md:p-6 pb-24">
+                {children}
+            </div>
           </main>
           
-          <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg">
-              <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium md:max-w-none md:px-4 md:pl-[calc(var(--sidebar-width)_+_1rem)] peer-data-[state=collapsed]:peer-data-[collapsible=icon]:md:pl-[calc(var(--sidebar-width-icon)_+_1rem)]">
+          <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg md:hidden">
+              <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
               {navItems.map((item) => {
                   const isActive = pathname.startsWith(item.href);
                   const isMatchIcon = item.href === '/matches';
