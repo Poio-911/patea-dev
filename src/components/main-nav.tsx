@@ -34,7 +34,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import type { Player, AvailablePlayer } from '@/lib/types';
 import { doc } from 'firebase/firestore';
-import { Badge } from '@/components/ui/badge';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { MatchIcon } from '@/components/icons/match-icon';
 import { FindMatchIcon } from '@/components/icons/find-match-icon';
@@ -130,24 +129,25 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   <HeaderActions />
               </div>
 
-              <div className="flex items-center gap-2 sm:gap-4">
+              <div className="flex items-center gap-2">
+                  {player && (
+                      <div className="flex items-center gap-3">
+                          <div className="text-right">
+                              <p className="font-bold text-sm truncate max-w-[100px] sm:max-w-none">{player.name}</p>
+                              <p className="text-xs text-muted-foreground">{player.position}</p>
+                          </div>
+                           <div className="flex items-center justify-center h-10 w-10 text-xl font-bold rounded-full bg-primary/10 border-2 border-primary/20 text-primary">
+                              {player.ovr}
+                          </div>
+                      </div>
+                  )}
                   
+                  <Separator orientation="vertical" className="h-10 mx-1 hidden sm:block" />
+
                   <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-auto px-2 py-1">
-                            <div className="flex items-center gap-3">
-                              {player && (
-                                <>
-                                  <div className="text-right hidden sm:block">
-                                    <p className="font-bold text-sm truncate">{player.name}</p>
-                                    <p className="text-xs text-muted-foreground">{player.position}</p>
-                                  </div>
-                                  <div className="flex items-center justify-center h-10 w-10 text-xl font-bold rounded-full bg-primary/10 border-2 border-primary/20 text-primary">
-                                    {player.ovr}
-                                  </div>
-                                </>
-                              )}
-                                <Avatar className="h-10 w-10 border overflow-hidden">
+                          <Button variant="ghost" className="relative h-12 w-12 rounded-full">
+                              <Avatar className="h-12 w-12 border overflow-hidden">
                                   <AvatarImage
                                     src={user?.photoURL || ''}
                                     alt={user?.displayName || 'User'}
@@ -161,7 +161,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                                   />
                                   <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
                               </Avatar>
-                            </div>
                           </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="w-64" align="end" forceMount>
