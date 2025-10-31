@@ -331,7 +331,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     
     return (
         <div className="relative isolate">
-          <div className="absolute inset-0 -z-10 dark:block">
+          <div className="absolute inset-0 -z-10 hidden dark:block">
             <video
               autoPlay
               loop
@@ -356,19 +356,19 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 
                 <PageHeader title={match.title} className="dark:text-white" />
   
-                {/* Card para Tema Claro */}
+                {/* --- VISTA PARA TEMA CLARO --- */}
                 <Card className="dark:hidden relative overflow-hidden border-foreground/10">
                    <div className="absolute inset-0 -z-10 rounded-lg overflow-hidden">
                       <video autoPlay loop muted playsInline className="h-full w-full object-cover">
                           <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
                       </video>
-                      <div className="absolute inset-0 bg-white/30" />
+                      <div className="absolute inset-0 bg-white/60" />
                   </div>
-                    <CardContent className="pt-6 space-y-4 text-white [text-shadow:0_1px_3px_rgb(0_0_0_/_0.5)] bg-transparent">
+                    <CardContent className="pt-6 space-y-4 bg-transparent">
                          <div className="flex flex-col sm:flex-row gap-4 justify-between">
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3 text-lg">
-                                    <Calendar className="h-5 w-5 text-white"/>
+                                    <Calendar className="h-5 w-5"/>
                                     <span className="font-bold">{format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es })}</span>
                                 </div>
                                 {ownerProfile && (
@@ -380,22 +380,22 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                             </div>
                             <div className="space-y-3 text-left sm:text-right">
                                <div className="flex items-center gap-3 text-lg justify-start sm:justify-end">
-                                    <Clock className="h-5 w-5 text-white"/>
+                                    <Clock className="h-5 w-5"/>
                                     <span className="font-bold">{match.time} hs</span>
                                     {WeatherIcon && match.weather && (
                                         <span className="flex items-center gap-1.5 text-sm">
-                                            <WeatherIcon className="h-4 w-4 text-blue-300" />
+                                            <WeatherIcon className="h-4 w-4 text-blue-500" />
                                             <span>({match.weather.temperature}°C)</span>
                                         </span>
                                     )}
                                 </div>
-                                <Badge variant="secondary" className="capitalize text-sm bg-black/20 text-white border-white/20">{match.type === 'by_teams' ? 'Por Equipos' : match.type}</Badge>
+                                <Badge variant="outline" className="capitalize text-sm">{match.type === 'by_teams' ? 'Por Equipos' : match.type}</Badge>
                             </div>
                         </div>
-                         <Separator className="bg-white/20"/>
+                         <Separator/>
                          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                             <div className="flex items-start gap-3">
-                                <MapPin className="h-5 w-5 text-white mt-1 flex-shrink-0"/>
+                                <MapPin className="h-5 w-5 mt-1 flex-shrink-0"/>
                                 <p className="font-bold">{match.location.name}</p>
                             </div>
                             <div className="flex gap-2">
@@ -403,7 +403,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                     <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">Ir a la cancha</a>
                                 </Button>
                                  {isOwner && match.status === 'upcoming' && (
-                                    <Button variant="outline" size="sm" asChild className="bg-black/20 text-white border-white/20 hover:bg-white/10">
+                                    <Button variant="outline" size="sm" asChild>
                                         <a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer">
                                             <WhatsAppIcon className="mr-2 h-4 w-4"/>
                                             Compartir Partido
@@ -413,7 +413,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                             </div>
                          </div>
                          {match.type === 'collaborative' && match.status === 'upcoming' && (
-                            <div className="border-t pt-4 border-white/20">
+                            <div className="border-t pt-4">
                                 {isMatchFull && !isUserInMatch ? (
                                     <Button variant="outline" size="lg" className="w-full" disabled>Partido Lleno</Button>
                                 ) : (
@@ -427,9 +427,9 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     </CardContent>
                 </Card>
 
-                {/* Card para Tema Oscuro */}
+                {/* --- VISTA PARA TEMA OSCURO --- */}
                 <Card className="hidden dark:block dark:bg-background/20 border-foreground/10 backdrop-blur-sm">
-                    <CardContent className="pt-6 space-y-4">
+                    <CardContent className="pt-6 space-y-4 [text-shadow:0_1px_3px_rgb(0_0_0_/_0.5)]">
                          <div className="flex flex-col sm:flex-row gap-4 justify-between">
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3 text-lg">
@@ -592,3 +592,5 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
         </div>
     );
 }
+
+    
