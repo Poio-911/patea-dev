@@ -30,7 +30,12 @@
       "Bash(.idx/integrations.json)",
       "Bash(git reset:*)",
       "Bash(git restore:*)",
-      "Bash(npm run typecheck:*)"
+      "Bash(npm run typecheck:*)",
+      "Bash(src/app/matches/[id]/page.tsx)",
+      "Bash(src/app/matches/page.tsx)",
+      "Bash(src/app/players/page.tsx)",
+      "Bash(src/components/groups/group-dialogs.tsx)",
+      "Bash(src/components/image-cropper-dialog.tsx)"
     ],
     "deny": [],
     "ask": []

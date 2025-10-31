@@ -3,7 +3,8 @@
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { HelpCircle } from 'lucide-react';
-import { attributeDescriptions, type AttributeKey } from '@/lib/data';
+import { attributeDescriptions } from '@/lib/data';
+import type { AttributeKey } from '@/lib/types';
 
 interface AttributeHelpTooltipProps {
     attribute: AttributeKey;

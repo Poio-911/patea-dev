@@ -7,6 +7,8 @@ export type PerformanceTag = Pt;
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
 
+export type AttributeKey = 'PAC' | 'SHO' | 'PAS' | 'DRI' | 'DEF' | 'PHY';
+
 export type PlayerStats = {
   matchesPlayed: number;
   goals: number;

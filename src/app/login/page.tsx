@@ -1,12 +1,11 @@
 
 'use client';
 
-import { useUser } from '@/firebase';
+import { useUser, useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { useAuth } from '@/firebase';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -49,8 +48,8 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     if (!auth) return;
     try {
-        await signInWithEmailAndPassword(auth, data.email, data.password);
-        // The useEffect will handle the redirect
+        const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+        // Let the useUser hook handle the redirect via onAuthStateChanged
     } catch (error: any) {
         toast({
             variant: 'destructive',

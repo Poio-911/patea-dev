@@ -1,7 +1,6 @@
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: true, // Forzar la reconstrucción del caché de Next.js
   images: {
     remotePatterns: [
       {
