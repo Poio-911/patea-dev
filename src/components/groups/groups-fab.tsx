@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, forwardRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Users2, X, PlusCircle, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,12 +30,16 @@ export function GroupsFab() {
     open: { opacity: 1, y: 0 },
   };
 
-  const FabItem = ({ icon: Icon, label, children }: { icon: React.ElementType, label: string, children: React.ReactNode }) => (
-     <motion.div variants={itemVariants} className="flex items-center gap-3 justify-end">
+  const FabItem = forwardRef<HTMLDivElement, { icon: React.ElementType, label: string, children: React.ReactNode }>(
+    ({ icon: Icon, label, children }, ref) => (
+      <motion.div variants={itemVariants} className="flex items-center gap-3 justify-end" ref={ref}>
         <span className="text-sm font-semibold p-2 rounded-md shadow-md bg-background/70 backdrop-blur-lg">{label}</span>
         {children}
-    </motion.div>
+      </motion.div>
+    )
   );
+  FabItem.displayName = 'FabItem';
+
 
   return (
     <div className="fixed bottom-20 right-4 z-40 md:bottom-6 md:right-6 flex flex-col items-end gap-4">
