@@ -306,11 +306,11 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     };
 
     if (matchLoading) {
-        return <div className="flex justify-center items-center h-full"><Loader2 className="h-12 w-12 animate-spin" /></div>;
+        return <div className="flex justify-center items-center h-full"><Loader2 className="h-12 w-12 animate-spin text-white" /></div>;
     }
 
     if (!match) {
-        return <div className="text-center p-8"><h2 className="text-xl font-bold">Partido no encontrado</h2></div>;
+        return <div className="text-center p-8 text-white"><h2 className="text-xl font-bold">Partido no encontrado</h2></div>;
     }
 
     const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
@@ -329,11 +329,11 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
           >
             <source src="/videos/match-detail-bg.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 -z-10 bg-black/50 backdrop-blur-sm" />
+          <div className="absolute inset-0 -z-10 bg-black/50" />
     
           <div className="relative flex flex-col gap-8 p-4 md:p-6 text-white">
                 <div className="flex w-full items-start justify-between gap-4">
-                    <Button asChild variant="outline" className="self-start bg-black/20 border-white/20 hover:bg-black/40">
+                    <Button asChild variant="outline" className="self-start bg-black/20 border-white/20 hover:bg-black/40 text-white">
                         <Link href="/matches">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Volver a Partidos
@@ -389,7 +389,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                     <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">Ir a la cancha</a>
                                 </Button>
                                  {isOwner && match.status === 'upcoming' && (
-                                    <Button variant="outline" size="sm" asChild className="bg-black/20 border-white/20 hover:bg-black/40">
+                                    <Button variant="outline" size="sm" asChild className="bg-black/20 border-white/20 hover:bg-black/40 text-white">
                                         <a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer">
                                             <WhatsAppIcon className="mr-2 h-4 w-4"/>
                                             Compartir Partido
@@ -401,7 +401,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                          {match.type === 'collaborative' && match.status === 'upcoming' && (
                             <div className="border-t border-white/20 pt-4">
                                 {isMatchFull && !isUserInMatch ? (
-                                    <Button variant="outline" size="lg" className="w-full" disabled>Partido Lleno</Button>
+                                    <Button variant="outline" size="lg" className="w-full bg-black/20 border-white/20" disabled>Partido Lleno</Button>
                                 ) : (
                                     <Button variant={isUserInMatch ? 'secondary' : 'default'} size="lg" onClick={handleJoinOrLeaveMatch} disabled={isJoining} className="w-full">
                                         {isJoining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isUserInMatch ? <LogOut className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />)}
@@ -421,8 +421,8 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                  <div className="pt-2">
                                     {isOwner && match.teams && match.teams.length > 0 && match.status === 'upcoming' && (
                                         <div className="flex flex-col sm:flex-row gap-2">
-                                            <Button variant="outline" size="sm" onClick={handleShuffleTeams} disabled={isShuffling} className="bg-black/20 border-white/20 hover:bg-black/40">{isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<Shuffle className="mr-2 h-4 w-4"/>Volver a Sortear</Button>
-                                            <Button variant="outline" size="sm" asChild className="bg-black/20 border-white/20 hover:bg-black/40"><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Equipos</a></Button>
+                                            <Button variant="outline" size="sm" onClick={handleShuffleTeams} disabled={isShuffling} className="bg-black/20 border-white/20 hover:bg-black/40 text-white">{isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<Shuffle className="mr-2 h-4 w-4"/>Volver a Sortear</Button>
+                                            <Button variant="outline" size="sm" asChild className="bg-black/20 border-white/20 hover:bg-black/40 text-white"><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Equipos</a></Button>
                                         </div>
                                     )}
                                 </div>
@@ -495,7 +495,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                             Finalizar
                                         </Button>
                                     )}
-                                    {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" size="sm" className="bg-black/20 border-white/20 hover:bg-black/40"><UserPlus className="mr-2 h-4 w-4"/>Invitar</Button></InvitePlayerDialog>}
+                                    {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" size="sm" className="bg-black/20 border-white/20 hover:bg-black/40 text-white"><UserPlus className="mr-2 h-4 w-4"/>Invitar</Button></InvitePlayerDialog>}
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild><Button variant="destructive" size="sm" disabled={isDeleting}><Trash2 className="mr-2 h-4 w-4"/>Eliminar</Button></AlertDialogTrigger>
                                         <AlertDialogContent>
