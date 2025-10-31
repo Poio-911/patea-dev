@@ -333,9 +333,9 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
           <div className="absolute inset-0 bg-black/50" />
         </div>
   
-        <div className="relative flex flex-col gap-8 p-4 md:p-6 text-foreground dark:text-white">
+        <div className="relative flex flex-col gap-8 p-4 md:p-6 text-foreground">
               <div className="flex w-full items-start justify-between gap-4">
-                  <Button asChild variant="outline" className="self-start bg-background/50 dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40">
+                  <Button asChild variant="outline" className="self-start dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40">
                       <Link href="/matches">
                           <ArrowLeft className="mr-2 h-4 w-4" />
                           Volver a Partidos
@@ -343,14 +343,14 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                   </Button>
               </div>
               
-              <PageHeader title={match.title} className="text-foreground dark:text-white" />
+              <PageHeader title={match.title} className="dark:text-white" />
 
-              <Card className="relative overflow-hidden border-foreground/10 dark:bg-background/20">
-                 <div className="absolute inset-0 -z-10 block dark:hidden">
+              <Card className="relative overflow-hidden border-foreground/10 dark:hidden">
+                 <div className="absolute inset-0 -z-10">
                     <video autoPlay loop muted playsInline className="h-full w-full object-cover">
                         <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
                     </video>
-                    <div className="absolute inset-0 bg-white/70 backdrop-blur-sm" />
+                    <div className="absolute inset-0 bg-white/30" />
                 </div>
                   <CardContent className="pt-6 space-y-4">
                        <div className="flex flex-col sm:flex-row gap-4 justify-between">
@@ -380,24 +380,23 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                       </span>
                                   )}
                               </div>
-                              <Badge variant="outline" className="capitalize text-sm bg-background/50">{match.type === 'by_teams' ? 'Por Equipos' : match.type}</Badge>
+                              <Badge variant="outline" className="capitalize text-sm">{match.type === 'by_teams' ? 'Por Equipos' : match.type}</Badge>
                           </div>
                       </div>
-                       <Separator className="bg-foreground/20"/>
+                       <Separator />
                        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                           <div className="flex items-start gap-3">
                               <MapPin className="h-5 w-5 text-primary mt-1 flex-shrink-0"/>
                               <div>
                                   <p className="font-bold">{match.location.name}</p>
-                                  <p className="text-sm text-foreground/80">{match.location.address}</p>
                               </div>
                           </div>
                           <div className="flex gap-2">
-                              <Button asChild variant="secondary" size="sm" className="dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40">
+                              <Button asChild variant="secondary" size="sm">
                                   <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">Ir a la cancha</a>
                               </Button>
                                {isOwner && match.status === 'upcoming' && (
-                                  <Button variant="outline" size="sm" asChild className="bg-background/50 dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40">
+                                  <Button variant="outline" size="sm" asChild>
                                       <a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer">
                                           <WhatsAppIcon className="mr-2 h-4 w-4"/>
                                           Compartir Partido
@@ -407,9 +406,9 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                           </div>
                        </div>
                        {match.type === 'collaborative' && match.status === 'upcoming' && (
-                          <div className="border-t border-foreground/20 pt-4">
+                          <div className="border-t pt-4">
                               {isMatchFull && !isUserInMatch ? (
-                                  <Button variant="outline" size="lg" className="w-full bg-background/50" disabled>Partido Lleno</Button>
+                                  <Button variant="outline" size="lg" className="w-full" disabled>Partido Lleno</Button>
                               ) : (
                                   <Button variant={isUserInMatch ? 'secondary' : 'default'} size="lg" onClick={handleJoinOrLeaveMatch} disabled={isJoining} className="w-full">
                                       {isJoining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isUserInMatch ? <LogOut className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />)}
@@ -423,14 +422,14 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
               
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2 space-y-6">
-                      <Card className="bg-background/20 border-foreground/10 backdrop-blur-sm dark:text-white">
+                      <Card className="dark:bg-background/20 border-foreground/10 backdrop-blur-sm dark:text-white">
                           <CardHeader>
                               <CardTitle>Equipos ({match.players.length} / {match.matchSize})</CardTitle>
                                <div className="pt-2">
                                   {isOwner && match.teams && match.teams.length > 0 && match.status === 'upcoming' && (
                                       <div className="flex flex-col sm:flex-row gap-2">
-                                          <Button variant="outline" size="sm" onClick={handleShuffleTeams} disabled={isShuffling} className="bg-background/50 dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40">{isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<Shuffle className="mr-2 h-4 w-4"/>Volver a Sortear</Button>
-                                          <Button variant="outline" size="sm" asChild className="bg-background/50 dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40"><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Equipos</a></Button>
+                                          <Button variant="outline" size="sm" onClick={handleShuffleTeams} disabled={isShuffling} className="dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40">{isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<Shuffle className="mr-2 h-4 w-4"/>Volver a Sortear</Button>
+                                          <Button variant="outline" size="sm" asChild className="dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40"><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Equipos</a></Button>
                                       </div>
                                   )}
                               </div>
@@ -441,7 +440,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                       {match.teams.map(team => {
                                         const TeamIcon = team.name.toLowerCase().includes("chaleco") ? VestIcon : ShirtIcon;
                                         return (
-                                          <Card key={team.name} className="bg-background/20 dark:bg-background/20 border-foreground/10">
+                                          <Card key={team.name} className="dark:bg-background/20 border-foreground/10">
                                               <CardHeader className="flex flex-row items-center justify-between">
                                                   <CardTitle className="flex items-center gap-2"><TeamIcon className="h-5 w-5" />{team.name}</CardTitle>
                                                   <Badge variant="secondary">OVR {team.averageOVR.toFixed(1)}</Badge>
@@ -460,7 +459,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                                                           <Button variant="ghost" size="icon" className="h-7 w-7"><Shuffle className="h-4 w-4" /></Button>
                                                                       </SwapPlayerDialog>
                                                                   )}
-                                                                  <Badge variant="outline" className={cn("text-xs bg-background/50 dark:bg-background/20 dark:border-foreground/20", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
+                                                                  <Badge variant="outline" className={cn("text-xs dark:bg-background/20 dark:border-foreground/20", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
                                                                   <Badge variant="secondary" className="text-xs w-10 justify-center">{player.ovr}</Badge>
                                                               </div>
                                                           </div>
@@ -473,12 +472,12 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                ) : (
                                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                                       {match.players.map((player, idx) => (
-                                          <div key={`${player.uid}-${idx}`} className="flex flex-col items-center text-center p-3 gap-2 border border-foreground/10 rounded-lg bg-background/20 dark:bg-background/20">
+                                          <div key={`${player.uid}-${idx}`} className="flex flex-col items-center text-center p-3 gap-2 border border-foreground/10 rounded-lg dark:bg-background/20">
                                               <Avatar className="h-16 w-16"><AvatarImage src={player.photoUrl} alt={player.displayName} /><AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback></Avatar>
                                               <div>
                                                   <p className="font-bold text-sm truncate w-24">{player.displayName}</p>
                                                   <div className="flex items-center justify-center gap-1.5 mt-1">
-                                                      <Badge variant="outline" className={cn("text-xs bg-background/50 dark:bg-background/20 dark:border-foreground/20", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
+                                                      <Badge variant="outline" className={cn("text-xs dark:bg-background/20 dark:border-foreground/20", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
                                                       <Badge variant="secondary">{player.ovr}</Badge>
                                                   </div>
                                               </div>
@@ -492,7 +491,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                   </div>
                   <div className="space-y-6">
                       {isOwner && (
-                          <Card className="bg-background/20 border-foreground/10 backdrop-blur-sm">
+                          <Card className="dark:bg-background/20 border-foreground/10 backdrop-blur-sm">
                               <CardHeader>
                                   <CardTitle>Gestión del Partido</CardTitle>
                               </CardHeader>
@@ -503,7 +502,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                           Finalizar
                                       </Button>
                                   )}
-                                  {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" size="sm" className="bg-background/50 dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40"><UserPlus className="mr-2 h-4 w-4"/>Invitar</Button></InvitePlayerDialog>}
+                                  {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" size="sm" className="dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40"><UserPlus className="mr-2 h-4 w-4"/>Invitar</Button></InvitePlayerDialog>}
                                   <AlertDialog>
                                       <AlertDialogTrigger asChild><Button variant="destructive" size="sm" disabled={isDeleting}><Trash2 className="mr-2 h-4 w-4"/>Eliminar</Button></AlertDialogTrigger>
                                       <AlertDialogContent>
@@ -522,3 +521,4 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
   );
 }
 
+    
