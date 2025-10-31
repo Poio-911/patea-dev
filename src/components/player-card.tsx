@@ -1,12 +1,12 @@
 
 'use client';
 
-import Image from 'next/image';
+import React from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { WandSparkles, MoreVertical, Trash2, Pencil, Zap, Target, Send, Footprints, Shield, Dumbbell } from 'lucide-react';
+import { MoreVertical, Trash2, Pencil, Zap, Target, Send, Footprints, Shield, Dumbbell } from 'lucide-react';
 import type { Player } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { EditPlayerDialog } from './edit-player-dialog';
@@ -16,7 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,16 +26,16 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 import { useFirestore, useUser } from '@/firebase';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import React from 'react';
 import { Badge } from './ui/badge';
 import { motion } from 'framer-motion';
+import { Progress } from '@/components/ui/progress';
 
 type PlayerCardProps = {
-  player: Player & { displayName?: string }; // Allow displayName for compatibility
+  player: Player & { displayName?: string };
   isLink?: boolean;
 };
 
@@ -53,7 +53,6 @@ const positionColors: Record<Player['position'], string> = {
   POR: 'text-chart-4',
 };
 
-// Iconos para cada stat
 const statIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   RIT: Zap,
   TIR: Target,
@@ -63,15 +62,20 @@ const statIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   FIS: Dumbbell,
 };
 
-const Stat = ({ label, value }: { label: string; value: number }) => {
+const Stat = ({ label, value, isBest }: { label: string; value: number, isBest: boolean }) => {
   const Icon = statIcons[label] || Zap;
   return (
-    <div className="flex items-center justify-between group">
-      <div className="flex items-center gap-1">
-        <Icon className="h-3 w-3 text-muted-foreground/60 group-hover:text-primary transition-colors" />
-        <span className="font-semibold text-muted-foreground text-xs">{label}</span>
+    <div className="flex flex-col gap-1 group">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <Icon className="h-3 w-3 text-muted-foreground/80 group-hover:text-primary transition-colors" />
+          <span className="font-semibold text-muted-foreground text-xs">{label}</span>
+        </div>
+        <span className={cn("font-bold text-sm", isBest && "text-primary")}>{value}</span>
       </div>
-      <span className="font-bold">{value}</span>
+      <motion.div whileHover={{ scaleX: 1.05, transition: { duration: 0.2 } }}>
+        <Progress value={value} isBest={isBest} />
+      </motion.div>
     </div>
   );
 };
@@ -85,8 +89,6 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
   
   const playerName = player.name || player.displayName || 'Jugador';
 
-  // A manual player is one whose document ID is not the same as the UID of the user who created them.
-  // Registered users have their player ID === their user UID.
   const isManualPlayer = player.id !== player.ownerUid;
   const canDelete = isManualPlayer && user?.uid === player.ownerUid;
   const canEdit = isManualPlayer && user?.uid === player.ownerUid;
@@ -112,36 +114,39 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
         setIsDeleting(false);
     }
   };
+  
+  const stats: { label: 'RIT' | 'TIR' | 'PAS' | 'REG' | 'DEF' | 'FIS', value: number }[] = [
+    { label: 'RIT', value: player.pac },
+    { label: 'TIR', value: player.sho },
+    { label: 'PAS', value: player.pas },
+    { label: 'REG', value: player.dri },
+    { label: 'DEF', value: player.def },
+    { label: 'FIS', value: player.phy },
+  ];
+  
+  const maxStatValue = Math.max(...stats.map(s => s.value));
 
   const CardContentComponent = () => (
-    <Card className="overflow-hidden border-2 shadow-lg transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 border-border h-full flex flex-col group">
-      {/* Header con degradado sutil */}
-      <div className={cn(
-        "relative p-4 text-card-foreground bg-gradient-to-br from-transparent",
+    <Card className="overflow-hidden border-2 shadow-lg transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30 border-border h-full flex flex-col group">
+      <CardHeader className={cn(
+        "relative p-3 text-card-foreground bg-gradient-to-br from-transparent",
         positionBackgrounds[player.position]
       )}>
         <div className="flex items-start justify-between">
           <div className="relative">
-            {/* OVR con efecto sutil */}
-            <div className="relative">
-              <div className={cn(
-                "absolute inset-0 blur-md opacity-30 transition-opacity group-hover:opacity-50",
-                positionColors[player.position]
-              )}>
-                {player.ovr}
-              </div>
-              <div className={cn("relative text-4xl font-bold leading-none", positionColors[player.position])}>
-                {player.ovr}
-              </div>
+            <div className={cn("text-3xl font-bold leading-none", positionColors[player.position])}>
+              {player.ovr}
             </div>
           </div>
-
+          <Badge variant="secondary" className={cn("mt-1 text-xs", positionColors[player.position])}>
+            {player.position}
+          </Badge>
           {(canEdit || canDelete) && (
             <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-white/20">
-                    <MoreVertical size={18} />
+                  <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7 text-muted-foreground hover:bg-white/20">
+                    <MoreVertical size={16} />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -179,10 +184,10 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
             </AlertDialog>
           )}
         </div>
-      </div>
+      </CardHeader>
 
-      <CardContent className="p-4 text-center bg-card flex-grow flex flex-col">
-        <Avatar className="mx-auto -mt-12 h-24 w-24 border-4 border-background overflow-hidden">
+      <CardContent className="p-3 text-center bg-card flex-grow flex flex-col">
+        <Avatar className="mx-auto -mt-10 h-20 w-20 border-4 border-background overflow-hidden">
           <AvatarImage
             src={player.photoUrl}
             alt={playerName}
@@ -198,25 +203,18 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
         </Avatar>
 
         <div className="mt-2 text-center">
-          <h3 className="text-xl font-bold font-headline truncate">{playerName}</h3>
-          <Badge variant="secondary" className={cn("mt-1 text-xs", positionColors[player.position])}>
-            {player.position}
-          </Badge>
+          <h3 className="text-lg font-bold font-headline truncate">{playerName}</h3>
           {isManualPlayer && (
-            <Badge variant="outline" className="mt-1 ml-1 text-xs border-dashed">
+            <Badge variant="outline" className="mt-1 text-xs border-dashed">
               Manual
             </Badge>
           )}
         </div>
 
-        {/* Stats ajustados para mobile */}
-        <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 flex-grow">
-          <Stat label="RIT" value={player.pac} />
-          <Stat label="TIR" value={player.sho} />
-          <Stat label="PAS" value={player.pas} />
-          <Stat label="REG" value={player.dri} />
-          <Stat label="DEF" value={player.def} />
-          <Stat label="FIS" value={player.phy} />
+        <div className="mt-4 space-y-2.5 flex-grow">
+          {stats.map((stat) => (
+            <Stat key={stat.label} label={stat.label} value={stat.value} isBest={stat.value === maxStatValue} />
+          ))}
         </div>
       </CardContent>
     </Card>
