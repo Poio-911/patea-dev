@@ -2,9 +2,9 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import type { Match, Player, EvaluationAssignment, Notification, UserProfile, Invitation, Jersey } from '@/lib/types';
+import type { Match, Player, EvaluationAssignment, Notification, UserProfile, Jersey } from '@/lib/types';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
-import { useDoc, useFirestore, useUser } from '@/firebase';
+import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
 import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, CheckCircle, Shuffle, Trash2, UserPlus, LogOut, MessageCircle, MoreVertical, Share2, ClipboardCopy, Edit, Users2 } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
@@ -39,7 +39,7 @@ import { logger } from '@/lib/logger';
 import { SwapPlayerDialog } from './swap-player-dialog';
 import { ShirtIcon } from './icons/shirt-icon';
 import { VestIcon } from './icons/vest-icon';
-import { useCollection } from '@/firebase/firestore/use-collection';
+
 
 interface MatchDetailViewProps {
   matchId: string;
@@ -364,7 +364,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     
     return (
         <div className="relative isolate">
-          <div className="absolute inset-0 -z-10 dark:block hidden">
+          <div className="absolute inset-0 -z-10 hidden dark:block">
             <video
               autoPlay
               loop
@@ -390,14 +390,14 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 <PageHeader title={match.title} className="dark:text-white" />
   
                 {/* --- VISTA PARA TEMA CLARO --- */}
-                <Card className="dark:hidden relative overflow-hidden border-foreground/10 text-white rounded-lg shadow-lg">
+                <Card className="dark:hidden relative overflow-hidden border-foreground/10 text-white rounded-lg shadow-lg bg-transparent">
                    <div className="absolute inset-0 -z-10 rounded-lg overflow-hidden">
                       <video autoPlay loop muted playsInline className="h-full w-full object-cover">
                           <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
                       </video>
-                      <div className="absolute inset-0 bg-black/40" />
+                      <div className="absolute inset-0 bg-black/40"></div>
                   </div>
-                    <CardContent className="pt-6 space-y-4 bg-transparent [text-shadow:0_1px_3px_rgb(0_0_0_/_0.5)]">
+                    <div className="p-6 pt-6 space-y-4 bg-transparent [text-shadow:0_1px_3px_rgb(0_0_0_/_0.5)]">
                          <div className="flex flex-col sm:flex-row gap-4 justify-between">
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3 text-lg">
@@ -457,7 +457,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                 )}
                             </div>
                          )}
-                    </CardContent>
+                    </div>
                 </Card>
 
                 {/* --- VISTA PARA TEMA OSCURO --- */}
