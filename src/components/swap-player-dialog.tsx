@@ -18,7 +18,6 @@ import { Button } from './ui/button';
 import { Loader2, Shuffle } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Badge } from './ui/badge';
 import type { Match, Team } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -45,10 +44,8 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
     try {
       const matchRef = doc(firestore, 'matches', match.id);
       
-      // Create a deep copy to manipulate
       const newTeams: Team[] = JSON.parse(JSON.stringify(match.teams));
       
-      // Find source and target players and their team indices
       let sourceTeamIndex = -1, sourcePlayerIndex = -1;
       let targetTeamIndex = -1, targetPlayerIndex = -1;
 
@@ -69,12 +66,10 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
           throw new Error("No se pudo encontrar a uno de los jugadores en los equipos.");
       }
 
-      // Swap the players
       const temp = newTeams[sourceTeamIndex].players[sourcePlayerIndex];
       newTeams[sourceTeamIndex].players[sourcePlayerIndex] = newTeams[targetTeamIndex].players[targetPlayerIndex];
       newTeams[targetTeamIndex].players[targetPlayerIndex] = temp;
       
-      // Recalculate OVRs
       newTeams.forEach(team => {
         const totalOVR = team.players.reduce((sum, p) => sum + p.ovr, 0);
         team.averageOVR = team.players.length > 0 ? totalOVR / team.players.length : 0;
