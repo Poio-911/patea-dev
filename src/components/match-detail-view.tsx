@@ -5,7 +5,7 @@ import { useMemo, useState, useEffect } from 'react';
 import type { Match, Player, EvaluationAssignment, Notification, UserProfile, Invitation, Jersey } from '@/lib/types';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, CheckCircle, Shuffle, Trash2, UserPlus, LogOut, MessageCircle, MoreVertical, Share2, ClipboardCopy } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, CheckCircle, Shuffle, Trash2, UserPlus, LogOut, MessageCircle, MoreVertical, Share2, ClipboardCopy, Edit, Users2 } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
 import Link from 'next/link';
@@ -28,7 +28,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { InvitePlayerDialog } from './invite-player-dialog';
 import { WhatsAppIcon } from './icons/whatsapp-icon';
@@ -325,7 +324,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 </Button>
             </div>
             
-            <PageHeader title={match.title} />
+            <PageHeader title="Detalles del Partido" description={match.title} />
 
             <Card>
                 <CardContent className="pt-6 space-y-4">
@@ -368,9 +367,19 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                 <p className="text-sm text-muted-foreground">{match.location.address}</p>
                             </div>
                         </div>
-                        <Button asChild variant="secondary" size="sm">
-                            <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">Ir a la cancha</a>
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button asChild variant="secondary" size="sm">
+                                <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">Ir a la cancha</a>
+                            </Button>
+                             {isOwner && match.status === 'upcoming' && (
+                                <Button variant="outline" size="sm" asChild>
+                                    <a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer">
+                                        <WhatsAppIcon className="mr-2 h-4 w-4"/>
+                                        Compartir
+                                    </a>
+                                </Button>
+                             )}
+                        </div>
                      </div>
                      {match.type === 'collaborative' && match.status === 'upcoming' && (
                         <div className="border-t pt-4">
@@ -388,65 +397,46 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
             </Card>
             
             {isOwner && match.status === 'upcoming' && (
-                <div className="space-y-4">
-                    <h2 className="text-xl font-bold">Panel del Organizador</h2>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Card className="md:col-span-2 border-primary">
-                            <CardHeader>
-                                <CardTitle>Estado del Partido</CardTitle>
-                                <CardDescription>Finalizá el encuentro cuando termine para poder iniciar las evaluaciones.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {canFinalize ? (
-                                    <Button onClick={handleFinishMatch} disabled={isFinishing} size="lg">
-                                        {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                                        Finalizar Partido
-                                    </Button>
-                                ) : (
-                                    <p className="text-sm text-muted-foreground">El partido debe estar lleno para poder finalizarlo.</p>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Plantel y Tácticas</CardTitle>
-                                <CardDescription>Gestiona a los jugadores y la formación.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex flex-col gap-2">
-                                {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" className="w-full"><UserPlus className="mr-2 h-4 w-4"/>Invitar Jugadores del Grupo</Button></InvitePlayerDialog>}
-                                {match.teams && match.teams.length > 0 && <Button variant="outline" className="w-full" onClick={handleShuffleTeams} disabled={isShuffling}>{isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<Shuffle className="mr-2 h-4 w-4"/>Volver a Sortear (IA)</Button>}
-                            </CardContent>
-                        </Card>
-                        
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Difusión y Acciones</CardTitle>
-                                <CardDescription>Comparte la información del partido.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex flex-col gap-2">
-                                <Button variant="outline" className="w-full" asChild><a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Partido</a></Button>
-                                {match.teams && match.teams.length > 0 && <Button variant="outline" className="w-full" asChild><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Equipos</a></Button>}
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild><Button variant="destructive" className="w-full" disabled={isDeleting}><Trash2 className="mr-2 h-4 w-4"/>Eliminar Partido</Button></AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitle>¿Borrar este partido?</AlertDialogTitle><AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">{isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Eliminar</AlertDialogAction></AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Gestión del Partido</CardTitle>
+                        <CardDescription>Acciones disponibles para el organizador.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {canFinalize && (
+                            <Button onClick={handleFinishMatch} disabled={isFinishing} size="sm">
+                                {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                Finalizar Partido
+                            </Button>
+                        )}
+                        {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" size="sm"><UserPlus className="mr-2 h-4 w-4"/>Invitar Jugadores</Button></InvitePlayerDialog>}
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild><Button variant="destructive" size="sm" disabled={isDeleting}><Trash2 className="mr-2 h-4 w-4"/>Eliminar</Button></AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader><AlertDialogTitle>¿Borrar este partido?</AlertDialogTitle><AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogFooter><AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">{isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Eliminar</AlertDialogAction></AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </CardContent>
+                </Card>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center justify-between">
-                                <span className="flex items-center gap-2"><Users className="h-5 w-5 text-primary"/>Plantel ({match.players.length} / {match.matchSize})</span>
-                            </CardTitle>
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary"/>Alineaciones y Plantel ({match.players.length} / {match.matchSize})</CardTitle>
+                                    <CardDescription>Equipos generados por la IA o definidos por el organizador.</CardDescription>
+                                </div>
+                                {isOwner && match.teams && match.teams.length > 0 && match.status === 'upcoming' && (
+                                     <div className="flex gap-2">
+                                        <Button variant="outline" size="sm" onClick={handleShuffleTeams} disabled={isShuffling}>{isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<Shuffle className="mr-2 h-4 w-4"/>Volver a Sortear</Button>
+                                        <Button variant="outline" size="sm" asChild><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Equipos</a></Button>
+                                    </div>
+                                )}
+                            </div>
                         </CardHeader>
                          <CardContent>
                              {match.teams && match.teams.length > 0 ? (
