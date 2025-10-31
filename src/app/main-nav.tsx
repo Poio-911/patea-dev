@@ -43,8 +43,7 @@ import { useFcm } from '@/hooks/use-fcm';
 import { WelcomeDialog } from '@/components/welcome-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { isToday, parseISO } from 'date-fns';
-import { FloatingActionMenu } from './floating-action-menu';
-import { HelpDialog } from './help-dialog';
+import { HelpDialog } from '@/components/help-dialog';
 
 
 const navItems = [

@@ -62,7 +62,7 @@ export function SwapPlayerDialog({ match, playerToSwap, allPlayers, children }: 
     };
   }, [match, playerToSwap, allPlayers]);
 
-  const handleSwap = async (playerToSwapWith: { uid: string; displayName: string; ovr: number; position: Player['position'] }) => {
+  const handleSwap = async (playerToSwapWith: { uid: string; displayName: string; ovr: number; position: string | Player['position'] }) => {
     if (!firestore || !sourceTeam || sourceTeamIndex === -1) return;
     setIsSwapping(true);
 
@@ -126,10 +126,10 @@ export function SwapPlayerDialog({ match, playerToSwap, allPlayers, children }: 
                     <p className="font-semibold text-sm">{player.displayName}</p>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Badge variant="outline" className={cn("text-xs", positionBadgeStyles[player.position])}>{player.position}</Badge>
+                    <Badge variant="outline" className={cn("text-xs", positionBadgeStyles[player.position as Player['position']])}>{player.position}</Badge>
                     <Badge variant="secondary" className="text-xs">{player.ovr}</Badge>
                   </div>
-                  <Button size="sm" onClick={() => handleSwap(player)} disabled={isSwapping}>
+                  <Button size="sm" onClick={() => handleSwap({ ...player, position: player.position as Player['position'] })} disabled={isSwapping}>
                     {isSwapping ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Elegir'}
                   </Button>
                 </div>

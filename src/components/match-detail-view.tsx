@@ -10,7 +10,7 @@ import { Button } from './ui/button';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
-import { MatchChatView } from './match-chat-view';
+// import { MatchChatView } from './match-chat-view'; // TODO: Component not yet implemented
 import { TeamsIcon } from './icons/teams-icon';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +18,7 @@ import { Badge } from './ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Separator } from './ui/separator';
-import { generateTeamsAction } from '@/lib/actions/server-actions';
+import { generateTeamsAction } from '@/lib/actions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +33,7 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import { WhatsAppIcon } from './icons/whatsapp-icon';
-import { MatchChronicleCard } from './match-chronicle-card';
+// import { MatchChronicleCard } from './match-chronicle-card'; // TODO: Component not yet implemented
 import { Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
 import { MatchTeamsDialog } from './match-teams-dialog';
 import { SwapPlayerDialog } from './swap-player-dialog';
@@ -470,7 +470,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                                                     <Badge variant="secondary" className="text-xs">{player.ovr}</Badge>
                                                                 </div>
                                                                 {isOwner && (
-                                                                    <SwapPlayerDialog match={match} playerToSwap={player} allPlayers={match.players}>
+                                                                    <SwapPlayerDialog match={match} playerToSwap={{ ...player, position: player.position as Player['position'] }} allPlayers={match.players}>
                                                                         <Button variant="ghost" size="icon" className="h-8 w-8">
                                                                             <Replace className="h-4 w-4" />
                                                                         </Button>
@@ -502,10 +502,10 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                              )}
                         </CardContent>
                     </Card>
-                    <MatchChronicleCard match={match} />
+                    {/* <MatchChronicleCard match={match} /> */}
                 </div>
                 <div className="space-y-6">
-                    <MatchChatView match={match} />
+                    {/* <MatchChatView match={match} /> */}
                 </div>
             </div>
         </div>

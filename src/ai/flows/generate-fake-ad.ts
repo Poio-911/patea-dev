@@ -10,7 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import { googleAI } from '@genkit-ai/google-genai';
 
 const FakeAdOutputSchema = z.object({
   productName: z.string().describe('The completely fictional, absurd name of the product or service.'),
@@ -26,7 +26,7 @@ export async function generateFakeAd(): Promise<FakeAdOutput> {
 
 const prompt = ai.definePrompt({
   name: 'generateFakeAdPrompt',
-  outputSchema: FakeAdOutputSchema,
+  output: {schema: FakeAdOutputSchema},
   prompt: `
     You are a cynical, dark-humored marketing creative specialized in the world of amateur football.
     Your task is to invent a completely fake, slightly absurd, and funny product or service for amateur football players and generate a short ad for it.

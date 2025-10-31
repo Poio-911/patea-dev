@@ -52,8 +52,8 @@ export async function findBestFitPlayer(input: Omit<FindBestFitPlayerInput, 'spo
 
 const prompt = ai.definePrompt({
   name: 'findBestFitPlayerPrompt',
-  inputSchema: FindBestFitPlayerInputSchema,
-  outputSchema: FindBestFitPlayerOutputSchema,
+  input: {schema: FindBestFitPlayerInputSchema},
+  output: {schema: FindBestFitPlayerOutputSchema},
   prompt: `
     Eres un director deportivo experto en fútbol amateur del Río de la Plata, con un ojo clínico para fichajes.
     Tu tarea es analizar un partido incompleto y una lista de jugadores libres para recomendar los mejores fichajes posibles.

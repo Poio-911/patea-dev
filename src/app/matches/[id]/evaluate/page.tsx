@@ -207,17 +207,6 @@ export default function EvaluateMatchPage() {
     }
   }, [matchLoading, assignmentsLoading, playersLoading]);
 
-  // 🎉 Celebrate when 100% of evaluations are complete
-  useEffect(() => {
-    if (evaluationProgress === 100 && totalPossibleEvaluators > 0 && match?.status !== 'evaluated') {
-      confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.7 }
-      });
-    }
-  }, [evaluationProgress, totalPossibleEvaluators, match?.status]);
-  
   const handleFinalizeEvaluation = async () => {
     if (!firestore || !match || !match.id) return;
     setIsFinalizing(true);
@@ -378,7 +367,18 @@ export default function EvaluateMatchPage() {
   const totalPossibleEvaluators = realPlayersInMatch.length;
   const completedEvaluatorsCount = evaluatorsWhoHaveVoted.size;
   const evaluationProgress = totalPossibleEvaluators > 0 ? (completedEvaluatorsCount / totalPossibleEvaluators) * 100 : 0;
-  
+
+  // 🎉 Celebrate when 100% of evaluations are complete
+  useEffect(() => {
+    if (evaluationProgress === 100 && totalPossibleEvaluators > 0 && match?.status !== 'evaluated') {
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.7 }
+      });
+    }
+  }, [evaluationProgress, totalPossibleEvaluators, match?.status]);
+
   if (isPageLoading) {
     return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }

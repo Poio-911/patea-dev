@@ -5,20 +5,20 @@ import type { Match, Player, EvaluationAssignment, Notification, UserProfile } f
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
 import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, CheckCircle, Shuffle, Trash2, UserPlus, LogOut, MessageCircle, MoreVertical, Share2, ClipboardCopy } from 'lucide-react';
-import { PageHeader } from './page-header';
-import { Button } from './ui/button';
+import { PageHeader } from '../page-header';
+import { Button } from '../ui/button';
 import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
-import { MatchChatView } from './match-chat-view';
-import { TeamsIcon } from './icons/teams-icon';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
+// import { MatchChatView } from './match-chat-view'; // TODO: Component not yet implemented
+import { TeamsIcon } from '../icons/teams-icon';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { Badge } from './ui/badge';
+import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Separator } from './ui/separator';
-import { generateTeamsAction } from '@/lib/actions/server-actions';
+import { Separator } from '../ui/separator';
+import { generateTeamsAction } from '@/lib/actions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,11 +30,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { InvitePlayerDialog } from './invite-player-dialog';
-import { WhatsAppIcon } from './icons/whatsapp-icon';
-import { MatchChronicleCard } from './match-chronicle-card';
+import { InvitePlayerDialog } from '../invite-player-dialog';
+import { WhatsAppIcon } from '../icons/whatsapp-icon';
+// import { MatchChronicleCard } from './match-chronicle-card'; // TODO: Component not yet implemented
 import { Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
-import { MatchTeamsDialog } from './match-teams-dialog';
+import { MatchTeamsDialog } from '../match-teams-dialog';
 
 interface MatchDetailViewProps {
   matchId: string;
@@ -490,10 +490,10 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                              )}
                         </CardContent>
                     </Card>
-                    <MatchChronicleCard match={match} />
+                    {/* <MatchChronicleCard match={match} /> */}
                 </div>
                 <div className="space-y-6">
-                    <MatchChatView match={match} />
+                    {/* <MatchChatView match={match} /> */}
                 </div>
             </div>
         </div>

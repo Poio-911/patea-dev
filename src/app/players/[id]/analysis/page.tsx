@@ -49,10 +49,10 @@ export default function AnalysisPage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="flex flex-col gap-4">
-            <CoachChatView playerId={playerId as string} groupId={user.activeGroupId || ''} />
+            <CoachChatView playerId={playerId as string} groupId={user?.activeGroupId || ''} />
         </div>
         <div className="flex flex-col gap-4">
-            <PlayerInsightsPanel playerId={playerId as string} playerName={player.name} groupId={user.activeGroupId || ''} />
+            <PlayerInsightsPanel playerId={playerId as string} playerName={player.name} groupId={user?.activeGroupId || ''} />
         </div>
       </div>
     </div>

@@ -21,7 +21,16 @@
       "Bash(timeout /t 3)",
       "Bash(npx kill-port:*)",
       "Bash(set PORT=3006)",
-      "Bash(npx next dev -p 3006)"
+      "Bash(npx next dev -p 3006)",
+      "Bash(git checkout:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(package.json.new)",
+      "Bash(temp_evaluations.tsx)",
+      "Bash(.env)",
+      "Bash(.idx/integrations.json)",
+      "Bash(git reset:*)",
+      "Bash(git restore:*)",
+      "Bash(npm run typecheck:*)"
     ],
     "deny": [],
     "ask": []

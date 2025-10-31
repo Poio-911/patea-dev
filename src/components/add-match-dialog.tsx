@@ -32,7 +32,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Checkbox } from './ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { generateTeamsAction, getWeatherForecastAction } from '@/lib/actions/server-actions';
+import { generateTeamsAction, getWeatherForecastAction } from '@/lib/actions';
 import { Progress } from './ui/progress';
 import { GetMatchDayForecastOutput } from '@/ai/flows/get-match-day-forecast';
 import { Switch } from './ui/switch';
