@@ -164,10 +164,15 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
         const matchRef = doc(firestore, 'matches', match.id);
         try {
             const freshMatchSnap = await getDoc(matchRef);
-            if (!freshMatchSnap.exists()) throw new Error("El partido ya no existe.");
+            if (!freshMatchSnap.exists()) {
+                throw new Error("El partido ya no existe.");
+            }
             const freshMatch = { id: freshMatchSnap.id, ...freshMatchSnap.data() } as Match;
+            
             let finalTeams = freshMatch.teams;
             let matchUpdateData: any = { status: 'completed' };
+
+            // Logic to generate teams if they don't exist yet
             if (!finalTeams || finalTeams.length === 0) {
                  const playerIdsInMatch = freshMatch.playerUids;
                  if (playerIdsInMatch.length >= freshMatch.matchSize) {
@@ -175,16 +180,32 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     const teamGenerationResult = await generateTeamsAction(playersToBalance);
                     if ('error' in teamGenerationResult) throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
                     if (!teamGenerationResult.teams) throw new Error('La respuesta de la IA no contiene equipos.');
+
                     finalTeams = teamGenerationResult.teams as any;
                     matchUpdateData.teams = finalTeams;
+                 } else {
+                     logger.warn("Finishing match without full player list. Teams not generated.");
                  }
             }
+
             batch.update(matchRef, matchUpdateData);
+
+            // Generate evaluation assignments only if teams were successfully formed
             if (finalTeams && finalTeams.length > 0) {
                  const assignments = generateEvaluationAssignments({ ...freshMatch, teams: finalTeams }, allGroupPlayers);
+
+                if (assignments.length < realPlayerUids.length * 2) {
+                    toast({
+                        variant: 'default',
+                        title: 'Advertencia: Pocos jugadores reales',
+                        description: `No todos los jugadores recibieron 2 asignaciones.`,
+                    });
+                }
+
                 assignments.forEach(assignment => {
                     const assignmentRef = doc(collection(firestore, `matches/${freshMatch.id}/assignments`));
                     batch.set(assignmentRef, assignment);
+
                     const notificationRef = doc(collection(firestore, `users/${assignment.evaluatorId}/notifications`));
                     const notification: Omit<Notification, 'id'> = {
                         type: 'evaluation_pending',
@@ -199,15 +220,25 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
             }
            
             await batch.commit();
-            toast({ title: 'Partido Finalizado', description: `Ahora los jugadores pueden realizar las evaluaciones.` });
+
+            toast({
+                title: 'Partido Finalizado',
+                description: `El partido "${freshMatch.title}" ha sido marcado como finalizado.`
+            });
+
         } catch (error: any) {
              logger.error("Error finishing match", error, { matchId: match.id });
-             toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudo finalizar el partido.' });
+             toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: error.message || 'No se pudo finalizar el partido.'
+            });
         } finally {
             setIsFinishing(false);
         }
     };
-    
+
+
     const handleJoinOrLeaveMatch = async () => {
         if (!firestore || !user || !match) return;
         setIsJoining(true);
@@ -329,10 +360,11 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const isMatchFull = match.players.length >= match.matchSize;
     const canFinalize = isOwner && match.status === 'upcoming' && isMatchFull;
     const canInvite = isOwner && match.type !== 'by_teams';
+    const realPlayerUids = allGroupPlayers ? allGroupPlayers.filter(p => match.playerUids.includes(p.id) && isRealUser(p)).map(p => p.id) : [];
     
     return (
         <div className="relative isolate">
-          <div className="absolute inset-0 -z-10 hidden dark:block">
+          <div className="absolute inset-0 -z-10 dark:block hidden">
             <video
               autoPlay
               loop
@@ -358,7 +390,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 <PageHeader title={match.title} className="dark:text-white" />
   
                 {/* --- VISTA PARA TEMA CLARO --- */}
-                <Card className="dark:hidden relative overflow-hidden border-foreground/10 text-white">
+                <Card className="dark:hidden relative overflow-hidden border-foreground/10 text-white rounded-lg shadow-lg">
                    <div className="absolute inset-0 -z-10 rounded-lg overflow-hidden">
                       <video autoPlay loop muted playsInline className="h-full w-full object-cover">
                           <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
@@ -375,7 +407,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                 {ownerProfile && (
                                     <div className="flex items-center gap-2">
                                         <Avatar className="h-6 w-6"><AvatarImage src={ownerProfile.photoURL || ''} alt={ownerProfile.displayName || ''} /><AvatarFallback>{ownerProfile.displayName?.charAt(0)}</AvatarFallback></Avatar>
-                                        <p className="text-sm text-white/80">{`Organizado por ${ownerProfile.displayName}`}</p>
+                                        <p className="text-sm">{`Organizado por ${ownerProfile.displayName}`}</p>
                                     </div>
                                 )}
                             </div>
