@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -17,10 +18,10 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Users2, User, BellRing, HelpCircle, CheckCircle } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings, Users2, User, BellRing, HelpCircle, CheckCircle, Flame, Snowflake } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
+import { useUser, useAuth, useDoc, useCollection, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { GroupSwitcher } from '@/components/group-switcher';
 import {
@@ -31,21 +32,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import type { Player, AvailablePlayer } from '@/lib/types';
-import { doc } from 'firebase/firestore';
+import type { Player, AvailablePlayer, OvrHistory } from '@/lib/types';
+import { doc, collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { MatchIcon } from '@/components/icons/match-icon';
 import { FindMatchIcon } from '@/components/icons/find-match-icon';
 import { EvaluationIcon } from '@/components/icons/evaluation-icon';
-import { NotificationBell } from '@/components/notification-bell';
 import { useFcm } from '@/hooks/use-fcm';
 import { WelcomeDialog } from '@/components/welcome-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { isToday, parseISO } from 'date-fns';
-import { FloatingActionMenu } from './floating-action-menu';
-import { HelpDialog } from './help-dialog';
 import { SettingsSheet } from './settings-sheet';
+import { HeaderActions } from './header-actions';
+import { Progress } from './ui/progress';
 
 
 const navItems = [
@@ -86,6 +86,27 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   }, [firestore, user?.uid]);
   const { data: availablePlayerData, loading: availablePlayerLoading } = useDoc<AvailablePlayer>(availablePlayerRef);
 
+  const ovrHistoryQuery = React.useMemo(() => {
+    if (!firestore || !user?.uid) return null;
+    return query(collection(firestore, 'players', user.uid, 'ovrHistory'), orderBy('date', 'desc'), limit(3));
+  }, [firestore, user?.uid]);
+  const { data: ovrHistory } = useCollection<OvrHistory>(ovrHistoryQuery);
+
+  const ovrProgress = React.useMemo(() => {
+    if (!player) return 0;
+    const currentOvr = player.ovr;
+    const nextOvr = Math.floor(currentOvr) + 1;
+    const progress = (currentOvr - Math.floor(currentOvr)) * 100;
+    return { progress, nextOvr };
+  }, [player]);
+
+  const playerStreak = React.useMemo(() => {
+    if (!ovrHistory || ovrHistory.length < 2) return null;
+    if (ovrHistory.every(h => h.change >= 0)) return 'positive';
+    if (ovrHistory.every(h => h.change <= 0)) return 'negative';
+    return null;
+  }, [ovrHistory]);
+
 
   React.useEffect(() => {
     if (!userLoading && !user && pathname !== '/' && pathname !== '/login' && pathname !== '/register' && pathname !== '/forgot-password') {
@@ -118,10 +139,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     }
   };
 
-  if (pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password') {
-    return <>{children}</>;
-  }
-
   const loading = userLoading || playerLoading || availablePlayerLoading;
 
   if (loading || !user) {
@@ -141,20 +158,25 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   <div className="hidden md:block">
                       <SidebarTrigger />
                   </div>
-                  <HelpDialog />
-                  <NotificationBell />
+                  <HeaderActions />
               </div>
 
               <div className="flex items-center gap-2 sm:gap-4">
                   {player && (
                       <div className="flex items-center gap-3">
-                          <div className="text-right">
-                              <p className="font-bold text-sm truncate">{player.name}</p>
+                          <div className="flex flex-col items-end">
+                            <div className="flex items-center gap-2">
+                                {playerStreak === 'positive' && <Flame className="h-4 w-4 text-orange-500" />}
+                                {playerStreak === 'negative' && <Snowflake className="h-4 w-4 text-blue-300" />}
+                                <Badge className={cn("px-2 py-0.5 text-base font-bold", positionBadgeStyles[player.position])}>
+                                    <span className="font-bold">{player.ovr}</span>
+                                </Badge>
+                            </div>
+                            <div className="w-20 mt-1">
+                                <Progress value={ovrProgress.progress} />
+                                <p className="text-xs text-muted-foreground text-right">prox. {ovrProgress.nextOvr}</p>
+                            </div>
                           </div>
-                          <Badge className={cn("px-2.5 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
-                              <span className="font-bold">{player.ovr}</span>
-                              <span className="font-medium ml-1.5">{player.position}</span>
-                          </Badge>
                       </div>
                   )}
                   
@@ -189,31 +211,17 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                               </div>
                           </DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <div className="p-2">
-                              <GroupSwitcher />
-                          </div>
-                          <DropdownMenuItem asChild>
-                              <Link href="/groups">
-                                  <Users2 className="mr-2 h-4 w-4" />
-                                  <span>Gestionar Grupos</span>
-                              </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
                           <DropdownMenuItem asChild>
                               <Link href="/profile">
                                   <User className="mr-2 h-4 w-4" />
                                   <span>Mi Perfil</span>
                               </Link>
                           </DropdownMenuItem>
-                          <SettingsSheet>
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                <Settings className="mr-2 h-4 w-4" />
-                                <span>Ajustes</span>
-                            </DropdownMenuItem>
-                          </SettingsSheet>
-                          <DropdownMenuItem onClick={requestPermission}>
-                              <BellRing className="mr-2 h-4 w-4" />
-                              <span>Activar Notificaciones</span>
+                           <DropdownMenuItem asChild>
+                              <Link href="/groups">
+                                  <Users2 className="mr-2 h-4 w-4" />
+                                  <span>Gestionar Grupos</span>
+                              </Link>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={handleLogout}>
@@ -227,26 +235,29 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
           <Sidebar>
             <SidebarHeader>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                     <SoccerPlayerIcon className="h-8 w-8 text-primary" />
                     <span className="text-xl font-bold font-headline">Pateá</span>
                 </div>
             </SidebarHeader>
             <SidebarContent>
                 <SidebarMenu>
-                    {navItems.map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                        <Link href={item.href}>
-                        <SidebarMenuButton
-                            isActive={pathname.startsWith(item.href)}
-                            tooltip={item.label}
-                        >
-                            <item.icon />
-                            <span>{item.label}</span>
-                        </SidebarMenuButton>
-                        </Link>
-                    </SidebarMenuItem>
-                    ))}
+                    <SidebarGroup>
+                      <SidebarGroupLabel>Menú</SidebarGroupLabel>
+                      {navItems.map((item) => (
+                      <SidebarMenuItem key={item.href}>
+                          <Link href={item.href}>
+                          <SidebarMenuButton
+                              isActive={pathname.startsWith(item.href)}
+                              tooltip={item.label}
+                          >
+                              <item.icon />
+                              <span>{item.label}</span>
+                          </SidebarMenuButton>
+                          </Link>
+                      </SidebarMenuItem>
+                      ))}
+                    </SidebarGroup>
                 </SidebarMenu>
                  <div className="mt-auto">
                     <Separator className="my-2" />

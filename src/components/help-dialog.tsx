@@ -24,6 +24,8 @@ import { TeamsIcon } from './icons/teams-icon';
 interface HelpDialogProps {
   forceOpen?: boolean;
   onExplicitClose?: () => void;
+  isPopoverContent?: boolean;
+  children?: React.ReactNode;
 }
 
 const tutorialContent = [
@@ -54,7 +56,7 @@ const tutorialContent = [
     }
 ];
 
-export function HelpDialog({ forceOpen = false, onExplicitClose }: HelpDialogProps) {
+export function HelpDialog({ forceOpen = false, onExplicitClose, children, isPopoverContent = false }: HelpDialogProps) {
   const [isOpen, setIsOpen] = useState(forceOpen);
   const router = useRouter();
   const pathname = usePathname();
@@ -78,17 +80,17 @@ export function HelpDialog({ forceOpen = false, onExplicitClose }: HelpDialogPro
 
   const DialogTriggerButton = (
     <DialogTrigger asChild>
-      <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full">
-        <HelpCircle className="h-5 w-5" />
-        <span className="sr-only">Ayuda</span>
-      </Button>
+      {children || (
+          <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full">
+            <HelpCircle className="h-5 w-5" />
+            <span className="sr-only">Ayuda</span>
+          </Button>
+      )}
     </DialogTrigger>
   );
 
-  return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      {!forceOpen && DialogTriggerButton}
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+  const Content = () => (
+      <>
         <DialogHeader>
             <DialogTitle className="text-2xl font-bold font-headline text-center">¡Bienvenid@ a Pateá!</DialogTitle>
             <DialogDescription className="text-center">Acá tenés una guía rápida para que le saques todo el jugo a la app.</DialogDescription>
@@ -122,6 +124,18 @@ export function HelpDialog({ forceOpen = false, onExplicitClose }: HelpDialogPro
               ¡Entendido, a jugar!
             </Button>
         </DialogFooter>
+      </>
+  );
+
+  if(isPopoverContent) {
+    return <Content />;
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      {!forceOpen && DialogTriggerButton}
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+        <Content />
       </DialogContent>
     </Dialog>
   );
