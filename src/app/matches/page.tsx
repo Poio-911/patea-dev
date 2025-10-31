@@ -125,7 +125,7 @@ export default function MatchesPage() {
                 title="Partidos"
                 description="Programa, visualiza y gestiona todos tus partidos."
             >
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                    <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'list' | 'calendar')}>
                        <ToggleGroupItem value="list" aria-label="Vista de lista">
                            <LayoutGrid className="h-4 w-4" />
