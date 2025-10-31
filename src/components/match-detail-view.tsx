@@ -317,182 +317,195 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const canInvite = isOwner && match.type !== 'by_teams';
     
     return (
-        <div className="flex flex-col gap-8">
-            <div className="flex w-full items-start justify-between gap-4">
-                <Button asChild variant="outline" className="self-start">
-                    <Link href="/matches">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Volver a Partidos
-                    </Link>
-                </Button>
-            </div>
-            
-            <PageHeader title="Detalles del Partido" description={match.title} />
+        <div className="relative isolate min-h-screen">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 -z-10 h-full w-full object-cover brightness-50"
+          >
+            <source src="/videos/match-detail-bg.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 -z-10 bg-black/60 backdrop-blur-sm" />
+    
+          <div className="relative flex flex-col gap-8 p-4 md:p-6 text-white">
+                <div className="flex w-full items-start justify-between gap-4">
+                    <Button asChild variant="outline" className="self-start bg-white/10 border-white/20 hover:bg-white/20">
+                        <Link href="/matches">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Volver a Partidos
+                        </Link>
+                    </Button>
+                </div>
+                
+                <PageHeader title="Detalles del Partido" description={match.title} />
 
-            <Card>
-                <CardContent className="pt-6 space-y-4">
-                     <div className="flex flex-col sm:flex-row gap-4 justify-between">
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-3 text-lg">
-                                <Calendar className="h-5 w-5 text-primary"/>
-                                <span className="font-bold">{format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es })}</span>
-                            </div>
-                            {ownerProfile && (
-                                <div className="flex items-center gap-2">
-                                    <Avatar className="h-6 w-6">
-                                        <AvatarImage src={ownerProfile.photoURL || ''} alt={ownerProfile.displayName || ''} />
-                                        <AvatarFallback>{ownerProfile.displayName?.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <p className="text-sm text-muted-foreground">Organizado por {ownerProfile.displayName}</p>
+                <Card className="bg-white/5 border-white/10">
+                    <CardContent className="pt-6 space-y-4">
+                         <div className="flex flex-col sm:flex-row gap-4 justify-between">
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3 text-lg">
+                                    <Calendar className="h-5 w-5 text-primary"/>
+                                    <span className="font-bold">{format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es })}</span>
                                 </div>
-                            )}
-                        </div>
-                        <div className="space-y-3 text-left sm:text-right">
-                           <div className="flex items-center gap-3 text-lg justify-start sm:justify-end">
-                                <Clock className="h-5 w-5 text-primary"/>
-                                <span className="font-bold">{match.time} hs</span>
-                                {WeatherIcon && match.weather && (
-                                    <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                        <WeatherIcon className="h-4 w-4 text-blue-400" />
-                                        <span>({match.weather.temperature}°C)</span>
-                                    </span>
-                                )}
-                            </div>
-                            <Badge variant="outline" className="capitalize text-sm">{match.type === 'by_teams' ? 'Por Equipos' : match.type}</Badge>
-                        </div>
-                    </div>
-                     <Separator />
-                     <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                        <div className="flex items-start gap-3">
-                            <MapPin className="h-5 w-5 text-primary mt-1 flex-shrink-0"/>
-                            <div>
-                                <p className="font-bold">{match.location.name}</p>
-                                <p className="text-sm text-muted-foreground">{match.location.address}</p>
-                            </div>
-                        </div>
-                        <div className="flex gap-2">
-                            <Button asChild variant="secondary" size="sm">
-                                <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">Ir a la cancha</a>
-                            </Button>
-                             {isOwner && match.status === 'upcoming' && (
-                                <Button variant="outline" size="sm" asChild>
-                                    <a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer">
-                                        <WhatsAppIcon className="mr-2 h-4 w-4"/>
-                                        Compartir Partido
-                                    </a>
-                                </Button>
-                             )}
-                        </div>
-                     </div>
-                     {match.type === 'collaborative' && match.status === 'upcoming' && (
-                        <div className="border-t pt-4">
-                            {isMatchFull && !isUserInMatch ? (
-                                <Button variant="outline" size="lg" className="w-full" disabled>Partido Lleno</Button>
-                            ) : (
-                                <Button variant={isUserInMatch ? 'secondary' : 'default'} size="lg" onClick={handleJoinOrLeaveMatch} disabled={isJoining} className="w-full">
-                                    {isJoining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isUserInMatch ? <LogOut className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />)}
-                                    {isUserInMatch ? 'Darse de baja' : 'Apuntarse'}
-                                </Button>
-                            )}
-                        </div>
-                     )}
-                </CardContent>
-            </Card>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Equipos ({match.players.length} / {match.matchSize})</CardTitle>
-                             <div className="pt-2">
-                                {isOwner && match.teams && match.teams.length > 0 && match.status === 'upcoming' && (
-                                    <div className="flex flex-col sm:flex-row gap-2">
-                                        <Button variant="outline" size="sm" onClick={handleShuffleTeams} disabled={isShuffling}>{isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<Shuffle className="mr-2 h-4 w-4"/>Volver a Sortear</Button>
-                                        <Button variant="outline" size="sm" asChild><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Equipos</a></Button>
+                                {ownerProfile && (
+                                    <div className="flex items-center gap-2">
+                                        <Avatar className="h-6 w-6">
+                                            <AvatarImage src={ownerProfile.photoURL || ''} alt={ownerProfile.displayName || ''} />
+                                            <AvatarFallback>{ownerProfile.displayName?.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <p className="text-sm text-white/80">Organizado por {ownerProfile.displayName}</p>
                                     </div>
                                 )}
                             </div>
-                        </CardHeader>
-                         <CardContent>
-                             {match.teams && match.teams.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {match.teams.map(team => {
-                                      const TeamIcon = team.name.toLowerCase().includes("chaleco") ? VestIcon : ShirtIcon;
-                                      return (
-                                        <Card key={team.name}>
-                                            <CardHeader className="flex flex-row items-center justify-between">
-                                                <CardTitle className="flex items-center gap-2"><TeamIcon className="h-5 w-5" />{team.name}</CardTitle>
-                                                <Badge variant="secondary">OVR {team.averageOVR.toFixed(1)}</Badge>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="space-y-1">
-                                                    {team.players.map(player => (
-                                                        <div key={player.uid} className="flex items-center justify-between p-2 border-b last:border-b-0">
-                                                            <div className="flex items-center gap-3">
-                                                                <Avatar className="h-9 w-9"><AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoUrl} alt={player.displayName} /><AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback></Avatar>
-                                                                <div className="flex-1"><p className="font-semibold text-sm">{player.displayName}</p></div>
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                {isOwner && match.status === 'upcoming' && (
-                                                                    <SwapPlayerDialog match={match} playerToSwap={player}>
-                                                                        <Button variant="ghost" size="icon" className="h-7 w-7"><Shuffle className="h-4 w-4" /></Button>
-                                                                    </SwapPlayerDialog>
-                                                                )}
-                                                                <Badge variant="outline" className={cn("text-xs", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
-                                                                <Badge variant="secondary" className="text-xs w-10 justify-center">{player.ovr}</Badge>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    )})}
+                            <div className="space-y-3 text-left sm:text-right">
+                               <div className="flex items-center gap-3 text-lg justify-start sm:justify-end">
+                                    <Clock className="h-5 w-5 text-primary"/>
+                                    <span className="font-bold">{match.time} hs</span>
+                                    {WeatherIcon && match.weather && (
+                                        <span className="flex items-center gap-1.5 text-sm text-white/80">
+                                            <WeatherIcon className="h-4 w-4 text-blue-400" />
+                                            <span>({match.weather.temperature}°C)</span>
+                                        </span>
+                                    )}
                                 </div>
-                             ) : (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                                    {match.players.map((player, idx) => (
-                                        <div key={`${player.uid}-${idx}`} className="flex flex-col items-center text-center p-3 gap-2 border rounded-lg">
-                                            <Avatar className="h-16 w-16"><AvatarImage src={player.photoUrl} alt={player.displayName} /><AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback></Avatar>
-                                            <div>
-                                                <p className="font-bold text-sm truncate w-24">{player.displayName}</p>
-                                                <div className="flex items-center justify-center gap-1.5 mt-1">
-                                                    <Badge variant="outline" className={cn("text-xs", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
-                                                    <Badge variant="secondary">{player.ovr}</Badge>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
+                                <Badge variant="outline" className="capitalize text-sm bg-white/10 border-white/20">{match.type === 'by_teams' ? 'Por Equipos' : match.type}</Badge>
+                            </div>
+                        </div>
+                         <Separator className="bg-white/20"/>
+                         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                            <div className="flex items-start gap-3">
+                                <MapPin className="h-5 w-5 text-primary mt-1 flex-shrink-0"/>
+                                <div>
+                                    <p className="font-bold">{match.location.name}</p>
+                                    <p className="text-sm text-white/80">{match.location.address}</p>
                                 </div>
-                             )}
-                        </CardContent>
-                    </Card>
-                    <MatchChronicleCard match={match} />
-                </div>
-                <div className="space-y-6">
-                    {isOwner && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Gestión del Partido</CardTitle>
-                            </CardHeader>
-                            <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                {canFinalize && (
-                                    <Button onClick={handleFinishMatch} disabled={isFinishing} size="sm">
-                                        {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                                        Finalizar
+                            </div>
+                            <div className="flex gap-2">
+                                <Button asChild variant="secondary" size="sm">
+                                    <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">Ir a la cancha</a>
+                                </Button>
+                                 {isOwner && match.status === 'upcoming' && (
+                                    <Button variant="outline" size="sm" asChild className="bg-white/10 border-white/20 hover:bg-white/20">
+                                        <a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer">
+                                            <WhatsAppIcon className="mr-2 h-4 w-4"/>
+                                            Compartir Partido
+                                        </a>
+                                    </Button>
+                                 )}
+                            </div>
+                         </div>
+                         {match.type === 'collaborative' && match.status === 'upcoming' && (
+                            <div className="border-t border-white/20 pt-4">
+                                {isMatchFull && !isUserInMatch ? (
+                                    <Button variant="outline" size="lg" className="w-full" disabled>Partido Lleno</Button>
+                                ) : (
+                                    <Button variant={isUserInMatch ? 'secondary' : 'default'} size="lg" onClick={handleJoinOrLeaveMatch} disabled={isJoining} className="w-full">
+                                        {isJoining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isUserInMatch ? <LogOut className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />)}
+                                        {isUserInMatch ? 'Darse de baja' : 'Apuntarse'}
                                     </Button>
                                 )}
-                                {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" size="sm"><UserPlus className="mr-2 h-4 w-4"/>Invitar</Button></InvitePlayerDialog>}
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild><Button variant="destructive" size="sm" disabled={isDeleting}><Trash2 className="mr-2 h-4 w-4"/>Eliminar</Button></AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitle>¿Borrar este partido?</AlertDialogTitle><AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">{isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Eliminar</AlertDialogAction></AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
+                            </div>
+                         )}
+                    </CardContent>
+                </Card>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 space-y-6">
+                        <Card className="bg-white/5 border-white/10">
+                            <CardHeader>
+                                <CardTitle>Equipos ({match.players.length} / {match.matchSize})</CardTitle>
+                                 <div className="pt-2">
+                                    {isOwner && match.teams && match.teams.length > 0 && match.status === 'upcoming' && (
+                                        <div className="flex flex-col sm:flex-row gap-2">
+                                            <Button variant="outline" size="sm" onClick={handleShuffleTeams} disabled={isShuffling} className="bg-white/10 border-white/20 hover:bg-white/20">{isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<Shuffle className="mr-2 h-4 w-4"/>Volver a Sortear</Button>
+                                            <Button variant="outline" size="sm" asChild className="bg-white/10 border-white/20 hover:bg-white/20"><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Equipos</a></Button>
+                                        </div>
+                                    )}
+                                </div>
+                            </CardHeader>
+                             <CardContent>
+                                 {match.teams && match.teams.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {match.teams.map(team => {
+                                          const TeamIcon = team.name.toLowerCase().includes("chaleco") ? VestIcon : ShirtIcon;
+                                          return (
+                                            <Card key={team.name} className="bg-black/20 border-white/10">
+                                                <CardHeader className="flex flex-row items-center justify-between">
+                                                    <CardTitle className="flex items-center gap-2"><TeamIcon className="h-5 w-5" />{team.name}</CardTitle>
+                                                    <Badge variant="secondary">OVR {team.averageOVR.toFixed(1)}</Badge>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <div className="space-y-1">
+                                                        {team.players.map(player => (
+                                                            <div key={player.uid} className="flex items-center justify-between p-2 border-b last:border-b-0 border-white/10">
+                                                                <div className="flex items-center gap-3">
+                                                                    <Avatar className="h-9 w-9"><AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoUrl} alt={player.displayName} /><AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback></Avatar>
+                                                                    <div className="flex-1"><p className="font-semibold text-sm">{player.displayName}</p></div>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    {isOwner && match.status === 'upcoming' && (
+                                                                        <SwapPlayerDialog match={match} playerToSwap={player}>
+                                                                            <Button variant="ghost" size="icon" className="h-7 w-7"><Shuffle className="h-4 w-4" /></Button>
+                                                                        </SwapPlayerDialog>
+                                                                    )}
+                                                                    <Badge variant="outline" className={cn("text-xs bg-transparent border-white/20", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
+                                                                    <Badge variant="secondary" className="text-xs w-10 justify-center">{player.ovr}</Badge>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        )})}
+                                    </div>
+                                 ) : (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                        {match.players.map((player, idx) => (
+                                            <div key={`${player.uid}-${idx}`} className="flex flex-col items-center text-center p-3 gap-2 border border-white/10 rounded-lg bg-black/20">
+                                                <Avatar className="h-16 w-16"><AvatarImage src={player.photoUrl} alt={player.displayName} /><AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback></Avatar>
+                                                <div>
+                                                    <p className="font-bold text-sm truncate w-24">{player.displayName}</p>
+                                                    <div className="flex items-center justify-center gap-1.5 mt-1">
+                                                        <Badge variant="outline" className={cn("text-xs bg-transparent border-white/20", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
+                                                        <Badge variant="secondary">{player.ovr}</Badge>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                 )}
                             </CardContent>
                         </Card>
-                    )}
-                    <MatchChatView match={match} />
+                        <MatchChronicleCard match={match} />
+                    </div>
+                    <div className="space-y-6">
+                        {isOwner && (
+                            <Card className="bg-white/5 border-white/10">
+                                <CardHeader>
+                                    <CardTitle>Gestión del Partido</CardTitle>
+                                </CardHeader>
+                                <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    {canFinalize && (
+                                        <Button onClick={handleFinishMatch} disabled={isFinishing} size="sm">
+                                            {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                            Finalizar
+                                        </Button>
+                                    )}
+                                    {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" size="sm" className="bg-white/10 border-white/20 hover:bg-white/20"><UserPlus className="mr-2 h-4 w-4"/>Invitar</Button></InvitePlayerDialog>}
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild><Button variant="destructive" size="sm" disabled={isDeleting}><Trash2 className="mr-2 h-4 w-4"/>Eliminar</Button></AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader><AlertDialogTitle>¿Borrar este partido?</AlertDialogTitle><AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
+                                            <AlertDialogFooter><AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">{isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Eliminar</AlertDialogAction></AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </CardContent>
+                            </Card>
+                        )}
+                        <MatchChatView match={match} />
+                    </div>
                 </div>
             </div>
         </div>
