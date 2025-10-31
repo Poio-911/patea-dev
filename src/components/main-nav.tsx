@@ -33,7 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import type { Player, AvailablePlayer } from '@/lib/types';
-import { doc, collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { MatchIcon } from '@/components/icons/match-icon';
@@ -139,24 +139,21 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               </div>
 
               <div className="flex items-center gap-2 sm:gap-4">
-                  {player && (
-                      <div className="flex items-center gap-3">
-                          <div className="text-right">
-                              <p className="font-bold text-sm truncate">{player.name}</p>
-                          </div>
-                          <Badge className={cn("px-2.5 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
-                              <span className="font-bold">{player.ovr}</span>
-                              <span className="font-medium ml-1.5">{player.position}</span>
-                          </Badge>
-                      </div>
-                  )}
                   
-                  <Separator orientation="vertical" className="h-10 mx-1 hidden sm:block" />
-
                   <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="relative h-12 w-12 rounded-full">
-                              <Avatar className="h-12 w-12 border overflow-hidden">
+                          <Button variant="ghost" className="h-auto px-2 py-1">
+                            <div className="flex items-center gap-3">
+                                <div className="text-right hidden sm:block">
+                                    <p className="font-bold text-sm truncate">{player?.name}</p>
+                                </div>
+                                {player && (
+                                <Badge className={cn("px-2.5 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
+                                    <span className="font-bold">{player.ovr}</span>
+                                    <span className="font-medium ml-1.5">{player.position}</span>
+                                </Badge>
+                                )}
+                                <Avatar className="h-10 w-10 border overflow-hidden">
                                   <AvatarImage
                                     src={user?.photoURL || ''}
                                     alt={user?.displayName || 'User'}
@@ -170,6 +167,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                                   />
                                   <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
                               </Avatar>
+                            </div>
                           </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="w-64" align="end" forceMount>
@@ -274,3 +272,4 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+
