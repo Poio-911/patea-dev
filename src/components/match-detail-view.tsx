@@ -306,11 +306,11 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     };
 
     if (matchLoading) {
-        return <div className="flex justify-center items-center h-full"><Loader2 className="h-12 w-12 animate-spin text-white" /></div>;
+        return <div className="flex justify-center items-center h-full"><Loader2 className="h-12 w-12 animate-spin" /></div>;
     }
 
     if (!match) {
-        return <div className="text-center p-8 text-white"><h2 className="text-xl font-bold">Partido no encontrado</h2></div>;
+        return <div className="text-center p-8"><h2 className="text-xl font-bold">Partido no encontrado</h2></div>;
     }
 
     const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
@@ -325,15 +325,15 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
             loop
             muted
             playsInline
-            className="absolute inset-0 -z-10 h-full w-full object-cover saturate-50 brightness-75"
+            className="absolute inset-0 -z-10 h-full w-full object-cover dark:saturate-50 dark:brightness-75 light:grayscale light:brightness-[2]"
           >
             <source src="/videos/match-detail-bg.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 -z-10 bg-black/50" />
+          <div className="absolute inset-0 -z-10 bg-white/30 dark:bg-black/50" />
     
-          <div className="relative flex flex-col gap-8 p-4 md:p-6 text-white">
+          <div className="relative flex flex-col gap-8 p-4 md:p-6">
                 <div className="flex w-full items-start justify-between gap-4">
-                    <Button asChild variant="outline" className="self-start bg-black/20 border-white/20 hover:bg-black/40 text-white">
+                    <Button asChild variant="outline" className="self-start bg-background/20 border-foreground/20 hover:bg-background/40 text-foreground">
                         <Link href="/matches">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Volver a Partidos
@@ -343,7 +343,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 
                 <PageHeader title="Detalles del Partido" description={match.title} />
 
-                <Card className="bg-black/20 border-white/10">
+                <Card className="bg-background/20 border-foreground/10">
                     <CardContent className="pt-6 space-y-4">
                          <div className="flex flex-col sm:flex-row gap-4 justify-between">
                             <div className="space-y-3">
@@ -357,7 +357,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                             <AvatarImage src={ownerProfile.photoURL || ''} alt={ownerProfile.displayName || ''} />
                                             <AvatarFallback>{ownerProfile.displayName?.charAt(0)}</AvatarFallback>
                                         </Avatar>
-                                        <p className="text-sm text-white/80">Organizado por {ownerProfile.displayName}</p>
+                                        <p className="text-sm text-foreground/80">Organizado por {ownerProfile.displayName}</p>
                                     </div>
                                 )}
                             </div>
@@ -366,22 +366,22 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                     <Clock className="h-5 w-5 text-primary"/>
                                     <span className="font-bold">{match.time} hs</span>
                                     {WeatherIcon && match.weather && (
-                                        <span className="flex items-center gap-1.5 text-sm text-white/80">
+                                        <span className="flex items-center gap-1.5 text-sm text-foreground/80">
                                             <WeatherIcon className="h-4 w-4 text-blue-400" />
                                             <span>({match.weather.temperature}°C)</span>
                                         </span>
                                     )}
                                 </div>
-                                <Badge variant="outline" className="capitalize text-sm bg-black/20 border-white/20">{match.type === 'by_teams' ? 'Por Equipos' : match.type}</Badge>
+                                <Badge variant="outline" className="capitalize text-sm bg-background/20 border-foreground/20">{match.type === 'by_teams' ? 'Por Equipos' : match.type}</Badge>
                             </div>
                         </div>
-                         <Separator className="bg-white/20"/>
+                         <Separator className="bg-foreground/20"/>
                          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                             <div className="flex items-start gap-3">
                                 <MapPin className="h-5 w-5 text-primary mt-1 flex-shrink-0"/>
                                 <div>
                                     <p className="font-bold">{match.location.name}</p>
-                                    <p className="text-sm text-white/80">{match.location.address}</p>
+                                    <p className="text-sm text-foreground/80">{match.location.address}</p>
                                 </div>
                             </div>
                             <div className="flex gap-2">
@@ -389,7 +389,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                     <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">Ir a la cancha</a>
                                 </Button>
                                  {isOwner && match.status === 'upcoming' && (
-                                    <Button variant="outline" size="sm" asChild className="bg-black/20 border-white/20 hover:bg-black/40 text-white">
+                                    <Button variant="outline" size="sm" asChild className="bg-background/20 border-foreground/20 hover:bg-background/40 text-foreground">
                                         <a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer">
                                             <WhatsAppIcon className="mr-2 h-4 w-4"/>
                                             Compartir Partido
@@ -399,9 +399,9 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                             </div>
                          </div>
                          {match.type === 'collaborative' && match.status === 'upcoming' && (
-                            <div className="border-t border-white/20 pt-4">
+                            <div className="border-t border-foreground/20 pt-4">
                                 {isMatchFull && !isUserInMatch ? (
-                                    <Button variant="outline" size="lg" className="w-full bg-black/20 border-white/20" disabled>Partido Lleno</Button>
+                                    <Button variant="outline" size="lg" className="w-full bg-background/20 border-foreground/20" disabled>Partido Lleno</Button>
                                 ) : (
                                     <Button variant={isUserInMatch ? 'secondary' : 'default'} size="lg" onClick={handleJoinOrLeaveMatch} disabled={isJoining} className="w-full">
                                         {isJoining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isUserInMatch ? <LogOut className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />)}
@@ -415,14 +415,14 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
-                        <Card className="bg-black/20 border-white/10">
+                        <Card className="bg-background/20 border-foreground/10">
                             <CardHeader>
                                 <CardTitle>Equipos ({match.players.length} / {match.matchSize})</CardTitle>
                                  <div className="pt-2">
                                     {isOwner && match.teams && match.teams.length > 0 && match.status === 'upcoming' && (
                                         <div className="flex flex-col sm:flex-row gap-2">
-                                            <Button variant="outline" size="sm" onClick={handleShuffleTeams} disabled={isShuffling} className="bg-black/20 border-white/20 hover:bg-black/40 text-white">{isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<Shuffle className="mr-2 h-4 w-4"/>Volver a Sortear</Button>
-                                            <Button variant="outline" size="sm" asChild className="bg-black/20 border-white/20 hover:bg-black/40 text-white"><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Equipos</a></Button>
+                                            <Button variant="outline" size="sm" onClick={handleShuffleTeams} disabled={isShuffling} className="bg-background/20 border-foreground/20 hover:bg-background/40 text-foreground">{isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<Shuffle className="mr-2 h-4 w-4"/>Volver a Sortear</Button>
+                                            <Button variant="outline" size="sm" asChild className="bg-background/20 border-foreground/20 hover:bg-background/40 text-foreground"><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Equipos</a></Button>
                                         </div>
                                     )}
                                 </div>
@@ -433,7 +433,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                         {match.teams.map(team => {
                                           const TeamIcon = team.name.toLowerCase().includes("chaleco") ? VestIcon : ShirtIcon;
                                           return (
-                                            <Card key={team.name} className="bg-black/20 border-white/10">
+                                            <Card key={team.name} className="bg-background/20 border-foreground/10">
                                                 <CardHeader className="flex flex-row items-center justify-between">
                                                     <CardTitle className="flex items-center gap-2"><TeamIcon className="h-5 w-5" />{team.name}</CardTitle>
                                                     <Badge variant="secondary">OVR {team.averageOVR.toFixed(1)}</Badge>
@@ -441,7 +441,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                                 <CardContent>
                                                     <div className="space-y-1">
                                                         {team.players.map(player => (
-                                                            <div key={player.uid} className="flex items-center justify-between p-2 border-b last:border-b-0 border-white/10">
+                                                            <div key={player.uid} className="flex items-center justify-between p-2 border-b last:border-b-0 border-foreground/10">
                                                                 <div className="flex items-center gap-3">
                                                                     <Avatar className="h-9 w-9"><AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoUrl} alt={player.displayName} /><AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback></Avatar>
                                                                     <div className="flex-1"><p className="font-semibold text-sm">{player.displayName}</p></div>
@@ -452,7 +452,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                                                             <Button variant="ghost" size="icon" className="h-7 w-7"><Shuffle className="h-4 w-4" /></Button>
                                                                         </SwapPlayerDialog>
                                                                     )}
-                                                                    <Badge variant="outline" className={cn("text-xs bg-transparent border-white/20", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
+                                                                    <Badge variant="outline" className={cn("text-xs bg-transparent border-foreground/20", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
                                                                     <Badge variant="secondary" className="text-xs w-10 justify-center">{player.ovr}</Badge>
                                                                 </div>
                                                             </div>
@@ -465,12 +465,12 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                  ) : (
                                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                                         {match.players.map((player, idx) => (
-                                            <div key={`${player.uid}-${idx}`} className="flex flex-col items-center text-center p-3 gap-2 border border-white/10 rounded-lg bg-black/20">
+                                            <div key={`${player.uid}-${idx}`} className="flex flex-col items-center text-center p-3 gap-2 border border-foreground/10 rounded-lg bg-background/20">
                                                 <Avatar className="h-16 w-16"><AvatarImage src={player.photoUrl} alt={player.displayName} /><AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback></Avatar>
                                                 <div>
                                                     <p className="font-bold text-sm truncate w-24">{player.displayName}</p>
                                                     <div className="flex items-center justify-center gap-1.5 mt-1">
-                                                        <Badge variant="outline" className={cn("text-xs bg-transparent border-white/20", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
+                                                        <Badge variant="outline" className={cn("text-xs bg-transparent border-foreground/20", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
                                                         <Badge variant="secondary">{player.ovr}</Badge>
                                                     </div>
                                                 </div>
@@ -484,7 +484,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     </div>
                     <div className="space-y-6">
                         {isOwner && (
-                            <Card className="bg-black/20 border-white/10">
+                            <Card className="bg-background/20 border-foreground/10">
                                 <CardHeader>
                                     <CardTitle>Gestión del Partido</CardTitle>
                                 </CardHeader>
@@ -495,7 +495,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                             Finalizar
                                         </Button>
                                     )}
-                                    {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" size="sm" className="bg-black/20 border-white/20 hover:bg-black/40 text-white"><UserPlus className="mr-2 h-4 w-4"/>Invitar</Button></InvitePlayerDialog>}
+                                    {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" size="sm" className="bg-background/20 border-foreground/20 hover:bg-background/40 text-foreground"><UserPlus className="mr-2 h-4 w-4"/>Invitar</Button></InvitePlayerDialog>}
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild><Button variant="destructive" size="sm" disabled={isDeleting}><Trash2 className="mr-2 h-4 w-4"/>Eliminar</Button></AlertDialogTrigger>
                                         <AlertDialogContent>
