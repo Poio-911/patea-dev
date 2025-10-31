@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -377,7 +378,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                 <Button variant="outline" size="sm" asChild>
                                     <a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer">
                                         <WhatsAppIcon className="mr-2 h-4 w-4"/>
-                                        Compartir
+                                        Compartir Partido
                                     </a>
                                 </Button>
                              )}
@@ -416,7 +417,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                              {match.teams && match.teams.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {match.teams.map(team => {
-                                      const TeamIcon = team.name.includes("chaleco") ? VestIcon : ShirtIcon;
+                                      const TeamIcon = team.name.toLowerCase().includes("chaleco") ? VestIcon : ShirtIcon;
                                       return (
                                         <Card key={team.name}>
                                             <CardHeader className="flex flex-row items-center justify-between">
