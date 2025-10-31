@@ -108,7 +108,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
         return match.playerUids.includes(user.uid);
     }, [match, user]);
 
-    const googleMapsUrl = match ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location.name)}&query_place_id=${match.location.placeId}` : '';
+    const googleMapsUrl = match ? `https://www.google.com/maps/search/?api=1&query_place_id=${match.location.placeId}` : '';
     
     const whatsAppShareText = useMemo(() => {
         if (!match) return '';
@@ -331,8 +331,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     
     return (
         <div className="relative isolate">
-          {/* Vista para Tema Oscuro */}
-          <div className="absolute inset-0 -z-10 hidden dark:block">
+          <div className="absolute inset-0 -z-10 dark:block">
             <video
               autoPlay
               loop
@@ -355,17 +354,17 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     </Button>
                 </div>
                 
-                <PageHeader title={match.title} />
+                <PageHeader title={match.title} className="dark:text-white" />
   
                 {/* Card para Tema Claro */}
                 <Card className="dark:hidden relative overflow-hidden border-foreground/10">
-                   <div className="absolute inset-0 -z-10">
+                   <div className="absolute inset-0 -z-10 rounded-lg overflow-hidden">
                       <video autoPlay loop muted playsInline className="h-full w-full object-cover">
                           <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
                       </video>
-                      <div className="absolute inset-0 bg-white/70" />
+                      <div className="absolute inset-0 bg-white/30" />
                   </div>
-                    <CardContent className="pt-6 space-y-4 text-white [text-shadow:0_1px_3px_rgb(0_0_0_/_0.5)]">
+                    <CardContent className="pt-6 space-y-4 text-white [text-shadow:0_1px_3px_rgb(0_0_0_/_0.5)] bg-transparent">
                          <div className="flex flex-col sm:flex-row gap-4 justify-between">
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3 text-lg">
@@ -570,7 +569,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                 </CardHeader>
                                 <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-2">
                                     {canFinalize && (
-                                        <Button onClick={handleFinishMatch} disabled={isFinishing} size="sm">
+                                        <Button onClick={handleFinishMatch} disabled={isFinishing} size="sm" className="dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40">
                                             {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
                                             Finalizar
                                         </Button>
