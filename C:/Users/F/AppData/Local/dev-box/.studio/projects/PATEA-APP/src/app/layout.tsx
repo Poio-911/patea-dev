@@ -1,10 +1,7 @@
-'use client';
-
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ClientProviders } from '@/components/client-providers';
 import { cn } from '@/lib/utils';
-import { MainNav } from '@/components/main-nav';
 
 export default function RootLayout({
   children,
@@ -33,9 +30,7 @@ export default function RootLayout({
         )}
       >
         <ClientProviders>
-          <MainNav>
             {children}
-          </MainNav>
         </ClientProviders>
         <Toaster />
       </body>
