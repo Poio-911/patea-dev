@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import type { Match, ChatMessage } from '@/lib/types';
 import { useFirestore, useUser, useCollection } from '@/firebase';
-import { collection, query, orderBy, addDoc, serverTimestamp, getDocs, where } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,6 +18,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from './ui/scroll-area';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 
 interface MatchChatViewProps {
@@ -91,9 +91,11 @@ export function MatchChatView({ match }: MatchChatViewProps) {
   const { data: messages, loading: messagesLoading } = useCollection<ChatMessage>(messagesQuery);
   
   const scrollToBottom = useCallback(() => {
-    if (scrollAreaRef.current) {
-        scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-    }
+    setTimeout(() => {
+        if (scrollAreaRef.current) {
+            scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+        }
+    }, 100);
   }, []);
 
   useEffect(() => {
@@ -165,37 +167,43 @@ export function MatchChatView({ match }: MatchChatViewProps) {
   };
 
   return (
-    <Card className="flex flex-col">
-        <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-                <MessageCircle className="h-5 w-5" />
-                Chat del Partido
-                {unreadCount > 0 && (
-                    <Badge className="animate-pulse">{unreadCount}</Badge>
-                )}
-            </CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 flex flex-col p-4 overflow-hidden min-h-[300px]" onFocus={handleFocus} tabIndex={0}>
-          <ScrollArea className="flex-1 pr-2 max-h-[400px]" ref={scrollAreaRef}>
-            <div className="space-y-4">
-              {renderContent()}
-            </div>
-          </ScrollArea>
-        </CardContent>
-        <CardFooter className="p-4 border-t">
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex w-full items-center space-x-2">
-            <Input
-              {...form.register('message')}
-              placeholder="Escribe un mensaje..."
-              autoComplete="off"
-              disabled={isSending}
-              onFocus={handleFocus}
-            />
-            <Button type="submit" size="icon" disabled={isSending}>
-              {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
-          </form>
-        </CardFooter>
+    <Card className="dark:bg-background/20 border-foreground/10 backdrop-blur-sm">
+        <Accordion type="single" collapsible defaultValue="chat" className="w-full">
+            <AccordionItem value="chat" className="border-b-0">
+                <AccordionTrigger className="p-4">
+                    <div className="flex items-center gap-2 w-full">
+                        <MessageCircle className="h-5 w-5" />
+                        <h3 className="font-semibold text-lg">Chat del Partido</h3>
+                        {unreadCount > 0 && (
+                            <Badge className="animate-pulse">{unreadCount}</Badge>
+                        )}
+                    </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                    <div className="flex-1 flex flex-col p-4 pt-0 overflow-hidden min-h-[300px]" onFocus={handleFocus} tabIndex={0}>
+                        <ScrollArea className="flex-1 pr-2 max-h-[400px]" ref={scrollAreaRef}>
+                            <div className="space-y-4">
+                            {renderContent()}
+                            </div>
+                        </ScrollArea>
+                    </div>
+                    <div className="p-4 border-t">
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="flex w-full items-center space-x-2">
+                            <Input
+                            {...form.register('message')}
+                            placeholder="Escribe un mensaje..."
+                            autoComplete="off"
+                            disabled={isSending}
+                            onFocus={handleFocus}
+                            />
+                            <Button type="submit" size="icon" disabled={isSending}>
+                            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                            </Button>
+                        </form>
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
+        </Accordion>
     </Card>
   );
 }
