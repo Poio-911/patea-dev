@@ -62,31 +62,40 @@ const statIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   FIS: Dumbbell,
 };
 
+const statLabelsLong: Record<string, string> = {
+  RIT: 'Ritmo',
+  TIR: 'Tiro',
+  PAS: 'Pase',
+  REG: 'Regate',
+  DEF: 'Defensa',
+  FIS: 'Físico',
+};
+
 const Stat = ({ label, value, isBest }: { label: string; value: number, isBest: boolean }) => {
   const Icon = statIcons[label] || Zap;
   return (
-    <div className="flex flex-col gap-1 group">
+    <div className="flex flex-col gap-1 group" role="group" aria-label={`${statLabelsLong[label]}: ${value} puntos${isBest ? ', mejor estadística' : ''}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <Icon className="h-3 w-3 text-muted-foreground/80 group-hover:text-primary transition-colors" />
+          <Icon className="h-3 w-3 text-muted-foreground/80 group-hover:text-primary transition-colors" aria-hidden="true" />
           <span className="font-semibold text-muted-foreground text-xs">{label}</span>
         </div>
         <span className={cn("font-bold text-sm", isBest && "text-primary")}>{value}</span>
       </div>
       <motion.div whileHover={{ scaleX: 1.05, transition: { duration: 0.2 } }}>
-        <Progress value={value} isBest={isBest} />
+        <Progress value={value} isBest={isBest} aria-hidden="true" />
       </motion.div>
     </div>
   );
 };
 
-export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
+export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true }: PlayerCardProps) {
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isAlertOpen, setIsAlertOpen] = React.useState(false);
-  
+
   const playerName = player.name || player.displayName || 'Jugador';
 
   const isManualPlayer = player.id !== player.ownerUid;
@@ -114,20 +123,24 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
         setIsDeleting(false);
     }
   };
-  
-  const stats: { label: 'RIT' | 'TIR' | 'PAS' | 'REG' | 'DEF' | 'FIS', value: number }[] = [
+
+  const stats: { label: 'RIT' | 'TIR' | 'PAS' | 'REG' | 'DEF' | 'FIS', value: number }[] = React.useMemo(() => [
     { label: 'RIT', value: player.pac },
     { label: 'TIR', value: player.sho },
     { label: 'PAS', value: player.pas },
     { label: 'REG', value: player.dri },
     { label: 'DEF', value: player.def },
     { label: 'FIS', value: player.phy },
-  ];
-  
-  const maxStatValue = Math.max(...stats.map(s => s.value));
+  ], [player.pac, player.sho, player.pas, player.dri, player.def, player.phy]);
+
+  const maxStatValue = React.useMemo(() => Math.max(...stats.map(s => s.value)), [stats]);
 
   const CardContentComponent = () => (
-    <Card className="overflow-hidden border-2 shadow-lg transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30 border-border h-full flex flex-col group">
+    <Card
+      className="overflow-hidden border-2 shadow-lg transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30 border-border h-full flex flex-col group"
+      role="article"
+      aria-label={`Jugador ${playerName}, calificación general ${player.ovr}, posición ${player.position}`}
+    >
       <CardHeader className={cn(
         "relative p-3 text-card-foreground bg-gradient-to-br to-transparent",
         positionBackgrounds[player.position]
@@ -162,8 +175,13 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
               <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:bg-white/20">
-                      <MoreVertical size={16} />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-12 w-12 text-muted-foreground hover:bg-white/20"
+                      aria-label={`Opciones para ${playerName}`}
+                    >
+                      <MoreVertical size={20} />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -218,17 +236,41 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
             <Stat key={stat.label} label={stat.label} value={stat.value} isBest={stat.value === maxStatValue} />
           ))}
         </div>
+
+        {/* Quick Stats Footer */}
+        <div className="mt-3 pt-3 border-t border-border/50">
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <div className="flex flex-col items-center">
+              <span className="font-bold text-base text-foreground">{player.stats.matchesPlayed}</span>
+              <span className="text-muted-foreground">Partidos</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="font-bold text-base text-foreground">{player.stats.goals}</span>
+              <span className="text-muted-foreground">Goles</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="font-bold text-base text-foreground">
+                {player.stats.averageRating > 0 ? player.stats.averageRating.toFixed(1) : '-'}
+              </span>
+              <span className="text-muted-foreground">Rating</span>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
 
   if (isLink) {
     return (
-        <Link href={`/players/${player.id}`} className="block h-full">
+        <Link
+          href={`/players/${player.id}`}
+          className="block h-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg"
+          aria-label={`Ver perfil completo de ${playerName}`}
+        >
             <CardContentComponent />
         </Link>
     );
   }
 
   return <CardContentComponent />;
-}
+});
