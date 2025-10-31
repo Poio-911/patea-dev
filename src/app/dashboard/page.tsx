@@ -27,9 +27,6 @@ import { MateIcon } from '@/components/icons/mate-icon';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 import { logger } from '@/lib/logger';
 import { motion } from 'framer-motion';
-import { HighlightReelCard } from '@/components/highlight-reel-card';
-import { FootballNewsCard } from '@/components/football-news-card';
-
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
     upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
@@ -241,8 +238,41 @@ function DashboardContent() {
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-8">
-            <HighlightReelCard />
-            <FootballNewsCard />
+          {nextMatch && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    Próximo Partido
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <NextMatchCard match={nextMatch} />
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader>
+                <CardTitle>Partidos Anteriores</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {recentMatches && recentMatches.length > 0 ? recentMatches.map(match => {
+                     const statusInfo = statusConfig[match.status] || { label: 'Desconocido', className: 'bg-gray-100 text-gray-800' };
+                     return (
+                        <Link key={match.id} href={`/matches/${match.id}`} className="block">
+                            <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                                <div>
+                                    <p className="font-semibold">{match.title}</p>
+                                    <p className="text-sm text-muted-foreground">{format(new Date(match.date), "dd 'de' MMMM, yyyy", { locale: es })}</p>
+                                </div>
+                                <Badge variant="outline" className={cn(statusInfo.className)}>{statusInfo.label}</Badge>
+                            </div>
+                        </Link>
+                     )
+                }) : <p className="text-sm text-muted-foreground text-center py-4">Aún no hay partidos jugados en este grupo.</p>}
+            </CardContent>
+          </Card>
         </div>
 
         <div className="lg:col-span-1 space-y-8">
@@ -296,16 +326,52 @@ function DashboardContent() {
                 </motion.div>
               </CardContent>
             </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <SoccerPlayerIcon className="h-5 w-5 text-primary" />
-                        Plantel
+                        <Eye className="h-5 w-5 text-primary" />
+                        Visibilidad Pública
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-4xl font-bold">{allPlayersInGroup?.length || 0}</div>
-                    <p className="text-xs text-muted-foreground">jugadores en el grupo</p>
+                    <div className="flex items-center justify-between space-x-2">
+                        <Label htmlFor="availability-switch" className="flex flex-col space-y-1">
+                            <span>¿Disponible para otros?</span>
+                            <span className="font-normal leading-snug text-muted-foreground text-xs">
+                                Permití que otros DTs te encuentren y te inviten a sus partidos.
+                            </span>
+                        </Label>
+                         <Switch 
+                            id="availability-switch" 
+                            checked={!!availablePlayerData} 
+                            onCheckedChange={handleToggleAvailability}
+                            disabled={isToggling}
+                        />
+                    </div>
+                     {locationError && (
+                        <Alert variant="destructive" className="mt-4">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Error de Ubicación</AlertTitle>
+                            <AlertDescription>
+                                {locationError}
+                                <Button variant="link" className="p-0 h-auto ml-1 text-destructive" onClick={requestLocationAndToggle}>Reintentar</Button>
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                     {availablePlayerData && (
+                        <div className="mt-4 flex gap-2">
+                             <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                             <p className="text-xs text-muted-foreground">Estás visible en la búsqueda de jugadores.</p>
+                        </div>
+                    )}
+                    <Separator className="my-4" />
+                    <SetAvailabilityDialog player={player} availability={availablePlayerData?.availability || {}}>
+                        <Button variant="outline" className="w-full" disabled={!availablePlayerData}>
+                            <Calendar className="mr-2 h-4 w-4" />
+                            Definir mi Horario
+                        </Button>
+                    </SetAvailabilityDialog>
                 </CardContent>
             </Card>
         </div>
