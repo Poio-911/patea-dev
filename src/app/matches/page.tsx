@@ -10,19 +10,29 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { AddMatchDialog } from '@/components/add-match-dialog';
 import type { Match, Player } from '@/lib/types';
-import { MatchCard } from '@/components/match-card';
 import { InvitationsSheet } from '@/components/invitations-sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
+import { motion } from 'framer-motion';
+import { MatchCard } from '@/components/match-card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MatchesCalendar } from '@/components/matches-calendar';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 
+
+const listVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
 
 export default function MatchesPage() {
     const { user, loading: userLoading } = useUser();
@@ -45,7 +55,6 @@ export default function MatchesPage() {
         );
     }, [firestore, user?.activeGroupId]);
     
-    // Query for public matches where the user is a player, but are NOT from the current active group.
     const joinedPublicMatchesQuery = useMemo(() => {
         if (!firestore || !user?.uid || !user?.activeGroupId) return null;
         return query(
@@ -60,7 +69,6 @@ export default function MatchesPage() {
     const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(groupMatchesQuery);
     const { data: joinedPublicMatches, loading: joinedPublicMatchesLoading } = useCollection<Match>(joinedPublicMatchesQuery);
     
-    // Merge matches from the active group with any public matches the user has joined.
     const matches = useMemo(() => {
         const allMatchesMap = new Map<string, Match>();
         
@@ -73,18 +81,22 @@ export default function MatchesPage() {
     const { upcomingMatches, pastMatches } = useMemo(() => {
         const upcoming: Match[] = [];
         const past: Match[] = [];
+        const now = new Date();
+        
         matches.forEach(match => {
-            if (match.status === 'upcoming' || match.status === 'active') {
+            const matchDate = new Date(match.date);
+            if (matchDate >= now || match.status === 'upcoming' || match.status === 'active') {
                 upcoming.push(match);
             } else {
                 past.push(match);
             }
         });
-        // Upcoming matches should be sorted ascending (closest first)
+
+        // Sort upcoming matches by date ascending
         upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        
         return { upcomingMatches: upcoming, pastMatches: past };
     }, [matches]);
-
 
     const loading = userLoading || playersLoading || groupMatchesLoading || joinedPublicMatchesLoading;
     
@@ -107,7 +119,7 @@ export default function MatchesPage() {
             <FirstTimeInfoDialog
                 featureKey="hasSeenMatchesInfo"
                 title="Sección de Partidos"
-                description="Acá podés crear nuevos partidos, ver los que están por jugarse y revisar el historial de los ya jugados. Usá las pestañas para navegar entre 'Próximos' e 'Historial'."
+                description="Acá podés crear nuevos partidos y ver todos los partidos de tu grupo, tanto los próximos como el historial. Usá el icono del calendario para una vista mensual."
             />
             <PageHeader
                 title="Partidos"
@@ -126,33 +138,6 @@ export default function MatchesPage() {
                    <InvitationsSheet />
                 </div>
             </PageHeader>
-
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                         <div className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer self-start">
-                            <Info className="h-4 w-4" />
-                            <span>¿Cómo funcionan los partidos y las evaluaciones?</span>
-                        </div>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-md">
-                        <div className="space-y-3 p-2">
-                             <h4 className="font-bold">Tipos de Partido</h4>
-                             <ul className="list-disc list-inside text-xs space-y-1">
-                                <li><b>Manual:</b> El organizador elige a tod@s l@s jugador@s.</li>
-                                <li><b>Colaborativo:</b> El organizador crea el evento y l@s demás se apuntan.</li>
-                                <li><b>Por Equipos:</b> Se enfrentan dos equipos ya creados en tu grupo.</li>
-                             </ul>
-                             <h4 className="font-bold">Proceso Post-Partido</h4>
-                             <ul className="list-disc list-inside text-xs space-y-1">
-                                <li>Al <b>finalizar</b> un partido, si es colaborativo o manual y están tod@s, la IA arma los equipos.</li>
-                                <li>Luego, se generan las <b>evaluaciones pendientes</b> para que cada participante evalúe a sus compañer@s.</li>
-                                <li>Como organizador, tenés que ir al panel de supervisión para <b>cerrar la evaluación</b>. Esto dispara el cálculo y la actualización de los OVRs de tod@s.</li>
-                             </ul>
-                        </div>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
 
             {!user?.activeGroupId && (
                 <Alert>
@@ -176,40 +161,50 @@ export default function MatchesPage() {
                             <TabsTrigger value="upcoming">Próximos</TabsTrigger>
                             <TabsTrigger value="history">Historial</TabsTrigger>
                         </TabsList>
-
                         <TabsContent value="upcoming" className="mt-6">
-                            <div className="flex flex-col gap-6">
-                                {upcomingMatches.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {upcomingMatches.map((match) => (
-                                            <MatchCard key={match.id} match={match} allPlayers={sortedPlayers} />
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center text-center border-2 border-dashed border-muted-foreground/30 rounded-xl p-12">
-                                        <Calendar className="h-12 w-12 text-muted-foreground/50" />
-                                        <h2 className="mt-4 text-xl font-semibold">No hay partidos programados</h2>
-                                        <p className="mt-2 text-sm text-muted-foreground">
-                                            ¡Usa el botón de arriba para empezar a jugar!
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </TabsContent>
-
-                        <TabsContent value="history" className="mt-6">
-                             {pastMatches.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {pastMatches.map((match) => (
-                                        <MatchCard key={match.id} match={match} allPlayers={sortedPlayers} />
+                            {upcomingMatches.length > 0 ? (
+                                <motion.div 
+                                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                    variants={listVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                >
+                                    {upcomingMatches.map(match => (
+                                        <motion.div key={match.id} variants={itemVariants}>
+                                            <MatchCard match={match} allPlayers={sortedPlayers} />
+                                        </motion.div>
                                     ))}
-                                </div>
+                                </motion.div>
                             ) : (
-                                 <div className="flex flex-col items-center justify-center text-center border-2 border-dashed border-muted-foreground/30 rounded-xl p-12">
-                                    <Calendar className="h-12 w-12 text-muted-foreground/50" />
-                                    <h2 className="mt-4 text-xl font-semibold">Sin Historial de Partidos</h2>
-                                    <p className="mt-2 text-sm text-muted-foreground">
-                                        Cuando completes tu primer partido, aparecerá aquí.
+                                <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl">
+                                    <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
+                                    <h2 className="text-xl font-semibold mb-2">No hay partidos programados</h2>
+                                    <p className="text-muted-foreground mb-6 max-w-md">
+                                    ¡Es hora de organizar el próximo encuentro!
+                                    </p>
+                                </div>
+                            )}
+                        </TabsContent>
+                        <TabsContent value="history" className="mt-6">
+                            {pastMatches.length > 0 ? (
+                                <motion.div 
+                                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                    variants={listVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                >
+                                    {pastMatches.map(match => (
+                                        <motion.div key={match.id} variants={itemVariants}>
+                                            <MatchCard match={match} allPlayers={sortedPlayers} />
+                                        </motion.div>
+                                    ))}
+                                </motion.div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl">
+                                    <Info className="h-16 w-16 text-muted-foreground mb-4" />
+                                    <h2 className="text-xl font-semibold mb-2">Sin Historial</h2>
+                                    <p className="text-muted-foreground mb-6 max-w-md">
+                                        Cuando los partidos finalicen, aparecerán acá.
                                     </p>
                                 </div>
                             )}

@@ -1,10 +1,12 @@
 
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { WandSparkles, MoreVertical, Trash2, Pencil } from 'lucide-react';
+import { WandSparkles, MoreVertical, Trash2, Pencil, Zap, Target, Send, Footprints, Shield, Dumbbell } from 'lucide-react';
 import type { Player } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { EditPlayerDialog } from './edit-player-dialog';
@@ -30,7 +32,7 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import React from 'react';
 import { Badge } from './ui/badge';
-import { AttributeKey } from '@/lib/data';
+import { motion } from 'framer-motion';
 
 type PlayerCardProps = {
   player: Player & { displayName?: string }; // Allow displayName for compatibility
@@ -51,12 +53,28 @@ const positionColors: Record<Player['position'], string> = {
   POR: 'text-chart-4',
 };
 
-const Stat = ({ label, value }: { label: string; value: number }) => (
-  <div className="flex items-center justify-between text-sm">
-    <span className="font-semibold text-muted-foreground">{label}</span>
-    <span className="font-bold">{value}</span>
-  </div>
-);
+// Iconos para cada stat
+const statIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  RIT: Zap,
+  TIR: Target,
+  PAS: Send,
+  REG: Footprints,
+  DEF: Shield,
+  FIS: Dumbbell,
+};
+
+const Stat = ({ label, value }: { label: string; value: number }) => {
+  const Icon = statIcons[label] || Zap;
+  return (
+    <div className="flex items-center justify-between group">
+      <div className="flex items-center gap-1">
+        <Icon className="h-3 w-3 text-muted-foreground/60 group-hover:text-primary transition-colors" />
+        <span className="font-semibold text-muted-foreground text-xs">{label}</span>
+      </div>
+      <span className="font-bold">{value}</span>
+    </div>
+  );
+};
 
 export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
   const { user } = useUser();
@@ -93,60 +111,75 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
     } finally {
         setIsDeleting(false);
     }
-  }
+  };
 
   const CardContentComponent = () => (
-    <Card className="overflow-hidden border-2 shadow-lg transition-transform hover:scale-105 hover:shadow-xl border-border h-full flex flex-col">
-       <div className={cn("relative p-4 text-card-foreground", positionBackgrounds[player.position])}>
-            <div className="flex items-start justify-between">
-                <div>
-                    <div className={cn("text-3xl font-bold leading-none", positionColors[player.position])}>{player.ovr}</div>
-                </div>
-
-                {(canEdit || canDelete) && (
-                     <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-white/20">
-                                    <MoreVertical size={18} />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                               {canEdit && (
-                                 <EditPlayerDialog player={player}>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                        <Pencil className="mr-2 h-4 w-4" />
-                                        <span>Editar</span>
-                                    </DropdownMenuItem>
-                                 </EditPlayerDialog>
-                               )}
-                               {canDelete && canEdit && <DropdownMenuSeparator />}
-                               {canDelete && (
-                                 <DropdownMenuItem onClick={() => setIsAlertOpen(true)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      <span>Eliminar</span>
-                                  </DropdownMenuItem>
-                               )}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>¿Seguro que querés borrar a {playerName}?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Vas a borrar al jugador para siempre.
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                                {isDeleting ? "Borrando..." : "Sí, borrar"}
-                            </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                )}
+    <Card className="overflow-hidden border-2 shadow-lg transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 border-border h-full flex flex-col group">
+      {/* Header con degradado sutil */}
+      <div className={cn(
+        "relative p-4 text-card-foreground bg-gradient-to-br from-transparent",
+        positionBackgrounds[player.position]
+      )}>
+        <div className="flex items-start justify-between">
+          <div className="relative">
+            {/* OVR con efecto sutil */}
+            <div className="relative">
+              <div className={cn(
+                "absolute inset-0 blur-md opacity-30 transition-opacity group-hover:opacity-50",
+                positionColors[player.position]
+              )}>
+                {player.ovr}
+              </div>
+              <div className={cn("relative text-4xl font-bold leading-none", positionColors[player.position])}>
+                {player.ovr}
+              </div>
             </div>
+          </div>
+
+          {(canEdit || canDelete) && (
+            <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-white/20">
+                    <MoreVertical size={18} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {canEdit && (
+                    <EditPlayerDialog player={player}>
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        <span>Editar</span>
+                      </DropdownMenuItem>
+                    </EditPlayerDialog>
+                  )}
+                  {canDelete && canEdit && <DropdownMenuSeparator />}
+                  {canDelete && (
+                    <DropdownMenuItem onClick={() => setIsAlertOpen(true)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      <span>Eliminar</span>
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Seguro que querés borrar a {playerName}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta acción no se puede deshacer. Vas a borrar al jugador para siempre.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                    {isDeleting ? "Borrando..." : "Sí, borrar"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
+      </div>
 
       <CardContent className="p-4 text-center bg-card flex-grow flex flex-col">
         <Avatar className="mx-auto -mt-12 h-24 w-24 border-4 border-background overflow-hidden">
@@ -163,12 +196,21 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
           />
           <AvatarFallback>{playerName.charAt(0)}</AvatarFallback>
         </Avatar>
+
         <div className="mt-2 text-center">
-            <h3 className="text-xl font-bold font-headline truncate">{playerName}</h3>
-            <Badge variant="secondary" className={cn("mt-1", positionColors[player.position])}>{player.position}</Badge>
+          <h3 className="text-xl font-bold font-headline truncate">{playerName}</h3>
+          <Badge variant="secondary" className={cn("mt-1 text-xs", positionColors[player.position])}>
+            {player.position}
+          </Badge>
+          {isManualPlayer && (
+            <Badge variant="outline" className="mt-1 ml-1 text-xs border-dashed">
+              Manual
+            </Badge>
+          )}
         </div>
-        
-        <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 flex-grow">
+
+        {/* Stats ajustados para mobile */}
+        <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 flex-grow">
           <Stat label="RIT" value={player.pac} />
           <Stat label="TIR" value={player.sho} />
           <Stat label="PAS" value={player.pas} />

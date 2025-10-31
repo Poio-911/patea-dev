@@ -1,4 +1,3 @@
-
 'use client';
 import { useEffect, useState, createContext, useContext } from 'react';
 import type { User } from 'firebase/auth';
@@ -6,6 +5,7 @@ import { useAuth } from '@/firebase';
 import { doc, setDoc, getDoc, serverTimestamp, onSnapshot, FieldValue, updateDoc, getFirestore } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { UserProfile, Player } from '@/lib/types';
+import { logger } from '@/lib/logger';
 
 const UserContext = createContext<{ user: UserProfile | null; loading: boolean }>({
   user: null,
@@ -34,25 +34,37 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           if (userDoc.exists()) {
              const userData = userDoc.data() as UserProfile;
              
-             // --- DATA REPAIR & SYNC LOGIC ---
-             // This logic checks if the player's groupId is out of sync with the user's activeGroupId and repairs it.
-             if (userData.activeGroupId) {
-                const playerRef = doc(firestore, 'players', firebaseUser.uid);
-                try {
-                    const playerDoc = await getDoc(playerRef);
-                    if (playerDoc.exists()) {
-                        const playerData = playerDoc.data() as Player;
-                        // If groupId is missing OR different from the active one, update it.
-                        if (playerData.groupId !== userData.activeGroupId) {
-                            console.log(`Syncing player groupId for ${userData.displayName}: setting groupId to ${userData.activeGroupId}`);
-                            await updateDoc(playerRef, { groupId: userData.activeGroupId });
-                        }
+             // --- DATA REPAIR & CREDIT RESET LOGIC ---
+             const playerRef = doc(firestore, 'players', firebaseUser.uid);
+             try {
+                const playerDoc = await getDoc(playerRef);
+                if (playerDoc.exists()) {
+                    const playerData = playerDoc.data() as Player;
+                    const updates: Partial<Player> = {};
+
+                    // Sync player's groupId if out of sync with user's activeGroupId
+                    if (userData.activeGroupId && playerData.groupId !== userData.activeGroupId) {
+                        updates.groupId = userData.activeGroupId;
                     }
-                } catch (e) {
-                    console.error("Failed to sync player data:", e);
+
+                    // Monthly credit reset logic
+                    const now = new Date();
+                    const lastReset = playerData.lastCreditReset ? new Date(playerData.lastCreditReset) : null;
+
+                    if (!lastReset || (lastReset.getMonth() !== now.getMonth() || lastReset.getFullYear() !== now.getFullYear())) {
+                        updates.cardGenerationCredits = 3;
+                        updates.lastCreditReset = now.toISOString();
+                    }
+
+                    if (Object.keys(updates).length > 0) {
+                        logger.info('Syncing player data', { userId: firebaseUser.uid, updates });
+                        await updateDoc(playerRef, updates);
+                    }
                 }
+             } catch (e) {
+                logger.error("Failed to sync player data or reset credits:", e, { userId: firebaseUser.uid });
              }
-             // --- END REPAIR & SYNC LOGIC ---
+             // --- END REPAIR & CREDIT RESET LOGIC ---
 
              setUser(userData);
              setLoading(false);
@@ -72,14 +84,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                 setUser(newUserProfile);
               })
               .catch(e => {
-                console.error("[useUser] Error creating user profile:", e);
+                logger.error("[useUser] Error creating user profile:", e, { uid: firebaseUser.uid });
               })
               .finally(() => {
                 setLoading(false);
               });
           }
         }, (error) => {
-          console.error("[useUser] Error listening to user document:", error);
+          logger.error("[useUser] Error listening to user document:", error, { uid: firebaseUser.uid });
           setUser(null);
           setLoading(false);
         });

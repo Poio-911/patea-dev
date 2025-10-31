@@ -14,7 +14,7 @@ import {
 import type { Group, Player, Match } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Loader2, Users2 } from 'lucide-react';
+import { Loader2, Users2, PlusCircle, LogIn } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { TeamList } from '@/components/team-builder/team-list';
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
@@ -22,6 +22,8 @@ import { UserGroupsList } from '@/components/groups/user-groups-list';
 import { GroupStatsCards } from '@/components/groups/group-stats-cards';
 import { UpcomingMatchesFeed } from '@/components/groups/upcoming-matches-feed';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
+import { CreateGroupDialog, JoinGroupDialog } from '@/components/groups/group-dialogs';
+import { Separator } from '@/components/ui/separator';
 import { motion } from 'framer-motion';
 
 export default function GroupsPage() {
@@ -60,15 +62,34 @@ export default function GroupsPage() {
             title="¡Bienvenid@ a tus Grupos!"
             description="Esta es tu central de operaciones. Desde 'Mis Grupos' podés crear nuevos grupos, unirte a otros, o cambiar tu grupo activo. Debajo verás toda la info del grupo que tengas seleccionado, ¡incluyendo los equipos que podés crear!"
         />
+        
+        <PageHeader title="Mis Grupos">
+          <div className="flex flex-col sm:flex-row gap-2">
+              <CreateGroupDialog>
+                <Button variant="default">
+                    <PlusCircle className="mr-2 h-4 w-4"/>
+                    Crear Grupo
+                </Button>
+              </CreateGroupDialog>
+              <JoinGroupDialog>
+                <Button variant="outline">
+                    <LogIn className="mr-2 h-4 w-4"/>
+                    Unirse a Grupo
+                </Button>
+              </JoinGroupDialog>
+          </div>
+        </PageHeader>
         <UserGroupsList />
+        
+        <Separator className="my-4"/>
       
         {loading ? (
             <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
         ) : !activeGroup || !user ? (
             <Alert className="text-center py-10">
-            <Users2 className="h-6 w-6 mx-auto mb-2" />
-            <AlertTitle>No hay un grupo activo</AlertTitle>
-            <AlertDescription>Creá un grupo o unite a uno desde la sección "Mis Grupos" de arriba.</AlertDescription>
+              <Users2 className="h-6 w-6 mx-auto mb-2" />
+              <AlertTitle>No hay un grupo activo</AlertTitle>
+              <AlertDescription>Creá un grupo o unite a uno desde la sección de arriba para empezar.</AlertDescription>
             </Alert>
         ) : (
             <motion.div

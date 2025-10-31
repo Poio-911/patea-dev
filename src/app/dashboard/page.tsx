@@ -1,24 +1,21 @@
 
 'use client';
 
-import { Suspense, useState } from 'react';
-import { useCollection, useDoc } from '@/firebase';
+import { Suspense, useState, useMemo, useCallback, useEffect } from 'react';
+import { useCollection, useDoc, useFirestore, useUser } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, Users2, Calendar, MapPin, User, UserRound, Eye, Loader2, Locate, AlertCircle } from 'lucide-react';
+import { Star, Users2, Calendar, User, Eye, Loader2, LocateFixed, AlertCircle, UserRound, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, limit, doc, setDoc, deleteDoc } from 'firebase/firestore';
-import { useUser } from '@/firebase';
-import { useMemo } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import type { Player, Match, AvailablePlayer } from '@/lib/types';
 import { NextMatchCard } from '@/components/next-match-card';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { format, isToday, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Separator } from '@/components/ui/separator';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
@@ -38,6 +35,21 @@ const statusConfig: Record<Match['status'], { label: string; className: string }
     evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' },
 };
 
+const pageVariants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { duration: 0.5 } },
+};
+
+const listVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
 function DashboardContent() {
   const { user } = useUser();
   const firestore = useFirestore();
@@ -45,7 +57,6 @@ function DashboardContent() {
   const [isToggling, setIsToggling] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  // ✅ Query optimizada: Solo traemos top 5 jugadores ordenados por OVR
   const top5PlayersQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
     return query(
@@ -56,13 +67,6 @@ function DashboardContent() {
     );
   }, [firestore, user?.activeGroupId]);
 
-  // Query para contar jugadores del grupo (sin traer todos los datos)
-  const allPlayersQuery = useMemo(() => {
-    if (!firestore || !user?.activeGroupId) return null;
-    return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
-  }, [firestore, user?.activeGroupId]);
-
-  // ✅ Query optimizada: Solo últimos 10 partidos (suficiente para próximo + 2 recientes)
   const groupMatchesQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
     return query(
@@ -87,15 +91,18 @@ function DashboardContent() {
   const availablePlayerRef = useMemo(() => firestore && user?.uid ? doc(firestore, 'availablePlayers', user.uid) : null, [firestore, user?.uid]);
   const { data: availablePlayerData, loading: availablePlayerLoading } = useDoc<AvailablePlayer>(availablePlayerRef);
 
+  const { data: top5Players, loading: top5PlayersLoading } = useCollection<Player>(top5PlayersQuery);
+
+  const allPlayersInGroupQuery = useMemo(() => {
+    if (!firestore || !user?.activeGroupId) return null;
+    return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
+  }, [firestore, user?.activeGroupId]);
+  const { data: allPlayersInGroup, loading: allPlayersLoading } = useCollection<Player>(allPlayersInGroupQuery);
 
   const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(groupMatchesQuery);
   const { data: joinedMatches, loading: joinedMatchesLoading } = useCollection<Match>(joinedMatchesQuery);
 
-  // ✅ Top 5 ya viene ordenado y limitado desde Firestore
-  const { data: top5Players, loading: top5Loading } = useCollection<Player>(top5PlayersQuery);
-
-  // Para contar jugadores del grupo
-  const { data: allPlayers, loading: allPlayersLoading } = useCollection<Player>(allPlayersQuery);
+  const loading = top5PlayersLoading || allPlayersLoading || groupMatchesLoading || joinedMatchesLoading || playerLoading || availablePlayerLoading;
   
   const matches = useMemo(() => {
     if (!groupMatches && !joinedMatches) return null;
@@ -112,8 +119,6 @@ function DashboardContent() {
 
     return Array.from(allMatchesMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [groupMatches, joinedMatches]);
-
-  const loading = top5Loading || allPlayersLoading || groupMatchesLoading || joinedMatchesLoading || playerLoading || availablePlayerLoading;
 
   const { nextMatch, recentMatches } = useMemo(() => {
     if (!matches) return { nextMatch: null, recentMatches: [] };
@@ -213,10 +218,10 @@ function DashboardContent() {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="flex flex-col gap-8"
+        className="flex flex-col gap-8"
+        variants={pageVariants}
+        initial="initial"
+        animate="animate"
     >
       <FirstTimeInfoDialog
         featureKey="hasSeenDashboardInfo"
@@ -278,7 +283,6 @@ function DashboardContent() {
       </Card>
 
       <div className="grid gap-8 lg:grid-cols-3">
-        {/* Main column */}
         <div className="lg:col-span-2 space-y-8">
             <Card>
                 <CardHeader>
@@ -299,7 +303,7 @@ function DashboardContent() {
                         <div className="space-y-4">
                             {recentMatches.map((match, index) => {
                                 const statusInfo = statusConfig[match.status];
-                                const owner = allPlayers?.find(p => p.id === match.ownerUid)
+                                const owner = allPlayersInGroup?.find(p => p.id === match.ownerUid)
                                 const ownerName = owner?.name || (match.ownerUid === user?.uid ? user.displayName : null) || 'Organizador';
 
                                 return (
@@ -343,7 +347,6 @@ function DashboardContent() {
             </Card>
         </div>
 
-        {/* Side column */}
         <div className="lg:col-span-1 space-y-8">
             <Card>
               <CardHeader>
@@ -355,15 +358,18 @@ function DashboardContent() {
                 <CardDescription>El Top 5 de jugadores por OVR.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {top5Players.length > 0 ? top5Players.map((player: Player, index: number) => {
+                <motion.div 
+                    className="space-y-4"
+                    variants={listVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
+                  {top5Players && top5Players.length > 0 ? top5Players.map((player: Player, index: number) => {
                       const isManualPlayer = player.id !== player.ownerUid;
                       return (
                         <motion.div
                           key={player.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.1, type: "spring", stiffness: 100 }}
+                          variants={listVariants}
                           className="flex items-center gap-4"
                         >
                           <div className="text-muted-foreground font-bold w-4">{index + 1}.</div>
@@ -389,7 +395,7 @@ function DashboardContent() {
                         </motion.div>
                       )
                   }) : <p className="text-sm text-muted-foreground text-center py-4">Aún no hay jugadores en este grupo.</p>}
-                </div>
+                </motion.div>
               </CardContent>
             </Card>
             <Card>
@@ -400,7 +406,7 @@ function DashboardContent() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-4xl font-bold">{allPlayers?.length || 0}</div>
+                    <div className="text-4xl font-bold">{allPlayersInGroup?.length || 0}</div>
                     <p className="text-xs text-muted-foreground">jugadores en el grupo</p>
                 </CardContent>
             </Card>
@@ -409,7 +415,6 @@ function DashboardContent() {
     </motion.div>
   );
 }
-
 
 export default function DashboardPage() {
     return (

@@ -1,3 +1,4 @@
+
 /**
  * Sistema de manejo de errores estandarizado
  *

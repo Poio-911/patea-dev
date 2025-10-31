@@ -15,11 +15,25 @@ import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 import { motion } from 'framer-motion';
 
+const listVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
+
 export default function PlayersPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
 
-  // Optimized Query: Fetch all players belonging to the active group in one go.
   const playersQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
     return query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId));
@@ -83,18 +97,18 @@ export default function PlayersPage() {
         </Alert>
       )}
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {sortedPlayers?.map((player, index) => (
-          <motion.div
-            key={player.id}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.05, type: "spring", stiffness: 100 }}
-          >
+      <motion.div 
+        className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+        variants={listVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {sortedPlayers?.map((player) => (
+          <motion.div key={player.id} variants={itemVariants}>
             <PlayerCard player={player} />
           </motion.div>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 }

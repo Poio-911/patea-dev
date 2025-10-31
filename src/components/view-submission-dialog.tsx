@@ -13,7 +13,7 @@ import { Button } from './ui/button';
 import type { EvaluationSubmission } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
-import { Star } from 'lucide-react';
+import { Star, Goal } from 'lucide-react';
 import { Separator } from './ui/separator';
 
 interface ViewSubmissionDialogProps {
@@ -38,8 +38,11 @@ export function ViewSubmissionDialog({ submission, children }: ViewSubmissionDia
           <ScrollArea className="h-full pr-4">
             <div className="space-y-6">
               <div className="p-3 border rounded-md bg-muted/50">
-                  <p className="text-sm font-semibold">Tus Goles Reportados</p>
-                  <p className="text-2xl font-bold">{formData.evaluatorGoals}</p>
+                  <div className="flex items-center gap-2">
+                    <Goal className="h-5 w-5 text-muted-foreground" />
+                    <p className="text-sm font-semibold">Tus Goles Reportados</p>
+                  </div>
+                  <p className="text-2xl font-bold mt-1">{formData.evaluatorGoals}</p>
               </div>
 
               <div>

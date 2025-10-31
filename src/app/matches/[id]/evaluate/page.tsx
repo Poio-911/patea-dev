@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
@@ -15,6 +16,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { logger } from '@/lib/logger';
 
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
@@ -119,7 +121,10 @@ export default function EvaluateMatchPage() {
         const submissionsQuery = query(collection(firestore, 'evaluationSubmissions'), where('matchId', '==', matchId));
         const snapshot = await getDocs(submissionsQuery);
 
-        if (snapshot.empty) return;
+        if (snapshot.empty) {
+          setPendingSubmissionsCount(0); // Ensure count is reset if no submissions
+          return;
+        }
 
         setPendingSubmissionsCount(snapshot.size);
 
@@ -206,6 +211,23 @@ export default function EvaluateMatchPage() {
       setIsPageLoading(false);
     }
   }, [matchLoading, assignmentsLoading, playersLoading]);
+
+  // FIX: Moved these declarations before the useEffect that uses them.
+  const realPlayersInMatch = useMemo(() => {
+    if (!match || !allGroupPlayers) return [];
+    const playerIdsInMatch = new Set(match.players.map(p => p.uid));
+    return allGroupPlayers.filter(p => playerIdsInMatch.has(p.id) && isRealUser(p));
+  }, [match, allGroupPlayers]);
+
+  const evaluatorsWhoHaveVoted = useMemo(() => {
+    if (!assignments) return new Set();
+    const completedEvaluators = assignments.filter(a => a.status === 'completed').map(a => a.evaluatorId);
+    return new Set(completedEvaluators);
+  }, [assignments]);
+
+  const totalPossibleEvaluators = realPlayersInMatch.length;
+  const completedEvaluatorsCount = evaluatorsWhoHaveVoted.size;
+  const evaluationProgress = totalPossibleEvaluators > 0 ? (completedEvaluatorsCount / totalPossibleEvaluators) * 100 : 0;
 
   // 🎉 Celebrate when 100% of evaluations are complete
   useEffect(() => {
@@ -362,22 +384,6 @@ export default function EvaluateMatchPage() {
         setIsFinalizing(false);
     }
   };
-
-  const realPlayersInMatch = useMemo(() => {
-    if (!match || !allGroupPlayers) return [];
-    const playerIdsInMatch = new Set(match.players.map(p => p.uid));
-    return allGroupPlayers.filter(p => playerIdsInMatch.has(p.id) && isRealUser(p));
-  }, [match, allGroupPlayers]);
-
-  const evaluatorsWhoHaveVoted = useMemo(() => {
-    if (!assignments) return new Set();
-    const completedEvaluators = assignments.filter(a => a.status === 'completed').map(a => a.evaluatorId);
-    return new Set(completedEvaluators);
-  }, [assignments]);
-
-  const totalPossibleEvaluators = realPlayersInMatch.length;
-  const completedEvaluatorsCount = evaluatorsWhoHaveVoted.size;
-  const evaluationProgress = totalPossibleEvaluators > 0 ? (completedEvaluatorsCount / totalPossibleEvaluators) * 100 : 0;
   
   if (isPageLoading) {
     return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -452,7 +458,7 @@ export default function EvaluateMatchPage() {
                 </div>
                 
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <AnimatePresence mode="popLayout">
+                    <AnimatePresence>
                         {realPlayersInMatch.map((player, index) => (
                             <motion.div
                                 key={player.id}

@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { coachConversationAction } from '@/lib/actions';
+import { coachConversationAction } from '@/lib/actions/server-actions';
 import type { CoachConversationInput, CoachConversationOutput } from '@/ai/flows/coach-conversation';
 import { useUser } from '@/firebase';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -124,60 +125,61 @@ export function CoachChatView({ playerId, groupId }: Props) {
   };
 
   return (
-    <Card className="h-[70vh] flex flex-col">
+    <Card className="flex flex-col @container">
         <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-                <CoachIcon className="h-6 w-6 text-primary" />
+            <CardTitle>
                 Charla con el DT
             </CardTitle>
         </CardHeader>
-        <div className="flex-1 overflow-y-auto px-4 relative" ref={scrollRef} onScroll={handleScroll}>
-            <div className="space-y-4 py-4">
-            {messages.map((message, index) => (
-                <div key={index} className={cn('flex items-end gap-2 text-sm', message.role === 'user' ? 'justify-end' : 'justify-start')}>
-                {message.role === 'coach' && (
-                    <Avatar className="h-6 w-6">
-                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">DT</AvatarFallback>
-                    </Avatar>
-                )}
-                <div className={cn('rounded-2xl px-3 py-2 max-w-[80%]', message.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-muted rounded-bl-none')}>
-                    <p className="whitespace-pre-wrap">{message.content}</p>
-                    {message.mood && <Badge variant="outline" className="mt-2 text-xs bg-background/50">{moodLabels[message.mood]}</Badge>}
-                    {message.suggestedActions && message.suggestedActions.length > 0 && (
-                        <div className="mt-3 space-y-2 border-t border-white/20 pt-2">
-                            <p className="text-xs font-semibold">Acciones sugeridas:</p>
-                            <ul className="space-y-1">
-                            {message.suggestedActions.map((action, i) => (
-                                <li key={i} className="text-xs flex items-start gap-1">
-                                    <span className="opacity-80">•</span>
-                                    <span>{action}</span>
-                                </li>
-                            ))}
-                            </ul>
-                        </div>
+        <CardContent className="flex-grow flex flex-col gap-4 overflow-hidden p-4 @lg:p-6">
+            <div className="flex-grow overflow-y-auto pr-2 relative min-h-[200px] max-h-[50vh]" ref={scrollRef} onScroll={handleScroll}>
+                <div className="space-y-4 py-4">
+                {messages.map((message, index) => (
+                    <div key={index} className={cn('flex items-end gap-2 text-sm', message.role === 'user' ? 'justify-end' : 'justify-start')}>
+                    {message.role === 'coach' && (
+                        <Avatar className="h-6 w-6">
+                            <AvatarFallback className="bg-primary text-primary-foreground text-xs">DT</AvatarFallback>
+                        </Avatar>
                     )}
+                    <div className={cn('rounded-2xl px-3 py-2 max-w-[80%]', message.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-muted rounded-bl-none')}>
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                        {message.mood && <Badge variant="outline" className="mt-2 text-xs bg-background/50">{moodLabels[message.mood]}</Badge>}
+                        {message.suggestedActions && message.suggestedActions.length > 0 && (
+                            <div className="mt-3 space-y-2 border-t border-white/20 pt-2">
+                                <p className="text-xs font-semibold">Acciones sugeridas:</p>
+                                <ul className="space-y-1">
+                                {message.suggestedActions.map((action, i) => (
+                                    <li key={i} className="text-xs flex items-start gap-1">
+                                        <span className="opacity-80">•</span>
+                                        <span>{action}</span>
+                                    </li>
+                                ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                    </div>
+                ))}
+                {isLoading && (
+                    <div className="flex items-end gap-2 justify-start">
+                        <Avatar className="h-6 w-6"><AvatarFallback className="bg-primary text-primary-foreground text-xs">DT</AvatarFallback></Avatar>
+                        <div className="bg-muted rounded-2xl rounded-bl-none px-3 py-2"><Loader2 className="h-4 w-4 animate-spin" /></div>
+                    </div>
+                )}
                 </div>
-                </div>
-            ))}
-            {isLoading && (
-                <div className="flex items-end gap-2 justify-start">
-                    <Avatar className="h-6 w-6"><AvatarFallback className="bg-primary text-primary-foreground text-xs">DT</AvatarFallback></Avatar>
-                    <div className="bg-muted rounded-2xl rounded-bl-none px-3 py-2"><Loader2 className="h-4 w-4 animate-spin" /></div>
-                </div>
-            )}
+                {showScrollButton && (
+                    <Button size="icon" className="absolute bottom-4 right-4 rounded-full h-10 w-10 shadow-lg" onClick={scrollToBottom}>
+                        <ArrowDown className="h-5 w-5" />
+                    </Button>
+                )}
             </div>
-            {showScrollButton && (
-                <Button size="icon" className="absolute bottom-4 right-4 rounded-full h-10 w-10 shadow-lg" onClick={scrollToBottom}>
-                    <ArrowDown className="h-5 w-5" />
-                </Button>
-            )}
-        </div>
-        <div className="border-t p-4 flex gap-2">
-          <Input value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}} placeholder="Escribí tu mensaje..." disabled={isLoading} className="flex-1" />
-          <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon">
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
+            <div className="border-t pt-4 flex gap-2">
+              <Input value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}} placeholder="Escribí tu mensaje..." disabled={isLoading} className="flex-1" />
+              <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon">
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+        </CardContent>
     </Card>
   );
 }

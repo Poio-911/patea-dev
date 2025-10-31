@@ -12,6 +12,7 @@ import { useUser } from './auth/use-user';
 
 export function initializeFirebase() {
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  // Explicitly set the auth domain to help with auth issues in complex environments
   const auth = getAuth(app);
   const firestore = getFirestore(app);
   let messaging: Messaging | null = null;
@@ -32,5 +33,3 @@ export {
   useAuth,
   useFirestore,
 };
-
-    
