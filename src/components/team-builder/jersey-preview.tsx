@@ -102,7 +102,11 @@ export function JerseyPreview({ jersey: jerseyProp, size = 'md', className }: Je
       className={cn(SIZE_CLASSES[size], 'flex items-center justify-center overflow-hidden', className)}
     >
       <div
-        className="w-full h-full [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
+        className={cn(
+          "w-full h-full [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain",
+          // ✅ AÑADIDO: Efecto de contorno blanco solo en dark mode
+          "dark:[&>svg]:[filter:drop-shadow(0px_0px_1px_rgba(255,255,255,0.5))]"
+        )}
         dangerouslySetInnerHTML={{ __html: svgContent }}
       />
     </div>
