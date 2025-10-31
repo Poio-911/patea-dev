@@ -18,10 +18,10 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Users2, User, BellRing, HelpCircle, CheckCircle, Flame, Snowflake } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings, Users2, User, BellRing, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { useUser, useAuth, useDoc, useCollection, useFirestore } from '@/firebase';
+import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { GroupSwitcher } from '@/components/group-switcher';
 import {
@@ -32,7 +32,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import type { Player, AvailablePlayer, OvrHistory } from '@/lib/types';
+import type { Player, AvailablePlayer } from '@/lib/types';
 import { doc, collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
@@ -43,9 +43,7 @@ import { useFcm } from '@/hooks/use-fcm';
 import { WelcomeDialog } from '@/components/welcome-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { isToday, parseISO } from 'date-fns';
-import { SettingsSheet } from './settings-sheet';
 import { HeaderActions } from './header-actions';
-import { Progress } from './ui/progress';
 
 
 const navItems = [
@@ -85,27 +83,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     return doc(firestore, 'availablePlayers', user.uid);
   }, [firestore, user?.uid]);
   const { data: availablePlayerData, loading: availablePlayerLoading } = useDoc<AvailablePlayer>(availablePlayerRef);
-
-  const ovrHistoryQuery = React.useMemo(() => {
-    if (!firestore || !user?.uid) return null;
-    return query(collection(firestore, 'players', user.uid, 'ovrHistory'), orderBy('date', 'desc'), limit(3));
-  }, [firestore, user?.uid]);
-  const { data: ovrHistory } = useCollection<OvrHistory>(ovrHistoryQuery);
-
-  const ovrProgress = React.useMemo(() => {
-    if (!player) return 0;
-    const currentOvr = player.ovr;
-    const nextOvr = Math.floor(currentOvr) + 1;
-    const progress = (currentOvr - Math.floor(currentOvr)) * 100;
-    return { progress, nextOvr };
-  }, [player]);
-
-  const playerStreak = React.useMemo(() => {
-    if (!ovrHistory || ovrHistory.length < 2) return null;
-    if (ovrHistory.every(h => h.change >= 0)) return 'positive';
-    if (ovrHistory.every(h => h.change <= 0)) return 'negative';
-    return null;
-  }, [ovrHistory]);
 
 
   React.useEffect(() => {
@@ -164,19 +141,13 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               <div className="flex items-center gap-2 sm:gap-4">
                   {player && (
                       <div className="flex items-center gap-3">
-                          <div className="flex flex-col items-end">
-                            <div className="flex items-center gap-2">
-                                {playerStreak === 'positive' && <Flame className="h-4 w-4 text-orange-500" />}
-                                {playerStreak === 'negative' && <Snowflake className="h-4 w-4 text-blue-300" />}
-                                <Badge className={cn("px-2 py-0.5 text-base font-bold", positionBadgeStyles[player.position])}>
-                                    <span className="font-bold">{player.ovr}</span>
-                                </Badge>
-                            </div>
-                            <div className="w-20 mt-1">
-                                <Progress value={ovrProgress.progress} />
-                                <p className="text-xs text-muted-foreground text-right">prox. {ovrProgress.nextOvr}</p>
-                            </div>
+                          <div className="text-right">
+                              <p className="font-bold text-sm truncate">{player.name}</p>
                           </div>
+                          <Badge className={cn("px-2.5 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
+                              <span className="font-bold">{player.ovr}</span>
+                              <span className="font-medium ml-1.5">{player.position}</span>
+                          </Badge>
                       </div>
                   )}
                   
