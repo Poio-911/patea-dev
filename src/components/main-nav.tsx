@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -46,6 +45,7 @@ import { useToast } from '@/hooks/use-toast';
 import { isToday, parseISO } from 'date-fns';
 import { FloatingActionMenu } from './floating-action-menu';
 import { HelpDialog } from './help-dialog';
+import { SettingsSheet } from './settings-sheet';
 
 
 const navItems = [
@@ -205,13 +205,15 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                                   <span>Mi Perfil</span>
                               </Link>
                           </DropdownMenuItem>
+                          <SettingsSheet>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <Settings className="mr-2 h-4 w-4" />
+                                <span>Ajustes</span>
+                            </DropdownMenuItem>
+                          </SettingsSheet>
                           <DropdownMenuItem onClick={requestPermission}>
                               <BellRing className="mr-2 h-4 w-4" />
                               <span>Activar Notificaciones</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                              <Settings className="mr-2 h-4 w-4" />
-                              <span>Ajustes</span>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={handleLogout}>
@@ -264,8 +266,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                 {children}
             </div>
           </main>
-          
-          {/* <FloatingActionMenu /> */}
           
           <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg md:hidden">
               <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">

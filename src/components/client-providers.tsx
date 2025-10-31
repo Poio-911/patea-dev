@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase/index';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
-import { UserProvider } from '@/firebase/auth/use-user';
+import { UserProvider } from './auth/use-user';
 import { MainNav } from '@/components/main-nav';
+import { ThemeProvider } from 'next-themes';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { libraries } from '@/lib/google-maps';
 import { SoccerPlayerIcon } from './icons/soccer-player-icon';
@@ -44,18 +45,24 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
   
   if (loadError) {
     console.error("Google Maps API failed to load: ", loadError);
-    // You can render a fallback UI here, but for now we'll log and continue.
   }
 
   return (
-    <FirebaseProvider
-      firebaseApp={firebaseInstances.firebaseApp}
-      auth={firebaseInstances.auth}
-      firestore={firebaseInstances.firestore}
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
     >
-      <UserProvider>
-       <MainNav>{children}</MainNav>
-      </UserProvider>
-    </FirebaseProvider>
+      <FirebaseProvider
+        firebaseApp={firebaseInstances.firebaseApp}
+        auth={firebaseInstances.auth}
+        firestore={firebaseInstances.firestore}
+      >
+        <UserProvider>
+         <MainNav>{children}</MainNav>
+        </UserProvider>
+      </FirebaseProvider>
+    </ThemeProvider>
   );
 }
