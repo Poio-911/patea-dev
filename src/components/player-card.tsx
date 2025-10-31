@@ -132,17 +132,17 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
         "relative p-3 text-card-foreground bg-gradient-to-br to-transparent",
         positionBackgrounds[player.position]
       )}>
-        <div className="relative h-20">
-          <div className={cn("absolute top-0 left-0 font-bold leading-none", positionColors[player.position], "text-4xl sm:text-5xl")}>
+        <div className="flex justify-between items-start">
+          <div className={cn("font-bold leading-none text-4xl sm:text-5xl", positionColors[player.position])}>
             {player.ovr}
           </div>
-          <div className="absolute top-1 right-0">
-             <Badge variant="outline" className={cn("text-xs font-bold bg-transparent border-0", positionColors[player.position])}>
-              {player.position}
-            </Badge>
-          </div>
+          <Badge variant="outline" className={cn("text-xs font-bold bg-transparent border-0", positionColors[player.position])}>
+            {player.position}
+          </Badge>
+        </div>
+        <div className="relative h-16 sm:h-20 -mt-8 sm:-mt-10">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <Avatar className="h-24 w-24 border-4 border-background overflow-hidden group-hover:scale-105 transition-transform duration-300">
+            <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-4 border-background overflow-hidden group-hover:scale-105 transition-transform duration-300">
               <AvatarImage
                 src={player.photoUrl}
                 alt={playerName}
@@ -158,49 +158,51 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
             </Avatar>
           </div>
           {(canEdit || canDelete) && (
-            <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="absolute -top-1 -right-1 h-7 w-7 text-muted-foreground hover:bg-white/20">
-                    <MoreVertical size={16} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {canEdit && (
-                    <EditPlayerDialog player={player}>
-                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        <span>Editar</span>
+            <div className="absolute top-0 right-0">
+              <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:bg-white/20">
+                      <MoreVertical size={16} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {canEdit && (
+                      <EditPlayerDialog player={player}>
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          <span>Editar</span>
+                        </DropdownMenuItem>
+                      </EditPlayerDialog>
+                    )}
+                    {canDelete && canEdit && <DropdownMenuSeparator />}
+                    {canDelete && (
+                      <DropdownMenuItem onClick={() => setIsAlertOpen(true)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Eliminar</span>
                       </DropdownMenuItem>
-                    </EditPlayerDialog>
-                  )}
-                  {canDelete && canEdit && <DropdownMenuSeparator />}
-                  {canDelete && (
-                    <DropdownMenuItem onClick={() => setIsAlertOpen(true)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      <span>Eliminar</span>
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>¿Seguro que querés borrar a {playerName}?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Esta acción no se puede deshacer. Vas a borrar al jugador para siempre.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                    {isDeleting ? "Borrando..." : "Sí, borrar"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Seguro que querés borrar a {playerName}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta acción no se puede deshacer. Vas a borrar al jugador para siempre.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                      {isDeleting ? "Borrando..." : "Sí, borrar"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           )}
         </div>
-        <div className="mt-8 text-center">
+        <div className="mt-2 text-center">
             <h3 className="text-lg font-bold font-headline truncate">{playerName}</h3>
             {isManualPlayer && (
               <Badge variant="outline" className="mt-1 text-xs border-dashed">
