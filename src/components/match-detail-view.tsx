@@ -316,7 +316,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     
     return (
         <div className="flex flex-col gap-8">
-            <div className="flex w-full items-center justify-between">
+            <div className="flex w-full items-start justify-between gap-4">
                 <Button asChild variant="outline" className="self-start">
                     <Link href="/matches">
                         <ArrowLeft className="mr-2 h-4 w-4" />
@@ -401,18 +401,17 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 <div className="lg:col-span-2 space-y-6">
                     <Card>
                         <CardHeader>
-                            <div className="flex items-start justify-between gap-4">
-                                <div>
-                                    <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary"/>Alineaciones y Plantel ({match.players.length} / {match.matchSize})</CardTitle>
-                                    <CardDescription>Equipos generados por la IA o definidos por el organizador.</CardDescription>
+                            <CardTitle className="flex items-center gap-2">
+                                <Users2 className="h-5 w-5 text-primary"/>
+                                Equipos ({match.players.length} / {match.matchSize})
+                            </CardTitle>
+                            <CardDescription>Equipos generados por la IA o definidos por el organizador.</CardDescription>
+                            {isOwner && match.teams && match.teams.length > 0 && match.status === 'upcoming' && (
+                                <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                                    <Button variant="outline" size="sm" onClick={handleShuffleTeams} disabled={isShuffling}>{isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<Shuffle className="mr-2 h-4 w-4"/>Volver a Sortear</Button>
+                                    <Button variant="outline" size="sm" asChild><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Equipos</a></Button>
                                 </div>
-                                {isOwner && match.teams && match.teams.length > 0 && match.status === 'upcoming' && (
-                                     <div className="flex gap-2">
-                                        <Button variant="outline" size="sm" onClick={handleShuffleTeams} disabled={isShuffling}>{isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<Shuffle className="mr-2 h-4 w-4"/>Volver a Sortear</Button>
-                                        <Button variant="outline" size="sm" asChild><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Equipos</a></Button>
-                                    </div>
-                                )}
-                            </div>
+                            )}
                         </CardHeader>
                          <CardContent>
                              {match.teams && match.teams.length > 0 ? (
