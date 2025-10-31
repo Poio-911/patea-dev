@@ -133,13 +133,11 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
         positionBackgrounds[player.position]
       )}>
         <div className="relative h-20">
-          <div className="absolute top-0 left-0">
-            <div className={cn("text-4xl font-bold leading-none", positionColors[player.position])}>
-              {player.ovr}
-            </div>
+          <div className={cn("absolute top-0 left-0 font-bold leading-none", positionColors[player.position], "text-4xl sm:text-5xl")}>
+            {player.ovr}
           </div>
           <div className="absolute top-1 right-0">
-            <Badge variant="secondary" className={cn("text-xs font-bold", positionColors[player.position])}>
+             <Badge variant="outline" className={cn("text-xs font-bold bg-transparent border-0", positionColors[player.position])}>
               {player.position}
             </Badge>
           </div>
