@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useFirestore } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -89,7 +89,24 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
     }
   };
   
-  const eligiblePlayers = match.teams?.flatMap(team => team.players).filter(p => p.uid !== playerToSwap.uid) || [];
+  const { eligiblePlayers } = useMemo(() => {
+    if (!match.teams || match.teams.length < 2) {
+      return { eligiblePlayers: [] };
+    }
+
+    const sourceTeam = match.teams.find(team => team.players.some(p => p.uid === playerToSwap.uid));
+    if (!sourceTeam) {
+      return { eligiblePlayers: [] };
+    }
+    
+    // Filter to get players from the *other* team(s)
+    const eligible = match.teams
+      .filter(team => team.name !== sourceTeam.name)
+      .flatMap(team => team.players);
+
+    return { eligiblePlayers: eligible };
+  }, [match.teams, playerToSwap.uid]);
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -98,7 +115,7 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
         <DialogHeader>
           <DialogTitle>Intercambiar a {playerToSwap.displayName}</DialogTitle>
           <DialogDescription>
-            Seleccioná un jugador para hacer el cambio.
+            Seleccioná un jugador del equipo contrario para hacer el cambio.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
