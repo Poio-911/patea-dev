@@ -40,10 +40,10 @@ type PlayerCardProps = {
 };
 
 const positionBackgrounds: Record<Player['position'], string> = {
-  DEL: 'bg-chart-1/10',
-  MED: 'bg-chart-2/10',
-  DEF: 'bg-chart-3/10',
-  POR: 'bg-chart-4/10',
+  DEL: 'from-chart-1/20',
+  MED: 'from-chart-2/20',
+  DEF: 'from-chart-3/20',
+  POR: 'from-chart-4/20',
 };
 
 const positionColors: Record<Player['position'], string> = {
@@ -129,23 +129,41 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
   const CardContentComponent = () => (
     <Card className="overflow-hidden border-2 shadow-lg transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30 border-border h-full flex flex-col group">
       <CardHeader className={cn(
-        "relative p-3 text-card-foreground bg-gradient-to-br from-transparent",
+        "relative p-3 text-card-foreground bg-gradient-to-br to-transparent",
         positionBackgrounds[player.position]
       )}>
-        <div className="flex items-start justify-between">
-          <div className="relative">
-            <div className={cn("text-3xl font-bold leading-none", positionColors[player.position])}>
+        <div className="relative h-20">
+          <div className="absolute top-0 left-0">
+            <div className={cn("text-4xl font-bold leading-none", positionColors[player.position])}>
               {player.ovr}
             </div>
           </div>
-          <Badge variant="secondary" className={cn("mt-1 text-xs", positionColors[player.position])}>
-            {player.position}
-          </Badge>
+          <div className="absolute top-1 right-0">
+            <Badge variant="secondary" className={cn("text-xs font-bold", positionColors[player.position])}>
+              {player.position}
+            </Badge>
+          </div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <Avatar className="h-24 w-24 border-4 border-background overflow-hidden group-hover:scale-105 transition-transform duration-300">
+              <AvatarImage
+                src={player.photoUrl}
+                alt={playerName}
+                data-ai-hint="player portrait"
+                style={{
+                  objectFit: 'cover',
+                  objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`,
+                  transform: `scale(${player.cropZoom || 1})`,
+                  transformOrigin: 'center center',
+                }}
+              />
+              <AvatarFallback className="text-4xl">{playerName.charAt(0)}</AvatarFallback>
+            </Avatar>
+          </div>
           {(canEdit || canDelete) && (
             <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7 text-muted-foreground hover:bg-white/20">
+                  <Button variant="ghost" size="icon" className="absolute -top-1 -right-1 h-7 w-7 text-muted-foreground hover:bg-white/20">
                     <MoreVertical size={16} />
                   </Button>
                 </DropdownMenuTrigger>
@@ -184,34 +202,18 @@ export function PlayerCard({ player, isLink = true }: PlayerCardProps) {
             </AlertDialog>
           )}
         </div>
+        <div className="mt-8 text-center">
+            <h3 className="text-lg font-bold font-headline truncate">{playerName}</h3>
+            {isManualPlayer && (
+              <Badge variant="outline" className="mt-1 text-xs border-dashed">
+                Manual
+              </Badge>
+            )}
+        </div>
       </CardHeader>
 
       <CardContent className="p-3 text-center bg-card flex-grow flex flex-col">
-        <Avatar className="mx-auto -mt-10 h-20 w-20 border-4 border-background overflow-hidden">
-          <AvatarImage
-            src={player.photoUrl}
-            alt={playerName}
-            data-ai-hint="player portrait"
-            style={{
-              objectFit: 'cover',
-              objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`,
-              transform: `scale(${player.cropZoom || 1})`,
-              transformOrigin: 'center center',
-            }}
-          />
-          <AvatarFallback>{playerName.charAt(0)}</AvatarFallback>
-        </Avatar>
-
-        <div className="mt-2 text-center">
-          <h3 className="text-lg font-bold font-headline truncate">{playerName}</h3>
-          {isManualPlayer && (
-            <Badge variant="outline" className="mt-1 text-xs border-dashed">
-              Manual
-            </Badge>
-          )}
-        </div>
-
-        <div className="mt-4 space-y-2.5 flex-grow">
+        <div className="mt-2 space-y-2.5 flex-grow">
           {stats.map((stat) => (
             <Stat key={stat.label} label={stat.label} value={stat.value} isBest={stat.value === maxStatValue} />
           ))}
