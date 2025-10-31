@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
 import type { Match, Player, EvaluationAssignment, Notification, UserProfile, Invitation, Jersey } from '@/lib/types';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
-import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
+import { useDoc, useFirestore, useUser } from '@/firebase';
 import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, CheckCircle, Shuffle, Trash2, UserPlus, LogOut, MessageCircle, MoreVertical, Share2, ClipboardCopy, Edit, Users2 } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
@@ -321,9 +320,8 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     
     return (
       <div className="relative isolate">
-        <div className="absolute inset-0 -z-10 dark:hidden">
-             <div className="h-full w-full object-cover" />
-        </div>
+        
+        {/* --- TEMA OSCURO: Video de fondo --- */}
         <div className="absolute inset-0 -z-10 hidden dark:block">
           <video
             autoPlay
@@ -338,7 +336,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
         </div>
   
         <div className="relative flex flex-col gap-8 p-4 md:p-6 text-foreground">
-              <div className="flex w-full items-start justify-between gap-4">
+              <div className="flex w-full items-center justify-between gap-4">
                   <Button asChild variant="outline" className="self-start dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40">
                       <Link href="/matches">
                           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -349,18 +347,19 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
               
               <PageHeader title={match.title} className="dark:text-white" />
 
-              <Card className="relative overflow-hidden border-foreground/10 dark:hidden backdrop-blur-sm">
+              {/* --- VISTA TEMA CLARO --- */}
+              <Card className="relative overflow-hidden border-foreground/10 dark:hidden">
                  <div className="absolute inset-0 -z-10">
-                    <video autoPlay loop muted playsInline className="h-full w-full object-cover grayscale brightness-125">
+                    <video autoPlay loop muted playsInline className="h-full w-full object-cover grayscale brightness-50">
                         <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
                     </video>
-                    <div className="absolute inset-0 bg-white/30" />
+                    <div className="absolute inset-0 bg-white/60" />
                 </div>
-                  <CardContent className="pt-6 space-y-4">
+                  <CardContent className="pt-6 space-y-4 text-white [text-shadow:0_1px_3px_rgb(0_0_0_/_0.5)]">
                        <div className="flex flex-col sm:flex-row gap-4 justify-between">
                           <div className="space-y-3">
                               <div className="flex items-center gap-3 text-lg">
-                                  <Calendar className="h-5 w-5 text-primary"/>
+                                  <Calendar className="h-5 w-5"/>
                                   <span className="font-bold">{format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es })}</span>
                               </div>
                               {ownerProfile && (
@@ -369,31 +368,29 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                           <AvatarImage src={ownerProfile.photoURL || ''} alt={ownerProfile.displayName || ''} />
                                           <AvatarFallback>{ownerProfile.displayName?.charAt(0)}</AvatarFallback>
                                       </Avatar>
-                                      <p className="text-sm text-muted-foreground">{`Organizado por ${ownerProfile.displayName}`}</p>
+                                      <p className="text-sm">{`Organizado por ${ownerProfile.displayName}`}</p>
                                   </div>
                               )}
                           </div>
                           <div className="space-y-3 text-left sm:text-right">
                              <div className="flex items-center gap-3 text-lg justify-start sm:justify-end">
-                                  <Clock className="h-5 w-5 text-primary"/>
+                                  <Clock className="h-5 w-5"/>
                                   <span className="font-bold">{match.time} hs</span>
                                   {WeatherIcon && match.weather && (
-                                      <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                          <WeatherIcon className="h-4 w-4 text-blue-400" />
+                                      <span className="flex items-center gap-1.5 text-sm">
+                                          <WeatherIcon className="h-4 w-4 text-blue-300" />
                                           <span>({match.weather.temperature}°C)</span>
                                       </span>
                                   )}
                               </div>
-                              <Badge variant="outline" className="capitalize text-sm">{match.type === 'by_teams' ? 'Por Equipos' : match.type}</Badge>
+                              <Badge variant="secondary" className="capitalize text-sm">{match.type === 'by_teams' ? 'Por Equipos' : match.type}</Badge>
                           </div>
                       </div>
                        <Separator />
                        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                           <div className="flex items-start gap-3">
-                              <MapPin className="h-5 w-5 text-primary mt-1 flex-shrink-0"/>
-                              <div>
-                                  <p className="font-bold">{match.location.name}</p>
-                              </div>
+                              <MapPin className="h-5 w-5 mt-1 flex-shrink-0"/>
+                              <p className="font-bold">{match.location.name}</p>
                           </div>
                           <div className="flex gap-2">
                               <Button asChild variant="secondary" size="sm">
@@ -424,6 +421,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                   </CardContent>
               </Card>
 
+              {/* --- VISTA TEMA OSCURO --- */}
               <Card className="hidden dark:block dark:bg-background/20 border-foreground/10 backdrop-blur-sm dark:text-white">
                   <CardContent className="pt-6 space-y-4">
                        <div className="flex flex-col sm:flex-row gap-4 justify-between">
@@ -460,9 +458,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                           <div className="flex items-start gap-3">
                               <MapPin className="h-5 w-5 text-primary mt-1 flex-shrink-0"/>
-                              <div>
-                                  <p className="font-bold">{match.location.name}</p>
-                              </div>
+                              <p className="font-bold">{match.location.name}</p>
                           </div>
                           <div className="flex gap-2">
                               <Button asChild variant="secondary" size="sm">
@@ -593,5 +589,3 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
       </div>
   );
 }
-
-    
