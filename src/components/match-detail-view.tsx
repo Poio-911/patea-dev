@@ -323,11 +323,11 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
             loop
             muted
             playsInline
-            className="absolute inset-0 -z-10 h-full w-full object-cover brightness-50"
+            className="absolute inset-0 -z-10 h-full w-full object-cover brightness-75"
           >
             <source src="/videos/match-detail-bg.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 -z-10 bg-black/60 backdrop-blur-sm" />
+          <div className="absolute inset-0 -z-10 bg-black/50 backdrop-blur-sm" />
     
           <div className="relative flex flex-col gap-8 p-4 md:p-6 text-white">
                 <div className="flex w-full items-start justify-between gap-4">
