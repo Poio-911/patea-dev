@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -325,13 +324,13 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
             loop
             muted
             playsInline
-            className="absolute inset-0 -z-10 h-full w-full object-cover dark:saturate-50 dark:brightness-75 light:grayscale light:brightness-[1.5] light:contrast-50"
+            className="absolute inset-0 -z-10 h-full w-full object-cover"
           >
             <source src="/videos/match-detail-bg.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 -z-10 dark:bg-black/50 light:bg-white/60" />
+          <div className="absolute inset-0 -z-10 bg-white/10 dark:bg-black/50" />
     
-          <div className="relative flex flex-col gap-8 p-4 md:p-6 text-foreground">
+          <div className="relative flex flex-col gap-8 p-4 md:p-6">
                 <div className="flex w-full items-start justify-between gap-4">
                     <Button asChild variant="outline" className="self-start bg-background/20 border-foreground/20 hover:bg-background/40">
                         <Link href="/matches">
