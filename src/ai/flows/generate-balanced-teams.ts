@@ -34,7 +34,7 @@ export type GenerateBalancedTeamsInput = z.infer<typeof GenerateBalancedTeamsInp
 const GenerateBalancedTeamsOutputSchema = z.object({
   teams: z.array(
     z.object({
-      name: z.string().describe('A creative and cool name for the team (e.g., "Titanes Azules", "Furia Roja").'),
+      name: z.string().describe('A placeholder name for the team (e.g., "Equipo 1", "Equipo 2").'),
       players: z.array(
         z.object({
           uid: z.string().describe('The unique identifier of the player.'),
@@ -76,7 +76,7 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateBalancedTeamsOutputSchema},
   prompt: `Sos un DT experto en fútbol amateur del Río de la Plata, de esos que saben armar los equipos para el picado de los sábados.
 
-Con esta lista de jugadores, con sus puestos y valoraciones (OVR), tu laburo es armar {{teamCount}} equipos que queden lo más parejos posible.
+Con esta lista de jugadores, con sus puestos y valoraciones (OVR), tu laburo es armar {{teamCount}} equipos que queden lo más parejos posible. Simplemente nombrálos "Equipo 1" y "Equipo 2".
 
 La lista de jugadores es esta:
 
@@ -85,7 +85,7 @@ La lista de jugadores es esta:
 {{/each}}
 
 Para cada equipo que armes, tenés que:
-1.  **Ponerle un nombre canchero y futbolero, bien rioplatense**. Ejemplos: "Los Pibes del Potrero", "La Banda del Pato", "Atletas de Tablón", "El Resto del Mundo". Evitá los nombres aburridos como "Equipo A".
+1.  **Asignarle un nombre simple como "Equipo 1" o "Equipo 2".**
 2.  **Sugerir una formación táctica** según la cantidad de jugadores (ej: para un fútbol 5, un "1-2-1" o "2-1-1").
 3.  **Tirar 2 o 3 etiquetas tácticas** que describan al equipo (ej: "Ataque Rápido", "Defensa de Hierro", "Control del Mediocampo", "Sin Golero Fijo" si no hay un 'POR').
 4.  Intentá que la diferencia de OVR total entre el equipo más fuerte y el más débil sea la menor posible.
@@ -104,6 +104,17 @@ const generateBalancedTeamsFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input, {model: 'googleai/gemini-2.5-flash'});
-    return output!;
+    if (!output || !output.teams || output.teams.length < 2) {
+      throw new Error('La IA no pudo generar los equipos correctamente.');
+    }
+
+    // Asignar aleatoriamente "Con chaleco" y "Sin chaleco"
+    const teamNames = ["Con chaleco", "Sin chaleco"];
+    const shuffledNames = teamNames.sort(() => 0.5 - Math.random());
+
+    output.teams[0].name = shuffledNames[0];
+    output.teams[1].name = shuffledNames[1];
+
+    return output;
   }
 );

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -37,6 +36,8 @@ import { Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
 import { MatchTeamsDialog } from './match-teams-dialog';
 import { logger } from '@/lib/logger';
 import { SwapPlayerDialog } from './swap-player-dialog';
+import { ShirtIcon } from './icons/shirt-icon';
+import { VestIcon } from './icons/vest-icon';
 
 interface MatchDetailViewProps {
   matchId: string;
@@ -109,7 +110,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
         if (!match || !match.teams || match.teams.length < 2) return '';
         let message = `*Equipos para el partido "${match.title}"*:\n\n`;
         match.teams.forEach(team => {
-            message += `*${team.name} (OVR ${team.averageOVR.toFixed(1)})*\n`;
+            message += `*${team.name}*\n`;
             team.players.forEach(p => {
                 message += `- ${p.displayName} (OVR ${p.ovr})\n`;
             });
@@ -401,25 +402,25 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 <div className="lg:col-span-2 space-y-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Users2 className="h-5 w-5 text-primary"/>
-                                Equipos ({match.players.length} / {match.matchSize})
-                            </CardTitle>
-                            <CardDescription>Equipos generados por la IA o definidos por el organizador.</CardDescription>
-                            {isOwner && match.teams && match.teams.length > 0 && match.status === 'upcoming' && (
-                                <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                                    <Button variant="outline" size="sm" onClick={handleShuffleTeams} disabled={isShuffling}>{isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<Shuffle className="mr-2 h-4 w-4"/>Volver a Sortear</Button>
-                                    <Button variant="outline" size="sm" asChild><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Equipos</a></Button>
-                                </div>
-                            )}
+                            <CardTitle>Equipos ({match.players.length} / {match.matchSize})</CardTitle>
+                             <div className="pt-2">
+                                {isOwner && match.teams && match.teams.length > 0 && match.status === 'upcoming' && (
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        <Button variant="outline" size="sm" onClick={handleShuffleTeams} disabled={isShuffling}>{isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<Shuffle className="mr-2 h-4 w-4"/>Volver a Sortear</Button>
+                                        <Button variant="outline" size="sm" asChild><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Equipos</a></Button>
+                                    </div>
+                                )}
+                            </div>
                         </CardHeader>
                          <CardContent>
                              {match.teams && match.teams.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {match.teams.map(team => (
+                                    {match.teams.map(team => {
+                                      const TeamIcon = team.name.includes("chaleco") ? VestIcon : ShirtIcon;
+                                      return (
                                         <Card key={team.name}>
                                             <CardHeader className="flex flex-row items-center justify-between">
-                                                <CardTitle>{team.name}</CardTitle>
+                                                <CardTitle className="flex items-center gap-2"><TeamIcon className="h-5 w-5" />{team.name}</CardTitle>
                                                 <Badge variant="secondary">OVR {team.averageOVR.toFixed(1)}</Badge>
                                             </CardHeader>
                                             <CardContent>
@@ -444,7 +445,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                                 </div>
                                             </CardContent>
                                         </Card>
-                                    ))}
+                                    )})}
                                 </div>
                              ) : (
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -467,7 +468,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     <MatchChronicleCard match={match} />
                 </div>
                 <div className="space-y-6">
-                    {isOwner && match.status === 'upcoming' && (
+                    {isOwner && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Gestión del Partido</CardTitle>
@@ -476,10 +477,10 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                 {canFinalize && (
                                     <Button onClick={handleFinishMatch} disabled={isFinishing} size="sm">
                                         {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                                        Finalizar Partido
+                                        Finalizar
                                     </Button>
                                 )}
-                                {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" size="sm"><UserPlus className="mr-2 h-4 w-4"/>Invitar Jugadores</Button></InvitePlayerDialog>}
+                                {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" size="sm"><UserPlus className="mr-2 h-4 w-4"/>Invitar</Button></InvitePlayerDialog>}
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild><Button variant="destructive" size="sm" disabled={isDeleting}><Trash2 className="mr-2 h-4 w-4"/>Eliminar</Button></AlertDialogTrigger>
                                     <AlertDialogContent>
