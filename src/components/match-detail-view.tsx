@@ -28,6 +28,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { InvitePlayerDialog } from './invite-player-dialog';
 import { WhatsAppIcon } from './icons/whatsapp-icon';
@@ -396,31 +397,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 </CardContent>
             </Card>
             
-            {isOwner && match.status === 'upcoming' && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Gestión del Partido</CardTitle>
-                        <CardDescription>Acciones disponibles para el organizador.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {canFinalize && (
-                            <Button onClick={handleFinishMatch} disabled={isFinishing} size="sm">
-                                {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                                Finalizar Partido
-                            </Button>
-                        )}
-                        {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" size="sm"><UserPlus className="mr-2 h-4 w-4"/>Invitar Jugadores</Button></InvitePlayerDialog>}
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild><Button variant="destructive" size="sm" disabled={isDeleting}><Trash2 className="mr-2 h-4 w-4"/>Eliminar</Button></AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader><AlertDialogTitle>¿Borrar este partido?</AlertDialogTitle><AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
-                                <AlertDialogFooter><AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">{isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Eliminar</AlertDialogAction></AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </CardContent>
-                </Card>
-            )}
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
                     <Card>
@@ -492,6 +468,29 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     <MatchChronicleCard match={match} />
                 </div>
                 <div className="space-y-6">
+                    {isOwner && match.status === 'upcoming' && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Gestión del Partido</CardTitle>
+                            </CardHeader>
+                            <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                {canFinalize && (
+                                    <Button onClick={handleFinishMatch} disabled={isFinishing} size="sm">
+                                        {isFinishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                        Finalizar Partido
+                                    </Button>
+                                )}
+                                {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" size="sm"><UserPlus className="mr-2 h-4 w-4"/>Invitar Jugadores</Button></InvitePlayerDialog>}
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild><Button variant="destructive" size="sm" disabled={isDeleting}><Trash2 className="mr-2 h-4 w-4"/>Eliminar</Button></AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader><AlertDialogTitle>¿Borrar este partido?</AlertDialogTitle><AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
+                                        <AlertDialogFooter><AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeleteMatch} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">{isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Eliminar</AlertDialogAction></AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </CardContent>
+                        </Card>
+                    )}
                     <MatchChatView match={match} />
                 </div>
             </div>
