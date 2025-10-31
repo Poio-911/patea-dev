@@ -331,7 +331,8 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     
     return (
         <div className="relative isolate">
-          <div className="absolute inset-0 -z-10 dark:block">
+          {/* Vista para Tema Oscuro */}
+          <div className="absolute inset-0 -z-10 hidden dark:block">
             <video
               autoPlay
               loop
@@ -356,12 +357,13 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 
                 <PageHeader title={match.title} />
   
+                {/* Card para Tema Claro */}
                 <Card className="dark:hidden relative overflow-hidden border-foreground/10">
                    <div className="absolute inset-0 -z-10">
                       <video autoPlay loop muted playsInline className="h-full w-full object-cover">
                           <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
                       </video>
-                      <div className="absolute inset-0 bg-white/30" />
+                      <div className="absolute inset-0 bg-white/70" />
                   </div>
                     <CardContent className="pt-6 space-y-4 text-white [text-shadow:0_1px_3px_rgb(0_0_0_/_0.5)]">
                          <div className="flex flex-col sm:flex-row gap-4 justify-between">
@@ -425,7 +427,8 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                          )}
                     </CardContent>
                 </Card>
-  
+
+                {/* Card para Tema Oscuro */}
                 <Card className="hidden dark:block dark:bg-background/20 border-foreground/10 backdrop-blur-sm">
                     <CardContent className="pt-6 space-y-4">
                          <div className="flex flex-col sm:flex-row gap-4 justify-between">
