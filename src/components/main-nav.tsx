@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Users2, User, BellRing, HelpCircle } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings, Users2, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -53,14 +53,6 @@ const navItems = [
   { href: '/evaluations', label: 'Evaluaciones', icon: EvaluationIcon },
   { href: '/find-match', label: 'Buscar', icon: FindMatchIcon },
 ];
-
-const positionBadgeStyles: Record<Player['position'], string> = {
-  DEL: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
-  MED: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-  DEF: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
-  POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
-};
-
 
 export function MainNav({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -144,15 +136,17 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                       <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-auto px-2 py-1">
                             <div className="flex items-center gap-3">
-                                <div className="text-right hidden sm:block">
-                                    <p className="font-bold text-sm truncate">{player?.name}</p>
-                                </div>
-                                {player && (
-                                <Badge className={cn("px-2.5 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
-                                    <span className="font-bold">{player.ovr}</span>
-                                    <span className="font-medium ml-1.5">{player.position}</span>
-                                </Badge>
-                                )}
+                              {player && (
+                                <>
+                                  <div className="text-right hidden sm:block">
+                                    <p className="font-bold text-sm truncate">{player.name}</p>
+                                    <p className="text-xs text-muted-foreground">{player.position}</p>
+                                  </div>
+                                  <div className="flex items-center justify-center h-10 w-10 text-xl font-bold rounded-full bg-primary/10 border-2 border-primary/20 text-primary">
+                                    {player.ovr}
+                                  </div>
+                                </>
+                              )}
                                 <Avatar className="h-10 w-10 border overflow-hidden">
                                   <AvatarImage
                                     src={user?.photoURL || ''}
@@ -272,4 +266,3 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
-
