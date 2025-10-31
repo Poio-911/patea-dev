@@ -1,188 +1,146 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
-import { arrayMove, SortableContext, useSortable, rectSortingStrategy } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import type { Match, Team, Player } from '@/lib/types';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
 import { useFirestore } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { Loader2, Save, Users, Shuffle } from 'lucide-react';
-import { DroppablePitchZone } from './droppable-pitch-zone';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Button } from './ui/button';
+import { Loader2, Shuffle } from 'lucide-react';
+import { ScrollArea } from './ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Badge } from './ui/badge';
+import type { Match, Team } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
-interface TacticalBoardProps {
+interface SwapPlayerDialogProps {
   match: Match;
+  playerToSwap: Team['players'][0];
+  children: React.ReactNode;
 }
 
-const positionBadgeStyles: Record<string, string> = {
-  DEL: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
-  MED: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-  DEF: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
-  POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
-};
-
-function SortablePlayerItem({ player, teamColor }: { player: any, teamColor: string }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: player.uid });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    borderColor: teamColor,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative p-1 rounded-full bg-background border-2 shadow-lg w-14 h-14 flex items-center justify-center">
-        <Avatar className="h-12 w-12">
-            <AvatarImage src={player.photoUrl} alt={player.displayName} />
-            <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <Badge className="absolute -bottom-1 -right-1 text-[9px] px-1 h-4 border-2 border-background font-bold">{player.ovr}</Badge>
-    </div>
-  );
-}
-
-export function TacticalBoard({ match: initialMatch }: TacticalBoardProps) {
-  const [teams, setTeams] = useState<Team[]>(initialMatch.teams || []);
-  const [unassignedPlayers, setUnassignedPlayers] = useState<any[]>(() => {
-    const assignedPlayerIds = new Set(initialMatch.teams?.flatMap(t => t.players.map(p => p.uid)));
-    return initialMatch.players.filter(p => !assignedPlayerIds.has(p.uid));
-  });
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const { toast } = useToast();
+export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDialogProps) {
+  const [open, setOpen] = useState(false);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [isSwapping, setIsSwapping] = useState(false);
   const firestore = useFirestore();
+  const { toast } = useToast();
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-  
-  const allPlayerIds = useMemo(() => teams.flatMap(t => t.players.map(p => p.uid)).concat(unassignedPlayers.map(p => p.uid)), [teams, unassignedPlayers]);
-
-  const findContainer = (id: string) => {
-    if (unassignedPlayers.some(p => p.uid === id)) return 'unassigned';
-    for (const team of teams) {
-      if (team.players.some(p => p.uid === id)) return team.name;
+  const handleSwap = async () => {
+    if (!firestore || !selectedPlayerId) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Debes seleccionar un jugador para el intercambio.' });
+      return;
     }
-    return null;
-  };
-  
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  };
-  
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveId(null);
-    if (!over || active.id === over.id) return;
-
-    const sourceContainer = findContainer(active.id as string);
-    const targetContainer = over.data.current?.sortable?.containerId || over.id;
+    setIsSwapping(true);
     
-    if (!sourceContainer || !targetContainer || sourceContainer === targetContainer) return;
-    
-    let playerToMove: any;
-    let newTeams = [...teams];
-    let newUnassigned = [...unassignedPlayers];
-
-    // Remove from source
-    if (sourceContainer === 'unassigned') {
-        const index = newUnassigned.findIndex(p => p.uid === active.id);
-        playerToMove = newUnassigned.splice(index, 1)[0];
-    } else {
-        const teamIndex = newTeams.findIndex(t => t.name === sourceContainer);
-        const index = newTeams[teamIndex].players.findIndex(p => p.uid === active.id);
-        playerToMove = newTeams[teamIndex].players.splice(index, 1)[0];
-    }
-
-    // Add to target
-    if (targetContainer === 'unassigned') {
-        newUnassigned.push(playerToMove);
-    } else {
-        const teamIndex = newTeams.findIndex(t => t.name === targetContainer);
-        newTeams[teamIndex].players.push(playerToMove);
-    }
-
-    // Update state
-    setTeams(newTeams);
-    setUnassignedPlayers(newUnassigned);
-  };
-
-  const handleSave = async () => {
-    if (!firestore) return;
-    setIsSaving(true);
     try {
-      const matchRef = doc(firestore, 'matches', initialMatch.id);
+      const matchRef = doc(firestore, 'matches', match.id);
       
-      const updatedTeams = teams.map(team => {
+      // Create a deep copy to manipulate
+      const newTeams: Team[] = JSON.parse(JSON.stringify(match.teams));
+      
+      // Find source and target players and their team indices
+      let sourceTeamIndex = -1, sourcePlayerIndex = -1;
+      let targetTeamIndex = -1, targetPlayerIndex = -1;
+
+      newTeams.forEach((team, teamIdx) => {
+        let pIdx = team.players.findIndex(p => p.uid === playerToSwap.uid);
+        if (pIdx !== -1) {
+          sourceTeamIndex = teamIdx;
+          sourcePlayerIndex = pIdx;
+        }
+        pIdx = team.players.findIndex(p => p.uid === selectedPlayerId);
+        if (pIdx !== -1) {
+          targetTeamIndex = teamIdx;
+          targetPlayerIndex = pIdx;
+        }
+      });
+      
+      if (sourceTeamIndex === -1 || targetTeamIndex === -1) {
+          throw new Error("No se pudo encontrar a uno de los jugadores en los equipos.");
+      }
+
+      // Swap the players
+      const temp = newTeams[sourceTeamIndex].players[sourcePlayerIndex];
+      newTeams[sourceTeamIndex].players[sourcePlayerIndex] = newTeams[targetTeamIndex].players[targetPlayerIndex];
+      newTeams[targetTeamIndex].players[targetPlayerIndex] = temp;
+      
+      // Recalculate OVRs
+      newTeams.forEach(team => {
         const totalOVR = team.players.reduce((sum, p) => sum + p.ovr, 0);
-        return {
-            ...team,
-            averageOVR: team.players.length > 0 ? totalOVR / team.players.length : 0,
-            totalOVR: totalOVR
-        };
+        team.averageOVR = team.players.length > 0 ? totalOVR / team.players.length : 0;
       });
 
-      await updateDoc(matchRef, { teams: updatedTeams });
-      toast({ title: 'Equipos guardados', description: 'La formación táctica ha sido actualizada.' });
+      await updateDoc(matchRef, { teams: newTeams });
+      
+      toast({ title: '¡Intercambio realizado!', description: 'Los equipos han sido actualizados.' });
+      setOpen(false);
+
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudieron guardar los cambios.' });
+      console.error("Error swapping players:", error);
+      toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudo realizar el intercambio.' });
     } finally {
-      setIsSaving(false);
+      setIsSwapping(false);
+      setSelectedPlayerId(null);
     }
   };
   
-  const activePlayer = useMemo(() => {
-    if (!activeId) return null;
-    return initialMatch.players.find(p => p.uid === activeId);
-  }, [activeId, initialMatch.players]);
+  const eligiblePlayers = match.teams?.flatMap(team => team.players).filter(p => p.uid !== playerToSwap.uid) || [];
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-3">
-                 <div className="relative aspect-[7/5] bg-green-700 bg-[url('/pitch-texture.svg')] bg-blend-multiply rounded-lg p-4 flex flex-col justify-between border-4 border-white/50">
-                    {/* Zones for each team */}
-                    {teams.map((team, index) => (
-                        <DroppablePitchZone key={team.name} id={team.name} team={team} teamColor={index === 0 ? 'border-blue-400' : 'border-red-400'} initialMatch={initialMatch} />
-                    ))}
-                 </div>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Intercambiar a {playerToSwap.displayName}</DialogTitle>
+          <DialogDescription>
+            Seleccioná un jugador para hacer el cambio.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+          <ScrollArea className="h-64 pr-4">
+            <div className="space-y-2">
+              {eligiblePlayers.map(player => {
+                const isSelected = selectedPlayerId === player.uid;
+                return (
+                  <div
+                    key={player.uid}
+                    onClick={() => setSelectedPlayerId(player.uid)}
+                    className={cn(
+                      'flex items-center gap-3 rounded-lg border p-3 transition-colors cursor-pointer',
+                      isSelected ? 'bg-primary/10 border-primary' : 'hover:bg-accent/50'
+                    )}
+                  >
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoUrl} alt={player.displayName} />
+                      <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <p className="font-semibold">{player.displayName}</p>
+                      <p className="text-xs text-muted-foreground">OVR: {player.ovr} - {match.teams?.find(t => t.players.some(p => p.uid === player.uid))?.name}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="lg:col-span-1 space-y-4">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/>Suplentes</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <SortableContext id="unassigned" items={unassignedPlayers.map(p => p.uid)} strategy={rectSortingStrategy}>
-                            <div className="min-h-[100px] p-2 bg-muted/50 rounded-lg flex flex-wrap gap-2">
-                                {unassignedPlayers.map(player => {
-                                    const matchPlayer = initialMatch.players.find(p => p.uid === player.uid);
-                                    return <SortablePlayerItem key={player.uid} player={{ ...player, ...matchPlayer}} teamColor="border-gray-400" />;
-                                })}
-                            </div>
-                        </SortableContext>
-                    </CardContent>
-                </Card>
-                <Button onClick={handleSave} disabled={isSaving} className="w-full">
-                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
-                    Guardar Formaciones
-                </Button>
-            </div>
+          </ScrollArea>
         </div>
-      <DragOverlay>
-        {activePlayer ? (
-            <div className="relative p-1 rounded-full bg-background border-2 shadow-lg w-14 h-14 flex items-center justify-center border-primary ring-2 ring-primary">
-                <Avatar className="h-12 w-12">
-                    <AvatarImage src={activePlayer.photoUrl} alt={activePlayer.displayName} />
-                    <AvatarFallback>{activePlayer.displayName.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <Badge className="absolute -bottom-1 -right-1 text-[9px] px-1 h-4 border-2 border-background font-bold">{activePlayer.ovr}</Badge>
-            </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button onClick={handleSwap} disabled={!selectedPlayerId || isSwapping}>
+            {isSwapping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Shuffle className="mr-2 h-4 w-4" />}
+            Confirmar Intercambio
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

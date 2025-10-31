@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import type { Match, Player, EvaluationAssignment, Notification, UserProfile } from '@/lib/types';
+import type { Match, Player, EvaluationAssignment, Notification, UserProfile, Invitation, Jersey } from '@/lib/types';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
 import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, CheckCircle, Shuffle, Trash2, UserPlus, LogOut, MessageCircle, MoreVertical, Share2, ClipboardCopy } from 'lucide-react';
@@ -11,7 +12,6 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { MatchChatView } from './match-chat-view';
-import { TeamsIcon } from './icons/teams-icon';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from './ui/badge';
@@ -35,7 +35,8 @@ import { WhatsAppIcon } from './icons/whatsapp-icon';
 import { MatchChronicleCard } from './match-chronicle-card';
 import { Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
 import { MatchTeamsDialog } from './match-teams-dialog';
-import { TacticsIcon } from './icons/tactics-icon';
+import { logger } from '@/lib/logger';
+import { SwapPlayerDialog } from './swap-player-dialog';
 
 interface MatchDetailViewProps {
   matchId: string;
@@ -159,7 +160,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     const teamGenerationResult = await generateTeamsAction(playersToBalance);
                     if ('error' in teamGenerationResult) throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
                     if (!teamGenerationResult.teams) throw new Error('La respuesta de la IA no contiene equipos.');
-                    finalTeams = teamGenerationResult.teams;
+                    finalTeams = teamGenerationResult.teams as any;
                     matchUpdateData.teams = finalTeams;
                  }
             }
@@ -414,7 +415,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                             </CardHeader>
                             <CardContent className="flex flex-col gap-2">
                                 {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" className="w-full"><UserPlus className="mr-2 h-4 w-4"/>Invitar Jugadores del Grupo</Button></InvitePlayerDialog>}
-                                {match.teams && match.teams.length > 0 && <Button variant="outline" className="w-full" asChild><Link href={`/matches/${match.id}/tactics`}><TacticsIcon className="mr-2 h-4 w-4"/>Pizarra Táctica</Link></Button>}
                                 {match.teams && match.teams.length > 0 && <Button variant="outline" className="w-full" onClick={handleShuffleTeams} disabled={isShuffling}>{isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<Shuffle className="mr-2 h-4 w-4"/>Volver a Sortear (IA)</Button>}
                             </CardContent>
                         </Card>
@@ -460,12 +460,19 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                             <CardContent>
                                                 <div className="space-y-1">
                                                     {team.players.map(player => (
-                                                        <div key={player.uid} className="flex items-center gap-3 p-2 border-b last:border-b-0">
-                                                            <Avatar className="h-9 w-9"><AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoUrl} alt={player.displayName} /><AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback></Avatar>
-                                                            <div className="flex-1"><p className="font-semibold text-sm">{player.displayName}</p></div>
-                                                            <div className="flex items-center gap-1.5">
+                                                        <div key={player.uid} className="flex items-center justify-between p-2 border-b last:border-b-0">
+                                                            <div className="flex items-center gap-3">
+                                                                <Avatar className="h-9 w-9"><AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoUrl} alt={player.displayName} /><AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback></Avatar>
+                                                                <div className="flex-1"><p className="font-semibold text-sm">{player.displayName}</p></div>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                {isOwner && match.status === 'upcoming' && (
+                                                                    <SwapPlayerDialog match={match} playerToSwap={player}>
+                                                                        <Button variant="ghost" size="icon" className="h-7 w-7"><Shuffle className="h-4 w-4" /></Button>
+                                                                    </SwapPlayerDialog>
+                                                                )}
                                                                 <Badge variant="outline" className={cn("text-xs", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
-                                                                <Badge variant="secondary" className="text-xs">{player.ovr}</Badge>
+                                                                <Badge variant="secondary" className="text-xs w-10 justify-center">{player.ovr}</Badge>
                                                             </div>
                                                         </div>
                                                     ))}

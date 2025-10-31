@@ -1,60 +1,146 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
-import { useDoc, useFirestore } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { Match } from '@/lib/types';
-import { Loader2, ArrowLeft } from 'lucide-react';
-import { TacticalBoard } from '@/components/tactical-board';
-import { PageHeader } from '@/components/page-header';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useState } from 'react';
+import { useFirestore } from '@/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Button } from './ui/button';
+import { Loader2, Shuffle } from 'lucide-react';
+import { ScrollArea } from './ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Badge } from './ui/badge';
+import type { Match, Team } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
-export default function TacticsPage() {
-  const { id: matchId } = useParams();
+interface SwapPlayerDialogProps {
+  match: Match;
+  playerToSwap: Team['players'][0];
+  children: React.ReactNode;
+}
+
+export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDialogProps) {
+  const [open, setOpen] = useState(false);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [isSwapping, setIsSwapping] = useState(false);
   const firestore = useFirestore();
-  const router = useRouter();
+  const { toast } = useToast();
 
-  const matchRef = firestore && matchId ? doc(firestore, 'matches', matchId as string) : null;
-  const { data: match, loading: matchLoading, error } = useDoc<Match>(matchRef);
+  const handleSwap = async () => {
+    if (!firestore || !selectedPlayerId) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Debes seleccionar un jugador para el intercambio.' });
+      return;
+    }
+    setIsSwapping(true);
+    
+    try {
+      const matchRef = doc(firestore, 'matches', match.id);
+      
+      // Create a deep copy to manipulate
+      const newTeams: Team[] = JSON.parse(JSON.stringify(match.teams));
+      
+      // Find source and target players and their team indices
+      let sourceTeamIndex = -1, sourcePlayerIndex = -1;
+      let targetTeamIndex = -1, targetPlayerIndex = -1;
 
-  if (matchLoading) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
+      newTeams.forEach((team, teamIdx) => {
+        let pIdx = team.players.findIndex(p => p.uid === playerToSwap.uid);
+        if (pIdx !== -1) {
+          sourceTeamIndex = teamIdx;
+          sourcePlayerIndex = pIdx;
+        }
+        pIdx = team.players.findIndex(p => p.uid === selectedPlayerId);
+        if (pIdx !== -1) {
+          targetTeamIndex = teamIdx;
+          targetPlayerIndex = pIdx;
+        }
+      });
+      
+      if (sourceTeamIndex === -1 || targetTeamIndex === -1) {
+          throw new Error("No se pudo encontrar a uno de los jugadores en los equipos.");
+      }
 
-  if (error) {
-    return (
-        <Alert variant="destructive">
-            <AlertTitle>Error al cargar el partido</AlertTitle>
-            <AlertDescription>{error.message}</AlertDescription>
-        </Alert>
-    );
-  }
+      // Swap the players
+      const temp = newTeams[sourceTeamIndex].players[sourcePlayerIndex];
+      newTeams[sourceTeamIndex].players[sourcePlayerIndex] = newTeams[targetTeamIndex].players[targetPlayerIndex];
+      newTeams[targetTeamIndex].players[targetPlayerIndex] = temp;
+      
+      // Recalculate OVRs
+      newTeams.forEach(team => {
+        const totalOVR = team.players.reduce((sum, p) => sum + p.ovr, 0);
+        team.averageOVR = team.players.length > 0 ? totalOVR / team.players.length : 0;
+      });
 
-  if (!match) {
-    return <Alert>No se encontró el partido.</Alert>;
-  }
+      await updateDoc(matchRef, { teams: newTeams });
+      
+      toast({ title: '¡Intercambio realizado!', description: 'Los equipos han sido actualizados.' });
+      setOpen(false);
+
+    } catch (error: any) {
+      console.error("Error swapping players:", error);
+      toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudo realizar el intercambio.' });
+    } finally {
+      setIsSwapping(false);
+      setSelectedPlayerId(null);
+    }
+  };
+  
+  const eligiblePlayers = match.teams?.flatMap(team => team.players).filter(p => p.uid !== playerToSwap.uid) || [];
 
   return (
-    <div className="flex flex-col gap-6">
-       <div className="flex w-full items-center justify-between">
-            <Button asChild variant="outline" className="self-start">
-                <Link href={`/matches/${matchId}`}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Volver a Detalles del Partido
-                </Link>
-            </Button>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Intercambiar a {playerToSwap.displayName}</DialogTitle>
+          <DialogDescription>
+            Seleccioná un jugador para hacer el cambio.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+          <ScrollArea className="h-64 pr-4">
+            <div className="space-y-2">
+              {eligiblePlayers.map(player => {
+                const isSelected = selectedPlayerId === player.uid;
+                return (
+                  <div
+                    key={player.uid}
+                    onClick={() => setSelectedPlayerId(player.uid)}
+                    className={cn(
+                      'flex items-center gap-3 rounded-lg border p-3 transition-colors cursor-pointer',
+                      isSelected ? 'bg-primary/10 border-primary' : 'hover:bg-accent/50'
+                    )}
+                  >
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoUrl} alt={player.displayName} />
+                      <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <p className="font-semibold">{player.displayName}</p>
+                      <p className="text-xs text-muted-foreground">OVR: {player.ovr} - {match.teams?.find(t => t.players.some(p => p.uid === player.uid))?.name}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
         </div>
-      <PageHeader
-        title="Pizarra Táctica"
-        description={`Arrastrá y soltá jugadores para cambiar su posición o equipo para el partido: ${match.title}`}
-      />
-      <TacticalBoard match={match} />
-    </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button onClick={handleSwap} disabled={!selectedPlayerId || isSwapping}>
+            {isSwapping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Shuffle className="mr-2 h-4 w-4" />}
+            Confirmar Intercambio
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
