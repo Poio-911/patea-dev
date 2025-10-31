@@ -325,15 +325,15 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
             loop
             muted
             playsInline
-            className="absolute inset-0 -z-10 h-full w-full object-cover dark:saturate-50 dark:brightness-75 light:grayscale light:brightness-[2]"
+            className="absolute inset-0 -z-10 h-full w-full object-cover dark:saturate-50 dark:brightness-75 light:grayscale light:brightness-[1.5] light:contrast-50"
           >
             <source src="/videos/match-detail-bg.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 -z-10 bg-white/30 dark:bg-black/50" />
+          <div className="absolute inset-0 -z-10 dark:bg-black/50 light:bg-white/60" />
     
-          <div className="relative flex flex-col gap-8 p-4 md:p-6">
+          <div className="relative flex flex-col gap-8 p-4 md:p-6 text-foreground">
                 <div className="flex w-full items-start justify-between gap-4">
-                    <Button asChild variant="outline" className="self-start bg-background/20 border-foreground/20 hover:bg-background/40 text-foreground">
+                    <Button asChild variant="outline" className="self-start bg-background/20 border-foreground/20 hover:bg-background/40">
                         <Link href="/matches">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Volver a Partidos
@@ -343,7 +343,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 
                 <PageHeader title="Detalles del Partido" description={match.title} />
 
-                <Card className="bg-background/20 border-foreground/10">
+                <Card className="bg-background/20 border-foreground/10 backdrop-blur-sm">
                     <CardContent className="pt-6 space-y-4">
                          <div className="flex flex-col sm:flex-row gap-4 justify-between">
                             <div className="space-y-3">
@@ -415,7 +415,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
-                        <Card className="bg-background/20 border-foreground/10">
+                        <Card className="bg-background/20 border-foreground/10 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle>Equipos ({match.players.length} / {match.matchSize})</CardTitle>
                                  <div className="pt-2">
@@ -452,7 +452,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                                                             <Button variant="ghost" size="icon" className="h-7 w-7"><Shuffle className="h-4 w-4" /></Button>
                                                                         </SwapPlayerDialog>
                                                                     )}
-                                                                    <Badge variant="outline" className={cn("text-xs bg-transparent border-foreground/20", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
+                                                                    <Badge variant="outline" className={cn("text-xs bg-background/20 border-foreground/20", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
                                                                     <Badge variant="secondary" className="text-xs w-10 justify-center">{player.ovr}</Badge>
                                                                 </div>
                                                             </div>
@@ -470,7 +470,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                                 <div>
                                                     <p className="font-bold text-sm truncate w-24">{player.displayName}</p>
                                                     <div className="flex items-center justify-center gap-1.5 mt-1">
-                                                        <Badge variant="outline" className={cn("text-xs bg-transparent border-foreground/20", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
+                                                        <Badge variant="outline" className={cn("text-xs bg-background/20 border-foreground/20", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
                                                         <Badge variant="secondary">{player.ovr}</Badge>
                                                     </div>
                                                 </div>
@@ -484,7 +484,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     </div>
                     <div className="space-y-6">
                         {isOwner && (
-                            <Card className="bg-background/20 border-foreground/10">
+                            <Card className="bg-background/20 border-foreground/10 backdrop-blur-sm">
                                 <CardHeader>
                                     <CardTitle>Gestión del Partido</CardTitle>
                                 </CardHeader>
@@ -495,7 +495,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                             Finalizar
                                         </Button>
                                     )}
-                                    {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" size="sm" className="bg-background/20 border-foreground/20 hover:bg-background/40 text-foreground"><UserPlus className="mr-2 h-4 w-4"/>Invitar</Button></InvitePlayerDialog>}
+                                    {canInvite && <InvitePlayerDialog playerToInvite={null} userMatches={match ? [match] : []} allGroupPlayers={allGroupPlayers || []} match={match}><Button variant="outline" size="sm" className="bg-background/20 border-foreground/20 hover:bg-background/40"><UserPlus className="mr-2 h-4 w-4"/>Invitar</Button></InvitePlayerDialog>}
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild><Button variant="destructive" size="sm" disabled={isDeleting}><Trash2 className="mr-2 h-4 w-4"/>Eliminar</Button></AlertDialogTrigger>
                                         <AlertDialogContent>
