@@ -4,7 +4,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import type { Match, Player, EvaluationAssignment, Notification, UserProfile, Invitation, Jersey } from '@/lib/types';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
-import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
+import { useDoc, useFirestore, useUser } from '@/firebase';
 import { Loader2, ArrowLeft, Calendar, Clock, MapPin, Users, User, CheckCircle, Shuffle, Trash2, UserPlus, LogOut, MessageCircle, MoreVertical, Share2, ClipboardCopy, Edit, Users2 } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
@@ -39,6 +39,7 @@ import { logger } from '@/lib/logger';
 import { SwapPlayerDialog } from './swap-player-dialog';
 import { ShirtIcon } from './icons/shirt-icon';
 import { VestIcon } from './icons/vest-icon';
+import { useCollection } from '@/firebase/firestore/use-collection';
 
 interface MatchDetailViewProps {
   matchId: string;
@@ -357,14 +358,14 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 <PageHeader title={match.title} className="dark:text-white" />
   
                 {/* --- VISTA PARA TEMA CLARO --- */}
-                <Card className="dark:hidden relative overflow-hidden border-foreground/10">
+                <Card className="dark:hidden relative overflow-hidden border-foreground/10 text-white">
                    <div className="absolute inset-0 -z-10 rounded-lg overflow-hidden">
                       <video autoPlay loop muted playsInline className="h-full w-full object-cover">
                           <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
                       </video>
-                      <div className="absolute inset-0 bg-white/60" />
+                      <div className="absolute inset-0 bg-black/40" />
                   </div>
-                    <CardContent className="pt-6 space-y-4 bg-transparent">
+                    <CardContent className="pt-6 space-y-4 bg-transparent [text-shadow:0_1px_3px_rgb(0_0_0_/_0.5)]">
                          <div className="flex flex-col sm:flex-row gap-4 justify-between">
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3 text-lg">
@@ -374,7 +375,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                 {ownerProfile && (
                                     <div className="flex items-center gap-2">
                                         <Avatar className="h-6 w-6"><AvatarImage src={ownerProfile.photoURL || ''} alt={ownerProfile.displayName || ''} /><AvatarFallback>{ownerProfile.displayName?.charAt(0)}</AvatarFallback></Avatar>
-                                        <p className="text-sm">{`Organizado por ${ownerProfile.displayName}`}</p>
+                                        <p className="text-sm text-white/80">{`Organizado por ${ownerProfile.displayName}`}</p>
                                     </div>
                                 )}
                             </div>
@@ -384,15 +385,15 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                     <span className="font-bold">{match.time} hs</span>
                                     {WeatherIcon && match.weather && (
                                         <span className="flex items-center gap-1.5 text-sm">
-                                            <WeatherIcon className="h-4 w-4 text-blue-500" />
+                                            <WeatherIcon className="h-4 w-4 text-blue-400" />
                                             <span>({match.weather.temperature}°C)</span>
                                         </span>
                                     )}
                                 </div>
-                                <Badge variant="outline" className="capitalize text-sm">{match.type === 'by_teams' ? 'Por Equipos' : match.type}</Badge>
+                                <Badge variant="outline" className="capitalize text-sm bg-white/20 border-white/30 text-white">{match.type === 'by_teams' ? 'Por Equipos' : match.type}</Badge>
                             </div>
                         </div>
-                         <Separator/>
+                         <Separator className="bg-white/20"/>
                          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                             <div className="flex items-start gap-3">
                                 <MapPin className="h-5 w-5 mt-1 flex-shrink-0"/>
@@ -403,7 +404,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                     <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">Ir a la cancha</a>
                                 </Button>
                                  {isOwner && match.status === 'upcoming' && (
-                                    <Button variant="outline" size="sm" asChild>
+                                    <Button variant="outline" size="sm" asChild className="bg-white/20 border-white/30 hover:bg-white/30">
                                         <a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer">
                                             <WhatsAppIcon className="mr-2 h-4 w-4"/>
                                             Compartir Partido
@@ -413,7 +414,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                             </div>
                          </div>
                          {match.type === 'collaborative' && match.status === 'upcoming' && (
-                            <div className="border-t pt-4">
+                            <div className="border-t pt-4 border-white/20">
                                 {isMatchFull && !isUserInMatch ? (
                                     <Button variant="outline" size="lg" className="w-full" disabled>Partido Lleno</Button>
                                 ) : (
@@ -592,5 +593,3 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
         </div>
     );
 }
-
-    
