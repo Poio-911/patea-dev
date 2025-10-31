@@ -22,9 +22,9 @@ import { UserGroupsList } from '@/components/groups/user-groups-list';
 import { GroupStatsCards } from '@/components/groups/group-stats-cards';
 import { UpcomingMatchesFeed } from '@/components/groups/upcoming-matches-feed';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
-import { CreateGroupDialog, JoinGroupDialog } from '@/components/groups/group-dialogs';
 import { Separator } from '@/components/ui/separator';
 import { motion } from 'framer-motion';
+import { GroupsFab } from '@/components/groups/groups-fab';
 
 export default function GroupsPage() {
   const { user, loading: userLoading } = useUser();
@@ -63,22 +63,8 @@ export default function GroupsPage() {
             description="Esta es tu central de operaciones. Desde 'Mis Grupos' podés crear nuevos grupos, unirte a otros, o cambiar tu grupo activo. Debajo verás toda la info del grupo que tengas seleccionado, ¡incluyendo los equipos que podés crear!"
         />
         
-        <PageHeader title="Mis Grupos">
-          <div className="flex flex-col sm:flex-row gap-2">
-              <CreateGroupDialog>
-                <Button variant="default">
-                    <PlusCircle className="mr-2 h-4 w-4"/>
-                    Crear Grupo
-                </Button>
-              </CreateGroupDialog>
-              <JoinGroupDialog>
-                <Button variant="outline">
-                    <LogIn className="mr-2 h-4 w-4"/>
-                    Unirse a Grupo
-                </Button>
-              </JoinGroupDialog>
-          </div>
-        </PageHeader>
+        <PageHeader title="Mis Grupos" />
+        
         <UserGroupsList />
         
         <Separator className="my-4"/>
@@ -96,6 +82,7 @@ export default function GroupsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.4 }}
+              className="space-y-8"
             >
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
@@ -109,7 +96,7 @@ export default function GroupsPage() {
                         <Button asChild>
                             <a href={`https://wa.me/?text=${shareText}`} target="_blank" rel="noopener noreferrer">
                                 <WhatsAppIcon className="mr-2 h-4 w-4" />
-                                Compartir Código
+                                Compartir
                             </a>
                         </Button>
                     </PageHeader>
@@ -122,6 +109,8 @@ export default function GroupsPage() {
                 >
                     <TeamList groupId={activeGroup.id} players={groupPlayers || []} currentUserId={user.uid} />
                 </motion.div>
+                
+                <Separator />
 
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -130,6 +119,8 @@ export default function GroupsPage() {
                 >
                     <UpcomingMatchesFeed matches={upcomingMatches || []} />
                 </motion.div>
+                
+                <Separator />
 
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -140,6 +131,7 @@ export default function GroupsPage() {
                 </motion.div>
             </motion.div>
         )}
+        <GroupsFab />
     </div>
   );
 }

@@ -38,7 +38,7 @@ export function GroupsFab() {
   );
 
   return (
-    <>
+    <div className="fixed bottom-20 right-4 z-40 md:bottom-6 md:right-6 flex flex-col items-end gap-4">
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -63,23 +63,22 @@ export function GroupsFab() {
       </AnimatePresence>
 
       <Button
-        className="rounded-full w-auto h-14 bg-background/70 backdrop-blur-lg border-2 border-primary/50 text-primary shadow-lg hover:bg-background/90 hover:scale-105 active:scale-95 transition-all px-4"
+        className="rounded-full w-14 h-14 bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all"
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Toggle groups menu"
       >
         <AnimatePresence initial={false} mode="wait">
           <motion.div
-            key={isOpen ? 'x' : 'groups'}
+            key={isOpen ? 'x' : 'plus'}
             initial={{ rotate: -45, opacity: 0, scale: 0.5 }}
             animate={{ rotate: 0, opacity: 1, scale: 1 }}
             exit={{ rotate: 45, opacity: 0, scale: 0.5 }}
             transition={{ duration: 0.2 }}
-            className="flex items-center gap-2"
           >
-            {isOpen ? <X className="h-6 w-6" /> : <><Users2 className="h-5 w-5" /> <span className="font-semibold">Grupos</span></>}
+            {isOpen ? <X className="h-6 w-6" /> : <PlusCircle className="h-6 w-6" />}
           </motion.div>
         </AnimatePresence>
       </Button>
-    </>
+    </div>
   );
 }

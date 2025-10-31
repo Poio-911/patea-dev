@@ -9,7 +9,7 @@ import type { Group } from '@/lib/types';
 import { Button } from '../ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '../ui/badge';
-import { Loader2, CheckCircle, Copy, Trash2, Edit, Users2, MoreVertical, Crown } from 'lucide-react';
+import { Loader2, CheckCircle, Copy, Trash2, Edit, MoreVertical, Crown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
@@ -66,6 +66,10 @@ export function UserGroupsList() {
         const matchesQuery = query(collection(firestore, 'matches'), where('groupId', '==', groupId));
         const matchesSnap = await getDocs(matchesQuery);
         matchesSnap.forEach(matchDoc => batch.delete(matchDoc.ref));
+        
+        const teamsQuery = query(collection(firestore, 'teams'), where('groupId', '==', groupId));
+        const teamsSnap = await getDocs(teamsQuery);
+        teamsSnap.forEach(teamDoc => batch.delete(teamDoc.ref));
 
         batch.delete(doc(firestore, 'groups', groupId));
 
