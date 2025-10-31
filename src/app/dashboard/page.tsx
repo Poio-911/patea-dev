@@ -27,6 +27,9 @@ import { MateIcon } from '@/components/icons/mate-icon';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 import { logger } from '@/lib/logger';
 import { motion } from 'framer-motion';
+import { HighlightReelCard } from '@/components/highlight-reel-card';
+import { FootballNewsCard } from '@/components/football-news-card';
+
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
     upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
@@ -236,115 +239,10 @@ function DashboardContent() {
         />
       </div>
 
-      <Card>
-        <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-                <Eye className="h-5 w-5 text-primary" />
-                Visibilidad Pública
-            </CardTitle>
-            <CardDescription>
-                {availablePlayerData ? 'Estás visible para que otros grupos te inviten a partidos.' : 'No estás visible para otros grupos.'}
-            </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center space-x-2">
-                    <Switch
-                        id="availability-switch"
-                        checked={!!availablePlayerData}
-                        onCheckedChange={handleToggleAvailability}
-                        disabled={isToggling}
-                    />
-                    <Label htmlFor="availability-switch" className="font-medium">
-                        {isToggling ? 'Actualizando...' : (availablePlayerData ? 'Visible' : 'Oculto')}
-                    </Label>
-                    {isToggling && <SoccerPlayerIcon className="h-5 w-5 color-cycle-animation" />}
-                </div>
-                <SetAvailabilityDialog player={player} availability={availablePlayerData?.availability || {}}>
-                    <Button variant="outline" disabled={!availablePlayerData}>
-                        <UserRound className="mr-2 h-4 w-4" />
-                        Ajustar Disponibilidad y Horarios
-                    </Button>
-                </SetAvailabilityDialog>
-            </div>
-            {locationError && (
-                <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error de Ubicación</AlertTitle>
-                    <AlertDescription>
-                        {locationError}
-                        <Button variant="link" className="p-0 h-auto ml-1 text-destructive" onClick={requestLocationAndToggle}>
-                            Reintentar
-                        </Button>
-                    </AlertDescription>
-                </Alert>
-            )}
-        </CardContent>
-      </Card>
-
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-8">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-primary">Se Juega</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <NextMatchCard match={nextMatch} />
-                </CardContent>
-            </Card>
-            
-            <Card>
-                <CardHeader>
-                    <CardTitle>Partidos Anteriores</CardTitle>
-                    <CardDescription>Los últimos resultados del grupo.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {recentMatches.length > 0 ? (
-                        <div className="space-y-4">
-                            {recentMatches.map((match, index) => {
-                                const statusInfo = statusConfig[match.status];
-                                const owner = allPlayersInGroup?.find(p => p.id === match.ownerUid)
-                                const ownerName = owner?.name || (match.ownerUid === user?.uid ? user.displayName : null) || 'Organizador';
-
-                                return (
-                                    <motion.div
-                                      key={match.id}
-                                      initial={{ opacity: 0, y: 10 }}
-                                      animate={{ opacity: 1, y: 0 }}
-                                      transition={{ delay: index * 0.1 }}
-                                    >
-                                        <div className="flex justify-between items-start gap-4">
-                                            <div className="flex-1">
-                                                <p className="font-semibold">{match.title}</p>
-                                                <div className="flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Calendar className="h-3.5 w-3.5" />
-                                                        <span>{format(new Date(match.date), "d MMM, yyyy", { locale: es })}</span>
-                                                    </div>
-                                                     <div className="flex items-center gap-1.5">
-                                                        <User className="h-3.5 w-3.5" />
-                                                        <span className="truncate">{ownerName.trim() || 'Desconocido'}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <Badge variant="outline" className={cn("text-xs shrink-0", statusInfo.className)}>{statusInfo.label}</Badge>
-                                        </div>
-                                        {index < recentMatches.length - 1 && <Separator className="mt-4" />}
-                                    </motion.div>
-                                )
-                            })}
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center text-center border-2 border-dashed border-muted-foreground/30 rounded-xl p-12">
-                            <Calendar className="h-12 w-12 text-muted-foreground/50" />
-                            <h2 className="mt-4 text-xl font-semibold">Sin Partidos Anteriores</h2>
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                Aún no se ha completado ningún partido en este grupo.
-                            </p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+            <HighlightReelCard />
+            <FootballNewsCard />
         </div>
 
         <div className="lg:col-span-1 space-y-8">
