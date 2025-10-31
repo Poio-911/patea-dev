@@ -129,7 +129,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   <HeaderActions />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 sm:gap-4">
                   {player && (
                       <div className="flex items-center gap-3">
                           <div className="text-right">
