@@ -24,6 +24,7 @@ import { useFirestore, useUser } from '@/firebase';
 import { addDoc, collection, writeBatch, doc, getDocs, query, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Player, MatchLocation, Notification, Team, MatchType, GroupTeam } from '@/lib/types';
+import { celebrationConfetti } from '@/lib/animations';
 import { Alert, AlertDescription } from './ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
@@ -348,7 +349,8 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
             } else {
               await createCollaborativeMatch(data);
             }
-            
+
+            celebrationConfetti();
             toast({ title: '¡Listo!', description: 'Partido armado correctamente.' });
             setOpen(false);
         } catch (error: any) {

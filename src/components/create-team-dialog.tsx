@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { useFirestore } from '@/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { celebrationConfetti } from '@/lib/animations';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Card } from './ui/card';
@@ -182,6 +183,7 @@ export function CreateTeamDialog({
       
       await addDoc(collection(firestore, 'teams'), newTeam);
 
+      celebrationConfetti();
       toast({
         title: '¡Equipo creado!',
         description: `El equipo "${data.name}" se ha creado exitosamente.`,

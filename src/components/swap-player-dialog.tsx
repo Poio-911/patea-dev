@@ -5,6 +5,7 @@ import { useState, useMemo } from 'react';
 import { useFirestore } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { successConfetti } from '@/lib/animations';
 import {
   Dialog,
   DialogContent,
@@ -76,7 +77,8 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
       });
 
       await updateDoc(matchRef, { teams: newTeams });
-      
+
+      successConfetti();
       toast({ title: '¡Intercambio realizado!', description: 'Los equipos han sido actualizados.' });
       setOpen(false);
 

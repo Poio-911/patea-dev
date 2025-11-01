@@ -5,6 +5,7 @@ import { Firestore } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { generateTeamsAction } from '@/lib/actions/server-actions';
 import { logger } from '@/lib/logger';
+import { celebrationConfetti, miniConfetti } from '@/lib/animations';
 
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
@@ -205,6 +206,7 @@ export function useMatchActions({
           batch.set(notificationRef, notification);
         }
 
+        miniConfetti();
         toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${match.title}".` });
       }
       await batch.commit();
@@ -244,6 +246,7 @@ export function useMatchActions({
         teams: teamGenerationResult.teams
       });
 
+      celebrationConfetti();
       toast({ title: "¡Equipos Sorteados!", description: "La IA ha generado nuevas formaciones." });
 
     } catch (error: any) {
