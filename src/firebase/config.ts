@@ -5,12 +5,13 @@
 // https://console.firebase.google.com/project/_/settings/general/
 import { FirebaseOptions } from 'firebase/app';
 
+// Using static configuration values to ensure consistency and avoid environment variable issues.
 export const firebaseConfig: FirebaseOptions = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+  apiKey: "AIzaSyBe_V2v-2p78kHxYd8s8kLz9lC0b2n2H8",
+  authDomain: "mil-disculpis.firebaseapp.com",
+  projectId: "mil-disculpis",
+  storageBucket: "mil-disculpis.appspot.com",
+  messagingSenderId: "313938466268",
+  appId: "1:313938466268:web:7573436d4f9b3634062a87",
+  measurementId: "G-9XG18W93EM"
 };
