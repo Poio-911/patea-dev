@@ -44,7 +44,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
   return (
     <Card className="relative overflow-hidden border-foreground/10 text-foreground dark:text-white rounded-lg shadow-lg bg-card dark:bg-transparent">
       {/* Background video - visible SOLO en tema CLARO */}
-      <div className="absolute inset-0 -z-10 rounded-lg overflow-hidden dark:hidden">
+      <div className="absolute inset-0 -z-10 rounded-lg overflow-hidden block dark:hidden">
         <video
           autoPlay
           loop
@@ -52,13 +52,14 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
           playsInline
           className="h-full w-full object-cover"
           aria-hidden="true"
+          key="light-theme-video"
         >
           <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-black/40" />
       </div>
 
-      <CardContent className="p-6 pt-6 space-y-4 bg-transparent text-white dark:text-white [text-shadow:0_1px_3px_rgb(0_0_0_/_0.5)]">
+      <CardContent className="p-6 pt-6 space-y-4 bg-transparent text-white [text-shadow:0_1px_3px_rgb(0_0_0_/_0.5)]">
         {/* Fecha y organizador */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between">
           <div className="space-y-3">
