@@ -5,3 +5,49 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+
+  # Variables de entorno
+  env:
+    # Gemini AI API Key
+    - variable: GOOGLE_GENAI_API_KEY
+      secret: GOOGLE_GENAI_API_KEY
+
+    # Google Maps API Key
+    - variable: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+      secret: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+
+    # Firebase Service Account
+    - variable: FIREBASE_SERVICE_ACCOUNT_KEY
+      secret: FIREBASE_SERVICE_ACCOUNT_KEY
+
+    # Variables públicas (no sensibles)
+    - variable: GCLOUD_PROJECT
+      value: mil-disculpis
+
+    - variable: NODE_ENV
+      value: production
+
+    - variable: FIREBASE_USE_EMULATOR
+      value: "false"
+
+    # Firebase Client Config (públicas, ya están en el código)
+    - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+      value: AIzaSyAes7EVn8hQswS8XgvDMJfN6U4IT_ZL_WY
+
+    - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+      value: mil-disculpis.firebaseapp.com
+
+    - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+      value: mil-disculpis
+
+    - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+      value: mil-disculpis.firebasestorage.app
+
+    - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+      value: "5614567933"
+
+    - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+      value: 1:5614567933:web:6d7b7dde5f994c36861994
+
+    - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+      value: G-56F70EMSVB
