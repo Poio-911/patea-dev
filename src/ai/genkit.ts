@@ -1,3 +1,5 @@
+'use server';
+
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 
@@ -7,7 +9,10 @@ import { googleAI } from '@genkit-ai/google-genai';
 export const ai = genkit({
   plugins: [
     googleAI({
-      apiKey: "AIzaSyDDN2IFxzPbAHJRpnLUbQ6lnCFs3Ua4O-k", // Hardcoded key to fix API errors
+      // The API key is now read from the environment variable set in apphosting.yaml
+      // or your local .env.local file. This file runs on the server, so it can access
+      // server-side environment variables.
+      apiKey: process.env.GOOGLE_GENAI_API_KEY,
     }),
   ],
 });

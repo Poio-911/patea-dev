@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase/index';
 import type { FirebaseApp } from 'firebase/app';
@@ -24,9 +24,16 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
     firestore: Firestore;
   } | null>(null);
 
+  // This is a client component, so it needs NEXT_PUBLIC_ prefix
+  const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+  if (!googleMapsApiKey) {
+    console.error("Google Maps API key is not configured. Please set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.");
+  }
+
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: "AIzaSyBnjKt571ZEUlRmK4lAnrdNJxYKZ-0Pnhk", // Hardcoded key to fix loading error
+    googleMapsApiKey: googleMapsApiKey || "",
     libraries,
   });
 
