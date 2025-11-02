@@ -1,4 +1,4 @@
 {
-  "cloud_run_deploy": {},
-  "gemini_api": {}
+  "firebase_hosting": {},
+  "secrets_manager": {}
 }
