@@ -1,3 +1,4 @@
+
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
 
@@ -46,7 +47,7 @@ runConfig:
       availability:
         - RUNTIME
 
-    # Firebase Client Config (públicas, ya están en el código)
+    # Firebase Client Config (públicas)
     - variable: NEXT_PUBLIC_FIREBASE_API_KEY
       value: AIzaSyAes7EVn8hQswS8XgvDMJfN6U4IT_ZL_WY
       availability:
@@ -66,7 +67,7 @@ runConfig:
         - RUNTIME
 
     - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-      value: mil-disculpis.firebasestorage.app
+      value: mil-disculpis.appspot.com
       availability:
         - BUILD
         - RUNTIME
