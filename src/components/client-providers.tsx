@@ -11,7 +11,7 @@ import { MainNav } from '@/components/main-nav';
 import { ThemeProvider } from 'next-themes';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { libraries } from '@/lib/google-maps';
-import { SoccerPlayerIcon } from './icons/soccer-player-icon';
+import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 
 type FirebaseClientProviderProps = {
   children: React.ReactNode;
