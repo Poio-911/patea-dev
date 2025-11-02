@@ -25,7 +25,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       if (loading) setLoading(false);
       return;
     };
-    
+
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         const userRef = doc(firestore, 'users', firebaseUser.uid);
@@ -108,7 +108,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       unsubscribe();
     };
-  }, [auth, firestore, loading]);
+  }, [auth, firestore]);
 
   return (
     <UserContext.Provider value={{ user, loading }}>

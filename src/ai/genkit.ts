@@ -1,9 +1,8 @@
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
-import { config } from 'dotenv';
 
-// Cargar variables de entorno desde .env
-config({ path: './.env' });
+// Next.js carga automáticamente .env.local y otras variables de entorno
+// No es necesario usar dotenv/config manualmente
 
 export const ai = genkit({
   plugins: [

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase/index';
 import type { FirebaseApp } from 'firebase/app';
@@ -35,18 +35,27 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
     setFirebaseInstances(instances);
   }, []);
 
-  if (!firebaseInstances || !isLoaded) {
-    return (
-        <div className="flex h-screen w-full items-center justify-center bg-background">
-            <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
-        </div>
-    );
-  }
-  
   if (loadError) {
     console.error("Google Maps API failed to load: ", loadError);
   }
 
+  // Wait for Firebase to initialize before rendering anything
+  if (!firebaseInstances) {
+    return (
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+          <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
+        </div>
+      </ThemeProvider>
+    );
+  }
+
+  // Once Firebase is ready, mount providers ONCE and never unmount them
   return (
     <ThemeProvider
       attribute="class"
@@ -60,7 +69,13 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
         firestore={firebaseInstances.firestore}
       >
         <UserProvider>
-         <MainNav>{children}</MainNav>
+          {!isLoaded ? (
+            <div className="flex h-screen w-full items-center justify-center bg-background">
+              <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
+            </div>
+          ) : (
+            <MainNav>{children}</MainNav>
+          )}
         </UserProvider>
       </FirebaseProvider>
     </ThemeProvider>
