@@ -14,12 +14,12 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { Users, HelpCircle } from 'lucide-react';
-import { SoccerPlayerIcon } from './icons/soccer-player-icon';
-import { MatchIcon } from './icons/match-icon';
-import { EvaluationIcon } from './icons/evaluation-icon';
-import { FindMatchIcon } from './icons/find-match-icon';
+import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
+import { MatchIcon } from '@/components/icons/match-icon';
+import { EvaluationIcon } from '@/components/icons/evaluation-icon';
+import { FindMatchIcon } from '@/components/icons/find-match-icon';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './ui/carousel';
-import { TeamsIcon } from './icons/teams-icon';
+import { TeamsIcon } from '@/components/icons/teams-icon';
 
 interface HelpDialogProps {
   forceOpen?: boolean;

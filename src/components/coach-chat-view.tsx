@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Send, ArrowDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { CoachIcon } from './icons/coach-icon';
+import { CoachIcon } from '@/components/icons/coach-icon';
 
 type Message = {
   role: 'user' | 'coach';

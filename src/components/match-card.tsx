@@ -30,9 +30,9 @@ import {
 import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User, MessageCircle, FileSignature, MoreVertical, Users, UserCheck, Shuffle } from 'lucide-react';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import Link from 'next/link';
-import { SoccerPlayerIcon } from './icons/soccer-player-icon';
+import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { MatchChatSheet } from './match-chat-sheet';
-import { TeamsIcon } from './icons/teams-icon';
+import { TeamsIcon } from '@/components/icons/teams-icon';
 import {
   DropdownMenu,
   DropdownMenuContent,

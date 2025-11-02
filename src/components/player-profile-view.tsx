@@ -30,7 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider as UiTooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { FirstTimeInfoDialog } from './first-time-info-dialog';
 import Link from 'next/link';
-import { AnalysisIcon } from './icons/analysis-icon';
+import { AnalysisIcon } from '@/components/icons/analysis-icon';
 import { ImageCropperDialog } from '@/components/image-cropper-dialog';
 import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
 import { AttributesHelpDialog } from './attributes-help-dialog';

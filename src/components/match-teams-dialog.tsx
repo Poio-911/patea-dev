@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import type { Match, Player, Jersey } from '@/lib/types';
 import { Star, Scale, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { TeamsIcon } from './icons/teams-icon';
+import { TeamsIcon } from '@/components/icons/teams-icon';
 import { JerseyPreview } from './team-builder/jersey-preview';
 
 

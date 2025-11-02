@@ -18,7 +18,7 @@ import { es } from 'date-fns/locale';
 import { ScrollArea } from './ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { SoccerPlayerIcon } from './icons/soccer-player-icon';
+import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 
 interface NotificationBellProps {
   isPopoverContent?: boolean;
