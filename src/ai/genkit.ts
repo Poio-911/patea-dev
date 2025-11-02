@@ -7,9 +7,7 @@ import { googleAI } from '@genkit-ai/google-genai';
 export const ai = genkit({
   plugins: [
     googleAI({
-      // The API key is now read from the environment variable set in apphosting.yaml
-      // or your local .env.local file.
-      apiKey: process.env.GOOGLE_GENAI_API_KEY,
+      apiKey: "AIzaSyDDN2IFxzPbAHJRpnLUbQ6lnCFs3Ua4O-k", // Hardcoded key to fix API errors
     }),
   ],
 });
