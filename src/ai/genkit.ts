@@ -2,17 +2,15 @@
 
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
+import { config } from 'dotenv';
 
-// Next.js loads environment variables from .env.local automatically.
-// No need to use dotenv/config manually.
+// Cargar variables de entorno desde .env
+config({ path: './.env' });
 
 export const ai = genkit({
   plugins: [
     googleAI({
-      // The API key is now read from the environment variable set in apphosting.yaml
-      // or your local .env.local file. This file runs on the server, so it can access
-      // server-side environment variables.
-      apiKey: process.env.GOOGLE_GENAI_API_KEY,
+      apiKey: process.env.GOOGLE_GENAI_API_KEY || "AIzaSyDDN2IFxzPbAHJRpnLUbQ6lnCFs3Ua4O-k",
     }),
   ],
 });
