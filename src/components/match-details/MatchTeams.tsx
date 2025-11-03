@@ -10,8 +10,16 @@ import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import { SwapPlayerDialog } from '@/components/swap-player-dialog';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { cn } from '@/lib/utils';
-import { Shuffle, Loader2 } from 'lucide-react';
+import { Shuffle, Loader2, MoreVertical, Pencil } from 'lucide-react';
 import { useMemo } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
+import { EditableTeamsDialog } from '../editable-teams-dialog';
 
 interface MatchTeamsProps {
   match: Match;
@@ -44,16 +52,35 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
 
     return (
         <Card className="bg-card/60 backdrop-blur-sm border-2">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-xl font-semibold">Equipos Generados</CardTitle>
-                 <div className="pt-2">
-                    {isOwner && match.status === 'upcoming' && (
-                        <div className="flex flex-col sm:flex-row gap-2">
-                            <Button variant="outline" size="sm" onClick={onShuffle} disabled={isShuffling}>{isShuffling && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<Shuffle className="mr-2 h-4 w-4"/>Volver a Sortear</Button>
-                            <Button variant="outline" size="sm" asChild><a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Equipos</a></Button>
-                        </div>
-                    )}
-                </div>
+                {isOwner && match.status === 'upcoming' && (
+                     <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={onShuffle} disabled={isShuffling}>
+                            {isShuffling ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Shuffle className="mr-2 h-4 w-4"/>}
+                            Volver a Sortear
+                        </DropdownMenuItem>
+                        <EditableTeamsDialog match={match}>
+                             <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Editar Equipos
+                            </DropdownMenuItem>
+                        </EditableTeamsDialog>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                           <a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer">
+                             <WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir Equipos
+                           </a>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -68,15 +95,10 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
                                     {team.players.map(player => (
                                         <div key={player.uid} className="flex items-center justify-between p-2 border-b last:border-b-0 border-foreground/10 hover:bg-background/40 transition-all duration-300 rounded">
                                             <div className="flex items-center gap-3">
-                                                <Avatar className="h-9 w-9"><AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoUrl} alt={player.displayName} /><AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback></Avatar>
+                                                <Avatar className="h-9 w-9"><AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoUrl} alt={player.displayName} data-ai-hint="player portrait" /><AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback></Avatar>
                                                 <div className="flex-1"><p className="font-semibold text-sm">{player.displayName}</p></div>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                {isOwner && match.status === 'upcoming' && (
-                                                    <SwapPlayerDialog match={match} playerToSwap={player}>
-                                                        <Button variant="ghost" size="icon" className="h-7 w-7"><Shuffle className="h-4 w-4" /></Button>
-                                                    </SwapPlayerDialog>
-                                                )}
                                                 <Badge className={cn("text-xs", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
                                                 <Badge variant="secondary" className="text-xs w-10 justify-center">{player.ovr}</Badge>
                                             </div>
