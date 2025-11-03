@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
@@ -9,7 +10,6 @@ import {
   where, 
   orderBy, 
   getDocs,
-  getDoc,
   updateDoc,
   writeBatch
 } from 'firebase/firestore';
@@ -46,10 +46,10 @@ type PlayerProfileViewProps = {
 };
 
 const positionColors: Record<Player['position'], string> = {
-  DEL: 'text-chart-1',
-  MED: 'text-chart-2',
-  DEF: 'text-chart-3',
-  POR: 'text-chart-4',
+  POR: 'text-yellow-600',
+  DEF: 'text-green-600',
+  MED: 'text-blue-600',
+  DEL: 'text-red-600',
 };
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
@@ -410,7 +410,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                     </button>
                                 </div>
                                 {isCurrentUserProfile && (
-                                    <div className="w-full flex flex-col gap-2">
+                                    <div className="w-full flex flex-col items-center gap-2">
                                         <div className="flex items-center justify-center gap-2">
                                           <AlertDialog>
                                               <AlertDialogTrigger asChild>
@@ -434,7 +434,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                                   </AlertDialogFooter>
                                               </AlertDialogContent>
                                           </AlertDialog>
-                                          <Badge variant="secondary" className="rounded-full h-6 w-6 flex items-center justify-center p-0">
+                                          <Badge variant="secondary" className="rounded-full h-6 w-6 flex items-center justify-center p-0 text-xs">
                                             {player.cardGenerationCredits || 0}
                                           </Badge>
                                         </div>

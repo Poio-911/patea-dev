@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { MoreVertical, Trash2, Pencil, Zap, Target, Send, Footprints, Shield, Dumbbell } from 'lucide-react';
+import { MoreVertical, Trash2, Pencil, Star, Goal, TrendingUp } from 'lucide-react';
 import type { Player } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { EditPlayerDialog } from './edit-player-dialog';
@@ -32,62 +32,67 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from './ui/badge';
 import { motion } from 'framer-motion';
-import { Progress } from '@/components/ui/progress';
 
 type PlayerCardProps = {
   player: Player & { displayName?: string };
   isLink?: boolean;
 };
 
-const positionBackgrounds: Record<Player['position'], string> = {
-  DEL: 'from-chart-1/20',
-  MED: 'from-chart-2/20',
-  DEF: 'from-chart-3/20',
-  POR: 'from-chart-4/20',
+// NUEVA PALETA DE COLORES (Inspirada en PES 6)
+const positionStyles: Record<Player['position'], { color: string; bg: string; name: string }> = {
+  POR: { name: 'Portero', color: 'text-yellow-600', bg: 'from-yellow-500/20' },
+  DEF: { name: 'Defensa', color: 'text-green-600', bg: 'from-green-500/20' },
+  MED: { name: 'Volante', color: 'text-blue-600', bg: 'from-blue-500/20' },
+  DEL: { name: 'Delantero', color: 'text-red-600', bg: 'from-red-500/20' },
 };
 
-const positionColors: Record<Player['position'], string> = {
-  DEL: 'text-chart-1',
-  MED: 'text-chart-2',
-  DEF: 'text-chart-3',
-  POR: 'text-chart-4',
-};
+const HexagonStatChart = ({ stats }: { stats: { label: string, value: number }[] }) => {
+  const size = 100;
+  const center = size / 2;
+  const points = stats.map((stat, i) => {
+    const angle_deg = 60 * i - 30;
+    const angle_rad = (Math.PI / 180) * angle_deg;
+    const valueRatio = stat.value / 99;
+    const x = center + center * valueRatio * Math.cos(angle_rad);
+    const y = center + center * valueRatio * Math.sin(angle_rad);
+    return `${x},${y}`;
+  }).join(' ');
 
-const statIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  RIT: Zap,
-  TIR: Target,
-  PAS: Send,
-  REG: Footprints,
-  DEF: Shield,
-  FIS: Dumbbell,
-};
-
-const statLabelsLong: Record<string, string> = {
-  RIT: 'Ritmo',
-  TIR: 'Tiro',
-  PAS: 'Pase',
-  REG: 'Regate',
-  DEF: 'Defensa',
-  FIS: 'Físico',
-};
-
-const Stat = ({ label, value, isBest }: { label: string; value: number, isBest: boolean }) => {
-  const Icon = statIcons[label] || Zap;
   return (
-    <div className="flex flex-col gap-1 group" role="group" aria-label={`${statLabelsLong[label]}: ${value} puntos${isBest ? ', mejor estadística' : ''}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <Icon className="h-3 w-3 text-muted-foreground/80 group-hover:text-primary transition-colors" aria-hidden="true" />
-          <span className="font-semibold text-muted-foreground text-xs">{label}</span>
-        </div>
-        <span className={cn("font-bold text-sm", isBest && "text-primary")}>{value}</span>
-      </div>
-      <motion.div whileHover={{ scaleX: 1.05, transition: { duration: 0.2 } }}>
-        <Progress value={value} isBest={isBest} aria-hidden="true" />
-      </motion.div>
-    </div>
+    <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full">
+      {/* Hexagon background grid */}
+      {[0.25, 0.5, 0.75, 1].map(scale => (
+        <polygon
+          key={scale}
+          points={stats.map((_, i) => {
+            const angle_deg = 60 * i - 30;
+            const angle_rad = (Math.PI / 180) * angle_deg;
+            const x = center + center * scale * Math.cos(angle_rad);
+            const y = center + center * scale * Math.sin(angle_rad);
+            return `${x},${y}`;
+          }).join(' ')}
+          className="fill-none stroke-muted-foreground/20"
+          strokeWidth="0.5"
+        />
+      ))}
+      {/* Stat polygon */}
+      <polygon points={points} className="fill-primary/40 stroke-primary" strokeWidth="1" />
+      {/* Stat labels */}
+      {stats.map((stat, i) => {
+        const angle_deg = 60 * i - 30;
+        const angle_rad = (Math.PI / 180) * angle_deg;
+        const x = center + center * 1.1 * Math.cos(angle_rad);
+        const y = center + center * 1.05 * Math.sin(angle_rad);
+        return (
+          <text key={stat.label} x={x} y={y} fontSize="8" textAnchor="middle" alignmentBaseline="middle" className="fill-muted-foreground font-semibold">
+            {stat.label}
+          </text>
+        );
+      })}
+    </svg>
   );
 };
+
 
 export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true }: PlayerCardProps) {
   const { user } = useUser();
@@ -97,7 +102,6 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
   const [isAlertOpen, setIsAlertOpen] = React.useState(false);
 
   const playerName = player.name || player.displayName || 'Jugador';
-
   const isManualPlayer = player.id !== player.ownerUid;
   const canDelete = isManualPlayer && user?.uid === player.ownerUid;
   const canEdit = isManualPlayer && user?.uid === player.ownerUid;
@@ -123,7 +127,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
         setIsDeleting(false);
     }
   };
-
+  
   const stats: { label: 'RIT' | 'TIR' | 'PAS' | 'REG' | 'DEF' | 'FIS', value: number }[] = React.useMemo(() => [
     { label: 'RIT', value: player.pac },
     { label: 'TIR', value: player.sho },
@@ -133,7 +137,6 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
     { label: 'FIS', value: player.phy },
   ], [player.pac, player.sho, player.pas, player.dri, player.def, player.phy]);
 
-  const maxStatValue = React.useMemo(() => Math.max(...stats.map(s => s.value)), [stats]);
 
   const CardContentComponent = () => (
     <Card
@@ -143,19 +146,19 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
     >
       <CardHeader className={cn(
         "relative p-3 text-card-foreground bg-gradient-to-br to-transparent",
-        positionBackgrounds[player.position]
+        positionStyles[player.position].bg
       )}>
         <div className="flex justify-between items-start">
-          <div className={cn("font-bold leading-none text-4xl sm:text-5xl", positionColors[player.position])}>
+          <div className={cn("font-bold leading-none text-5xl", positionStyles[player.position].color)}>
             {player.ovr}
           </div>
-          <Badge variant="outline" className={cn("text-xs font-bold bg-transparent border-0", positionColors[player.position])}>
+          <Badge variant="outline" className={cn("text-xs font-bold bg-transparent border-0", positionStyles[player.position].color)}>
             {player.position}
           </Badge>
         </div>
-        <div className="relative h-16 sm:h-20 -mt-8 sm:-mt-10">
+        <div className="relative h-20 -mt-10">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-4 border-background overflow-hidden group-hover:scale-105 transition-transform duration-300">
+            <Avatar className="h-24 w-24 border-4 border-background overflow-hidden group-hover:scale-105 transition-transform duration-300">
               <AvatarImage
                 src={player.photoUrl}
                 alt={playerName}
@@ -230,15 +233,11 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
         </div>
       </CardHeader>
 
-      <CardContent className="p-3 text-center bg-card flex-grow flex flex-col">
-        <div className="mt-2 space-y-2.5 flex-grow">
-          {stats.map((stat) => (
-            <Stat key={stat.label} label={stat.label} value={stat.value} isBest={stat.value === maxStatValue} />
-          ))}
+      <CardContent className="p-3 text-center bg-card flex-grow flex flex-col justify-center">
+        <div className="w-full max-w-[150px] mx-auto my-2">
+            <HexagonStatChart stats={stats} />
         </div>
-
-        {/* Quick Stats Footer */}
-        <div className="mt-3 pt-3 border-t border-border/50">
+        <div className="mt-auto pt-3 border-t">
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div className="flex flex-col items-center">
               <span className="font-bold text-base text-foreground">{player.stats.matchesPlayed}</span>
