@@ -1,8 +1,8 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useDoc, useCollection, useFirestore, useUser, useAuth } from '@/firebase';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
 import { 
   doc, 
   collection, 
@@ -15,7 +15,7 @@ import type { Player, Evaluation, Match, OvrHistory, UserProfile, PerformanceTag
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowUp, ArrowDown, Minus, Goal, Eye, ChevronDown } from 'lucide-react';
+import { Loader2, ArrowUp, ArrowDown, Minus, Goal, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -23,8 +23,6 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { FirstTimeInfoDialog } from './first-time-info-dialog';
-import Link from 'next/link';
 import { logger } from '@/lib/logger';
 import { PlayerDetailCard } from '@/components/player-detail-card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
@@ -114,7 +112,6 @@ const FormTrend = ({ history }: { history: OvrHistory[] }) => {
 
 
 export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
-  const { user } = useUser();
   const firestore = useFirestore();
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
@@ -252,105 +249,97 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
           {ovrHistory && <FormTrend history={ovrHistory} />}
         </div>
         <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-                <CardTitle>Historial de Partidos</CardTitle>
-                <CardDescription>Rendimiento en los últimos partidos evaluados.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {filteredEvaluationsByMatch.length > 0 ? (
-                    <div className="space-y-3">
-                        {filteredEvaluationsByMatch.map(({ match, teamName, performance, goals, individualEvaluations }) => (
-                            <Card key={match.id}>
-                                <CardHeader className="p-4">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <CardTitle className="text-base">{match.title}</CardTitle>
-                                            <CardDescription>{format(new Date(match.date), 'dd MMM yyyy', { locale: es })}</CardDescription>
-                                        </div>
-                                        <Badge style={{ backgroundColor: performance.color }} className="text-white text-xs">{performance.level}</Badge>
+          <h2 className="text-2xl font-bold font-headline text-foreground/90">Historial de Partidos</h2>
+            {filteredEvaluationsByMatch.length > 0 ? (
+                <div className="space-y-3">
+                    {filteredEvaluationsByMatch.map(({ match, teamName, performance, goals, individualEvaluations }) => (
+                        <Card key={match.id}>
+                            <CardHeader className="p-4">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <CardTitle className="text-base">{match.title}</CardTitle>
+                                        <CardDescription>{format(new Date(match.date), 'dd MMM yyyy', { locale: es })}</CardDescription>
                                     </div>
-                                    <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
-                                        {teamName && <Badge variant="outline">Equipo: {teamName}</Badge>}
-                                        <div className="flex items-center gap-1"><Goal className="h-3 w-3" /> {goals} Goles</div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="p-4 pt-0">
-                                    <Dialog>
-                                        <DialogTrigger asChild>
-                                            <Button variant="secondary" size="sm" className="w-full">
-                                                <Eye className="mr-2 h-4 w-4" /> Ver Detalles de Evaluación
-                                            </Button>
-                                        </DialogTrigger>
-                                        <DialogContent>
-                                            <DialogHeader>
-                                                <DialogTitle>Evaluación de: {match.title}</DialogTitle>
-                                                <DialogDescription>Detalle de las evaluaciones recibidas en este partido.</DialogDescription>
-                                            </DialogHeader>
-                                            <Table>
-                                              <TableHeader>
-                                                  <TableRow>
-                                                      <TableHead>Evaluador</TableHead>
-                                                      <TableHead className="text-center">Rating</TableHead>
-                                                      <TableHead>Etiquetas</TableHead>
+                                    <Badge style={{ backgroundColor: performance.color }} className="text-white text-xs">{performance.level}</Badge>
+                                </div>
+                                <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
+                                    {teamName && <Badge variant="outline">Equipo: {teamName}</Badge>}
+                                    <div className="flex items-center gap-1"><Goal className="h-3 w-3" /> {goals} Goles</div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-4 pt-0">
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <Button variant="secondary" size="sm" className="w-full">
+                                            <Eye className="mr-2 h-4 w-4" /> Ver Detalles de Evaluación
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Evaluación de: {match.title}</DialogTitle>
+                                            <DialogDescription>Detalle de las evaluaciones recibidas en este partido.</DialogDescription>
+                                        </DialogHeader>
+                                        <Table>
+                                          <TableHeader>
+                                              <TableRow>
+                                                  <TableHead>Evaluador</TableHead>
+                                                  <TableHead className="text-center">Rating</TableHead>
+                                                  <TableHead>Etiquetas</TableHead>
+                                              </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                              {individualEvaluations.map(ev => (
+                                                  <TableRow key={ev.id}>
+                                                      <TableCell>
+                                                          <div className="flex items-center gap-2">
+                                                              <Avatar className="h-8 w-8">
+                                                                  <AvatarImage src={ev.evaluatorPhoto} alt={ev.evaluatorName} />
+                                                                  <AvatarFallback>{ev.evaluatorName?.charAt(0)}</AvatarFallback>
+                                                              </Avatar>
+                                                              <span>{ev.evaluatorName}</span>
+                                                          </div>
+                                                      </TableCell>
+                                                      <TableCell className="text-center">
+                                                        {ev.rating !== undefined ? <Badge variant="secondary">{ev.rating}</Badge> : <span className="text-muted-foreground text-xs">-</span>}
+                                                      </TableCell>
+                                                      <TableCell>
+                                                          <div className="flex gap-1 flex-wrap">
+                                                            {(ev.performanceTags || []).map((tag, idx) => {
+                                                                if (tag && typeof tag === 'object' && 'name' in tag) {
+                                                                    const typedTag = tag as PerformanceTag;
+                                                                    return (
+                                                                        <TooltipProvider key={typedTag.id || idx}>
+                                                                            <Tooltip>
+                                                                                <TooltipTrigger asChild>
+                                                                                    <Badge variant="outline" className="cursor-help">{typedTag.name}</Badge>
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent>
+                                                                                    <p className="font-semibold mb-1">{typedTag.description}</p>
+                                                                                </TooltipContent>
+                                                                            </Tooltip>
+                                                                        </TooltipProvider>
+                                                                    );
+                                                                }
+                                                                return null;
+                                                            })}
+                                                            {(!ev.performanceTags || ev.performanceTags.length === 0) && <span className="text-muted-foreground text-xs">-</span>}
+                                                          </div>
+                                                      </TableCell>
                                                   </TableRow>
-                                              </TableHeader>
-                                              <TableBody>
-                                                  {individualEvaluations.map(ev => (
-                                                      <TableRow key={ev.id}>
-                                                          <TableCell>
-                                                              <div className="flex items-center gap-2">
-                                                                  <Avatar className="h-8 w-8">
-                                                                      <AvatarImage src={ev.evaluatorPhoto} alt={ev.evaluatorName} />
-                                                                      <AvatarFallback>{ev.evaluatorName?.charAt(0)}</AvatarFallback>
-                                                                  </Avatar>
-                                                                  <span>{ev.evaluatorName}</span>
-                                                              </div>
-                                                          </TableCell>
-                                                          <TableCell className="text-center">
-                                                            {ev.rating !== undefined ? <Badge variant="secondary">{ev.rating}</Badge> : <span className="text-muted-foreground text-xs">-</span>}
-                                                          </TableCell>
-                                                          <TableCell>
-                                                              <div className="flex gap-1 flex-wrap">
-                                                                {(ev.performanceTags || []).map((tag, idx) => {
-                                                                    if (tag && typeof tag === 'object' && 'name' in tag) {
-                                                                        const typedTag = tag as PerformanceTag;
-                                                                        return (
-                                                                            <TooltipProvider key={typedTag.id || idx}>
-                                                                                <Tooltip>
-                                                                                    <TooltipTrigger asChild>
-                                                                                        <Badge variant="outline" className="cursor-help">{typedTag.name}</Badge>
-                                                                                    </TooltipTrigger>
-                                                                                    <TooltipContent>
-                                                                                        <p className="font-semibold mb-1">{typedTag.description}</p>
-                                                                                    </TooltipContent>
-                                                                                </Tooltip>
-                                                                            </TooltipProvider>
-                                                                        );
-                                                                    }
-                                                                    return null;
-                                                                })}
-                                                                {(!ev.performanceTags || ev.performanceTags.length === 0) && <span className="text-muted-foreground text-xs">-</span>}
-                                                              </div>
-                                                          </TableCell>
-                                                      </TableRow>
-                                                  ))}
-                                              </TableBody>
-                                          </Table>
-                                        </DialogContent>
-                                    </Dialog>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center text-muted-foreground py-10">Este jugador aún no tiene evaluaciones registradas.</div>
-                )}
-            </CardContent>
-          </Card>
+                                              ))}
+                                          </TableBody>
+                                      </Table>
+                                    </DialogContent>
+                                </Dialog>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center text-muted-foreground py-10 border-2 border-dashed rounded-lg">Este jugador aún no tiene evaluaciones registradas.</div>
+            )}
         </div>
       </div>
     </div>
   );
 }
-
