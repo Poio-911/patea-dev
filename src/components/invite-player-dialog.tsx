@@ -66,7 +66,7 @@ export function InvitePlayerDialog({
   const getMatchById = (id: string) => [...userMatches, ...(match ? [match] : [])].find(m => m.id === id);
 
   const availableGroupPlayers = useMemo(() => {
-    if (isInvitingExternal) return [];
+    if (isInvitingExternal || !allGroupPlayers) return []; // FIX: Check if allGroupPlayers is null/undefined
     
     const selectedMatchData = finalSelectedMatchId ? getMatchById(finalSelectedMatchId) : null;
     const playerUidsInMatch = new Set(selectedMatchData?.playerUids || []);
