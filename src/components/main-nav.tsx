@@ -270,7 +270,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               "h-screen overflow-y-auto pt-16 md:pl-[var(--sidebar-width)] transition-[padding] duration-300 ease-in-out",
               "group-data-[state=collapsed]/sidebar-wrapper:md:pl-[var(--sidebar-width-icon)]"
           )}>
-            <div className="p-4 md:p-6 pb-24">
+            <div className="md:p-6 pb-24">
                 {children}
             </div>
           </main>
