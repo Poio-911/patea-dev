@@ -155,10 +155,8 @@
   }
   
   .text-gold-gradient {
-    background: linear-gradient(135deg, #FFD700, #E6C200, #C9A900, #B39200);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+    color: #FFD700;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.6));
   }
   
   .gold-particles-background {
