@@ -111,28 +111,6 @@
     transform: translate(-50%, -50%);
   }
 
-  /* Brillo que recorre el borde */
-  .stat-border-glow {
-      position: relative;
-      overflow: hidden;
-  }
-  .stat-border-glow::before {
-      content: "";
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: conic-gradient(
-        from 90deg at 50% 50%,
-        hsla(0, 0%, 100%, 0.5) 0%,
-        hsla(0, 0%, 100%, 0) 10%,
-        hsla(0, 0%, 100%, 0) 90%,
-        hsla(0, 0%, 100%, 0.5) 100%
-      );
-      animation: rotate-glow 4s linear infinite;
-  }
-
   .animated-border-badge {
     position: relative;
     overflow: hidden;
