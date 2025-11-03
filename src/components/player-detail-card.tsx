@@ -18,35 +18,70 @@ import { logger } from '@/lib/logger';
 import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
 import { ImageCropperDialog } from './image-cropper-dialog';
 import { Dialog, DialogContent } from './ui/dialog';
+import { motion } from 'framer-motion';
 
 type PlayerDetailCardProps = {
   player: Player;
 };
 
 const positionColors: Record<Player['position'], string> = {
-  POR: 'text-yellow-600',
-  DEF: 'text-green-600',
-  MED: 'text-blue-600',
-  DEL: 'text-red-600',
+  POR: 'text-yellow-600 dark:text-yellow-400',
+  DEF: 'text-green-600 dark:text-green-400',
+  MED: 'text-blue-600 dark:text-blue-400',
+  DEL: 'text-red-600 dark:text-red-400',
 };
 
-const getStatColorClasses = (value: number): string => {
-    if (value >= 85) return 'text-green-500 border-green-500';
-    if (value >= 70) return 'text-blue-500 border-blue-500';
-    if (value >= 50) return 'text-yellow-600 border-yellow-600';
-    return 'text-muted-foreground border-muted';
+const getStatColorClasses = (value: number): { text: string; border: string; bg: string } => {
+    // Sistema de colores FIFA: Bronze (0-64), Silver (65-74), Gold (75-99)
+    if (value >= 75) {
+        // Gold
+        return {
+            text: 'text-yellow-600 dark:text-yellow-400',
+            border: 'border-yellow-600 dark:border-yellow-400',
+            bg: 'bg-yellow-600/10'
+        };
+    }
+    if (value >= 65) {
+        // Silver
+        return {
+            text: 'text-slate-400 dark:text-slate-300',
+            border: 'border-slate-400 dark:border-slate-300',
+            bg: 'bg-slate-400/10'
+        };
+    }
+    // Bronze (0-64)
+    return {
+        text: 'text-amber-700 dark:text-amber-600',
+        border: 'border-amber-700 dark:border-amber-600',
+        bg: 'bg-amber-700/10'
+    };
 };
 
-const StatPill = ({ label, value, isPrimary }: { label: string; value: number; isPrimary: boolean; }) => {
-    const colorClass = getStatColorClasses(value);
+const StatPill = ({ label, value, isPrimary, index }: { label: string; value: number; isPrimary: boolean; index: number }) => {
+    const { text, border, bg } = getStatColorClasses(value);
+
     return (
-        <div className={cn(
-            "flex items-center justify-between rounded-lg p-2 text-xs font-bold border-2",
-            isPrimary ? 'border-primary shadow-lg animated-glowing-border' : colorClass
-        )}>
+        <motion.div
+            className={cn(
+                "relative flex items-center justify-between rounded-lg p-2 text-xs font-bold border-2",
+                "transition-all duration-200",
+                border,
+                bg,
+                // Atributo máximo: brillo que recorre el borde + estrella
+                isPrimary && 'stat-border-glow stat-sparkle',
+                // Hover solo para atributos no primarios
+                !isPrimary && "hover:scale-105 hover:shadow-lg hover:z-10"
+            )}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: index * 0.05, type: 'spring', stiffness: 300, damping: 20 }}
+            whileHover={!isPrimary ? { scale: 1.05, transition: { duration: 0.2 } } : undefined}
+        >
             <span className="text-muted-foreground">{label}</span>
-            <span className={cn(isPrimary ? 'text-primary' : colorClass.split(' ')[0])}>{value}</span>
-        </div>
+            <span className={cn("font-black", text)}>
+                {value}
+            </span>
+        </motion.div>
     );
 };
 
@@ -125,20 +160,49 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
             <div className="text-center">
               <h2 className="text-3xl font-bold font-headline">{playerName}</h2>
               <div className="flex items-center justify-center gap-4 mt-2">
-                <span className={cn("text-5xl font-bold", positionColors[player.position])}>{player.ovr}</span>
-                <Badge variant="secondary" className="text-lg">{player.position}</Badge>
+                <motion.span
+                  key={player.ovr}
+                  initial={{ scale: 1.2 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.3, type: 'spring' }}
+                  className={cn(
+                    "text-5xl sm:text-6xl font-black drop-shadow-2xl",
+                    player.ovr >= 85 ? "text-glow" : positionColors[player.position]
+                  )}
+                >
+                  {player.ovr}
+                </motion.span>
+                <Badge
+                  variant="secondary"
+                  className="text-lg font-bold px-3 py-1.5 bg-background/90 backdrop-blur-sm border-2 shadow-md"
+                >
+                  {player.position}
+                </Badge>
               </div>
               {showSpecialty && (
-                <div className="flex items-center justify-center gap-1.5 mt-2 text-sm font-semibold text-primary">
-                  <specialty.icon className="h-4 w-4" />
-                  <span>{specialty.nickname}</span>
-                </div>
+                <motion.div
+                  className="flex items-center justify-center gap-2 mt-3 px-4 py-2 mx-auto max-w-fit bg-primary/10 rounded-full border border-primary/30"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, type: 'spring' }}
+                >
+                  <specialty.icon className="h-5 w-5 text-primary animate-pulse" />
+                  <span className="text-base font-bold text-primary text-glow">{specialty.nickname}</span>
+                </motion.div>
               )}
             </div>
             <div className="relative w-full flex flex-col items-center gap-4">
               <div className="group relative">
                 <button onClick={() => setShowImageDialog(true)} aria-label="Ampliar imagen de perfil">
-                  <Avatar className="h-40 w-40 border-4 border-primary/50 group-hover:scale-105 group-hover:ring-4 group-hover:ring-primary/50 transition-all duration-300 overflow-hidden">
+                  <Avatar className={cn(
+                    "h-40 w-40 overflow-hidden",
+                    "border-4 border-primary/50 shadow-2xl",
+                    "transition-all duration-300",
+                    "group-hover:scale-110 group-hover:shadow-primary/50",
+                    "group-hover:ring-4 group-hover:ring-primary/50",
+                    showSpecialty && "ring-4 ring-primary/30 ring-offset-2 ring-offset-background",
+                    player.ovr >= 85 && "shadow-primary/40"
+                  )}>
                     {isGeneratingAI && (
                       <div className="absolute inset-0 z-10 bg-black/70 flex flex-col items-center justify-center text-white">
                         <Sparkles className="h-8 w-8 color-cycle-animation" />
@@ -147,10 +211,13 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
                     )}
                     <AvatarImage
                       src={player.photoUrl} alt={player.name} data-ai-hint="player portrait"
-                      className={cn(isGeneratingAI && "opacity-30 blur-sm")}
+                      className={cn(
+                        "group-hover:brightness-110 transition-all duration-300",
+                        isGeneratingAI && "opacity-30 blur-sm"
+                      )}
                       style={{ objectFit: 'cover', objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`, transform: `scale(${player.cropZoom || 1})`, transformOrigin: 'center center' }}
                     />
-                    <AvatarFallback>{playerName.charAt(0)}</AvatarFallback>
+                    <AvatarFallback className="font-black text-5xl">{playerName.charAt(0)}</AvatarFallback>
                   </Avatar>
                 </button>
               </div>
@@ -189,9 +256,9 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
           </div>
           <Separator className="my-6"/>
           <div className="w-full px-4">
-            <div className="grid grid-cols-2 gap-2 my-2">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 my-3 sm:my-4">
               {stats.map((stat, index) => (
-                <StatPill key={stat.label} label={stat.label} value={stat.value} isPrimary={stat.key === primaryStat.key} />
+                <StatPill key={stat.label} label={stat.label} value={stat.value} isPrimary={stat.key === primaryStat.key} index={index} />
               ))}
             </div>
           </div>
