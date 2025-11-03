@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Users2, User } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings, Users2, User, BellRing, HelpCircle, CheckCircle, Moon, Sun, Laptop } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -31,18 +31,25 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal
 } from "@/components/ui/dropdown-menu"
 import type { Player, AvailablePlayer } from '@/lib/types';
 import { doc } from 'firebase/firestore';
+import { Badge } from '@/components/ui/badge';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { MatchIcon } from '@/components/icons/match-icon';
 import { FindMatchIcon } from '@/components/icons/find-match-icon';
 import { EvaluationIcon } from '@/components/icons/evaluation-icon';
+import { NotificationBell } from '@/components/notification-bell';
 import { useFcm } from '@/hooks/use-fcm';
+import { HelpDialog } from '@/components/help-dialog';
 import { WelcomeDialog } from '@/components/welcome-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { isToday, parseISO } from 'date-fns';
-import { HeaderActions } from './header-actions';
+import { useTheme } from 'next-themes';
 
 
 const navItems = [
@@ -60,6 +67,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  const { setTheme } = useTheme();
 
   const { requestPermission } = useFcm();
 
@@ -134,7 +142,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   <div className="hidden md:block">
                       <SidebarTrigger />
                   </div>
-                  <HeaderActions />
+                  <HelpDialog />
+                  <NotificationBell />
               </div>
 
               <div className="flex items-center gap-2 sm:gap-4">
@@ -192,6 +201,25 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                                   <Users2 className="mr-2 h-4 w-4" />
                                   <span>Gestionar Grupos</span>
                               </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                                <Sun className="mr-2 h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                                <Moon className="absolute mr-2 h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                                <span>Cambiar Tema</span>
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuItem onClick={() => setTheme("light")}>Claro</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setTheme("dark")}>Oscuro</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setTheme("system")}>Sistema</DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                          </DropdownMenuSub>
+                          <DropdownMenuItem onClick={requestPermission}>
+                              <BellRing className="mr-2 h-4 w-4" />
+                              <span>Activar Notificaciones</span>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={handleLogout}>
