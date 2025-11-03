@@ -32,9 +32,7 @@ const positionColors: Record<Player['position'], string> = {
 };
 
 const getStatColorClasses = (value: number): { text: string; border: string; bg: string } => {
-    // Sistema de colores FIFA: Bronze (0-64), Silver (65-74), Gold (75-99)
     if (value >= 75) {
-        // Gold
         return {
             text: 'text-yellow-600 dark:text-yellow-400',
             border: 'border-yellow-600 dark:border-yellow-400',
@@ -42,14 +40,12 @@ const getStatColorClasses = (value: number): { text: string; border: string; bg:
         };
     }
     if (value >= 65) {
-        // Silver
         return {
             text: 'text-slate-400 dark:text-slate-300',
             border: 'border-slate-400 dark:border-slate-300',
             bg: 'bg-slate-400/10'
         };
     }
-    // Bronze (0-64)
     return {
         text: 'text-amber-700 dark:text-amber-600',
         border: 'border-amber-700 dark:border-amber-600',
@@ -67,9 +63,7 @@ const StatPill = ({ label, value, isPrimary, index }: { label: string; value: nu
                 "transition-all duration-200",
                 border,
                 bg,
-                // Atributo máximo: brillo que recorre el borde + estrella
                 isPrimary && 'stat-border-glow stat-sparkle',
-                // Hover solo para atributos no primarios
                 !isPrimary && "hover:scale-105 hover:shadow-lg hover:z-10"
             )}
             initial={{ opacity: 0, scale: 0.8 }}
@@ -84,21 +78,6 @@ const StatPill = ({ label, value, isPrimary, index }: { label: string; value: nu
         </motion.div>
     );
 };
-
-const toDataURL = (url: string): Promise<string> =>
-  fetch(url)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
-        }
-        return response.blob();
-    })
-    .then(blob => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    }));
 
 export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
   const { user } = useUser();
@@ -123,12 +102,11 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
   const showSpecialty = specialty && primaryStat.value >= specialty.threshold;
 
   const handleGenerateAIPhoto = async () => {
-    if (!user?.uid || !player?.photoUrl) return;
+    if (!user?.uid) return;
 
     setIsGeneratingAI(true);
     try {
-      const photoDataUri = await toDataURL(player.photoUrl);
-      const result = await generatePlayerCardImageAction(user.uid, photoDataUri);
+      const result = await generatePlayerCardImageAction(user.uid);
 
       if ('error' in result) {
         toast({ variant: 'destructive', title: 'Error al generar imagen', description: result.error });

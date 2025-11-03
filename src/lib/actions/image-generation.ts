@@ -7,9 +7,9 @@ import { generatePlayerCardImage } from '@/ai/flows/generate-player-card-image';
 import type { Player } from '@/lib/types';
 import { logger } from '@/lib/logger';
 
-// ✅ CORRECCIÓN: La función ahora acepta el Data URI de la foto directamente
-// en lugar de solo el `userId`, eliminando la necesidad de descargar desde Storage.
-export async function generatePlayerCardImageAction(userId: string, photoDataUri: string) {
+// ✅ CORRECCIÓN: La función ahora solo necesita el userId.
+// El servidor se encargará de descargar la imagen desde Storage.
+export async function generatePlayerCardImageAction(userId: string) {
   const playerRef = adminDb.doc(`players/${userId}`);
 
   try {
@@ -34,7 +34,18 @@ export async function generatePlayerCardImageAction(userId: string, photoDataUri
       return { error: 'La generación de imágenes no funciona con fotos de marcador de posición. Por favor, sube una foto tuya real.' };
     }
     
-    // El Data URI ya se pasa como argumento, no es necesario descargarlo.
+    // ✅ PASO 1: Descargar la imagen directamente desde Firebase Storage en el servidor.
+    // Esto evita enviar un archivo pesado desde el cliente.
+    const url = new URL(player.photoUrl);
+    // Extraer el path del archivo desde la URL de storage.googleapis.com
+    const filePath = decodeURIComponent(url.pathname.substring(url.pathname.indexOf('/o/') + 3));
+    const file = adminStorage.file(filePath);
+
+    const [imageBuffer] = await file.download();
+    const photoDataUri = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
+
+
+    // ✅ PASO 2: Llamar al flujo de IA con el Data URI obtenido en el servidor.
     const generatedImageDataUri = await generatePlayerCardImage(photoDataUri);
 
     const generatedImageBuffer = Buffer.from(generatedImageDataUri.split(',')[1], 'base64');
@@ -54,7 +65,6 @@ export async function generatePlayerCardImageAction(userId: string, photoDataUri
     batch.update(playerRef, {
       photoUrl: newPhotoURL,
       cardGenerationCredits: FieldValue.increment(-1),
-      // Reseteamos el crop ya que es una nueva imagen
       cropPosition: { x: 50, y: 50 },
       cropZoom: 1,
     });
