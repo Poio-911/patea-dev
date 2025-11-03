@@ -9,78 +9,29 @@ import {
   query, 
   where, 
   orderBy, 
-  getDocs,
-  updateDoc,
-  writeBatch
+  getDocs
 } from 'firebase/firestore';
-import type { Player, Evaluation, Match, OvrHistory, UserProfile, PerformanceTag, AttributeKey } from '@/lib/types';
+import type { Player, Evaluation, Match, OvrHistory, UserProfile, PerformanceTag } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, BarChart2, Star, Goal, Eye, ChevronDown, CheckCircle, BrainCircuit, Sparkles, Zap, Target, Send, Footprints, Shield, Dumbbell, Upload, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { Loader2, ArrowUp, ArrowDown, Minus, Goal, Eye, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Tooltip as UiTooltip, TooltipContent, TooltipProvider as UiTooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { FirstTimeInfoDialog } from './first-time-info-dialog';
 import Link from 'next/link';
-import { AnalysisIcon } from '@/components/icons/analysis-icon';
-import { ImageCropperDialog } from '@/components/image-cropper-dialog';
-import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
-import { AttributesHelpDialog } from './attributes-help-dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { logger } from '@/lib/logger';
-import { initializeFirebase } from '@/firebase/index';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { updateProfile } from 'firebase/auth';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-
+import { PlayerDetailCard } from '@/components/player-detail-card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 
 type PlayerProfileViewProps = {
   playerId: string;
 };
-
-const positionColors: Record<Player['position'], string> = {
-  POR: 'text-yellow-600',
-  DEF: 'text-green-600',
-  MED: 'text-blue-600',
-  DEL: 'text-red-600',
-};
-
-const statusConfig: Record<Match['status'], { label: string; className: string }> = {
-    upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
-    active: { label: 'Activo', className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
-    completed: { label: 'Finalizado', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' },
-    evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' },
-};
-
-const statIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  RIT: Zap,
-  TIR: Target,
-  PAS: Send,
-  REG: Footprints,
-  DEF: Shield,
-  FIS: Dumbbell,
-};
-
-const Stat = ({ label, value }: { label: string; value: number }) => {
-  const Icon = statIcons[label] || Zap;
-  return (
-    <div className="flex items-center justify-between text-base py-2 group">
-        <div className="flex items-center gap-2 font-semibold text-muted-foreground">
-            <Icon className="h-5 w-5 group-hover:text-primary transition-colors" />
-            <span>{label}</span>
-        </div>
-        <span className="font-bold text-lg">{value}</span>
-    </div>
-  );
-};
-
 
 type DetailedEvaluation = Evaluation & { evaluatorName?: string; evaluatorPhoto?: string };
 
@@ -122,63 +73,56 @@ const getPerformanceFromTags = (tags: PerformanceTag[]): { level: PerformanceLev
     return { level: 'Bajo', color: 'bg-red-500' };
 };
 
-const toDataURL = (url: string): Promise<string> =>
-  fetch(url)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
-        }
-        return response.blob();
-    })
-    .then(blob => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    }));
+const FormTrend = ({ history }: { history: OvrHistory[] }) => {
+    const lastFive = history.slice(-5);
+    
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Estado de Forma</CardTitle>
+                <CardDescription>Rendimiento en los últimos 5 partidos.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {lastFive.length > 0 ? (
+                    <div className="flex justify-center items-center gap-2">
+                        {lastFive.map((entry, index) => {
+                            const Icon = entry.change > 0 ? ArrowUp : entry.change < 0 ? ArrowDown : Minus;
+                            const color = entry.change > 0 ? 'text-green-500' : entry.change < 0 ? 'text-red-500' : 'text-gray-500';
+                            return (
+                                <TooltipProvider key={index}>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${color.replace('text-', 'border-')} bg-opacity-10`}>
+                                                <Icon className={cn("h-6 w-6", color)} />
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Partido {index + 1}: OVR {entry.oldOVR} → {entry.newOVR} ({entry.change > 0 ? '+' : ''}{entry.change})</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <p className="text-sm text-muted-foreground text-center">No hay suficientes partidos para mostrar una tendencia.</p>
+                )}
+            </CardContent>
+        </Card>
+    );
+};
 
 
 export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
   const { user } = useUser();
-  const auth = useAuth();
   const firestore = useFirestore();
-  const { toast } = useToast();
-
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [evaluatorProfiles, setEvaluatorProfiles] = useState<Record<string, {displayName: string, photoURL: string}>>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [openAccordion, setOpenAccordion] = useState<string | null>(null);
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-  const [showImageDialog, setShowImageDialog] = useState(false);
-
-  const isCurrentUserProfile = user?.uid === playerId;
 
   const playerRef = useMemo(() => firestore && playerId ? doc(firestore, 'players', playerId) : null, [firestore, playerId]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
-
-  const createdPlayersQuery = useMemo(() => {
-    if (!firestore || !playerId) return null;
-    return query(collection(firestore, 'players'), where('ownerUid', '==', playerId));
-  }, [firestore, playerId]);
-  const { data: createdPlayers, loading: createdPlayersLoading } = useCollection<Player>(createdPlayersQuery);
-  
-  const createdMatchesQuery = useMemo(() => {
-    if (!firestore || !playerId) return null;
-    return query(collection(firestore, 'matches'), where('ownerUid', '==', playerId));
-  }, [firestore, playerId]);
-  const { data: createdMatches, loading: createdMatchesLoading } = useCollection<Match>(createdMatchesQuery);
-  
-  const manualPlayers = useMemo(() => {
-    if(!createdPlayers) return [];
-    return createdPlayers.filter(p => p.id !== p.ownerUid);
-  }, [createdPlayers]);
-  
-  const sortedCreatedMatches = useMemo(() => {
-    if (!createdMatches) return [];
-    return [...createdMatches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [createdMatches]);
-
 
   const ovrHistoryQuery = useMemo(() => {
     if (!firestore || !playerId) return null;
@@ -290,59 +234,9 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
         individualEvaluations: summary.evaluations,
       };
     }).sort((a, b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime());
-
   }, [evaluations, matches, evaluatorProfiles, isLoading, playerId]);
 
-  const chartData = useMemo(() => {
-    if (!ovrHistory) return [];
-    if (ovrHistory.length === 0 && player) {
-        return [{name: 'Inicial', OVR: player.ovr, Fecha: format(new Date(), 'dd/MM')}]
-    }
-    return ovrHistory.map((entry, index) => ({
-      name: `P. ${index + 1}`,
-      OVR: entry.newOVR,
-      Fecha: format(new Date(entry.date), 'dd/MM'),
-      ...entry.attributeChanges
-    }));
-  }, [ovrHistory, player]);
-
-  const handleGenerateAIPhoto = async () => {
-    if (!user?.uid || !player?.photoUrl) return;
-
-    setIsGeneratingAI(true);
-    try {
-      const photoDataUri = await toDataURL(player.photoUrl);
-      const result = await generatePlayerCardImageAction(user.uid, photoDataUri);
-
-      if ('error' in result) {
-        toast({
-          variant: 'destructive',
-          title: 'Error al generar imagen',
-          description: result.error,
-        });
-        return;
-      }
-
-      toast({
-        title: 'Foto generada con éxito',
-        description: 'Tu foto profesional ha sido creada con IA.',
-      });
-      
-    } catch (error: any) {
-      logger.error('Error generating AI photo', error, { userId: user?.uid });
-      toast({
-        variant: 'destructive',
-        title: 'Error al generar imagen',
-        description: error.message || 'No se pudo generar la imagen con IA. Asegúrate de tener una foto real subida.',
-      });
-    } finally {
-      setIsGeneratingAI(false);
-    }
-  };
-  
-  const loadingAny = playerLoading || historyLoading || isLoading || (isCurrentUserProfile && (createdMatchesLoading || createdPlayersLoading));
-
-  if (loadingAny) {
+  if (playerLoading || historyLoading || isLoading) {
     return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
@@ -351,352 +245,112 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   }
 
   return (
-    <>
-        <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
-            <DialogContent className="max-w-2xl p-0 border-0 bg-transparent shadow-none">
-                <img
-                    src={player.photoUrl}
-                    alt={player.name}
-                    className="w-full h-auto max-h-[80vh] object-contain"
-                />
-            </DialogContent>
-        </Dialog>
-
-        <FirstTimeInfoDialog 
-            featureKey='hasSeenProfileInfo'
-            title='Este es Tu Perfil de Jugador'
-            description='Acá podés ver tu carta de jugador con tus atributos, que irán mejorando a medida que juegues y te evalúen. También podés ver tu historial de rendimiento y acceder a las herramientas de IA para recibir consejos y mejorar tu juego.'
-        >
-             <div className="flex items-center justify-center p-4 bg-primary/10 rounded-lg">
-                <CheckCircle className="h-10 w-10 text-primary" />
-             </div>
-        </FirstTimeInfoDialog>
-        <div className="flex flex-col gap-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <Card className="lg:col-span-1">
-                    <CardContent className="pt-6">
-                        <div className="flex flex-col items-center gap-4">
-                            <div className="text-center">
-                                <h2 className="text-3xl font-bold font-headline">{player.name}</h2>
-                                <div className="flex items-center justify-center gap-4 mt-2">
-                                    <span className={cn("text-5xl font-bold", positionColors[player.position])}>{player.ovr}</span>
-                                    <Badge variant="secondary" className="text-lg">{player.position}</Badge>
-                                </div>
-                            </div>
-                            <div className="relative w-full flex flex-col items-center gap-4">
-                                <div className="group relative">
-                                    <button onClick={() => setShowImageDialog(true)} aria-label="Ampliar imagen de perfil">
-                                      <Avatar className="h-40 w-40 border-4 border-primary/50 group-hover:scale-105 group-hover:ring-4 group-hover:ring-primary/50 transition-all duration-300 overflow-hidden">
-                                          {isGeneratingAI && (
-                                              <div className="absolute inset-0 z-10 bg-black/70 flex flex-col items-center justify-center text-white">
-                                                  <Sparkles className="h-8 w-8 color-cycle-animation" />
-                                                  <p className="text-xs font-semibold mt-2">Creando magia...</p>
-                                              </div>
-                                          )}
-                                          <AvatarImage
-                                              src={player.photoUrl}
-                                              alt={player.name}
-                                              data-ai-hint="player portrait"
-                                              className={cn(isGeneratingAI && "opacity-30 blur-sm")}
-                                              style={{
-                                                  objectFit: 'cover',
-                                                  objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`,
-                                                  transform: `scale(${player.cropZoom || 1})`,
-                                                  transformOrigin: 'center center',
-                                              }}
-                                          />
-                                          <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                      </Avatar>
-                                    </button>
-                                </div>
-                                {isCurrentUserProfile && (
-                                    <div className="w-full flex flex-col items-center gap-2">
-                                        <div className="flex items-center justify-center gap-2">
-                                          <AlertDialog>
-                                              <AlertDialogTrigger asChild>
-                                                  <Button variant="default" size="sm" disabled={isGeneratingAI || (player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0)}>
-                                                      <Sparkles className="mr-2 h-4 w-4" />
-                                                      Generar Foto IA
-                                                  </Button>
-                                              </AlertDialogTrigger>
-                                              <AlertDialogContent>
-                                                  <AlertDialogHeader>
-                                                      <AlertDialogTitle>¿Confirmar generación de imagen?</AlertDialogTitle>
-                                                      <AlertDialogDescription>
-                                                          Esto usará 1 de tus {player.cardGenerationCredits} créditos de generación de este mes. Esta acción no se puede deshacer.
-                                                      </AlertDialogDescription>
-                                                  </AlertDialogHeader>
-                                                  <AlertDialogFooter>
-                                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                      <AlertDialogAction onClick={handleGenerateAIPhoto}>
-                                                          Confirmar y Usar Crédito
-                                                      </AlertDialogAction>
-                                                  </AlertDialogFooter>
-                                              </AlertDialogContent>
-                                          </AlertDialog>
-                                          <Badge variant="secondary" className="rounded-full h-6 w-6 flex items-center justify-center p-0 text-xs">
-                                            {player.cardGenerationCredits || 0}
-                                          </Badge>
+    <div className="flex flex-col gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <div className="lg:col-span-1 space-y-6">
+          <PlayerDetailCard player={player} />
+          {ovrHistory && <FormTrend history={ovrHistory} />}
+        </div>
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+                <CardTitle>Historial de Partidos</CardTitle>
+                <CardDescription>Rendimiento en los últimos partidos evaluados.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {filteredEvaluationsByMatch.length > 0 ? (
+                    <div className="space-y-3">
+                        {filteredEvaluationsByMatch.map(({ match, teamName, performance, goals, individualEvaluations }) => (
+                            <Card key={match.id}>
+                                <CardHeader className="p-4">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <CardTitle className="text-base">{match.title}</CardTitle>
+                                            <CardDescription>{format(new Date(match.date), 'dd MMM yyyy', { locale: es })}</CardDescription>
                                         </div>
-                                         <ImageCropperDialog player={player} onSaveComplete={() => window.location.reload()}>
-                                            <Button variant="outline" size="sm" disabled={isGeneratingAI}>
-                                                <Upload className="mr-2 h-4 w-4" />
-                                                Cambiar Foto
-                                            </Button>
-                                        </ImageCropperDialog>
+                                        <Badge style={{ backgroundColor: performance.color }} className="text-white text-xs">{performance.level}</Badge>
                                     </div>
-                                )}
-                            </div>
-                        </div>
-                        
-                        <Separator className="my-6"/>
-                        
-                        <div className="w-full px-4">
-                            <div className="flex items-center gap-2 mb-2">
-                                <h4 className="font-bold text-lg">Atributos</h4>
-                                <AttributesHelpDialog />
-                            </div>
-                            <div className="grid grid-cols-2 md:grid-cols-1 gap-x-8">
-                                <Stat label="RIT" value={player.pac} />
-                                <Stat label="TIR" value={player.sho} />
-                                <Stat label="PAS" value={player.pas} />
-                                <Stat label="REG" value={player.dri} />
-                                <Stat label="DEF" value={player.def} />
-                                <Stat label="FIS" value={player.phy} />
-                            </div>
-                        </div>
-                        {isCurrentUserProfile && (
-                             <div className="mt-6 text-center">
-                                 <Button asChild>
-                                    <Link href={`/players/${playerId}/analysis`}>
-                                        <AnalysisIcon className="mr-2 h-5 w-5" />
-                                        Análisis Avanzado con IA
-                                    </Link>
-                                 </Button>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                <div className="lg:col-span-2 space-y-8">
-                    <Card>
-                        <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <BarChart2 className="h-6 w-6" />
-                            Progresión de OVR
-                        </CardTitle>
-                        <CardDescription>Evolución del OVR del jugador a lo largo de los últimos partidos.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <LineChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" />
-                            <YAxis domain={([dataMin, dataMax]) => [Math.max(0, dataMin - 5), Math.min(100, dataMax + 5)]} />
-                            <Tooltip
-                                content={({ active, payload, label }) => {
-                                    if (active && payload && payload.length) {
-                                        const data = payload[0].payload;
-                                        const changes = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'].map(attr => ({
-                                            key: attr,
-                                            value: data[attr]
-                                        })).filter(item => item.value !== undefined && item.value !== 0);
-
-                                        return (
-                                            <div className="rounded-lg border bg-background p-3 shadow-sm">
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <div className="flex flex-col">
-                                                    <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                                        Partido
-                                                    </span>
-                                                    <span className="font-bold text-muted-foreground">
-                                                        {label} ({payload[0].payload.Fecha})
-                                                    </span>
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                    <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                                        OVR
-                                                    </span>
-                                                    <span className="font-bold text-foreground">
-                                                        {payload[0].value}
-                                                    </span>
-                                                    </div>
-                                                </div>
-                                                {changes.length > 0 && <Separator className="my-2" />}
-                                                <div className="grid grid-cols-3 gap-x-4 gap-y-1">
-                                                    {changes.map(change => (
-                                                        <div key={change.key} className={cn("text-xs font-medium", (change.value || 0) > 0 ? 'text-green-600' : 'text-red-600')}>
-                                                            {change.key.toUpperCase()}: {(change.value || 0) > 0 ? '+' : ''}{change.value}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                }}
-                            />
-                            <Legend />
-                            <Line type="monotone" dataKey="OVR" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }} />
-                            </LineChart>
-                        </ResponsiveContainer>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader>
-                          <CardTitle>Historial de Evaluaciones</CardTitle>
-                          <CardDescription>Rendimiento del jugador en los últimos partidos evaluados. Haz clic en un partido para ver el detalle.</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                          {filteredEvaluationsByMatch.length > 0 ? (
-                              <Table>
-                                  <TableHeader>
-                                      <TableRow>
-                                          <TableHead>Partido</TableHead>
-                                          <TableHead>Fecha</TableHead>
-                                          <TableHead className="text-right">Acciones</TableHead>
-                                      </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                      {filteredEvaluationsByMatch.map(({ match, teamName, hasNumericRatings, performance, goals, individualEvaluations }) => {
-                                          const isOpen = openAccordion === match.id;
-                                          return (
-                                              <React.Fragment key={match.id}>
-                                                  <TableRow onClick={() => setOpenAccordion(isOpen ? null : match.id)} className="cursor-pointer">
-                                                      <TableCell className="font-medium">{match.title}</TableCell>
-                                                      <TableCell>{format(new Date(match.date), 'dd MMM', { locale: es })}</TableCell>
-                                                      <TableCell className="text-right">
-                                                          <Button variant="ghost" size="sm">
-                                                              Ver Detalles
-                                                              <ChevronDown className={cn("ml-2 h-4 w-4 transition-transform", isOpen && "rotate-180")} />
-                                                          </Button>
-                                                      </TableCell>
+                                    <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
+                                        {teamName && <Badge variant="outline">Equipo: {teamName}</Badge>}
+                                        <div className="flex items-center gap-1"><Goal className="h-3 w-3" /> {goals} Goles</div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-4 pt-0">
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <Button variant="secondary" size="sm" className="w-full">
+                                                <Eye className="mr-2 h-4 w-4" /> Ver Detalles de Evaluación
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Evaluación de: {match.title}</DialogTitle>
+                                                <DialogDescription>Detalle de las evaluaciones recibidas en este partido.</DialogDescription>
+                                            </DialogHeader>
+                                            <Table>
+                                              <TableHeader>
+                                                  <TableRow>
+                                                      <TableHead>Evaluador</TableHead>
+                                                      <TableHead className="text-center">Rating</TableHead>
+                                                      <TableHead>Etiquetas</TableHead>
                                                   </TableRow>
-                                                  {isOpen && (
-                                                      <TableRow>
-                                                          <TableCell colSpan={3} className="p-0">
-                                                              <div className="p-4 bg-muted/50 rounded-md">
-                                                                  <div className="flex justify-between items-center mb-2">
-                                                                      <div className="flex items-center gap-4">
-                                                                          <Badge variant="outline">Equipo: {teamName}</Badge>
-                                                                          <Badge variant="outline"><Goal className="mr-1 h-3 w-3" /> {goals} Goles</Badge>
-                                                                      </div>
-                                                                       <Badge style={{ backgroundColor: performance.color }} className="text-white">
-                                                                          {performance.level}
-                                                                      </Badge>
-                                                                  </div>
-                                                                  <h4 className="font-semibold mb-2 mt-4">Detalle de Evaluaciones:</h4>
-                                                                  <Table>
-                                                                      <TableHeader>
-                                                                          <TableRow>
-                                                                              <TableHead>Evaluador</TableHead>
-                                                                              <TableHead className="text-center">Rating</TableHead>
-                                                                              <TableHead>Etiquetas</TableHead>
-                                                                          </TableRow>
-                                                                      </TableHeader>
-                                                                      <TableBody>
-                                                                          {individualEvaluations.map(ev => (
-                                                                              <TableRow key={ev.id}>
-                                                                                  <TableCell>
-                                                                                      <div className="flex items-center gap-2">
-                                                                                          <Avatar className="h-8 w-8">
-                                                                                              <AvatarImage src={ev.evaluatorPhoto} alt={ev.evaluatorName} />
-                                                                                              <AvatarFallback>{ev.evaluatorName?.charAt(0)}</AvatarFallback>
-                                                                                          </Avatar>
-                                                                                          <span>{ev.evaluatorName}</span>
-                                                                                      </div>
-                                                                                  </TableCell>
-                                                                                  <TableCell className="text-center">
-                                                                                    {ev.rating !== undefined ? <Badge variant="secondary">{ev.rating}</Badge> : <span className="text-muted-foreground text-xs">-</span>}
-                                                                                  </TableCell>
-                                                                                  <TableCell>
-                                                                                      <div className="flex gap-1 flex-wrap">
-                                                                                        {(ev.performanceTags || []).map((tag, idx) => {
-                                                                                            if (tag && typeof tag === 'object' && 'name' in tag) {
-                                                                                                const typedTag = tag as PerformanceTag;
-                                                                                                return (
-                                                                                                    <UiTooltipProvider key={typedTag.id || idx}>
-                                                                                                        <UiTooltip>
-                                                                                                            <TooltipTrigger asChild>
-                                                                                                                <Badge variant="outline" className="cursor-help">{typedTag.name}</Badge>
-                                                                                                            </TooltipTrigger>
-                                                                                                            <TooltipContent>
-                                                                                                                <p className="font-semibold mb-1">{typedTag.description}</p>
-                                                                                                                {typedTag.effects && typedTag.effects.length > 0 && (
-                                                                                                                    <div className="text-xs space-y-0.5">
-                                                                                                                        {typedTag.effects.map((effect, i) => (
-                                                                                                                            <p key={i} className={cn(effect.change > 0 ? 'text-green-600' : 'text-red-600')}>
-                                                                                                                                {effect.attribute.toUpperCase()}: {effect.change > 0 ? '+' : ''}{effect.change}
-                                                                                                                            </p>
-                                                                                                                        ))}
-                                                                                                                    </div>
-                                                                                                                )}
-                                                                                                            </TooltipContent>
-                                                                                                        </UiTooltip>
-                                                                                                    </UiTooltipProvider>
-                                                                                                );
-                                                                                            }
-                                                                                            return null;
-                                                                                        })}
-                                                                                        {(!ev.performanceTags || ev.performanceTags.length === 0) && <span className="text-muted-foreground text-xs">-</span>}
-                                                                                      </div>
-                                                                                  </TableCell>
-                                                                              </TableRow>
-                                                                          ))}
-                                                                      </TableBody>
-                                                                  </Table>
+                                              </TableHeader>
+                                              <TableBody>
+                                                  {individualEvaluations.map(ev => (
+                                                      <TableRow key={ev.id}>
+                                                          <TableCell>
+                                                              <div className="flex items-center gap-2">
+                                                                  <Avatar className="h-8 w-8">
+                                                                      <AvatarImage src={ev.evaluatorPhoto} alt={ev.evaluatorName} />
+                                                                      <AvatarFallback>{ev.evaluatorName?.charAt(0)}</AvatarFallback>
+                                                                  </Avatar>
+                                                                  <span>{ev.evaluatorName}</span>
+                                                              </div>
+                                                          </TableCell>
+                                                          <TableCell className="text-center">
+                                                            {ev.rating !== undefined ? <Badge variant="secondary">{ev.rating}</Badge> : <span className="text-muted-foreground text-xs">-</span>}
+                                                          </TableCell>
+                                                          <TableCell>
+                                                              <div className="flex gap-1 flex-wrap">
+                                                                {(ev.performanceTags || []).map((tag, idx) => {
+                                                                    if (tag && typeof tag === 'object' && 'name' in tag) {
+                                                                        const typedTag = tag as PerformanceTag;
+                                                                        return (
+                                                                            <TooltipProvider key={typedTag.id || idx}>
+                                                                                <Tooltip>
+                                                                                    <TooltipTrigger asChild>
+                                                                                        <Badge variant="outline" className="cursor-help">{typedTag.name}</Badge>
+                                                                                    </TooltipTrigger>
+                                                                                    <TooltipContent>
+                                                                                        <p className="font-semibold mb-1">{typedTag.description}</p>
+                                                                                    </TooltipContent>
+                                                                                </Tooltip>
+                                                                            </TooltipProvider>
+                                                                        );
+                                                                    }
+                                                                    return null;
+                                                                })}
+                                                                {(!ev.performanceTags || ev.performanceTags.length === 0) && <span className="text-muted-foreground text-xs">-</span>}
                                                               </div>
                                                           </TableCell>
                                                       </TableRow>
-                                                  )}
-                                              </React.Fragment>
-                                          )
-                                      })}
-                                  </TableBody>
-                              </Table>
-                          ) : (
-                              <div className="text-center text-muted-foreground py-10">Este jugador aún no tiene evaluaciones registradas.</div>
-                          )}
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader>
-                          <CardTitle>Actividad de {isCurrentUserProfile ? 'Mi' : 'su'} Actividad</CardTitle>
-                          <CardDescription>Partidos y jugadores creados por {isCurrentUserProfile ? 'vos' : player.name}.</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                          <h3 className="font-semibold">Partidos Organizados ({sortedCreatedMatches.length})</h3>
-                          {sortedCreatedMatches.length > 0 ? (
-                            <Table>
-                                <TableHeader><TableRow><TableHead>Partido</TableHead><TableHead>Fecha</TableHead><TableHead>Estado</TableHead></TableRow></TableHeader>
-                                <TableBody>{sortedCreatedMatches.slice(0, 3).map(match => {
-                                      const statusInfo = statusConfig[match.status] || statusConfig.completed;
-                                      return (<TableRow key={match.id}><TableCell className="font-medium">{match.title}</TableCell><TableCell>{format(new Date(match.date), 'dd/MM/yyyy', { locale: es })}</TableCell><TableCell><Badge variant="outline" className={cn(statusInfo.className)}>{statusInfo.label}</Badge></TableCell></TableRow>);
-                                  })}
-                                </TableBody>
-                            </Table>
-                          ) : <p className="text-sm text-muted-foreground">Este jugador no ha creado ningún partido.</p>}
-                          
-                          <Separator />
-
-                          <h3 className="font-semibold">Jugadores Manuales Creados ({manualPlayers.length})</h3>
-                           {manualPlayers.length > 0 ? (
-                                <Table>
-                                    <TableHeader><TableRow><TableHead>Jugador</TableHead><TableHead>Posición</TableHead><TableHead>OVR</TableHead></TableRow></TableHeader>
-                                    <TableBody>{manualPlayers.slice(0, 3).map(p => (
-                                          <TableRow key={p.id}>
-                                              <TableCell><div className="flex items-center gap-3"><Avatar className="h-9 w-9"><AvatarImage src={p.photoUrl} alt={p.name} /><AvatarFallback>{p.name.charAt(0)}</AvatarFallback></Avatar><span className="font-medium">{p.name}</span></div></TableCell>
-                                              <TableCell><Badge variant="outline">{p.position}</Badge></TableCell>
-                                              <TableCell><Badge>{p.ovr}</Badge></TableCell>
-                                          </TableRow>
-                                    ))}</TableBody>
-                                </Table>
-                           ) : <p className="text-sm text-muted-foreground">Este jugador no ha creado jugadores manuales.</p>}
-                      </CardContent>
-                    </Card>
-                </div>
-            </div>
+                                                  ))}
+                                              </TableBody>
+                                          </Table>
+                                        </DialogContent>
+                                    </Dialog>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center text-muted-foreground py-10">Este jugador aún no tiene evaluaciones registradas.</div>
+                )}
+            </CardContent>
+          </Card>
         </div>
-    </>
+      </div>
+    </div>
   );
 }
+
