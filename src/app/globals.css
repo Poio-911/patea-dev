@@ -111,84 +111,37 @@
     transform: translate(-50%, -50%);
   }
 
-  /* Destello tipo estrella para atributo máximo */
-  @keyframes sparkle {
-    0%, 100% {
-      opacity: 0;
-      transform: scale(0) rotate(0deg);
-    }
-    50% {
-      opacity: 1;
-      transform: scale(1) rotate(180deg);
-    }
-  }
-
-  .stat-sparkle {
-    position: relative;
-  }
-
-  .stat-sparkle::before {
-    content: '✦';
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    font-size: 14px;
-    color: rgba(234, 179, 8, 0.95);
-    animation: sparkle 2.5s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 10;
-  }
-
-  /* Brillo sutil que recorre el borde rectangular */
+  /* Brillo que recorre el borde */
   .stat-border-glow {
-    position: relative;
-    overflow: visible;
+      position: relative;
+      overflow: hidden;
+  }
+  .stat-border-glow::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: conic-gradient(
+        from 90deg at 50% 50%,
+        hsla(0, 0%, 100%, 0.5) 0%,
+        hsla(0, 0%, 100%, 0) 10%,
+        hsla(0, 0%, 100%, 0) 90%,
+        hsla(0, 0%, 100%, 0.5) 100%
+      );
+      animation: rotate-glow 4s linear infinite;
   }
 
-  .stat-border-glow::after {
-    content: '';
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: radial-gradient(
-      circle,
-      rgba(255, 215, 0, 0.7) 0%,
-      rgba(255, 215, 0, 0.4) 20%,
-      rgba(255, 215, 0, 0.15) 40%,
-      rgba(255, 215, 0, 0) 70%
-    );
-    filter: blur(6px);
-    pointer-events: none;
-    animation: travel-border 4s ease-in-out infinite;
+  @keyframes rotate-glow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
-  @keyframes travel-border {
-    0% {
-      top: -6px;
-      left: -6px;
-    }
-    /* Lado superior: izquierda → derecha */
-    25% {
-      top: -6px;
-      left: calc(100% - 6px);
-    }
-    /* Lado derecho: arriba → abajo */
-    50% {
-      top: calc(100% - 6px);
-      left: calc(100% - 6px);
-    }
-    /* Lado inferior: derecha → izquierda */
-    75% {
-      top: calc(100% - 6px);
-      left: -6px;
-    }
-    /* Lado izquierdo: abajo → arriba */
-    100% {
-      top: -6px;
-      left: -6px;
-    }
-  }
 
   @keyframes border-shine {
     to {
