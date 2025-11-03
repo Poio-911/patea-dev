@@ -122,6 +122,23 @@ const getPerformanceFromTags = (tags: PerformanceTag[]): { level: PerformanceLev
     return { level: 'Bajo', color: 'bg-red-500' };
 };
 
+// Helper para convertir una URL de imagen a Data URI
+const toDataURL = (url: string): Promise<string> =>
+  fetch(url, { cache: 'no-store' }) // Usar no-store para evitar problemas de CORS con imágenes cacheadas
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+        }
+        return response.blob();
+    })
+    .then(blob => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    }));
+
+
 export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
   const { user } = useUser();
   const auth = useAuth();
@@ -400,12 +417,17 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     }
   };
 
+  // ✅ CORRECCIÓN: Esta función ahora convierte la imagen a Data URI antes de llamar a la acción.
   const handleGenerateAIPhoto = async () => {
-    if (!user?.uid) return;
+    if (!user?.uid || !player?.photoUrl) return;
 
     setIsGeneratingAI(true);
     try {
-      const result = await generatePlayerCardImageAction(user.uid);
+      // 1. Convertir la URL de la imagen actual a un Data URI
+      const photoDataUri = await toDataURL(`https://firebasestorage.googleapis.com/v0/b/${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}/o/${encodeURIComponent(player.photoUrl.split('o/')[1].split('?')[0])}?alt=media`);
+
+      // 2. Llamar a la acción del servidor con el Data URI
+      const result = await generatePlayerCardImageAction(user.uid, photoDataUri);
 
       if ('error' in result) {
         toast({
@@ -421,13 +443,15 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
         description: 'Tu foto profesional ha sido creada con IA.',
       });
 
+      // Recargar la página para mostrar la nueva imagen y datos de crop reseteados
       window.location.reload();
+      
     } catch (error: any) {
       logger.error('Error generating AI photo', error, { userId: user?.uid });
       toast({
         variant: 'destructive',
         title: 'Error al generar imagen',
-        description: error.message || 'No se pudo generar la imagen con IA.',
+        description: error.message || 'No se pudo generar la imagen con IA. Asegúrate de tener una foto real subida.',
       });
     } finally {
       setIsGeneratingAI(false);
@@ -526,9 +550,9 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   };
 
 
-  const loading = playerLoading || historyLoading || isLoading || (isCurrentUserProfile && (createdMatchesLoading || createdPlayersLoading));
+  const loadingAny = playerLoading || historyLoading || isLoading || (isCurrentUserProfile && (createdMatchesLoading || createdPlayersLoading));
 
-  if (loading) {
+  if (loadingAny) {
     return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 

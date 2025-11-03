@@ -1,3 +1,4 @@
+
 'use server';
 
 import { adminDb, adminAuth, adminStorage } from '@/firebase/admin-init';
@@ -6,7 +7,9 @@ import { generatePlayerCardImage } from '@/ai/flows/generate-player-card-image';
 import type { Player } from '@/lib/types';
 import { logger } from '@/lib/logger';
 
-export async function generatePlayerCardImageAction(userId: string) {
+// ✅ CORRECCIÓN: La función ahora acepta el Data URI de la foto directamente
+// en lugar de solo el `userId`, eliminando la necesidad de descargar desde Storage.
+export async function generatePlayerCardImageAction(userId: string, photoDataUri: string) {
   const playerRef = adminDb.doc(`players/${userId}`);
 
   try {
@@ -30,46 +33,8 @@ export async function generatePlayerCardImageAction(userId: string) {
     if (player.photoUrl.includes('picsum.photos')) {
       return { error: 'La generación de imágenes no funciona con fotos de marcador de posición. Por favor, sube una foto tuya real.' };
     }
-
-    // --- ROBUST FILE HANDLING ---
-    let imageBuffer: Buffer;
-    let contentType: string;
-
-    try {
-      const bucket = adminStorage;
-      // ✅ FIX: Robust path extraction
-      // The photoUrl from Firebase Storage is in the format:
-      // https://storage.googleapis.com/your-bucket.appspot.com/path/to/your/file.jpg?alt=media&token=...
-      // We need to extract `path/to/your/file.jpg`
-      const url = new URL(player.photoUrl);
-      // The pathname will be /your-bucket.appspot.com/path/to/your/file.jpg
-      const decodedPathName = decodeURIComponent(url.pathname);
-      // Remove the leading slash and bucket name to get the file path
-      const filePath = decodedPathName.substring(`/${bucket.name}/`.length);
-
-
-      if (!filePath) {
-        throw new Error("Could not determine file path from the photo URL.");
-      }
-
-      logger.info('Attempting to download file from path:', { filePath });
-
-      const file = bucket.file(filePath);
-      const [buffer] = await file.download();
-      const [metadata] = await file.getMetadata();
-      imageBuffer = buffer;
-      contentType = metadata.contentType || 'image/jpeg';
-
-      logger.info('File downloaded successfully', { size: imageBuffer.length, contentType });
-
-    } catch (downloadError) {
-      logger.error("Error downloading image from storage", downloadError, { photoUrl: player.photoUrl });
-      return { error: "No se pudo acceder a tu foto de perfil actual. Intenta subirla de nuevo." };
-    }
     
-    const photoDataUri = `data:${contentType};base64,${imageBuffer.toString('base64')}`;
-    // --- END ROBUST FILE HANDLING ---
-
+    // El Data URI ya se pasa como argumento, no es necesario descargarlo.
     const generatedImageDataUri = await generatePlayerCardImage(photoDataUri);
 
     const generatedImageBuffer = Buffer.from(generatedImageDataUri.split(',')[1], 'base64');
@@ -80,10 +45,7 @@ export async function generatePlayerCardImageAction(userId: string) {
       metadata: { contentType: 'image/png' },
     });
     
-    // Make the file public to get a predictable URL
     await newFile.makePublic();
-
-    // The public URL has a predictable format
     const newPhotoURL = `https://storage.googleapis.com/${adminStorage.name}/${newFilePath}`;
 
     const batch = adminDb.batch();
@@ -92,6 +54,9 @@ export async function generatePlayerCardImageAction(userId: string) {
     batch.update(playerRef, {
       photoUrl: newPhotoURL,
       cardGenerationCredits: FieldValue.increment(-1),
+      // Reseteamos el crop ya que es una nueva imagen
+      cropPosition: { x: 50, y: 50 },
+      cropZoom: 1,
     });
 
     const availablePlayerRef = adminDb.doc(`availablePlayers/${userId}`);
@@ -106,7 +71,6 @@ export async function generatePlayerCardImageAction(userId: string) {
     return { success: true, newPhotoURL };
   } catch (error: any) {
     logger.error("Error in generatePlayerCardImageAction", error);
-    // Return a structured error to prevent the server from crashing
     return { error: error.message || "Un error inesperado ocurrió en el servidor." };
   }
 }
