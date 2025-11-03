@@ -36,7 +36,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuPortal
 } from "@/components/ui/dropdown-menu"
-import type { Player, AvailablePlayer } from '@/lib/types';
+import type { Player } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
@@ -60,6 +60,14 @@ const navItems = [
   { href: '/evaluations', label: 'Evaluaciones', icon: EvaluationIcon },
 ];
 
+const positionBadgeStyles: Record<Player['position'], string> = {
+  POR: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
+  DEF: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+  MED: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
+  DEL: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+};
+
+
 export function MainNav({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, loading: userLoading } = useUser();
@@ -76,12 +84,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     return doc(firestore, 'players', user.uid);
   }, [firestore, user?.uid]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
-
-  const availablePlayerRef = React.useMemo(() => {
-    if (!firestore || !user?.uid) return null;
-    return doc(firestore, 'availablePlayers', user.uid);
-  }, [firestore, user?.uid]);
-  const { data: availablePlayerData, loading: availablePlayerLoading } = useDoc<AvailablePlayer>(availablePlayerRef);
 
 
   React.useEffect(() => {
@@ -123,7 +125,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   }
 
   // For protected pages, check auth and loading states
-  const loading = userLoading || playerLoading || availablePlayerLoading;
+  const loading = userLoading || playerLoading;
 
   if (loading || !user) {
     return (
@@ -151,11 +153,11 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                       <div className="flex items-center gap-3">
                           <div className="text-right">
                               <p className="font-bold text-sm truncate max-w-[100px] sm:max-w-none">{player.name}</p>
-                              <p className="text-xs text-muted-foreground">{player.position}</p>
                           </div>
-                           <div className="flex items-center justify-center h-10 w-10 text-xl font-bold rounded-full bg-primary/10 border-2 border-primary/20 text-primary">
-                              {player.ovr}
-                          </div>
+                          <Badge className={cn("px-2.5 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
+                              <span className="font-bold">{player.ovr}</span>
+                              <span className="font-medium ml-1.5">{player.position}</span>
+                          </Badge>
                       </div>
                   )}
                   
