@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -38,59 +37,38 @@ type PlayerCardProps = {
   isLink?: boolean;
 };
 
-// NUEVA PALETA DE COLORES (Inspirada en PES 6)
-const positionStyles: Record<Player['position'], { color: string; bg: string; name: string }> = {
-  POR: { name: 'Portero', color: 'text-yellow-600', bg: 'from-yellow-500/20' },
-  DEF: { name: 'Defensa', color: 'text-green-600', bg: 'from-green-500/20' },
-  MED: { name: 'Volante', color: 'text-blue-600', bg: 'from-blue-500/20' },
-  DEL: { name: 'Delantero', color: 'text-red-600', bg: 'from-red-500/20' },
+const positionStyles: Record<Player['position'], { color: string; bg: string; name: string; primaryAttr: 'pac' | 'sho' | 'pas' | 'dri' | 'def' | 'phy' }> = {
+  POR: { name: 'Portero', color: 'text-yellow-600', bg: 'from-yellow-500/20', primaryAttr: 'def' },
+  DEF: { name: 'Defensa', color: 'text-green-600', bg: 'from-green-500/20', primaryAttr: 'def' },
+  MED: { name: 'Volante', color: 'text-blue-600', bg: 'from-blue-500/20', primaryAttr: 'pas' },
+  DEL: { name: 'Delantero', color: 'text-red-600', bg: 'from-red-500/20', primaryAttr: 'sho' },
 };
 
-const HexagonStatChart = ({ stats }: { stats: { label: string, value: number }[] }) => {
-  const size = 100;
-  const center = size / 2;
-  const points = stats.map((stat, i) => {
-    const angle_deg = 60 * i - 30;
-    const angle_rad = (Math.PI / 180) * angle_deg;
-    const valueRatio = stat.value / 99;
-    const x = center + center * valueRatio * Math.cos(angle_rad);
-    const y = center + center * valueRatio * Math.sin(angle_rad);
-    return `${x},${y}`;
-  }).join(' ');
+const getStatColor = (value: number) => {
+    if (value >= 85) return 'bg-green-500/80 text-white';
+    if (value >= 70) return 'bg-blue-500/80 text-white';
+    if (value >= 50) return 'bg-yellow-500/80 text-yellow-950';
+    return 'bg-muted text-muted-foreground';
+};
 
-  return (
-    <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full">
-      {/* Hexagon background grid */}
-      {[0.25, 0.5, 0.75, 1].map(scale => (
-        <polygon
-          key={scale}
-          points={stats.map((_, i) => {
-            const angle_deg = 60 * i - 30;
-            const angle_rad = (Math.PI / 180) * angle_deg;
-            const x = center + center * scale * Math.cos(angle_rad);
-            const y = center + center * scale * Math.sin(angle_rad);
-            return `${x},${y}`;
-          }).join(' ')}
-          className="fill-none stroke-muted-foreground/20"
-          strokeWidth="0.5"
-        />
-      ))}
-      {/* Stat polygon */}
-      <polygon points={points} className="fill-primary/40 stroke-primary" strokeWidth="1" />
-      {/* Stat labels */}
-      {stats.map((stat, i) => {
-        const angle_deg = 60 * i - 30;
-        const angle_rad = (Math.PI / 180) * angle_deg;
-        const x = center + center * 1.1 * Math.cos(angle_rad);
-        const y = center + center * 1.05 * Math.sin(angle_rad);
-        return (
-          <text key={stat.label} x={x} y={y} fontSize="8" textAnchor="middle" alignmentBaseline="middle" className="fill-muted-foreground font-semibold">
-            {stat.label}
-          </text>
-        );
-      })}
-    </svg>
-  );
+const StatPill = ({ label, value, isPrimary, index }: { label: string; value: number; isPrimary: boolean; index: number }) => {
+    const colorClass = getStatColor(value);
+
+    return (
+        <motion.div
+            className={cn(
+                "flex items-center justify-between rounded-lg p-2 text-xs font-bold",
+                colorClass,
+                isPrimary && 'ring-2 ring-offset-2 ring-offset-card ring-amber-400'
+            )}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: index * 0.05, type: 'spring', stiffness: 300, damping: 20 }}
+        >
+            <span>{label}</span>
+            <span>{value}</span>
+        </motion.div>
+    );
 };
 
 
@@ -128,13 +106,13 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
     }
   };
   
-  const stats: { label: 'RIT' | 'TIR' | 'PAS' | 'REG' | 'DEF' | 'FIS', value: number }[] = React.useMemo(() => [
-    { label: 'RIT', value: player.pac },
-    { label: 'TIR', value: player.sho },
-    { label: 'PAS', value: player.pas },
-    { label: 'REG', value: player.dri },
-    { label: 'DEF', value: player.def },
-    { label: 'FIS', value: player.phy },
+  const stats: { label: 'RIT' | 'TIR' | 'PAS' | 'REG' | 'DEF' | 'FIS', value: number, key: 'pac' | 'sho' | 'pas' | 'dri' | 'def' | 'phy' }[] = React.useMemo(() => [
+    { label: 'RIT', value: player.pac, key: 'pac' },
+    { label: 'TIR', value: player.sho, key: 'sho' },
+    { label: 'PAS', value: player.pas, key: 'pas' },
+    { label: 'REG', value: player.dri, key: 'dri' },
+    { label: 'DEF', value: player.def, key: 'def' },
+    { label: 'FIS', value: player.phy, key: 'phy' },
   ], [player.pac, player.sho, player.pas, player.dri, player.def, player.phy]);
 
 
@@ -234,8 +212,16 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
       </CardHeader>
 
       <CardContent className="p-3 text-center bg-card flex-grow flex flex-col justify-center">
-        <div className="w-full max-w-[150px] mx-auto my-2">
-            <HexagonStatChart stats={stats} />
+         <div className="grid grid-cols-2 gap-2 my-2">
+            {stats.map((stat, index) => (
+                <StatPill 
+                    key={stat.label}
+                    label={stat.label}
+                    value={stat.value}
+                    isPrimary={stat.key === positionStyles[player.position].primaryAttr}
+                    index={index}
+                />
+            ))}
         </div>
         <div className="mt-auto pt-3 border-t">
           <div className="grid grid-cols-3 gap-2 text-xs">
