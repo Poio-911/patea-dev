@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -5,8 +6,8 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { MoreVertical, Trash2, Pencil, Star, Goal, TrendingUp } from 'lucide-react';
-import type { Player } from '@/lib/types';
+import { MoreVertical, Trash2, Pencil, Star, Goal } from 'lucide-react';
+import type { Player, AttributeKey } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { EditPlayerDialog } from './edit-player-dialog';
 import {
@@ -31,46 +32,45 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from './ui/badge';
 import { motion } from 'framer-motion';
+import { playerSpecialties } from '@/lib/data';
 
 type PlayerCardProps = {
   player: Player & { displayName?: string };
   isLink?: boolean;
 };
 
-const positionStyles: Record<Player['position'], { color: string; bg: string; name: string; primaryAttr: 'pac' | 'sho' | 'pas' | 'dri' | 'def' | 'phy' }> = {
-  POR: { name: 'Portero', color: 'text-yellow-600', bg: 'from-yellow-500/20', primaryAttr: 'def' },
-  DEF: { name: 'Defensa', color: 'text-green-600', bg: 'from-green-500/20', primaryAttr: 'def' },
-  MED: { name: 'Volante', color: 'text-blue-600', bg: 'from-blue-500/20', primaryAttr: 'pas' },
-  DEL: { name: 'Delantero', color: 'text-red-600', bg: 'from-red-500/20', primaryAttr: 'sho' },
+const positionStyles: Record<Player['position'], { color: string; bg: string; name: string; primaryAttr: AttributeKey }> = {
+  POR: { name: 'Portero', color: 'text-yellow-600', bg: 'from-yellow-500/20', primaryAttr: 'DEF' },
+  DEF: { name: 'Defensa', color: 'text-green-600', bg: 'from-green-500/20', primaryAttr: 'DEF' },
+  MED: { name: 'Volante', color: 'text-blue-600', bg: 'from-blue-500/20', primaryAttr: 'PAS' },
+  DEL: { name: 'Delantero', color: 'text-red-600', bg: 'from-red-500/20', primaryAttr: 'SHO' },
 };
 
-const getStatColor = (value: number) => {
-    if (value >= 85) return 'bg-green-500/80 text-white';
-    if (value >= 70) return 'bg-blue-500/80 text-white';
-    if (value >= 50) return 'bg-yellow-500/80 text-yellow-950';
-    return 'bg-muted text-muted-foreground';
+const getStatColorClasses = (value: number): { text: string; border: string; } => {
+    if (value >= 85) return { text: 'text-green-500', border: 'border-green-500' };
+    if (value >= 70) return { text: 'text-blue-500', border: 'border-blue-500' };
+    if (value >= 50) return { text: 'text-yellow-600', border: 'border-yellow-600' };
+    return { text: 'text-muted-foreground', border: 'border-muted' };
 };
 
 const StatPill = ({ label, value, isPrimary, index }: { label: string; value: number; isPrimary: boolean; index: number }) => {
-    const colorClass = getStatColor(value);
+    const { text, border } = getStatColorClasses(value);
 
     return (
         <motion.div
             className={cn(
-                "flex items-center justify-between rounded-lg p-2 text-xs font-bold",
-                colorClass,
-                isPrimary && 'ring-2 ring-offset-2 ring-offset-card ring-amber-400'
+                "relative flex items-center justify-between rounded-lg p-2 text-xs font-bold border-2",
+                isPrimary ? 'border-primary shadow-lg animated-glowing-border' : border
             )}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.05, type: 'spring', stiffness: 300, damping: 20 }}
         >
-            <span>{label}</span>
-            <span>{value}</span>
+            <span className="text-muted-foreground">{label}</span>
+            <span className={cn(isPrimary ? 'text-primary' : text)}>{value}</span>
         </motion.div>
     );
 };
-
 
 export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true }: PlayerCardProps) {
   const { user } = useUser();
@@ -106,14 +106,26 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
     }
   };
   
-  const stats: { label: 'RIT' | 'TIR' | 'PAS' | 'REG' | 'DEF' | 'FIS', value: number, key: 'pac' | 'sho' | 'pas' | 'dri' | 'def' | 'phy' }[] = React.useMemo(() => [
-    { label: 'RIT', value: player.pac, key: 'pac' },
-    { label: 'TIR', value: player.sho, key: 'sho' },
-    { label: 'PAS', value: player.pas, key: 'pas' },
-    { label: 'REG', value: player.dri, key: 'dri' },
-    { label: 'DEF', value: player.def, key: 'def' },
-    { label: 'FIS', value: player.phy, key: 'phy' },
+  const stats = React.useMemo<{ label: string; value: number; key: AttributeKey }[]>(() => [
+    { label: 'RIT', value: player.pac, key: 'PAC' },
+    { label: 'TIR', value: player.sho, key: 'SHO' },
+    { label: 'PAS', value: player.pas, key: 'PAS' },
+    { label: 'REG', value: player.dri, key: 'DRI' },
+    { label: 'DEF', value: player.def, key: 'DEF' },
+    { label: 'FIS', value: player.phy, key: 'PHY' },
   ], [player.pac, player.sho, player.pas, player.dri, player.def, player.phy]);
+
+  const primaryStat = React.useMemo(() => {
+    return stats.reduce((max, stat) => (stat.value > max.value ? stat : max), stats[0]);
+  }, [stats]);
+  
+  const specialty = React.useMemo(() => {
+    const spec = playerSpecialties[primaryStat.key];
+    if (primaryStat.value >= spec.threshold) {
+      return spec;
+    }
+    return null;
+  }, [primaryStat]);
 
 
   const CardContentComponent = () => (
@@ -203,7 +215,13 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
         </div>
         <div className="mt-2 text-center">
             <h3 className="text-lg font-bold font-headline truncate">{playerName}</h3>
-            {isManualPlayer && (
+            {specialty && (
+                <div className="flex items-center justify-center gap-1.5 mt-1 text-sm font-semibold text-primary">
+                    <specialty.icon className="h-4 w-4" />
+                    <span>{specialty.nickname}</span>
+                </div>
+            )}
+            {isManualPlayer && !specialty && (
               <Badge variant="outline" className="mt-1 text-xs border-dashed">
                 Manual
               </Badge>
@@ -218,7 +236,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
                     key={stat.label}
                     label={stat.label}
                     value={stat.value}
-                    isPrimary={stat.key === positionStyles[player.position].primaryAttr}
+                    isPrimary={stat.key === primaryStat.key}
                     index={index}
                 />
             ))}

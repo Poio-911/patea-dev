@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -109,6 +110,17 @@
     animation: border-shine 4s linear infinite;
     transform: translate(-50%, -50%);
   }
+
+  @keyframes glowing-border {
+    0% { border-color: hsl(var(--primary) / 0.8); box-shadow: 0 0 3px hsl(var(--primary) / 0.6); }
+    50% { border-color: hsl(var(--primary) / 0.4); box-shadow: 0 0 10px hsl(var(--primary) / 0.3); }
+    100% { border-color: hsl(var(--primary) / 0.8); box-shadow: 0 0 3px hsl(var(--primary) / 0.6); }
+  }
+
+  .animated-glowing-border {
+    animation: glowing-border 2.5s ease-in-out infinite;
+  }
+
   @keyframes border-shine {
     to {
       transform: translate(-50%, -50%) rotate(360deg);
