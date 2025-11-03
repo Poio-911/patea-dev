@@ -43,23 +43,23 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-row items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <h2 className="text-xl font-bold text-foreground/90">Equipos Generados</h2>
                 {isOwner && match.status === 'upcoming' && (
-                     <div className="flex items-center gap-2">
+                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                          <Button onClick={onShuffle} disabled={isShuffling} variant="outline" size="sm">
-                             {isShuffling ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Shuffle className="mr-2 h-4 w-4"/>}
+                             {isShuffling ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Shuffle className="mr-2 h-4 w-4 text-primary"/>}
                              Volver a Sortear
                          </Button>
                          <EditableTeamsDialog match={match}>
                              <Button variant="outline" size="sm">
-                                 <Pencil className="mr-2 h-4 w-4" />
+                                 <Pencil className="mr-2 h-4 w-4 text-amber-500" />
                                  Editar Equipos
                              </Button>
                          </EditableTeamsDialog>
                          <Button size="sm" variant="outline" asChild>
                             <a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer">
-                              <WhatsAppIcon className="mr-2 h-4 w-4"/>Compartir
+                              <WhatsAppIcon className="mr-2 h-4 w-4 text-green-500"/>Compartir
                             </a>
                          </Button>
                      </div>

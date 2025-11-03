@@ -21,7 +21,7 @@ interface MatchManagementActionsProps {
   match: Match;
   allGroupPlayers: Player[];
   canFinalize: boolean;
-  canInvite: boolean;
+  canGenerateTeams: boolean;
   isFinishing: boolean;
   isDeleting: boolean;
   onFinish: () => void;
@@ -36,7 +36,7 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
   match,
   allGroupPlayers,
   canFinalize,
-  canInvite,
+  canGenerateTeams,
   isFinishing,
   isDeleting,
   onFinish,
@@ -45,7 +45,7 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold text-foreground/90">Gestión del Partido</h2>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
         {canFinalize && (
           <Button
             onClick={onFinish}
@@ -63,7 +63,7 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
           </Button>
         )}
 
-        {canInvite && (
+        {canGenerateTeams && (
           <InvitePlayerDialog
             playerToInvite={null}
             userMatches={[match]}
@@ -85,10 +85,10 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
-              variant="destructive"
+              variant="ghost"
               size="sm"
               disabled={isDeleting}
-              className="min-h-[48px]"
+              className="min-h-[48px] text-destructive hover:bg-destructive/10 hover:text-destructive"
               aria-label="Eliminar partido"
             >
               <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
