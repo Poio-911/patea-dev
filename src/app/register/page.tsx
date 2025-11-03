@@ -44,7 +44,6 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [generatedPhotoUrl, setGeneratedPhotoUrl] = useState<string | null>(null);
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
 
   const form = useForm<RegisterFormValues>({
@@ -62,14 +61,6 @@ export default function RegisterPage() {
     }
   }, [user, loading, router]);
   
-  const handleGenerateAIPhoto = async () => {
-    if (!user?.uid) return;
-
-    setIsGeneratingAI(true);
-    // ... Implement AI generation logic if needed in registration, or disable it.
-    // For now, let's assume this is for post-registration.
-    setIsGeneratingAI(false);
-  };
 
 
   const onSubmit = async (data: RegisterFormValues) => {
@@ -173,8 +164,6 @@ export default function RegisterPage() {
                     <div className="flex flex-col items-center gap-4">
                       <ImageCropperDialog
                           player={{ photoUrl: imagePreview || undefined }}
-                          onGenerateAI={handleGenerateAIPhoto}
-                          isGeneratingAI={isGeneratingAI}
                           onSaveComplete={(newUrl) => {
                               setImagePreview(newUrl);
                               setGeneratedPhotoUrl(newUrl);
