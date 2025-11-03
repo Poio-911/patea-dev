@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -102,7 +101,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
 
     return (
         <div className="relative isolate">
-          <div className="relative flex flex-col gap-8 p-4 md:p-6 text-foreground dark:text-white">
+          <div className="relative flex flex-col gap-8 md:p-6 text-foreground dark:text-white">
                 <div className="flex w-full items-center justify-between gap-4">
                     <Button asChild variant="outline" className="self-start dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40">
                         <Link href="/matches">
@@ -112,7 +111,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     </Button>
                 </div>
                 
-                <PageHeader title={match.title} className="dark:text-white" />
+                <PageHeader title={match.title} className="dark:text-white px-4 md:px-0" />
 
                 <MatchInfoCard
                     match={match}
@@ -127,8 +126,8 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     onJoinOrLeave={actions.handleJoinOrLeave}
                 />
                 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 md:px-0">
+                    <div className="lg:col-span-3 space-y-6">
                          {match.teams && match.teams.length > 0 ? (
                            <MatchTeams 
                                 match={match}
@@ -140,9 +139,9 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                            <PlayersConfirmed match={match} />
                          )}
                     </div>
-                    <div className="lg:col-span-1 space-y-6">
-                        {permissions.isOwner && (
-                            <MatchManagementActions
+                    {permissions.isOwner && (
+                        <div className="lg:col-span-3">
+                           <MatchManagementActions
                                 match={match}
                                 allGroupPlayers={allGroupPlayers || []}
                                 canFinalize={permissions.canFinalize}
@@ -152,8 +151,8 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                 onFinish={actions.handleFinish}
                                 onDelete={actions.handleDelete}
                             />
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

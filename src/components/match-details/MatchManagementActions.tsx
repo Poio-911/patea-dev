@@ -2,7 +2,6 @@
 
 import React from 'react';
 import type { Match, Player } from '@/lib/types';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -44,11 +43,9 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
   onDelete,
 }: MatchManagementActionsProps) {
   return (
-    <Card className="bg-card/60 backdrop-blur-sm border-2">
-      <CardHeader>
-        <CardTitle className="text-xl font-semibold">Gestión del Partido</CardTitle>
-      </CardHeader>
-      <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-2">
+    <div className="space-y-4">
+      <h2 className="text-xl font-bold text-foreground/90">Gestión del Partido</h2>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
         {canFinalize && (
           <Button
             onClick={onFinish}
@@ -118,7 +115,7 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 });

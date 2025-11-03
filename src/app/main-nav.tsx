@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -13,13 +12,12 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
   SidebarHeader,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Users2, User, BellRing, HelpCircle, CheckCircle } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings, Users2, User, BellRing, HelpCircle, CheckCircle, Moon, Sun, Laptop } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -32,13 +30,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal
 } from "@/components/ui/dropdown-menu"
 import type { Player, AvailablePlayer } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { MatchIcon } from '@/components/icons/match-icon';
-import { FindMatchIcon } from '@/components/icons/find-match-icon';
 import { EvaluationIcon } from '@/components/icons/evaluation-icon';
 import { NotificationBell } from '@/components/notification-bell';
 import { useFcm } from '@/hooks/use-fcm';
@@ -46,23 +47,16 @@ import { HelpDialog } from '@/components/help-dialog';
 import { WelcomeDialog } from '@/components/welcome-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { isToday, parseISO } from 'date-fns';
+import { useTheme } from 'next-themes';
 
 
 const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
+  { href: '/groups', label: 'Grupos', icon: Users2 },
   { href: '/players', label: 'Jugadores', icon: SoccerPlayerIcon },
   { href: '/matches', label: 'Partidos', icon: MatchIcon },
   { href: '/evaluations', label: 'Evaluaciones', icon: EvaluationIcon },
-  { href: '/find-match', label: 'Buscar', icon: FindMatchIcon },
 ];
-
-const positionBadgeStyles: Record<Player['position'], string> = {
-  DEL: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
-  MED: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-  DEF: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
-  POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
-};
-
 
 export function MainNav({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -71,6 +65,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  const { setTheme } = useTheme();
 
   const { requestPermission } = useFcm();
 
@@ -88,10 +83,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
 
   React.useEffect(() => {
-    if (!userLoading && !user) {
+    if (!userLoading && !user && pathname !== '/' && pathname !== '/login' && pathname !== '/register' && pathname !== '/forgot-password') {
       router.push('/login');
     }
-  }, [user, userLoading, router]);
+  }, [user, userLoading, pathname, router]);
   
   React.useEffect(() => {
     if (user) {
@@ -118,6 +113,14 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Allow public pages to render without auth check
+  const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
+
+  if (isPublicPage) {
+    return <>{children}</>;
+  }
+
+  // For protected pages, check auth and loading states
   const loading = userLoading || playerLoading || availablePlayerLoading;
 
   if (loading || !user) {
@@ -131,40 +134,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <WelcomeDialog />
-      <Sidebar>
-        <SidebarHeader>
-          <div className="flex items-center gap-2">
-            <SoccerPlayerIcon className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold font-headline">Pateá</span>
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
-                  <SidebarMenuButton
-                    isActive={pathname.startsWith(item.href)}
-                    tooltip={item.label}
-                  >
-                    <item.icon />
-                    {item.label}
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter>
-          <Separator className="my-2" />
-           <SidebarGroup>
-            <SidebarGroupLabel>Mi Grupo</SidebarGroupLabel>
-            <GroupSwitcher />
-          </SidebarGroup>
-        </SidebarFooter>
-      </Sidebar>
-      <div className="relative flex h-screen w-full flex-col">
-          <header className="fixed top-0 left-0 right-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background/70 px-4 backdrop-blur-lg sm:px-6 md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:pl-14 md:pl-72">
+      <div className="relative h-screen w-full">
+          <header className="fixed top-0 left-0 right-0 z-20 flex h-16 shrink-0 items-center justify-between border-b bg-background/70 px-4 backdrop-blur-lg sm:px-6 md:left-[var(--sidebar-width)] md:data-[state=collapsed]:left-[var(--sidebar-width-icon)] transition-all duration-300 ease-in-out">
               <div className="flex items-center gap-2">
                   <div className="hidden md:block">
                       <SidebarTrigger />
@@ -177,12 +148,12 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   {player && (
                       <div className="flex items-center gap-3">
                           <div className="text-right">
-                              <p className="font-bold text-sm truncate">{player.name}</p>
+                              <p className="font-bold text-sm truncate max-w-[100px] sm:max-w-none">{player.name}</p>
+                              <p className="text-xs text-muted-foreground">{player.position}</p>
                           </div>
-                          <Badge className={cn("px-2.5 py-1 text-base font-bold", positionBadgeStyles[player.position])}>
-                              <span className="font-bold">{player.ovr}</span>
-                              <span className="font-medium ml-1.5">{player.position}</span>
-                          </Badge>
+                           <div className="flex items-center justify-center h-10 w-10 text-xl font-bold rounded-full bg-primary/10 border-2 border-primary/20 text-primary">
+                              {player.ovr}
+                          </div>
                       </div>
                   )}
                   
@@ -191,8 +162,18 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="relative h-12 w-12 rounded-full">
-                              <Avatar className="h-12 w-12 border">
-                                  <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} data-ai-hint="user avatar" />
+                              <Avatar className="h-12 w-12 border overflow-hidden">
+                                  <AvatarImage
+                                    src={user?.photoURL || ''}
+                                    alt={user?.displayName || 'User'}
+                                    data-ai-hint="user avatar"
+                                    style={{
+                                      objectFit: 'cover',
+                                      objectPosition: `${player?.cropPosition?.x || 50}% ${player?.cropPosition?.y || 50}%`,
+                                      transform: `scale(${player?.cropZoom || 1})`,
+                                      transformOrigin: 'center center',
+                                    }}
+                                  />
                                   <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
                               </Avatar>
                           </Button>
@@ -207,29 +188,36 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                               </div>
                           </DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <div className="p-2">
-                              <GroupSwitcher />
-                          </div>
-                          <DropdownMenuItem asChild>
-                              <Link href="/groups">
-                                  <Users2 className="mr-2 h-4 w-4" />
-                                  <span>Gestionar Grupos</span>
-                              </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
                           <DropdownMenuItem asChild>
                               <Link href="/profile">
                                   <User className="mr-2 h-4 w-4" />
                                   <span>Mi Perfil</span>
                               </Link>
                           </DropdownMenuItem>
+                           <DropdownMenuItem asChild>
+                              <Link href="/groups">
+                                  <Users2 className="mr-2 h-4 w-4" />
+                                  <span>Gestionar Grupos</span>
+                              </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                                <Sun className="mr-2 h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                                <Moon className="absolute mr-2 h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                                <span>Cambiar Tema</span>
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuItem onClick={() => setTheme("light")}>Claro</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setTheme("dark")}>Oscuro</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setTheme("system")}>Sistema</DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                          </DropdownMenuSub>
                           <DropdownMenuItem onClick={requestPermission}>
                               <BellRing className="mr-2 h-4 w-4" />
                               <span>Activar Notificaciones</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                              <Settings className="mr-2 h-4 w-4" />
-                              <span>Ajustes</span>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={handleLogout}>
@@ -241,22 +229,53 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               </div>
           </header>
 
-          {availablePlayerData && (
-            <div className="fixed top-16 left-0 right-0 z-10 h-8 bg-gradient-to-r from-green-500/80 to-emerald-600/80 text-white flex items-center justify-center shadow-md animate-in fade-in-0 slide-in-from-top-2 duration-500 md:left-72 md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:left-14">
-                <CheckCircle className="mr-2 h-4 w-4" />
-                <p className="text-xs font-semibold">Estás visible para otros partidos</p>
-            </div>
-          )}
+          <Sidebar>
+            <SidebarHeader>
+                <div className="flex items-center gap-3">
+                    <SoccerPlayerIcon className="h-8 w-8 text-primary" />
+                    <span className="text-xl font-bold font-headline">Pateá</span>
+                </div>
+            </SidebarHeader>
+            <SidebarContent>
+                <SidebarMenu>
+                    <SidebarGroup>
+                      <SidebarGroupLabel>Menú</SidebarGroupLabel>
+                      {navItems.map((item) => (
+                      <SidebarMenuItem key={item.href}>
+                          <Link href={item.href}>
+                          <SidebarMenuButton
+                              isActive={pathname.startsWith(item.href)}
+                              tooltip={item.label}
+                          >
+                              <item.icon />
+                              <span>{item.label}</span>
+                          </SidebarMenuButton>
+                          </Link>
+                      </SidebarMenuItem>
+                      ))}
+                    </SidebarGroup>
+                </SidebarMenu>
+                 <div className="mt-auto">
+                    <Separator className="my-2" />
+                    <SidebarGroup>
+                        <SidebarGroupLabel>Mi Grupo</SidebarGroupLabel>
+                        <GroupSwitcher />
+                    </SidebarGroup>
+                </div>
+            </SidebarContent>
+          </Sidebar>
 
           <main className={cn(
-            "flex-1 overflow-y-auto p-4 pt-20 pb-20 md:p-6 md:pt-24 md:pb-24 md:pl-72 md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:pl-14",
-            availablePlayerData && "pt-[104px] md:pt-[120px]"
+              "h-screen overflow-y-auto pt-16 md:pl-[var(--sidebar-width)] transition-[padding] duration-300 ease-in-out",
+              "group-data-[state=collapsed]/sidebar-wrapper:md:pl-[var(--sidebar-width-icon)]"
           )}>
-            {children}
+            <div className="p-4 md:p-6 pb-24">
+                {children}
+            </div>
           </main>
           
-          <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg">
-              <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium md:max-w-none md:px-4 md:pl-[calc(var(--sidebar-width)_+_1rem)] peer-data-[state=collapsed]:peer-data-[collapsible=icon]:md:pl-[calc(var(--sidebar-width-icon)_+_1rem)]">
+          <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg md:hidden">
+              <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
               {navItems.map((item) => {
                   const isActive = pathname.startsWith(item.href);
                   const isMatchIcon = item.href === '/matches';
