@@ -417,16 +417,12 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     }
   };
 
-  // ✅ CORRECCIÓN: Esta función ahora convierte la imagen a Data URI antes de llamar a la acción.
   const handleGenerateAIPhoto = async () => {
     if (!user?.uid || !player?.photoUrl) return;
 
     setIsGeneratingAI(true);
     try {
-      // 1. Convertir la URL de la imagen actual a un Data URI
-      const photoDataUri = await toDataURL(`https://firebasestorage.googleapis.com/v0/b/${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}/o/${encodeURIComponent(player.photoUrl.split('o/')[1].split('?')[0])}?alt=media`);
-
-      // 2. Llamar a la acción del servidor con el Data URI
+      const photoDataUri = await toDataURL(player.photoUrl);
       const result = await generatePlayerCardImageAction(user.uid, photoDataUri);
 
       if ('error' in result) {
@@ -443,7 +439,6 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
         description: 'Tu foto profesional ha sido creada con IA.',
       });
 
-      // Recargar la página para mostrar la nueva imagen y datos de crop reseteados
       window.location.reload();
       
     } catch (error: any) {
