@@ -34,7 +34,7 @@ import { AnalysisIcon } from '@/components/icons/analysis-icon';
 import { ImageCropperDialog } from '@/components/image-cropper-dialog';
 import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
 import { AttributesHelpDialog } from './attributes-help-dialog';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { logger } from '@/lib/logger';
 import { initializeFirebase } from '@/firebase/index';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -124,7 +124,7 @@ const getPerformanceFromTags = (tags: PerformanceTag[]): { level: PerformanceLev
 
 // Helper para convertir una URL de imagen a Data URI
 const toDataURL = (url: string): Promise<string> =>
-  fetch(url, { cache: 'no-store' }) // Usar no-store para evitar problemas de CORS con imágenes cacheadas
+  fetch(url)
     .then(response => {
         if (!response.ok) {
             throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
@@ -151,65 +151,8 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   const [isLoading, setIsLoading] = useState(true);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [showImageDialog, setShowImageDialog] = useState(false);
-  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
-  const [imageZoom, setImageZoom] = useState(1);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [isSavingCrop, setIsSavingCrop] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isCurrentUserProfile = user?.uid === playerId;
-
-  // Keyboard shortcuts for crop editor
-  useEffect(() => {
-    if (!showImageDialog || !isCurrentUserProfile) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const MOVE_STEP = 10;
-      const ZOOM_STEP = 0.1;
-
-      switch (e.key) {
-        case 'ArrowUp':
-          e.preventDefault();
-          setImagePosition(prev => ({ ...prev, y: prev.y - MOVE_STEP }));
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          setImagePosition(prev => ({ ...prev, y: prev.y + MOVE_STEP }));
-          break;
-        case 'ArrowLeft':
-          e.preventDefault();
-          setImagePosition(prev => ({ ...prev, x: prev.x - MOVE_STEP }));
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          setImagePosition(prev => ({ ...prev, x: prev.x + MOVE_STEP }));
-          break;
-        case '+':
-        case '=':
-          e.preventDefault();
-          setImageZoom(prev => Math.min(prev + ZOOM_STEP, 3));
-          break;
-        case '-':
-        case '_':
-          e.preventDefault();
-          setImageZoom(prev => Math.max(prev - ZOOM_STEP, 0.5));
-          break;
-        case 'r':
-        case 'R':
-          if (!e.ctrlKey && !e.metaKey) {
-            e.preventDefault();
-            handleResetView();
-          }
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showImageDialog, isCurrentUserProfile]);
 
   const playerRef = useMemo(() => firestore && playerId ? doc(firestore, 'players', playerId) : null, [firestore, playerId]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
@@ -364,59 +307,6 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     }));
   }, [ovrHistory, player]);
 
-  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user || !auth?.currentUser || !firestore) return;
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    
-    try {
-        const { firebaseApp } = initializeFirebase();
-        const storage = getStorage(firebaseApp);
-
-        const fileExtension = file.name.split('.').pop();
-        const fileName = `${user.uid}-${Date.now()}.${fileExtension}`;
-        const filePath = `profile-images/${user.uid}/${fileName}`;
-        
-        const storageRef = ref(storage, filePath);
-        const uploadResult = await uploadBytes(storageRef, file);
-        const newPhotoURL = await getDownloadURL(uploadResult.ref);
-
-        const userDocRef = doc(firestore, 'users', user.uid);
-        const playerDocRef = doc(firestore, 'players', user.uid);
-
-        const batch = writeBatch(firestore);
-        batch.update(userDocRef, { photoURL: newPhotoURL });
-        batch.update(playerDocRef, { photoUrl: newPhotoURL });
-        
-        const availablePlayerRef = doc(firestore, 'availablePlayers', user.uid);
-        const availablePlayerSnap = await getDoc(availablePlayerRef);
-        if (availablePlayerSnap.exists()) {
-            batch.update(availablePlayerRef, { photoUrl: newPhotoURL });
-        }
-        
-        await batch.commit();
-
-        await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
-
-        toast({
-            title: '¡Foto actualizada!',
-            description: 'Tu foto de perfil ha cambiado.'
-        });
-
-    } catch (error: any) {
-        logger.error('Error updating photo', error, { playerId, userId: user?.uid });
-        toast({
-            variant: 'destructive',
-            title: 'Error al subir la imagen',
-            description: error.message || 'No se pudo actualizar la foto de perfil.',
-        });
-    } finally {
-        setIsUploading(false);
-    }
-  };
-
   const handleGenerateAIPhoto = async () => {
     if (!user?.uid || !player?.photoUrl) return;
 
@@ -438,8 +328,6 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
         title: 'Foto generada con éxito',
         description: 'Tu foto profesional ha sido creada con IA.',
       });
-
-      window.location.reload();
       
     } catch (error: any) {
       logger.error('Error generating AI photo', error, { userId: user?.uid });
@@ -452,99 +340,7 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
       setIsGeneratingAI(false);
     }
   };
-
-  const handleOpenImageDialog = () => {
-    if (player?.cropPosition || player?.cropZoom) {
-      const DIALOG_SIZE = 500;
-      const xPixels = player.cropPosition ? ((player.cropPosition.x - 50) / 100) * DIALOG_SIZE : 0;
-      const yPixels = player.cropPosition ? ((player.cropPosition.y - 50) / 100) * DIALOG_SIZE : 0;
-
-      setImagePosition({ x: xPixels, y: yPixels });
-      setImageZoom(player.cropZoom || 1);
-    } else {
-      setImagePosition({ x: 0, y: 0 });
-      setImageZoom(1);
-    }
-    setShowImageDialog(true);
-  };
   
-  const handleResetView = () => {
-    if (player?.cropPosition || player?.cropZoom) {
-      const DIALOG_SIZE = 500;
-      const xPixels = player.cropPosition ? ((player.cropPosition.x - 50) / 100) * DIALOG_SIZE : 0;
-      const yPixels = player.cropPosition ? ((player.cropPosition.y - 50) / 100) * DIALOG_SIZE : 0;
-
-      setImagePosition({ x: xPixels, y: yPixels });
-      setImageZoom(player.cropZoom || 1);
-    } else {
-      setImagePosition({ x: 0, y: 0 });
-      setImageZoom(1);
-    }
-  };
-
-  const handleSaveCrop = async () => {
-    if (!playerRef) return;
-
-    setIsSavingCrop(true);
-    try {
-      const DIALOG_SIZE = 500;
-      const xPercent = 50 + (imagePosition.x / DIALOG_SIZE) * 100;
-      const yPercent = 50 + (imagePosition.y / DIALOG_SIZE) * 100;
-
-      await updateDoc(playerRef, {
-        cropPosition: { x: xPercent, y: yPercent },
-        cropZoom: imageZoom,
-      });
-
-      toast({
-        title: 'Configuración guardada',
-        description: 'El ajuste de tu foto ha sido guardado.',
-      });
-
-      setShowImageDialog(false);
-    } catch (error: any) {
-      logger.error('Error saving crop', error, { playerId, userId: user?.uid });
-      toast({
-        variant: 'destructive',
-        title: 'Error al guardar',
-        description: error.message || 'No se pudo guardar la configuración.',
-      });
-    } finally {
-      setIsSavingCrop(false);
-    }
-  };
-  
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isCurrentUserProfile) return;
-    setIsDragging(true);
-    setDragStart({ x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y });
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    setImagePosition({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y,
-    });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-  
-  const handleZoomIn = () => {
-    setImageZoom(prev => Math.min(prev + 0.2, 3));
-  };
-
-  const handleZoomOut = () => {
-    setImageZoom(prev => Math.max(prev - 0.2, 0.5));
-  };
-  
-  const handleSetZoom = (zoom: number) => {
-    setImageZoom(zoom);
-  };
-
-
   const loadingAny = playerLoading || historyLoading || isLoading || (isCurrentUserProfile && (createdMatchesLoading || createdPlayersLoading));
 
   if (loadingAny) {
@@ -578,20 +374,25 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                     <Badge variant="secondary" className="text-lg">{player.position}</Badge>
                                 </div>
                             </div>
-                            <div className="relative w-full flex justify-center">
+                            <div className="relative w-full flex flex-col items-center gap-4">
                                 {isCurrentUserProfile ? (
                                     <ImageCropperDialog
                                         player={player}
-                                        onGenerateAI={handleGenerateAIPhoto}
-                                        isGeneratingAI={isGeneratingAI}
                                         onSaveComplete={() => window.location.reload()}
                                     >
                                         <button className="group relative">
                                             <Avatar className="h-40 w-40 border-4 border-primary/50 group-hover:scale-105 group-hover:ring-4 group-hover:ring-primary/50 transition-all duration-300 overflow-hidden">
+                                                {isGeneratingAI && (
+                                                    <div className="absolute inset-0 z-10 bg-black/70 flex flex-col items-center justify-center text-white">
+                                                        <Sparkles className="h-8 w-8 color-cycle-animation" />
+                                                        <p className="text-xs font-semibold mt-2">Creando magia...</p>
+                                                    </div>
+                                                )}
                                                 <AvatarImage
                                                     src={player.photoUrl}
                                                     alt={player.name}
                                                     data-ai-hint="player portrait"
+                                                    className={cn(isGeneratingAI && "opacity-30 blur-sm")}
                                                     style={{
                                                         objectFit: 'cover',
                                                         objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`,
@@ -621,6 +422,30 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                         />
                                         <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
+                                )}
+                                {isCurrentUserProfile && (
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="outline" size="sm" disabled={isGeneratingAI || (player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0)}>
+                                                <Sparkles className="mr-2 h-4 w-4" />
+                                                Generar Foto IA ({player.cardGenerationCredits || 0} rest.)
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>¿Confirmar generación de imagen?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Esto usará 1 de tus {player.cardGenerationCredits} créditos de generación de este mes. Esta acción no se puede deshacer.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleGenerateAIPhoto}>
+                                                    Confirmar y Usar Crédito
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 )}
                             </div>
                         </div>
