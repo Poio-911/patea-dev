@@ -133,15 +133,65 @@
       animation: rotate-glow 4s linear infinite;
   }
 
-  @keyframes rotate-glow {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+  .animated-border-badge {
+    position: relative;
+    overflow: hidden;
+    background-color: hsl(var(--accent));
+  }
+  .animated-border-badge::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 150%;
+    padding-bottom: 150%;
+    background: conic-gradient(from 0deg, transparent 50%, hsl(var(--primary)) 100%);
+    animation: rotate-glow 3s linear infinite;
+    transform: translate(-50%, -50%);
+    z-index: -1;
+  }
+  .animated-border-badge > * {
+    z-index: 1;
+  }
+  
+  .text-gold-gradient {
+    background: linear-gradient(135deg, #FFD700, #E6C200, #C9A900, #B39200);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+  }
+  
+  .gold-particles-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  
+  .gold-particles-background::before {
+    content: '';
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    top: -50%;
+    left: -50%;
+    background-image: radial-gradient(circle, rgba(255, 215, 0, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    animation: pan-particles 60s linear infinite;
   }
 
+  @keyframes rotate-glow {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
+  @keyframes pan-particles {
+    from { transform: translate(0%, 0%); }
+    to { transform: translate(25%, 25%); }
+  }
 
   @keyframes border-shine {
     to {

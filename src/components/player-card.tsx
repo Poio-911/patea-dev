@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { MoreVertical, Trash2, Pencil, Shield } from 'lucide-react';
+import { MoreVertical, Trash2, Pencil } from 'lucide-react';
 import type { Player, AttributeKey } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { EditPlayerDialog } from './edit-player-dialog';
@@ -47,22 +47,23 @@ const positionStyles: Record<Player['position'], { color: string; bg: string; na
 };
 
 const getStatColorClasses = (value: number): { text: string; border: string; bg: string } => {
-    if (value >= 85) return { text: 'text-yellow-600 dark:text-yellow-400', border: 'border-yellow-600 dark:border-yellow-400', bg: 'bg-yellow-600/10' };
-    if (value >= 75) return { text: 'text-green-600 dark:text-green-400', border: 'border-green-600 dark:border-green-400', bg: 'bg-green-600/10' };
-    if (value >= 65) return { text: 'text-slate-400 dark:text-slate-300', border: 'border-slate-400 dark:border-slate-300', bg: 'bg-slate-400/10' };
-    return { text: 'text-amber-700 dark:text-amber-600', border: 'border-amber-700 dark:border-amber-600', bg: 'bg-amber-700/10' };
+    if (value >= 85) return { text: 'text-green-600 dark:text-green-400', border: 'border-green-500/50', bg: 'bg-green-500/10' };
+    if (value >= 70) return { text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/40', bg: 'bg-blue-500/10' };
+    if (value >= 50) return { text: 'text-slate-500 dark:text-slate-400', border: 'border-slate-500/30', bg: 'bg-slate-500/10' };
+    return { text: 'text-amber-700 dark:text-amber-600', border: 'border-amber-600/40', bg: 'bg-amber-600/10' };
 };
 
-const StatPill = ({ label, value, isPrimary }: { label: string; value: number; isPrimary: boolean }) => {
+const StatPill = React.memo(({ label, value, isPrimary }: { label: string; value: number; isPrimary: boolean }) => {
     const { text, border } = getStatColorClasses(value);
     return (
         <motion.div
             className={cn(
-                "relative flex items-center justify-between rounded-md p-1.5 text-xs font-bold border-2",
+                "relative flex items-center justify-between rounded-md p-1.5 text-xs font-bold border",
                 "transition-all duration-200",
+                text,
                 border,
+                 isPrimary && "animated-border-badge",
                 !isPrimary && "hover:scale-105 hover:shadow-lg hover:z-10",
-                isPrimary && "stat-border-glow" // Animación de brillo para el atributo principal
             )}
             whileHover={!isPrimary ? { scale: 1.05, transition: { duration: 0.2 } } : undefined}
         >
@@ -72,7 +73,8 @@ const StatPill = ({ label, value, isPrimary }: { label: string; value: number; i
             </span>
         </motion.div>
     );
-};
+});
+StatPill.displayName = 'StatPill';
 
 
 export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true }: PlayerCardProps) {
@@ -86,6 +88,8 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
   const isManualPlayer = player.id !== player.ownerUid;
   const canDelete = isManualPlayer && user?.uid === player.ownerUid;
   const canEdit = isManualPlayer && user?.uid === player.ownerUid;
+
+  const isElitePlayer = player.ovr >= 85;
 
   const handleDelete = async () => {
     if (!firestore || !canDelete) return;
@@ -123,11 +127,8 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
   }, [stats]);
   
   const specialty = React.useMemo(() => {
-    const spec = playerSpecialties[primaryStat.key];
-    if (primaryStat.value >= spec.threshold) {
-      return spec;
-    }
-    return null;
+    if (primaryStat.value < 85) return null;
+    return playerSpecialties[primaryStat.key as keyof typeof playerSpecialties];
   }, [primaryStat]);
 
 
@@ -136,17 +137,17 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
       className={cn(
         "overflow-hidden border-2 shadow-lg h-full flex flex-col group",
         "transition-all duration-300 cursor-pointer",
-        "hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30",
+        isElitePlayer ? "border-amber-400/50 hover:shadow-amber-400/10" : "hover:shadow-primary/10 hover:border-primary/30",
         "active:scale-[0.98] active:shadow-md",
-        "border-border"
       )}
       role="article"
       aria-label={`Jugador ${playerName}, calificación general ${player.ovr}, posición ${player.position}`}
     >
       <CardHeader className={cn(
         "relative p-3 sm:p-4 text-card-foreground bg-gradient-to-br to-transparent",
-        positionStyles[player.position].bg
+        isElitePlayer ? "from-amber-400/20" : positionStyles[player.position].bg
       )}>
+        {isElitePlayer && <div className="gold-particles-background" />}
         <div className="flex justify-between items-start">
           <motion.div
             key={player.ovr}
@@ -155,18 +156,12 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
             transition={{ duration: 0.3, type: 'spring' }}
             className="font-black leading-none"
           >
-            {player.ovr >= 85 ? (
-              <div className="relative w-16 h-16 sm:w-20 sm:h-20">
-                <Shield className="w-full h-full text-yellow-500 fill-yellow-500/10" />
-                <span className="absolute inset-0 flex items-center justify-center text-3xl sm:text-4xl text-yellow-900 dark:text-background font-black">
-                  {player.ovr}
-                </span>
-              </div>
-            ) : (
-              <div className={cn("text-4xl sm:text-5xl lg:text-6xl", positionStyles[player.position].color)}>
+             <span className={cn(
+                "text-4xl sm:text-5xl lg:text-6xl font-black",
+                isElitePlayer ? "text-gold-gradient" : positionStyles[player.position].color
+             )}>
                 {player.ovr}
-              </div>
-            )}
+            </span>
           </motion.div>
           <Badge
             variant="outline"
@@ -174,7 +169,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
               "text-sm font-bold px-2.5 py-1",
               "bg-background/90 backdrop-blur-sm",
               "border-2 shadow-md",
-              positionStyles[player.position].color
+              isElitePlayer ? "border-amber-400/50 text-amber-400" : positionStyles[player.position].color
             )}
             title={positionStyles[player.position].name}
           >
@@ -187,8 +182,8 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
               "h-20 w-20 sm:h-24 sm:w-24 overflow-hidden",
               "border-2 sm:border-4 border-background shadow-2xl",
               "transition-all duration-300",
-              "group-hover:scale-110 group-hover:shadow-primary/50",
-              specialty && "ring-4 ring-primary/30 ring-offset-2 ring-offset-background",
+              "group-hover:scale-110",
+               isElitePlayer ? "group-hover:shadow-amber-400/50" : "group-hover:shadow-primary/50",
             )}>
               <AvatarImage
                 src={player.photoUrl}
@@ -261,10 +256,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
             <h3 className="text-lg font-bold font-headline truncate">{playerName}</h3>
             {specialty ? (
                 <motion.div
-                  className="flex items-center justify-center gap-2 mt-2 px-3 py-1.5 mx-auto max-w-fit rounded-md border-2 border-amber-400 bg-amber-400/10"
-                  style={{
-                    clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
-                  }}
+                  className="animated-border-badge flex items-center justify-center gap-2 mt-2 px-3 py-1.5 mx-auto max-w-fit rounded-md"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3, type: 'spring' }}
