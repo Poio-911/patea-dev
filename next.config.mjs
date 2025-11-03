@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true, // Forzar la reconstrucción del caché de Next.js
+  reactStrictMode: true,
   images: {
     remotePatterns: [
       {
@@ -16,6 +16,9 @@ const nextConfig = {
         hostname: 'storage.googleapis.com',
       },
     ],
+  },
+  serverActions: {
+    bodySizeLimit: '10mb',
   },
 };
 
