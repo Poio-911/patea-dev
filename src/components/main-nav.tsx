@@ -57,7 +57,6 @@ const navItems = [
   { href: '/players', label: 'Jugadores', icon: SoccerPlayerIcon },
   { href: '/matches', label: 'Partidos', icon: MatchIcon },
   { href: '/evaluations', label: 'Evaluaciones', icon: EvaluationIcon },
-  { href: '/find-match', label: 'Buscar', icon: FindMatchIcon },
 ];
 
 export function MainNav({ children }: { children: React.ReactNode }) {
@@ -277,7 +276,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           </main>
           
           <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg md:hidden">
-              <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
+              <div className="mx-auto grid h-full max-w-lg grid-cols-4 font-medium">
               {navItems.map((item) => {
                   const isActive = pathname.startsWith(item.href);
                   const isMatchIcon = item.href === '/matches';

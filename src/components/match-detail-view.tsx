@@ -5,7 +5,7 @@ import { useMemo, useState, useEffect } from 'react';
 import type { Match, Player, UserProfile } from '@/lib/types';
 import { doc, getDoc, query, where, collection } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { Loader2, ArrowLeft, Shuffle } from 'lucide-react';
+import { Loader2, ArrowLeft, Shuffle, UserPlus } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
 import Link from 'next/link';
@@ -16,7 +16,6 @@ import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
 import { MatchChronicleCard } from './match-chronicle-card';
-import { MatchTeamsDialog } from './match-teams-dialog';
 import { SwapPlayerDialog } from './swap-player-dialog';
 import { ShirtIcon } from '@/components/icons/shirt-icon';
 import { VestIcon } from '@/components/icons/vest-icon';
@@ -25,7 +24,7 @@ import { useMatchPermissions } from '@/hooks/use-match-permissions';
 import { useMatchActions } from '@/hooks/use-match-actions';
 import { MatchInfoCard } from './match-details/MatchInfoCard';
 import { MatchManagementActions } from './match-details/MatchManagementActions';
-
+import { InvitePlayerDialog } from './invite-player-dialog';
 
 interface MatchDetailViewProps {
   matchId: string;
@@ -242,16 +241,29 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     </div>
                     <div className="space-y-6">
                         {permissions.isOwner && (
-                            <MatchManagementActions
-                                match={match}
-                                allGroupPlayers={allGroupPlayers || []}
-                                canFinalize={permissions.canFinalize}
-                                canInvite={canInvite}
-                                isFinishing={actions.isFinishing}
-                                isDeleting={actions.isDeleting}
-                                onFinish={actions.handleFinish}
-                                onDelete={actions.handleDelete}
-                            />
+                             <Card className="dark:bg-background/20 border-foreground/10 backdrop-blur-sm">
+                                <CardHeader>
+                                    <CardTitle>Gestión del Partido</CardTitle>
+                                </CardHeader>
+                                <CardContent className="grid grid-cols-2 gap-2">
+                                     <InvitePlayerDialog match={match} allGroupPlayers={allGroupPlayers} userMatches={[]}>
+                                        <Button variant="outline" className="dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40 min-h-[48px]">
+                                            <UserPlus className="mr-2 h-4 w-4"/>
+                                            Invitar Jugador
+                                        </Button>
+                                     </InvitePlayerDialog>
+                                     <MatchManagementActions
+                                        match={match}
+                                        allGroupPlayers={allGroupPlayers || []}
+                                        canFinalize={permissions.canFinalize}
+                                        canInvite={canInvite}
+                                        isFinishing={actions.isFinishing}
+                                        isDeleting={actions.isDeleting}
+                                        onFinish={actions.handleFinish}
+                                        onDelete={actions.handleDelete}
+                                    />
+                                </CardContent>
+                            </Card>
                         )}
                         <MatchChatView match={match} />
                     </div>

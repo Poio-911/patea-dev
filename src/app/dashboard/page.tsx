@@ -6,7 +6,7 @@ import { useCollection, useDoc, useFirestore, useUser } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, Users2, Calendar, User, Eye, Loader2, LocateFixed, AlertCircle, UserRound, CheckCircle } from 'lucide-react';
+import { Star, Users2, Calendar, User, Eye, Loader2, LocateFixed, AlertCircle, UserRound, CheckCircle, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { collection, query, where, orderBy, limit, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -27,6 +27,7 @@ import { MateIcon } from '@/components/icons/mate-icon';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 import { logger } from '@/lib/logger';
 import { motion } from 'framer-motion';
+import { FindMatchIcon } from '@/components/icons/find-match-icon';
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
     upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
@@ -251,6 +252,25 @@ function DashboardContent() {
               </CardContent>
             </Card>
           )}
+
+          <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FindMatchIcon className="h-5 w-5 text-primary" />
+                  Mercado de Pases
+                </CardTitle>
+                <CardDescription>Buscá partidos públicos y sumate a jugar.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">¿Con ganas de jugar? Mirá los partidos públicos disponibles cerca tuyo y encontrá un lugar en la cancha.</p>
+                 <Button asChild>
+                    <Link href="/find-match">
+                        <Search className="mr-2 h-4 w-4" />
+                        Encontrar un Partido
+                    </Link>
+                </Button>
+              </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>
