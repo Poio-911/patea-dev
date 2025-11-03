@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Match, ChatMessage } from '@/lib/types';
 import { useFirestore, useUser, useCollection } from '@/firebase';
 import { collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -18,7 +19,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from './ui/scroll-area';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 
 interface MatchChatViewProps {
@@ -76,11 +76,12 @@ function ChatMessageItem({ message, isCurrentUser }: { message: ChatMessage; isC
 export function MatchChatView({ match }: MatchChatViewProps) {
   const [isSending, setIsSending] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isOpen, setIsOpen] = useState(false);
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  
+
   const lastSeenKey = `lastSeenMsg_${match.id}`;
 
   const messagesQuery = useMemo(() => {
@@ -118,6 +119,13 @@ export function MatchChatView({ match }: MatchChatViewProps) {
         setUnreadCount(0);
     }
   }
+
+  // Marcar como leído cuando se abre el chat
+  useEffect(() => {
+    if (isOpen) {
+      handleFocus();
+    }
+  }, [isOpen]);
 
 
   const form = useForm<ChatFormData>({
@@ -167,43 +175,79 @@ export function MatchChatView({ match }: MatchChatViewProps) {
   };
 
   return (
-    <Card className="dark:bg-background/20 border-foreground/10 backdrop-blur-sm">
-        <Accordion type="single" collapsible defaultValue="chat" className="w-full">
-            <AccordionItem value="chat" className="border-b-0">
-                <AccordionTrigger className="p-4">
-                    <div className="flex items-center gap-2 w-full">
-                        <MessageCircle className="h-5 w-5" />
-                        <h3 className="font-semibold text-lg">Chat del Partido</h3>
-                        {unreadCount > 0 && (
-                            <Badge className="animate-pulse">{unreadCount}</Badge>
-                        )}
+    <>
+      {/* Botón flotante circular */}
+      <motion.button
+        onClick={() => setIsOpen(!isOpen)}
+        className="fixed bottom-20 right-6 w-14 h-14 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg flex items-center justify-center z-[100] transition-transform hover:scale-110"
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        aria-label="Abrir chat del partido"
+      >
+        <MessageCircle className="h-6 w-6" />
+        {unreadCount > 0 && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-destructive text-white text-xs font-bold flex items-center justify-center"
+          >
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </motion.div>
+        )}
+      </motion.button>
+
+      {/* Panel del chat */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-20 right-6 w-96 max-w-[calc(100vw-3rem)] z-[100] mb-4"
+          >
+            <Card className="bg-card/95 backdrop-blur-md border-2 shadow-2xl">
+              <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
+                <div className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5" />
+                  <CardTitle className="text-lg font-semibold">Chat del Partido</CardTitle>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsOpen(false)}
+                  className="h-8 w-8"
+                >
+                  ×
+                </Button>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="flex-1 flex flex-col overflow-hidden" onFocus={handleFocus} tabIndex={0}>
+                  <ScrollArea className="p-4 h-[400px]" ref={scrollAreaRef}>
+                    <div className="space-y-4">
+                      {renderContent()}
                     </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                    <div className="flex-1 flex flex-col p-4 pt-0 overflow-hidden min-h-[300px]" onFocus={handleFocus} tabIndex={0}>
-                        <ScrollArea className="flex-1 pr-2 max-h-[400px]" ref={scrollAreaRef}>
-                            <div className="space-y-4">
-                            {renderContent()}
-                            </div>
-                        </ScrollArea>
-                    </div>
-                    <div className="p-4 border-t">
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="flex w-full items-center space-x-2">
-                            <Input
-                            {...form.register('message')}
-                            placeholder="Escribe un mensaje..."
-                            autoComplete="off"
-                            disabled={isSending}
-                            onFocus={handleFocus}
-                            />
-                            <Button type="submit" size="icon" disabled={isSending}>
-                            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                            </Button>
-                        </form>
-                    </div>
-                </AccordionContent>
-            </AccordionItem>
-        </Accordion>
-    </Card>
+                  </ScrollArea>
+                </div>
+                <CardFooter className="p-4 border-t">
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="flex w-full items-center space-x-2">
+                    <Input
+                      {...form.register('message')}
+                      placeholder="Escribe un mensaje..."
+                      autoComplete="off"
+                      disabled={isSending}
+                      onFocus={handleFocus}
+                    />
+                    <Button type="submit" size="icon" disabled={isSending}>
+                      {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    </Button>
+                  </form>
+                </CardFooter>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

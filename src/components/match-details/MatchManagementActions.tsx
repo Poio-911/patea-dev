@@ -44,9 +44,9 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
   onDelete,
 }: MatchManagementActionsProps) {
   return (
-    <Card className="dark:bg-background/20 border-foreground/10 backdrop-blur-sm">
+    <Card className="bg-card/60 backdrop-blur-sm border-2">
       <CardHeader>
-        <CardTitle>Gestión del Partido</CardTitle>
+        <CardTitle className="text-xl font-semibold">Gestión del Partido</CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-2">
         {canFinalize && (
@@ -54,7 +54,7 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
             onClick={onFinish}
             disabled={isFinishing}
             size="sm"
-            className="dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40 min-h-[48px]"
+            className="min-h-[48px]"
             aria-label="Finalizar partido"
           >
             {isFinishing ? (
@@ -76,7 +76,7 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
             <Button
               variant="outline"
               size="sm"
-              className="dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40 min-h-[48px]"
+              className="min-h-[48px]"
               aria-label="Invitar jugador"
             >
               <UserPlus className="mr-2 h-4 w-4" aria-hidden="true" />

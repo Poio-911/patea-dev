@@ -42,9 +42,9 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
   onJoinOrLeave,
 }: MatchInfoCardProps) {
   return (
-    <Card className="relative overflow-hidden border-foreground/10 text-foreground dark:text-white rounded-lg shadow-lg bg-transparent">
-      {/* Background video - visible SOLO en tema CLARO */}
-      <div className="absolute inset-0 -z-10 rounded-lg overflow-hidden block dark:hidden">
+    <Card className="relative overflow-hidden border-2 border-t-4 border-t-primary text-foreground dark:text-white rounded-lg shadow-lg bg-card/80 backdrop-blur-md">
+      {/* Background video - visible en AMBOS temas */}
+      <div className="absolute inset-0 -z-10 rounded-lg overflow-hidden">
         <video
           autoPlay
           loop
@@ -52,7 +52,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
           playsInline
           className="h-full w-full object-cover"
           aria-hidden="true"
-          key="light-theme-video"
+          key="unified-theme-video"
         >
           <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
         </video>
@@ -65,7 +65,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-lg">
               <Calendar className="h-5 w-5" aria-hidden="true" />
-              <span className="font-bold">
+              <span className="font-semibold">
                 {format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es })}
               </span>
             </div>
@@ -84,7 +84,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
           <div className="space-y-3 text-left sm:text-right">
             <div className="flex items-center gap-3 text-lg justify-start sm:justify-end">
               <Clock className="h-5 w-5" aria-hidden="true" />
-              <span className="font-bold">{match.time} hs</span>
+              <span className="font-semibold">{match.time} hs</span>
               {WeatherIcon && match.weather && (
                 <span className="flex items-center gap-1.5 text-sm text-white/90">
                   <WeatherIcon className="h-4 w-4 text-blue-400" aria-hidden="true" />
@@ -104,7 +104,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
           <div className="flex items-start gap-3">
             <MapPin className="h-5 w-5 mt-1 flex-shrink-0" aria-hidden="true" />
-            <p className="font-bold">{match.location.name}</p>
+            <p className="font-semibold">{match.location.name}</p>
           </div>
           <div className="flex gap-2">
             <Button asChild variant="secondary" size="sm">
@@ -145,7 +145,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full"
+                className="w-full font-bold text-base"
                 disabled
                 aria-label="Partido completo"
               >

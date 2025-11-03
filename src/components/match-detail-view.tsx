@@ -102,21 +102,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
 
     return (
         <div className="relative isolate">
-          <div className="absolute inset-0 -z-10 hidden dark:block">
-            <video
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="h-full w-full object-cover saturate-50 brightness-75"
-              aria-hidden="true"
-              key="light-theme-video"
-            >
-              <source src="/videos/match-detail-bg.mp4" type="video/mp4" />
-            </video>
-            <div className="absolute inset-0 bg-black/50" />
-          </div>
-    
           <div className="relative flex flex-col gap-8 p-4 md:p-6 text-foreground dark:text-white">
                 <div className="flex w-full items-center justify-between gap-4">
                     <Button asChild variant="outline" className="self-start dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40">
@@ -168,10 +153,12 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                 onDelete={actions.handleDelete}
                             />
                         )}
-                        <MatchChatView match={match} />
                     </div>
                 </div>
             </div>
+
+            {/* Chat flotante */}
+            <MatchChatView match={match} />
         </div>
     );
 }
