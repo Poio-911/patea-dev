@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -21,7 +22,7 @@ interface MatchManagementActionsProps {
   match: Match;
   allGroupPlayers: Player[];
   canFinalize: boolean;
-  canGenerateTeams: boolean;
+  canInvite: boolean;
   isFinishing: boolean;
   isDeleting: boolean;
   onFinish: () => void;
@@ -36,7 +37,7 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
   match,
   allGroupPlayers,
   canFinalize,
-  canGenerateTeams,
+  canInvite,
   isFinishing,
   isDeleting,
   onFinish,
@@ -44,14 +45,14 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
 }: MatchManagementActionsProps) {
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold text-foreground/90">Gestión del Partido</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+      <h2 className="text-xl font-bold text-foreground/90 pt-6">Gestión del Partido</h2>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         {canFinalize && (
           <Button
             onClick={onFinish}
             disabled={isFinishing}
             size="sm"
-            className="min-h-[48px]"
+            className="min-h-[48px] w-full sm:w-auto"
             aria-label="Finalizar partido"
           >
             {isFinishing ? (
@@ -63,7 +64,7 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
           </Button>
         )}
 
-        {canGenerateTeams && (
+        {canInvite && (
           <InvitePlayerDialog
             playerToInvite={null}
             userMatches={[match]}
@@ -73,10 +74,10 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
             <Button
               variant="outline"
               size="sm"
-              className="min-h-[48px]"
+              className="min-h-[48px] w-full sm:w-auto"
               aria-label="Invitar jugador"
             >
-              <UserPlus className="mr-2 h-4 w-4" aria-hidden="true" />
+              <UserPlus className="mr-2 h-4 w-4 text-primary" aria-hidden="true" />
               Invitar
             </Button>
           </InvitePlayerDialog>
@@ -88,7 +89,7 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
               variant="ghost"
               size="sm"
               disabled={isDeleting}
-              className="min-h-[48px] text-destructive hover:bg-destructive/10 hover:text-destructive"
+              className="min-h-[48px] text-destructive hover:bg-destructive/10 hover:text-destructive w-full sm:w-auto"
               aria-label="Eliminar partido"
             >
               <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
