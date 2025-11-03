@@ -122,7 +122,6 @@ const getPerformanceFromTags = (tags: PerformanceTag[]): { level: PerformanceLev
     return { level: 'Bajo', color: 'bg-red-500' };
 };
 
-// Helper para convertir una URL de imagen a Data URI
 const toDataURL = (url: string): Promise<string> =>
   fetch(url)
     .then(response => {
@@ -171,7 +170,6 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
   
   const manualPlayers = useMemo(() => {
     if(!createdPlayers) return [];
-    // Filter out the player's own profile if they are the owner
     return createdPlayers.filter(p => p.id !== p.ownerUid);
   }, [createdPlayers]);
   
@@ -375,44 +373,19 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                 </div>
                             </div>
                             <div className="relative w-full flex flex-col items-center gap-4">
-                                {isCurrentUserProfile ? (
-                                    <ImageCropperDialog
-                                        player={player}
-                                        onSaveComplete={() => window.location.reload()}
-                                    >
-                                        <button className="group relative">
-                                            <Avatar className="h-40 w-40 border-4 border-primary/50 group-hover:scale-105 group-hover:ring-4 group-hover:ring-primary/50 transition-all duration-300 overflow-hidden">
-                                                {isGeneratingAI && (
-                                                    <div className="absolute inset-0 z-10 bg-black/70 flex flex-col items-center justify-center text-white">
-                                                        <Sparkles className="h-8 w-8 color-cycle-animation" />
-                                                        <p className="text-xs font-semibold mt-2">Creando magia...</p>
-                                                    </div>
-                                                )}
-                                                <AvatarImage
-                                                    src={player.photoUrl}
-                                                    alt={player.name}
-                                                    data-ai-hint="player portrait"
-                                                    className={cn(isGeneratingAI && "opacity-30 blur-sm")}
-                                                    style={{
-                                                        objectFit: 'cover',
-                                                        objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`,
-                                                        transform: `scale(${player.cropZoom || 1})`,
-                                                        transformOrigin: 'center center',
-                                                    }}
-                                                />
-                                                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Eye className="h-10 w-10 text-white" />
+                                <div className="group relative">
+                                    <Avatar className="h-40 w-40 border-4 border-primary/50 group-hover:scale-105 group-hover:ring-4 group-hover:ring-primary/50 transition-all duration-300 overflow-hidden">
+                                        {isGeneratingAI && (
+                                            <div className="absolute inset-0 z-10 bg-black/70 flex flex-col items-center justify-center text-white">
+                                                <Sparkles className="h-8 w-8 color-cycle-animation" />
+                                                <p className="text-xs font-semibold mt-2">Creando magia...</p>
                                             </div>
-                                        </button>
-                                    </ImageCropperDialog>
-                                ) : (
-                                    <Avatar className="h-40 w-40 border-4 border-primary/50 overflow-hidden">
+                                        )}
                                         <AvatarImage
                                             src={player.photoUrl}
                                             alt={player.name}
                                             data-ai-hint="player portrait"
+                                            className={cn(isGeneratingAI && "opacity-30 blur-sm")}
                                             style={{
                                                 objectFit: 'cover',
                                                 objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`,
@@ -422,30 +395,41 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
                                         />
                                         <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
-                                )}
+                                </div>
                                 {isCurrentUserProfile && (
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="outline" size="sm" disabled={isGeneratingAI || (player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0)}>
-                                                <Sparkles className="mr-2 h-4 w-4" />
-                                                Generar Foto IA ({player.cardGenerationCredits || 0} rest.)
+                                    <div className="w-full flex flex-col gap-2">
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="default" size="sm" disabled={isGeneratingAI || (player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0)}>
+                                                    <Sparkles className="mr-2 h-4 w-4" />
+                                                    Generar Foto IA ({player.cardGenerationCredits || 0} rest.)
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>¿Confirmar generación de imagen?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Esto usará 1 de tus {player.cardGenerationCredits} créditos de generación de este mes. Esta acción no se puede deshacer.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={handleGenerateAIPhoto}>
+                                                        Confirmar y Usar Crédito
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                         <ImageCropperDialog
+                                            player={player}
+                                            onSaveComplete={() => window.location.reload()}
+                                        >
+                                            <Button variant="outline" size="sm" disabled={isGeneratingAI}>
+                                                <Upload className="mr-2 h-4 w-4" />
+                                                Subir o Recortar Foto
                                             </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>¿Confirmar generación de imagen?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    Esto usará 1 de tus {player.cardGenerationCredits} créditos de generación de este mes. Esta acción no se puede deshacer.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                <AlertDialogAction onClick={handleGenerateAIPhoto}>
-                                                    Confirmar y Usar Crédito
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
+                                        </ImageCropperDialog>
+                                    </div>
                                 )}
                             </div>
                         </div>

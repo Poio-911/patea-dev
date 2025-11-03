@@ -17,17 +17,14 @@ import { useToast } from '@/hooks/use-toast';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import { doc, writeBatch } from 'firebase/firestore';
-import { Loader2, Upload, Scissors, Sparkles } from 'lucide-react';
+import { Loader2, Upload, Scissors } from 'lucide-react';
 import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
 
 interface ImageCropperDialogProps {
   player: {
     photoUrl?: string;
   };
-  onGenerateAI: () => Promise<void>;
-  isGeneratingAI: boolean;
   onSaveComplete?: (newUrl: string) => void;
   children: React.ReactNode;
 }
@@ -68,7 +65,7 @@ async function getCroppedImg(
 }
 
 
-export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, onSaveComplete, children }: ImageCropperDialogProps) {
+export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCropperDialogProps) {
   const [open, setOpen] = useState(false);
   const [imgSrc, setImgSrc] = useState('');
   const [crop, setCrop] = useState<Crop>();
@@ -82,7 +79,7 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, onSav
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setCrop(undefined); // Reset crop when new image is selected
+      setCrop(undefined);
       const reader = new FileReader();
       reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
       reader.readAsDataURL(e.target.files[0]);
@@ -93,6 +90,10 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, onSav
     setOpen(isOpen);
     if (isOpen) {
         setImgSrc(player.photoUrl || '');
+    } else {
+        setImgSrc('');
+        setCrop(undefined);
+        setCompletedCrop(undefined);
     }
   }
 
@@ -102,28 +103,26 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, onSav
         return;
     }
     
-    // If not logged in (e.g., registration page), just pass the data URL back
-    if (!user || !auth?.currentUser) {
-        const croppedImageBlob = await getCroppedImg(imgRef.current, completedCrop);
-        if (croppedImageBlob) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                if (onSaveComplete) {
-                    onSaveComplete(reader.result as string);
-                }
-                setOpen(false);
-            };
-            reader.readAsDataURL(croppedImageBlob);
-        }
-        return;
-    }
-
-
     setIsUploading(true);
+
     try {
       const croppedImageBlob = await getCroppedImg(imgRef.current, completedCrop);
       if (!croppedImageBlob) {
         throw new Error('No se pudo recortar la imagen.');
+      }
+      
+      if (!user || !auth?.currentUser) {
+        // Handle case for non-logged-in user (e.g., registration)
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            if (onSaveComplete) {
+                onSaveComplete(reader.result as string);
+            }
+            setOpen(false);
+        };
+        reader.readAsDataURL(croppedImageBlob);
+        setIsUploading(false);
+        return;
       }
 
       const { firebaseApp, firestore } = initializeFirebase();
@@ -166,7 +165,7 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, onSav
         <DialogHeader>
           <DialogTitle>Editar Foto de Perfil</DialogTitle>
           <DialogDescription>
-            Ajustá tu foto de perfil. Hacé clic y arrastrá para recortar la imagen.
+            Subí una nueva imagen y ajusta el recorte.
           </DialogDescription>
         </DialogHeader>
         <div className="flex justify-center items-center bg-muted/50 p-4 rounded-md">
@@ -187,10 +186,13 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, onSav
               />
             </ReactCrop>
           ) : (
-            <p className="text-muted-foreground">Subí una imagen para empezar.</p>
+            <div className="h-64 flex flex-col items-center justify-center text-muted-foreground">
+              <Upload className="h-10 w-10 mb-2" />
+              <p>Subí una imagen para empezar.</p>
+            </div>
           )}
         </div>
-        <DialogFooter className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <DialogFooter className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <input
                 type="file"
                 ref={fileInputRef}
@@ -202,26 +204,15 @@ export function ImageCropperDialog({ player, onGenerateAI, isGeneratingAI, onSav
                 type="button"
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading || isGeneratingAI}
+                disabled={isUploading}
             >
                 <Upload className="mr-2 h-4 w-4" />
-                Cambiar Imagen
+                Subir Nueva Foto
             </Button>
-            {user && ( // Only show AI generation for logged-in users
-              <Button
-                  type="button"
-                  onClick={onGenerateAI}
-                  disabled={isUploading || isGeneratingAI}
-                  className="relative"
-              >
-                  {isGeneratingAI ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                  {isGeneratingAI ? "Generando..." : "Generar con IA"}
-              </Button>
-            )}
             <Button
                 type="button"
                 onClick={handleSaveCrop}
-                disabled={!completedCrop || isUploading || isGeneratingAI}
+                disabled={!completedCrop || isUploading}
             >
                 {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Scissors className="mr-2 h-4 w-4" />}
                 {isUploading ? 'Guardando...' : 'Guardar Recorte'}
