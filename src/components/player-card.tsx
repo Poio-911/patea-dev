@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -54,7 +53,7 @@ const getStatColorClasses = (value: number): { text: string; border: string; bg:
 };
 
 const StatPill = React.memo(({ label, value, isPrimary }: { label: string; value: number; isPrimary: boolean }) => {
-    const { text, border, bg } = getStatColorClasses(value);
+    const { text, border } = getStatColorClasses(value);
     return (
         <motion.div
             className={cn(
@@ -62,8 +61,7 @@ const StatPill = React.memo(({ label, value, isPrimary }: { label: string; value
                 "transition-all duration-200",
                 text,
                 border,
-                bg, // Fondo re-aplicado
-                 isPrimary && "animated-border-badge",
+                isPrimary && "animated-border-badge",
                 !isPrimary && "hover:scale-105 hover:shadow-lg hover:z-10",
             )}
             whileHover={!isPrimary ? { scale: 1.05, transition: { duration: 0.2 } } : undefined}
@@ -159,12 +157,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
           >
             {isElitePlayer ? (
               <div className="relative w-fit">
-                <div className="absolute -inset-1.5 flex items-center justify-center">
-                  <div className="h-full w-full bg-gradient-to-r from-amber-400 to-yellow-500 blur-md" />
-                </div>
-                <div className={cn(
-                  "relative text-4xl sm:text-5xl lg:text-6xl font-black text-gold-gradient"
-                )}>
+                <div className={cn("relative text-4xl sm:text-5xl lg:text-6xl font-black text-gold-gradient")}>
                   {player.ovr}
                 </div>
               </div>
