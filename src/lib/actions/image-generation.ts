@@ -37,18 +37,24 @@ export async function generatePlayerCardImageAction(userId: string) {
 
     try {
       const bucket = adminStorage;
-      // Extract the object path from the full gs:// or https:// URL
-      // Example URL: https://storage.googleapis.com/your-bucket.appspot.com/path/to/file.jpg
+      // ✅ FIX: Robust path extraction
+      // The photoUrl from Firebase Storage is in the format:
+      // https://storage.googleapis.com/your-bucket.appspot.com/path/to/your/file.jpg?alt=media&token=...
+      // We need to extract `path/to/your/file.jpg`
       const url = new URL(player.photoUrl);
-      const filePath = url.pathname.split(`/${bucket.name}/`)[1];
-      
+      // The pathname will be /your-bucket.appspot.com/path/to/your/file.jpg
+      const decodedPathName = decodeURIComponent(url.pathname);
+      // Remove the leading slash and bucket name to get the file path
+      const filePath = decodedPathName.substring(`/${bucket.name}/`.length);
+
+
       if (!filePath) {
         throw new Error("Could not determine file path from the photo URL.");
       }
 
       logger.info('Attempting to download file from path:', { filePath });
 
-      const file = bucket.file(decodeURIComponent(filePath));
+      const file = bucket.file(filePath);
       const [buffer] = await file.download();
       const [metadata] = await file.getMetadata();
       imageBuffer = buffer;
