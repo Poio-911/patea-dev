@@ -23,22 +23,21 @@ const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 const STORAGE_BUCKET = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'mil-disculpis.appspot.com';
 
 if (!getApps().length) {
-    if (serviceAccountKey) {
-        try {
-            const serviceAccount = JSON.parse(serviceAccountKey);
-            adminApp = initializeApp({
-                credential: cert(serviceAccount),
-                projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'mil-disculpis',
-                storageBucket: STORAGE_BUCKET,
-            });
-        } catch (error) {
-            logger.error("Error parsing FIREBASE_SERVICE_ACCOUNT_KEY:", error);
-            throw new Error("Failed to initialize Firebase Admin SDK. Service account key is malformed.");
-        }
-    } else {
-        // This path is for environments like Google Cloud Run where the SDK can auto-initialize.
+    const serviceAccount = serviceAccountKey
+      ? JSON.parse(serviceAccountKey)
+      : undefined;
+
+    if (!serviceAccount) {
+        // This path is for environments like Google Cloud Run where the SDK can auto-initialize
+        // if given the correct permissions.
         logger.warn("FIREBASE_SERVICE_ACCOUNT_KEY not found. Attempting to auto-initialize Admin SDK.");
         adminApp = initializeApp({
+            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'mil-disculpis',
+            storageBucket: STORAGE_BUCKET,
+        });
+    } else {
+        adminApp = initializeApp({
+            credential: cert(serviceAccount),
             projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'mil-disculpis',
             storageBucket: STORAGE_BUCKET,
         });
