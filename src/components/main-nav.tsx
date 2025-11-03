@@ -54,6 +54,7 @@ import { useTheme } from 'next-themes';
 
 const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
+  { href: '/groups', label: 'Grupos', icon: Users2 },
   { href: '/players', label: 'Jugadores', icon: SoccerPlayerIcon },
   { href: '/matches', label: 'Partidos', icon: MatchIcon },
   { href: '/evaluations', label: 'Evaluaciones', icon: EvaluationIcon },
@@ -270,13 +271,13 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               "h-screen overflow-y-auto pt-16 md:pl-[var(--sidebar-width)] transition-[padding] duration-300 ease-in-out",
               "group-data-[state=collapsed]/sidebar-wrapper:md:pl-[var(--sidebar-width-icon)]"
           )}>
-            <div className="md:p-6 pb-24">
+            <div className="p-4 md:p-6 pb-24">
                 {children}
             </div>
           </main>
           
           <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg md:hidden">
-              <div className="mx-auto grid h-full max-w-lg grid-cols-4 font-medium">
+              <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
               {navItems.map((item) => {
                   const isActive = pathname.startsWith(item.href);
                   const isMatchIcon = item.href === '/matches';
