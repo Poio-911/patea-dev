@@ -19,8 +19,8 @@ let adminApp: AdminApp;
 
 const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
-// Correct Storage Bucket Name
-const STORAGE_BUCKET = 'mil-disculpis.appspot.com';
+// ✅ CORRECCIÓN: Usar la variable de entorno para el bucket, con un fallback.
+const STORAGE_BUCKET = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'mil-disculpis.appspot.com';
 
 if (!getApps().length) {
     if (serviceAccountKey) {
