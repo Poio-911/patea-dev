@@ -1,12 +1,12 @@
 
 'use client';
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { MoreVertical, Trash2, Pencil, Star } from 'lucide-react';
+import { MoreVertical, Trash2, Pencil, Star, Wind, Crosshair, BrainCircuit, WandSparkles, Shield, Dumbbell, LucideIcon, ArrowLeftRight } from 'lucide-react';
 import type { Player, AttributeKey } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { EditPlayerDialog } from './edit-player-dialog';
@@ -31,184 +31,161 @@ import { useFirestore, useUser } from '@/firebase';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from './ui/badge';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Progress } from './ui/progress';
+
 
 type PlayerCardProps = {
   player: Player & { displayName?: string };
-  isLink?: boolean;
 };
 
-const positionStyles: Record<Player['position'], { color: string; bg: string; name: string; border: string; }> = {
-  POR: { name: 'Portero', color: 'text-yellow-400', border: 'border-yellow-400', bg: 'bg-yellow-500' },
-  DEF: { name: 'Defensa', color: 'text-green-400', border: 'border-green-400', bg: 'bg-green-500' },
-  MED: { name: 'Volante', color: 'text-blue-400', border: 'border-blue-400', bg: 'bg-blue-500' },
-  DEL: { name: 'Delantero', color: 'text-red-400', border: 'border-red-400', bg: 'bg-red-500' },
+const attributeDetails: Record<AttributeKey, { name: string; icon: LucideIcon; }> = {
+    PAC: { name: 'Ritmo', icon: Wind },
+    SHO: { name: 'Tiro', icon: Crosshair },
+    PAS: { name: 'Pase', icon: BrainCircuit },
+    DRI: { name: 'Regate', icon: WandSparkles },
+    DEF: { name: 'Defensa', icon: Shield },
+    PHY: { name: 'Físico', icon: Dumbbell },
 };
 
-
-const StatPill = ({ label, value, isPrimary, position }: { label: string; value: number; isPrimary: boolean; position: Player['position'] }) => {
-    const positionClass = positionStyles[position];
-
-    return (
-        <div
-            className={cn(
-                "relative flex items-center justify-between rounded-md p-2 text-xs font-bold border",
-                "transition-all duration-200",
-                positionClass.border
-            )}
-        >
-            <span className="text-muted-foreground">{label}</span>
-            <span className={cn("font-black", positionClass.color)}>
-                {value}
-            </span>
-            {isPrimary && <div className="stat-border-glow" />}
-        </div>
-    );
+const positionColors: Record<Player['position'], string> = {
+  POR: 'text-yellow-400 border-yellow-400 bg-yellow-950',
+  DEF: 'text-green-400 border-green-400 bg-green-950',
+  MED: 'text-blue-400 border-blue-400 bg-blue-950',
+  DEL: 'text-red-400 border-red-400 bg-red-950',
 };
 
-export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true }: PlayerCardProps) {
-  const { user } = useUser();
-  const firestore = useFirestore();
-  const { toast } = useToast();
-  const [isDeleting, setIsDeleting] = React.useState(false);
-  const [isAlertOpen, setIsAlertOpen] = React.useState(false);
+const getStatColor = (value: number) => {
+    if (value >= 85) return 'bg-yellow-400';
+    if (value >= 75) return 'bg-green-400';
+    if (value >= 60) return 'bg-blue-400';
+    return 'bg-red-400';
+};
 
-  const playerName = player.name || player.displayName || 'Jugador';
-  const isManualPlayer = player.id !== player.ownerUid;
-  const canDelete = isManualPlayer && user?.uid === player.ownerUid;
-  const canEdit = isManualPlayer && user?.uid === player.ownerUid;
+const CardFace = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+    <div
+        className={cn(
+            "absolute inset-0 w-full h-full backface-hidden",
+            className
+        )}
+        {...props}
+    />
+);
 
-  const handleDelete = async () => {
-    if (!firestore || !canDelete) return;
-    setIsDeleting(true);
-    try {
-        await deleteDoc(doc(firestore, 'players', player.id));
-        toast({
-            title: "Jugador borrado",
-            description: `${playerName} fue eliminado de tu plantel.`
-        });
-        setIsAlertOpen(false);
-    } catch (error) {
-        console.error("Error deleting player: ", error);
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "No se pudo eliminar al jugador."
-        });
-    } finally {
-        setIsDeleting(false);
-    }
-  };
-  
-  const stats = React.useMemo<{ label: string; value: number; key: AttributeKey }[]>(() => [
-    { label: 'RIT', value: player.pac, key: 'PAC' },
-    { label: 'TIR', value: player.sho, key: 'SHO' },
-    { label: 'PAS', value: player.pas, key: 'PAS' },
-    { label: 'REG', value: player.dri, key: 'DRI' },
-    { label: 'DEF', value: player.def, key: 'DEF' },
-    { label: 'FIS', value: player.phy, key: 'PHY' },
-  ], [player.pac, player.sho, player.pas, player.dri, player.def, player.phy]);
+export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardProps) {
+    const { user } = useUser();
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [isDeleting, setIsDeleting] = React.useState(false);
+    const [isAlertOpen, setIsAlertOpen] = React.useState(false);
+    const [isFlipped, setIsFlipped] = useState(false);
 
-  const primaryStat = React.useMemo(() => {
-    return stats.reduce((max, stat) => (stat.value > max.value ? stat : max), stats[0]);
-  }, [stats]);
-  
-  const positionClass = positionStyles[player.position];
+    const playerName = player.name || player.displayName || 'Jugador';
+    const isManualPlayer = player.id !== player.ownerUid;
+    const canDelete = isManualPlayer && user?.uid === player.ownerUid;
+    const canEdit = isManualPlayer && user?.uid === player.ownerUid;
 
-  const CardContentComponent = () => (
-    <Card
-      className={cn(
-        "overflow-hidden h-full flex flex-col group border-2",
-        "transition-all duration-300 cursor-pointer",
-        "hover:shadow-xl hover:border-primary/30 active:scale-[0.98]",
-        "bg-card text-card-foreground shadow-lg"
-      )}
-      role="article"
-      aria-label={`Jugador ${playerName}, calificación general ${player.ovr}, posición ${player.position}`}
-    >
-      <div className={cn("relative h-24", positionClass.bg)}>
-        <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 z-10">
-            <Avatar className={cn(
-              "h-20 w-20 mx-auto",
-              "border-4 border-background shadow-lg",
-            )}>
-              <AvatarImage
-                src={player.photoUrl}
-                alt={playerName}
-                data-ai-hint="player portrait"
-                style={{
-                  objectFit: 'cover',
-                  objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`,
-                  transform: `scale(${player.cropZoom || 1})`,
-                  transformOrigin: 'center center',
-                }}
-              />
-              <AvatarFallback className="text-3xl font-black">
-                {playerName.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-        </div>
-      </div>
-      
-      <CardContent className="flex-grow flex flex-col p-3 pt-12 bg-card">
-        <div className="text-center">
-            <div className="flex items-baseline justify-center gap-2">
-                 <span className={cn("font-black leading-none text-5xl", positionClass.color)}>
-                    {player.ovr}
-                  </span>
-                  <span className="font-bold leading-none text-lg text-muted-foreground">{player.position}</span>
-            </div>
-            <h3 className="text-base font-bold font-headline truncate mt-1">{playerName}</h3>
-        </div>
-        
-        <div className="flex-grow flex flex-col justify-center">
-          <div className="grid grid-cols-2 gap-1.5 my-3">
-            {stats.map((stat) => (
-                <StatPill
-                    key={stat.label}
-                    label={stat.label}
-                    value={stat.value}
-                    isPrimary={stat.key === primaryStat.key}
-                    position={player.position}
-                />
-            ))}
-          </div>
-        </div>
+    const stats = useMemo(() => [
+        { label: 'RIT', value: player.pac, key: 'PAC' as AttributeKey },
+        { label: 'TIR', value: player.sho, key: 'SHO' as AttributeKey },
+        { label: 'PAS', value: player.pas, key: 'PAS' as AttributeKey },
+        { label: 'REG', value: player.dri, key: 'DRI' as AttributeKey },
+        { label: 'DEF', value: player.def, key: 'DEF' as AttributeKey },
+        { label: 'FIS', value: player.phy, key: 'PHY' as AttributeKey },
+    ], [player]);
 
-        <div className="pt-2 border-t text-xs">
-          <div className="grid grid-cols-3 gap-1">
-              <div className="flex flex-col items-center">
-              <span className="font-bold text-sm text-foreground">{player.stats.matchesPlayed}</span>
-              <span className="text-muted-foreground">Partidos</span>
-              </div>
-              <div className="flex flex-col items-center">
-              <span className="font-bold text-sm text-foreground">{player.stats.goals}</span>
-              <span className="text-muted-foreground">Goles</span>
-              </div>
-              <div className="flex flex-col items-center">
-              <span className="font-bold text-sm text-foreground">
-                  {player.stats.averageRating > 0 ? player.stats.averageRating.toFixed(1) : '-'}
-              </span>
-              <span className="text-muted-foreground">Rating</span>
-              </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  if (isLink) {
-    return (
-        <Link
-          href={`/players/${player.id}`}
-          className="block h-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg"
-          aria-label={`Ver perfil completo de ${playerName}`}
-        >
-            <CardContentComponent />
-        </Link>
-    );
-  }
-
-  return <CardContentComponent />;
-});
-
+    const primaryStat = useMemo(() => {
+        return stats.reduce((max, stat) => (stat.value > max.value ? stat : max), stats[0]);
+    }, [stats]);
     
+    const PrimaryStatIcon = attributeDetails[primaryStat.key].icon;
+    const positionClass = positionColors[player.position];
+    
+    const handleDelete = async () => {
+        if (!firestore || !canDelete) return;
+        setIsDeleting(true);
+        try {
+            await deleteDoc(doc(firestore, 'players', player.id));
+            toast({ title: "Jugador borrado" });
+            setIsAlertOpen(false);
+        } catch (error) {
+            console.error("Error deleting player: ", error);
+            toast({ variant: "destructive", title: "Error", description: "No se pudo eliminar al jugador." });
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+    
+    const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        // Prevent flip if clicking on a button or link inside the card
+        if ((e.target as HTMLElement).closest('button, a')) {
+            return;
+        }
+        setIsFlipped(!isFlipped);
+    }
+    
+    return (
+        <div 
+            className="card-container h-full"
+            onClick={handleCardClick}
+        >
+            <motion.div
+                className="card-inner h-full"
+                animate={{ rotateY: isFlipped ? 180 : 0 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+            >
+                {/* Anverso de la Tarjeta */}
+                <CardFace>
+                    <Card
+                        className="h-full flex flex-col overflow-hidden bg-card text-card-foreground shadow-lg border-2 border-border group cursor-pointer transition-all duration-300 hover:shadow-primary/20 hover:border-primary/30"
+                        role="article"
+                        aria-label={`Jugador ${playerName}, calificación general ${player.ovr}`}
+                    >
+                         <CardContent className="flex-grow flex flex-col p-3 justify-between">
+                            <div className="flex justify-between items-start">
+                                <Badge className={cn("flex items-center gap-1.5 shadow-md", positionClass)}>
+                                    <span className="text-lg font-black">{player.ovr}</span>
+                                    <span className="font-semibold text-xs">{player.position}</span>
+                                </Badge>
+                                <div className={cn("stat-border-glow flex items-center gap-1.5 rounded-full p-1.5 shadow-md", positionClass)}>
+                                    <PrimaryStatIcon className="h-4 w-4" />
+                                    <span className="font-bold text-sm">{primaryStat.value}</span>
+                                </div>
+                            </div>
+                            <div className="flex flex-col items-center justify-center">
+                               <Link href={`/players/${player.id}`} className="block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-full">
+                                <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
+                                    <AvatarImage src={player.photoUrl} alt={playerName} data-ai-hint="player portrait" style={{ objectFit: 'cover', objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`, transform: `scale(${player.cropZoom || 1})`, transformOrigin: 'center center' }} />
+                                    <AvatarFallback className="text-3xl font-black">{playerName.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                               </Link>
+                            </div>
+                             <div className="text-center">
+                                <h3 className="text-base font-bold font-headline truncate">{playerName}</h3>
+                                <p className="text-xs text-muted-foreground">{player.stats.goals} goles en {player.stats.matchesPlayed} partidos</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </CardFace>
+
+                {/* Reverso de la Tarjeta */}
+                <CardFace className="card-back">
+                    <Card className="h-full flex flex-col overflow-hidden bg-card text-card-foreground shadow-lg border-2 border-border cursor-pointer">
+                        <CardContent className="flex-grow flex flex-col p-3 justify-center gap-2">
+                             <h4 className="text-center font-bold font-headline mb-1">{playerName}</h4>
+                             {stats.map(stat => (
+                                <div key={stat.key} className="space-y-1">
+                                    <div className="flex justify-between items-center text-xs font-semibold">
+                                        <span className="text-muted-foreground">{attributeDetails[stat.key].name}</span>
+                                        <span>{stat.value}</span>
+                                    </div>
+                                    <Progress value={stat.value} indicatorClassName={getStatColor(stat.value)} />
+                                </div>
+                             ))}
+                        </CardContent>
+                    </Card>
+                </CardFace>
+            </motion.div>
+        </div>
+    );
+});
