@@ -37,9 +37,10 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
             <Card
                 className={cn(
                     "relative h-full aspect-[3/4] w-full flex flex-col overflow-hidden rounded-2xl border-2 shadow-lg transition-transform duration-300 hover:-translate-y-1",
-                    // Light mode styles
+                    // --- ESTILOS CORREGIDOS ---
+                    // Modo Claro (default)
                     "bg-card border-border hover:shadow-lg",
-                    // Dark mode ("Game Mode") styles
+                    // Modo Juego (oscuro)
                     "dark:bg-gradient-to-b dark:from-[#1a2a6c] dark:to-[#0d1b3a] dark:border-[#2e4fff] dark:hover:shadow-[0_12px_40px_rgba(46,79,255,0.3)]"
                 )}
                 role="article"
