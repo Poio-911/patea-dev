@@ -47,8 +47,6 @@ const positionStyles: Record<Player['position'], { color: string; bg: string; na
 };
 
 const StatPill = ({ label, value, isPrimary, position, index }: { label: string; value: number; isPrimary: boolean; position: Player['position']; index: number }) => {
-    // Opacidad basada en el valor del atributo (más alto = más opaco)
-    const bgOpacity = Math.max(0, (value - 40) / 60); // Normaliza de 40-99 a 0-1
     const positionClass = positionStyles[position];
 
     return (
@@ -57,21 +55,13 @@ const StatPill = ({ label, value, isPrimary, position, index }: { label: string;
                 "relative flex items-center justify-between rounded-lg p-2 text-xs font-bold border-2",
                 "transition-all duration-200",
                 positionClass.border,
-                !isPrimary && "hover:scale-105 hover:shadow-lg hover:z-10",
-                isPrimary && 'stat-border-glow stat-sparkle', // Animaciones para el stat principal
+                "hover:scale-105 hover:shadow-lg hover:z-10",
+                isPrimary && 'stat-border-glow', // Animación de borde para el stat principal
             )}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.05, type: 'spring', stiffness: 300, damping: 20 }}
-            whileHover={!isPrimary ? { scale: 1.05, transition: { duration: 0.2 } } : undefined}
-            style={{ 
-                // Fondo con opacidad variable
-                backgroundColor: `hsla(var(--muted-foreground) / ${bgOpacity * 0.3})`,
-                // Brillo de fondo para el atributo principal
-                boxShadow: isPrimary ? `0 0 12px 2px var(--glow-color)` : 'none',
-                // @ts-ignore
-                '--glow-color': isPrimary ? `hsl(var(--${position.toLowerCase()}-glow))` : 'transparent'
-            }}
+            whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
         >
             <span className="text-muted-foreground">{label}</span>
             <span className={cn("font-black", positionClass.color)}>
@@ -156,10 +146,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
       )}>
         <div className="flex justify-between items-start">
             <div className={cn(
-                "flex items-baseline gap-2 rounded-lg px-3 py-1.5",
-                "bg-gradient-to-br",
-                positionClass.gradientFrom,
-                "to-transparent"
+                "flex items-baseline gap-2 rounded-lg px-3 py-1.5"
             )}>
               <motion.div
                 key={player.ovr}
@@ -168,7 +155,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
                 transition={{ duration: 0.3, type: 'spring' }}
                 className={cn(
                   "font-black leading-none text-4xl sm:text-5xl lg:text-6xl text-white",
-                  "drop-shadow-[0_2px_2px_rgba(0,0,0,0.4)]"
+                  player.ovr >= 85 ? 'text-gold-500 drop-shadow-[0_2px_1px_rgba(0,0,0,0.6)]' : 'drop-shadow-[0_2px_2px_rgba(0,0,0,0.4)]'
                 )}
               >
                 {player.ovr}
@@ -266,7 +253,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player, isLink = true
             {specialty && (
                 <motion.div
                   className={cn(
-                    "flex items-center justify-center gap-2 mt-2 px-3 py-1.5 mx-auto max-w-fit rounded-md border-2",
+                    "flex items-center justify-center gap-2 mt-2 px-3 py-1.5 mx-auto max-w-fit rounded-full border-2",
                      positionClass.border,
                      "bg-background/80"
                   )}

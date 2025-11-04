@@ -123,34 +123,6 @@
     transform: translate(-50%, -50%);
   }
 
-  /* Destello tipo estrella para atributo máximo */
-  @keyframes sparkle {
-    0%, 100% {
-      opacity: 0;
-      transform: scale(0) rotate(0deg);
-    }
-    50% {
-      opacity: 1;
-      transform: scale(1) rotate(180deg);
-    }
-  }
-
-  .stat-sparkle {
-    position: relative;
-  }
-
-  .stat-sparkle::before {
-    content: '✦';
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    font-size: 14px;
-    color: rgba(234, 179, 8, 0.95);
-    animation: sparkle 2.5s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 10;
-  }
-
   /* Brillo sutil que recorre el borde rectangular */
   .stat-border-glow {
     position: relative;
@@ -176,31 +148,13 @@
   }
 
   @keyframes travel-border {
-    0% {
-      top: -6px;
-      left: -6px;
-    }
-    /* Lado superior: izquierda → derecha */
-    25% {
-      top: -6px;
-      left: calc(100% - 6px);
-    }
-    /* Lado derecho: arriba → abajo */
-    50% {
-      top: calc(100% - 6px);
-      left: calc(100% - 6px);
-    }
-    /* Lado inferior: derecha → izquierda */
-    75% {
-      top: calc(100% - 6px);
-      left: -6px;
-    }
-    /* Lado izquierdo: abajo → arriba */
-    100% {
-      top: -6px;
-      left: -6px;
-    }
+    0% { top: -6px; left: -6px; }
+    25% { top: -6px; left: calc(100% - 6px); }
+    50% { top: calc(100% - 6px); left: calc(100% - 6px); }
+    75% { top: calc(100% - 6px); left: -6px; }
+    100% { top: -6px; left: -6px; }
   }
+
 
   @keyframes border-shine {
     to {
