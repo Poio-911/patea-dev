@@ -73,6 +73,13 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  .dark body {
+    background-color: #0b1120; /* Azul muy oscuro para el modo juego */
+    background-image:
+      radial-gradient(circle at 10% 20%, hsla(43, 96%, 56%, 0.1) 0px, transparent 25%),
+      radial-gradient(circle at 80% 90%, hsla(43, 96%, 56%, 0.1) 0px, transparent 25%);
+  }
 }
 
 @layer utilities {
@@ -98,7 +105,6 @@
     -webkit-backface-visibility: hidden;
   }
 
-  /* Animación para el color del OVR y otros elementos de la card */
   .text-glow {
       text-shadow: 0 0 8px hsl(var(--primary) / 0.8), 0 0 20px hsl(var(--primary) / 0.5);
   }
