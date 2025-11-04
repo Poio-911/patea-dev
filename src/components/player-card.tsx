@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import type { Player } from '@/lib/types';
+import type { Player, AttributeKey } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
@@ -12,60 +12,77 @@ type PlayerCardProps = {
   player: Player & { displayName?: string };
 };
 
+const attributeDetails: Record<AttributeKey, { name: string }> = {
+    PAC: { name: 'Ritmo' },
+    SHO: { name: 'Tiro' },
+    PAS: { name: 'Pase' },
+    DRI: { name: 'Regate' },
+    DEF: { name: 'Defensa' },
+    PHY: { name: 'Físico' },
+};
+
 export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardProps) {
     const playerName = player.name || player.displayName || 'Jugador';
+    const stats = [
+        { key: 'PAC', value: player.pac },
+        { key: 'SHO', value: player.sho },
+        { key: 'PAS', value: player.pas },
+        { key: 'DRI', value: player.dri },
+        { key: 'DEF', value: player.def },
+        { key: 'PHY', value: player.phy },
+    ];
 
     return (
         <Link href={`/players/${player.id}`} className="block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-2xl h-full w-full">
-            <motion.div 
-                whileHover={{ scale: 1.05 }} 
-                whileTap={{ scale: 0.98 }}
-                className="h-full"
+            <Card
+                className={cn(
+                    "relative h-full aspect-[3/4] w-full flex flex-col overflow-hidden rounded-2xl border-2 border-[#2e4fff] shadow-lg transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(46,79,255,0.3)] bg-gradient-to-b from-[#1a2a6c] to-[#0d1b3a]"
+                )}
+                role="article"
+                aria-label={`Jugador ${playerName}, calificación general ${player.ovr}`}
             >
-                <Card
-                    className={cn(
-                        "relative h-full aspect-[3/4.2] w-full flex flex-col overflow-hidden shadow-lg border-border group cursor-pointer transition-all duration-300 rounded-2xl",
-                        "dark:bg-[#080D2B] dark:border-primary/30 dark:shadow-primary/20"
-                    )}
-                    role="article"
-                    aria-label={`Jugador ${playerName}, calificación general ${player.ovr}`}
-                >
-                    {/* Borde dorado en modo juego */}
-                    <div className="absolute inset-0 z-10 rounded-2xl border-2 border-transparent dark:border-primary/50 pointer-events-none"></div>
+                {/* Textura de fondo opcional */}
+                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_10%,transparent_90%)] opacity-20 pointer-events-none"></div>
 
-                    <CardContent className="relative z-20 flex-grow flex flex-col p-2 text-center justify-between text-card-foreground dark:text-white">
-                        
-                        {/* SECCIÓN SUPERIOR: OVR y Posición */}
-                        <div className="flex flex-col items-center pt-2">
-                            <span className="text-3xl font-black dark:text-yellow-300">{player.ovr}</span>
-                            <span className="text-xs font-semibold text-muted-foreground dark:text-yellow-300/80 -mt-1">{player.position}</span>
-                        </div>
+                <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center text-white">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                        <span className="text-yellow-400 text-2xl font-black">{player.ovr}</span>
+                        <div className="bg-white/10 rounded-md px-2 py-0.5 text-xs uppercase">{player.position}</div>
+                        {/* Placeholder para la bandera */}
+                        <img src="https://flagcdn.com/w20/uy.png" alt="Bandera" className="w-6 h-4 object-cover rounded-sm" />
+                    </div>
 
-                        {/* FOTO y NOMBRE */}
-                        <div className="flex flex-col items-center gap-2">
-                            <Avatar className="h-24 w-24 border-4 border-background dark:border-[#0d1a4a]">
-                                <AvatarImage 
-                                    src={player.photoUrl} 
-                                    alt={playerName} 
-                                    data-ai-hint="player portrait" 
-                                    style={{ 
-                                        objectFit: 'cover', 
-                                        objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`, 
-                                        transform: `scale(${player.cropZoom || 1})`, 
-                                        transformOrigin: 'center center' 
-                                    }} 
-                                />
-                                <AvatarFallback className="text-3xl font-black">{playerName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <h3 className="text-base font-bold font-headline truncate w-full px-1 dark:text-white">{playerName}</h3>
-                        </div>
+                    {/* Imagen y Nombre */}
+                    <div className="flex flex-col items-center gap-1 mt-1">
+                        <Avatar className="h-24 w-24 rounded-full border-4 border-[#2e4fff] object-cover shadow-md">
+                            <AvatarImage 
+                                src={player.photoUrl} 
+                                alt={playerName} 
+                                data-ai-hint="player portrait" 
+                                style={{ 
+                                    objectFit: 'cover', 
+                                    objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`, 
+                                    transform: `scale(${player.cropZoom || 1})`, 
+                                    transformOrigin: 'center center' 
+                                }} 
+                            />
+                            <AvatarFallback className="text-3xl font-black">{playerName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <h3 className="w-full truncate text-center text-base font-semibold mt-1">{playerName}</h3>
+                    </div>
 
-                        {/* Espaciador para empujar el nombre hacia arriba */}
-                        <div className="pb-1"></div>
-
-                    </CardContent>
-                </Card>
-            </motion.div>
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 gap-1 mt-2 text-center text-xs">
+                        {stats.map(stat => (
+                            <div key={stat.key} className="rounded-lg bg-white/5 py-1">
+                                <span className="text-gray-400 text-xs">{attributeDetails[stat.key as AttributeKey].name}</span>
+                                <p className="text-base font-bold text-white">{stat.value}</p>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
         </Link>
     );
 });

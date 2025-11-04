@@ -98,7 +98,7 @@ export default function PlayersPage() {
       )}
 
       <motion.div 
-        className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
         variants={listVariants}
         initial="hidden"
         animate="visible"
