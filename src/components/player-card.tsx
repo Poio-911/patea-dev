@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo, useState } from 'react';
@@ -9,7 +10,9 @@ import type { Player, AttributeKey } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { motion } from 'framer-motion';
+import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer } from 'recharts';
 import { Progress } from './ui/progress';
+
 
 type PlayerCardProps = {
   player: Player & { displayName?: string };
@@ -24,35 +27,25 @@ const attributeDetails: Record<AttributeKey, { name: string; icon: LucideIcon; }
     PHY: { name: 'Físico', icon: Dumbbell },
 };
 
-const positionColors: Record<Player['position'], { main: string; light: string; dark: string; text: string }> = {
-  POR: { main: 'hsl(45, 90%, 55%)', light: 'hsl(45, 90%, 65%)', dark: 'hsl(45, 100%, 25%)', text: 'text-yellow-400' },
-  DEF: { main: 'hsl(142, 76%, 36%)', light: 'hsl(142, 76%, 46%)', dark: 'hsl(142, 86%, 16%)', text: 'text-green-400' },
-  MED: { main: 'hsl(217, 91%, 60%)', light: 'hsl(217, 91%, 70%)', dark: 'hsl(217, 91%, 30%)', text: 'text-blue-400' },
-  DEL: { main: 'hsl(0, 84%, 60%)', light: 'hsl(0, 84%, 70%)', dark: 'hsl(0, 84%, 30%)', text: 'text-red-400' },
+const getOvrColorClasses = (ovr: number): { text: string; border: string; bg: string; } => {
+    if (ovr >= 85) return { text: 'text-yellow-400', border: 'border-yellow-400', bg: 'bg-yellow-950' };
+    if (ovr >= 75) return { text: 'text-slate-300', border: 'border-slate-500', bg: 'bg-slate-800' };
+    return { text: 'text-amber-700', border: 'border-amber-800', bg: 'bg-amber-950' };
 };
 
-const getStatColor = (value: number) => {
-    if (value >= 85) return 'bg-yellow-400';
-    if (value >= 75) return 'bg-green-400';
-    if (value >= 60) return 'bg-blue-400';
-    return 'bg-red-400';
-};
-
-const getOvrColorClasses = (ovr: number): string => {
-    if (ovr >= 85) return 'text-amber-500'; // Gold
-    if (ovr >= 75) return 'text-slate-400'; // Silver
-    return 'text-amber-700'; // Bronze
-};
-
-const CardFace = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+const CardFace = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
     <div
-        className={cn(
-            "absolute inset-0 w-full h-full backface-hidden",
-            className
-        )}
-        {...props}
+      ref={ref}
+      className={cn(
+        "absolute inset-0 w-full h-full backface-hidden",
+        className
+      )}
+      {...props}
     />
+  )
 );
+CardFace.displayName = 'CardFace';
 
 export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardProps) {
     const [isFlipped, setIsFlipped] = useState(false);
@@ -60,12 +53,12 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
     const playerName = player.name || player.displayName || 'Jugador';
     
     const stats = useMemo(() => [
-        { label: 'RIT', value: player.pac, key: 'PAC' as AttributeKey },
-        { label: 'TIR', value: player.sho, key: 'SHO' as AttributeKey },
-        { label: 'PAS', value: player.pas, key: 'PAS' as AttributeKey },
-        { label: 'REG', value: player.dri, key: 'DRI' as AttributeKey },
-        { label: 'DEF', value: player.def, key: 'DEF' as AttributeKey },
-        { label: 'FIS', value: player.phy, key: 'PHY' as AttributeKey },
+        { subject: 'RIT', value: player.pac, fullMark: 100, key: 'PAC' as AttributeKey },
+        { subject: 'TIR', value: player.sho, fullMark: 100, key: 'SHO' as AttributeKey },
+        { subject: 'PAS', value: player.pas, fullMark: 100, key: 'PAS' as AttributeKey },
+        { subject: 'REG', value: player.dri, fullMark: 100, key: 'DRI' as AttributeKey },
+        { subject: 'DEF', value: player.def, fullMark: 100, key: 'DEF' as AttributeKey },
+        { subject: 'FIS', value: player.phy, fullMark: 100, key: 'PHY' as AttributeKey },
     ], [player]);
 
     const primaryStat = useMemo(() => {
@@ -73,7 +66,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
     }, [stats]);
     
     const PrimaryStatIcon = attributeDetails[primaryStat.key].icon;
-    const colors = positionColors[player.position];
+    const ovrColorClasses = getOvrColorClasses(player.ovr);
     
     const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if ((e.target as HTMLElement).closest('button, a')) {
@@ -86,10 +79,6 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
         <div 
             className="card-container aspect-[3/4.2] w-full"
             onClick={handleCardClick}
-            style={{
-                '--position-color': colors.main,
-                '--position-color-light': colors.light,
-            } as React.CSSProperties}
         >
             <motion.div
                 className="card-inner h-full"
@@ -103,18 +92,15 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                         role="article"
                         aria-label={`Jugador ${playerName}, calificación general ${player.ovr}`}
                     >
-                       <div 
-                         className="animated-background absolute inset-0 z-0 opacity-20 dark:opacity-10"
-                         style={{ backgroundImage: `radial-gradient(circle at 25% 25%, var(--position-color) 0%, transparent 50%), radial-gradient(circle at 75% 75%, var(--position-color-light) 0%, transparent 50%)` }}
-                       />
+                       <div className="animated-background absolute inset-0 z-0 opacity-20 dark:opacity-10" />
                        <CardContent className="relative z-10 flex-grow flex flex-col p-3 justify-between">
                             <div className="flex justify-between items-start">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-border bg-background shadow-md">
-                                  <span className={cn("text-xl font-black", getOvrColorClasses(player.ovr))}>{player.ovr}</span>
+                                <div className={cn("rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 flex items-center gap-1.5 shadow-md bg-background")}>
+                                  <span className={cn("text-lg font-black", ovrColorClasses.text)}>{player.ovr}</span>
                                 </div>
-                                <div className="stat-border-glow flex items-center gap-1.5 rounded-full p-1.5 shadow-md border-2 border-border bg-background">
-                                  <PrimaryStatIcon className={cn("h-4 w-4", colors.text)} />
-                                  <span className={cn("font-bold text-sm", colors.text)}>{primaryStat.value}</span>
+                                <div className="stat-border-glow flex items-center gap-1.5 rounded-full p-1.5 shadow-md bg-background border-2 border-border">
+                                  <PrimaryStatIcon className={cn("h-4 w-4", ovrColorClasses.text)} />
+                                  <span className="font-bold text-sm">{primaryStat.value}</span>
                                 </div>
                             </div>
                             <div className="flex flex-col items-center justify-center">
@@ -127,7 +113,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                             </div>
                             <div className="text-center">
                                 <h3 className="text-base font-bold font-headline truncate">{playerName}</h3>
-                                <Badge variant="outline" className="text-xs bg-background shadow-sm border-border">{player.position}</Badge>
+                                <Badge variant="outline">{player.position}</Badge>
                                 <p className="text-xs text-muted-foreground mt-1">{player.stats.goals || 0} goles en {player.stats.matchesPlayed || 0} partidos</p>
                             </div>
                         </CardContent>
@@ -137,18 +123,29 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                 {/* Reverso de la Tarjeta */}
                 <CardFace className="card-back">
                     <Card className="h-full flex flex-col overflow-hidden bg-card text-card-foreground shadow-lg border-2 border-border cursor-pointer">
-                        <CardContent className="flex-grow flex flex-col p-3 justify-center gap-2">
+                        <div className="flex-grow flex flex-col p-3 justify-center gap-2" style={{ backgroundImage: 'radial-gradient(hsla(var(--foreground)/.02) 1px, transparent 1px)', backgroundSize: '6px 6px'}}>
                              <h4 className="text-center font-bold font-headline mb-1">{playerName}</h4>
-                             {stats.map(stat => (
-                                <div key={stat.key} className="space-y-1">
-                                    <div className="flex justify-between items-center text-xs font-semibold">
-                                        <span className="text-muted-foreground">{attributeDetails[stat.key as AttributeKey].name}</span>
-                                        <span>{stat.value}</span>
+                             <div className="w-full h-32">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={stats} >
+                                        <PolarGrid stroke="hsl(var(--border))" />
+                                        <PolarAngleAxis dataKey="subject" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
+                                        <Radar name={playerName} dataKey="value" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.6} />
+                                    </RadarChart>
+                                </ResponsiveContainer>
+                             </div>
+                             <div className="space-y-1 px-2">
+                                {stats.map(stat => (
+                                    <div key={stat.key} className="space-y-1">
+                                        <div className="flex justify-between items-center text-xs font-semibold">
+                                            <span className="text-muted-foreground">{attributeDetails[stat.key].name}</span>
+                                            <span className={cn(getOvrColorClasses(stat.value).text, "font-bold")}>{stat.value}</span>
+                                        </div>
+                                        <Progress value={stat.value} className="h-1" indicatorClassName={cn(getOvrColorClasses(stat.value).bg.replace('bg-',''), 'bg-opacity-100')} />
                                     </div>
-                                    <Progress value={stat.value} indicatorClassName={getStatColor(stat.value)} />
-                                </div>
-                             ))}
-                        </CardContent>
+                                ))}
+                             </div>
+                        </div>
                     </Card>
                 </CardFace>
             </motion.div>
