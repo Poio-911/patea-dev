@@ -5,35 +5,12 @@ import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { MoreVertical, Trash2, Pencil, Star, Wind, Crosshair, BrainCircuit, WandSparkles, Shield, Dumbbell, LucideIcon, ArrowLeftRight } from 'lucide-react';
+import { MoreVertical, Star, Wind, Crosshair, BrainCircuit, WandSparkles, Shield, Dumbbell, LucideIcon } from 'lucide-react';
 import type { Player, AttributeKey } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { EditPlayerDialog } from './edit-player-dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useFirestore, useUser } from '@/firebase';
-import { deleteDoc, doc } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
 import { Badge } from './ui/badge';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Progress } from './ui/progress';
-
 
 type PlayerCardProps = {
   player: Player & { displayName?: string };
@@ -73,18 +50,10 @@ const CardFace = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>)
 );
 
 export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardProps) {
-    const { user } = useUser();
-    const firestore = useFirestore();
-    const { toast } = useToast();
-    const [isDeleting, setIsDeleting] = React.useState(false);
-    const [isAlertOpen, setIsAlertOpen] = React.useState(false);
     const [isFlipped, setIsFlipped] = useState(false);
 
     const playerName = player.name || player.displayName || 'Jugador';
-    const isManualPlayer = player.id !== player.ownerUid;
-    const canDelete = isManualPlayer && user?.uid === player.ownerUid;
-    const canEdit = isManualPlayer && user?.uid === player.ownerUid;
-
+    
     const stats = useMemo(() => [
         { label: 'RIT', value: player.pac, key: 'PAC' as AttributeKey },
         { label: 'TIR', value: player.sho, key: 'SHO' as AttributeKey },
@@ -101,23 +70,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
     const PrimaryStatIcon = attributeDetails[primaryStat.key].icon;
     const positionClass = positionColors[player.position];
     
-    const handleDelete = async () => {
-        if (!firestore || !canDelete) return;
-        setIsDeleting(true);
-        try {
-            await deleteDoc(doc(firestore, 'players', player.id));
-            toast({ title: "Jugador borrado" });
-            setIsAlertOpen(false);
-        } catch (error) {
-            console.error("Error deleting player: ", error);
-            toast({ variant: "destructive", title: "Error", description: "No se pudo eliminar al jugador." });
-        } finally {
-            setIsDeleting(false);
-        }
-    };
-    
     const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        // Prevent flip if clicking on a button or link inside the card
         if ((e.target as HTMLElement).closest('button, a')) {
             return;
         }
@@ -126,13 +79,13 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
     
     return (
         <div 
-            className="card-container h-full"
+            className="card-container w-full aspect-[3/4]"
             onClick={handleCardClick}
         >
             <motion.div
-                className="card-inner h-full"
+                className="card-inner h-full w-full"
                 animate={{ rotateY: isFlipped ? 180 : 0 }}
-                transition={{ duration: 0.5, ease: "easeInOut" }}
+                transition={{ duration: 0.6, ease: "easeInOut" }}
             >
                 {/* Anverso de la Tarjeta */}
                 <CardFace>
@@ -176,7 +129,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                              {stats.map(stat => (
                                 <div key={stat.key} className="space-y-1">
                                     <div className="flex justify-between items-center text-xs font-semibold">
-                                        <span className="text-muted-foreground">{attributeDetails[stat.key].name}</span>
+                                        <span className="text-muted-foreground">{attributeDetails[stat.key as AttributeKey].name}</span>
                                         <span>{stat.value}</span>
                                     </div>
                                     <Progress value={stat.value} indicatorClassName={getStatColor(stat.value)} />
