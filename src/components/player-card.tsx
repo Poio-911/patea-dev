@@ -111,13 +111,12 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                 <CardFace className="card-back">
                     <Card className="h-full flex flex-col overflow-hidden bg-card text-card-foreground shadow-lg border-2 border-border cursor-pointer">
                         <div className="flex-grow flex flex-col p-4 justify-center gap-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                                 {stats.map(stat => {
-                                    const { text: colorClass } = getStatColorClasses(stat.value);
                                     return (
                                         <div key={stat.key} className="flex flex-col items-center justify-center gap-0 rounded-lg bg-muted/50 p-2 text-center">
                                             <span className="text-xs font-semibold text-muted-foreground">{attributeDetails[stat.key].name}</span>
-                                            <span className={cn("text-3xl font-black", colorClass)}>{stat.value}</span>
+                                            <span className="text-3xl font-black">{stat.value}</span>
                                         </div>
                                     )
                                 })}
