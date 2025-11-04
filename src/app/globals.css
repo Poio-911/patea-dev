@@ -24,11 +24,18 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 217 91% 60%;
+    --radius: 0.5rem;
     --chart-1: 340 82% 61%;
     --chart-2: 158 44% 46%;
     --chart-3: 217 91% 60%;
     --chart-4: 38 92% 50%;
     --chart-5: 27 87% 67%;
+    
+    /* Position Colors */
+    --del: 0 84.2% 60.2%;
+    --med: 217 91% 60%;
+    --def: 142 76% 36%;
+    --por: 38 92% 50%;
   }
 
   .dark {
@@ -51,11 +58,18 @@
     --border: 217 33% 22%;
     --input: 217 33% 17%;
     --ring: 142 76% 36%;
+    --radius: 0.5rem;
     --chart-1: 142 76% 36%;
     --chart-2: 217 83% 62%;
     --chart-3: 27 87% 67%;
     --chart-4: 340 82% 61%;
     --chart-5: 158 44% 46%;
+
+    /* Position Colors */
+    --del: 0 72% 51%;
+    --med: 217 91% 60%;
+    --def: 142 71% 41%;
+    --por: 48 96% 53%;
   }
 }
 
@@ -121,17 +135,12 @@
       from 0deg at 50% 50%,
       transparent 0%,
       transparent 75%,
-      hsl(var(--position-color)) 95%,
+      hsl(var(--primary)) 95%,
       transparent 100%
     );
     animation: travel-border 2s linear infinite;
     z-index: 1;
   }
-  
-  .text-glow {
-    text-shadow: 0 0 8px hsl(var(--position-color)), 0 0 12px hsl(var(--position-color-light));
-  }
-
 
   @keyframes travel-border {
     0% {
@@ -155,8 +164,8 @@
   }
 
   .animated-background {
-    background-size: 200% 200%;
-    animation: animated-gradient 10s ease infinite;
+      background: linear-gradient(-45deg, var(--gradient-start), var(--gradient-end), var(--gradient-start));
+      background-size: 400% 400%;
+      animation: animated-gradient 15s ease infinite;
   }
-
 }

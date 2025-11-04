@@ -10,9 +10,6 @@ import type { Player, AttributeKey } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { motion } from 'framer-motion';
-import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
-import { Progress } from './ui/progress';
-
 
 type PlayerCardProps = {
   player: Player & { displayName?: string };
@@ -27,56 +24,49 @@ const attributeDetails: Record<AttributeKey, { name: string; icon: LucideIcon; }
     PHY: { name: 'Físico', icon: Dumbbell },
 };
 
-const getOvrColorClasses = (ovr: number): { text: string; border: string; bg: string; } => {
-    if (ovr >= 85) return { text: 'text-yellow-400', border: 'border-yellow-400', bg: 'bg-yellow-950' };
-    if (ovr >= 75) return { text: 'text-slate-300', border: 'border-slate-500', bg: 'bg-slate-800' };
-    return { text: 'text-amber-700', border: 'border-amber-800', bg: 'bg-amber-950' };
+const getOvrColorClasses = (ovr: number): string => {
+    if (ovr >= 85) return 'text-yellow-400';
+    if (ovr >= 75) return 'text-slate-300';
+    return 'text-amber-700';
 };
 
+// --- Componente Auxiliar para las Caras de la Tarjeta ---
+// Definido fuera del componente principal para evitar errores de sintaxis
 const CardFace = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn(
-        "absolute inset-0 w-full h-full backface-hidden",
-        className
-      )}
+      className={cn("absolute inset-0 w-full h-full backface-hidden", className)}
       {...props}
     />
   )
 );
 CardFace.displayName = 'CardFace';
 
+// --- Componente Principal ---
 export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardProps) {
     const [isFlipped, setIsFlipped] = useState(false);
-
     const playerName = player.name || player.displayName || 'Jugador';
-    
+
     const stats = useMemo(() => [
-        { subject: 'RIT', value: player.pac, fullMark: 100, key: 'PAC' as AttributeKey },
-        { subject: 'TIR', value: player.sho, fullMark: 100, key: 'SHO' as AttributeKey },
-        { subject: 'PAS', value: player.pas, fullMark: 100, key: 'PAS' as AttributeKey },
-        { subject: 'REG', value: player.dri, fullMark: 100, key: 'DRI' as AttributeKey },
-        { subject: 'DEF', value: player.def, fullMark: 100, key: 'DEF' as AttributeKey },
-        { subject: 'FIS', value: player.phy, fullMark: 100, key: 'PHY' as AttributeKey },
+        { subject: 'RIT', value: player.pac, key: 'PAC' as AttributeKey },
+        { subject: 'TIR', value: player.sho, key: 'SHO' as AttributeKey },
+        { subject: 'PAS', value: player.pas, key: 'PAS' as AttributeKey },
+        { subject: 'REG', value: player.dri, key: 'DRI' as AttributeKey },
+        { subject: 'DEF', value: player.def, key: 'DEF' as AttributeKey },
+        { subject: 'FIS', value: player.phy, key: 'PHY' as AttributeKey },
     ], [player]);
 
-    const primaryStat = useMemo(() => {
-        return stats.reduce((max, stat) => (stat.value > max.value ? stat : max), stats[0]);
-    }, [stats]);
-    
-    const PrimaryStatIcon = attributeDetails[primaryStat.key].icon;
-    const ovrColorClasses = getOvrColorClasses(player.ovr);
-    
     const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        if ((e.target as HTMLElement).closest('button, a')) {
+        if ((e.target as HTMLElement).closest('a')) {
             return;
         }
+        e.preventDefault();
         setIsFlipped(!isFlipped);
-    }
-    
+    };
+
     return (
-        <div 
+        <div
             className="card-container aspect-[3/4.2] w-full"
             onClick={handleCardClick}
         >
@@ -92,29 +82,29 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                         role="article"
                         aria-label={`Jugador ${playerName}, calificación general ${player.ovr}`}
                     >
-                       <div className="animated-background absolute inset-0 z-0 opacity-20 dark:opacity-10" />
+                       <div className={cn("animated-background absolute inset-0 z-0 opacity-20 dark:opacity-10")} style={{
+                           "--gradient-start": `hsl(var(--${player.position.toLowerCase()}))`,
+                           "--gradient-end": `hsl(var(--background))`,
+                       } as React.CSSProperties}
+                       />
                        <CardContent className="relative z-10 flex-grow flex flex-col p-3 justify-between">
                             <div className="flex justify-between items-start">
-                                <div className={cn("rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 flex items-center justify-center gap-1.5 shadow-md bg-background h-10 w-10")}>
-                                  <span className={cn("text-lg font-black", ovrColorClasses.text)}>{player.ovr}</span>
-                                </div>
-                                <div className="stat-border-glow flex items-center gap-1.5 rounded-full p-1.5 shadow-md bg-background border-2 border-border">
-                                  <PrimaryStatIcon className={cn("h-4 w-4", getOvrColorClasses(primaryStat.value).text)} />
-                                  <span className="font-bold text-sm">{primaryStat.value}</span>
+                                <div className="flex items-center justify-center h-12 w-12 text-2xl font-black rounded-full border-2 border-border shadow-md bg-background">
+                                  <span className={getOvrColorClasses(player.ovr)}>{player.ovr}</span>
                                 </div>
                             </div>
-                            <div className="flex flex-col items-center justify-center">
+                            <div className="flex flex-col items-center justify-center text-center -mt-8">
                                <Link href={`/players/${player.id}`} className="block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-full">
                                 <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
                                     <AvatarImage src={player.photoUrl} alt={playerName} data-ai-hint="player portrait" style={{ objectFit: 'cover', objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`, transform: `scale(${player.cropZoom || 1})`, transformOrigin: 'center center' }} />
                                     <AvatarFallback className="text-3xl font-black">{playerName.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                </Link>
+                                <h3 className="text-lg font-bold font-headline mt-2 truncate w-full px-2">{playerName}</h3>
+                                <Badge variant="outline" className="mt-1">{player.position}</Badge>
                             </div>
                             <div className="text-center">
-                                <h3 className="text-lg font-bold font-headline truncate">{playerName}</h3>
-                                <Badge variant="outline">{player.position}</Badge>
-                                <p className="text-xs text-muted-foreground mt-1">{player.stats.goals || 0} goles en {player.stats.matchesPlayed || 0} partidos</p>
+                                <p className="text-xs text-muted-foreground">{player.stats.goals || 0} goles en {player.stats.matchesPlayed || 0} partidos</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -123,22 +113,22 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                 {/* Reverso de la Tarjeta */}
                 <CardFace className="card-back">
                     <Card className="h-full flex flex-col overflow-hidden bg-card text-card-foreground shadow-lg border-2 border-border cursor-pointer">
-                        <div className="flex-grow flex flex-col p-2 sm:p-3 justify-center gap-2" style={{ backgroundImage: 'radial-gradient(hsla(var(--foreground)/.02) 1px, transparent 1px)', backgroundSize: '6px 6px'}}>
-                             <h4 className="text-center font-bold font-headline text-sm sm:text-base mb-1 sm:mb-2">{playerName}</h4>
-                             <div className="w-full aspect-square max-h-[80%]">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={stats} >
-                                        <PolarGrid stroke="hsl(var(--border))" />
-                                        <PolarAngleAxis dataKey="subject" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 'bold' }} />
-                                        <Radar name={playerName} dataKey="value" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.6} />
-                                        <Tooltip contentStyle={{
-                                            backgroundColor: 'hsl(var(--background))',
-                                            borderColor: 'hsl(var(--border))',
-                                            borderRadius: 'var(--radius)',
-                                        }}/>
-                                    </RadarChart>
-                                </ResponsiveContainer>
-                             </div>
+                        <div className="flex-grow flex flex-col p-4 justify-center gap-4">
+                             <h4 className="text-center font-bold font-headline text-lg mb-2">{playerName}</h4>
+                             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                                {stats.map(stat => {
+                                    const AttrIcon = attributeDetails[stat.key].icon;
+                                    return (
+                                        <div key={stat.key} className="flex items-center gap-3">
+                                            <AttrIcon className="h-5 w-5 text-primary"/>
+                                            <div className="flex-1">
+                                                <p className="text-sm font-semibold text-muted-foreground">{attributeDetails[stat.key].name}</p>
+                                            </div>
+                                            <p className="text-lg font-bold">{stat.value}</p>
+                                        </div>
+                                    )
+                                })}
+                            </div>
                         </div>
                     </Card>
                 </CardFace>
