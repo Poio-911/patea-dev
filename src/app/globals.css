@@ -30,46 +30,36 @@
     --chart-3: 217 91% 60%;
     --chart-4: 38 92% 50%;
     --chart-5: 27 87% 67%;
-    
-    /* Position Colors */
-    --del: 0 84.2% 60.2%;
-    --med: 217 91% 60%;
-    --def: 142 76% 36%;
-    --por: 38 92% 50%;
   }
 
   .dark {
-    --background: 224 71% 4%;
-    --foreground: 210 40% 98%;
-    --card: 224 71% 8%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 83% 4%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 142 76% 36%;
-    --primary-foreground: 142 76% 96%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 224 71% 12%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 22%;
-    --input: 217 33% 17%;
-    --ring: 142 76% 36%;
-    --radius: 0.5rem;
-    --chart-1: 142 76% 36%;
-    --chart-2: 217 83% 62%;
-    --chart-3: 27 87% 67%;
-    --chart-4: 340 82% 61%;
-    --chart-5: 158 44% 46%;
-
-    /* Position Colors */
-    --del: 0 72% 51%;
-    --med: 217 91% 60%;
-    --def: 142 71% 41%;
-    --por: 48 96% 53%;
+    --background: 225 25% 6%; /* Negro-azulado muy oscuro */
+    --foreground: 45 60% 95%; /* Blanco cálido */
+    
+    --card: 225 25% 9%; /* Un poco más claro que el fondo */
+    --card-foreground: 45 60% 95%;
+    
+    --popover: 225 25% 5%;
+    --popover-foreground: 45 60% 95%;
+    
+    --primary: 43 96% 56%; /* Dorado/Ámbar vibrante */
+    --primary-foreground: 30 100% 10%; /* Texto oscuro para contraste en primario */
+    
+    --secondary: 225 25% 15%;
+    --secondary-foreground: 45 60% 95%;
+    
+    --muted: 225 25% 15%;
+    --muted-foreground: 225 10% 60%;
+    
+    --accent: 43 96% 46%; /* Dorado un poco más oscuro para acentos */
+    --accent-foreground: 30 100% 10%;
+    
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 45 60% 95%;
+    
+    --border: 225 25% 18%;
+    --input: 225 25% 12%;
+    --ring: 43 96% 56%; /* Dorado para anillos de foco */
   }
 }
 
@@ -107,65 +97,9 @@
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
   }
-  
-  @keyframes color-cycle {
-    0%, 100% { color: hsl(var(--primary)); }
-    25% { color: hsl(var(--chart-1)); }
-    50% { color: hsl(var(--chart-2)); }
-    75% { color: hsl(var(--chart-4)); }
-  }
-  .color-cycle-animation {
-    animation: color-cycle 4s ease-in-out infinite;
-  }
 
-  .stat-border-glow {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .stat-border-glow::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    border-radius: inherit;
-    background: conic-gradient(
-      from 0deg at 50% 50%,
-      transparent 0%,
-      transparent 75%,
-      hsl(var(--primary)) 95%,
-      transparent 100%
-    );
-    animation: travel-border 2s linear infinite;
-    z-index: 1;
-  }
-
-  @keyframes travel-border {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
-  @keyframes animated-gradient {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
-  }
-
-  .animated-background {
-      background: linear-gradient(-45deg, var(--gradient-start), var(--gradient-end), var(--gradient-start));
-      background-size: 400% 400%;
-      animation: animated-gradient 15s ease infinite;
+  /* Animación para el color del OVR y otros elementos de la card */
+  .text-glow {
+      text-shadow: 0 0 8px hsl(var(--primary) / 0.8), 0 0 20px hsl(var(--primary) / 0.5);
   }
 }
