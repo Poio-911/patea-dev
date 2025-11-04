@@ -10,7 +10,7 @@ import type { Player, AttributeKey } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { motion } from 'framer-motion';
-import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer } from 'recharts';
+import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
 import { Progress } from './ui/progress';
 
 
@@ -95,11 +95,11 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                        <div className="animated-background absolute inset-0 z-0 opacity-20 dark:opacity-10" />
                        <CardContent className="relative z-10 flex-grow flex flex-col p-3 justify-between">
                             <div className="flex justify-between items-start">
-                                <div className={cn("rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 flex items-center gap-1.5 shadow-md bg-background")}>
+                                <div className={cn("rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 flex items-center justify-center gap-1.5 shadow-md bg-background h-10 w-10")}>
                                   <span className={cn("text-lg font-black", ovrColorClasses.text)}>{player.ovr}</span>
                                 </div>
                                 <div className="stat-border-glow flex items-center gap-1.5 rounded-full p-1.5 shadow-md bg-background border-2 border-border">
-                                  <PrimaryStatIcon className={cn("h-4 w-4", ovrColorClasses.text)} />
+                                  <PrimaryStatIcon className={cn("h-4 w-4", getOvrColorClasses(primaryStat.value).text)} />
                                   <span className="font-bold text-sm">{primaryStat.value}</span>
                                 </div>
                             </div>
@@ -112,7 +112,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                                </Link>
                             </div>
                             <div className="text-center">
-                                <h3 className="text-base font-bold font-headline truncate">{playerName}</h3>
+                                <h3 className="text-lg font-bold font-headline truncate">{playerName}</h3>
                                 <Badge variant="outline">{player.position}</Badge>
                                 <p className="text-xs text-muted-foreground mt-1">{player.stats.goals || 0} goles en {player.stats.matchesPlayed || 0} partidos</p>
                             </div>
@@ -123,27 +123,21 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                 {/* Reverso de la Tarjeta */}
                 <CardFace className="card-back">
                     <Card className="h-full flex flex-col overflow-hidden bg-card text-card-foreground shadow-lg border-2 border-border cursor-pointer">
-                        <div className="flex-grow flex flex-col p-3 justify-center gap-2" style={{ backgroundImage: 'radial-gradient(hsla(var(--foreground)/.02) 1px, transparent 1px)', backgroundSize: '6px 6px'}}>
-                             <h4 className="text-center font-bold font-headline mb-1">{playerName}</h4>
-                             <div className="w-full h-32">
+                        <div className="flex-grow flex flex-col p-2 sm:p-3 justify-center gap-2" style={{ backgroundImage: 'radial-gradient(hsla(var(--foreground)/.02) 1px, transparent 1px)', backgroundSize: '6px 6px'}}>
+                             <h4 className="text-center font-bold font-headline text-sm sm:text-base mb-1 sm:mb-2">{playerName}</h4>
+                             <div className="w-full aspect-square max-h-[80%]">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={stats} >
+                                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={stats} >
                                         <PolarGrid stroke="hsl(var(--border))" />
-                                        <PolarAngleAxis dataKey="subject" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
+                                        <PolarAngleAxis dataKey="subject" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 'bold' }} />
                                         <Radar name={playerName} dataKey="value" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.6} />
+                                        <Tooltip contentStyle={{
+                                            backgroundColor: 'hsl(var(--background))',
+                                            borderColor: 'hsl(var(--border))',
+                                            borderRadius: 'var(--radius)',
+                                        }}/>
                                     </RadarChart>
                                 </ResponsiveContainer>
-                             </div>
-                             <div className="space-y-1 px-2">
-                                {stats.map(stat => (
-                                    <div key={stat.key} className="space-y-1">
-                                        <div className="flex justify-between items-center text-xs font-semibold">
-                                            <span className="text-muted-foreground">{attributeDetails[stat.key].name}</span>
-                                            <span className={cn(getOvrColorClasses(stat.value).text, "font-bold")}>{stat.value}</span>
-                                        </div>
-                                        <Progress value={stat.value} className="h-1" indicatorClassName={cn(getOvrColorClasses(stat.value).bg.replace('bg-',''), 'bg-opacity-100')} />
-                                    </div>
-                                ))}
                              </div>
                         </div>
                     </Card>
