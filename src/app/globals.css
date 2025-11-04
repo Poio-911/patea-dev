@@ -104,10 +104,9 @@
     animation: color-cycle 4s ease-in-out infinite;
   }
 
-  /* Animación de destello que recorre el borde */
   .stat-border-glow {
     position: relative;
-    overflow: hidden; /* Changed from visible to hidden to contain the glow */
+    overflow: hidden;
   }
 
   .stat-border-glow::after {
@@ -117,7 +116,7 @@
     left: -50%;
     width: 200%;
     height: 200%;
-    border-radius: inherit; /* Use the parent's border-radius */
+    border-radius: inherit;
     background: conic-gradient(
       from 0deg at 50% 50%,
       transparent 0%,

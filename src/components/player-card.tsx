@@ -100,38 +100,30 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                         role="article"
                         aria-label={`Jugador ${playerName}, calificación general ${player.ovr}`}
                     >
-                        <div className="relative flex-grow flex flex-col justify-between bg-gradient-to-b from-[var(--position-color-dark)] via-background/10 to-background/90 p-3">
-                            {/* Top Section */}
+                       <CardContent className="flex-grow flex flex-col p-3 justify-between">
                             <div className="flex justify-between items-start">
-                                <div className="flex flex-col items-center justify-center h-16 w-16 bg-background/50 backdrop-blur-sm rounded-full border-2 border-[var(--position-color)] shadow-lg">
-                                    <span className={cn("text-3xl font-black text-glow", colors.text)}>{player.ovr}</span>
-                                </div>
-                                <Badge className="bg-background/50 backdrop-blur-sm border-2 border-[var(--position-color)] text-base font-bold shadow-lg">
-                                    {player.position}
+                                <Badge variant="outline" className={cn("flex items-center gap-1.5 shadow-md", colors.text, `border-[${colors.main}]`, `bg-[${colors.dark}]`)}>
+                                  <span className="text-lg font-black">{player.ovr}</span>
+                                  <span className="font-semibold text-xs">{player.position}</span>
                                 </Badge>
+                                <div className={cn("stat-border-glow flex items-center gap-1.5 rounded-full p-1.5 shadow-md", colors.text, `border-[${colors.main}]`, `bg-[${colors.dark}]`)}>
+                                  <PrimaryStatIcon className="h-4 w-4" />
+                                  <span className="font-bold text-sm">{primaryStat.value}</span>
+                                </div>
                             </div>
-
-                            {/* Avatar Section */}
-                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] flex flex-col items-center justify-center">
+                            <div className="flex flex-col items-center justify-center">
                                <Link href={`/players/${player.id}`} className="block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-full">
-                                <Avatar className="h-28 w-28 border-4 border-background shadow-lg">
+                                <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
                                     <AvatarImage src={player.photoUrl} alt={playerName} data-ai-hint="player portrait" style={{ objectFit: 'cover', objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`, transform: `scale(${player.cropZoom || 1})`, transformOrigin: 'center center' }} />
                                     <AvatarFallback className="text-3xl font-black">{playerName.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                </Link>
                             </div>
-
-                            {/* Bottom Section */}
-                            <div className="relative flex flex-col items-center justify-end h-1/3">
-                                <div className={cn("stat-border-glow flex items-center gap-1.5 rounded-full p-2 text-sm font-bold shadow-md bg-background/50 backdrop-blur-sm", colors.text)}>
-                                     <PrimaryStatIcon className="h-4 w-4" />
-                                     <span>{primaryStat.label}: {primaryStat.value}</span>
-                                </div>
-                                <div className="absolute bottom-0 w-full bg-[var(--position-color)] p-2 text-center rounded-b-md -mx-3 -mb-3">
-                                    <h3 className="text-lg font-bold font-headline truncate text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">{playerName}</h3>
-                                </div>
+                            <div className="text-center">
+                                <h3 className="text-base font-bold font-headline truncate">{playerName}</h3>
+                                <p className="text-xs text-muted-foreground">{player.stats.goals || 0} goles en {player.stats.matchesPlayed || 0} partidos</p>
                             </div>
-                        </div>
+                        </CardContent>
                     </Card>
                 </CardFace>
 
