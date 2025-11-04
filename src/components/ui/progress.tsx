@@ -1,25 +1,37 @@
+
 "use client"
 
 import * as React from "react"
 import * as ProgressPrimitive from "@radix-ui/react-progress"
+import { motion } from "framer-motion"
 
 import { cn } from "@/lib/utils"
 
+type ProgressProps = React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> & {
+  isBest?: boolean;
+};
+
 const Progress = React.forwardRef<
   React.ElementRef<typeof ProgressPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>
->(({ className, value, ...props }, ref) => (
+  ProgressProps
+>(({ className, value, isBest = false, ...props }, ref) => (
   <ProgressPrimitive.Root
     ref={ref}
     className={cn(
-      "relative h-4 w-full overflow-hidden rounded-full bg-secondary",
+      "relative h-2 w-full overflow-hidden rounded-full bg-secondary",
       className
     )}
     {...props}
   >
-    <ProgressPrimitive.Indicator
-      className="h-full w-full flex-1 bg-primary transition-all"
-      style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+    <motion.div
+      className={cn(
+        "h-full w-full flex-1 transition-all",
+        isBest ? "bg-primary" : "bg-muted-foreground/50"
+      )}
+      initial={{ x: "-100%" }}
+      whileInView={{ x: `-${100 - (value || 0)}%` }}
+      transition={{ duration: 0.8, ease: "easeInOut" }}
+      viewport={{ once: true }}
     />
   </ProgressPrimitive.Root>
 ))

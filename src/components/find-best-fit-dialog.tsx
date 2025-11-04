@@ -16,7 +16,7 @@ import type { AvailablePlayer, Match } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, Send, UserSearch } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { findBestFitPlayerAction } from '@/lib/actions';
+import { findBestFitPlayerAction } from '@/lib/actions/server-actions';
 import { Card, CardContent } from './ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Badge } from './ui/badge';

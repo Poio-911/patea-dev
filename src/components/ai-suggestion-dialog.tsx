@@ -13,7 +13,7 @@ import {
 import { WandSparkles, Loader2 } from 'lucide-react';
 import { useState, useTransition } from 'react';
 import type { Player } from '@/lib/types';
-import { getPlayerImprovementSuggestionsAction } from '@/lib/actions';
+import { getPlayerImprovementSuggestionsAction } from '@/lib/actions/server-actions';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useUser } from '@/firebase';

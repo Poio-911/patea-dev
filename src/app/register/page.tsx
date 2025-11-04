@@ -24,6 +24,7 @@ import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, Camera } from 'lucide-react';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ImageCropperDialog } from '@/components/image-cropper-dialog';
 
 const registerSchema = z.object({
     displayName: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
@@ -41,9 +42,9 @@ export default function RegisterPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [generatedPhotoUrl, setGeneratedPhotoUrl] = useState<string | null>(null);
+
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -60,75 +61,43 @@ export default function RegisterPage() {
     }
   }, [user, loading, router]);
   
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setProfileImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
 
   const onSubmit = async (data: RegisterFormValues) => {
     if (!auth || !firestore) return;
     setIsSubmitting(true);
     
-    let photoURL = `https://picsum.photos/seed/${data.displayName}/400/400`;
+    // Use the generated/uploaded photo URL if available, otherwise fallback to null.
+    const photoURL = generatedPhotoUrl;
 
     try {
         // Step 1: Create user in Auth
         const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
         const newUser = userCredential.user;
-
-        // Step 2: If a file was selected, upload it now that we have a user UID
-        if (profileImageFile) {
-            try {
-                const { firebaseApp } = initializeFirebase();
-                const storage = getStorage(firebaseApp);
-                const fileExtension = profileImageFile.name.split('.').pop();
-                const fileName = `${newUser.uid}.${fileExtension}`;
-                const filePath = `profile-images/${newUser.uid}/${fileName}`;
-                const storageRef = ref(storage, filePath);
-                
-                const uploadResult = await uploadBytes(storageRef, profileImageFile);
-                photoURL = await getDownloadURL(uploadResult.ref);
-            } catch (uploadError) {
-                console.error("Error uploading profile image, using fallback.", uploadError);
-                toast({
-                    variant: 'destructive',
-                    title: 'Error de subida',
-                    description: 'No se pudo subir tu foto. Se usará una por defecto, podés cambiarla desde tu perfil.',
-                });
-            }
-        }
         
-        // Step 3: Update Auth profile with display name and final photoURL
+        // Step 2: Update Auth profile with display name and final photoURL
         await updateProfile(newUser, {
             displayName: data.displayName,
             photoURL: photoURL,
         });
 
-        // Step 4: Create Firestore documents in a batch for atomicity
+        // Step 3: Create Firestore documents in a batch for atomicity
         const batch = writeBatch(firestore);
 
-        // 4a. Create user document in /users
+        // 3a. Create user document in /users
         const userRef = doc(firestore, 'users', newUser.uid);
         const newUserProfile = {
           uid: newUser.uid,
           email: newUser.email,
           displayName: data.displayName,
           photoURL: photoURL,
-          groups: [], // Start with no groups
-          activeGroupId: null, // No active group initially
+          groups: [], 
+          activeGroupId: null, 
         };
         batch.set(userRef, newUserProfile);
 
-        // 4b. Create player document in /players
-        const playerRef = doc(firestore, 'players', newUser.uid); // Use user UID as player ID
+        // 3b. Create player document in /players
+        const playerRef = doc(firestore, 'players', newUser.uid);
         const baseStat = 50;
         const newPlayer: Omit<Player, 'id'> = {
             name: data.displayName,
@@ -140,11 +109,12 @@ export default function RegisterPage() {
             def: baseStat,
             phy: baseStat,
             ovr: baseStat,
-            photoUrl: photoURL,
+            photoUrl: photoURL || '',
             stats: { matchesPlayed: 0, goals: 0, assists: 0, averageRating: 0 },
             ownerUid: newUser.uid,
-            groupId: null, // No group initially
-            cardGenerationCredits: 1, // Give 1 credit on registration
+            groupId: null, 
+            cardGenerationCredits: 3, 
+            lastCreditReset: new Date().toISOString(),
         };
         batch.set(playerRef, newPlayer);
 
@@ -154,8 +124,7 @@ export default function RegisterPage() {
             title: '¡Cuenta creada!',
             description: 'Te hemos redirigido al panel de control.',
         });
-        // The useEffect will handle the redirect
-
+        
     } catch (error: any) {
         toast({
             variant: 'destructive',
@@ -193,28 +162,28 @@ export default function RegisterPage() {
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <div className="flex flex-col items-center gap-4">
-                         <input
-                            type="file"
-                            ref={fileInputRef}
-                            className="hidden"
-                            accept="image/png, image/jpeg"
-                            onChange={handleFileChange}
-                        />
-                        <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="relative group"
+                      <ImageCropperDialog
+                          player={{ photoUrl: imagePreview || undefined }}
+                          onSaveComplete={(newUrl) => {
+                              setImagePreview(newUrl);
+                              setGeneratedPhotoUrl(newUrl);
+                          }}
                         >
-                            <Avatar className="h-24 w-24 border-4 border-muted-foreground/20 group-hover:border-primary/50 transition-colors">
-                                <AvatarImage src={imagePreview || undefined} alt="Foto de perfil" />
-                                <AvatarFallback className="text-4xl">
-                                    {form.getValues('displayName')?.charAt(0) || <Camera />}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Camera className="h-8 w-8 text-white" />
-                            </div>
-                        </button>
+                            <button
+                                type="button"
+                                className="relative group"
+                            >
+                                <Avatar className="h-24 w-24 border-4 border-muted-foreground/20 group-hover:border-primary/50 transition-colors">
+                                    <AvatarImage src={imagePreview || undefined} alt="Foto de perfil" />
+                                    <AvatarFallback className="text-4xl">
+                                        {form.getValues('displayName')?.charAt(0) || <Camera />}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Camera className="h-8 w-8 text-white" />
+                                </div>
+                            </button>
+                        </ImageCropperDialog>
                     </div>
 
                     <FormField
@@ -296,4 +265,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-

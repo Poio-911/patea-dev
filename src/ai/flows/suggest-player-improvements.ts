@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -74,7 +73,7 @@ const suggestPlayerImprovementsFlow = ai.defineFlow(
     outputSchema: SuggestPlayerImprovementsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input, { model: 'googleai/gemini-2.5-flash' });
+    const {output} = await prompt(input, {model: 'googleai/gemini-2.5-flash'});
     return output!;
   }
 );

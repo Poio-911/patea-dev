@@ -1,11 +1,11 @@
-
-
 import { DocumentData, DocumentReference } from "firebase/firestore";
 import type { PerformanceTag as Pt } from "./performance-tags";
 
 export type PerformanceTag = Pt;
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
+
+export type AttributeKey = 'PAC' | 'SHO' | 'PAS' | 'DRI' | 'DEF' | 'PHY';
 
 export type PlayerStats = {
   matchesPlayed: number;
@@ -40,6 +40,9 @@ export type Player = {
   ownerUid: string; // The UID of the user who created this player
   groupId: string | null;
   cardGenerationCredits?: number;
+  lastCreditReset?: string; // ISO 8601 string
+  cropPosition?: { x: number; y: number };
+  cropZoom?: number;
 } & DocumentData;
 
 export type DetailedTeamPlayer = Player & { number: number; status: 'titular' | 'suplente' };
@@ -77,6 +80,10 @@ export type MatchLocation = {
     placeId: string;
 }
 
+export type TeamFormation = {
+  [key: string]: { x: number, y: number } // player.uid -> {x, y} percentage coordinates
+};
+
 export type Match = {
   id: string;
   title: string;
@@ -97,6 +104,7 @@ export type Match = {
     icon: string;
     temperature: number;
   };
+  chronicle?: string; // AI-generated match summary
 } & DocumentData;
 
 export type Team = {
@@ -117,6 +125,7 @@ export type Team = {
     fairnessPercentage: number;
   };
   jersey?: Jersey;
+  formation?: TeamFormation;
 };
 
 export type JerseyType = 'plain' | 'vertical' | 'band' | 'chevron' | 'thirds' | 'lines';
@@ -230,11 +239,6 @@ export type EvaluationSubmission = {
         evaluations: PlayerEvaluationFormData[];
     }
 } & DocumentData;
-
-export type PlayerProfileViewProps = {
-    playerId: string;
-    isUploading?: boolean;
-};
     
 export type FcmToken = {
     id: string;
@@ -258,4 +262,12 @@ export type UserProfile = {
   photoURL: string | null;
   groups?: string[];
   activeGroupId?: string | null;
+};
+
+export type AppHelpInput = {
+    userMessage: string;
+    conversationHistory?: {
+        role: 'user' | 'agent';
+        content: string;
+    }[];
 };

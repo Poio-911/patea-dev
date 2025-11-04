@@ -18,8 +18,11 @@ import { es } from 'date-fns/locale';
 import { ScrollArea } from './ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { SoccerPlayerIcon } from './icons/soccer-player-icon';
+import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 
+interface NotificationBellProps {
+  isPopoverContent?: boolean;
+}
 
 const notificationIcons: Record<Notification['type'], React.ElementType> = {
     match_invite: SoccerPlayerIcon,
@@ -45,7 +48,7 @@ const IconWrapper = ({ type, className, ...props }: { type: Notification['type']
     );
 };
 
-export function NotificationBell() {
+export function NotificationBell({ isPopoverContent = false }: NotificationBellProps) {
     const { user } = useUser();
     const firestore = useFirestore();
     const [isOpen, setIsOpen] = useState(false);
@@ -78,16 +81,50 @@ export function NotificationBell() {
         await batch.commit();
     };
 
-    useEffect(() => {
-        if (isOpen && unreadCount > 0) {
-            // Wait a bit before marking as read so user can see them
-            const timer = setTimeout(() => {
-                markAllAsRead();
-            }, 2000);
-            return () => clearTimeout(timer);
-        }
-    }, [isOpen, unreadCount, firestore, user, notifications]);
+    const Content = () => (
+      <>
+        <ScrollArea className="h-96">
+            {loading ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">Cargando...</div>
+            ) : notifications && notifications.length > 0 ? (
+                <div className="divide-y">
+                    {notifications.map(notification => (
+                        <Link key={notification.id} href={notification.link} className="block hover:bg-accent/50" onClick={() => setIsOpen(false)}>
+                            <div className={cn("flex items-start gap-3 p-4", !notification.isRead && "bg-primary/10")}>
+                                <div className="mt-1">
+                                    <IconWrapper type={notification.type} className="h-8 w-8" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-semibold text-sm leading-tight">{notification.title}</p>
+                                    <p className="text-xs text-muted-foreground">{notification.message}</p>
+                                    <p className="text-xs text-muted-foreground/80 mt-1">
+                                        {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true, locale: es })}
+                                    </p>
+                                </div>
+                                {!notification.isRead && (
+                                    <div className="h-2 w-2 rounded-full bg-primary mt-1" />
+                                )}
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            ) : (
+                <p className="p-8 text-center text-sm text-muted-foreground">No tienes notificaciones.</p>
+            )}
+        </ScrollArea>
+        <div className="p-2 border-t text-center">
+            <Button variant="link" size="sm" asChild>
+                <Link href="/notifications">Ver todas</Link>
+            </Button>
+        </div>
+      </>
+    );
 
+    if (isPopoverContent) {
+      return <Content />;
+    }
+
+    // Default popover behavior
     return (
         <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
@@ -112,40 +149,7 @@ export function NotificationBell() {
                         </Button>
                     )}
                 </div>
-                 <ScrollArea className="h-96">
-                    {loading ? (
-                        <div className="p-4 text-center text-sm text-muted-foreground">Cargando...</div>
-                    ) : notifications && notifications.length > 0 ? (
-                        <div className="divide-y">
-                            {notifications.map(notification => (
-                                <Link key={notification.id} href={notification.link} className="block hover:bg-accent/50" onClick={() => setIsOpen(false)}>
-                                    <div className={cn("flex items-start gap-3 p-4", !notification.isRead && "bg-primary/10")}>
-                                        <div className="mt-1">
-                                            <IconWrapper type={notification.type} className="h-8 w-8" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="font-semibold text-sm leading-tight">{notification.title}</p>
-                                            <p className="text-xs text-muted-foreground">{notification.message}</p>
-                                            <p className="text-xs text-muted-foreground/80 mt-1">
-                                                {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true, locale: es })}
-                                            </p>
-                                        </div>
-                                        {!notification.isRead && (
-                                            <div className="h-2 w-2 rounded-full bg-primary mt-1" />
-                                        )}
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="p-8 text-center text-sm text-muted-foreground">No tienes notificaciones.</p>
-                    )}
-                </ScrollArea>
-                <div className="p-2 border-t text-center">
-                    <Button variant="link" size="sm" asChild>
-                        <Link href="/notifications">Ver todas</Link>
-                    </Button>
-                </div>
+                <Content />
             </PopoverContent>
         </Popover>
     )
