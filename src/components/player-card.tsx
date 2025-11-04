@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -37,25 +38,23 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
             <Card
                 className={cn(
                     "relative h-full aspect-[3/4] w-full flex flex-col overflow-hidden rounded-2xl border-2 shadow-lg transition-transform duration-300 hover:-translate-y-1",
-                    // --- ESTILOS CORREGIDOS ---
-                    // Modo Claro (default)
-                    "bg-card border-border hover:shadow-lg",
-                    // Modo Juego (oscuro)
+                    // Modo Claro
+                    "bg-card border-border hover:shadow-xl",
+                    // Modo Juego (Oscuro)
                     "dark:bg-gradient-to-b dark:from-[#1a2a6c] dark:to-[#0d1b3a] dark:border-[#2e4fff] dark:hover:shadow-[0_12px_40px_rgba(46,79,255,0.3)]"
                 )}
                 role="article"
                 aria-label={`Jugador ${playerName}, calificación general ${player.ovr}`}
             >
-                {/* Textura de fondo opcional (solo para dark mode) */}
-                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_10%,transparent_90%)] opacity-0 dark:opacity-20 pointer-events-none"></div>
+                {/* Vector decorativo */}
+                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_10%,transparent_90%)] dark:opacity-20 opacity-0 pointer-events-none"></div>
 
                 <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center">
                     {/* Header */}
                     <div className="flex items-center justify-between text-foreground dark:text-white">
                         <span className="text-primary dark:text-yellow-400 text-2xl font-black">{player.ovr}</span>
                         <div className="bg-muted dark:bg-white/10 rounded-md px-2 py-0.5 text-xs uppercase">{player.position}</div>
-                        {/* Placeholder para la bandera */}
-                        <img src="https://flagcdn.com/w20/uy.png" alt="Bandera" className="w-6 h-4 object-cover rounded-sm" />
+                        <img src="https://flagcdn.com/w20/uy.png" alt="Bandera de Uruguay" className="w-6 h-4 object-cover rounded-sm" />
                     </div>
 
                     {/* Imagen y Nombre */}
