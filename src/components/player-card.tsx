@@ -30,8 +30,6 @@ const getOvrColorClasses = (ovr: number): string => {
     return 'text-amber-700';
 };
 
-// --- Componente Auxiliar para las Caras de la Tarjeta ---
-// Definido fuera del componente principal para evitar errores de sintaxis
 const CardFace = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
@@ -43,7 +41,6 @@ const CardFace = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
 );
 CardFace.displayName = 'CardFace';
 
-// --- Componente Principal ---
 export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardProps) {
     const [isFlipped, setIsFlipped] = useState(false);
     const playerName = player.name || player.displayName || 'Jugador';
@@ -114,17 +111,17 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                 <CardFace className="card-back">
                     <Card className="h-full flex flex-col overflow-hidden bg-card text-card-foreground shadow-lg border-2 border-border cursor-pointer">
                         <div className="flex-grow flex flex-col p-4 justify-center gap-4">
-                             <h4 className="text-center font-bold font-headline text-lg mb-2">{playerName}</h4>
-                             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                            <h4 className="text-center font-bold font-headline text-xl">{playerName}</h4>
+                            <div className="grid grid-cols-2 gap-4">
                                 {stats.map(stat => {
                                     const AttrIcon = attributeDetails[stat.key].icon;
                                     return (
-                                        <div key={stat.key} className="flex items-center gap-3">
-                                            <AttrIcon className="h-5 w-5 text-primary"/>
-                                            <div className="flex-1">
-                                                <p className="text-sm font-semibold text-muted-foreground">{attributeDetails[stat.key].name}</p>
+                                        <div key={stat.key} className="flex items-center gap-2 rounded-lg bg-muted/50 p-2">
+                                            <AttrIcon className="h-6 w-6 text-primary flex-shrink-0"/>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-semibold text-muted-foreground">{attributeDetails[stat.key].name}</span>
+                                                <span className="text-xl font-bold">{stat.value}</span>
                                             </div>
-                                            <p className="text-lg font-bold">{stat.value}</p>
                                         </div>
                                     )
                                 })}
