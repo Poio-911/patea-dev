@@ -32,6 +32,11 @@ export default function AnalysisPage() {
     return <div className="text-center">Solo puedes acceder a tu propio análisis avanzado.</div>;
   }
 
+  // ✅ CORRECCIÓN: Añadir esta comprobación para asegurar que user no es null
+  if (!user) {
+    return <div className="text-center">No se pudo cargar la información del usuario.</div>;
+  }
+
   return (
     <div className="flex flex-col gap-6">
         <div className="flex w-full items-center justify-between">

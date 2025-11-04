@@ -13,7 +13,6 @@ Define las dependencias del proyecto, los scripts de `npm` y la metadata general
   "name": "nextn",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "next dev",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
@@ -21,12 +20,16 @@ Define las dependencias del proyecto, los scripts de `npm` y la metadata general
     "build": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "0.5.2",
     "@genkit-ai/next": "0.5.2",
-    "@hookform/resolvers": "^4.1.3",
+    "@hookform/resolvers": "3.10.0",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
     "@radix-ui/react-avatar": "^1.1.3",
@@ -50,6 +53,7 @@ Define las dependencias del proyecto, los scripts de `npm` y la metadata general
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.8",
     "@react-google-maps/api": "^2.19.3",
+    "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
@@ -59,28 +63,32 @@ Define las dependencias del proyecto, los scripts de `npm` y la metadata general
     "eventemitter3": "^5.0.1",
     "firebase": "^11.9.1",
     "firebase-admin": "^12.2.0",
+    "framer-motion": "^11.18.2",
     "genkit": "0.5.2",
-    "lucide-react": "^0.395.0",
+    "lucide-react": "^0.475.0",
     "nanoid": "^5.0.7",
-    "next": "14.2.4",
+    "next": "14.2.5",
     "react": "18.3.1",
     "react-day-picker": "^9.0.4",
     "react-dom": "18.3.1",
-    "react-hook-form": "^7.54.2",
+    "react-hook-form": "7.65.0",
+    "react-image-crop": "^11.0.10",
     "recharts": "^2.15.1",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
     "use-places-autocomplete": "^4.0.1",
-    "uuid": "^9.0.0",
+    "uuid": "^10.0.0",
     "wav": "^1.0.2",
-    "zod": "^3.24.2"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/google.maps": "^3.55.11",
     "@types/node": "^20",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.1",
-    "@types/uuid": "^9.0.0",
+    "@types/uuid": "^10.0.0",
     "genkit-cli": "0.5.2",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
@@ -101,7 +109,7 @@ Este archivo es generado automáticamente por `npm`. Garantiza que se instalen e
 
 ## 3. `next.config.mjs`
 
-Configuración específica de Next.js. El cambio a la extensión `.mjs` fue clave para resolver el error `ReferenceError: module is not defined`.
+Configuración específica de Next.js.
 
 ```javascript
 /** @type {import('next').NextConfig} */
@@ -123,9 +131,6 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    allowedDevOrigins: ["https://studio.web.app"]
-  }
 };
 
 export default nextConfig;

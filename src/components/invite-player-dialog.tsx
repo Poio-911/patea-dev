@@ -35,7 +35,7 @@ import { Checkbox } from './ui/checkbox';
 
 
 type InvitePlayerDialogProps = {
-  playerToInvite: AvailablePlayer | null; // For inviting external players
+  playerToInvite?: AvailablePlayer | null; // For inviting external players
   allGroupPlayers?: Player[]; // For inviting internal players
   userMatches: Match[];
   children: React.ReactNode;
@@ -66,7 +66,7 @@ export function InvitePlayerDialog({
   const getMatchById = (id: string) => [...userMatches, ...(match ? [match] : [])].find(m => m.id === id);
 
   const availableGroupPlayers = useMemo(() => {
-    if (isInvitingExternal) return [];
+    if (isInvitingExternal || !allGroupPlayers) return []; // FIX: Check if allGroupPlayers is null/undefined
     
     const selectedMatchData = finalSelectedMatchId ? getMatchById(finalSelectedMatchId) : null;
     const playerUidsInMatch = new Set(selectedMatchData?.playerUids || []);
@@ -245,5 +245,3 @@ export function InvitePlayerDialog({
     </Dialog>
   );
 }
-
-    

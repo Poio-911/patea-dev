@@ -1,3 +1,4 @@
+
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
 
@@ -5,3 +6,79 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+
+  # Environment variables for your backend.
+  env:
+    # Server-only variables
+    - variable: GOOGLE_GENAI_API_KEY
+      value: AIzaSyDDN2IFxzPbAHJRpnLUbQ6lnCFs3Ua4O-k
+      availability:
+        - BUILD
+        - RUNTIME
+    - variable: FIREBASE_SERVICE_ACCOUNT_KEY
+      secret: FIREBASE_SERVICE_ACCOUNT_KEY
+      availability:
+        - RUNTIME
+
+    # Public variables (exposed to the client)
+    - variable: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+      value: AIzaSyBnjKt571ZEUlRmK4lAnrdNJxYKZ-0Pnhk
+      availability:
+        - BUILD
+        - RUNTIME
+    - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+      value: AIzaSyAes7EVn8hQswS8XgvDMJfN6U4IT_ZL_WY
+      availability:
+        - BUILD
+        - RUNTIME
+    - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+      value: mil-disculpis.firebaseapp.com
+      availability:
+        - BUILD
+        - RUNTIME
+    - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+      value: mil-disculpis
+      availability:
+        - BUILD
+        - RUNTIME
+    - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+      value: mil-disculpis.appspot.com
+      availability:
+        - BUILD
+        - RUNTIME
+    - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+      value: '5614567933'
+      availability:
+        - BUILD
+        - RUNTIME
+    - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+      value: 1:5614567933:web:6d7b7dde5f994c36861994
+      availability:
+        - BUILD
+        - RUNTIME
+    - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+      value: G-56F70EMSVB
+      availability:
+        - BUILD
+        - RUNTIME
+    - variable: NEXT_PUBLIC_FIREBASE_VAPID_KEY
+      value: BKW3qYRW72BtPqyI1oC3IEzafEAx4CXg7ooux7-v3zzn9Hxsgxnk4k1hnIZ9Jb_tEWJn3CU5ncRF4gP3OlwMfKA
+      availability:
+        - BUILD
+        - RUNTIME
+        
+    # Other system variables
+    - variable: GCLOUD_PROJECT
+      value: mil-disculpis
+      availability:
+        - BUILD
+        - RUNTIME
+    - variable: NODE_ENV
+      value: production
+      availability:
+        - BUILD
+        - RUNTIME
+    - variable: FIREBASE_USE_EMULATOR
+      value: 'false'
+      availability:
+        - RUNTIME

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -8,13 +7,15 @@ import { useFirestore, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { generateTeamsAction } from '@/lib/actions';
+import { generateTeamsAction } from '@/lib/actions/server-actions';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { MatchTeamsDialog } from '@/components/match-teams-dialog';
+import { EditableTeamsDialog } from '@/components/editable-teams-dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,14 +25,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User, MessageCircle, FileSignature, MoreVertical, Users, UserCheck } from 'lucide-react';
+import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User, MessageCircle, FileSignature, MoreVertical, Users, UserCheck, Shuffle } from 'lucide-react';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import Link from 'next/link';
-import { SoccerPlayerIcon } from './icons/soccer-player-icon';
+import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { MatchChatSheet } from './match-chat-sheet';
-import { MatchDetailsDialog } from './match-details-dialog';
-import { TeamsIcon } from './icons/teams-icon';
+import { TeamsIcon } from '@/components/icons/teams-icon';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -117,7 +118,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         // ✅ Validation: Check if there are enough real players
         const minPlayersRequired = 6; // At least 3 per team for proper peer evaluation
         if (realPlayerUids.length < minPlayersRequired) {
-            console.warn(`[ASSIGNMENT WARNING] Only ${realPlayerUids.length} real players. Minimum recommended: ${minPlayersRequired}`);
+            logger.warn(`[ASSIGNMENT WARNING] Only ${realPlayerUids.length} real players. Minimum recommended: ${minPlayersRequired}`);
         }
 
         realPlayerUids.forEach(evaluatorId => {
@@ -132,7 +133,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             const playersToEvaluate = shuffledTeammates.slice(0, maxAssignments);
 
             if (playersToEvaluate.length < 2) {
-                console.warn(`[ASSIGNMENT WARNING] Player ${evaluatorId} only has ${playersToEvaluate.length} assignment(s) (team has ${teammates.length + 1} real players)`);
+                logger.warn(`[ASSIGNMENT WARNING] Player ${evaluatorId} only has ${playersToEvaluate.length} assignment(s) (team has ${teammates.length + 1} real players)`);
             }
 
             playersToEvaluate.forEach(subject => {
@@ -169,8 +170,8 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             if (!finalTeams || finalTeams.length === 0) {
                  const playerIdsInMatch = freshMatch.playerUids;
                  if (playerIdsInMatch.length >= freshMatch.matchSize) {
-                    const playersInMatchQuery = query(collection(firestore, 'players'), where('__name__', 'in', playerIdsInMatch));
-                    const playersSnapshot = await getDocs(playersInMatchQuery);
+                    const playersQuery = query(collection(firestore, 'players'), where('__name__', 'in', playerIdsInMatch));
+                    const playersSnapshot = await getDocs(playersQuery);
                     const selectedPlayersData = playersSnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as Player));
                     
                     const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
@@ -180,7 +181,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     finalTeams = teamGenerationResult.teams;
                     matchUpdateData.teams = finalTeams;
                  } else {
-                     console.warn("Finishing match without full player list. Teams not generated.");
+                     logger.warn("Finishing match without full player list. Teams not generated.");
                  }
             }
 
@@ -227,7 +228,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             });
 
         } catch (error: any) {
-             console.error("Error finishing match: ", error);
+             logger.error("Error finishing match", error, { matchId: match.id });
              toast({
                 variant: 'destructive',
                 title: 'Error',
@@ -304,7 +305,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             }
             await batch.commit();
         } catch (error) {
-            console.error("Error joining/leaving match: ", error);
+            logger.error("Error joining/leaving match", error, { matchId: match.id, userId: user?.uid });
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo completar la operación.' });
         } finally {
             setIsJoining(false);
@@ -326,7 +327,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             );
         }
         return null;
-    }
+    };
 
     return (
         <Card className="flex flex-col overflow-hidden shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
@@ -335,37 +336,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     <CardTitle className={cn("text-xl font-bold", currentStatus.neonClass)}>
                         {match.title}
                     </CardTitle>
-                    
-                    {isOwner && (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2 text-foreground/80 hover:bg-foreground/10">
-                                    <MoreVertical className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                {isOwner && match.status === 'upcoming' && (
-                                    <DropdownMenuItem onClick={handleFinishMatch} disabled={isFinishing}>
-                                        <CheckCircle className="mr-2 h-4 w-4" />
-                                        Finalizar Partido
-                                    </DropdownMenuItem>
-                                )}
-                                {(isOwner && match.status !== 'upcoming') && (
-                                    <DropdownMenuItem disabled>
-                                        <FileSignature className="mr-2 h-4 w-4" />
-                                        <span>Acciones no disponibles</span>
-                                    </DropdownMenuItem>
-                                )}
-                                {(isOwner && match.status === 'upcoming') && <DropdownMenuSeparator />}
-                                {isOwner && (
-                                    <DropdownMenuItem disabled>
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Eliminar (Pronto)
-                                    </DropdownMenuItem>
-                                )}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
                 </div>
                  <div className="flex items-center gap-2 flex-wrap">
                     <CardDescription className="flex items-center gap-2 text-xs text-foreground/80">
@@ -437,41 +407,23 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             </CardContent>
 
             <CardFooter className="flex flex-col items-stretch gap-2 p-3 bg-muted/50 mt-auto">
-                <div className="grid grid-cols-2 gap-2">
-                    <JoinLeaveButton />
-                    <MatchDetailsDialog match={match} isOwner={isOwner}>
-                        <Button variant="outline" size="sm" className="w-full">
+                 <div className="flex gap-2">
+                    <Button asChild className="w-full">
+                        <Link href={`/matches/${match.id}`}>
                             <Eye className="mr-2 h-4 w-4" />
-                            Detalles
-                        </Button>
-                    </MatchDetailsDialog>
-                    {isUserInMatch && <MatchChatSheet match={match}><Button variant="outline" size="sm" className="w-full"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button></MatchChatSheet>}
-                    {match.teams && match.teams.length > 0 && <MatchTeamsDialog match={match}><Button variant="outline" size="sm" className="w-full"><TeamsIcon className="mr-2 h-4 w-4" />Equipos</Button></MatchTeamsDialog>}
-                    
-                    {isOwner && match.status === 'completed' && (
-                        <Button asChild size="sm" className="w-full bg-amber-500 hover:bg-amber-600 text-white col-span-2">
-                            <Link href={`/matches/${match.id}/evaluate`}>
-                                <FileSignature className="mr-2 h-4 w-4" />
-                                Supervisar Evaluaciones
-                            </Link>
-                        </Button>
-                    )}
-
-                    {isOwner && match.status === 'upcoming' && (match.type === 'collaborative' || match.isPublic) && (
-                        <InvitePlayerDialog 
-                            playerToInvite={null} 
-                            userMatches={[]} 
-                            match={match} 
-                            allGroupPlayers={allPlayers}
-                            disabled={isMatchFull}
-                        >
-                            <Button variant="outline" size="sm" className="w-full" disabled={isMatchFull}>
-                                <UserPlus className="mr-2 h-4 w-4" />
-                                Invitar
-                            </Button>
-                        </InvitePlayerDialog>
+                            Ver Detalles
+                        </Link>
+                    </Button>
+                     {match.teams && match.teams.length > 0 && (
+                        <MatchTeamsDialog match={match}>
+                             <Button variant="secondary" className="w-full">
+                                <TeamsIcon className="mr-2 h-4 w-4" />
+                                Equipos
+                             </Button>
+                        </MatchTeamsDialog>
                     )}
                 </div>
+                 <JoinLeaveButton />
             </CardFooter>
         </Card>
     );

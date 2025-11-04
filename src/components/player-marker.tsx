@@ -5,7 +5,7 @@ import { OverlayView } from '@react-google-maps/api';
 import type { AvailablePlayer } from '@/lib/types';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
-import { PlayerMarkerIcon } from './icons/player-marker-icon';
+import { PlayerMarkerIcon } from '@/components/icons/player-marker-icon';
 
 interface PlayerMarkerProps {
   player: AvailablePlayer;

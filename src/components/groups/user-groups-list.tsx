@@ -6,59 +6,22 @@ import { useUser, useFirestore } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, query, where, doc, updateDoc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
 import type { Group } from '@/lib/types';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
 import { Button } from '../ui/button';
-import { Loader2, CheckCircle, PlusCircle, LogIn, Copy, Trash2, Edit, Users2 } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { Badge } from '../ui/badge';
+import { Loader2, CheckCircle, Copy, Trash2, Edit, MoreVertical, Crown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { nanoid } from 'nanoid';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
-
-
-const joinGroupSchema = z.object({
-  inviteCode: z.string().min(1, 'El código de invitación es obligatorio.'),
-});
-type JoinGroupForm = z.infer<typeof joinGroupSchema>;
-
-const createGroupSchema = z.object({
-  name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
-});
-type CreateGroupForm = z.infer<typeof createGroupSchema>;
-
-const editGroupSchema = z.object({
-  name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
-});
-type EditGroupForm = z.infer<typeof editGroupSchema>;
-
+import { EditGroupDialog } from './group-dialogs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
 export function UserGroupsList() {
-  const { user, loading: userLoading } = useUser();
-  const firestore = useFirestore();
-  const { toast } = useToast();
-  
+  const { user } = useUser();
   const [isChangingGroup, setIsChangingGroup] = useState<string | null>(null);
   const [isDeletingGroup, setIsDeletingGroup] = useState<string | null>(null);
-  const [isEditingGroup, setIsEditingGroup] = useState<string | null>(null);
-  const [isJoining, setIsJoining] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState<{ type: 'create' | 'join' | 'edit' | null, data?: any }>({ type: null });
-
-
-  const joinForm = useForm<JoinGroupForm>({ resolver: zodResolver(joinGroupSchema) });
-  const createForm = useForm<CreateGroupForm>({ resolver: zodResolver(createGroupSchema) });
-  const editForm = useForm<EditGroupForm>();
-
+  const { toast } = useToast();
+  const firestore = useFirestore();
 
   const groupsQuery = useMemo(() => {
     if (!firestore || !user?.uid) return null;
@@ -96,26 +59,27 @@ export function UserGroupsList() {
     const batch = writeBatch(firestore);
 
     try {
-        // Delete all players in the group
         const playersQuery = query(collection(firestore, 'players'), where('groupId', '==', groupId));
         const playersSnap = await getDocs(playersQuery);
         playersSnap.forEach(playerDoc => batch.delete(playerDoc.ref));
 
-        // Delete all matches in the group
         const matchesQuery = query(collection(firestore, 'matches'), where('groupId', '==', groupId));
         const matchesSnap = await getDocs(matchesQuery);
         matchesSnap.forEach(matchDoc => batch.delete(matchDoc.ref));
+        
+        const teamsQuery = query(collection(firestore, 'teams'), where('groupId', '==', groupId));
+        const teamsSnap = await getDocs(teamsQuery);
+        teamsSnap.forEach(teamDoc => batch.delete(teamDoc.ref));
 
-        // Delete the group itself
         batch.delete(doc(firestore, 'groups', groupId));
 
-        // Remove group from user's list and set active group to null if it was the one deleted
         const userRef = doc(firestore, 'users', user.uid);
+        const userGroups = user.groups || [];
         const userUpdate: any = {
-            groups: user.groups?.filter(id => id !== groupId)
+            groups: userGroups.filter(id => id !== groupId)
         };
         if (user.activeGroupId === groupId) {
-            userUpdate.activeGroupId = null;
+            userUpdate.activeGroupId = userGroups.length > 1 ? userGroups.find(id => id !== groupId) : null;
         }
         batch.update(userRef, userUpdate);
         
@@ -128,86 +92,111 @@ export function UserGroupsList() {
         setIsDeletingGroup(null);
     }
   };
-  
-  const handleCreateGroup = async (data: CreateGroupForm) => {
-      //... (implementation from groups/page.tsx, adapted)
-  };
-  
-  const handleJoinGroup = async (data: JoinGroupForm) => {
-     //... (implementation from groups/page.tsx, adapted)
-  };
-  
-  const handleEditGroup = async (data: EditGroupForm) => {
-    if (!firestore || !dialogOpen.data?.id) return;
-    setIsEditingGroup(dialogOpen.data.id);
-    try {
-        await updateDoc(doc(firestore, 'groups', dialogOpen.data.id), { name: data.name });
-        toast({ title: "Grupo actualizado" });
-        setDialogOpen({ type: null });
-    } catch (error) {
-        toast({ variant: 'destructive', title: "Error", description: "No se pudo actualizar el nombre del grupo."});
-    } finally {
-        setIsEditingGroup(null);
-    }
+
+  if (groupsLoading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i} className="h-48 animate-pulse bg-muted"></Card>
+        ))}
+      </div>
+    );
   }
 
+  if (!groups || groups.length === 0) {
+    return null; // The parent component will handle the empty state
+  }
 
   return (
-    <Accordion type="single" collapsible className="w-full">
-      <AccordionItem value="item-1">
-        <AccordionTrigger>
-            <div className="flex items-center gap-2">
-                 <Users2 className="h-5 w-5"/>
-                 <span className="font-semibold text-lg">Mis Grupos</span>
-            </div>
-        </AccordionTrigger>
-        <AccordionContent>
-          <div className="space-y-2">
-            {groupsLoading ? <Loader2 className="h-5 w-5 animate-spin"/> : (
-                groups && groups.length > 0 ? (
-                    groups.map(group => {
-                        const isActive = user?.activeGroupId === group.id;
-                        return (
-                            <div key={group.id} className={cn("flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg", isActive ? 'bg-green-100/50 dark:bg-green-900/30' : 'bg-muted/50')}>
-                                <div className="flex-1">
-                                    <p className="font-semibold">{group.name}</p>
-                                    <p className="text-xs text-muted-foreground">Código: <span className="font-mono">{group.inviteCode}</span></p>
-                                </div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <Button size="sm" variant="ghost" onClick={() => handleCopyCode(group.inviteCode)}><Copy className="h-4 w-4"/></Button>
-                                    {user?.uid === group.ownerUid && (
-                                        <>
-                                            <Button size="sm" variant="ghost" onClick={() => { editForm.reset({ name: group.name }); setDialogOpen({ type: 'edit', data: group })}}><Edit className="h-4 w-4"/></Button>
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild><Button size="sm" variant="ghost" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader><AlertDialogTitle>¿Borrar "{group.name}"?</AlertDialogTitle><AlertDialogDescription>Esta acción es permanente. Se borrarán todos los jugadores y partidos asociados a este grupo.</AlertDialogDescription></AlertDialogHeader>
-                                                    <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteGroup(group.id, group.name)} className="bg-destructive hover:bg-destructive/90">Borrar</AlertDialogAction></AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </>
-                                    )}
-                                    {isActive ? (
-                                        <Button size="sm" disabled className="bg-green-600 hover:bg-green-600"><CheckCircle className="mr-2 h-4 w-4"/>Activo</Button>
-                                    ) : (
-                                        <Button size="sm" variant="outline" onClick={() => handleSetActiveGroup(group.id)} disabled={!!isChangingGroup}>
-                                            {isChangingGroup === group.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                                            Activar
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-                        )
-                    })
-                ) : <p className="text-sm text-muted-foreground text-center py-4">No perteneces a ningún grupo.</p>
-            )}
-             <div className="flex gap-2 pt-4">
-                <Button variant="outline" className="w-full" onClick={() => { createForm.reset(); setDialogOpen({ type: 'create'})}}><PlusCircle className="mr-2 h-4 w-4"/>Crear Grupo</Button>
-                <Button className="w-full" onClick={() => { joinForm.reset(); setDialogOpen({ type: 'join' })}}><LogIn className="mr-2 h-4 w-4"/>Unirse a Grupo</Button>
-            </div>
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
-  )
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {groups.map(group => {
+        const isActive = user?.activeGroupId === group.id;
+        const isOwner = user?.uid === group.ownerUid;
+
+        return (
+          <Card key={group.id} className={cn("flex flex-col", isActive && 'border-primary ring-2 ring-primary/50')}>
+            <CardHeader className="flex-row items-start justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <span>{group.name}</span>
+                   {isOwner && (
+                      <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+                          <Crown className="h-3 w-3 mr-1"/>
+                          Propietario
+                      </Badge>
+                  )}
+                </CardTitle>
+                <div className="flex items-center gap-2 mt-2">
+                    <p className="text-xs text-muted-foreground">Código:</p>
+                    <code className="text-sm font-bold font-mono bg-muted px-2 py-1 rounded-md">{group.inviteCode}</code>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleCopyCode(group.inviteCode)}>
+                        <Copy className="h-4 w-4"/>
+                    </Button>
+                </div>
+              </div>
+              {isOwner && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 -mt-2">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                     <EditGroupDialog group={group}>
+                        <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                            <Edit className="mr-2 h-4 w-4"/> Editar Nombre
+                        </DropdownMenuItem>
+                    </EditGroupDialog>
+                    <DropdownMenuSeparator />
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive">
+                          <Trash2 className="mr-2 h-4 w-4"/> Eliminar Grupo
+                        </DropdownMenuItem>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Borrar "{group.name}"?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta acción es permanente. Se borrarán todos los jugadores y partidos asociados a este grupo.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteGroup(group.id, group.name)} disabled={isDeletingGroup === group.id}>
+                              {isDeletingGroup === group.id && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                              Borrar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </CardHeader>
+            <CardFooter className="mt-auto bg-muted/50 p-3">
+              {isActive ? (
+                <Badge className="w-full justify-center text-base py-1.5 bg-green-600 hover:bg-green-700">
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Activo
+                </Badge>
+              ) : (
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => handleSetActiveGroup(group.id)}
+                  disabled={!!isChangingGroup}
+                >
+                  {isChangingGroup === group.id ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Activar Grupo
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
+        );
+      })}
+    </div>
+  );
 }

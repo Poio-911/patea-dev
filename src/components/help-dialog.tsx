@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -14,16 +14,18 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { Users, HelpCircle } from 'lucide-react';
-import { SoccerPlayerIcon } from './icons/soccer-player-icon';
-import { MatchIcon } from './icons/match-icon';
-import { EvaluationIcon } from './icons/evaluation-icon';
-import { FindMatchIcon } from './icons/find-match-icon';
+import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
+import { MatchIcon } from '@/components/icons/match-icon';
+import { EvaluationIcon } from '@/components/icons/evaluation-icon';
+import { FindMatchIcon } from '@/components/icons/find-match-icon';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './ui/carousel';
-import { TeamsIcon } from './icons/teams-icon';
+import { TeamsIcon } from '@/components/icons/teams-icon';
 
 interface HelpDialogProps {
   forceOpen?: boolean;
   onExplicitClose?: () => void;
+  isPopoverContent?: boolean;
+  children?: React.ReactNode;
 }
 
 const tutorialContent = [
@@ -54,7 +56,46 @@ const tutorialContent = [
     }
 ];
 
-export function HelpDialog({ forceOpen = false, onExplicitClose }: HelpDialogProps) {
+const HelpContent = ({ onConfirm }: { onConfirm?: () => void }) => (
+    <>
+      <DialogHeader>
+          <DialogTitle className="text-2xl font-bold font-headline text-center">¡Bienvenid@ a Pateá!</DialogTitle>
+          <DialogDescription className="text-center">Acá tenés una guía rápida para que le saques todo el jugo a la app.</DialogDescription>
+      </DialogHeader>
+
+      <div className="flex-grow overflow-y-auto -mx-6 px-6 py-2">
+         <Carousel className="w-full max-w-lg mx-auto">
+              <CarouselContent>
+                  {tutorialContent.map((section, index) => {
+                      const Icon = section.icon;
+                      return (
+                          <CarouselItem key={index}>
+                              <div className="p-1 text-center flex flex-col items-center h-[350px] justify-center">
+                                  <div className="p-4 bg-primary/10 rounded-full mb-4">
+                                     <Icon className="h-8 w-8 text-primary" />
+                                  </div>
+                                  <h3 className="text-xl font-semibold mb-2">{section.title}</h3>
+                                  <p className="text-muted-foreground mb-4 px-4">{section.content}</p>
+                              </div>
+                          </CarouselItem>
+                      )
+                  })}
+              </CarouselContent>
+              <CarouselPrevious className="left-0" />
+              <CarouselNext className="right-0" />
+          </Carousel>
+      </div>
+      
+      <DialogFooter>
+          <Button onClick={onConfirm} className="w-full">
+            ¡Entendido, a jugar!
+          </Button>
+      </DialogFooter>
+    </>
+);
+
+
+export function HelpDialog({ forceOpen = false, onExplicitClose, children, isPopoverContent = false }: HelpDialogProps) {
   const [isOpen, setIsOpen] = useState(forceOpen);
   const router = useRouter();
   const pathname = usePathname();
@@ -71,57 +112,25 @@ export function HelpDialog({ forceOpen = false, onExplicitClose }: HelpDialogPro
     }
     setIsOpen(open);
   }
-
-  const handleGotItClick = () => {
-    handleOpenChange(false);
+  
+  if (isPopoverContent) {
+    return <HelpContent />;
   }
-
-  const DialogTriggerButton = (
-    <DialogTrigger asChild>
-      <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full">
-        <HelpCircle className="h-5 w-5" />
-        <span className="sr-only">Ayuda</span>
-      </Button>
-    </DialogTrigger>
-  );
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      {!forceOpen && DialogTriggerButton}
+      {!forceOpen && (
+        <DialogTrigger asChild>
+          {children || (
+              <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full">
+                <HelpCircle className="h-5 w-5" />
+                <span className="sr-only">Ayuda</span>
+              </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-            <DialogTitle className="text-2xl font-bold font-headline text-center">¡Bienvenid@ a Pateá!</DialogTitle>
-            <DialogDescription className="text-center">Acá tenés una guía rápida para que le saques todo el jugo a la app.</DialogDescription>
-        </DialogHeader>
-
-        <div className="flex-grow overflow-y-auto -mx-6 px-6 py-2">
-           <Carousel className="w-full max-w-lg mx-auto">
-                <CarouselContent>
-                    {tutorialContent.map((section, index) => {
-                        const Icon = section.icon;
-                        return (
-                            <CarouselItem key={index}>
-                                <div className="p-1 text-center flex flex-col items-center h-[350px] justify-center">
-                                    <div className="p-4 bg-primary/10 rounded-full mb-4">
-                                       <Icon className="h-8 w-8 text-primary" />
-                                    </div>
-                                    <h3 className="text-xl font-semibold mb-2">{section.title}</h3>
-                                    <p className="text-muted-foreground mb-4 px-4">{section.content}</p>
-                                </div>
-                            </CarouselItem>
-                        )
-                    })}
-                </CarouselContent>
-                <CarouselPrevious className="left-0" />
-                <CarouselNext className="right-0" />
-            </Carousel>
-        </div>
-        
-        <DialogFooter>
-            <Button onClick={handleGotItClick} className="w-full">
-              ¡Entendido, a jugar!
-            </Button>
-        </DialogFooter>
+        <HelpContent onConfirm={() => handleOpenChange(false)} />
       </DialogContent>
     </Dialog>
   );

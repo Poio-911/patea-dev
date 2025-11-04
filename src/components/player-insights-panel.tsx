@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
-import { detectPlayerPatternsAction } from '@/lib/actions';
+import { detectPlayerPatternsAction } from '@/lib/actions/server-actions';
 import type { DetectPlayerPatternsOutput } from '@/ai/flows/detect-player-patterns';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

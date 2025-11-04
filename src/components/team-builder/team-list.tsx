@@ -76,22 +76,22 @@ export function TeamList({ groupId, players, currentUserId }: TeamListProps) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <TeamsIcon className="h-6 w-6 text-primary" />
+          <TeamsIcon className="h-8 w-8 text-primary" />
           <div>
-            <h3 className="text-lg font-semibold">Equipos del Grupo</h3>
+            <h2 className="text-2xl font-bold">Equipos del Grupo</h2>
             <p className="text-sm text-muted-foreground">
               {teams?.length || 0} equipos creados
             </p>
           </div>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Crear Equipo
+        <Button onClick={() => setCreateDialogOpen(true)} size="sm">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Crear Equipo
         </Button>
       </div>
 
       {teams && teams.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {teams.map(team => (
             <TeamCard
               key={team.id}
@@ -107,7 +107,7 @@ export function TeamList({ groupId, players, currentUserId }: TeamListProps) {
         <Alert>
           <AlertTitle>No hay equipos creados</AlertTitle>
           <AlertDescription>
-            Creá el primer equipo del grupo haciendo clic en "Crear Equipo".
+            Creá el primer equipo del grupo. Podrás usarlos para armar partidos y llevar estadísticas.
           </AlertDescription>
         </Alert>
       )}
