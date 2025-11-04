@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useMemo, useState } from 'react';
@@ -40,9 +39,9 @@ const getStatColor = (value: number) => {
 };
 
 const getOvrColorClasses = (ovr: number): string => {
-    if (ovr >= 85) return 'border-amber-400 bg-amber-950/50 text-amber-300'; // Gold
-    if (ovr >= 75) return 'border-slate-400 bg-slate-900/50 text-slate-300'; // Silver
-    return 'border-amber-700 bg-amber-950/30 text-amber-500'; // Bronze
+    if (ovr >= 85) return 'text-amber-500'; // Gold
+    if (ovr >= 75) return 'text-slate-400'; // Silver
+    return 'text-amber-700'; // Bronze
 };
 
 const CardFace = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
@@ -104,18 +103,18 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                         role="article"
                         aria-label={`Jugador ${playerName}, calificación general ${player.ovr}`}
                     >
-                        <div
-                            className="animated-background absolute inset-0 z-0 opacity-20 dark:opacity-10"
-                            style={{ backgroundImage: `radial-gradient(circle at 25% 25%, var(--position-color) 0%, transparent 50%), radial-gradient(circle at 75% 75%, var(--position-color-light) 0%, transparent 50%)` }}
-                        />
+                       <div 
+                         className="animated-background absolute inset-0 z-0 opacity-20 dark:opacity-10"
+                         style={{ backgroundImage: `radial-gradient(circle at 25% 25%, var(--position-color) 0%, transparent 50%), radial-gradient(circle at 75% 75%, var(--position-color-light) 0%, transparent 50%)` }}
+                       />
                        <CardContent className="relative z-10 flex-grow flex flex-col p-3 justify-between">
                             <div className="flex justify-between items-start">
-                                <div className={cn("flex h-12 w-12 items-center justify-center rounded-full border-2 shadow-md", getOvrColorClasses(player.ovr))}>
-                                  <span className="text-xl font-black">{player.ovr}</span>
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-border bg-background shadow-md">
+                                  <span className={cn("text-xl font-black", getOvrColorClasses(player.ovr))}>{player.ovr}</span>
                                 </div>
-                                <div className="stat-border-glow flex items-center gap-1.5 rounded-full p-1.5 shadow-md text-[var(--position-color)] border-[var(--position-color)] bg-black/30">
-                                  <PrimaryStatIcon className="h-4 w-4" />
-                                  <span className="font-bold text-sm">{primaryStat.value}</span>
+                                <div className="stat-border-glow flex items-center gap-1.5 rounded-full p-1.5 shadow-md border-2 border-border bg-background">
+                                  <PrimaryStatIcon className={cn("h-4 w-4", colors.text)} />
+                                  <span className={cn("font-bold text-sm", colors.text)}>{primaryStat.value}</span>
                                 </div>
                             </div>
                             <div className="flex flex-col items-center justify-center">
@@ -127,10 +126,8 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                                </Link>
                             </div>
                             <div className="text-center">
-                                <h3 className="text-lg font-bold font-headline truncate">{playerName}</h3>
-                                <Badge variant="outline" className={cn("text-xs shadow-sm", colors.text, `border-[var(--position-color)]`, `bg-black/20`)}>
-                                  {player.position}
-                                </Badge>
+                                <h3 className="text-base font-bold font-headline truncate">{playerName}</h3>
+                                <Badge variant="outline" className="text-xs bg-background shadow-sm border-border">{player.position}</Badge>
                                 <p className="text-xs text-muted-foreground mt-1">{player.stats.goals || 0} goles en {player.stats.matchesPlayed || 0} partidos</p>
                             </div>
                         </CardContent>
