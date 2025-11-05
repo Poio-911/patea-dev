@@ -24,7 +24,6 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 217 91% 60%;
-    --radius: 0.5rem;
     --chart-1: 340 82% 61%;
     --chart-2: 158 44% 46%;
     --chart-3: 217 91% 60%;
@@ -87,8 +86,7 @@
     width: 200%;
     height: 200%;
     background-image: 
-      radial-gradient(ellipse 50% 50% at 50% 50%, rgba(46, 79, 255, 0.15), transparent),
-      url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80"><g fill="%23eab308" fill-opacity="0.1"><path d="M0 0h80v80H0z" fill="none"/><path d="M20 20h2v2h-2zM22 20h2v2h-2zM20 22h2v2h-2zM22 22h2v2h-2zM40 40h2v2h-2zM42 40h2v2h-2zM40 42h2v2h-2zM42 42h2v2h-2zM60 60h2v2h-2zM62 60h2v2h-2zM60 62h2v2h-2zM62 62h2v2h-2z"/></g></svg>');
+      radial-gradient(ellipse 50% 50% at 50% 50%, hsla(var(--primary), 0.15), transparent 50%);
     will-change: transform;
     animation: background-pan 150s linear infinite;
     z-index: -1;
@@ -134,16 +132,16 @@
   }
 
   .aura-gold {
-      background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.25) 0%, transparent 70%);
+      background-image: radial-gradient(ellipse at top right, hsla(var(--primary), 0.25) 0%, transparent 70%);
   }
   .dark .aura-gold {
-      background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.3) 0%, transparent 70%);
+      background-image: radial-gradient(ellipse at top right, hsla(var(--primary), 0.3) 0%, transparent 70%);
   }
 
   .aura-elite {
-      background-image: radial-gradient(ellipse at top right, hsla(262, 88%, 66%, 0.3) 0%, transparent 70%);
+      background-image: radial-gradient(ellipse at top right, hsla(var(--accent), 0.3) 0%, transparent 70%);
   }
   .dark .aura-elite {
-      background-image: radial-gradient(ellipse at top right, hsla(262, 88%, 66%, 0.35) 0%, transparent 70%);
+      background-image: radial-gradient(ellipse at top right, hsla(var(--accent), 0.35) 0%, transparent 70%);
   }
 }
