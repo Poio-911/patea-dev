@@ -18,7 +18,6 @@ import { logger } from '@/lib/logger';
 import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
 import { ImageCropperDialog } from './image-cropper-dialog';
 import { Dialog, DialogContent } from './ui/dialog';
-import { motion } from 'framer-motion';
 
 type PlayerDetailCardProps = {
   player: Player;
@@ -51,21 +50,18 @@ const StatPill = ({ label, value, isPrimary, index }: { label: string; value: nu
     const colorClass = getStatColorClasses(value);
 
     return (
-        <motion.div
+        <div
             className={cn(
                 "relative flex items-center justify-between rounded-lg p-2 text-xs font-bold border-2",
                 "bg-white/5 dark:bg-white/5",
                 isPrimary ? "border-yellow-400/50 dark:border-yellow-400/50" : "border-transparent"
             )}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.05, type: 'spring', stiffness: 300, damping: 20 }}
         >
             <span className="text-gray-400">{label}</span>
             <span className={cn("font-black", colorClass)}>
                 {value}
             </span>
-        </motion.div>
+        </div>
     );
 };
 
@@ -124,25 +120,19 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
       </Dialog>
       <Card className={cn(
           "relative overflow-hidden border-2 shadow-lg h-full flex flex-col",
-          // Modo Claro
-          "bg-slate-100 border-border shimmer-effect",
-          // Modo Oscuro
-          "dark:bg-gradient-to-b dark:from-[#1a2a6c] dark:to-[#0d1b3a] dark:border-[#2e4fff]"
+          "shimmer-bg", // Fondo estático para modo claro
+          "dark:bg-card dark:border-border"
       )}>
         {/* Efecto de brillo solo en modo claro */}
+        <div className="shimmer-effect absolute inset-0 pointer-events-none dark:hidden"></div>
         <div className="hidden dark:block absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_10%,transparent_90%)] opacity-20 pointer-events-none"></div>
-        <div className="dark:hidden shimmer-effect absolute inset-0 pointer-events-none"></div>
 
         <CardContent className="pt-6 z-10">
           <div className="flex flex-col items-center gap-4">
             <div className="text-center">
               <h2 className="text-3xl font-bold font-headline">{playerName}</h2>
               <div className="flex items-center justify-center gap-4 mt-2">
-                <motion.div
-                  key={player.ovr}
-                  initial={{ scale: 1.2 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 0.3, type: 'spring' }}
+                <div
                   className={cn(
                     "flex items-center justify-center h-20 w-20 rounded-full shadow-lg",
                     "bg-card text-5xl font-black",
@@ -151,7 +141,7 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
                   )}
                 >
                   {player.ovr}
-                </motion.div>
+                </div>
                 <div className="flex flex-col items-start">
                     <Badge
                       variant="secondary"
@@ -163,15 +153,12 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
                       {player.position}
                     </Badge>
                      {showSpecialty && (
-                        <motion.div
+                        <div
                             className="flex items-center justify-center gap-2 mt-2"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3, type: 'spring' }}
                         >
                             <specialty.icon className="h-5 w-5 text-primary animate-pulse" />
                             <span className="text-base font-bold text-primary dark:text-glow">{specialty.nickname}</span>
-                        </motion.div>
+                        </div>
                     )}
                 </div>
               </div>
@@ -183,7 +170,6 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
                         "h-40 w-40 overflow-hidden",
                         "border-4 shadow-2xl",
                         "transition-all duration-300",
-                        "group-hover:scale-110 group-hover:shadow-primary/50",
                         positionBorderColors[player.position]
                     )}>
                     {isGeneratingAI && (
@@ -195,7 +181,6 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
                     <AvatarImage
                       src={player.photoUrl} alt={player.name} data-ai-hint="player portrait"
                       className={cn(
-                        "group-hover:brightness-110 transition-all duration-300",
                         isGeneratingAI && "opacity-30 blur-sm"
                       )}
                       style={{ objectFit: 'cover', objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`, transform: `scale(${player.cropZoom || 1})`, transformOrigin: 'center center' }}
