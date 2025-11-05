@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Player, AttributeKey } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { DelanteroIcon, DefensaIcon, MediocampistaIcon, PorteroIcon } from '@/components/icons/position-icons';
 
 type PlayerCardProps = {
   player: Player & { displayName?: string };
@@ -34,6 +35,16 @@ const positionBorderColors: Record<Player['position'], string> = {
   DEL: 'border-red-400',
 };
 
+const PositionIcon = ({ position }: { position: Player['position'] }) => {
+    switch (position) {
+        case 'DEL': return <DelanteroIcon />;
+        case 'MED': return <MediocampistaIcon />;
+        case 'DEF': return <DefensaIcon />;
+        case 'POR': return <PorteroIcon />;
+        default: return null;
+    }
+};
+
 export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardProps) {
     const playerName = player.name || player.displayName || 'Jugador';
     
@@ -60,7 +71,10 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                 )}
             >
                 <CardContent className="relative flex h-full flex-col justify-between p-3 text-center">
-                    <div className={cn("position-watermark", `position-watermark-${player.position}`)}></div>
+                    {/* Watermark Icon */}
+                    <div className="absolute bottom-0 right-0 h-2/5 w-2/5 text-muted-foreground/10 dark:text-primary/5 -z-0">
+                        <PositionIcon position={player.position} />
+                    </div>
                     
                     <div className="relative z-10 flex flex-col h-full justify-between">
                         {/* Header */}

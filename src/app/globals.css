@@ -117,34 +117,4 @@
   .color-cycle-animation {
       animation: color-cycle 4s infinite;
   }
-  
-  .position-watermark {
-    content: '';
-    position: absolute;
-    bottom: -10%;
-    right: -10%;
-    width: 50%;
-    height: 50%;
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-position: bottom right;
-    -webkit-mask-size: contain;
-    mask-repeat: no-repeat;
-    mask-position: bottom right;
-    mask-size: contain;
-    background-color: hsl(var(--muted-foreground) / 0.08);
-    pointer-events: none;
-    transition: background-color 0.3s;
-    opacity: 0.7;
-    z-index: 0;
-  }
-
-  .dark .position-watermark {
-    background-color: hsl(var(--primary) / 0.05);
-  }
-
-  .position-watermark-DEL { -webkit-mask-image: url('/icons-pos/posicion--Del.svg'); mask-image: url('/icons-pos/posicion--Del.svg'); }
-  .position-watermark-MED { -webkit-mask-image: url('/icons-pos/posicion--Med.svg'); mask-image: url('/icons-pos/posicion--Med.svg'); }
-  .position-watermark-DEF { -webkit-mask-image: url('/icons-pos/posicion--Def.svg'); mask-image: url('/icons-pos/posicion--Def.svg'); }
-  .position-watermark-POR { -webkit-mask-image: url('/icons-pos/posicion--Por.svg'); mask-image: url('/icons-pos/posicion--Por.svg'); }
-
 }
