@@ -44,7 +44,7 @@
   }
 
   .dark {
-    --background: 224 71% 4%; /* Azul muy oscuro para el fondo general */
+    --background: 224 71% 4%;
     --foreground: 210 40% 98%;
     
     --card: 225 25% 9%;
@@ -86,40 +86,51 @@
   }
   
   .dark body {
-    background-image: radial-gradient(circle at 20% 20%, hsl(var(--accent) / 0.15), transparent 30%),
-                      radial-gradient(circle at 80% 70%, hsl(var(--primary) / 0.1), transparent 40%);
+    background-image: radial-gradient(circle at 20% 20%, hsl(var(--accent) / 0.1), transparent 35%),
+                      radial-gradient(circle at 80% 70%, hsl(var(--primary) / 0.08), transparent 40%);
     background-attachment: fixed;
   }
 }
 
 @layer utilities {
-  /* Player Card Aura Effects */
+  /* Player Card Aura Effects - CORREGIDO CON VALORES FIJOS */
   .aura-bronze {
-    background-image: radial-gradient(ellipse at top right, rgba(205, 127, 50, 0.2) 0%, transparent 70%);
+    background-image: radial-gradient(ellipse at top right, rgba(205, 127, 50, 0.25) 0%, transparent 70%);
   }
   .dark .aura-bronze {
-    background-image: radial-gradient(ellipse at top right, rgba(205, 127, 50, 0.25) 0%, transparent 70%);
+    background-image: radial-gradient(ellipse at top right, rgba(205, 127, 50, 0.3) 0%, transparent 70%);
   }
 
   .aura-silver {
-    background-image: radial-gradient(ellipse at top right, rgba(192, 192, 192, 0.25) 0%, transparent 70%);
+    background-image: radial-gradient(ellipse at top right, hsla(220, 15%, 75%, 0.3) 0%, transparent 70%);
   }
   .dark .aura-silver {
-    background-image: radial-gradient(ellipse at top right, rgba(192, 192, 192, 0.3) 0%, transparent 70%);
+    background-image: radial-gradient(ellipse at top right, hsla(220, 15%, 75%, 0.35) 0%, transparent 70%);
   }
 
   .aura-gold {
-    background-image: radial-gradient(ellipse at top right, hsl(var(--primary) / 0.25) 0%, transparent 70%);
+    background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.25) 0%, transparent 70%);
   }
   .dark .aura-gold {
-    background-image: radial-gradient(ellipse at top right, hsl(var(--primary) / 0.3) 0%, transparent 70%);
+    background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.3) 0%, transparent 70%);
   }
 
   .aura-elite {
-    background-image: radial-gradient(ellipse at top right, rgba(139, 92, 246, 0.3) 0%, transparent 70%);
+    /* Gradiente arcoiris con acento violeta */
+    background-image: radial-gradient(ellipse at top right, 
+      hsla(270, 80%, 60%, 0.35) 0%,   /* Violeta */
+      hsla(217, 91%, 60%, 0.2) 30%,   /* Azul */
+      hsla(43, 96%, 56%, 0.1) 60%,    /* Dorado */
+      transparent 80%
+    );
   }
   .dark .aura-elite {
-    background-image: radial-gradient(ellipse at top right, rgba(167, 139, 250, 0.35) 0%, transparent 70%);
+     background-image: radial-gradient(ellipse at top right, 
+      hsla(270, 80%, 60%, 0.4) 0%,   /* Violeta */
+      hsla(217, 91%, 60%, 0.25) 30%,   /* Azul */
+      hsla(43, 96%, 56%, 0.15) 60%,    /* Dorado */
+      transparent 80%
+    );
   }
 
   .text-glow {
@@ -134,30 +145,5 @@
 
   .color-cycle-animation {
     animation: color-cycle 4s infinite;
-  }
-
-  /* Efecto de fondo sutil para el modo oscuro */
-  .shimmer-bg {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .shimmer-effect {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: radial-gradient(circle at 20% 20%, hsl(var(--primary) / 0.08), transparent 35%),
-                      radial-gradient(circle at 80% 70%, hsl(var(--accent) / 0.08), transparent 35%);
-    background-size: 200% 200%;
-    animation: background-pan 25s linear infinite;
-    z-index: 0;
-  }
-
-  @keyframes background-pan {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
   }
 }
