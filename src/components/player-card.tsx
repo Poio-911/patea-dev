@@ -4,8 +4,9 @@ import React from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import type { Player, AttributeKey } from '@/lib/types';
+import type { Player, AttributeKey, PlayerPosition } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { DelIcon, MedIcon, DefIcon, PorIcon } from '@/components/icons/positions';
 
 type PlayerCardProps = {
   player: Player & { displayName?: string };
@@ -20,19 +21,27 @@ const attributeDetails: Record<AttributeKey, { name: string }> = {
     PHY: { name: 'FIS' },
 };
 
-const positionTextColors: Record<Player['position'], string> = {
+const positionTextColors: Record<PlayerPosition, string> = {
   POR: 'text-yellow-600 dark:text-yellow-400',
   DEF: 'text-green-600 dark:text-green-400',
   MED: 'text-blue-600 dark:text-blue-400',
   DEL: 'text-red-600 dark:text-red-400',
 };
 
-const positionBorderColors: Record<Player['position'], string> = {
+const positionBorderColors: Record<PlayerPosition, string> = {
   POR: 'border-yellow-400',
   DEF: 'border-green-400',
   MED: 'border-blue-400',
   DEL: 'border-red-400',
 };
+
+const positionIcons: Record<PlayerPosition, React.ElementType> = {
+  DEL: DelIcon,
+  MED: MedIcon,
+  DEF: DefIcon,
+  POR: PorIcon,
+};
+
 
 export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardProps) {
     const playerName = player.name || player.displayName || 'Jugador';
@@ -50,6 +59,8 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
         return stats.reduce((max, stat) => stat.value > max.value ? stat : max, stats[0]);
     }, [stats]);
 
+    const PositionIcon = positionIcons[player.position];
+
     return (
         <Link href={`/players/${player.id}`} className="block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-2xl h-full w-full" aria-label={`Ver perfil de ${playerName}`}>
             <Card
@@ -60,8 +71,14 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                 )}
             >
                 <CardContent className="relative flex h-full flex-col justify-between p-3 text-center">
+                    
+                    {/* Watermark Icon */}
+                    <div className="absolute -bottom-2 -right-2 h-2/5 w-2/5 text-muted-foreground/5 dark:text-primary/5 -z-0">
+                      {PositionIcon && <PositionIcon className={cn("w-full h-full", positionTextColors[player.position])} />}
+                    </div>
+
+                    {/* Card Content */}
                     <div className="relative z-10 flex flex-col h-full justify-between">
-                        {/* Header */}
                          <div className="flex items-start justify-between">
                              <div className="flex flex-col items-center">
                                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-white/10 shadow-md">
@@ -73,7 +90,6 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                             </div>
                         </div>
 
-                        {/* Imagen y Nombre */}
                         <div className="flex flex-col items-center gap-1 my-2">
                             <Avatar className={cn("h-24 w-24 rounded-full border-4 object-cover shadow-md bg-muted", positionBorderColors[player.position])}>
                                 <AvatarImage 
@@ -92,7 +108,6 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                             <h3 className="w-full truncate text-center text-base font-semibold mt-1 dark:text-white">{playerName}</h3>
                         </div>
 
-                        {/* Stats */}
                         <div className="grid grid-cols-2 gap-1 text-center text-xs">
                             {stats.map(stat => (
                                 <div 
