@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -129,7 +130,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // ✅ CORRECCIÓN CRÍTICA: Renderizar páginas públicas sin comprobar autenticación.
   const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
 
   if (isPublicPage) {

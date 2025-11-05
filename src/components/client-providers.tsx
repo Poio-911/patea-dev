@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -11,7 +12,7 @@ import { MainNav } from '@/components/main-nav';
 import { ThemeProvider } from 'next-themes';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { libraries } from '@/lib/google-maps';
-import { SoccerPlayerIcon } from './icons/soccer-player-icon';
+import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { logger } from '@/lib/logger';
 
 type FirebaseClientProviderProps = {
@@ -40,8 +41,9 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
     logger.error("Google Maps API failed to load: ", loadError);
   }
 
-  // Muestra la pantalla de carga hasta que tanto Firebase como Google Maps estén listos.
-  if (!firebaseInstances || !isLoaded) {
+  // Muestra una pantalla de carga solo si Firebase no está listo.
+  // El contenido principal se renderiza independientemente del estado de Google Maps.
+  if (!firebaseInstances) {
     return (
       <ThemeProvider
         attribute="class"
@@ -56,7 +58,7 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
     );
   }
 
-  // Una vez que todo está listo, renderiza la aplicación principal.
+  // Una vez que Firebase está listo, monta los proveedores.
   return (
     <ThemeProvider
       attribute="class"
@@ -70,7 +72,15 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
         firestore={firebaseInstances.firestore}
       >
         <UserProvider>
-          <MainNav>{children}</MainNav>
+          <MainNav>
+            {!isLoaded ? (
+              <div className="flex h-screen w-full items-center justify-center bg-background">
+                <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
+              </div>
+            ) : (
+              children
+            )}
+          </MainNav>
         </UserProvider>
       </FirebaseProvider>
     </ThemeProvider>
