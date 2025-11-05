@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Separator } from './ui/separator';
 import type { Player } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { playerSpecialties } from '@/lib/data';
@@ -23,7 +24,7 @@ type PlayerDetailCardProps = {
   player: Player;
 };
 
-const positionColors: Record<Player['position'], string> = {
+const positionTextColors: Record<Player['position'], string> = {
   POR: 'text-yellow-600 dark:text-yellow-400',
   DEF: 'text-green-600 dark:text-green-400',
   MED: 'text-blue-600 dark:text-blue-400',
@@ -124,11 +125,12 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
       <Card className={cn(
           "relative overflow-hidden border-2 shadow-lg h-full flex flex-col",
           // Modo Claro
-          "bg-slate-100 border-border shimmer-bg",
+          "bg-slate-100 border-border shimmer-effect",
           // Modo Oscuro
           "dark:bg-gradient-to-b dark:from-[#1a2a6c] dark:to-[#0d1b3a] dark:border-[#2e4fff]"
       )}>
         {/* Efecto de brillo solo en modo claro */}
+        <div className="hidden dark:block absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_10%,transparent_90%)] opacity-20 pointer-events-none"></div>
         <div className="dark:hidden shimmer-effect absolute inset-0 pointer-events-none"></div>
 
         <CardContent className="pt-6 z-10">
