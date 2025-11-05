@@ -45,13 +45,12 @@ const positionIcons: Record<PlayerPosition, React.ElementType> = {
 
 // --- Lógica de Niveles y Colores para el Resplandor ---
 const getOvrLevel = (ovr: number) => {
-    if (ovr >= 85) return 'elite';
-    if (ovr >= 75) return 'gold';
+    if (ovr >= 86) return 'elite';
+    if (ovr >= 76) return 'gold';
     if (ovr >= 65) return 'silver';
     return 'bronze';
 };
 
-// ✅ CORRECCIÓN: Se usan clases CSS definidas en globals.css para asegurar que Tailwind las procese.
 const auraClasses: Record<string, string> = {
     bronze: 'aura-bronze',
     silver: 'aura-silver',
