@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -71,58 +72,58 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                 )}
             >
                 <CardContent className="relative flex h-full flex-col justify-between p-3 text-center">
-                    <div className="flex items-start justify-between">
-                        <div className="flex flex-col items-start">
+                    {/* Z-0: Watermark Icon */}
+                    <div className="absolute -bottom-2 -right-2 h-2/5 w-2/5 text-muted-foreground/5 dark:text-primary/5 -z-0">
+                        {PositionIcon && <PositionIcon className="w-full h-full" />}
+                    </div>
+
+                    {/* Z-10: Main Content */}
+                    <div className="relative z-10 flex flex-col h-full justify-between">
+                        {/* Option 2: FIFA Style Layout */}
+                        <div className="flex flex-col items-center">
                             <span className="font-headline text-5xl font-bold text-slate-900 dark:text-yellow-400 -mb-2">{player.ovr}</span>
-                        </div>
-                        <div className="flex flex-col items-end">
                             <span className={cn("font-headline text-2xl font-bold uppercase", positionTextColors[player.position])}>
                                 {player.position}
                             </span>
                         </div>
-                    </div>
 
-                    <div className="flex flex-col items-center gap-1 my-2">
-                        <Avatar className={cn("h-24 w-24 rounded-full border-4 object-cover shadow-md bg-muted", positionBorderColors[player.position])}>
-                            <AvatarImage 
-                                src={player.photoUrl} 
-                                alt={playerName} 
-                                data-ai-hint="player portrait" 
-                                style={{ 
-                                    objectFit: 'cover', 
-                                    objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`, 
-                                    transform: `scale(${player.cropZoom || 1})`, 
-                                    transformOrigin: 'center center' 
-                                }} 
-                            />
-                            <AvatarFallback className="text-3xl font-black">{playerName.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <h3 className="w-full truncate text-center text-base font-semibold mt-1 dark:text-white">{playerName}</h3>
-                    </div>
-
-                    <div className="relative grid grid-cols-2 gap-1 text-center text-xs">
-                        {PositionIcon && (
-                            <div className="absolute inset-0 flex items-center justify-center -z-10">
-                                <PositionIcon className={cn("w-3/5 h-3/5 text-muted-foreground/5 dark:text-primary/5", positionTextColors[player.position])} />
-                            </div>
-                        )}
-                        {stats.map(stat => (
-                            <div 
-                                key={stat.key} 
-                                className={cn(
-                                    "rounded-lg py-1 border-2",
-                                    "bg-black/5 dark:bg-white/5",
-                                    stat.key === highestStat.key ? "border-yellow-400/50 dark:border-yellow-400/50" : "border-transparent"
-                                )}
-                            >
-                                <p className="text-base font-bold text-slate-800 dark:text-white">
-                                    {stat.value} 
-                                    <span className="ml-1 text-gray-500 dark:text-gray-400 text-xs font-semibold">
-                                        {attributeDetails[stat.key].name}
-                                    </span>
-                                </p>
-                            </div>
-                        ))}
+                        <div className="flex flex-col items-center gap-1 my-2">
+                            <Avatar className={cn("h-24 w-24 rounded-full border-4 object-cover shadow-md bg-muted", positionBorderColors[player.position])}>
+                                <AvatarImage 
+                                    src={player.photoUrl} 
+                                    alt={playerName} 
+                                    data-ai-hint="player portrait" 
+                                    style={{ 
+                                        objectFit: 'cover', 
+                                        objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`, 
+                                        transform: `scale(${player.cropZoom || 1})`, 
+                                        transformOrigin: 'center center' 
+                                    }} 
+                                />
+                                <AvatarFallback className="text-3xl font-black">{playerName.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <h3 className="w-full truncate text-center text-base font-semibold mt-1 dark:text-white">{playerName}</h3>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-1 text-center text-xs">
+                            {stats.map(stat => (
+                                <div 
+                                    key={stat.key} 
+                                    className={cn(
+                                        "rounded-lg py-1 border-2",
+                                        "bg-black/5 dark:bg-white/5",
+                                        stat.key === highestStat.key ? "border-yellow-400/50 dark:border-yellow-400/50" : "border-transparent"
+                                    )}
+                                >
+                                    <p className="text-base font-bold text-slate-800 dark:text-white">
+                                        {stat.value} 
+                                        <span className="ml-1 text-gray-500 dark:text-gray-400 text-xs font-semibold">
+                                            {attributeDetails[stat.key].name}
+                                        </span>
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </CardContent>
             </Card>
