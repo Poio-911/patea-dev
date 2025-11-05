@@ -96,6 +96,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   }, [firestore, user?.uid]);
   
   const { data: pendingEvaluations } = useCollection<EvaluationAssignment>(pendingEvaluationsQuery);
+  const pendingEvaluationsCount = pendingEvaluations?.length || 0;
 
 
   React.useEffect(() => {
