@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -310,6 +309,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
               {navItems.map((item) => {
                   const isActive = pathname.startsWith(item.href);
+                  const isEval = item.href === '/evaluations';
                   return (
                   <Link
                       key={item.href}
@@ -321,6 +321,9 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   >
                       <item.icon className="h-6 w-6" />
                       <span className="text-xs">{item.label}</span>
+                      {isEval && pendingEvaluationsCount > 0 && (
+                         <Badge className="absolute top-1 right-1 h-4 w-4 justify-center p-0 text-xs">{pendingEvaluationsCount}</Badge>
+                      )}
                   </Link>
                   );
               })}
