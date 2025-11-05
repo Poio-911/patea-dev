@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -71,8 +72,9 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                 )}
             >
                 <CardContent className="relative flex h-full flex-col justify-between p-3 text-center">
-                    {/* Watermark Icon - Corregido */}
-                    <div className="absolute -bottom-2 -right-2 h-2/5 w-2/5 text-muted-foreground/5 dark:text-primary/5 -z-0">
+                    
+                    {/* Watermark Icon - FINAL ATTEMPT */}
+                    <div className="absolute -bottom-2 -right-2 h-2/5 w-2/5 text-muted-foreground/5 dark:text-primary/5 z-0">
                         <PositionIcon position={player.position} />
                     </div>
                     
