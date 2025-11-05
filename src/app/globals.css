@@ -7,24 +7,35 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
+    
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
+    
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 43 96% 56%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    
+    --primary: 217 91% 60%; /* AZUL como primario */
+    --primary-foreground: 210 40% 98%;
+    
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
+    
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 217 91% 60%;
-    --accent-foreground: 210 40% 98%;
+    
+    --accent: 43 96% 56%; /* AMARILLO/ÁMBAR como acento */
+    --accent-foreground: 222.2 47.4% 11.2%;
+    
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
+    
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 43 96% 56%;
+    --ring: 217 91% 60%; /* Ring ahora azul */
+    
     --radius: 0.5rem;
+
+    /* Colores para gráficos */
     --chart-1: 340 82% 61%;
     --chart-2: 158 44% 46%;
     --chart-3: 217 91% 60%;
@@ -42,7 +53,7 @@
     --popover: 225 25% 5%;
     --popover-foreground: 210 40% 98%;
     
-    --primary: 43 96% 56%; /* Dorado/Ámbar vibrante */
+    --primary: 43 96% 56%; /* Dorado/Ámbar vibrante para el modo oscuro */
     --primary-foreground: 222.2 47.4% 11.2%;
     
     --secondary: 225 25% 15%;
@@ -51,7 +62,7 @@
     --muted: 225 25% 15%;
     --muted-foreground: 215 20.2% 65.1%;
     
-    --accent: 217 91% 60%; /* Azul neón para acentos */
+    --accent: 217 91% 60%; /* Azul neón para acentos en modo oscuro */
     --accent-foreground: 210 40% 98%;
     
     --destructive: 0 62.8% 30.6%;
@@ -72,32 +83,6 @@
     min-height: 100svh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-  }
-  
-  .dark body {
-    background-color: #071021;
-    overflow: hidden;
-  }
-
-  .dark body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 200%;
-    height: 200%;
-    background-image: radial-gradient(ellipse 50% 50% at 50% 50%, hsla(var(--accent) / 0.15), transparent);
-    will-change: transform;
-    animation: background-pan 150s linear infinite;
-    z-index: -1;
-  }
-
-  @keyframes background-pan {
-    0% { transform: translate(0, 0); }
-    25% { transform: translate(10%, -10%); }
-    50% { transform: translate(-10%, 10%); }
-    75% { transform: translate(5%, 5%); }
-    100% { transform: translate(0, 0); }
   }
 }
 
