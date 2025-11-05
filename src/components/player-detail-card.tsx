@@ -132,8 +132,17 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
             />
         </DialogContent>
       </Dialog>
-      <Card className="overflow-hidden border-2 shadow-lg border-border h-full flex flex-col bg-card">
-        <CardContent className="pt-6">
+      <Card className={cn(
+          "relative overflow-hidden border-2 shadow-lg h-full flex flex-col",
+          // Modo Claro (Holográfico)
+          "shimmer-bg border-border",
+          // Modo Juego
+          "dark:bg-gradient-to-b dark:from-[#1a2a6c] dark:to-[#0d1b3a] dark:border-[#2e4fff]"
+      )}>
+        {/* Efecto de brillo solo en modo claro */}
+        <div className="dark:hidden shimmer-effect absolute inset-0 pointer-events-none"></div>
+
+        <CardContent className="pt-6 z-10">
           <div className="flex flex-col items-center gap-4">
             <div className="text-center">
               <h2 className="text-3xl font-bold font-headline">{playerName}</h2>
@@ -145,7 +154,8 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
                   transition={{ duration: 0.3, type: 'spring' }}
                   className={cn(
                     "text-5xl sm:text-6xl font-black drop-shadow-2xl",
-                    player.ovr >= 85 ? "text-glow" : positionColors[player.position]
+                    "text-slate-800 dark:text-yellow-400",
+                    player.ovr >= 85 && "dark:text-glow"
                   )}
                 >
                   {player.ovr}
@@ -165,7 +175,7 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
                   transition={{ delay: 0.3, type: 'spring' }}
                 >
                   <specialty.icon className="h-5 w-5 text-primary animate-pulse" />
-                  <span className="text-base font-bold text-primary text-glow">{specialty.nickname}</span>
+                  <span className="text-base font-bold text-primary dark:text-glow">{specialty.nickname}</span>
                 </motion.div>
               )}
             </div>
