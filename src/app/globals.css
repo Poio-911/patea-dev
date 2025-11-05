@@ -61,6 +61,33 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 43 96% 56%;
   }
+  /* Game Mode (FC SPORT inspired) palette scoped by .game theme class on <html> */
+  .game {
+    --background: 216 22% 6%; /* Carbon dark */
+    --foreground: 210 40% 96%;
+    --card: 220 18% 10%;
+    --card-foreground: 210 40% 96%;
+    --popover: 220 18% 8%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 72 100% 58%; /* Volt Yellow */
+    --primary-foreground: 230 20% 10%;
+    --secondary: 220 18% 16%;
+    --secondary-foreground: 210 40% 92%;
+    --muted: 220 18% 22%;
+    --muted-foreground: 215 12% 72%;
+    --accent: 173 100% 45%; /* Turquoise */
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 72% 46%;
+    --destructive-foreground: 210 40% 96%;
+    --border: 220 18% 28%;
+    --input: 220 18% 28%;
+    --ring: 72 100% 58%;
+    --chart-1: 72 100% 58%; /* Volt */
+    --chart-2: 173 100% 45%; /* Turquoise */
+    --chart-3: 277 92% 64%; /* Violet accent */
+    --chart-4: 198 100% 52%; /* Cyan pulse */
+    --chart-5: 32 100% 54%; /* Orange alt */
+  }
 }
 
 @layer base {
@@ -147,5 +174,62 @@
     );
     animation: shimmer 4s infinite;
     opacity: 0.8;
+  }
+
+  /* Game Mode energy backdrop (diagonal drift + subtle noise) */
+  @keyframes energy-drift {
+    0% { background-position: 0% 0%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 0%; }
+  }
+  /* Game theme fallback gradient (canvas handles rich backdrop when active) */
+  .game::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -5;
+    background: linear-gradient(140deg,
+      hsl(var(--background)) 0%,
+      hsl(var(--background) / 0.95) 60%,
+      hsl(var(--background)) 100%);
+  }
+
+  /* Collectible card energy variant */
+  /* Unified game mode card styling */
+  .game .card {
+    position: relative;
+    background:
+      linear-gradient(160deg,
+        hsl(var(--card) / 1) 0%,
+        hsl(var(--card) / 0.96) 40%,
+        hsl(var(--card) / 0.94) 70%,
+        hsl(var(--card) / 1) 100%);
+    border-color: hsl(var(--border));
+  }
+  .game .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg,
+      hsl(var(--accent) / 0.10) 0%,
+      transparent 45%,
+      hsl(var(--chart-3) / 0.10) 75%,
+      transparent 100%);
+    mix-blend-mode: plus-lighter;
+    pointer-events: none;
+  }
+  .game .card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      hsl(var(--primary) / 0.07) 40%,
+      hsl(var(--accent) / 0.05) 55%,
+      transparent 70%);
+    background-size: 180% 100%;
+    animation: energy-drift 80s linear infinite;
+    mix-blend-mode: overlay;
+    pointer-events: none;
   }
 }

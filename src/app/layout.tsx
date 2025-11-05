@@ -2,6 +2,13 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ClientProviders } from '@/components/client-providers';
 import { cn } from '@/lib/utils';
+import { Rajdhani, Teko, Outfit } from 'next/font/google';
+import { GameModeBackdrop } from '@/components/game-mode-backdrop';
+
+// Font loading via next/font to provide CSS variables consumed by Tailwind font families.
+const outfit = Outfit({ subsets: ['latin'], weight: ['400','500','600','700'], variable: '--font-body' });
+const rajdhani = Rajdhani({ subsets: ['latin'], weight: ['500','600','700'], variable: '--font-headline' });
+const teko = Teko({ subsets: ['latin'], weight: ['400','500','600','700'], variable: '--font-numeric' });
 
 export default function RootLayout({
   children,
@@ -9,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" suppressHydrationWarning>
+  <html lang="es" suppressHydrationWarning className={cn(outfit.variable, rajdhani.variable, teko.variable)}>
       <head>
         <title>Pateá</title>
         <meta name="description" content="Pateá es una app para organizar los partidos entre amigos: armás equipos, anotás los resultados y llevás la cuenta de quién juega bien y quién se hace el lesionado." />
@@ -17,18 +24,14 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#3B82F6" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
+        {/* Fonts handled by next/font; legacy preconnect removed */}
       </head>
       <body
         className={cn(
           'min-h-[100svh] bg-background text-foreground font-body antialiased'
         )}
       >
+        <GameModeBackdrop />
         <ClientProviders>
           {children}
         </ClientProviders>

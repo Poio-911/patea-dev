@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Player, AttributeKey } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { usePointerLight } from '@/hooks/usePointerLight';
 
 type PlayerCardProps = {
   player: Player & { displayName?: string };
@@ -52,23 +53,37 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
         return stats.reduce((max, stat) => stat.value > max.value ? stat : max, stats[0]);
     }, [stats]);
 
+    const lightRef = usePointerLight<HTMLDivElement>();
     return (
         <Link href={`/players/${player.id}`} className="block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-2xl h-full w-full" aria-label={`Ver perfil de ${playerName}`}>
             <Card
+                ref={lightRef as any}
                 className={cn(
-                    "relative h-full flex flex-col overflow-hidden rounded-2xl shadow-lg",
-                    // Modo Claro
+                    "relative h-full flex flex-col overflow-hidden rounded-2xl shadow-lg transition-colors",
+                    // Light baseline
                     "bg-slate-100 border-border",
-                    // Modo Juego (Oscuro)
+                    // Dark / game mode overrides via variable scope
                     "dark:bg-card dark:border-border"
                 )}
             >
+                {/* Pointer reactive highlight layer */}
+                <div aria-hidden className="pointer-events-none absolute inset-0 z-0" style={{
+                  background: 'radial-gradient(circle at var(--px,50%) var(--py,50%), hsl(var(--accent) / 0.35), transparent 65%)',
+                  mixBlendMode: 'plus-lighter',
+                  opacity: 0.5,
+                  transition: 'opacity 0.3s'
+                }} />
                 <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center">
                     {/* Header */}
                      <div className="flex items-start justify-between">
                          <div className="flex flex-col items-center">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-white/10 shadow-md">
-                                <span className="text-2xl font-black text-slate-900 dark:text-yellow-400">{player.ovr}</span>
+                                                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-white/10 shadow-md relative overflow-hidden">
+                                                                <span className="text-2xl font-black font-numeric tracking-tight text-slate-900 dark:text-yellow-400 relative z-10">{player.ovr}</span>
+                                                                {/* Rim light intensity scales with OVR */}
+                                                                <div aria-hidden className="absolute inset-0 rounded-full" style={{
+                                                                    boxShadow: player.ovr >= 88 ? '0 0 12px 4px hsl(var(--primary) / 0.55), 0 0 24px 10px hsl(var(--accent) / 0.35)' : player.ovr >= 82 ? '0 0 8px 3px hsl(var(--primary) / 0.4)' : '0 0 4px 2px hsl(var(--primary) / 0.25)',
+                                                                    opacity: 0.9
+                                                                }} />
                             </div>
                             <span className={cn("mt-1 text-sm font-bold uppercase", positionTextColors[player.position])}>
                                 {player.position}
@@ -92,7 +107,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                             />
                             <AvatarFallback className="text-3xl font-black">{playerName.charAt(0)}</AvatarFallback>
                         </Avatar>
-                        <h3 className="w-full truncate text-center text-base font-semibold mt-1 dark:text-white">{playerName}</h3>
+                        <h3 className="w-full truncate text-center text-base font-semibold font-headline tracking-wide mt-1 dark:text-white">{playerName}</h3>
                     </div>
 
                     {/* Stats */}
@@ -106,7 +121,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                                     stat.key === highestStat.key ? "border-yellow-400/50 dark:border-yellow-400/50" : "border-transparent"
                                 )}
                             >
-                                <p className="text-base font-bold text-slate-800 dark:text-white">
+                                <p className="text-base font-bold font-numeric tracking-tight text-slate-800 dark:text-white">
                                     {stat.value} 
                                     <span className="ml-1 text-gray-500 dark:text-gray-400 text-xs font-semibold">
                                         {attributeDetails[stat.key].name}

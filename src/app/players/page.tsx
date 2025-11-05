@@ -50,7 +50,7 @@ export default function PlayersPage() {
 
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="game-mode flex flex-col gap-8">
       <FirstTimeInfoDialog
         featureKey="hasSeenPlayersInfo"
         title="Sección de Plantel"

@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Users2, User, BellRing, HelpCircle, CheckCircle, Moon, Sun, Laptop, Gamepad2 } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings, Users2, User, BellRing, HelpCircle, CheckCircle, Moon, Sun, Laptop, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -164,80 +164,78 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   <Separator orientation="vertical" className="h-10 mx-1 hidden sm:block" />
 
                   <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="relative h-12 w-12 rounded-full">
-                              <Avatar className="h-12 w-12 border overflow-hidden">
-                                  <AvatarImage
-                                    src={user?.photoURL || ''}
-                                    alt={user?.displayName || 'User'}
-                                    data-ai-hint="user avatar"
-                                    style={{
-                                      objectFit: 'cover',
-                                      objectPosition: `${player?.cropPosition?.x || 50}% ${player?.cropPosition?.y || 50}%`,
-                                      transform: `scale(${player?.cropZoom || 1})`,
-                                      transformOrigin: 'center center',
-                                    }}
-                                  />
-                                  <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
-                              </Avatar>
-                          </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-64" align="end" forceMount>
-                          <DropdownMenuLabel className="font-normal">
-                              <div className="flex flex-col space-y-1">
-                                  <p className="text-sm font-medium leading-none">{user.displayName}</p>
-                                  <p className="text-xs leading-none text-muted-foreground">
-                                      {user.email}
-                                  </p>
-                              </div>
-                          </DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem asChild>
-                              <Link href="/profile">
-                                  <User className="mr-2 h-4 w-4" />
-                                  <span>Mi Perfil</span>
-                              </Link>
-                          </DropdownMenuItem>
-                           <DropdownMenuItem asChild>
-                              <Link href="/groups">
-                                  <Users2 className="mr-2 h-4 w-4" />
-                                  <span>Gestionar Grupos</span>
-                              </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>
-                                <Sun className="mr-2 h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                                <Moon className="absolute mr-2 h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                                <span>Cambiar Tema</span>
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuPortal>
-                                <DropdownMenuSubContent>
-                                    <DropdownMenuItem onClick={() => setTheme("light")}>
-                                        <Sun className="mr-2 h-4 w-4"/>
-                                        Claro
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setTheme("dark")}>
-                                        <Gamepad2 className="mr-2 h-4 w-4"/>
-                                        Modo Juego
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setTheme("system")}>
-                                        <Laptop className="mr-2 h-4 w-4"/>
-                                        Sistema
-                                    </DropdownMenuItem>
-                                </DropdownMenuSubContent>
-                            </DropdownMenuPortal>
-                          </DropdownMenuSub>
-                          <DropdownMenuItem onClick={requestPermission}>
-                              <BellRing className="mr-2 h-4 w-4" />
-                              <span>Activar Notificaciones</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={handleLogout}>
-                              <LogOut className="mr-2 h-4 w-4" />
-                              <span>Cerrar sesión</span>
-                          </DropdownMenuItem>
-                      </DropdownMenuContent>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="relative h-12 w-12 rounded-full">
+                        <Avatar className="h-12 w-12 border overflow-hidden">
+                          <AvatarImage
+                            src={user?.photoURL || ''}
+                            alt={user?.displayName || 'User'}
+                            data-ai-hint="user avatar"
+                            style={{
+                              objectFit: 'cover',
+                              objectPosition: `${player?.cropPosition?.x || 50}% ${player?.cropPosition?.y || 50}%`,
+                              transform: `scale(${player?.cropZoom || 1})`,
+                              transformOrigin: 'center center',
+                            }}
+                          />
+                          <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-64" align="end" forceMount>
+                      <DropdownMenuLabel className="font-normal">
+                        <div className="flex flex-col space-y-1">
+                          <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                          <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/profile">
+                          <User className="mr-2 h-4 w-4" />
+                          <span>Mi Perfil</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/groups">
+                          <Users2 className="mr-2 h-4 w-4" />
+                          <span>Gestionar Grupos</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                          <Sun className="mr-2 h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                          <Moon className="absolute mr-2 h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                          <span>Cambiar Tema</span>
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuPortal>
+                          <DropdownMenuSubContent>
+                            <DropdownMenuItem onClick={() => setTheme('light')}>
+                              <Sun className="mr-2 h-4 w-4" /> Claro {theme === 'light' && '•'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setTheme('dark')}>
+                              <Moon className="mr-2 h-4 w-4" /> Oscuro {theme === 'dark' && '•'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setTheme('game')}>
+                              <Sparkles className="mr-2 h-4 w-4" /> Juego {theme === 'game' && '•'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setTheme('system')}>
+                              <Laptop className="mr-2 h-4 w-4" /> Sistema {theme === 'system' && '•'}
+                            </DropdownMenuItem>
+                          </DropdownMenuSubContent>
+                        </DropdownMenuPortal>
+                      </DropdownMenuSub>
+                      <DropdownMenuItem onClick={requestPermission}>
+                        <BellRing className="mr-2 h-4 w-4" />
+                        <span>Activar Notificaciones</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleLogout}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Cerrar sesión</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
                   </DropdownMenu>
               </div>
           </header>
