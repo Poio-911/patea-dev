@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -21,7 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LayoutDashboard, LogOut, Settings, Users2, User, BellRing, HelpCircle, CheckCircle, Moon, Sun, Laptop, Gamepad2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
+import { useUser, useAuth, useDoc, useFirestore, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { GroupSwitcher } from '@/components/group-switcher';
 import {
@@ -36,8 +35,8 @@ import {
   DropdownMenuSubContent,
   DropdownMenuPortal
 } from "@/components/ui/dropdown-menu"
-import type { Player } from '@/lib/types';
-import { doc } from 'firebase/firestore';
+import type { Player, EvaluationAssignment } from '@/lib/types';
+import { doc, collectionGroup, query, where } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { MatchIcon } from '@/components/icons/match-icon';
@@ -57,7 +56,7 @@ const navItems = [
   { href: '/groups', label: 'Grupos', icon: Users2 },
   { href: '/players', label: 'Jugadores', icon: SoccerPlayerIcon },
   { href: '/matches', label: 'Partidos', icon: MatchIcon },
-  { href: '/evaluations', label: 'Evaluaciones', icon: EvaluationIcon },
+  { href: '/evaluations', label: 'Evaluar', icon: EvaluationIcon },
 ];
 
 const positionBadgeStyles: Record<Player['position'], string> = {
@@ -84,6 +83,18 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     return doc(firestore, 'players', user.uid);
   }, [firestore, user?.uid]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
+  
+  const pendingEvaluationsQuery = React.useMemo(() => {
+    if (!firestore || !user?.uid) return null;
+    return query(
+      collectionGroup(firestore, 'assignments'),
+      where('evaluatorId', '==', user.uid),
+      where('status', '==', 'pending')
+    );
+  }, [firestore, user?.uid]);
+  
+  const { data: pendingEvaluations } = useCollection<EvaluationAssignment>(pendingEvaluationsQuery);
+  const pendingEvaluationsCount = pendingEvaluations?.length || 0;
 
 
   React.useEffect(() => {
@@ -291,17 +302,22 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
               {navItems.map((item) => {
                   const isActive = pathname.startsWith(item.href);
-                  const isMatchIcon = item.href === '/matches';
+                  const isEval = item.href === '/evaluations';
                   return (
                   <Link
                       key={item.href}
                       href={item.href}
                       className={cn(
-                      'group inline-flex flex-col items-center justify-center px-1 text-muted-foreground transition-colors hover:text-primary',
+                      'group relative inline-flex flex-col items-center justify-center px-1 text-muted-foreground transition-colors hover:text-primary',
                       isActive && 'text-primary'
                       )}
                   >
-                      <item.icon className={cn("h-6 w-6", isMatchIcon && "h-7 w-7")} />
+                      {isEval && pendingEvaluationsCount > 0 && (
+                          <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                            {pendingEvaluationsCount}
+                          </span>
+                      )}
+                      <item.icon className="h-6 w-6" />
                       <span className="text-xs">{item.label}</span>
                   </Link>
                   );
