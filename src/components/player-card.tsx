@@ -39,37 +39,38 @@ const positionBorderColors: Record<Player['position'], string> = {
 export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardProps) {
     const playerName = player.name || player.displayName || 'Jugador';
     
-    const stats = [
+    const stats = React.useMemo(() => [
         { key: 'PAC', value: player.pac },
         { key: 'SHO', value: player.sho },
         { key: 'PAS', value: player.pas },
         { key: 'DRI', value: player.dri },
         { key: 'DEF', value: player.def },
         { key: 'PHY', value: player.phy },
-    ] as const;
+    ] as const, [player]);
 
     const highestStat = React.useMemo(() => {
-        return stats.reduce((max, stat) => stat.value > max.value ? stat : max);
+        return stats.reduce((max, stat) => stat.value > max.value ? stat : max, stats[0]);
     }, [stats]);
 
     return (
         <Link href={`/players/${player.id}`} className="block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-2xl h-full w-full" aria-label={`Ver perfil de ${playerName}`}>
             <Card
                 className={cn(
-                    "relative h-full w-full flex flex-col overflow-hidden rounded-2xl border-2 shadow-lg transition-transform duration-300 hover:-translate-y-1",
+                    "relative h-full flex flex-col overflow-hidden rounded-2xl shadow-lg transition-transform duration-300 hover:-translate-y-1",
                     // Modo Claro
-                    "bg-card border-border hover:shadow-xl",
+                    "shimmer-bg border-border hover:shadow-xl",
                     // Modo Juego (Oscuro)
-                    "dark:bg-gradient-to-b dark:from-[#1a2a6c] dark:to-[#0d1b3a] dark:border-[#2e4fff] dark:hover:shadow-[0_12px_40px_rgba(46,79,255,0.3)]"
+                    "dark:bg-gradient-to-b dark:from-[#1a2a6c] dark:to-[#0d1b3a] dark:border-2 dark:border-[#2e4fff] dark:hover:shadow-[0_12px_40px_rgba(46,79,255,0.3)]"
                 )}
             >
-                {/* Vector decorativo */}
-                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_10%,transparent_90%)] dark:opacity-20 opacity-0 pointer-events-none"></div>
+                {/* Efecto de brillo solo en modo claro */}
+                <div className="hidden dark:block absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_10%,transparent_90%)] opacity-20 pointer-events-none"></div>
+                <div className="dark:hidden shimmer-effect absolute inset-0 pointer-events-none"></div>
 
-                <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center text-foreground dark:text-white">
+                <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center">
                     {/* Header */}
                      <div className="flex items-start justify-between">
-                         <div className="flex flex-col items-center text-left">
+                         <div className="flex flex-col items-center">
                             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-white/10 shadow-md">
                                 <span className="text-2xl font-black text-slate-900 dark:text-yellow-400">{player.ovr}</span>
                             </div>
@@ -81,7 +82,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
 
                     {/* Imagen y Nombre */}
                     <div className="flex flex-col items-center gap-1 my-2">
-                        <Avatar className={cn("h-20 w-20 sm:h-24 sm:w-24 rounded-full border-4 object-cover shadow-md bg-muted dark:bg-slate-800", positionBorderColors[player.position])}>
+                        <Avatar className={cn("h-24 w-24 rounded-full border-4 object-cover shadow-md bg-muted", positionBorderColors[player.position])}>
                             <AvatarImage 
                                 src={player.photoUrl} 
                                 alt={playerName} 
@@ -95,7 +96,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                             />
                             <AvatarFallback className="text-3xl font-black">{playerName.charAt(0)}</AvatarFallback>
                         </Avatar>
-                        <h3 className="w-full truncate text-center text-base font-semibold mt-1">{playerName}</h3>
+                        <h3 className="w-full truncate text-center text-base font-semibold mt-1 dark:text-white">{playerName}</h3>
                     </div>
 
                     {/* Stats */}
@@ -104,11 +105,12 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                             <div 
                                 key={stat.key} 
                                 className={cn(
-                                    "rounded-lg bg-muted dark:bg-white/5 py-1 transition-all border-2",
+                                    "rounded-lg py-1 transition-all border-2",
+                                    "bg-black/5 dark:bg-white/5",
                                     stat.key === highestStat.key ? "border-yellow-400/50 dark:border-yellow-400/50" : "border-transparent"
                                 )}
                             >
-                                <p className="text-base font-bold text-foreground dark:text-white">
+                                <p className="text-base font-bold text-slate-800 dark:text-white">
                                     {stat.value} 
                                     <span className="ml-1 text-gray-500 dark:text-gray-400 text-xs font-semibold">
                                         {attributeDetails[stat.key].name}

@@ -74,10 +74,9 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Fondo animado para el Modo Juego */
   .dark body {
-    background-color: #071021; /* Azul oscuro base */
-    overflow: hidden; /* Prevenir scroll del body */
+    background-color: #071021;
+    overflow: hidden;
   }
 
   .dark body::before {
@@ -117,5 +116,36 @@
 
   .color-cycle-animation {
       animation: color-cycle 4s infinite;
+  }
+
+  /* Animación de Brillo Holográfico */
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%) skewX(-15deg);
+    }
+    100% {
+      transform: translateX(200%) skewX(-15deg);
+    }
+  }
+
+  .shimmer-bg {
+    @apply bg-slate-100;
+  }
+
+  .shimmer-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      transparent 100%
+    );
+    animation: shimmer 4s infinite;
+    opacity: 0.8;
   }
 }
