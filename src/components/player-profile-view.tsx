@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -14,7 +15,7 @@ import type { Player, Evaluation, Match, OvrHistory, UserProfile, PerformanceTag
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowUp, ArrowDown, Minus, Goal, Eye } from 'lucide-react';
+import { Loader2, ArrowUp, ArrowDown, Minus, Goal, Eye, LineChart as LineChartIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -25,6 +26,7 @@ import { logger } from '@/lib/logger';
 import { PlayerDetailCard } from '@/components/player-detail-card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { PlayerInsightsPanel } from './player-insights-panel';
+import Link from 'next/link';
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -252,7 +254,20 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
         </div>
         <div className="lg:col-span-2 space-y-6">
            {isCurrentUserProfile && user && (
-              <PlayerInsightsPanel playerId={playerId} playerName={player.name} groupId={user.activeGroupId || ''} />
+              <Card>
+                <CardHeader>
+                    <CardTitle>Análisis Avanzado</CardTitle>
+                    <CardDescription>Obtené insights detallados de tu rendimiento y chateá con tu DT virtual.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button asChild className="w-full">
+                        <Link href={`/players/${playerId}/analysis`}>
+                            <LineChartIcon className="mr-2 h-4 w-4"/>
+                            Ir al Análisis Avanzado
+                        </Link>
+                    </Button>
+                </CardContent>
+              </Card>
             )}
           <h2 className="text-2xl font-bold font-headline text-foreground/90">Historial de Partidos</h2>
             {filteredEvaluationsByMatch.length > 0 ? (
