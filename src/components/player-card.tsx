@@ -57,7 +57,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                 className={cn(
                     "relative h-full flex flex-col overflow-hidden rounded-2xl shadow-lg",
                     "dark:bg-card dark:border-border",
-                    "shimmer-bg shimmer-effect" // Aplicado solo en modo claro
+                    "bg-card" 
                 )}
             >
                 <div className={cn("position-watermark", `position-watermark-${player.position}`)}></div>
