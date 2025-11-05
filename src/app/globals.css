@@ -11,19 +11,20 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 43 96% 56%;
+    --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 217 91% 60%;
+    --ring: 43 96% 56%;
+    --radius: 0.5rem;
     --chart-1: 340 82% 61%;
     --chart-2: 158 44% 46%;
     --chart-3: 217 91% 60%;
@@ -72,23 +73,35 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+  
+  .dark body {
+    background-color: #071021;
+    overflow: hidden;
+  }
+
+  .dark body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 200%;
+    background-image: radial-gradient(ellipse 50% 50% at 50% 50%, hsla(var(--accent) / 0.15), transparent);
+    will-change: transform;
+    animation: background-pan 150s linear infinite;
+    z-index: -1;
+  }
+
+  @keyframes background-pan {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(10%, -10%); }
+    50% { transform: translate(-10%, 10%); }
+    75% { transform: translate(5%, 5%); }
+    100% { transform: translate(0, 0); }
+  }
 }
 
 @layer utilities {
-  .text-glow {
-      text-shadow: 0 0 8px hsl(var(--primary) / 0.8), 0 0 20px hsl(var(--primary) / 0.5);
-  }
-
-  @keyframes color-cycle {
-    0%, 100% { color: hsl(var(--primary)); }
-    33% { color: hsl(var(--chart-2)); }
-    66% { color: hsl(var(--chart-4)); }
-  }
-
-  .color-cycle-animation {
-      animation: color-cycle 4s infinite;
-  }
-
   /* Player Card Aura Effects */
   .aura-bronze {
       background-image: radial-gradient(ellipse at top right, rgba(205, 127, 50, 0.2) 0%, transparent 70%);
@@ -105,16 +118,30 @@
   }
 
   .aura-gold {
-      background-image: radial-gradient(ellipse at top right, hsla(var(--primary), 0.25) 0%, transparent 70%);
+      background-image: radial-gradient(ellipse at top right, hsl(var(--primary) / 0.25) 0%, transparent 70%);
   }
   .dark .aura-gold {
-      background-image: radial-gradient(ellipse at top right, hsla(var(--primary), 0.3) 0%, transparent 70%);
+      background-image: radial-gradient(ellipse at top right, hsl(var(--primary) / 0.3) 0%, transparent 70%);
   }
 
   .aura-elite {
-      background-image: radial-gradient(ellipse at top right, hsla(var(--accent), 0.3) 0%, transparent 70%);
+      background-image: radial-gradient(ellipse at top right, hsl(var(--accent) / 0.3) 0%, transparent 70%);
   }
   .dark .aura-elite {
-      background-image: radial-gradient(ellipse at top right, hsla(var(--accent), 0.35) 0%, transparent 70%);
+      background-image: radial-gradient(ellipse at top right, hsl(var(--accent) / 0.35) 0%, transparent 70%);
+  }
+
+  .text-glow {
+      text-shadow: 0 0 8px hsl(var(--primary) / 0.8), 0 0 20px hsl(var(--primary) / 0.5);
+  }
+
+  @keyframes color-cycle {
+    0%, 100% { color: hsl(var(--primary)); }
+    33% { color: hsl(var(--chart-2)); }
+    66% { color: hsl(var(--chart-4)); }
+  }
+
+  .color-cycle-animation {
+      animation: color-cycle 4s infinite;
   }
 }
