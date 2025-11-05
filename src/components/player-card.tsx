@@ -23,14 +23,14 @@ const attributeDetails: Record<AttributeKey, { name: string }> = {
 };
 
 const positionTextColors: Record<PlayerPosition, string> = {
-  POR: 'text-yellow-600 dark:text-yellow-400',
+  POR: 'text-orange-600 dark:text-orange-400',
   DEF: 'text-green-600 dark:text-green-400',
   MED: 'text-blue-600 dark:text-blue-400',
   DEL: 'text-red-600 dark:text-red-400',
 };
 
 const positionBorderColors: Record<PlayerPosition, string> = {
-  POR: 'border-yellow-400',
+  POR: 'border-orange-400',
   DEF: 'border-green-400',
   MED: 'border-blue-400',
   DEL: 'border-red-400',
