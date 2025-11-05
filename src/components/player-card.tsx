@@ -70,13 +70,12 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                     "bg-card" 
                 )}
             >
-                {/* Watermark Icon - This is the corrected implementation */}
+                {/* Watermark Icon */}
                 <div className="absolute -bottom-2 -right-2 h-2/5 w-2/5 text-muted-foreground/5 dark:text-primary/5 z-0">
                   {PositionIcon && <PositionIcon className={cn("w-full h-full", positionTextColors[player.position])} />}
                 </div>
 
                 <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center">
-                    {/* The rest of the card content goes here, and will appear above the watermark */}
                     <div className="flex items-start justify-between">
                          <div className="flex flex-col items-center">
                             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-white/10 shadow-md">
