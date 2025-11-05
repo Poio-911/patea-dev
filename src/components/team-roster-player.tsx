@@ -56,8 +56,8 @@ export const TeamRosterPlayer = ({ player, team, onPlayerUpdate }: TeamRosterPla
         </div>
         <div className="flex flex-col items-center">
             <div className="flex items-center gap-2">
-                <Icon className={cn("h-4 w-4 rounded-full border-2 p-0.5", colorClass)} />
-                <p className="font-bold truncate w-24 text-sm">{player.name}</p>
+                <Icon className={cn("h-5 w-5 rounded-full border-2 p-0.5", colorClass)} />
+                <p className="font-bold truncate w-24 text-base">{player.name}</p>
             </div>
             <div className="flex items-center justify-center gap-1.5 mt-1">
                 <Badge variant="secondary" className="text-xs">{player.ovr}</Badge>
