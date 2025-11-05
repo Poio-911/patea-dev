@@ -167,6 +167,7 @@
     pointer-events: none;
     transition: background-color 0.3s;
     opacity: 0.7;
+    z-index: 0;
   }
 
   .dark .position-watermark {

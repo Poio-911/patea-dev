@@ -59,9 +59,10 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                     "bg-card" 
                 )}
             >
-                <CardContent className="relative z-0 flex h-full flex-col justify-between p-3 text-center">
+                <CardContent className="relative flex h-full flex-col justify-between p-3 text-center">
                     <div className={cn("position-watermark", `position-watermark-${player.position}`)}></div>
-                    <div className="relative z-10">
+                    
+                    <div className="relative z-10 flex flex-col h-full justify-between">
                         {/* Header */}
                          <div className="flex items-start justify-between">
                              <div className="flex flex-col items-center">
