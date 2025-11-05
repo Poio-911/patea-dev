@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -11,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { playerSpecialties } from '@/lib/data';
 import { useUser } from '@/firebase';
 import { Button } from './ui/button';
-import { Sparkles, Upload, Loader2, Image, Scissors } from 'lucide-react';
+import { Sparkles, Loader2, Scissors } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/lib/logger';
@@ -31,48 +30,38 @@ const positionColors: Record<Player['position'], string> = {
   DEL: 'text-red-600 dark:text-red-400',
 };
 
-const getStatColorClasses = (value: number): { text: string; border: string; bg: string } => {
-    if (value >= 75) {
-        return {
-            text: 'text-yellow-600 dark:text-yellow-400',
-            border: 'border-yellow-600 dark:border-yellow-400',
-            bg: 'bg-yellow-600/10'
-        };
-    }
-    if (value >= 65) {
-        return {
-            text: 'text-slate-400 dark:text-slate-300',
-            border: 'border-slate-400 dark:border-slate-300',
-            bg: 'bg-slate-400/10'
-        };
-    }
-    return {
-        text: 'text-amber-700 dark:text-amber-600',
-        border: 'border-amber-700 dark:border-amber-600',
-        bg: 'bg-amber-700/10'
-    };
+const positionBorderColors: Record<Player['position'], string> = {
+    POR: 'border-yellow-400',
+    DEF: 'border-green-400',
+    MED: 'border-blue-400',
+    DEL: 'border-red-400',
 };
 
+
+const getStatColorClasses = (value: number): string => {
+    if (value >= 85) return "text-yellow-400"; // Gold for elite stats
+    if (value >= 75) return "text-green-400"; // Green for great stats
+    if (value >= 60) return "text-slate-300"; // Light gray for good stats
+    return "text-slate-500"; // Muted gray for average stats
+};
+
+
 const StatPill = ({ label, value, isPrimary, index }: { label: string; value: number; isPrimary: boolean; index: number }) => {
-    const { text, border, bg } = getStatColorClasses(value);
+    const colorClass = getStatColorClasses(value);
 
     return (
         <motion.div
             className={cn(
                 "relative flex items-center justify-between rounded-lg p-2 text-xs font-bold border-2",
-                "transition-all duration-200",
-                border,
-                bg,
-                isPrimary && 'stat-border-glow stat-sparkle',
-                !isPrimary && "hover:scale-105 hover:shadow-lg hover:z-10"
+                "bg-white/5 dark:bg-white/5",
+                isPrimary ? "border-yellow-400/50 dark:border-yellow-400/50" : "border-transparent"
             )}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.05, type: 'spring', stiffness: 300, damping: 20 }}
-            whileHover={!isPrimary ? { scale: 1.05, transition: { duration: 0.2 } } : undefined}
         >
-            <span className="text-muted-foreground">{label}</span>
-            <span className={cn("font-black", text)}>
+            <span className="text-gray-400">{label}</span>
+            <span className={cn("font-black", colorClass)}>
                 {value}
             </span>
         </motion.div>
@@ -134,9 +123,9 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
       </Dialog>
       <Card className={cn(
           "relative overflow-hidden border-2 shadow-lg h-full flex flex-col",
-          // Modo Claro (Holográfico)
-          "shimmer-bg border-border",
-          // Modo Juego
+          // Modo Claro
+          "bg-slate-100 border-border shimmer-bg",
+          // Modo Oscuro
           "dark:bg-gradient-to-b dark:from-[#1a2a6c] dark:to-[#0d1b3a] dark:border-[#2e4fff]"
       )}>
         {/* Efecto de brillo solo en modo claro */}
@@ -147,50 +136,54 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
             <div className="text-center">
               <h2 className="text-3xl font-bold font-headline">{playerName}</h2>
               <div className="flex items-center justify-center gap-4 mt-2">
-                <motion.span
+                <motion.div
                   key={player.ovr}
                   initial={{ scale: 1.2 }}
                   animate={{ scale: 1 }}
                   transition={{ duration: 0.3, type: 'spring' }}
                   className={cn(
-                    "text-5xl sm:text-6xl font-black drop-shadow-2xl",
-                    "text-slate-800 dark:text-yellow-400",
+                    "flex items-center justify-center h-20 w-20 rounded-full shadow-lg",
+                    "bg-card text-5xl font-black",
+                    "dark:bg-white/10 dark:text-yellow-400",
                     player.ovr >= 85 && "dark:text-glow"
                   )}
                 >
                   {player.ovr}
-                </motion.span>
-                <Badge
-                  variant="secondary"
-                  className="text-lg font-bold px-3 py-1.5 bg-background/90 backdrop-blur-sm border-2 shadow-md"
-                >
-                  {player.position}
-                </Badge>
-              </div>
-              {showSpecialty && (
-                <motion.div
-                  className="flex items-center justify-center gap-2 mt-3 px-4 py-2 mx-auto max-w-fit bg-primary/10 rounded-full border border-primary/30"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3, type: 'spring' }}
-                >
-                  <specialty.icon className="h-5 w-5 text-primary animate-pulse" />
-                  <span className="text-base font-bold text-primary dark:text-glow">{specialty.nickname}</span>
                 </motion.div>
-              )}
+                <div className="flex flex-col items-start">
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                          "text-lg font-bold px-3 py-1.5 shadow-md",
+                          positionTextColors[player.position]
+                      )}
+                    >
+                      {player.position}
+                    </Badge>
+                     {showSpecialty && (
+                        <motion.div
+                            className="flex items-center justify-center gap-2 mt-2"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3, type: 'spring' }}
+                        >
+                            <specialty.icon className="h-5 w-5 text-primary animate-pulse" />
+                            <span className="text-base font-bold text-primary dark:text-glow">{specialty.nickname}</span>
+                        </motion.div>
+                    )}
+                </div>
+              </div>
             </div>
             <div className="relative w-full flex flex-col items-center gap-4">
               <div className="group relative">
                 <button onClick={() => setShowImageDialog(true)} aria-label="Ampliar imagen de perfil">
-                  <Avatar className={cn(
-                    "h-40 w-40 overflow-hidden",
-                    "border-4 border-primary/50 shadow-2xl",
-                    "transition-all duration-300",
-                    "group-hover:scale-110 group-hover:shadow-primary/50",
-                    "group-hover:ring-4 group-hover:ring-primary/50",
-                    showSpecialty && "ring-4 ring-primary/30 ring-offset-2 ring-offset-background",
-                    player.ovr >= 85 && "shadow-primary/40"
-                  )}>
+                   <Avatar className={cn(
+                        "h-40 w-40 overflow-hidden",
+                        "border-4 shadow-2xl",
+                        "transition-all duration-300",
+                        "group-hover:scale-110 group-hover:shadow-primary/50",
+                        positionBorderColors[player.position]
+                    )}>
                     {isGeneratingAI && (
                       <div className="absolute inset-0 z-10 bg-black/70 flex flex-col items-center justify-center text-white">
                         <Sparkles className="h-8 w-8 color-cycle-animation" />
@@ -242,7 +235,7 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
               )}
             </div>
           </div>
-          <Separator className="my-6"/>
+          <Separator className="my-6 dark:bg-white/10"/>
           <div className="w-full px-4">
             <div className="grid grid-cols-2 gap-2 sm:gap-3 my-3 sm:my-4">
               {stats.map((stat, index) => (

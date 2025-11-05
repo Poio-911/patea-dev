@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -20,12 +19,12 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { logger } from '@/lib/logger';
 import { PlayerDetailCard } from '@/components/player-detail-card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { PlayerInsightsPanel } from './player-insights-panel';
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -112,6 +111,7 @@ const FormTrend = ({ history }: { history: OvrHistory[] }) => {
 
 
 export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
+  const { user } = useUser();
   const firestore = useFirestore();
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
@@ -126,6 +126,8 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
     return query(collection(firestore, 'players', playerId, 'ovrHistory'), orderBy('date', 'asc'));
   }, [firestore, playerId]);
   const { data: ovrHistory, loading: historyLoading } = useCollection<OvrHistory>(ovrHistoryQuery);
+  
+  const isCurrentUserProfile = user?.uid === playerId;
   
   useEffect(() => {
     async function fetchEvaluationData() {
@@ -249,6 +251,9 @@ export default function PlayerProfileView({ playerId }: PlayerProfileViewProps) 
           {ovrHistory && <FormTrend history={ovrHistory} />}
         </div>
         <div className="lg:col-span-2 space-y-6">
+           {isCurrentUserProfile && user && (
+              <PlayerInsightsPanel playerId={playerId} playerName={player.name} groupId={user.activeGroupId || ''} />
+            )}
           <h2 className="text-2xl font-bold font-headline text-foreground/90">Historial de Partidos</h2>
             {filteredEvaluationsByMatch.length > 0 ? (
                 <div className="space-y-3">
