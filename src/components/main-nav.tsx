@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -35,7 +36,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuPortal
 } from "@/components/ui/dropdown-menu"
-import type { Player, EvaluationAssignment } from '@/lib/types';
+import type { Player, PlayerPosition, EvaluationAssignment } from '@/lib/types';
 import { doc, collectionGroup, query, where } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
@@ -59,11 +60,11 @@ const navItems = [
   { href: '/evaluations', label: 'Evaluar', icon: EvaluationIcon },
 ];
 
-const positionBadgeStyles: Record<Player['position'], string> = {
-  POR: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
-  DEF: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-  MED: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
-  DEL: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+const positionBadgeStyles: Record<PlayerPosition, string> = {
+  POR: 'text-orange-600 dark:text-orange-400',
+  DEF: 'text-green-600 dark:text-green-400',
+  MED: 'text-blue-600 dark:text-blue-400',
+  DEL: 'text-red-600 dark:text-red-400',
 };
 
 
@@ -164,7 +165,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                       <div className="flex items-center gap-3">
                           <div className="text-right">
                               <p className="font-bold text-sm truncate max-w-[100px] sm:max-w-none">{player.name}</p>
-                              <p className="text-xs text-muted-foreground">{player.position}</p>
+                              <p className={cn("text-xs font-semibold", positionBadgeStyles[player.position])}>{player.position}</p>
                           </div>
                            <div className="flex items-center justify-center h-10 w-10 text-xl font-bold rounded-full bg-primary/10 border-2 border-primary/20 text-primary">
                               {player.ovr}
@@ -264,19 +265,25 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                 <SidebarMenu>
                     <SidebarGroup>
                       <SidebarGroupLabel>Menú</SidebarGroupLabel>
-                      {navItems.map((item) => (
-                      <SidebarMenuItem key={item.href}>
-                          <Link href={item.href}>
-                          <SidebarMenuButton
-                              isActive={pathname.startsWith(item.href)}
-                              tooltip={item.label}
-                          >
-                              <item.icon />
-                              <span>{item.label}</span>
-                          </SidebarMenuButton>
-                          </Link>
-                      </SidebarMenuItem>
-                      ))}
+                      {navItems.map((item) => {
+                        const isEval = item.href === '/evaluations';
+                        return (
+                          <SidebarMenuItem key={item.href}>
+                              <Link href={item.href}>
+                              <SidebarMenuButton
+                                  isActive={pathname.startsWith(item.href)}
+                                  tooltip={item.label}
+                              >
+                                  <item.icon />
+                                  <span>{item.label}</span>
+                                  {isEval && pendingEvaluationsCount > 0 && (
+                                    <Badge className="ml-auto">{pendingEvaluationsCount}</Badge>
+                                  )}
+                              </SidebarMenuButton>
+                              </Link>
+                          </SidebarMenuItem>
+                        )
+                      })}
                     </SidebarGroup>
                 </SidebarMenu>
                  <div className="mt-auto">
@@ -302,7 +309,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
               {navItems.map((item) => {
                   const isActive = pathname.startsWith(item.href);
-                  const isEval = item.href === '/evaluations';
                   return (
                   <Link
                       key={item.href}
@@ -312,11 +318,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                       isActive && 'text-primary'
                       )}
                   >
-                      {isEval && pendingEvaluationsCount > 0 && (
-                          <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                            {pendingEvaluationsCount}
-                          </span>
-                      )}
                       <item.icon className="h-6 w-6" />
                       <span className="text-xs">{item.label}</span>
                   </Link>
