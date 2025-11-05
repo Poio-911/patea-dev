@@ -39,10 +39,10 @@ import type { Player, PlayerPosition, EvaluationAssignment } from '@/lib/types';
 import { doc, collectionGroup, query, where } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
-import { MatchIcon } from '@/components/icons/match-icon';
-import { TeamsIcon } from '@/components/icons/teams-icon';
-import { EvaluationIcon } from '@/components/icons/evaluation-icon';
 import { ShirtIcon } from '@/components/icons/shirt-icon';
+import { TeamsIcon } from '@/components/icons/teams-icon';
+import { MatchIcon } from '@/components/icons/match-icon';
+import { EvaluationIcon } from '@/components/icons/evaluation-icon';
 import { NotificationBell } from '@/components/notification-bell';
 import { useFcm } from '@/hooks/use-fcm';
 import { HelpDialog } from '@/components/help-dialog';
@@ -319,11 +319,14 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                       isActive && 'text-primary'
                       )}
                   >
+                      {isEval && pendingEvaluationsCount > 0 && (
+                        <span className="absolute top-2 right-2 flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                        </span>
+                      )}
                       <item.icon className="h-6 w-6" />
                       <span className="text-xs">{item.label}</span>
-                      {isEval && pendingEvaluationsCount > 0 && (
-                         <Badge className="absolute top-1 right-1 h-4 w-4 justify-center p-0 text-xs">{pendingEvaluationsCount}</Badge>
-                      )}
                   </Link>
                   );
               })}
