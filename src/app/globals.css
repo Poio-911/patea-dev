@@ -118,34 +118,64 @@
       animation: color-cycle 4s infinite;
   }
 
-  /* Animación de Brillo Holográfico */
-  @keyframes shimmer {
-    0% {
-      transform: translateX(-100%) skewX(-15deg);
-    }
-    100% {
-      transform: translateX(200%) skewX(-15deg);
-    }
-  }
-
   .shimmer-bg {
-    @apply bg-slate-100;
+    background: hsl(var(--card));
   }
 
+  .shimmer-effect {
+    position: relative;
+    overflow: hidden;
+  }
+  
   .shimmer-effect::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 50%;
-    height: 100%;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
     background: linear-gradient(
-      to right,
-      transparent 0%,
-      rgba(255, 255, 255, 0.4) 50%,
-      transparent 100%
+      110deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.15) 50%,
+      transparent 60%
     );
-    animation: shimmer 4s infinite;
-    opacity: 0.8;
+    animation: shimmer 5s infinite linear;
+    pointer-events: none;
   }
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-75%) translateY(-75%) rotate(25deg);
+    }
+    100% {
+      transform: translateX(75%) translateY(75%) rotate(25deg);
+    }
+  }
+  
+  .position-watermark {
+    content: '';
+    position: absolute;
+    bottom: -10%;
+    right: -10%;
+    width: 50%;
+    height: 50%;
+    mask-repeat: no-repeat;
+    mask-position: bottom right;
+    mask-size: contain;
+    background-color: hsl(var(--muted-foreground) / 0.08);
+    pointer-events: none;
+    transition: background-color 0.3s;
+    opacity: 0.7;
+  }
+
+  .dark .position-watermark {
+    background-color: hsl(var(--primary) / 0.05);
+  }
+
+  .position-watermark-DEL { mask-image: url('/icons-pos/posicion--Del.svg'); }
+  .position-watermark-MED { mask-image: url('/icons-pos/posicion--Med.svg'); }
+  .position-watermark-DEF { mask-image: url('/icons-pos/posicion--Def.svg'); }
+  .position-watermark-POR { mask-image: url('/icons-pos/posicion--Por.svg'); }
+
 }

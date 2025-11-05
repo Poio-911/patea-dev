@@ -7,7 +7,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Player, AttributeKey } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
 
 type PlayerCardProps = {
   player: Player & { displayName?: string };
@@ -57,12 +56,11 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
             <Card
                 className={cn(
                     "relative h-full flex flex-col overflow-hidden rounded-2xl shadow-lg",
-                    // Modo Claro
-                    "bg-slate-100 border-border",
-                    // Modo Juego (Oscuro)
-                    "dark:bg-card dark:border-border"
+                    "dark:bg-card dark:border-border",
+                    "shimmer-bg shimmer-effect" // Aplicado solo en modo claro
                 )}
             >
+                <div className={cn("position-watermark", `position-watermark-${player.position}`)}></div>
                 <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center">
                     {/* Header */}
                      <div className="flex items-start justify-between">
