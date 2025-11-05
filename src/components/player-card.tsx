@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -60,58 +59,60 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                     "bg-card" 
                 )}
             >
-                <div className={cn("position-watermark", `position-watermark-${player.position}`)}></div>
-                <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center">
-                    {/* Header */}
-                     <div className="flex items-start justify-between">
-                         <div className="flex flex-col items-center">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-white/10 shadow-md">
-                                <span className="text-2xl font-black text-slate-900 dark:text-yellow-400">{player.ovr}</span>
+                <CardContent className="relative z-0 flex h-full flex-col justify-between p-3 text-center">
+                    <div className={cn("position-watermark", `position-watermark-${player.position}`)}></div>
+                    <div className="relative z-10">
+                        {/* Header */}
+                         <div className="flex items-start justify-between">
+                             <div className="flex flex-col items-center">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-white/10 shadow-md">
+                                    <span className="text-2xl font-black text-slate-900 dark:text-yellow-400">{player.ovr}</span>
+                                </div>
+                                <span className={cn("mt-1 text-sm font-bold uppercase", positionTextColors[player.position])}>
+                                    {player.position}
+                                </span>
                             </div>
-                            <span className={cn("mt-1 text-sm font-bold uppercase", positionTextColors[player.position])}>
-                                {player.position}
-                            </span>
                         </div>
-                    </div>
 
-                    {/* Imagen y Nombre */}
-                    <div className="flex flex-col items-center gap-1 my-2">
-                        <Avatar className={cn("h-24 w-24 rounded-full border-4 object-cover shadow-md bg-muted", positionBorderColors[player.position])}>
-                            <AvatarImage 
-                                src={player.photoUrl} 
-                                alt={playerName} 
-                                data-ai-hint="player portrait" 
-                                style={{ 
-                                    objectFit: 'cover', 
-                                    objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`, 
-                                    transform: `scale(${player.cropZoom || 1})`, 
-                                    transformOrigin: 'center center' 
-                                }} 
-                            />
-                            <AvatarFallback className="text-3xl font-black">{playerName.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <h3 className="w-full truncate text-center text-base font-semibold mt-1 dark:text-white">{playerName}</h3>
-                    </div>
+                        {/* Imagen y Nombre */}
+                        <div className="flex flex-col items-center gap-1 my-2">
+                            <Avatar className={cn("h-24 w-24 rounded-full border-4 object-cover shadow-md bg-muted", positionBorderColors[player.position])}>
+                                <AvatarImage 
+                                    src={player.photoUrl} 
+                                    alt={playerName} 
+                                    data-ai-hint="player portrait" 
+                                    style={{ 
+                                        objectFit: 'cover', 
+                                        objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`, 
+                                        transform: `scale(${player.cropZoom || 1})`, 
+                                        transformOrigin: 'center center' 
+                                    }} 
+                                />
+                                <AvatarFallback className="text-3xl font-black">{playerName.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <h3 className="w-full truncate text-center text-base font-semibold mt-1 dark:text-white">{playerName}</h3>
+                        </div>
 
-                    {/* Stats */}
-                    <div className="grid grid-cols-2 gap-1 text-center text-xs">
-                        {stats.map(stat => (
-                            <div 
-                                key={stat.key} 
-                                className={cn(
-                                    "rounded-lg py-1 border-2",
-                                    "bg-black/5 dark:bg-white/5",
-                                    stat.key === highestStat.key ? "border-yellow-400/50 dark:border-yellow-400/50" : "border-transparent"
-                                )}
-                            >
-                                <p className="text-base font-bold text-slate-800 dark:text-white">
-                                    {stat.value} 
-                                    <span className="ml-1 text-gray-500 dark:text-gray-400 text-xs font-semibold">
-                                        {attributeDetails[stat.key].name}
-                                    </span>
-                                </p>
-                            </div>
-                        ))}
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 gap-1 text-center text-xs">
+                            {stats.map(stat => (
+                                <div 
+                                    key={stat.key} 
+                                    className={cn(
+                                        "rounded-lg py-1 border-2",
+                                        "bg-black/5 dark:bg-white/5",
+                                        stat.key === highestStat.key ? "border-yellow-400/50 dark:border-yellow-400/50" : "border-transparent"
+                                    )}
+                                >
+                                    <p className="text-base font-bold text-slate-800 dark:text-white">
+                                        {stat.value} 
+                                        <span className="ml-1 text-gray-500 dark:text-gray-400 text-xs font-semibold">
+                                            {attributeDetails[stat.key].name}
+                                        </span>
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </CardContent>
             </Card>
