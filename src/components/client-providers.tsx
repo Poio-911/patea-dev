@@ -50,8 +50,9 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
   return (
     <ThemeProvider
       attribute="class"
-      defaultTheme="system"
-      enableSystem
+      themes={['light','game']}
+      defaultTheme="light"
+      enableSystem={false}
       disableTransitionOnChange
     >
       <FirebaseProvider

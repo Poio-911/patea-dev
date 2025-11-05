@@ -48,11 +48,12 @@ type MatchCardProps = {
   allPlayers: Player[];
 };
 
+// Status styling relies on theme tokens so it adapts between Light and Game
 const statusConfig: Record<Match['status'], { label: string; className: string; neonClass: string; gradientClass: string }> = {
-    upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300', neonClass: 'text-shadow-[0_0_10px_hsl(var(--primary))]', gradientClass: 'from-blue-500/20' },
-    active: { label: 'Activo', className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300', neonClass: 'text-shadow-[0_0_10px_hsl(var(--accent))]', gradientClass: 'from-green-500/20' },
-    completed: { label: 'Finalizado', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', neonClass: 'text-shadow-[0_0_8px_hsl(var(--muted-foreground))]', gradientClass: 'from-gray-500/20' },
-    evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300', neonClass: 'text-shadow-[0_0_10px_hsl(var(--chart-2))]', gradientClass: 'from-purple-500/20' },
+    upcoming: { label: 'Próximo', className: 'bg-card/5 text-muted-foreground', neonClass: 'text-shadow-[0_0_10px_hsl(var(--primary))]', gradientClass: 'from-primary/10' },
+    active: { label: 'Activo', className: 'bg-card/5 text-muted-foreground', neonClass: 'text-shadow-[0_0_10px_hsl(var(--accent))]', gradientClass: 'from-accent/10' },
+    completed: { label: 'Finalizado', className: 'bg-card/5 text-muted-foreground', neonClass: 'text-shadow-[0_0_8px_hsl(var(--muted-foreground))]', gradientClass: 'from-muted/10' },
+    evaluated: { label: 'Evaluado', className: 'bg-card/5 text-muted-foreground', neonClass: 'text-shadow-[0_0_10px_hsl(var(--chart-2))]', gradientClass: 'from-chart-2/10' },
 };
 
 const weatherIcons: Record<string, React.ElementType> = {
@@ -145,9 +146,9 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 });
             });
         });
+
         return assignments;
     };
-
 
     const handleFinishMatch = async () => {
         if (!firestore || !user) return;
@@ -330,8 +331,8 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     };
 
     return (
-        <Card className="flex flex-col overflow-hidden shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
-            <CardHeader className={cn('relative bg-gradient-to-br to-transparent p-4', currentStatus.gradientClass)}>
+        <Card className="match-card flex flex-col overflow-hidden shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
+            <CardHeader className={cn('relative p-4', currentStatus.gradientClass)}>
                 <div className="flex items-start justify-between gap-4">
                     <CardTitle className={cn("text-xl font-bold", currentStatus.neonClass)}>
                         {match.title}
@@ -356,14 +357,14 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                         <Calendar className="h-5 w-5 text-muted-foreground" />
                         <div>
                             <p className="text-xs text-muted-foreground">Fecha</p>
-                            <p className="font-bold text-sm capitalize">{format(new Date(match.date), "EEEE, d 'de' MMMM", { locale: es })}</p>
+                            <p className="font-bold text-sm capitalize text-card-foreground">{format(new Date(match.date), "EEEE, d 'de' MMMM", { locale: es })}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
                         <Clock className="h-5 w-5 text-muted-foreground" />
                         <div>
                             <p className="text-xs text-muted-foreground">Hora</p>
-                            <p className="font-bold text-sm">{match.time} hs</p>
+                            <p className="font-bold text-sm text-card-foreground">{match.time} hs</p>
                         </div>
                     </div>
                 </div>

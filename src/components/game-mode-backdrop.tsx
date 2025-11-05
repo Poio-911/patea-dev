@@ -1,20 +1,21 @@
 "use client";
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTheme } from 'next-themes';
+import dynamic from 'next/dynamic';
+
+// Dynamically load the high-fidelity WebGL shader backdrop (client-only)
+const ShaderBackdrop = dynamic(() => import('./game-backdrop/shader-backdrop'), { ssr: false, loading: () => null });
 
 /**
- * GameModeBackdrop
- * Canvas procedural background: low-res noise + diagonal energy streak + soft color ramps.
- * Phase 1 prototype (no OffscreenCanvas yet). Designed to be visually distinct vs pure CSS.
+ * Canvas fallback (kept from original prototype). Runs when WebGL2 not available.
  */
-export const GameModeBackdrop: React.FC = () => {
-  const { theme } = useTheme();
+const CanvasFallback: React.FC<{ active: boolean }> = ({ active }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
-  if (theme !== 'game') return; // Only run animation logic in game theme
-  const canvas = canvasRef.current;
+    if (!active) return;
+    const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -104,14 +105,71 @@ export const GameModeBackdrop: React.FC = () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       window.removeEventListener('resize', resize);
     };
-  }, []);
+  }, [active]);
 
-  // Hide canvas when not in game theme
   return (
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className={"fixed inset-0 z-[-4] w-full h-full select-none pointer-events-none [image-rendering:pixelated] " + (theme === 'game' ? 'opacity-100' : 'opacity-0')}
+      className={
+        (() => {
+          // debug override: add ?forceBackdrop=1 to URL to force visible backdrop during development
+          const forced = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('forceBackdrop') === '1';
+          const visible = active || forced;
+          return `fixed inset-0 z-[-4] w-full h-full select-none pointer-events-none [image-rendering:pixelated] ${visible ? 'opacity-100' : 'opacity-0'}`;
+        })()
+      }
     />
+  );
+};
+
+/**
+ * GameModeBackdrop
+ * Chooses the WebGL shader backdrop when supported, otherwise falls back to CPU canvas.
+ */
+export const GameModeBackdrop: React.FC = () => {
+  const { theme } = useTheme();
+  const [webglAvailable, setWebglAvailable] = useState(false);
+  const [active, setActive] = useState<boolean>(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // Detect WebGL2 availability
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl2');
+      setWebglAvailable(!!gl);
+    } catch (e) {
+      setWebglAvailable(false);
+    }
+  }, []);
+
+  // Sync active state with next-themes hook and with html.classList (console/manual toggles)
+  useEffect(() => {
+    // mark mounted so we don't render on server
+    setMounted(true);
+    if (theme === 'game') {
+      setActive(true);
+      return;
+    }
+    if (typeof document !== 'undefined') {
+      setActive(document.documentElement.classList.contains('game'));
+    } else {
+      setActive(false);
+    }
+  }, [theme]);
+  // Avoid rendering anything during SSR or before client mount to prevent hydration mismatches.
+  if (!mounted) return null;
+
+  return (
+    <>
+      {active && webglAvailable ? (
+        // High-fidelity shader-backed backdrop
+        <ShaderBackdrop />
+      ) : (
+        // Canvas2D fallback
+        <CanvasFallback active={active} />
+      )}
+    </>
   );
 };

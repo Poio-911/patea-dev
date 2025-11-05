@@ -1,7 +1,12 @@
 import type {Config} from 'tailwindcss';
 
 export default {
-  darkMode: ['class'],
+  // No dark mode: project supports only light and game themes via CSS selector `.game`
+  // Keeping 'class' behavior for compatibility with theme provider attribute='class'
+  // but we no longer use `dark:` variants.
+  // Tailwind expects either 'media' | 'class' or undefined. We keep it undefined and
+  // avoid using 'dark:' variants across the codebase.
+  // This document intentionally leaves darkMode unset to prevent automatic dark utilities.
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',

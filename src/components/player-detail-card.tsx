@@ -24,10 +24,10 @@ type PlayerDetailCardProps = {
 };
 
 const positionTextColors: Record<Player['position'], string> = {
-  POR: 'text-yellow-600 dark:text-yellow-400',
-  DEF: 'text-green-600 dark:text-green-400',
-  MED: 'text-blue-600 dark:text-blue-400',
-  DEL: 'text-red-600 dark:text-red-400',
+  POR: 'text-yellow-600',
+  DEF: 'text-green-600',
+  MED: 'text-blue-600',
+  DEL: 'text-red-600',
 };
 
 const positionBorderColors: Record<Player['position'], string> = {
@@ -53,8 +53,8 @@ const StatPill = ({ label, value, isPrimary, index }: { label: string; value: nu
         <div
             className={cn(
                 "relative flex items-center justify-between rounded-lg p-2 text-xs font-bold border-2",
-                "bg-white/5 dark:bg-white/5",
-                isPrimary ? "border-yellow-400/50 dark:border-yellow-400/50" : "border-transparent"
+              "bg-white/5",
+              isPrimary ? "border-yellow-400/50" : "border-transparent"
             )}
         >
             <span className="text-gray-400">{label}</span>
@@ -118,14 +118,12 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
             />
         </DialogContent>
       </Dialog>
-      <Card className={cn(
-          "relative overflow-hidden border-2 shadow-lg h-full flex flex-col",
-          "shimmer-bg", // Fondo estático para modo claro
-          "dark:bg-card dark:border-border"
-      )}>
+    <Card className={cn(
+      "relative overflow-hidden border-2 shadow-lg h-full flex flex-col",
+      "shimmer-bg"
+    )}>
         {/* Efecto de brillo solo en modo claro */}
-        <div className="shimmer-effect absolute inset-0 pointer-events-none dark:hidden"></div>
-        <div className="hidden dark:block absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_10%,transparent_90%)] opacity-20 pointer-events-none"></div>
+  <div className="shimmer-effect absolute inset-0 pointer-events-none"></div>
 
         <CardContent className="pt-6 z-10">
           <div className="flex flex-col items-center gap-4">
@@ -136,8 +134,7 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
                   className={cn(
                     "flex items-center justify-center h-20 w-20 rounded-full shadow-lg",
                     "bg-card text-5xl font-black",
-                    "dark:bg-white/10 dark:text-yellow-400",
-                    player.ovr >= 85 && "dark:text-glow"
+                    player.ovr >= 85 && "text-yellow-600"
                   )}
                 >
                   {player.ovr}
@@ -157,7 +154,7 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
                             className="flex items-center justify-center gap-2 mt-2"
                         >
                             <specialty.icon className="h-5 w-5 text-primary animate-pulse" />
-                            <span className="text-base font-bold text-primary dark:text-glow">{specialty.nickname}</span>
+                            <span className="text-base font-bold text-primary">{specialty.nickname}</span>
                         </div>
                     )}
                 </div>
@@ -222,7 +219,7 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
               )}
             </div>
           </div>
-          <Separator className="my-6 dark:bg-white/10"/>
+          <Separator className="my-6"/>
           <div className="w-full px-4">
             <div className="grid grid-cols-2 gap-2 sm:gap-3 my-3 sm:my-4">
               {stats.map((stat, index) => (

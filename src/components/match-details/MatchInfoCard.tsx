@@ -42,7 +42,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
   onJoinOrLeave,
 }: MatchInfoCardProps) {
   return (
-    <Card className="relative overflow-hidden border-2 border-t-4 border-t-primary text-foreground dark:text-white rounded-lg shadow-lg bg-card/80 backdrop-blur-md">
+  <Card className="relative overflow-hidden border-2 border-t-4 border-t-primary text-foreground rounded-lg shadow-lg bg-card/80 backdrop-blur-md">
       {/* Background video - visible en AMBOS temas */}
       <div className="absolute inset-0 -z-10 rounded-lg overflow-hidden">
         <video

@@ -105,7 +105,7 @@ export function JerseyPreview({ jersey: jerseyProp, size = 'md', className }: Je
         className={cn(
           "w-full h-full [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain",
           // ✅ AÑADIDO: Efecto de contorno blanco solo en dark mode
-          "dark:[&>svg]:[filter:drop-shadow(0px_0px_1px_rgba(255,255,255,0.5))]"
+          "[&>svg]:[filter:drop-shadow(0px_0px_1px_rgba(0,0,0,0.12))]"
         )}
         dangerouslySetInnerHTML={{ __html: svgContent }}
       />

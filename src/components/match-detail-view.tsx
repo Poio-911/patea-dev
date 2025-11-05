@@ -101,9 +101,9 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
 
     return (
         <div className="relative isolate">
-          <div className="relative flex flex-col gap-8 md:p-6 text-foreground dark:text-white">
+          <div className="relative flex flex-col gap-8 md:p-6 text-foreground">
                 <div className="flex w-full items-center justify-between gap-4">
-                    <Button asChild variant="outline" className="self-start dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40">
+                    <Button asChild variant="outline" className="self-start">
                         <Link href="/matches">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Volver a Partidos
@@ -111,7 +111,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     </Button>
                 </div>
                 
-                <PageHeader title={match.title} className="dark:text-white px-4 md:px-0" />
+                <PageHeader title={match.title} className="px-4 md:px-0" />
 
                 <MatchInfoCard
                     match={match}

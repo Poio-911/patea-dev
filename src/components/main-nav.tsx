@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Users2, User, BellRing, HelpCircle, CheckCircle, Moon, Sun, Laptop, Sparkles } from 'lucide-react';
+import { LayoutDashboard, LogOut, Users2, User, BellRing, Sparkles, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -61,10 +61,10 @@ const navItems = [
 ];
 
 const positionBadgeStyles: Record<Player['position'], string> = {
-  POR: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
-  DEF: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-  MED: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
-  DEL: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+  POR: 'bg-yellow-100 text-yellow-800',
+  DEF: 'bg-green-100 text-green-800',
+  MED: 'bg-blue-100 text-blue-800',
+  DEL: 'bg-red-100 text-red-800',
 };
 
 
@@ -203,29 +203,12 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                          <Sun className="mr-2 h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                          <Moon className="absolute mr-2 h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                          <span>Cambiar Tema</span>
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuPortal>
-                          <DropdownMenuSubContent>
-                            <DropdownMenuItem onClick={() => setTheme('light')}>
-                              <Sun className="mr-2 h-4 w-4" /> Claro {theme === 'light' && '•'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setTheme('dark')}>
-                              <Moon className="mr-2 h-4 w-4" /> Oscuro {theme === 'dark' && '•'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setTheme('game')}>
-                              <Sparkles className="mr-2 h-4 w-4" /> Juego {theme === 'game' && '•'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setTheme('system')}>
-                              <Laptop className="mr-2 h-4 w-4" /> Sistema {theme === 'system' && '•'}
-                            </DropdownMenuItem>
-                          </DropdownMenuSubContent>
-                        </DropdownMenuPortal>
-                      </DropdownMenuSub>
+                      <DropdownMenuItem onClick={() => setTheme('light')}>
+                        <Sun className="mr-2 h-4 w-4" /> Claro {theme === 'light' && '•'}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme('game')}>
+                        <Sparkles className="mr-2 h-4 w-4" /> Juego {theme === 'game' && '•'}
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={requestPermission}>
                         <BellRing className="mr-2 h-4 w-4" />
                         <span>Activar Notificaciones</span>

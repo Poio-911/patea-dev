@@ -161,8 +161,8 @@ export function MatchChatSheet({ match, children }: MatchChatSheetProps) {
                     <Avatar className="h-8 w-8">
                         <AvatarFallback><Bot size={20}/></AvatarFallback>
                     </Avatar>
-                    <div className="max-w-xs rounded-lg p-3 text-sm lg:max-w-md rounded-bl-none bg-blue-100 dark:bg-blue-900/50">
-                        <p className="font-semibold mb-1 text-xs text-blue-800 dark:text-blue-300">Asistente del Partido</p>
+                    <div className="max-w-xs rounded-lg p-3 text-sm lg:max-w-md rounded-bl-none bg-blue-100">
+                        <p className="font-semibold mb-1 text-xs text-blue-800">Asistente del Partido</p>
                         <p className="break-words">{aiWelcomeMessage}</p>
                     </div>
                 </div>

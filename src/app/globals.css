@@ -32,35 +32,6 @@
     --chart-5: 27 87% 67%;
   }
 
-  .dark {
-    --background: 224 71% 4%; /* Azul muy oscuro para el fondo general */
-    --foreground: 210 40% 98%;
-    
-    --card: 225 25% 9%;
-    --card-foreground: 210 40% 98%;
-    
-    --popover: 225 25% 5%;
-    --popover-foreground: 210 40% 98%;
-    
-    --primary: 43 96% 56%; /* Dorado/Ámbar vibrante */
-    --primary-foreground: 222.2 47.4% 11.2%;
-    
-    --secondary: 225 25% 15%;
-    --secondary-foreground: 210 40% 98%;
-    
-    --muted: 225 25% 15%;
-    --muted-foreground: 215 20.2% 65.1%;
-    
-    --accent: 217 91% 60%; /* Azul neón para acentos */
-    --accent-foreground: 210 40% 98%;
-    
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 43 96% 56%;
-  }
   /* Game Mode (FC SPORT inspired) palette scoped by .game theme class on <html> */
   .game {
     --background: 216 22% 6%; /* Carbon dark */
@@ -87,6 +58,10 @@
     --chart-3: 277 92% 64%; /* Violet accent */
     --chart-4: 198 100% 52%; /* Cyan pulse */
     --chart-5: 32 100% 54%; /* Orange alt */
+    /* Shader / animation controls */
+    --game-intensity: 0.9; /* 0..1 controls shader glow/intensity */
+    --game-speed: 1; /* multiplier for shader time */
+    --game-noise-alpha: 0.06; /* noise overlay alpha */
   }
 }
 
@@ -210,10 +185,11 @@
     content: '';
     position: absolute;
     inset: 0;
+    /* Reduced accent overlay to avoid harsh highlights */
     background: linear-gradient(135deg,
-      hsl(var(--accent) / 0.10) 0%,
+      hsl(var(--accent) / 0.06) 0%,
       transparent 45%,
-      hsl(var(--chart-3) / 0.10) 75%,
+      hsl(var(--chart-3) / 0.06) 75%,
       transparent 100%);
     mix-blend-mode: plus-lighter;
     pointer-events: none;
@@ -232,4 +208,92 @@
     mix-blend-mode: overlay;
     pointer-events: none;
   }
+
+  /* Localized card energy overlay (small shimmer + subtle radial glow) */
+  /* Global animated background (game theme) inspired by eFootball: deep blue + accent slashes */
+  .game body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -10;
+    background:
+      linear-gradient(135deg,#041c47 0%,#052c6e 55%,#063b8f 100%),
+      repeating-linear-gradient(26deg, rgba(255,233,40,0.06) 0 10px, transparent 10px 38px),
+      radial-gradient(circle at 18% 22%, rgba(255,255,255,0.05), transparent 62%),
+      radial-gradient(circle at 82% 76%, rgba(0,170,255,0.09), transparent 58%);
+    background-blend-mode: overlay, normal, screen, screen;
+    animation: game-bg-pan 32s linear infinite;
+  }
+
+  @keyframes game-bg-pan {
+    0% { background-position: 0 0, 0 0, 0 0, 0 0; }
+    50% { background-position: 0 0, 240px 150px, 0 0, 0 0; }
+    100% { background-position: 0 0, 480px 300px, 0 0, 0 0; }
+  }
+
+  /* PlayerCard redesign (base clara sobre fondo oscuro) */
+  .game .player-card {
+    /* Dark surface variant so cards sit naturally against the deep-blue game background */
+    background: linear-gradient(180deg, hsl(var(--card) / 0.96), hsl(var(--card) / 0.92));
+    border: 1px solid rgba(255,255,255,0.03);
+    box-shadow: 0 6px 18px -6px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02);
+    position: relative;
+  }
+  .game .player-card::before {
+    /* header band removed to reduce glare */
+    display: none;
+  }
+  .game .player-card .ovr-ring {
+    /* Tone down extreme neon by using a subtle gradient and a thin ring */
+    background: linear-gradient(180deg, hsl(var(--primary) / 0.98), hsl(var(--primary) / 0.9));
+    border: 2px solid hsl(var(--primary-foreground) / 0.06);
+    box-shadow: 0 2px 6px -6px rgba(0,0,0,0.6);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Ensure the OVR number has strong dark contrast on the yellow badge */
+  .game .player-card .ovr-ring span,
+  .game .player-card .ovr-ring .ovr-value {
+    color: hsl(var(--primary-foreground)) !important;
+    font-weight: 800;
+    text-shadow: none !important;
+  }
+  .game .player-card .stat-tile {
+    /* Slightly stronger tile surface so small text has better contrast */
+    background: hsl(var(--card) / 0.12);
+    border: 1px solid rgba(255,255,255,0.05);
+    box-shadow: none;
+    transition: box-shadow .18s, border-color .18s, background .2s;
+  }
+  .game .player-card .stat-tile.primary {
+    background: linear-gradient(115deg, hsl(var(--primary) / 0.12), hsl(var(--primary) / 0.06));
+    border-color: hsl(var(--primary) / 0.5);
+    box-shadow: 0 2px 6px -4px rgba(0,0,0,0.6);
+  }
+  .game .player-card .avatar-frame {
+    box-shadow: 0 2px 8px -6px rgba(0,0,0,0.75);
+    background: hsl(var(--card) / 0.96);
+    border: 1px solid rgba(255,255,255,0.03);
+  }
+  .game .player-card .player-name {
+    text-shadow: none;
+    color: hsl(var(--card-foreground));
+  }
+
+  /* Reduce highlights on small screens for perf */
+  @media (max-width: 640px) {
+    .game body::before { animation-duration: 60s; }
+    .game .player-card::before { display: none; }
+    .game .player-card .ovr-ring { box-shadow: 0 2px 6px -5px rgba(0,0,0,0.7); }
+  }
+
+  /* MatchCard styling to align with player-card treatment */
+  .game .match-card {
+    background: linear-gradient(180deg, hsl(var(--card) / 0.96), hsl(var(--card) / 0.92));
+    border: 1px solid rgba(255,255,255,0.03);
+    box-shadow: 0 6px 18px -6px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02);
+    position: relative;
+  }
+  .game .match-card .card-header-band { display: none; }
 }

@@ -14,10 +14,10 @@ interface PlayerMarkerProps {
 }
 
 const positionBadgeStyles: Record<AvailablePlayer['position'], string> = {
-  DEL: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
-  MED: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-  DEF: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
-  POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
+    DEL: 'bg-red-100 text-red-800',
+    MED: 'bg-green-100 text-green-800',
+    DEF: 'bg-blue-100 text-blue-800',
+    POR: 'bg-orange-100 text-orange-800',
 };
 
 // Componente del marcador personalizado
@@ -62,7 +62,7 @@ const PlayerPopup = ({ player }: { player: AvailablePlayer }) => {
             
             {/* Flecha que apunta hacia abajo */}
             <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
-                <div className="w-4 h-4 bg-background border-r border-b border-gray-200 dark:border-gray-700 transform rotate-45 shadow-sm"></div>
+                <div className="w-4 h-4 bg-background border-r border-b border-gray-200 transform rotate-45 shadow-sm"></div>
             </div>
         </div>
     );

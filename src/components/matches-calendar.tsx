@@ -119,7 +119,7 @@ export function MatchesCalendar({ matches, allPlayers }: MatchesCalendarProps) {
                     "hover:border-primary/50 hover:bg-accent",
                     isCurrentMonth ? "bg-background" : "bg-muted/30 text-muted-foreground",
                     isSelected && "border-primary bg-primary/10",
-                    isTodayDate && "border-blue-500 bg-blue-50 dark:bg-blue-950",
+                    isTodayDate && "border-blue-500 bg-blue-50",
                     !isCurrentMonth && "opacity-50"
                   )}
                 >

@@ -3,9 +3,11 @@ import { Toaster } from '@/components/ui/toaster';
 import { ClientProviders } from '@/components/client-providers';
 import { cn } from '@/lib/utils';
 import { Rajdhani, Teko, Outfit } from 'next/font/google';
+import { GameFontScope } from '@/components/game-font-scope';
 import { GameModeBackdrop } from '@/components/game-mode-backdrop';
 
 // Font loading via next/font to provide CSS variables consumed by Tailwind font families.
+// Fonts sólo se aplican dentro del modo juego mediante GameFontScope
 const outfit = Outfit({ subsets: ['latin'], weight: ['400','500','600','700'], variable: '--font-body' });
 const rajdhani = Rajdhani({ subsets: ['latin'], weight: ['500','600','700'], variable: '--font-headline' });
 const teko = Teko({ subsets: ['latin'], weight: ['400','500','600','700'], variable: '--font-numeric' });
@@ -16,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-  <html lang="es" suppressHydrationWarning className={cn(outfit.variable, rajdhani.variable, teko.variable)}>
+  <html lang="es" suppressHydrationWarning>
       <head>
         <title>Pateá</title>
         <meta name="description" content="Pateá es una app para organizar los partidos entre amigos: armás equipos, anotás los resultados y llevás la cuenta de quién juega bien y quién se hace el lesionado." />
@@ -32,9 +34,12 @@ export default function RootLayout({
         )}
       >
         <GameModeBackdrop />
-        <ClientProviders>
-          {children}
-        </ClientProviders>
+        {/* GameFontScope aplica las variables sólo si theme === 'game' */}
+        <GameFontScope fonts={[outfit.variable, rajdhani.variable, teko.variable]}>
+          <ClientProviders>
+            {children}
+          </ClientProviders>
+        </GameFontScope>
         <Toaster />
       </body>
     </html>
