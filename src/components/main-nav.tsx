@@ -41,8 +41,9 @@ import { doc, collectionGroup, query, where } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { MatchIcon } from '@/components/icons/match-icon';
-import { FindMatchIcon } from '@/components/icons/find-match-icon';
+import { TeamsIcon } from '@/components/icons/teams-icon';
 import { EvaluationIcon } from '@/components/icons/evaluation-icon';
+import { ShirtIcon } from '@/components/icons/shirt-icon';
 import { NotificationBell } from '@/components/notification-bell';
 import { useFcm } from '@/hooks/use-fcm';
 import { HelpDialog } from '@/components/help-dialog';
@@ -54,8 +55,8 @@ import { useTheme } from 'next-themes';
 
 const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
-  { href: '/groups', label: 'Grupos', icon: Users2 },
-  { href: '/players', label: 'Jugadores', icon: SoccerPlayerIcon },
+  { href: '/groups', label: 'Grupos', icon: TeamsIcon },
+  { href: '/players', label: 'Jugadores', icon: ShirtIcon },
   { href: '/matches', label: 'Partidos', icon: MatchIcon },
   { href: '/evaluations', label: 'Evaluar', icon: EvaluationIcon },
 ];
@@ -95,7 +96,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   }, [firestore, user?.uid]);
   
   const { data: pendingEvaluations } = useCollection<EvaluationAssignment>(pendingEvaluationsQuery);
-  const pendingEvaluationsCount = pendingEvaluations?.length || 0;
 
 
   React.useEffect(() => {
