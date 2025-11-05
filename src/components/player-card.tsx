@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -48,7 +49,8 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
         <Link href={`/players/${player.id}`} className="block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-2xl h-full w-full" aria-label={`Ver perfil de ${playerName}`}>
             <Card
                 className={cn(
-                    "relative h-full aspect-[3/4] w-full flex flex-col overflow-hidden rounded-2xl border-2 shadow-lg transition-transform duration-300 hover:-translate-y-1",
+                    // ✅ CORRECCIÓN: Se elimina aspect-[3/4] y se asegura que la tarjeta tenga altura automática.
+                    "relative h-full w-full flex flex-col overflow-hidden rounded-2xl border-2 shadow-lg transition-transform duration-300 hover:-translate-y-1",
                     // Modo Claro
                     "bg-card border-border hover:shadow-xl",
                     // Modo Juego (Oscuro)
@@ -58,12 +60,12 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                 {/* Vector decorativo */}
                 <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_10%,transparent_90%)] dark:opacity-20 opacity-0 pointer-events-none"></div>
 
-                <CardContent className="relative z-10 flex h-full flex-col justify-between p-2 sm:p-3 text-center text-foreground dark:text-white">
+                <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center text-foreground dark:text-white">
                     {/* Header */}
-                    <div className="flex items-start justify-start">
-                        <div className="flex flex-col items-center">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-md">
-                                <span className="text-2xl font-black text-slate-900">{player.ovr}</span>
+                    <div className="flex items-start justify-between">
+                         <div className="flex flex-col items-center text-left">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-white/10 shadow-md">
+                                <span className="text-2xl font-black text-slate-900 dark:text-yellow-400">{player.ovr}</span>
                             </div>
                             <span className={cn("mt-1 text-sm font-bold uppercase", positionColors[player.position])}>
                                 {player.position}
@@ -72,7 +74,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                     </div>
 
                     {/* Imagen y Nombre */}
-                    <div className="flex flex-col items-center gap-1">
+                    <div className="flex flex-col items-center gap-1 my-2">
                         <Avatar className="h-20 w-20 sm:h-24 sm:w-24 rounded-full border-4 border-[#2e4fff] object-cover shadow-md bg-muted dark:bg-slate-800">
                             <AvatarImage 
                                 src={player.photoUrl} 
@@ -96,13 +98,13 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                             <div 
                                 key={stat.key} 
                                 className={cn(
-                                    "rounded-lg bg-muted dark:bg-white/5 py-1 transition-all",
-                                    stat.key === highestStat.key && "border-2 border-yellow-400 shadow-md shadow-yellow-400/20"
+                                    "rounded-lg bg-muted dark:bg-white/5 py-1 transition-all border-2",
+                                    stat.key === highestStat.key ? "border-yellow-400/50" : "border-transparent"
                                 )}
                             >
-                                <p className="text-sm sm:text-base font-bold text-foreground dark:text-white">
+                                <p className="text-base font-bold text-foreground dark:text-white">
                                     {stat.value} 
-                                    <span className="ml-1 text-muted-foreground dark:text-gray-400 text-xs">
+                                    <span className="ml-1 text-gray-500 dark:text-gray-400 text-xs font-semibold">
                                         {attributeDetails[stat.key].name}
                                     </span>
                                 </p>
