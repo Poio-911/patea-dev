@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -50,13 +51,12 @@ const getOvrLevel = (ovr: number) => {
     return 'bronze';
 };
 
-// --- Opción 1: "Aura de Leyenda" ---
-// ✅ CORRECCIÓN: Se usan colores del tema (`primary` y `accent`) para asegurar la visibilidad.
-const auraColors: Record<string, string> = {
-    bronze: 'bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-yellow-700/20 to-transparent to-70%',
-    silver: 'bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-400/20 to-transparent to-70%',
-    gold: 'bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/30 to-transparent to-70%',
-    elite: 'bg-[radial-gradient(ellipse_at_top_right,_var_(--tw-gradient-stops))] from-accent/30 to-transparent to-70%',
+// ✅ CORRECCIÓN: Se usan clases CSS definidas en globals.css para asegurar que Tailwind las procese.
+const auraClasses: Record<string, string> = {
+    bronze: 'aura-bronze',
+    silver: 'aura-silver',
+    gold: 'aura-gold',
+    elite: 'aura-elite',
 };
 
 
@@ -78,7 +78,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
 
     const PositionIcon = positionIcons[player.position];
     const ovrLevel = getOvrLevel(player.ovr);
-    const selectedOptionClasses = auraColors[ovrLevel]; 
+    const selectedAuraClass = auraClasses[ovrLevel]; 
 
     return (
         <Link href={`/players/${player.id}`} className="block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-2xl h-full w-full" aria-label={`Ver perfil de ${playerName}`}>
@@ -90,24 +90,24 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                 )}
             >
                 {/* Capa de resplandor */}
-                <div className={cn("absolute inset-0 z-0", selectedOptionClasses)} />
+                <div className={cn("absolute inset-0 z-0", selectedAuraClass)} />
                 
-                {/* Ícono de fondo (marca de agua) */}
-                <div className="absolute -bottom-2 -right-2 h-2/5 w-2/5 text-muted-foreground/5 dark:text-primary/5 -z-0">
-                    {PositionIcon && <PositionIcon className="w-full h-full" />}
-                </div>
-
                 <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center">
+                    <div className="absolute -bottom-2 -right-2 h-2/5 w-2/5 text-muted-foreground/5 dark:text-primary/5">
+                        {PositionIcon && <PositionIcon className="w-full h-full" />}
+                    </div>
                     {/* Contenido principal de la tarjeta */}
                     <div className="relative z-10 flex flex-col h-full justify-between">
                         {/* --- OVR Y POSICIÓN --- */}
-                        <div className="flex items-start justify-end text-right">
-                           <div className="flex flex-col items-end">
-                             <span className="font-headline text-5xl font-bold text-slate-900 dark:text-yellow-400 -mb-2">{player.ovr}</span>
+                         <div className="flex items-start justify-between">
+                           <div className="flex flex-col items-start text-left">
                              <span className={cn("font-headline text-2xl font-bold uppercase", positionTextColors[player.position])}>
                                  {player.position}
                              </span>
                            </div>
+                            <div className="flex flex-col items-end">
+                              <span className="font-headline text-5xl font-bold text-slate-900 dark:text-yellow-400 -mb-2">{player.ovr}</span>
+                            </div>
                         </div>
 
                         <div className="flex flex-col items-center gap-1 my-2">

@@ -117,4 +117,33 @@
   .color-cycle-animation {
       animation: color-cycle 4s infinite;
   }
+
+  /* Player Card Aura Effects */
+  .aura-bronze {
+      background-image: radial-gradient(ellipse at top right, rgba(205, 127, 50, 0.2) 0%, transparent 70%);
+  }
+  .dark .aura-bronze {
+      background-image: radial-gradient(ellipse at top right, rgba(205, 127, 50, 0.25) 0%, transparent 70%);
+  }
+  
+  .aura-silver {
+      background-image: radial-gradient(ellipse at top right, rgba(192, 192, 192, 0.2) 0%, transparent 70%);
+  }
+  .dark .aura-silver {
+      background-image: radial-gradient(ellipse at top right, rgba(192, 192, 192, 0.25) 0%, transparent 70%);
+  }
+
+  .aura-gold {
+      background-image: radial-gradient(ellipse at top right, hsl(var(--primary) / 0.25) 0%, transparent 70%);
+  }
+  .dark .aura-gold {
+      background-image: radial-gradient(ellipse at top right, hsl(var(--primary) / 0.3) 0%, transparent 70%);
+  }
+
+  .aura-elite {
+      background-image: radial-gradient(ellipse at top right, hsl(var(--accent) / 0.25) 0%, transparent 70%);
+  }
+  .dark .aura-elite {
+      background-image: radial-gradient(ellipse at top right, hsl(var(--accent) / 0.3) 0%, transparent 70%);
+  }
 }
