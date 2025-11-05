@@ -70,18 +70,13 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                     "bg-card" 
                 )}
             >
-                {/* Watermark Icon */}
-                <div className="absolute -bottom-2 -right-2 h-2/5 w-2/5 text-muted-foreground/5 dark:text-primary/5 z-0">
-                  {PositionIcon && <PositionIcon className={cn("w-full h-full", positionTextColors[player.position])} />}
-                </div>
-
-                <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center">
+                <CardContent className="relative flex h-full flex-col justify-between p-3 text-center">
                     <div className="flex items-start justify-between">
-                         <div className="flex flex-col items-center">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-white/10 shadow-md">
-                                <span className="text-2xl font-black text-slate-900 dark:text-yellow-400">{player.ovr}</span>
-                            </div>
-                            <span className={cn("mt-1 text-sm font-bold uppercase", positionTextColors[player.position])}>
+                        <div className="flex flex-col items-start">
+                            <span className="font-headline text-5xl font-bold text-slate-900 dark:text-yellow-400 -mb-2">{player.ovr}</span>
+                        </div>
+                        <div className="flex flex-col items-end">
+                            <span className={cn("font-headline text-2xl font-bold uppercase", positionTextColors[player.position])}>
                                 {player.position}
                             </span>
                         </div>
@@ -105,7 +100,12 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                         <h3 className="w-full truncate text-center text-base font-semibold mt-1 dark:text-white">{playerName}</h3>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-1 text-center text-xs">
+                    <div className="relative grid grid-cols-2 gap-1 text-center text-xs">
+                        {PositionIcon && (
+                            <div className="absolute inset-0 flex items-center justify-center -z-10">
+                                <PositionIcon className={cn("w-3/5 h-3/5 text-muted-foreground/5 dark:text-primary/5", positionTextColors[player.position])} />
+                            </div>
+                        )}
                         {stats.map(stat => (
                             <div 
                                 key={stat.key} 
