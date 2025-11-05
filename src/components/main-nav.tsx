@@ -287,7 +287,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             </div>
           </main>
           
-          <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg md:hidden">
+          <nav className="fixed bottom-4 left-4 right-4 z-20 h-16 rounded-xl border bg-background/70 shadow-lg backdrop-blur-lg md:hidden">
               <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
               {navItems.map((item) => {
                   const isActive = pathname.startsWith(item.href);
