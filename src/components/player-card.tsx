@@ -56,17 +56,13 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
         <Link href={`/players/${player.id}`} className="block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-2xl h-full w-full" aria-label={`Ver perfil de ${playerName}`}>
             <Card
                 className={cn(
-                    "relative h-full flex flex-col overflow-hidden rounded-2xl shadow-lg transition-transform duration-300 hover:-translate-y-1",
+                    "relative h-full flex flex-col overflow-hidden rounded-2xl shadow-lg",
                     // Modo Claro
-                    "shimmer-bg border-border hover:shadow-xl",
+                    "bg-slate-100 border-border",
                     // Modo Juego (Oscuro)
-                    "dark:bg-gradient-to-b dark:from-[#1a2a6c] dark:to-[#0d1b3a] dark:border-2 dark:border-[#2e4fff] dark:hover:shadow-[0_12px_40px_rgba(46,79,255,0.3)]"
+                    "dark:bg-card dark:border-border"
                 )}
             >
-                {/* Efecto de brillo solo en modo claro */}
-                <div className="hidden dark:block absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_10%,transparent_90%)] opacity-20 pointer-events-none"></div>
-                <div className="dark:hidden shimmer-effect absolute inset-0 pointer-events-none"></div>
-
                 <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center">
                     {/* Header */}
                      <div className="flex items-start justify-between">
@@ -105,7 +101,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                             <div 
                                 key={stat.key} 
                                 className={cn(
-                                    "rounded-lg py-1 transition-all border-2",
+                                    "rounded-lg py-1 border-2",
                                     "bg-black/5 dark:bg-white/5",
                                     stat.key === highestStat.key ? "border-yellow-400/50 dark:border-yellow-400/50" : "border-transparent"
                                 )}

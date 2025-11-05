@@ -97,18 +97,11 @@ export default function PlayersPage() {
         </Alert>
       )}
 
-      <motion.div 
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
-        variants={listVariants}
-        initial="hidden"
-        animate="visible"
-      >
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {sortedPlayers?.map((player) => (
-          <motion.div key={player.id} variants={itemVariants}>
-            <PlayerCard player={player} />
-          </motion.div>
+          <PlayerCard key={player.id} player={player} />
         ))}
-      </motion.div>
+      </div>
     </div>
   );
 }
