@@ -134,16 +134,16 @@
   }
 
   .aura-gold {
-      background-image: radial-gradient(ellipse at top right, hsl(var(--primary) / 0.25) 0%, transparent 70%);
+      background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.25) 0%, transparent 70%);
   }
   .dark .aura-gold {
-      background-image: radial-gradient(ellipse at top right, hsl(var(--primary) / 0.3) 0%, transparent 70%);
+      background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.3) 0%, transparent 70%);
   }
 
   .aura-elite {
-      background-image: radial-gradient(ellipse at top right, hsl(var(--accent) / 0.25) 0%, transparent 70%);
+      background-image: radial-gradient(ellipse at top right, hsla(262, 88%, 66%, 0.3) 0%, transparent 70%);
   }
   .dark .aura-elite {
-      background-image: radial-gradient(ellipse at top right, hsl(var(--accent) / 0.3) 0%, transparent 70%);
+      background-image: radial-gradient(ellipse at top right, hsla(262, 88%, 66%, 0.35) 0%, transparent 70%);
   }
 }
