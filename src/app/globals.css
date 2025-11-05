@@ -72,33 +72,6 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-
-  .dark body {
-    background-color: #071021;
-    overflow: hidden;
-  }
-
-  .dark body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 200%;
-    height: 200%;
-    background-image: 
-      radial-gradient(ellipse 50% 50% at 50% 50%, hsla(var(--primary), 0.15), transparent 50%);
-    will-change: transform;
-    animation: background-pan 150s linear infinite;
-    z-index: -1;
-  }
-
-  @keyframes background-pan {
-    0% { transform: translate(0, 0); }
-    25% { transform: translate(10%, -10%); }
-    50% { transform: translate(-10%, 10%); }
-    75% { transform: translate(5%, 5%); }
-    100% { transform: translate(0, 0); }
-  }
 }
 
 @layer utilities {
