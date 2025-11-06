@@ -1,8 +1,9 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, query, where, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, doc, getDoc, limit } from 'firebase/firestore';
 import type { Evaluation, Match, PerformanceTag } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, TrendingUp, TrendingDown, Minus, Goal, Star, Calendar } from 'lucide-react';
