@@ -10,3 +10,4 @@ import '@/ai/flows/generate-group-summary.ts';
 import '@/ai/flows/coach-conversation.ts';
 import '@/ai/flows/detect-player-patterns.ts';
 import '@/ai/flows/get-app-help.ts';
+import '@/ai/flows/analyze-player-progression.ts';

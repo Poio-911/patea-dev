@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file contains all the server-side actions that use the Firebase Admin SDK.
@@ -12,7 +13,7 @@ import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-ma
 import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-fit-player';
 import { coachConversation, type CoachConversationInput } from '@/ai/flows/coach-conversation';
 import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '@/ai/flows/detect-player-patterns';
-import { generatePlayerCardImage } from '@/ai/flows/generate-player-card-image';
+import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '@/ai/flows/analyze-player-progression';
 import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation } from '../types';
 import { logger } from '../logger';
 
@@ -268,5 +269,42 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
   } catch (error: any) {
     logger.error('Error detecting player patterns', error, { playerId });
     return { error: error.message || 'No se pudo analizar el rendimiento del jugador.' };
+  }
+}
+
+export async function analyzePlayerProgressionAction(playerId: string, groupId: string) {
+  try {
+      const playerDocRef = adminDb.doc(`players/${playerId}`);
+      const playerDocSnap = await playerDocRef.get();
+      if (!playerDocSnap.exists) {
+          return { error: 'No se pudo encontrar al jugador.' };
+      }
+      const player = playerDocSnap.data() as Player;
+
+      const evaluations = await getPlayerEvaluationsAction(playerId, groupId) as Evaluation[];
+      
+      const ovrHistorySnapshot = await adminDb.collection(`players/${playerId}/ovrHistory`).orderBy('date', 'desc').limit(10).get();
+      const ovrHistory = ovrHistorySnapshot.docs.map(doc => doc.data() as OvrHistory).reverse();
+      
+      const recentEvaluationsForAI = evaluations.slice(0, 10).map(e => ({
+          matchDate: e.evaluatedAt,
+          rating: e.rating,
+          performanceTags: e.performanceTags?.map(t => t.name) || [],
+      }));
+
+      const input: AnalyzePlayerProgressionInput = {
+          playerName: player.name,
+          ovrHistory: ovrHistory.map(h => ({
+              date: h.date,
+              newOVR: h.newOVR,
+              change: h.change
+          })),
+          recentEvaluations: recentEvaluationsForAI,
+      };
+
+      return await analyzePlayerProgression(input);
+  } catch (error: any) {
+      logger.error('Error in analyzePlayerProgressionAction', error, { playerId });
+      return { error: 'No se pudo generar el análisis de progresión.' };
   }
 }
