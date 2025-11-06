@@ -23,7 +23,6 @@ interface TeamListProps {
 
 export function TeamList({ groupId, players, currentUserId }: TeamListProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const { toast } = useToast();
   const firestore = useFirestore();
 
   const teamsQuery = useMemo(() => {
@@ -43,7 +42,7 @@ export function TeamList({ groupId, players, currentUserId }: TeamListProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div className="flex items-center gap-3">
           <TeamsIcon className="h-8 w-8 text-primary" />
           <div>
@@ -53,6 +52,10 @@ export function TeamList({ groupId, players, currentUserId }: TeamListProps) {
             </p>
           </div>
         </div>
+        <Button onClick={() => setCreateDialogOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Crear Equipo
+        </Button>
       </div>
 
       {teams && teams.length > 0 ? (

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -71,7 +70,7 @@ export function GroupsFab() {
         </AnimatePresence>
 
         <Button
-          className="rounded-full w-16 h-16 bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all"
+          className="rounded-full w-14 h-14 bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all"
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Acciones de grupo"
         >
@@ -83,18 +82,16 @@ export function GroupsFab() {
               exit={{ rotate: 45, scale: 0 }}
               transition={{ duration: 0.2 }}
             >
-              {isOpen ? <X className="h-7 w-7" /> : <Users2 className="h-7 w-7" />}
+              {isOpen ? <X className="h-6 w-6" /> : <Users2 className="h-6 w-6" />}
             </motion.div>
           </AnimatePresence>
         </Button>
       </div>
 
       <CreateGroupDialog open={createOpen} onOpenChange={setCreateOpen}>
-        {/* Trigger is now the FAB */}
         <></>
       </CreateGroupDialog>
       <JoinGroupDialog open={joinOpen} onOpenChange={setJoinOpen}>
-        {/* Trigger is now the FAB */}
         <></>
       </JoinGroupDialog>
     </>
