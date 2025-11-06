@@ -9,6 +9,7 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import { PageHeader } from '@/components/page-header';
 
 export default function PlayerDetailPage() {
   const { id: playerId } = useParams();
@@ -45,12 +46,18 @@ export default function PlayerDetailPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Button asChild variant="outline" className="self-start">
-        <Link href="/players">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Volver al Plantel
-        </Link>
-      </Button>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <PageHeader
+            title={player.name}
+            description="Perfil y estadísticas del jugador."
+        />
+        <Button asChild variant="outline" className="self-start sm:self-center">
+          <Link href="/players">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Volver al Plantel
+          </Link>
+        </Button>
+      </div>
       <PlayerProfileView playerId={playerId} player={player} />
     </div>
   );
