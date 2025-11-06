@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -94,8 +92,6 @@ export default function TeamDetailPage() {
   }, [team, groupPlayers, loading]);
   
   const handlePlayerUpdate = () => {
-    // This function can be used to trigger a refresh if needed,
-    // though Firestore's real-time updates should handle it.
     setRefreshKey(prev => prev + 1);
   }
 
@@ -122,8 +118,8 @@ export default function TeamDetailPage() {
 
         <div className="flex flex-col items-center text-center gap-4">
             {team.jersey && (
-              <div className="h-20 w-20 flex items-center justify-center overflow-hidden">
-                <JerseyPreview jersey={team.jersey} size="md" />
+              <div className="h-32 w-32 flex items-center justify-center overflow-hidden">
+                <JerseyPreview jersey={team.jersey} size="xl" />
               </div>
             )}
             <div className="flex flex-col items-center gap-2">

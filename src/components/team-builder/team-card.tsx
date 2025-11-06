@@ -36,92 +36,76 @@ interface TeamCardProps {
 }
 
 export function TeamCard({ team, players, isOwner, onEdit, onDelete }: TeamCardProps) {
-  // Defensive coding: Check for `team.members` and fallback to `team.playerIds` (old structure)
-  const teamPlayerIds = team.members ? team.members.map(m => m.playerId) : (team as any).playerIds || [];
+  const teamPlayerIds = team.members ? team.members.map(m => m.playerId) : [];
   const teamPlayers = players.filter(p => teamPlayerIds.includes(p.id));
-  const memberCount = team.members?.length || (team as any).playerIds?.length || 0;
+  const memberCount = team.members?.length || 0;
 
   return (
-     <Link href={`/groups/teams/${team.id}`}>
-        <Card className="overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col">
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
-              <div className="flex items-center gap-3">
-              <JerseyPreview jersey={team.jersey} size="md" />
-              <div>
-                  <CardTitle className="text-lg">{team.name}</CardTitle>
-                  <p className="text-xs text-muted-foreground mt-1">
-                  <Users className="inline h-3 w-3 mr-1" />
-                  {memberCount} jugadores
-                  </p>
-              </div>
-              </div>
-              {isOwner && onEdit && onDelete && (
-              <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.preventDefault()}>
-                        <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" onClick={(e) => e.preventDefault()}>
-                  <DropdownMenuItem onClick={() => onEdit(team)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Editar
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                      <DropdownMenuItem
-                          onSelect={e => e.preventDefault()}
-                          className="text-destructive focus:text-destructive"
-                      >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Eliminar
-                      </DropdownMenuItem>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                      <AlertDialogHeader>
-                          <AlertDialogTitle>¿Eliminar "{team.name}"?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                          Esta acción no se puede deshacer. El equipo será eliminado permanentemente.
-                          </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                          onClick={() => onDelete(team.id)}
-                          className="bg-destructive hover:bg-destructive/90"
-                          >
-                          Eliminar
-                          </AlertDialogAction>
-                      </AlertDialogFooter>
-                      </AlertDialogContent>
-                  </AlertDialog>
-                  </DropdownMenuContent>
-              </DropdownMenu>
-              )}
-          </CardHeader>
-          <CardContent className="flex-grow min-h-[4rem]">
-            <div className="flex -space-x-2 overflow-hidden">
-                {teamPlayers.slice(0, 7).map(player => (
-                    <Avatar key={player.id} className="inline-block h-8 w-8 rounded-full ring-2 ring-background">
-                        <AvatarImage src={player.photoUrl} alt={player.name} />
-                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                ))}
-                {teamPlayers.length > 7 && (
-                    <Avatar className="inline-block h-8 w-8 rounded-full ring-2 ring-background">
-                        <AvatarFallback>+{teamPlayers.length - 7}</AvatarFallback>
-                    </Avatar>
+    <Link href={`/groups/teams/${team.id}`} className="block h-full group">
+        <Card className="overflow-hidden h-full flex flex-col transition-all duration-300 group-hover:shadow-xl group-hover:border-primary/50">
+            <CardHeader className="flex-row items-center justify-between p-4">
+                <CardTitle className="text-lg font-bold truncate">{team.name}</CardTitle>
+                {isOwner && onEdit && onDelete && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={(e) => e.preventDefault()}>
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" onClick={(e) => e.preventDefault()}>
+                            {/* La funcionalidad de edición puede ser implementada en el futuro */}
+                            <DropdownMenuItem disabled>
+                                <Edit className="mr-2 h-4 w-4" /> Editar Nombre
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar Equipo
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>¿Eliminar "{team.name}"?</AlertDialogTitle>
+                                        <AlertDialogDescription>Esta acción no se puede deshacer. El equipo y su plantel serán eliminados permanentemente.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => onDelete(team.id)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 )}
-            </div>
-          </CardContent>
-          <CardFooter className="bg-muted/50 p-3">
-              <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1 w-full justify-center">
-                  <Eye className="h-3 w-3" />
-                  Ver Plantel Completo
-              </p>
-          </CardFooter>
+            </CardHeader>
+            <CardContent className="flex-grow flex flex-col items-center justify-center p-4 pt-0">
+                <div className="w-24 h-24 sm:w-32 sm:h-32">
+                    <JerseyPreview jersey={team.jersey} size="lg" />
+                </div>
+            </CardContent>
+            <CardFooter className="bg-muted/50 p-3 flex-col items-start">
+                 <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center -space-x-3">
+                        {teamPlayers.slice(0, 5).map(player => (
+                            <Avatar key={player.id} className="h-8 w-8 border-2 border-background">
+                                <AvatarImage src={player.photoUrl} alt={player.name} />
+                                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                        ))}
+                        {teamPlayers.length > 5 && (
+                             <Avatar className="h-8 w-8 border-2 border-background">
+                                <AvatarFallback>+{teamPlayers.length - 5}</AvatarFallback>
+                            </Avatar>
+                        )}
+                    </div>
+                     <div className="text-right">
+                        <p className="text-sm font-bold">{memberCount}</p>
+                        <p className="text-xs text-muted-foreground -mt-1">Jugadores</p>
+                    </div>
+                </div>
+            </CardFooter>
         </Card>
-     </Link>
+    </Link>
   );
 }
