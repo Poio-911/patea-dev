@@ -31,10 +31,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-  DropdownMenuPortal
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu"
 import type { Player, PlayerPosition, EvaluationAssignment } from '@/lib/types';
 import { doc, collectionGroup, query, where } from 'firebase/firestore';
@@ -189,7 +186,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                               </Avatar>
                           </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-64" align="end" forceMount>
+                      <DropdownMenuContent className="w-72" align="end" forceMount>
                           <DropdownMenuLabel className="font-normal">
                               <div className="flex flex-col space-y-1">
                                   <p className="text-sm font-medium leading-none">{user.displayName}</p>
@@ -198,44 +195,66 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                                   </p>
                               </div>
                           </DropdownMenuLabel>
+                          
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem asChild>
-                              <Link href="/profile">
-                                  <User className="mr-2 h-4 w-4" />
-                                  <span>Mi Perfil</span>
-                              </Link>
-                          </DropdownMenuItem>
-                           <DropdownMenuItem asChild>
-                              <Link href="/groups">
-                                  <Users2 className="mr-2 h-4 w-4" />
-                                  <span>Gestionar Grupos</span>
-                              </Link>
-                          </DropdownMenuItem>
+
+                          <DropdownMenuGroup>
+                              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                              <DropdownMenuItem asChild>
+                                  <Link href="/profile">
+                                      <User className="mr-2 h-4 w-4" />
+                                      <span>Mi Perfil</span>
+                                  </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                  <Link href="/groups">
+                                      <Users2 className="mr-2 h-4 w-4" />
+                                      <span>Gestionar Grupos</span>
+                                  </Link>
+                              </DropdownMenuItem>
+                          </DropdownMenuGroup>
+                          
                           <DropdownMenuSeparator />
-                          <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>
-                                <Sun className="mr-2 h-4 w-4 rotate-0 scale-100 transition-all game:-rotate-90 game:scale-0" />
-                                <Gamepad2 className="absolute mr-2 h-4 w-4 rotate-90 scale-0 transition-all game:rotate-0 game:scale-100" />
-                                <span>Cambiar Tema</span>
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuPortal>
-                                <DropdownMenuSubContent>
-                                    <DropdownMenuItem onClick={() => setTheme("light")}>
-                                        <Sun className="mr-2 h-4 w-4"/>
+
+                          <DropdownMenuGroup>
+                            <DropdownMenuLabel>Grupo Activo</DropdownMenuLabel>
+                            <div className="px-2">
+                                <GroupSwitcher />
+                            </div>
+                          </DropdownMenuGroup>
+
+                          <DropdownMenuSeparator />
+                          
+                          <DropdownMenuGroup>
+                               <DropdownMenuLabel>Apariencia</DropdownMenuLabel>
+                                <div className="grid grid-cols-2 gap-2 px-2 py-1">
+                                    <Button
+                                        variant={theme === 'light' ? 'secondary' : 'outline'}
+                                        size="sm"
+                                        className="h-auto py-2"
+                                        onClick={() => setTheme('light')}
+                                    >
+                                        <Sun className="mr-2 h-4 w-4" />
                                         Claro
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setTheme("game")}>
-                                        <Gamepad2 className="mr-2 h-4 w-4"/>
-                                        Modo Juego
-                                    </DropdownMenuItem>
-                                </DropdownMenuSubContent>
-                            </DropdownMenuPortal>
-                          </DropdownMenuSub>
+                                    </Button>
+                                    <Button
+                                        variant={theme === 'game' ? 'secondary' : 'outline'}
+                                        size="sm"
+                                        className="h-auto py-2"
+                                        onClick={() => setTheme('game')}
+                                    >
+                                        <Gamepad2 className="mr-2 h-4 w-4" />
+                                        Juego
+                                    </Button>
+                                </div>
+                          </DropdownMenuGroup>
+
+                          <DropdownMenuSeparator />
+
                           <DropdownMenuItem onClick={requestPermission}>
                               <BellRing className="mr-2 h-4 w-4" />
                               <span>Activar Notificaciones</span>
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={handleLogout}>
                               <LogOut className="mr-2 h-4 w-4" />
                               <span>Cerrar sesión</span>
@@ -291,7 +310,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               "h-screen overflow-y-auto pt-16 md:pl-[var(--sidebar-width)] transition-[padding] duration-300 ease-in-out",
               "group-data-[state=collapsed]/sidebar-wrapper:md:pl-[var(--sidebar-width-icon)]"
           )}>
-            <div className="p-4 md:p-6 pb-20 md:pb-6">
+            <div className="p-4 md:p-6 pb-24 md:pb-6">
                 {children}
             </div>
           </main>
