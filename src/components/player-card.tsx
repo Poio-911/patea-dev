@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Player, AttributeKey, PlayerPosition } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { DelIcon, MedIcon, DefIcon, PorIcon } from '@/components/icons/positions';
+import { Skeleton } from './ui/skeleton';
 
 type PlayerCardProps = {
   player: Player & { displayName?: string };
@@ -60,6 +61,17 @@ const auraClasses: Record<string, string> = {
 
 
 export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardProps) {
+    // ✅ ARREGLO DEFINITIVO: Si player es nulo o indefinido, mostramos un esqueleto de carga.
+    if (!player) {
+      return (
+        <Card className="h-full w-full rounded-2xl">
+          <CardContent className="p-3">
+            <Skeleton className="h-full w-full aspect-[2/3]" />
+          </CardContent>
+        </Card>
+      );
+    }
+    
     const playerName = player.name || player.displayName || 'Jugador';
     
     const stats = React.useMemo(() => [
