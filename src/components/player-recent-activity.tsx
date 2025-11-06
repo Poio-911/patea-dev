@@ -1,8 +1,9 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where, orderBy, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, limit, doc, getDoc } from 'firebase/firestore';
 import type { Evaluation, Match, PerformanceTag } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, TrendingUp, TrendingDown, Minus, Goal, Star, Calendar } from 'lucide-react';
@@ -118,7 +119,7 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
         activitySummaries.sort((a, b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime());
         setSummaries(activitySummaries);
 
-      } catch (error) {
+      } catch (error: any) {
         logger.error('Failed to fetch player activity', error);
       } finally {
         setIsLoading(false);
