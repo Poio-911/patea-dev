@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, query, where, orderBy, getDocs, limit, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
 import type { Evaluation, Match, PerformanceTag } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, TrendingUp, TrendingDown, Minus, Goal, Star, Calendar } from 'lucide-react';
@@ -60,7 +60,10 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
 
   useEffect(() => {
     async function fetchActivity() {
-      if (!firestore || !playerId) return;
+      if (!firestore || !playerId) {
+        setIsLoading(false);
+        return;
+      };
       setIsLoading(true);
 
       try {
@@ -93,6 +96,7 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
             setIsLoading(false);
             return;
         }
+        
         const matchPromises = matchIds.map(id => getDoc(doc(firestore, 'matches', id)));
         const matchSnaps = await Promise.all(matchPromises);
         const matchesMap = new Map(matchSnaps.map(snap => [snap.id, { id: snap.id, ...snap.data() } as Match]));
@@ -120,11 +124,15 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
             activitySummaries.push({ match, performance, goals });
         }
         
-        activitySummaries.sort((a, b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime());
+        activitySummaries.sort((a, b) => {
+            if (!a.match.date || !b.match.date) return 0;
+            return new Date(b.match.date).getTime() - new Date(a.match.date).getTime();
+        });
+
         setSummaries(activitySummaries);
 
       } catch (error: any) {
-        logger.error('Failed to fetch player activity', error);
+        logger.error('Failed to fetch player activity', error, { playerId });
       } finally {
         setIsLoading(false);
       }
@@ -162,7 +170,11 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
           <div key={match.id} className="p-3 border rounded-lg bg-muted/30">
             <div className="flex justify-between items-center mb-2">
               <h4 className="font-semibold text-sm truncate">{match.title}</h4>
-              <p className="text-xs text-muted-foreground">{match.date ? format(new Date(match.date), 'dd MMM yyyy', { locale: es }) : 'Fecha no disponible'}</p>
+              {match.date ? (
+                <p className="text-xs text-muted-foreground">{format(new Date(match.date), 'dd MMM yyyy', { locale: es })}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">Fecha no disponible</p>
+              )}
             </div>
             <Separator />
             <div className="grid grid-cols-2 gap-4 pt-3 text-center">
