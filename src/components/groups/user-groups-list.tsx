@@ -122,7 +122,7 @@ export function UserGroupsList() {
                    {isOwner && (
                       <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/20">
                           <Crown className="h-3 w-3 mr-1"/>
-                          Propietario
+                          Dueño
                       </Badge>
                   )}
                 </CardTitle>
@@ -144,14 +144,14 @@ export function UserGroupsList() {
                   <DropdownMenuContent align="end">
                      <EditGroupDialog group={group}>
                         <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                            <Edit className="mr-2 h-4 w-4"/> Editar Nombre
+                            <Edit className="mr-2 h-4 w-4"/> Editar
                         </DropdownMenuItem>
                     </EditGroupDialog>
                     <DropdownMenuSeparator />
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4"/> Eliminar Grupo
+                          <Trash2 className="mr-2 h-4 w-4"/> Eliminar
                         </DropdownMenuItem>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
@@ -163,7 +163,7 @@ export function UserGroupsList() {
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDeleteGroup(group.id, group.name)} disabled={isDeletingGroup === group.id}>
+                            <AlertDialogAction onClick={() => handleDeleteGroup(group.id, group.name)} disabled={isDeletingGroup === group.id} className="bg-destructive hover:bg-destructive/90">
                               {isDeletingGroup === group.id && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
                               Borrar
                             </AlertDialogAction>

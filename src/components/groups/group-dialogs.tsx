@@ -17,24 +17,29 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+interface DialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    children: React.ReactNode;
+}
+
 const createGroupSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
 });
 type CreateGroupForm = z.infer<typeof createGroupSchema>;
 
-export function CreateGroupDialog({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
+export function CreateGroupDialog({ open, onOpenChange, children }: DialogProps) {
   const [isCreating, setIsCreating] = useState(false);
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const form = useForm<CreateGroupForm>({ resolver: zodResolver(createGroupSchema) });
+  const form = useForm<CreateGroupForm>({ resolver: zodResolver(createGroupSchema), defaultValues: { name: '' } });
 
   const handleCreateGroup = async (data: CreateGroupForm) => {
     if (!firestore || !user?.uid) return;
     setIsCreating(true);
     try {
-      const inviteCode = nanoid(8); // Genera un código con mayúsculas, minúsculas y números
+      const inviteCode = nanoid(8);
       const batch = writeBatch(firestore);
       
       const newGroupRef = doc(collection(firestore, 'groups'));
@@ -55,7 +60,7 @@ export function CreateGroupDialog({ children }: { children: React.ReactNode }) {
       await batch.commit();
 
       toast({ title: "Grupo creado", description: `"${data.name}" ha sido creado.` });
-      setOpen(false);
+      onOpenChange(false);
       form.reset();
     } catch (error) {
       toast({ variant: 'destructive', title: "Error", description: "No se pudo crear el grupo." });
@@ -65,8 +70,8 @@ export function CreateGroupDialog({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {children}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Crear Nuevo Grupo</DialogTitle>
@@ -81,7 +86,7 @@ export function CreateGroupDialog({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit" disabled={isCreating}>
               {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
               Crear Grupo
@@ -98,13 +103,12 @@ const joinGroupSchema = z.object({
 });
 type JoinGroupForm = z.infer<typeof joinGroupSchema>;
 
-export function JoinGroupDialog({ children }: { children: React.ReactNode }) {
-    const [open, setOpen] = useState(false);
+export function JoinGroupDialog({ open, onOpenChange, children }: DialogProps) {
     const [isJoining, setIsJoining] = useState(false);
     const { user } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
-    const form = useForm<JoinGroupForm>({ resolver: zodResolver(joinGroupSchema) });
+    const form = useForm<JoinGroupForm>({ resolver: zodResolver(joinGroupSchema), defaultValues: { inviteCode: '' } });
 
     const handleJoinGroup = async (data: JoinGroupForm) => {
         if (!firestore || !user?.uid) return;
@@ -133,7 +137,7 @@ export function JoinGroupDialog({ children }: { children: React.ReactNode }) {
             await updateDoc(doc(firestore, 'users', user.uid), { activeGroupId: groupDoc.id, groups: arrayUnion(groupDoc.id) });
 
             toast({ title: "¡Te has unido!", description: `Ahora eres miembro de "${groupData.name}".` });
-            setOpen(false);
+            onOpenChange(false);
             form.reset();
         } catch (error) {
             toast({ variant: 'destructive', title: "Error", description: "No se pudo unir al grupo." });
@@ -143,8 +147,8 @@ export function JoinGroupDialog({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>{children}</DialogTrigger>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            {children}
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Unirse a un Grupo</DialogTitle>
@@ -159,7 +163,7 @@ export function JoinGroupDialog({ children }: { children: React.ReactNode }) {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
                         <Button type="submit" disabled={isJoining}>
                             {isJoining && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
                             Unirse
@@ -170,7 +174,6 @@ export function JoinGroupDialog({ children }: { children: React.ReactNode }) {
         </Dialog>
     );
 }
-
 
 const editGroupSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
