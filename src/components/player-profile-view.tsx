@@ -1,9 +1,10 @@
+
 'use client';
 
 import React from 'react';
 import { useUser } from '@/firebase';
 import type { Player } from '@/lib/types';
-import { PlayerCard } from '@/components/player-card'; // Reutilizaremos la PlayerCard
+import { PlayerCard } from '@/components/player-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LineChart, BrainCircuit } from 'lucide-react';
@@ -41,7 +42,7 @@ export default function PlayerProfileView({ playerId, player }: PlayerProfileVie
               </CardContent>
             </Card>
           </Link>
-          <Link href={`/players/${playerId}/analysis`}>
+          <Link href={`/players/${playerId}/progression`}>
              <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer">
                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">

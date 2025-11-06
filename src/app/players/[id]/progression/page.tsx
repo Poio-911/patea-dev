@@ -6,14 +6,13 @@ import { useDoc, useUser, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { Player } from '@/lib/types';
 import { Loader2, ArrowLeft } from 'lucide-react';
-import { CoachChatView } from '@/components/coach-chat-view';
-import { PlayerInsightsPanel } from '@/components/player-insights-panel';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
+import { PlayerProgressionView } from '@/components/player-progression-view';
 
-export default function AnalysisPage() {
+export default function ProgressionPage() {
   const { id: playerId } = useParams();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -28,14 +27,6 @@ export default function AnalysisPage() {
   if (!player) {
     return <div className="text-center">Jugador no encontrado.</div>;
   }
-  
-  if (user?.uid !== playerId) {
-    return <div className="text-center">Solo puedes acceder a tu propio análisis avanzado.</div>;
-  }
-
-  if (!user) {
-    return <div className="text-center">No se pudo cargar la información del usuario.</div>;
-  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -48,19 +39,12 @@ export default function AnalysisPage() {
             </Button>
         </div>
         <PageHeader 
-            title="Análisis con IA"
-            description={`Recibí consejos del DT virtual y descubrí patrones en tu juego.`}
+            title="Progresión del Jugador"
+            description={`Analizá la evolución de ${player.name} a lo largo del tiempo.`}
         />
         <Separator />
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="flex flex-col gap-4">
-            <CoachChatView playerId={playerId as string} groupId={user.activeGroupId || ''} />
-        </div>
-        <div className="flex flex-col gap-4">
-            <PlayerInsightsPanel playerId={playerId as string} playerName={player.name} groupId={user.activeGroupId || ''} />
-        </div>
-      </div>
+        <PlayerProgressionView playerId={playerId as string} />
     </div>
   );
 }
