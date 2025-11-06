@@ -1,8 +1,7 @@
-
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useCollection, useFirestore } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, getDocs, limit, doc, getDoc } from 'firebase/firestore';
 import type { Evaluation, Match, PerformanceTag } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -89,6 +88,11 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
         }, {} as Record<string, Evaluation[]>);
 
         const matchIds = Object.keys(evalsByMatchId);
+        if (matchIds.length === 0) {
+            setSummaries([]);
+            setIsLoading(false);
+            return;
+        }
         const matchPromises = matchIds.map(id => getDoc(doc(firestore, 'matches', id)));
         const matchSnaps = await Promise.all(matchPromises);
         const matchesMap = new Map(matchSnaps.map(snap => [snap.id, { id: snap.id, ...snap.data() } as Match]));
@@ -158,7 +162,7 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
           <div key={match.id} className="p-3 border rounded-lg bg-muted/30">
             <div className="flex justify-between items-center mb-2">
               <h4 className="font-semibold text-sm truncate">{match.title}</h4>
-              <p className="text-xs text-muted-foreground">{format(new Date(match.date), 'dd MMM yyyy', { locale: es })}</p>
+              <p className="text-xs text-muted-foreground">{match.date ? format(new Date(match.date), 'dd MMM yyyy', { locale: es }) : 'Fecha no disponible'}</p>
             </div>
             <Separator />
             <div className="grid grid-cols-2 gap-4 pt-3 text-center">
