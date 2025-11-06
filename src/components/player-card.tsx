@@ -23,10 +23,10 @@ const attributeDetails: Record<AttributeKey, { name: string }> = {
 };
 
 const positionTextColors: Record<PlayerPosition, string> = {
-  POR: 'text-orange-600 dark:text-orange-400',
-  DEF: 'text-green-600 dark:text-green-400',
-  MED: 'text-blue-600 dark:text-blue-400',
-  DEL: 'text-red-600 dark:text-red-400',
+  POR: 'text-orange-600 game:text-orange-400',
+  DEF: 'text-green-600 game:text-green-400',
+  MED: 'text-blue-600 game:text-blue-400',
+  DEL: 'text-red-600 game:text-red-400',
 };
 
 const positionBorderColors: Record<PlayerPosition, string> = {
@@ -83,8 +83,8 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
         <Link href={`/players/${player.id}`} className="block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-2xl h-full w-full" aria-label={`Ver perfil de ${playerName}`}>
             <Card
                 className={cn(
-                    "relative h-full flex flex-col overflow-hidden rounded-2xl shadow-lg",
-                    "dark:bg-card dark:border-border",
+                    "player-card relative h-full flex flex-col overflow-hidden rounded-2xl shadow-lg",
+                    "game:bg-card game:border-border",
                     "bg-card"
                 )}
             >
@@ -92,7 +92,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                 <div className={cn("absolute inset-0 z-0", selectedAuraClass)} />
                 
                 <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center">
-                    <div className="absolute -bottom-2 -right-2 h-2/5 w-2/5 text-muted-foreground/5 dark:text-primary/5">
+                    <div className="absolute -bottom-2 -right-2 h-2/5 w-2/5 text-muted-foreground/5 game:text-primary/5">
                         {PositionIcon && <PositionIcon className="w-full h-full" />}
                     </div>
                     {/* Contenido principal de la tarjeta */}
@@ -105,7 +105,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                              </span>
                            </div>
                             <div className="flex flex-col items-end">
-                              <span className="font-headline text-5xl font-bold text-slate-900 dark:text-yellow-400 -mb-2">{player.ovr}</span>
+                              <span className="font-headline text-5xl font-bold text-slate-900 game:text-yellow-400 -mb-2">{player.ovr}</span>
                             </div>
                         </div>
 
@@ -124,22 +124,22 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                                 />
                                 <AvatarFallback className="text-3xl font-black">{playerName.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <h3 className="w-full truncate text-center text-base font-semibold mt-1 dark:text-white">{playerName}</h3>
+                            <h3 className="w-full truncate text-center text-base font-semibold mt-1 game:text-white">{playerName}</h3>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-1 text-center text-xs">
                             {stats.map(stat => (
-                                <div 
-                                    key={stat.key} 
+                                <div
+                                    key={stat.key}
                                     className={cn(
                                         "rounded-lg py-1 border-2",
-                                        "bg-black/5 dark:bg-white/5",
-                                        stat.key === highestStat.key ? "border-yellow-400/50 dark:border-yellow-400/50" : "border-transparent"
+                                        "bg-black/5 game:bg-white/5",
+                                        stat.key === highestStat.key ? "border-yellow-400/50 game:border-yellow-400/50" : "border-transparent"
                                     )}
                                 >
-                                    <p className="text-base font-bold text-slate-800 dark:text-white">
-                                        {stat.value} 
-                                        <span className="ml-1 text-gray-500 dark:text-gray-400 text-xs font-semibold">
+                                    <p className="text-base font-bold text-slate-800 game:text-white">
+                                        {stat.value}
+                                        <span className="ml-1 text-gray-500 game:text-gray-400 text-xs font-semibold">
                                             {attributeDetails[stat.key].name}
                                         </span>
                                     </p>

@@ -9,11 +9,12 @@ import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import { UserProvider } from '@/firebase/auth/use-user';
 import { MainNav } from '@/components/main-nav';
-import { ThemeProvider } from 'next-themes';
+import { ThemeProvider, useTheme } from 'next-themes';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { libraries } from '@/lib/google-maps';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { logger } from '@/lib/logger';
+import { ThemeBackground } from '@/components/theme-background';
 
 type FirebaseClientProviderProps = {
   children: React.ReactNode;
@@ -47,8 +48,9 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
     return (
       <ThemeProvider
         attribute="class"
-        defaultTheme="dark"
-        enableSystem
+        themes={['light','game']}
+        defaultTheme="light"
+        enableSystem={false}
         disableTransitionOnChange
       >
         <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -62,10 +64,12 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
   return (
     <ThemeProvider
       attribute="class"
-      defaultTheme="dark"
-      enableSystem
+      themes={['light','game']}
+      defaultTheme="light"
+      enableSystem={false}
       disableTransitionOnChange
     >
+      <ThemeBackground />
       <FirebaseProvider
         firebaseApp={firebaseInstances.firebaseApp}
         auth={firebaseInstances.auth}

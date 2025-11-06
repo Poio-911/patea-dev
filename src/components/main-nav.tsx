@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Users2, User, BellRing, HelpCircle, CheckCircle, Moon, Sun, Laptop, Gamepad2 } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings, Users2, User, BellRing, HelpCircle, CheckCircle, Moon, Sun, Laptop, Gamepad2, UserCircle, Trophy, ClipboardCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore, useCollection } from '@/firebase';
@@ -40,10 +40,6 @@ import type { Player, PlayerPosition, EvaluationAssignment } from '@/lib/types';
 import { doc, collectionGroup, query, where } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
-import { ShirtIcon } from '@/components/icons/shirt-icon';
-import { TeamsIcon } from '@/components/icons/teams-icon';
-import { MatchIcon } from '@/components/icons/match-icon';
-import { EvaluationIcon } from '@/components/icons/evaluation-icon';
 import { NotificationBell } from '@/components/notification-bell';
 import { useFcm } from '@/hooks/use-fcm';
 import { HelpDialog } from '@/components/help-dialog';
@@ -55,17 +51,17 @@ import { useTheme } from 'next-themes';
 
 const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
-  { href: '/groups', label: 'Grupos', icon: TeamsIcon },
-  { href: '/players', label: 'Jugadores', icon: ShirtIcon },
-  { href: '/matches', label: 'Partidos', icon: MatchIcon },
-  { href: '/evaluations', label: 'Evaluar', icon: EvaluationIcon },
+  { href: '/groups', label: 'Grupos', icon: Users2 },
+  { href: '/players', label: 'Jugadores', icon: UserCircle },
+  { href: '/matches', label: 'Partidos', icon: Trophy },
+  { href: '/evaluations', label: 'Evaluar', icon: ClipboardCheck },
 ];
 
 const positionBadgeStyles: Record<PlayerPosition, string> = {
-  POR: 'text-orange-600 dark:text-orange-400',
-  DEF: 'text-green-600 dark:text-green-400',
-  MED: 'text-blue-600 dark:text-blue-400',
-  DEL: 'text-red-600 dark:text-red-400',
+  POR: 'text-orange-600 game:text-orange-400',
+  DEF: 'text-green-600 game:text-green-400',
+  MED: 'text-blue-600 game:text-blue-400',
+  DEL: 'text-red-600 game:text-red-400',
 };
 
 
@@ -218,8 +214,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                           <DropdownMenuSeparator />
                           <DropdownMenuSub>
                             <DropdownMenuSubTrigger>
-                                <Sun className="mr-2 h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                                <Moon className="absolute mr-2 h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                                <Sun className="mr-2 h-4 w-4 rotate-0 scale-100 transition-all game:-rotate-90 game:scale-0" />
+                                <Gamepad2 className="absolute mr-2 h-4 w-4 rotate-90 scale-0 transition-all game:rotate-0 game:scale-100" />
                                 <span>Cambiar Tema</span>
                             </DropdownMenuSubTrigger>
                             <DropdownMenuPortal>
@@ -228,13 +224,9 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                                         <Sun className="mr-2 h-4 w-4"/>
                                         Claro
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setTheme("dark")}>
+                                    <DropdownMenuItem onClick={() => setTheme("game")}>
                                         <Gamepad2 className="mr-2 h-4 w-4"/>
                                         Modo Juego
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setTheme("system")}>
-                                        <Laptop className="mr-2 h-4 w-4"/>
-                                        Sistema
                                     </DropdownMenuItem>
                                 </DropdownMenuSubContent>
                             </DropdownMenuPortal>
@@ -299,7 +291,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               "h-screen overflow-y-auto pt-16 md:pl-[var(--sidebar-width)] transition-[padding] duration-300 ease-in-out",
               "group-data-[state=collapsed]/sidebar-wrapper:md:pl-[var(--sidebar-width-icon)]"
           )}>
-            <div className="p-4 md:p-6 pb-24">
+            <div className="p-4 md:p-6 pb-20 md:pb-6">
                 {children}
             </div>
           </main>
@@ -314,18 +306,21 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                      'group relative inline-flex flex-col items-center justify-center px-1 text-muted-foreground transition-colors hover:text-primary',
-                      isActive && 'text-primary'
+                      'group relative inline-flex flex-col items-center justify-center gap-1 px-2 text-muted-foreground transition-all duration-200 hover:text-primary',
+                      isActive && 'text-primary font-semibold'
                       )}
                   >
                       {isEval && pendingEvaluationsCount > 0 && (
-                        <span className="absolute top-2 right-2 flex h-2 w-2">
+                        <span className="absolute top-1.5 right-1/4 flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                         </span>
                       )}
-                      <item.icon className="h-6 w-6" />
-                      <span className="text-xs">{item.label}</span>
+                      <item.icon className={cn(
+                        "h-5 w-5 transition-all duration-200",
+                        isActive && "scale-110"
+                      )} />
+                      <span className="text-[10px] leading-none">{item.label}</span>
                   </Link>
                   );
               })}
