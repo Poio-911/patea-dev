@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -16,7 +15,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { InvitePlayerDialog } from '@/components/invite-player-dialog';
-import { Loader2, CheckCircle, Trash2, UserPlus } from 'lucide-react';
+import { Loader2, CheckCircle, Trash2, UserPlus, FileSignature } from 'lucide-react';
+import Link from 'next/link';
 
 interface MatchManagementActionsProps {
   match: Match;
@@ -62,6 +62,15 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
             )}
             Finalizar
           </Button>
+        )}
+
+        {match.status === 'completed' && (
+           <Button asChild size="sm" className="min-h-[48px] w-full sm:w-auto">
+             <Link href={`/matches/${match.id}/evaluate`}>
+               <FileSignature className="mr-2 h-4 w-4" />
+               Supervisar Evaluaciones
+             </Link>
+           </Button>
         )}
 
         {canInvite && (
