@@ -39,7 +39,7 @@ const pointsEvaluationSchema = z.object({
   photoUrl: z.string(),
   position: z.string(),
   evaluationType: z.literal('points'),
-  rating: z.coerce.number().min(1).max(10), // Requerido
+  rating: z.coerce.number().min(1, 'El rating debe ser al menos 1').max(10, 'El rating debe ser máximo 10'), // ✅ Requerido y con mensajes
   performanceTags: z.array(z.custom<PerformanceTag>()).optional(), // Puede no estar
 });
 
@@ -144,7 +144,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
   const { data: allGroupPlayers, loading: playersLoading } = useCollection<Player>(allGroupPlayersQuery)
 
   const userAssignmentsQuery = useMemo(() => {
-    if (!firestore || !user?.uid || !matchId) return null
+    if (!firestore || !user?.uid || !matchId) return null;
     return query(
       collection(firestore, 'matches', matchId, 'assignments'),
       where('evaluatorId', '==', user.uid),

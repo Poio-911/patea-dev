@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, getDocs, doc, getDoc, limit } from 'firebase/firestore';
 import type { Evaluation, Match, PerformanceTag } from '@/lib/types';
