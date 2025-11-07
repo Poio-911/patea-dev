@@ -185,7 +185,8 @@
           }
         },
         "createdBy": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isChallengeable": { "type": "boolean", "default": false, "description": "Whether the team is available to be challenged by others." }
       },
       "required": ["name", "groupId", "jersey", "members", "createdBy", "createdAt"]
     },
@@ -385,4 +386,5 @@
     }
   }
 }
+
 

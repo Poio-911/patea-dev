@@ -1,13 +1,13 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useMemo, useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
-import { doc, collection, query, where } from 'firebase/firestore';
+import { doc, collection, query, where, updateDoc } from 'firebase/firestore';
 import type { GroupTeam, Player, GroupTeamMember, Match, DetailedTeamPlayer } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { Loader2, Users, ArrowLeft, ShieldCheck, UserCheck, CalendarDays, History, Swords } from 'lucide-react';
+import { Loader2, Users, ArrowLeft, ShieldCheck, UserCheck, CalendarDays, History, Swords, Globe } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { TeamRosterPlayer } from '@/components/team-roster-player';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
@@ -19,19 +19,24 @@ import { UpcomingMatchesFeed } from '@/components/groups/upcoming-matches-feed';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 export default function TeamDetailPage() {
   const { id: teamId } = useParams();
   const firestore = useFirestore();
   const { user } = useUser();
-  const [refreshKey, setRefreshKey] = useState(0);
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const teamRef = useMemo(() => {
     if (!firestore || !teamId) return null;
     return doc(firestore, 'teams', teamId as string);
   }, [firestore, teamId]);
 
-  const { data: team, loading: teamLoading } = useDoc<GroupTeam>(teamRef);
+  const { data: team, loading: teamLoading, error: teamError } = useDoc<GroupTeam>(teamRef);
 
   const groupPlayersQuery = useMemo(() => {
     if (!firestore || !team?.groupId) return null;
@@ -67,7 +72,6 @@ export default function TeamDetailPage() {
       return { upcomingMatches: upcoming, pastMatches: past };
   }, [allGroupMatches, team?.name]);
 
-  
   const loading = teamLoading || playersLoading || matchesLoading;
   const isOwner = user?.uid === team?.createdBy;
   
@@ -95,15 +99,43 @@ export default function TeamDetailPage() {
   }, [team, groupPlayers, loading]);
   
   const handlePlayerUpdate = () => {
-    setRefreshKey(prev => prev + 1);
+    // This function will be called from child components to indicate a change
+    // For now, we can just log it. A better implementation might refetch data.
+    console.log("Player updated, parent should refresh if needed.");
+  }
+  
+  const handleChallengeableToggle = async (isChallengeable: boolean) => {
+    if (!teamRef) return;
+    setIsUpdating(true);
+    try {
+        await updateDoc(teamRef, { isChallengeable });
+        toast({
+            title: 'Visibilidad actualizada',
+            description: `Tu equipo ${isChallengeable ? 'ahora puede' : 'ya no puede'} recibir desafíos.`
+        });
+    } catch(e) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar la visibilidad.' });
+    } finally {
+        setIsUpdating(false);
+    }
   }
 
   if (loading) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-12 w-12 animate-spin" /></div>;
   }
 
-  if (!team) {
-    return <div className="text-center">No se encontró el equipo.</div>;
+  if (!team || teamError) {
+    return (
+        <div className="text-center p-8">
+            <h2 className="text-xl font-bold">Equipo no encontrado</h2>
+            <Button asChild variant="outline" className="mt-4">
+                <Link href="/groups">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Volver a Grupos
+                </Link>
+            </Button>
+        </div>
+    );
   }
   
   const memberCount = team.members?.length || 0;
@@ -117,14 +149,6 @@ export default function TeamDetailPage() {
                     Volver a Grupos
                 </Link>
             </Button>
-            {isOwner && (
-                <Button asChild>
-                    <Link href="/competitions/find-opponent">
-                        <Swords className="mr-2 h-4 w-4" />
-                        Buscar Rival
-                    </Link>
-                </Button>
-            )}
         </div>
 
         <div className="flex flex-col items-center text-center gap-4">
@@ -142,13 +166,36 @@ export default function TeamDetailPage() {
             </div>
         </div>
         
+        {isOwner && (
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Globe className="h-5 w-5 text-primary" />
+                        Disponibilidad para Desafíos
+                    </CardTitle>
+                </CardHeader>
+                 <CardContent>
+                    <div className="flex items-center space-x-2">
+                        <Switch 
+                            id="challengeable-switch" 
+                            checked={team.isChallengeable}
+                            onCheckedChange={handleChallengeableToggle}
+                            disabled={isUpdating}
+                        />
+                        <Label htmlFor="challengeable-switch">
+                            {team.isChallengeable ? 'Tu equipo está abierto a recibir desafíos de otros grupos.' : 'Tu equipo no aparecerá en la búsqueda de rivales.'}
+                        </Label>
+                    </div>
+                </CardContent>
+            </Card>
+        )}
+        
         <Separator />
         
         <UpcomingMatchesFeed matches={upcomingMatches} teamName={team.name} />
         
         {upcomingMatches.length > 0 && <Separator />}
 
-        {/* Starting Lineup */}
         <div className="space-y-4">
             <h2 className="text-xl font-bold flex items-center gap-2"><ShieldCheck className="h-6 w-6 text-primary"/> Titulares ({titulares.length})</h2>
              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -168,7 +215,6 @@ export default function TeamDetailPage() {
         
         <Separator />
 
-        {/* Substitutes */}
         <div className="space-y-4">
             <h2 className="text-xl font-bold flex items-center gap-2"><UserCheck className="h-6 w-6 text-muted-foreground"/> Suplentes ({suplentes.length})</h2>
              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -181,7 +227,6 @@ export default function TeamDetailPage() {
         
         <Separator />
 
-        {/* Matches History */}
         <div className="space-y-4">
             <h2 className="text-xl font-bold flex items-center gap-2"><History className="h-6 w-6 text-muted-foreground"/> Historial de Partidos</h2>
             {pastMatches.length > 0 ? (

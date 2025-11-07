@@ -69,7 +69,7 @@ export type AvailablePlayer = {
 
 
 export type MatchStatus = 'upcoming' | 'active' | 'completed' | 'evaluated';
-export type MatchType = 'manual' | 'collaborative' | 'by_teams';
+export type MatchType = 'manual' | 'collaborative' | 'by_teams' | 'intergroup_friendly';
 export type MatchSize = 10 | 14 | 22;
 
 export type MatchLocation = {
@@ -152,6 +152,7 @@ export type GroupTeam = {
   members: GroupTeamMember[];
   createdBy: string;
   createdAt: string;
+  isChallengeable?: boolean; // New field to allow challenges
 } & DocumentData;
 
 
