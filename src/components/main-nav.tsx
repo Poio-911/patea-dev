@@ -44,7 +44,6 @@ import { WelcomeDialog } from '@/components/welcome-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { isToday, parseISO } from 'date-fns';
 import { useTheme } from 'next-themes';
-import { InvitationsSheet } from './invitations-sheet';
 
 
 const navItems = [
@@ -125,12 +124,14 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Allow public pages to render without auth check
   const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
 
   if (isPublicPage) {
     return <>{children}</>;
   }
 
+  // For protected pages, check auth and loading states
   const loading = userLoading || playerLoading;
 
   if (loading || !user) {
@@ -152,7 +153,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   </div>
                   <HelpDialog />
                   <NotificationBell />
-                  <InvitationsSheet />
               </div>
 
               <div className="flex items-center gap-2 sm:gap-4">

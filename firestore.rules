@@ -17,170 +17,111 @@ service cloud.firestore {
     function isResourceOwner(resourceData) {
       return isAuthenticated() && request.auth.uid == resourceData.ownerUid;
     }
+    
+    function isTeamOwner(teamId) {
+      return get(/databases/$(database)/documents/teams/$(teamId)).data.createdBy == request.auth.uid;
+    }
 
     // ───────────────────────────────────────────────────────────
     // USERS COLLECTION
     // ───────────────────────────────────────────────────────────
 
     match /users/{userId} {
-      // Usuarios pueden leer/escribir solo su propio perfil
       allow read: if isAuthenticated();
       allow write: if isOwner(userId);
+
+      // Subcollections
+      match /notifications/{notificationId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /fcmTokens/{tokenId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     // ───────────────────────────────────────────────────────────
-    // PLAYERS COLLECTION
+    // GLOBAL COLLECTIONS
     // ───────────────────────────────────────────────────────────
 
     match /players/{playerId} {
-      // Cualquier usuario autenticado puede leer jugadores
       allow read: if isAuthenticated();
+      allow write: if isOwner(playerId) || isResourceOwner(resource.data);
 
-      // Solo el dueño puede actualizar
-      allow update: if isAuthenticated() && (
-        isOwner(playerId) ||
-        isResourceOwner(resource.data)
-      );
-
-      // Solo el dueño puede crear/eliminar
-      allow create: if isAuthenticated() && isOwner(request.resource.data.ownerUid);
-      allow delete: if isResourceOwner(resource.data);
-
-      // Subcollection: OVR History
       match /ovrHistory/{historyId} {
         allow read: if isAuthenticated();
-        allow write: if false; // Solo se escribe desde server actions
+        allow write: if false; // Server-side only
       }
     }
-
-    // ───────────────────────────────────────────────────────────
-    // AVAILABLE PLAYERS COLLECTION
-    // ───────────────────────────────────────────────────────────
 
     match /availablePlayers/{playerId} {
-      // Cualquier usuario autenticado puede leer (para buscar jugadores disponibles)
       allow read: if isAuthenticated();
-
-      // Solo el dueño puede modificar su disponibilidad
       allow write: if isOwner(playerId);
     }
+    
+    match /groups/{groupId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(request.resource.data.ownerUid);
+      allow update, delete: if isResourceOwner(resource.data);
+    }
 
-    // ───────────────────────────────────────────────────────────
-    // MATCHES COLLECTION
-    // ───────────────────────────────────────────────────────────
+    match /teams/{teamId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && isOwner(request.resource.data.createdBy);
+        allow update: if isOwner(resource.data.createdBy);
+        allow delete: if isOwner(resource.data.createdBy);
+
+        match /invitations/{invitationId} {
+            // Read allowed if user is owner of either the challenged or challenging team
+            allow read: if isAuthenticated() && 
+                         (isTeamOwner(resource.data.toTeamId) || isTeamOwner(resource.data.fromTeamId));
+            // Only owner of challenging team can create
+            allow create: if isAuthenticated() && isTeamOwner(request.resource.data.fromTeamId);
+            // Only owner of challenged team can update (accept/decline)
+            allow update: if isAuthenticated() && isTeamOwner(resource.data.toTeamId);
+            // Owner of either team can delete it
+            allow delete: if isAuthenticated() && 
+                           (isTeamOwner(resource.data.toTeamId) || isTeamOwner(resource.data.fromTeamId));
+        }
+    }
 
     match /matches/{matchId} {
-      // Cualquier usuario autenticado puede leer partidos
       allow read: if isAuthenticated();
-
-      // Solo el organizador puede crear/actualizar/eliminar
       allow create: if isAuthenticated() && isOwner(request.resource.data.ownerUid);
-      allow update: if isAuthenticated() && isResourceOwner(resource.data);
+      allow update: if isResourceOwner(resource.data);
       allow delete: if isResourceOwner(resource.data);
 
-      // Subcollections
-      match /evaluationAssignments/{assignmentId} {
+      match /assignments/{assignmentId} {
         allow read: if isAuthenticated();
-        allow write: if false; // Solo desde server actions
-      }
-
-      match /evaluationSubmissions/{submissionId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated();
-        allow update, delete: if false; // Solo desde server actions
+        allow write: if false; // Server-side only
       }
 
       match /selfEvaluations/{evalId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated();
-        allow update: if isAuthenticated() && isOwner(resource.data.playerId);
+        allow read, create, update: if isAuthenticated();
         allow delete: if false;
       }
 
       match /messages/{messageId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated();
-        allow update, delete: if isOwner(resource.data.userId);
+        allow read, create: if isAuthenticated();
+        allow update, delete: if isOwner(resource.data.senderId);
+      }
+      
+      match /invitations/{invitationId} {
+          allow read: if isAuthenticated();
+          allow create: if isResourceOwner(get(/databases/$(database)/documents/matches/$(matchId)).data);
+          allow update: if isAuthenticated() && isOwner(resource.data.playerId);
+          allow delete: if isResourceOwner(get(/databases/$(database)/documents/matches/$(matchId)).data);
       }
     }
-
-    // ───────────────────────────────────────────────────────────
-    // EVALUATIONS COLLECTION
-    // ───────────────────────────────────────────────────────────
+    
+    match /evaluationSubmissions/{submissionId} {
+        allow create: if isAuthenticated();
+        allow read, update, delete: if false; // Processed server-side
+    }
 
     match /evaluations/{evalId} {
-      // Usuarios autenticados pueden leer evaluaciones
       allow read: if isAuthenticated();
-
-      // Solo se escriben desde server actions
-      allow write: if false;
+      allow write: if false; // Server-side only
     }
 
-    // ───────────────────────────────────────────────────────────
-    // GROUPS COLLECTION
-    // ───────────────────────────────────────────────────────────
-
-    match /groups/{groupId} {
-      // Cualquier usuario autenticado puede leer grupos
-      allow read: if isAuthenticated();
-
-      // Solo el owner puede modificar el grupo
-      allow create: if isAuthenticated() && isOwner(request.resource.data.ownerUid);
-      allow update: if isResourceOwner(resource.data);
-      allow delete: if isResourceOwner(resource.data);
-    }
-
-    // ───────────────────────────────────────────────────────────
-    // TEAMS COLLECTION
-    // ───────────────────────────────────────────────────────────
-
-    match /teams/{teamId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isOwner(request.resource.data.ownerUid);
-      allow update: if isResourceOwner(resource.data);
-      allow delete: if isResourceOwner(resource.data);
-    }
-
-    // ───────────────────────────────────────────────────────────
-    // NOTIFICATIONS COLLECTION
-    // ───────────────────────────────────────────────────────────
-
-    match /notifications/{notificationId} {
-      // Solo el destinatario puede leer sus notificaciones
-      allow read: if isAuthenticated() && isOwner(resource.data.userId);
-
-      // Solo el destinatario puede marcar como leída
-      allow update: if isAuthenticated() && isOwner(resource.data.userId);
-
-      // Solo se crean desde server actions
-      allow create, delete: if false;
-    }
-
-    // ───────────────────────────────────────────────────────────
-    // INVITATIONS COLLECTION
-    // ───────────────────────────────────────────────────────────
-
-    match /invitations/{invitationId} {
-      // El invitado y el invitador pueden leer
-      allow read: if isAuthenticated() && (
-        isOwner(resource.data.invitedUserId) ||
-        isOwner(resource.data.invitedBy)
-      );
-
-      // Solo el organizador puede crear invitaciones
-      allow create: if isAuthenticated() && isOwner(request.resource.data.invitedBy);
-
-      // El invitado puede actualizar (aceptar/rechazar)
-      allow update: if isAuthenticated() && isOwner(resource.data.invitedUserId);
-
-      // Solo el creador puede eliminar
-      allow delete: if isAuthenticated() && isOwner(resource.data.invitedBy);
-    }
-
-    // ───────────────────────────────────────────────────────────
-    // DENEGAR TODO LO DEMÁS
-    // ───────────────────────────────────────────────────────────
-
-    // Cualquier otra ruta no especificada está denegada por defecto
   }
 }

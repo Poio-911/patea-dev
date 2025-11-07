@@ -12,6 +12,7 @@ import { YourTeamsList } from '@/components/competitions/your-teams-list';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { InvitationsSheet } from '@/components/invitations-sheet';
 
 export default function CompetitionsPage() {
   const { user, loading: userLoading } = useUser();
@@ -43,7 +44,9 @@ export default function CompetitionsPage() {
       <PageHeader
         title="Competiciones"
         description="Desafiá a otros equipos y demostrá quién manda en la cancha."
-      />
+      >
+        <InvitationsSheet />
+      </PageHeader>
       
       {loading ? (
         <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
