@@ -186,6 +186,8 @@ export type Invitation = {
     
     // For player invites to a match
     matchId?: string;
+    matchTitle?: string;
+    matchDate?: string;
     playerId?: string;
     
     // For team challenges

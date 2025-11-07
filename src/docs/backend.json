@@ -226,11 +226,14 @@
         "createdBy": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "matchId": { "type": "string", "description": "ID of the match for player invites." },
+        "matchTitle": { "type": "string" },
+        "matchDate": { "type": "string" },
         "playerId": { "type": "string", "description": "ID of the invited player." },
         "fromTeamId": { "type": "string", "description": "ID of the challenging team." },
         "fromTeamName": { "type": "string" },
         "fromTeamJersey": { "$ref": "#/entities/jersey" },
-        "toTeamId": { "type": "string", "description": "ID of the challenged team." }
+        "toTeamId": { "type": "string", "description": "ID of the challenged team." },
+        "toTeamName": { "type": "string" }
       },
       "required": ["type", "status", "createdBy", "createdAt"]
     },
@@ -404,4 +407,3 @@
     }
   }
 }
-

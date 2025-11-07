@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collectionGroup, query, where, writeBatch, doc, getDoc, updateDoc, arrayUnion, deleteDoc } from 'firebase/firestore';
-import type { Invitation, Match, Player } from '@/lib/types';
+import type { Invitation, Match, Player, Notification } from '@/lib/types';
 import {
   Sheet,
   SheetContent,
@@ -34,14 +33,14 @@ interface InvitationCardProps {
 function InvitationCard({ invitation, onAction, isProcessing }: InvitationCardProps) {
     const firestore = useFirestore();
     const [matchInfo, setMatchInfo] = useState<{ title: string; date: string | null }>({
-        title: invitation.matchTitle || 'Cargando...',
-        date: invitation.matchDate || null,
+        title: 'Cargando...',
+        date: null,
     });
     const [isLoadingInfo, setIsLoadingInfo] = useState(false);
 
     useEffect(() => {
-        const fetchMatchInfoIfNeeded = async () => {
-            if ((!invitation.matchTitle || !invitation.matchDate) && invitation.matchId && firestore) {
+        const fetchMatchInfo = async () => {
+            if (invitation.matchId && firestore) {
                 setIsLoadingInfo(true);
                 try {
                     const matchRef = doc(firestore, 'matches', invitation.matchId);
@@ -56,7 +55,7 @@ function InvitationCard({ invitation, onAction, isProcessing }: InvitationCardPr
                          setMatchInfo({ title: 'Partido no encontrado', date: null });
                     }
                 } catch (error) {
-                    console.error("Error fetching match info for old invitation:", error);
+                    console.error("Error fetching match info:", error);
                     setMatchInfo({ title: 'Error al cargar partido', date: null });
                 } finally {
                     setIsLoadingInfo(false);
@@ -64,8 +63,8 @@ function InvitationCard({ invitation, onAction, isProcessing }: InvitationCardPr
             }
         };
 
-        fetchMatchInfoIfNeeded();
-    }, [invitation, firestore]);
+        fetchMatchInfo();
+    }, [invitation.matchId, firestore]);
 
     return (
         <Card>
@@ -118,6 +117,7 @@ export function InvitationsSheet() {
         return;
     }
     
+    // The reference to an invitation is now within the match document
     const invitationRef = doc(firestore, 'matches', matchId, 'invitations', invitation.id);
 
     try {
@@ -167,7 +167,7 @@ export function InvitationsSheet() {
             operation: 'update',
             requestResourceData: { status: accepted ? 'accepted' : 'declined' }
         }));
-        toast({ variant: 'destructive', title: 'Error de Permisos', description: 'No se pudo procesar la invitación. Contacta al organizador.' });
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo procesar la invitación. Contacta al organizador.' });
     } finally {
         setProcessingId(null);
     }

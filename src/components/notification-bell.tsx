@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -124,7 +123,6 @@ export function NotificationBell({ isPopoverContent = false }: NotificationBellP
       return <Content />;
     }
 
-    // Default popover behavior
     return (
         <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
