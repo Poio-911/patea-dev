@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { TeamList } from '@/components/team-builder/team-list';
 import { GroupStatsCards } from '@/components/groups/group-stats-cards';
 import { UpcomingMatchesFeed } from '@/components/groups/upcoming-matches-feed';
+import { FriendlyMatchCard } from '@/components/friendly-match-card';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 import { motion } from 'framer-motion';
 import { GroupSwitcher } from '@/components/group-switcher';
@@ -41,7 +42,17 @@ export default function GroupsPage() {
   }, [firestore, user?.activeGroupId]);
   const { data: upcomingMatches, loading: matchesLoading } = useCollection<Match>(groupMatchesQuery);
 
-  const loading = userLoading || playersLoading || matchesLoading;
+  const friendlyMatchesQuery = useMemo(() => {
+    if (!firestore || !user?.activeGroupId) return null;
+    return query(
+      collection(firestore, 'matches'),
+      where('type', '==', 'intergroup_friendly'),
+      where('groupId', '==', user.activeGroupId)
+    );
+  }, [firestore, user?.activeGroupId]);
+  const { data: friendlyMatches, loading: friendlyMatchesLoading } = useCollection<Match>(friendlyMatchesQuery);
+
+  const loading = userLoading || playersLoading || matchesLoading || friendlyMatchesLoading;
   
   return (
     <div className="flex flex-col gap-6">
@@ -82,8 +93,25 @@ export default function GroupsPage() {
                 <TabsContent value="teams" className="mt-6">
                   <TeamList groupId={user.activeGroupId} players={groupPlayers || []} currentUserId={user.uid} />
                 </TabsContent>
-                <TabsContent value="matches" className="mt-6">
-                  <UpcomingMatchesFeed matches={upcomingMatches || []} />
+                <TabsContent value="matches" className="mt-6 space-y-8">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Próximos Partidos</h3>
+                    <UpcomingMatchesFeed matches={upcomingMatches || []} />
+                  </div>
+
+                  {friendlyMatches && friendlyMatches.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <Swords className="h-5 w-5 text-primary" />
+                        Partidos Amistosos
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {friendlyMatches.map(match => (
+                          <FriendlyMatchCard key={match.id} match={match} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </TabsContent>
                 <TabsContent value="stats" className="mt-6">
                   <GroupStatsCards players={groupPlayers || []} />

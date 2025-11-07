@@ -71,11 +71,14 @@ export default function MatchesPage() {
     
     const matches = useMemo(() => {
         const allMatchesMap = new Map<string, Match>();
-        
+
         (groupMatches || []).forEach(match => allMatchesMap.set(match.id, match));
         (joinedPublicMatches || []).forEach(match => allMatchesMap.set(match.id, match));
 
-        return Array.from(allMatchesMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        // Filter out friendly matches - they should appear in Groups/Competitions sections instead
+        return Array.from(allMatchesMap.values())
+            .filter(match => match.type !== 'intergroup_friendly')
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [groupMatches, joinedPublicMatches]);
     
     const { upcomingMatches, pastMatches } = useMemo(() => {
