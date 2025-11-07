@@ -22,7 +22,14 @@ service cloud.firestore {
     function isTeamOwner(teamId) {
       return get(/databases/$(database)/documents/teams/$(teamId)).data.createdBy == request.auth.uid;
     }
-    
+
+    // NUEVA FUNCIÓN: Verifica si el usuario es miembro de un equipo específico
+    function isTeamMember(teamId) {
+      let teamMembers = get(/databases/$(database)/documents/teams/$(teamId)).data.members;
+      // El campo 'members' es un array de objetos { playerId, ... }, necesitamos chequear el playerId
+      return request.auth.uid in teamMembers.map(member => member.playerId);
+    }
+
     function isChallengingTeamOwner(invitationData) {
         return isTeamOwner(invitationData.fromTeamId);
     }
@@ -32,8 +39,9 @@ service cloud.firestore {
     // ───────────────────────────────────────────────────────────
 
     match /users/{userId} {
-      allow read: if isAuthenticated() && request.auth.uid == userId;
-      allow write: if isOwner(userId);
+      // ✅ CORRECCIÓN CRÍTICA: Se permite lectura y escritura si el usuario es el dueño del documento.
+      // Esto soluciona el error "Missing or insufficient permissions" al cargar el perfil.
+      allow read, write: if isOwner(userId);
 
       // Subcollections
       match /notifications/{notificationId} {
@@ -76,13 +84,13 @@ service cloud.firestore {
         allow delete: if isOwner(resource.data.createdBy);
 
         match /invitations/{invitationId} {
-            // Read allowed if user is owner of either the challenged or challenging team
+            // Permitir leer si sos dueño del equipo desafiado O del equipo desafiante
             allow read: if isAuthenticated() && (isTeamOwner(resource.data.toTeamId) || isChallengingTeamOwner(resource.data));
-            // Only owner of challenging team can create
+            // Solo el dueño del equipo desafiante puede crear
             allow create: if isAuthenticated() && isChallengingTeamOwner(request.resource.data);
-            // Only owner of challenged team can update (accept/decline)
-            allow update: if isAuthenticated() && isTeamOwner(resource.data.toTeamId);
-            // Owner of either team can delete it
+            // ✅ MEJORA: Ahora, cualquier MIEMBRO del equipo desafiado (no solo el dueño) puede aceptar/rechazar
+            allow update: if isAuthenticated() && isTeamMember(resource.data.toTeamId);
+            // El dueño de cualquiera de los dos equipos puede borrar
             allow delete: if isAuthenticated() && (isTeamOwner(resource.data.toTeamId) || isChallengingTeamOwner(resource.data));
         }
     }

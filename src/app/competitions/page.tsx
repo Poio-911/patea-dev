@@ -32,6 +32,8 @@ export default function CompetitionsPage() {
 
   const groupPlayersQuery = useMemo(() => {
     if (!firestore || groupIds.length === 0) return null;
+    // Firestore 'in' queries are limited to 10 elements.
+    // If a user is in many groups, this might need pagination or a different approach.
     return query(collection(firestore, 'players'), where('groupId', 'in', groupIds));
   }, [firestore, groupIds]);
 
