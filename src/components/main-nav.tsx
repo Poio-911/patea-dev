@@ -50,7 +50,8 @@ const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
   { href: '/groups', label: 'Grupos', icon: Users2 },
   { href: '/players', label: 'Jugadores', icon: UserCircle },
-  { href: '/matches', label: 'Partidos', icon: Trophy },
+  { href: '/matches', label: 'Partidos de Grupo', icon: Trophy },
+  { href: '/competitions', label: 'Competiciones', icon: Trophy },
   { href: '/evaluations', label: 'Evaluar', icon: ClipboardCheck },
 ];
 
