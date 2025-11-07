@@ -218,17 +218,31 @@
     },
      "invitation": {
       "title": "Invitation",
-      "description": "Represents an invitation for a player to join a match.",
+      "description": "Represents an invitation for a player or team.",
       "type": "object",
       "properties": {
-        "playerId": { "type": "string" },
-        "playerName": { "type": "string" },
-        "playerOvr": { "type": "number" },
-        "playerPhotoUrl": { "type": "string", "format": "uri" },
+        "type": { "type": "string", "enum": ["player_to_match", "team_challenge"] },
         "status": { "type": "string", "enum": ["pending", "accepted", "declined"] },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "matchId": { "type": "string", "description": "ID of the match for player invites." },
+        "playerId": { "type": "string", "description": "ID of the invited player." },
+        "fromTeamId": { "type": "string", "description": "ID of the challenging team." },
+        "fromTeamName": { "type": "string" },
+        "fromTeamJersey": { "$ref": "#/entities/jersey" },
+        "toTeamId": { "type": "string", "description": "ID of the challenged team." }
       },
-      "required": ["playerId", "status", "createdAt"]
+      "required": ["type", "status", "createdBy", "createdAt"]
+    },
+    "jersey": {
+      "title": "Jersey",
+      "description": "Defines a team's jersey design.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "primaryColor": { "type": "string" },
+        "secondaryColor": { "type": "string" }
+      }
     },
     "fcmToken": {
       "title": "FCM Token",
@@ -356,6 +370,10 @@
         "schema": { "$ref": "#/entities/groupTeam" },
         "description": "Stores data for each persistent team created by users."
     },
+    "/teams/{teamId}/invitations/{invitationId}": {
+        "schema": { "$ref": "#/entities/invitation" },
+        "description": "Stores challenges/invitations received by this team."
+    },
     "/matches/{matchId}": {
       "schema": { "$ref": "#/entities/match" },
       "description": "Stores data for each match, linked to a group."
@@ -386,5 +404,4 @@
     }
   }
 }
-
 

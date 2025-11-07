@@ -179,14 +179,30 @@ export type Notification = {
 
 export type Invitation = {
     id: string;
-    matchId: string;
-    matchTitle: string;
-    matchDate: string;
-    playerId: string; // The invited player
+    type: 'player_to_match' | 'team_challenge';
     status: 'pending' | 'accepted' | 'declined';
+    createdBy: string; // UID of the user who sent the invite
     createdAt: string;
+    
+    // For player invites to a match
+    matchId?: string;
+    playerId?: string;
+    
+    // For team challenges
+    fromTeamId?: string;
+    fromTeamName?: string;
+    fromTeamJersey?: Jersey;
+    toTeamId?: string;
+    toTeamName?: string;
+
 } & DocumentData;
 
+    
+export type FcmToken = {
+    id: string;
+    token: string;
+    createdAt: string;
+} & DocumentData;
 
 export type Evaluation = {
     id: string;
@@ -239,21 +255,6 @@ export type EvaluationSubmission = {
         evaluatorGoals: number;
         evaluations: PlayerEvaluationFormData[];
     }
-} & DocumentData;
-    
-export type FcmToken = {
-    id: string;
-    token: string;
-    createdAt: string;
-} & DocumentData;
-
-export type ChatMessage = {
-    id: string;
-    text: string;
-    senderId: string;
-    senderName: string;
-    senderPhotoUrl: string;
-    createdAt: any; // Can be a server timestamp
 } & DocumentData;
     
 export type UserProfile = {

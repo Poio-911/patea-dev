@@ -5,7 +5,7 @@
  * It is marked with 'use server' to ensure it only runs on the server.
  */
 
-import { adminDb, adminAuth, adminStorage } from '@/firebase/admin-init';
+import { adminDb, adminAuth } from '@/firebase/admin-init';
 import { FieldValue } from 'firebase-admin/firestore';
 import { generateBalancedTeams, GenerateBalancedTeamsInput } from '@/ai/flows/generate-balanced-teams';
 import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/flows/suggest-player-improvements';
@@ -14,7 +14,7 @@ import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-
 import { coachConversation, type CoachConversationInput } from '@/ai/flows/coach-conversation';
 import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '@/ai/flows/detect-player-patterns';
 import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '@/ai/flows/analyze-player-progression';
-import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation } from '../types';
+import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam } from '../types';
 import { logger } from '../logger';
 
 
@@ -307,4 +307,62 @@ export async function analyzePlayerProgressionAction(playerId: string, groupId: 
       logger.error('Error in analyzePlayerProgressionAction', error, { playerId });
       return { error: 'No se pudo generar el análisis de progresión.' };
   }
+}
+
+export async function sendTeamChallengeAction(
+    challengingTeamId: string, 
+    challengedTeamId: string, 
+    challengerUserId: string
+) {
+    try {
+        const batch = adminDb.batch();
+
+        const [challengingTeamSnap, challengedTeamSnap, challengerUserSnap] = await Promise.all([
+            adminDb.doc(`teams/${challengingTeamId}`).get(),
+            adminDb.doc(`teams/${challengedTeamId}`).get(),
+            adminDb.doc(`users/${challengerUserId}`).get(),
+        ]);
+        
+        if (!challengingTeamSnap.exists || !challengedTeamSnap.exists || !challengerUserSnap.exists) {
+            throw new Error("Uno de los equipos o el usuario no existe.");
+        }
+        
+        const challengingTeam = { id: challengingTeamSnap.id, ...challengingTeamSnap.data() } as GroupTeam;
+        const challengedTeam = { id: challengedTeamSnap.id, ...challengedTeamSnap.data() } as GroupTeam;
+        const challengerUser = challengerUserSnap.data();
+
+        // 1. Create invitation in challenged team's subcollection
+        const invitationRef = adminDb.collection(`teams/${challengedTeamId}/invitations`).doc();
+        const newInvitation: Omit<Invitation, 'id'> = {
+            type: 'team_challenge',
+            fromTeamId: challengingTeam.id,
+            fromTeamName: challengingTeam.name,
+            fromTeamJersey: challengingTeam.jersey,
+            toTeamId: challengedTeam.id,
+            toTeamName: challengedTeam.name,
+            status: 'pending',
+            createdBy: challengerUserId,
+            createdAt: new Date().toISOString(),
+        };
+        batch.set(invitationRef, newInvitation);
+
+        // 2. Create notification for the owner of the challenged team
+        const notificationRef = adminDb.collection(`users/${challengedTeam.createdBy}/notifications`).doc();
+        const notification: Omit<Notification, 'id'> = {
+            type: 'match_invite', // Re-using type for now
+            title: '¡Desafío Recibido!',
+            message: `El equipo "${challengingTeam.name}" ha desafiado a tu equipo "${challengedTeam.name}" a un partido.`,
+            link: '/competitions', // Link to competitions/challenges section
+            isRead: false,
+            createdAt: new Date().toISOString(),
+        };
+        batch.set(notificationRef, notification);
+
+        await batch.commit();
+
+        return { success: true };
+    } catch (error: any) {
+        logger.error('Error sending team challenge', error);
+        return { error: error.message || "No se pudo enviar el desafío." };
+    }
 }

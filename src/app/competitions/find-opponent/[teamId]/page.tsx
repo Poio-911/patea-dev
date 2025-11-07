@@ -4,7 +4,7 @@
 import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useCollection, useFirestore, useUser, useDoc } from '@/firebase';
-import { collection, query, where, doc, limit } from 'firebase/firestore';
+import { collection, query, where, doc } from 'firebase/firestore';
 import type { GroupTeam } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
@@ -14,12 +14,17 @@ import { Input } from '@/components/ui/input';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Card, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
+import { sendTeamChallengeAction } from '@/lib/actions/server-actions';
+import { celebrationConfetti } from '@/lib/animations';
 
 export default function FindOpponentForTeamPage() {
     const { teamId } = useParams();
     const firestore = useFirestore();
     const { user } = useUser();
     const [searchTerm, setSearchTerm] = useState('');
+    const [isChallenging, setIsChallenging] = useState<string | null>(null);
+    const { toast } = useToast();
 
     const teamRef = useMemo(() => {
         if (!firestore || !teamId) return null;
@@ -29,7 +34,6 @@ export default function FindOpponentForTeamPage() {
 
     const teamsQuery = useMemo(() => {
         if (!firestore || !user?.uid) return null;
-        // Query for teams that are challengeable and NOT owned by the current user
         return query(
             collection(firestore, 'teams'),
             where('isChallengeable', '==', true),
@@ -47,6 +51,30 @@ export default function FindOpponentForTeamPage() {
         );
     }, [teams, searchTerm, teamId]);
     
+    const handleChallenge = async (challengedTeamId: string) => {
+        if (!user || !teamId) return;
+        setIsChallenging(challengedTeamId);
+        try {
+            const result = await sendTeamChallengeAction(teamId as string, challengedTeamId, user.uid);
+            if (result.error) {
+                throw new Error(result.error);
+            }
+            celebrationConfetti();
+            toast({
+                title: '¡Desafío Enviado!',
+                description: 'El capitán del otro equipo ha sido notificado.',
+            });
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: error.message || 'No se pudo enviar el desafío.',
+            });
+        } finally {
+            setIsChallenging(null);
+        }
+    };
+
     const loading = teamLoading || teamsLoading;
 
     if (loading) {
@@ -102,9 +130,9 @@ export default function FindOpponentForTeamPage() {
                                  <CardTitle className="text-center mt-2 text-base font-bold">{team.name}</CardTitle>
                              </CardHeader>
                              <CardFooter className="p-2 border-t">
-                                <Button className="w-full" variant="secondary">
-                                    <Swords className="mr-2 h-4 w-4" />
-                                    Desafiar
+                                <Button className="w-full" variant="secondary" onClick={() => handleChallenge(team.id)} disabled={!!isChallenging}>
+                                    {isChallenging === team.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Swords className="mr-2 h-4 w-4" />}
+                                    {isChallenging === team.id ? 'Enviando...' : 'Desafiar'}
                                 </Button>
                              </CardFooter>
                         </Card>
@@ -121,4 +149,3 @@ export default function FindOpponentForTeamPage() {
         </div>
     );
 }
-
