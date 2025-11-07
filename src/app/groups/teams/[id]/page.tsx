@@ -1,12 +1,13 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { useDoc, useCollection, useFirestore } from '@/firebase';
+import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
 import { doc, collection, query, where } from 'firebase/firestore';
 import type { GroupTeam, Player, GroupTeamMember, Match, DetailedTeamPlayer } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { Loader2, Users, ArrowLeft, ShieldCheck, UserCheck, CalendarDays, History } from 'lucide-react';
+import { Loader2, Users, ArrowLeft, ShieldCheck, UserCheck, CalendarDays, History, Swords } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { TeamRosterPlayer } from '@/components/team-roster-player';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
@@ -22,6 +23,7 @@ import { es } from 'date-fns/locale';
 export default function TeamDetailPage() {
   const { id: teamId } = useParams();
   const firestore = useFirestore();
+  const { user } = useUser();
   const [refreshKey, setRefreshKey] = useState(0);
 
   const teamRef = useMemo(() => {
@@ -67,6 +69,7 @@ export default function TeamDetailPage() {
 
   
   const loading = teamLoading || playersLoading || matchesLoading;
+  const isOwner = user?.uid === team?.createdBy;
   
   const { titulares, suplentes } = useMemo(() => {
     if (loading || !team || !groupPlayers || !team.members) return { titulares: [], suplentes: [] };
@@ -114,6 +117,14 @@ export default function TeamDetailPage() {
                     Volver a Grupos
                 </Link>
             </Button>
+            {isOwner && (
+                <Button asChild>
+                    <Link href="/competitions/find-opponent">
+                        <Swords className="mr-2 h-4 w-4" />
+                        Buscar Rival
+                    </Link>
+                </Button>
+            )}
         </div>
 
         <div className="flex flex-col items-center text-center gap-4">
