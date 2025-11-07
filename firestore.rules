@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -6,8 +7,8 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isOwner(uid) {
-      return isAuthenticated() && request.auth.uid == uid;
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
     }
     
     function isResourceOwner(resourceData) {
@@ -21,12 +22,12 @@ service cloud.firestore {
 
     function isTeamMember(teamId) {
       let teamData = get(/databases/$(database)/documents/teams/$(teamId)).data;
-      // Use `hasAny` for checking if the user's ID is in the list of member IDs.
       return request.auth.uid in teamData.members.map(member => member.playerId);
     }
     
     match /users/{userId} {
-      // ✅ CORRECCIÓN CRÍTICA: Cualquiera autenticado puede leer, solo el dueño puede escribir.
+      // ✅ CORRECCIÓN DEFINITIVA: Un usuario puede leer su propio perfil y solo escribir en él.
+      // La regla de lectura general permite que la app cargue perfiles de otros miembros del grupo.
       allow read: if isAuthenticated();
       allow write: if isOwner(userId);
 
@@ -61,18 +62,13 @@ service cloud.firestore {
         allow delete: if isOwner(resource.data.createdBy);
 
         match /invitations/{invitationId} {
-            // Permitir leer si sos dueño del equipo desafiado O del equipo desafiante
             allow read: if isAuthenticated() && (isTeamOwner(resource.data.toTeamId) || isTeamOwner(resource.data.fromTeamId));
-            // Solo el dueño del equipo desafiante puede crear
             allow create: if isAuthenticated() && isTeamOwner(request.resource.data.fromTeamId);
-            // ✅ MEJORA: Ahora, CUALQUIER MIEMBRO del equipo desafiado (no solo el dueño) puede aceptar/rechazar
             allow update: if isAuthenticated() && isTeamMember(resource.data.toTeamId);
-            // El dueño de cualquiera de los dos equipos puede borrar
             allow delete: if isAuthenticated() && (isTeamOwner(resource.data.toTeamId) || isTeamOwner(resource.data.fromTeamId));
         }
     }
     
-    // Reglas para el resto de colecciones (pueden requerir ajuste)
     match /{document=**} {
       allow read, write: if isAuthenticated();
     }

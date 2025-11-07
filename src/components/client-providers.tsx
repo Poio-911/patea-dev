@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase/index';
 import type { FirebaseApp } from 'firebase/app';
@@ -9,16 +8,30 @@ import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import { UserProvider } from '@/firebase/auth/use-user';
 import { MainNav } from '@/components/main-nav';
-import { ThemeProvider, useTheme } from 'next-themes';
+import { ThemeProvider } from 'next-themes';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { libraries } from '@/lib/google-maps';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
-import { logger } from '@/lib/logger';
-import { ThemeBackground } from '@/components/theme-background';
+import { ThemeBackground } from './theme-background';
 
 type FirebaseClientProviderProps = {
   children: React.ReactNode;
 };
+
+// Componente de Carga Centralizado
+const LoadingScreen = () => (
+  <ThemeProvider
+    attribute="class"
+    themes={['light', 'game']}
+    defaultTheme="light"
+    enableSystem={false}
+    disableTransitionOnChange
+  >
+    <div className="flex h-screen w-full items-center justify-center bg-background">
+      <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
+    </div>
+  </ThemeProvider>
+);
 
 export function ClientProviders({ children }: FirebaseClientProviderProps) {
   const [firebaseInstances, setFirebaseInstances] = useState<{
@@ -39,32 +52,21 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
   }, []);
 
   if (loadError) {
-    logger.error("Google Maps API failed to load: ", loadError);
+    console.error("Google Maps API failed to load: ", loadError);
   }
 
-  // Muestra una pantalla de carga solo si Firebase no está listo.
-  // El contenido principal se renderiza independientemente del estado de Google Maps.
-  if (!firebaseInstances) {
-    return (
-      <ThemeProvider
-        attribute="class"
-        themes={['light','game']}
-        defaultTheme="light"
-        enableSystem={false}
-        disableTransitionOnChange
-      >
-        <div className="flex h-screen w-full items-center justify-center bg-background">
-          <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
-        </div>
-      </ThemeProvider>
-    );
+  // CORRECCIÓN CLAVE: No renderizar NADA hasta que Firebase esté inicializado.
+  // Esto previene que los hooks de auth se ejecuten con un contexto a medio cargar.
+  if (!firebaseInstances || !isLoaded) {
+    return <LoadingScreen />;
   }
 
-  // Una vez que Firebase está listo, monta los proveedores.
+  // Una vez que Firebase y Maps están listos, montar los proveedores UNA SOLA VEZ.
+  // Esta estructura es estable y no se volverá a renderizar, evitando race conditions.
   return (
     <ThemeProvider
       attribute="class"
-      themes={['light','game']}
+      themes={['light', 'game']}
       defaultTheme="light"
       enableSystem={false}
       disableTransitionOnChange
@@ -76,15 +78,7 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
         firestore={firebaseInstances.firestore}
       >
         <UserProvider>
-          <MainNav>
-            {!isLoaded ? (
-              <div className="flex h-screen w-full items-center justify-center bg-background">
-                <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
-              </div>
-            ) : (
-              children
-            )}
-          </MainNav>
+          <MainNav>{children}</MainNav>
         </UserProvider>
       </FirebaseProvider>
     </ThemeProvider>

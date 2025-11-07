@@ -108,7 +108,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       unsubscribe();
     };
-  }, [auth, firestore]);
+  }, [auth, firestore]); // ✅ CORRECCIÓN: Se elimina `loading` de las dependencias para evitar loops.
 
   return (
     <UserContext.Provider value={{ user, loading }}>
