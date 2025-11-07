@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -21,13 +22,17 @@ service cloud.firestore {
     function isTeamOwner(teamId) {
       return get(/databases/$(database)/documents/teams/$(teamId)).data.createdBy == request.auth.uid;
     }
+    
+    function isChallengingTeamOwner(invitationData) {
+        return isTeamOwner(invitationData.fromTeamId);
+    }
 
     // ───────────────────────────────────────────────────────────
     // USERS COLLECTION
     // ───────────────────────────────────────────────────────────
 
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && request.auth.uid == userId;
       allow write: if isOwner(userId);
 
       // Subcollections
@@ -72,15 +77,13 @@ service cloud.firestore {
 
         match /invitations/{invitationId} {
             // Read allowed if user is owner of either the challenged or challenging team
-            allow read: if isAuthenticated() && 
-                         (isTeamOwner(resource.data.toTeamId) || isTeamOwner(resource.data.fromTeamId));
+            allow read: if isAuthenticated() && (isTeamOwner(resource.data.toTeamId) || isChallengingTeamOwner(resource.data));
             // Only owner of challenging team can create
-            allow create: if isAuthenticated() && isTeamOwner(request.resource.data.fromTeamId);
+            allow create: if isAuthenticated() && isChallengingTeamOwner(request.resource.data);
             // Only owner of challenged team can update (accept/decline)
             allow update: if isAuthenticated() && isTeamOwner(resource.data.toTeamId);
             // Owner of either team can delete it
-            allow delete: if isAuthenticated() && 
-                           (isTeamOwner(resource.data.toTeamId) || isTeamOwner(resource.data.fromTeamId));
+            allow delete: if isAuthenticated() && (isTeamOwner(resource.data.toTeamId) || isChallengingTeamOwner(resource.data));
         }
     }
 
