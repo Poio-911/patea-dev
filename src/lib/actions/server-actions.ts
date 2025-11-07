@@ -5,8 +5,9 @@
  * It is marked with 'use server' to ensure it only runs on the server.
  */
 
-import { adminDb, adminAuth } from '@/firebase/admin-init';
-import { FieldValue } from 'firebase-admin/firestore';
+import { initializeApp, getApps, App as AdminApp, cert } from 'firebase-admin/app';
+import { getAuth as getAdminAuth } from 'firebase-admin/auth';
+import { getFirestore as getAdminFirestore, FieldValue } from 'firebase-admin/firestore';
 import { generateBalancedTeams, GenerateBalancedTeamsInput } from '@/ai/flows/generate-balanced-teams';
 import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/flows/suggest-player-improvements';
 import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-match-day-forecast';
@@ -16,6 +17,33 @@ import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '@/ai/flows
 import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '@/ai/flows/analyze-player-progression';
 import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam } from '../types';
 import { logger } from '../logger';
+
+// --- ADMIN SDK INITIALIZATION ---
+function getAdminInstances() {
+    if (getApps().length > 0) {
+        const adminApp = getApps()[0];
+        return {
+            adminDb: getAdminFirestore(adminApp),
+            adminAuth: getAdminAuth(adminApp),
+        };
+    }
+    
+    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    if (!serviceAccountKey) {
+        throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.");
+    }
+    const serviceAccount = JSON.parse(serviceAccountKey);
+
+    const adminApp = initializeApp({
+        credential: cert(serviceAccount),
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    }, 'firebase-admin-app-pateá'); // Unique app name
+
+    return {
+        adminDb: getAdminFirestore(adminApp),
+        adminAuth: getAdminAuth(adminApp),
+    };
+}
 
 
 // --- Server Actions ---
@@ -61,6 +89,7 @@ export async function generateTeamsAction(players: Player[]) {
 }
 
 export async function getPlayerEvaluationsAction(playerId: string, groupId: string): Promise<Partial<Evaluation>[]> {
+    const { adminDb } = getAdminInstances();
     const evaluations: Partial<Evaluation>[] = [];
     
     try {
@@ -86,7 +115,7 @@ export async function getPlayerEvaluationsAction(playerId: string, groupId: stri
 
 
 export async function getPlayerImprovementSuggestionsAction(playerId: string, groupId: string) {
-
+    const { adminDb } = getAdminInstances();
     try {
         const playerDocRef = adminDb.doc(`players/${playerId}`);
         const playerDocSnap = await playerDocRef.get();
@@ -151,6 +180,7 @@ export async function coachConversationAction(
   userMessage: string,
   conversationHistory?: CoachConversationInput['conversationHistory']
 ) {
+  const { adminDb } = getAdminInstances();
   try {
     const playerDocRef = adminDb.doc(`players/${playerId}`);
     const playerDocSnap = await playerDocRef.get();
@@ -201,6 +231,7 @@ export async function coachConversationAction(
 }
 
 export async function detectPlayerPatternsAction(playerId: string, groupId: string) {
+  const { adminDb } = getAdminInstances();
   try {
     const playerDocRef = adminDb.doc(`players/${playerId}`);
     const playerDocSnap = await playerDocRef.get();
@@ -273,6 +304,7 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
 }
 
 export async function analyzePlayerProgressionAction(playerId: string, groupId: string) {
+  const { adminDb } = getAdminInstances();
   try {
       const playerDocRef = adminDb.doc(`players/${playerId}`);
       const playerDocSnap = await playerDocRef.get();
@@ -314,6 +346,7 @@ export async function sendTeamChallengeAction(
     challengedTeamId: string, 
     challengerUserId: string
 ) {
+    const { adminDb } = getAdminInstances();
     try {
         const batch = adminDb.batch();
 

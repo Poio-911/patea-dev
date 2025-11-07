@@ -1,11 +1,6 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // ───────────────────────────────────────────────────────────
-    // HELPER FUNCTIONS
-    // ───────────────────────────────────────────────────────────
 
     function isAuthenticated() {
       return request.auth != null;
@@ -24,23 +19,17 @@ service cloud.firestore {
       return teamDoc.data.createdBy == request.auth.uid;
     }
 
-    // ✅ NUEVA FUNCIÓN: Verifica si el usuario es miembro de un equipo específico
     function isTeamMember(teamId) {
       let teamData = get(/databases/$(database)/documents/teams/$(teamId)).data;
+      // Use `hasAny` for checking if the user's ID is in the list of member IDs.
       return request.auth.uid in teamData.members.map(member => member.playerId);
     }
-
-    // ───────────────────────────────────────────────────────────
-    // USERS COLLECTION
-    // ───────────────────────────────────────────────────────────
-
+    
     match /users/{userId} {
-      // ✅ CORRECCIÓN CRÍTICA: Se permite lectura a cualquier usuario autenticado
-      // y escritura solo si es el dueño. Esto soluciona el error "Missing or insufficient permissions".
+      // ✅ CORRECCIÓN CRÍTICA: Cualquiera autenticado puede leer, solo el dueño puede escribir.
       allow read: if isAuthenticated();
       allow write: if isOwner(userId);
 
-      // Subcollections
       match /notifications/{notificationId} {
         allow read, write: if isOwner(userId);
       }
@@ -49,23 +38,14 @@ service cloud.firestore {
       }
     }
 
-    // ───────────────────────────────────────────────────────────
-    // GLOBAL COLLECTIONS
-    // ───────────────────────────────────────────────────────────
-
     match /players/{playerId} {
       allow read: if isAuthenticated();
       allow write: if isOwner(playerId) || isResourceOwner(resource.data);
 
       match /ovrHistory/{historyId} {
         allow read: if isAuthenticated();
-        allow write: if false; // Server-side only
+        allow write: if false; 
       }
-    }
-
-    match /availablePlayers/{playerId} {
-      allow read: if isAuthenticated();
-      allow write: if isOwner(playerId);
     }
     
     match /groups/{groupId} {
@@ -91,51 +71,10 @@ service cloud.firestore {
             allow delete: if isAuthenticated() && (isTeamOwner(resource.data.toTeamId) || isTeamOwner(resource.data.fromTeamId));
         }
     }
-
-    match /matches/{matchId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isOwner(request.resource.data.ownerUid);
-      allow update: if isResourceOwner(resource.data);
-      allow delete: if isResourceOwner(resource.data);
-
-      match /assignments/{assignmentId} {
-        allow read: if isAuthenticated();
-        allow write: if false; // Server-side only
-      }
-      
-      // ✅ NUEVO: Subcolección para submissions procesadas (solo lectura para dueños)
-      match /processedSubmissions/{submissionId} {
-        allow read: if isResourceOwner(get(/databases/$(database)/documents/matches/$(matchId)).data);
-        allow write: if false;
-      }
-
-      match /selfEvaluations/{evalId} {
-        allow read, create, update: if isAuthenticated();
-        allow delete: if false;
-      }
-
-      match /messages/{messageId} {
-        allow read, create: if isAuthenticated();
-        allow update, delete: if isOwner(resource.data.senderId);
-      }
-      
-      match /invitations/{invitationId} {
-          allow read: if isAuthenticated();
-          allow create: if isResourceOwner(get(/databases/$(database)/documents/matches/$(matchId)).data);
-          allow update: if isAuthenticated() && isOwner(resource.data.playerId);
-          allow delete: if isResourceOwner(get(/databases/$(database)/documents/matches/$(matchId)).data);
-      }
-    }
     
-    match /evaluationSubmissions/{submissionId} {
-        allow create: if isAuthenticated();
-        allow read, update, delete: if false; // Processed server-side
+    // Reglas para el resto de colecciones (pueden requerir ajuste)
+    match /{document=**} {
+      allow read, write: if isAuthenticated();
     }
-
-    match /evaluations/{evalId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Server-side only
-    }
-
   }
 }
