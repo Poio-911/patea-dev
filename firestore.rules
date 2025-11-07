@@ -14,24 +14,20 @@ service cloud.firestore {
     function isOwner(uid) {
       return isAuthenticated() && request.auth.uid == uid;
     }
-
+    
     function isResourceOwner(resourceData) {
       return isAuthenticated() && request.auth.uid == resourceData.ownerUid;
     }
     
     function isTeamOwner(teamId) {
-      return get(/databases/$(database)/documents/teams/$(teamId)).data.createdBy == request.auth.uid;
+      let teamDoc = get(/databases/$(database)/documents/teams/$(teamId));
+      return teamDoc.data.createdBy == request.auth.uid;
     }
 
-    // NUEVA FUNCIÓN: Verifica si el usuario es miembro de un equipo específico
+    // ✅ NUEVA FUNCIÓN: Verifica si el usuario es miembro de un equipo específico
     function isTeamMember(teamId) {
-      let teamMembers = get(/databases/$(database)/documents/teams/$(teamId)).data.members;
-      // El campo 'members' es un array de objetos { playerId, ... }, necesitamos chequear el playerId
-      return request.auth.uid in teamMembers.map(member => member.playerId);
-    }
-
-    function isChallengingTeamOwner(invitationData) {
-        return isTeamOwner(invitationData.fromTeamId);
+      let teamData = get(/databases/$(database)/documents/teams/$(teamId)).data;
+      return request.auth.uid in teamData.members.map(member => member.playerId);
     }
 
     // ───────────────────────────────────────────────────────────
@@ -39,9 +35,10 @@ service cloud.firestore {
     // ───────────────────────────────────────────────────────────
 
     match /users/{userId} {
-      // ✅ CORRECCIÓN CRÍTICA: Se permite lectura y escritura si el usuario es el dueño del documento.
-      // Esto soluciona el error "Missing or insufficient permissions" al cargar el perfil.
-      allow read, write: if isOwner(userId);
+      // ✅ CORRECCIÓN CRÍTICA: Se permite lectura a cualquier usuario autenticado
+      // y escritura solo si es el dueño. Esto soluciona el error "Missing or insufficient permissions".
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
 
       // Subcollections
       match /notifications/{notificationId} {
@@ -85,13 +82,13 @@ service cloud.firestore {
 
         match /invitations/{invitationId} {
             // Permitir leer si sos dueño del equipo desafiado O del equipo desafiante
-            allow read: if isAuthenticated() && (isTeamOwner(resource.data.toTeamId) || isChallengingTeamOwner(resource.data));
+            allow read: if isAuthenticated() && (isTeamOwner(resource.data.toTeamId) || isTeamOwner(resource.data.fromTeamId));
             // Solo el dueño del equipo desafiante puede crear
-            allow create: if isAuthenticated() && isChallengingTeamOwner(request.resource.data);
-            // ✅ MEJORA: Ahora, cualquier MIEMBRO del equipo desafiado (no solo el dueño) puede aceptar/rechazar
+            allow create: if isAuthenticated() && isTeamOwner(request.resource.data.fromTeamId);
+            // ✅ MEJORA: Ahora, CUALQUIER MIEMBRO del equipo desafiado (no solo el dueño) puede aceptar/rechazar
             allow update: if isAuthenticated() && isTeamMember(resource.data.toTeamId);
             // El dueño de cualquiera de los dos equipos puede borrar
-            allow delete: if isAuthenticated() && (isTeamOwner(resource.data.toTeamId) || isChallengingTeamOwner(resource.data));
+            allow delete: if isAuthenticated() && (isTeamOwner(resource.data.toTeamId) || isTeamOwner(resource.data.fromTeamId));
         }
     }
 
@@ -104,6 +101,12 @@ service cloud.firestore {
       match /assignments/{assignmentId} {
         allow read: if isAuthenticated();
         allow write: if false; // Server-side only
+      }
+      
+      // ✅ NUEVO: Subcolección para submissions procesadas (solo lectura para dueños)
+      match /processedSubmissions/{submissionId} {
+        allow read: if isResourceOwner(get(/databases/$(database)/documents/matches/$(matchId)).data);
+        allow write: if false;
       }
 
       match /selfEvaluations/{evalId} {

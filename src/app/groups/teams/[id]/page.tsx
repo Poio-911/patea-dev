@@ -5,10 +5,9 @@ import { useMemo, useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
 import { doc, collection, query, where, updateDoc } from 'firebase/firestore';
-import type { GroupTeam, Player, GroupTeamMember, Match, DetailedTeamPlayer } from '@/lib/types';
+import type { GroupTeam, Player, DetailedTeamPlayer, Match } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { Loader2, Users, ArrowLeft, ShieldCheck, UserCheck, CalendarDays, History, Swords, Globe } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Loader2, ArrowLeft, ShieldCheck, UserCheck, History, Globe, Swords } from 'lucide-react';
 import { TeamRosterPlayer } from '@/components/team-roster-player';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Button } from '@/components/ui/button';
@@ -22,6 +21,7 @@ import { es } from 'date-fns/locale';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 export default function TeamDetailPage() {
   const { id: teamId } = useParams();
@@ -79,7 +79,7 @@ export default function TeamDetailPage() {
     if (loading || !team || !groupPlayers || !team.members) return { titulares: [], suplentes: [] };
 
     const detailedPlayers: DetailedTeamPlayer[] = team.members
-      .map((member: GroupTeamMember) => {
+      .map((member) => {
         const playerDetails = groupPlayers.find((p: Player) => p.id === member.playerId);
         if (!playerDetails) return null;
         return { 
@@ -99,8 +99,6 @@ export default function TeamDetailPage() {
   }, [team, groupPlayers, loading]);
   
   const handlePlayerUpdate = () => {
-    // This function will be called from child components to indicate a change
-    // For now, we can just log it. A better implementation might refetch data.
     console.log("Player updated, parent should refresh if needed.");
   }
   
@@ -160,7 +158,6 @@ export default function TeamDetailPage() {
             <div className="flex flex-col items-center gap-2">
                 <PageHeader title={team.name} className="justify-center text-center" />
                 <Badge variant="outline" className="text-sm">
-                    <Users className="mr-2 h-4 w-4"/>
                     {memberCount} Jugadores
                 </Badge>
             </div>
@@ -174,7 +171,7 @@ export default function TeamDetailPage() {
                         Disponibilidad para Desafíos
                     </CardTitle>
                 </CardHeader>
-                 <CardContent>
+                 <CardContent className="space-y-4">
                     <div className="flex items-center space-x-2">
                         <Switch 
                             id="challengeable-switch" 
@@ -186,6 +183,12 @@ export default function TeamDetailPage() {
                             {team.isChallengeable ? 'Tu equipo está abierto a recibir desafíos de otros grupos.' : 'Tu equipo no aparecerá en la búsqueda de rivales.'}
                         </Label>
                     </div>
+                     <Button asChild disabled={!team.isChallengeable}>
+                        <Link href={`/competitions/find-opponent/${team.id}`}>
+                           <Swords className="mr-2 h-4 w-4" />
+                           Buscar Rival
+                        </Link>
+                    </Button>
                 </CardContent>
             </Card>
         )}
