@@ -94,12 +94,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
 
   React.useEffect(() => {
-    if (!userLoading && !user && pathname !== '/' && pathname !== '/login' && pathname !== '/register' && pathname !== '/forgot-password') {
-      router.push('/login');
-    }
-  }, [user, userLoading, pathname, router]);
-  
-  React.useEffect(() => {
     if (user) {
         const lastLoginStr = localStorage.getItem('lastDailyLogin');
         const today = new Date();
@@ -123,22 +117,33 @@ export function MainNav({ children }: { children: React.ReactNode }) {
       router.push('/');
     }
   };
-
-  // Allow public pages to render without auth check
+  
+  // ✅ CORRECCIÓN CRÍTICA: Identificar las páginas públicas.
   const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
 
+  // Si es una página pública, renderizarla directamente sin verificar autenticación.
   if (isPublicPage) {
     return <>{children}</>;
   }
 
-  // For protected pages, check auth and loading states
+  // Para páginas protegidas, verificar la carga y el usuario.
   const loading = userLoading || playerLoading;
 
-  if (loading || !user) {
+  if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
       </div>
+    );
+  }
+  
+  // Si no está cargando pero no hay usuario, redirigir a login (esto solo aplicará a páginas protegidas)
+  if (!user) {
+    router.push('/login');
+    return (
+        <div className="flex h-screen w-full items-center justify-center">
+          <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
+        </div>
     );
   }
   

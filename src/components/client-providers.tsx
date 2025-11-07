@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -27,6 +28,7 @@ const LoadingScreen = () => (
     enableSystem={false}
     disableTransitionOnChange
   >
+    <ThemeBackground />
     <div className="flex h-screen w-full items-center justify-center bg-background">
       <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
     </div>
@@ -55,8 +57,7 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
     console.error("Google Maps API failed to load: ", loadError);
   }
 
-  // CORRECCIÓN CLAVE: No renderizar NADA hasta que Firebase esté inicializado.
-  // Esto previene que los hooks de auth se ejecuten con un contexto a medio cargar.
+  // ✅ CORRECCIÓN CLAVE: No renderizar NADA hasta que Firebase y Google Maps estén listos.
   if (!firebaseInstances || !isLoaded) {
     return <LoadingScreen />;
   }
