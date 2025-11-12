@@ -15,7 +15,7 @@ import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-
 import { coachConversation, type CoachConversationInput } from '@/ai/flows/coach-conversation';
 import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '@/ai/flows/detect-player-patterns';
 import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '@/ai/flows/analyze-player-progression';
-import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam } from '../types';
+import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, MatchLocation } from '../types';
 import { logger } from '../logger';
 
 // --- ADMIN SDK INITIALIZATION ---
@@ -397,5 +397,426 @@ export async function sendTeamChallengeAction(
     } catch (error: any) {
         logger.error('Error sending team challenge', error);
         return { error: error.message || "No se pudo enviar el desafío." };
+    }
+}
+
+// --- TEAM AVAILABILITY POSTS ACTIONS ---
+
+export async function createTeamAvailabilityPostAction(
+    teamId: string,
+    userId: string,
+    postData: {
+        date: string;
+        time: string;
+        location: MatchLocation;
+        description?: string;
+    }
+) {
+    const { adminDb } = getAdminInstances();
+    try {
+        const teamSnap = await adminDb.doc(`teams/${teamId}`).get();
+        if (!teamSnap.exists) {
+            throw new Error("El equipo no existe.");
+        }
+
+        const team = { id: teamSnap.id, ...teamSnap.data() } as GroupTeam;
+
+        // Verify user is the owner
+        if (team.createdBy !== userId) {
+            throw new Error("Solo el dueño del equipo puede crear postulaciones.");
+        }
+
+        const postRef = adminDb.collection('teamAvailabilityPosts').doc();
+        const newPost: any = {
+            teamId: team.id,
+            teamName: team.name,
+            jersey: team.jersey,
+            date: postData.date,
+            time: postData.time,
+            location: postData.location,
+            createdBy: userId,
+            createdAt: new Date().toISOString(),
+        };
+
+        // Only add description if it's provided
+        if (postData.description) {
+            newPost.description = postData.description;
+        }
+
+        await postRef.set(newPost);
+
+        return { success: true, postId: postRef.id };
+    } catch (error: any) {
+        logger.error('Error creating team availability post', error);
+        return { error: error.message || "No se pudo crear la postulación." };
+    }
+}
+
+export async function getAvailableTeamPostsAction(userId: string) {
+    const { adminDb } = getAdminInstances();
+    try {
+        console.log('[getAvailableTeamPostsAction] userId:', userId);
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+
+        // Get all posts with future dates - filter on server
+        const postsSnapshot = await adminDb
+            .collection('teamAvailabilityPosts')
+            .where('createdBy', '!=', userId) // Exclude user's own posts
+            .where('date', '>=', today) // Server-side date filtering
+            .orderBy('date', 'asc')
+            .orderBy('createdBy')
+            .get();
+
+        console.log('[getAvailableTeamPostsAction] Total docs from query:', postsSnapshot.docs.length);
+        postsSnapshot.docs.forEach(doc => {
+            const data = doc.data();
+            console.log('[getAvailableTeamPostsAction] Post:', { id: doc.id, createdBy: data.createdBy, teamName: data.teamName, date: data.date, time: data.time });
+        });
+
+        const posts = postsSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as TeamAvailabilityPost))
+            .filter(post => {
+                // Additional time filtering for today's date
+                const postDateTime = new Date(`${post.date}T${post.time}`);
+                const isValid = postDateTime > new Date();
+                console.log('[getAvailableTeamPostsAction] Time filter:', { teamName: post.teamName, postDateTime, now: new Date(), isValid });
+                return isValid;
+            });
+
+        console.log('[getAvailableTeamPostsAction] Posts after time filter:', posts.length);
+        return { success: true, posts };
+    } catch (error: any) {
+        logger.error('Error getting available team posts', error);
+        return { error: error.message || "No se pudieron obtener las postulaciones.", posts: [] };
+    }
+}
+
+export async function getUserTeamPostsAction(userId: string) {
+    const { adminDb } = getAdminInstances();
+    try {
+        console.log('[getUserTeamPostsAction] userId:', userId);
+
+        // Get all posts created by user
+        const postsSnapshot = await adminDb
+            .collection('teamAvailabilityPosts')
+            .where('createdBy', '==', userId)
+            .orderBy('date', 'asc')
+            .get();
+
+        const posts = postsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            console.log('[getUserTeamPostsAction] Post found:', { id: doc.id, createdBy: data.createdBy, teamName: data.teamName });
+            return {
+                id: doc.id,
+                ...data
+            } as TeamAvailabilityPost;
+        });
+
+        console.log('[getUserTeamPostsAction] Total posts for user:', posts.length);
+        return { success: true, posts };
+    } catch (error: any) {
+        logger.error('Error getting user team posts', error);
+        return { error: error.message || "No se pudieron obtener tus postulaciones.", posts: [] };
+    }
+}
+
+export async function challengeTeamPostAction(
+    postId: string,
+    challengingTeamId: string,
+    challengerUserId: string
+) {
+    const { adminDb } = getAdminInstances();
+    try {
+        const batch = adminDb.batch();
+
+        const [postSnap, challengingTeamSnap, challengerUserSnap] = await Promise.all([
+            adminDb.doc(`teamAvailabilityPosts/${postId}`).get(),
+            adminDb.doc(`teams/${challengingTeamId}`).get(),
+            adminDb.doc(`users/${challengerUserId}`).get(),
+        ]);
+
+        if (!postSnap.exists || !challengingTeamSnap.exists || !challengerUserSnap.exists) {
+            throw new Error("La postulación, el equipo o el usuario no existe.");
+        }
+
+        const post = { id: postSnap.id, ...postSnap.data() } as TeamAvailabilityPost;
+        const challengingTeam = { id: challengingTeamSnap.id, ...challengingTeamSnap.data() } as GroupTeam;
+
+        // Get the challenged team
+        const challengedTeamSnap = await adminDb.doc(`teams/${post.teamId}`).get();
+        if (!challengedTeamSnap.exists) {
+            throw new Error("El equipo desafiado no existe.");
+        }
+        const challengedTeam = { id: challengedTeamSnap.id, ...challengedTeamSnap.data() } as GroupTeam;
+
+        // Create invitation in challenged team's subcollection
+        const invitationRef = adminDb.collection(`teams/${post.teamId}/invitations`).doc();
+        const newInvitation: Omit<Invitation, 'id'> = {
+            type: 'team_challenge',
+            fromTeamId: challengingTeam.id,
+            fromTeamName: challengingTeam.name,
+            fromTeamJersey: challengingTeam.jersey,
+            toTeamId: challengedTeam.id,
+            toTeamName: challengedTeam.name,
+            postId: post.id, // Reference to the post
+            status: 'pending',
+            createdBy: challengerUserId,
+            createdAt: new Date().toISOString(),
+        };
+        batch.set(invitationRef, newInvitation);
+
+        // Create notification for the owner of the challenged team
+        const notificationRef = adminDb.collection(`users/${challengedTeam.createdBy}/notifications`).doc();
+        const notification: Omit<Notification, 'id'> = {
+            type: 'match_invite',
+            title: '¡Desafío Recibido!',
+            message: `El equipo "${challengingTeam.name}" quiere aceptar tu postulación para jugar el ${new Date(post.date).toLocaleDateString()}.`,
+            link: '/competitions',
+            isRead: false,
+            createdAt: new Date().toISOString(),
+        };
+        batch.set(notificationRef, notification);
+
+        await batch.commit();
+
+        return { success: true };
+    } catch (error: any) {
+        logger.error('Error challenging team post', error);
+        return { error: error.message || "No se pudo aceptar la postulación." };
+    }
+}
+
+export async function acceptTeamChallengeAction(
+    invitationId: string,
+    teamId: string,
+    userId: string
+) {
+    const { adminDb } = getAdminInstances();
+    try {
+        const batch = adminDb.batch();
+
+        // Get the invitation
+        const invitationSnap = await adminDb.doc(`teams/${teamId}/invitations/${invitationId}`).get();
+        if (!invitationSnap.exists) {
+            throw new Error("La invitación no existe.");
+        }
+
+        const invitation = { id: invitationSnap.id, ...invitationSnap.data() } as Invitation;
+
+        if (invitation.type !== 'team_challenge') {
+            throw new Error("Esta no es una invitación de desafío de equipos.");
+        }
+
+        // Update invitation status
+        batch.update(invitationSnap.ref, { status: 'accepted' });
+
+        // Get both teams
+        const [team1Snap, team2Snap] = await Promise.all([
+            adminDb.doc(`teams/${invitation.toTeamId}`).get(),
+            adminDb.doc(`teams/${invitation.fromTeamId}`).get(),
+        ]);
+
+        if (!team1Snap.exists || !team2Snap.exists) {
+            throw new Error("Uno de los equipos no existe.");
+        }
+
+        const team1 = { id: team1Snap.id, ...team1Snap.data() } as GroupTeam;
+        const team2 = { id: team2Snap.id, ...team2Snap.data() } as GroupTeam;
+
+        // Get the post if it exists (to get date/time/location)
+        let matchDate = new Date().toISOString().split('T')[0];
+        let matchTime = '19:00';
+        let matchLocation: MatchLocation = {
+            name: 'Por definir',
+            address: 'Por definir',
+            lat: 0,
+            lng: 0,
+            placeId: '',
+        };
+
+        if (invitation.postId) {
+            const postSnap = await adminDb.doc(`teamAvailabilityPosts/${invitation.postId}`).get();
+            if (postSnap.exists) {
+                const post = postSnap.data() as TeamAvailabilityPost;
+                matchDate = post.date;
+                matchTime = post.time;
+                matchLocation = post.location;
+            }
+        }
+
+        // Get players from both teams
+        const [team1PlayersSnaps, team2PlayersSnaps] = await Promise.all([
+            Promise.all(team1.members.map(m => adminDb.doc(`players/${m.playerId}`).get())),
+            Promise.all(team2.members.map(m => adminDb.doc(`players/${m.playerId}`).get())),
+        ]);
+
+        const team1Players = team1PlayersSnaps
+            .filter(snap => snap.exists)
+            .map(snap => ({ id: snap.id, ...snap.data() } as Player));
+        const team2Players = team2PlayersSnaps
+            .filter(snap => snap.exists)
+            .map(snap => ({ id: snap.id, ...snap.data() } as Player));
+
+        // Create the match
+        const matchRef = adminDb.collection('matches').doc();
+        const newMatch: Omit<Match, 'id'> = {
+            title: `${team1.name} vs ${team2.name}`,
+            date: matchDate,
+            time: matchTime,
+            location: matchLocation,
+            type: 'intergroup_friendly',
+            matchSize: 22, // Default to 11v11
+            players: [...team1Players, ...team2Players].map(p => ({
+                uid: p.id,
+                displayName: p.name,
+                ovr: p.ovr,
+                position: p.position,
+                photoUrl: p.photoUrl || '',
+            })),
+            playerUids: [...team1Players, ...team2Players].map(p => p.id),
+            teams: [
+                {
+                    id: team1.id,
+                    name: team1.name,
+                    jersey: team1.jersey,
+                    players: team1Players.map(p => ({
+                        uid: p.id,
+                        displayName: p.name,
+                        position: p.position,
+                        ovr: p.ovr,
+                    })),
+                    totalOVR: team1Players.reduce((sum, p) => sum + p.ovr, 0),
+                    averageOVR: team1Players.reduce((sum, p) => sum + p.ovr, 0) / team1Players.length,
+                },
+                {
+                    id: team2.id,
+                    name: team2.name,
+                    jersey: team2.jersey,
+                    players: team2Players.map(p => ({
+                        uid: p.id,
+                        displayName: p.name,
+                        position: p.position,
+                        ovr: p.ovr,
+                    })),
+                    totalOVR: team2Players.reduce((sum, p) => sum + p.ovr, 0),
+                    averageOVR: team2Players.reduce((sum, p) => sum + p.ovr, 0) / team2Players.length,
+                },
+            ],
+            status: 'upcoming',
+            ownerUid: team1.createdBy, // The team that was challenged is the "owner"
+            groupId: team1.groupId,
+            isPublic: false,
+        };
+
+        batch.set(matchRef, newMatch);
+
+        // Create notifications for both team owners
+        const notification1Ref = adminDb.collection(`users/${team1.createdBy}/notifications`).doc();
+        const notification1: Omit<Notification, 'id'> = {
+            type: 'match_update',
+            title: '¡Desafío Aceptado!',
+            message: `Has aceptado el desafío de "${team2.name}". El partido ha sido creado.`,
+            link: `/matches/${matchRef.id}`,
+            isRead: false,
+            createdAt: new Date().toISOString(),
+        };
+        batch.set(notification1Ref, notification1);
+
+        const notification2Ref = adminDb.collection(`users/${team2.createdBy}/notifications`).doc();
+        const notification2: Omit<Notification, 'id'> = {
+            type: 'match_update',
+            title: '¡Desafío Aceptado!',
+            message: `"${team1.name}" ha aceptado tu desafío. El partido ha sido creado.`,
+            link: `/matches/${matchRef.id}`,
+            isRead: false,
+            createdAt: new Date().toISOString(),
+        };
+        batch.set(notification2Ref, notification2);
+
+        await batch.commit();
+
+        return { success: true, matchId: matchRef.id };
+    } catch (error: any) {
+        logger.error('Error accepting team challenge', error);
+        return { error: error.message || "No se pudo aceptar el desafío." };
+    }
+}
+
+export async function rejectTeamChallengeAction(
+    invitationId: string,
+    teamId: string,
+    userId: string
+) {
+    const { adminDb } = getAdminInstances();
+    try {
+        const batch = adminDb.batch();
+
+        // Get the invitation
+        const invitationSnap = await adminDb.doc(`teams/${teamId}/invitations/${invitationId}`).get();
+        if (!invitationSnap.exists) {
+            throw new Error("La invitación no existe.");
+        }
+
+        const invitation = { id: invitationSnap.id, ...invitationSnap.data() } as Invitation;
+
+        if (invitation.type !== 'team_challenge') {
+            throw new Error("Esta no es una invitación de desafío de equipos.");
+        }
+
+        // Update invitation status
+        batch.update(invitationSnap.ref, { status: 'declined' });
+
+        // Get the challenging team to get the owner
+        const challengingTeamSnap = await adminDb.doc(`teams/${invitation.fromTeamId}`).get();
+        if (challengingTeamSnap.exists) {
+            const challengingTeam = { id: challengingTeamSnap.id, ...challengingTeamSnap.data() } as GroupTeam;
+
+            // Create notification for the challenging team owner
+            const notificationRef = adminDb.collection(`users/${challengingTeam.createdBy}/notifications`).doc();
+            const notification: Omit<Notification, 'id'> = {
+                type: 'match_update',
+                title: 'Desafío Rechazado',
+                message: `"${invitation.toTeamName}" ha rechazado tu desafío.`,
+                link: '/competitions',
+                isRead: false,
+                createdAt: new Date().toISOString(),
+            };
+            batch.set(notificationRef, notification);
+        }
+
+        await batch.commit();
+
+        return { success: true };
+    } catch (error: any) {
+        logger.error('Error rejecting team challenge', error);
+        return { error: error.message || "No se pudo rechazar el desafío." };
+    }
+}
+
+export async function deleteTeamAvailabilityPostAction(
+    postId: string,
+    userId: string
+) {
+    const { adminDb } = getAdminInstances();
+    try {
+        const postSnap = await adminDb.doc(`teamAvailabilityPosts/${postId}`).get();
+
+        if (!postSnap.exists) {
+            throw new Error("La postulación no existe.");
+        }
+
+        const post = postSnap.data() as TeamAvailabilityPost;
+
+        // Verify user is the owner
+        if (post.createdBy !== userId) {
+            throw new Error("Solo el creador puede eliminar esta postulación.");
+        }
+
+        await postSnap.ref.delete();
+
+        return { success: true };
+    } catch (error: any) {
+        logger.error('Error deleting team availability post', error);
+        return { error: error.message || "No se pudo eliminar la postulación." };
     }
 }

@@ -21,7 +21,15 @@
       "Bash(timeout /t 3)",
       "Bash(npx kill-port:*)",
       "Bash(set PORT=3006)",
-      "Bash(npx next dev -p 3006)"
+      "Bash(npx next dev -p 3006)",
+      "Bash(git clean:*)",
+      "Bash(dir:*)",
+      "Bash(nul)",
+      "Bash(echo:*)",
+      "Bash(unset FIRESTORE_EMULATOR_HOST:*)",
+      "Bash(unset:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(firebase projects:list:*)"
     ],
     "deny": [],
     "ask": []

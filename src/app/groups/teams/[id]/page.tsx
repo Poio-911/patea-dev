@@ -101,22 +101,6 @@ export default function TeamDetailPage() {
   const handlePlayerUpdate = () => {
     console.log("Player updated, parent should refresh if needed.");
   }
-  
-  const handleChallengeableToggle = async (isChallengeable: boolean) => {
-    if (!teamRef) return;
-    setIsUpdating(true);
-    try {
-        await updateDoc(teamRef, { isChallengeable });
-        toast({
-            title: 'Visibilidad actualizada',
-            description: `Tu equipo ${isChallengeable ? 'ahora puede' : 'ya no puede'} recibir desafíos.`
-        });
-    } catch(e) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar la visibilidad.' });
-    } finally {
-        setIsUpdating(false);
-    }
-  }
 
   if (loading) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-12 w-12 animate-spin" /></div>;
@@ -164,29 +148,21 @@ export default function TeamDetailPage() {
         </div>
         
         {isOwner && (
-            <Card>
+            <Card className="bg-gradient-to-r from-primary/10 to-transparent border-primary/20">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Globe className="h-5 w-5 text-primary" />
-                        Disponibilidad para Desafíos
+                        <Swords className="h-5 w-5 text-primary" />
+                        Partidos y Competiciones
                     </CardTitle>
+                    <CardDescription>
+                        Gestioná las postulaciones y desafíos de tu equipo
+                    </CardDescription>
                 </CardHeader>
-                 <CardContent className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                        <Switch 
-                            id="challengeable-switch" 
-                            checked={team.isChallengeable}
-                            onCheckedChange={handleChallengeableToggle}
-                            disabled={isUpdating}
-                        />
-                        <Label htmlFor="challengeable-switch">
-                            {team.isChallengeable ? 'Tu equipo está abierto a recibir desafíos de otros grupos.' : 'Tu equipo no aparecerá en la búsqueda de rivales.'}
-                        </Label>
-                    </div>
-                     <Button asChild disabled={!team.isChallengeable}>
-                        <Link href={`/competitions/find-opponent/${team.id}`}>
+                <CardContent>
+                    <Button asChild className="w-full">
+                        <Link href="/competitions">
                            <Swords className="mr-2 h-4 w-4" />
-                           Buscar Rival
+                           Ir a Competiciones
                         </Link>
                     </Button>
                 </CardContent>

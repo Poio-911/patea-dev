@@ -143,7 +143,7 @@ export default function ChallengeTeamPage() {
                     <AlertDescription>No se pudo cargar la información del desafío.</AlertDescription>
                 </Alert>
                 <Button asChild variant="link" className="mt-4">
-                    <Link href="/competitions/available-teams">Volver</Link>
+                    <Link href="/competitions">Volver</Link>
                 </Button>
             </div>
         );
@@ -157,7 +157,7 @@ export default function ChallengeTeamPage() {
                     description="Elegí el equipo con el que querés desafiar"
                 />
                 <Button asChild variant="outline">
-                    <Link href="/competitions/available-teams">
+                    <Link href="/competitions">
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Volver
                     </Link>
@@ -176,7 +176,7 @@ export default function ChallengeTeamPage() {
                     <div className="flex flex-col md:flex-row gap-6">
                         <div className="flex flex-col items-center">
                             <div className="w-24 h-24">
-                                <JerseyPreview jersey={post.teamJersey} size="lg" />
+                                <JerseyPreview jersey={post.jersey} size="lg" />
                             </div>
                             <h3 className="font-bold text-xl mt-3">{post.teamName}</h3>
                             <Badge variant="secondary" className="mt-2">Rival</Badge>
@@ -246,7 +246,7 @@ export default function ChallengeTeamPage() {
             {myTeams && myTeams.length > 0 && (
                 <div className="flex justify-end gap-3">
                     <Button asChild variant="outline">
-                        <Link href="/competitions/available-teams">Cancelar</Link>
+                        <Link href="/competitions">Cancelar</Link>
                     </Button>
                     <Button
                         size="lg"

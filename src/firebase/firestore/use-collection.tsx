@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   onSnapshot,
   Query,
@@ -13,6 +13,7 @@ interface CollectionData<T> {
   data: T[] | null;
   loading: boolean;
   error: Error | null;
+  refetch: () => void;
 }
 
 export const useCollection = <T extends DocumentData>(
@@ -21,6 +22,7 @@ export const useCollection = <T extends DocumentData>(
   const [data, setData] = useState<T[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
+  const [refetchTrigger, setRefetchTrigger] = useState<number>(0);
 
   useEffect(() => {
     if (!query) {
@@ -59,7 +61,11 @@ export const useCollection = <T extends DocumentData>(
     return () => {
         unsubscribe();
     };
-  }, [query]);
+  }, [query, refetchTrigger]);
 
-  return { data, loading, error };
+  const refetch = useCallback(() => {
+    setRefetchTrigger(prev => prev + 1);
+  }, []);
+
+  return { data, loading, error, refetch };
 };

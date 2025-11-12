@@ -177,25 +177,39 @@ export type Notification = {
     createdAt: string; // ISO 8601 string
 } & DocumentData;
 
+export type TeamAvailabilityPost = {
+    id: string;
+    teamId: string;
+    teamName: string;
+    jersey: Jersey;
+    date: string; // ISO 8601 date string
+    time: string; // HH:MM format
+    location: MatchLocation;
+    description?: string;
+    createdBy: string; // UID of the team owner who created the post
+    createdAt: string; // ISO 8601 timestamp
+} & DocumentData;
+
 export type Invitation = {
     id: string;
     type: 'player_to_match' | 'team_challenge';
     status: 'pending' | 'accepted' | 'declined';
     createdBy: string; // UID of the user who sent the invite
     createdAt: string;
-    
+
     // For player invites to a match
     matchId?: string;
     matchTitle?: string;
     matchDate?: string;
     playerId?: string;
-    
+
     // For team challenges
     fromTeamId?: string;
     fromTeamName?: string;
     fromTeamJersey?: Jersey;
     toTeamId?: string;
     toTeamName?: string;
+    postId?: string; // Reference to the TeamAvailabilityPost that was challenged
 
 } & DocumentData;
 

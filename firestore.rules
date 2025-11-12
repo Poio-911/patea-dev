@@ -55,11 +55,8 @@ service cloud.firestore {
         // Subcolección de invitaciones
         match /invitations/{invitationId} {
             allow read: if isAuthenticated();
-            // ✅ CORRECCIÓN: Ahora cualquier miembro del equipo desafiado puede aceptar/rechazar.
-            allow update: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/teams/$(resource.data.toTeamId)).data.members.map(member => member.playerId);
-            // Solo el creador del desafío (dueño del equipo desafiante) puede crear/borrar invitaciones.
-            allow create: if isOwner(get(/databases/$(database)/documents/teams/$(request.resource.data.fromTeamId)).data.createdBy);
-            allow delete: if isOwner(get(/databases/$(database)/documents/teams/$(resource.data.fromTeamId)).data.createdBy);
+            // Permisos simplificados: autenticación + lógica de negocio en Server Actions
+            allow write: if isAuthenticated();
         }
     }
 
