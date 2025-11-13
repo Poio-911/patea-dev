@@ -1,3 +1,4 @@
+
 'use client';
 import { useEffect, useState, createContext, useContext } from 'react';
 import type { User } from 'firebase/auth';
@@ -29,12 +30,27 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     let unsubUser: (() => void) | null = null;
 
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (unsubUser) {
+          unsubUser();
+          unsubUser = null;
+      }
+      
       if (firebaseUser) {
         const userRef = doc(firestore, 'users', firebaseUser.uid);
 
         unsubUser = onSnapshot(userRef, async (userDoc) => {
           if (userDoc.exists()) {
              const userData = userDoc.data() as UserProfile;
+
+             // ✅ FIX: The local firebaseUser object can be stale. Create a new object with the latest data.
+             // This ensures that changes to photoURL or displayName are reflected everywhere immediately.
+             const freshUserProfile: UserProfile = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                displayName: firebaseUser.displayName,
+                photoURL: firebaseUser.photoURL,
+                ...userData, // Firestore data has priority (e.g. activeGroupId)
+             };
 
              // --- DATA REPAIR & CREDIT RESET LOGIC ---
              const playerRef = doc(firestore, 'players', firebaseUser.uid);
@@ -44,12 +60,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                     const playerData = playerDoc.data() as Player;
                     const updates: Partial<Player> = {};
 
-                    // Sync player's groupId if out of sync with user's activeGroupId
                     if (userData.activeGroupId && playerData.groupId !== userData.activeGroupId) {
                         updates.groupId = userData.activeGroupId;
                     }
 
-                    // Monthly credit reset logic
                     const now = new Date();
                     const lastReset = playerData.lastCreditReset ? new Date(playerData.lastCreditReset) : null;
 
@@ -66,10 +80,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
              } catch (e) {
                 logger.error("Failed to sync player data or reset credits:", e, { userId: firebaseUser.uid });
              }
-             // --- END REPAIR & CREDIT RESET LOGIC ---
-
-             setUser(userData);
+             
+             setUser(freshUserProfile);
              setLoading(false);
+
           } else {
             // This part is now primarily for brand new users after registration.
             const newUserProfile: UserProfile & { createdAt: FieldValue } = {
@@ -98,11 +112,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           setLoading(false);
         });
       } else {
-        // Limpiar listener cuando el usuario cierra sesión
-        if (unsubUser) {
-          unsubUser();
-          unsubUser = null;
-        }
         setUser(null);
         setLoading(false);
       }
@@ -110,8 +119,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => {
       unsubscribe();
+      if (unsubUser) {
+        unsubUser();
+      }
     };
-  }, [auth, firestore]); // ✅ CORRECCIÓN: Se elimina `loading` de las dependencias para evitar loops.
+  }, [auth, firestore]);
 
   return (
     <UserContext.Provider value={{ user, loading }}>

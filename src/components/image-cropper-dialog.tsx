@@ -141,6 +141,7 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
       }
       
       if (!user || !auth?.currentUser) {
+        // If not logged in (e.g., during registration), just pass the data URI back
         const reader = new FileReader();
         reader.onloadend = () => {
             if (onSaveComplete) {
@@ -153,6 +154,7 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
         return;
       }
 
+      // Logged-in user flow
       const { firebaseApp, firestore } = initializeFirebase();
       const storage = getStorage(firebaseApp);
       const filePath = `profile-images/${user.uid}/profile_${Date.now()}.jpg`;
@@ -161,14 +163,21 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
       const uploadResult = await uploadBytes(storageRef, croppedImageBlob);
       const newPhotoURL = await getDownloadURL(uploadResult.ref);
 
+      // ✅ FIX: Update both user and player documents in a single batch
       const userDocRef = doc(firestore, 'users', user.uid);
       const playerDocRef = doc(firestore, 'players', user.uid);
 
       const batch = writeBatch(firestore);
       batch.update(userDocRef, { photoURL: newPhotoURL });
-      batch.update(playerDocRef, { photoUrl: newPhotoURL });
+      batch.update(playerDocRef, { 
+          photoUrl: newPhotoURL,
+          // Reset crop and zoom as the new image is already cropped
+          cropPosition: { x: 50, y: 50 }, 
+          cropZoom: 1
+      });
       await batch.commit();
 
+      // ✅ FIX: Force update the auth user profile to propagate changes globally
       await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
       
       if(onSaveComplete) {

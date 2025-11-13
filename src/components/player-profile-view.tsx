@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser } from '@/firebase';
 import type { Player } from '@/lib/types';
 import { PlayerCard } from '@/components/player-card';
 import { Sparkles, Scissors, Loader2, LineChart, BrainCircuit } from 'lucide-react';
@@ -33,6 +33,7 @@ export default function PlayerProfileView({ playerId, player: initialPlayer }: P
 
   const handlePhotoUpdate = (newUrl: string) => {
     setPlayer(prevPlayer => ({ ...prevPlayer, photoUrl: newUrl }));
+    // No need to reload the page, state update will trigger re-render
   };
 
   const handleGenerateAIPhoto = async () => {
@@ -40,11 +41,15 @@ export default function PlayerProfileView({ playerId, player: initialPlayer }: P
     setIsGeneratingAI(true);
     try {
       const result = await generatePlayerCardImageAction(user.uid);
+
       if ('error' in result) {
         toast({ variant: 'destructive', title: 'Error al generar imagen', description: result.error });
       } else {
         toast({ title: 'Foto generada con éxito', description: 'Tu foto profesional ha sido creada con IA.' });
         if (result.newPhotoURL) {
+          // The useUser hook will pick up the change from Auth and update the context,
+          // which will re-render components that use it.
+          // For local component state, we still update it manually.
           handlePhotoUpdate(result.newPhotoURL);
         }
       }
