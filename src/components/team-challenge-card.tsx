@@ -32,7 +32,6 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
       const result = await acceptTeamChallengeAction(invitation.id, teamId, userId);
       
       if ('success' in result && result.success) {
-        // ✅ Trigger exit animation before removing
         setIsExiting(true);
         celebrationConfetti();
         toast({
@@ -46,16 +45,15 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
               Ver Detalles
             </Button>
           ) : undefined,
-          duration: 8000, // 8 segundos para leer los próximos pasos
+          duration: 8000,
         });
-        // Wait for animation to complete before calling onUpdate
         setTimeout(() => {
           onUpdate?.();
-        }, 300); // Match animation duration
+        }, 300);
       } else {
         toast({
           title: 'Error',
-          description: result.error || 'No se pudo aceptar el desafío.',
+          description: ('error' in result && result.error) || 'No se pudo aceptar el desafío.',
           variant: 'destructive',
         });
       }
@@ -66,16 +64,14 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
     startTransition(async () => {
       const result = await rejectTeamChallengeAction(invitation.id, teamId, userId);
       if (result.success) {
-        // ✅ Trigger exit animation before removing
         setIsExiting(true);
         toast({
           title: 'Desafío rechazado',
           description: `Has rechazado el desafío de "${invitation.fromTeamName}".`,
         });
-        // Wait for animation to complete before calling onUpdate
         setTimeout(() => {
           onUpdate?.();
-        }, 300); // Match animation duration
+        }, 300);
       } else {
         toast({
           title: 'Error',
