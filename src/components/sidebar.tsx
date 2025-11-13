@@ -9,10 +9,7 @@ import { PanelLeft } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Tooltip,
   TooltipContent,
@@ -31,8 +28,6 @@ type SidebarContext = {
   state: 'expanded' | 'collapsed';
   open: boolean;
   setOpen: (open: boolean) => void;
-  openMobile: boolean;
-  setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
   toggleSidebar: () => void;
 };
@@ -69,7 +64,6 @@ const SidebarProvider = React.forwardRef<
     ref
   ) => {
     const isMobile = useIsMobile();
-    const [openMobile, setOpenMobile] = React.useState(false);
 
     const [_open, _setOpen] = React.useState(defaultOpen);
     const open = openProp ?? _open;
@@ -87,10 +81,8 @@ const SidebarProvider = React.forwardRef<
     );
 
     const toggleSidebar = React.useCallback(() => {
-      return isMobile
-        ? setOpenMobile((open) => !open)
-        : setOpen((open) => !open);
-    }, [isMobile, setOpen, setOpenMobile]);
+      setOpen((open) => !open);
+    }, [setOpen]);
 
     React.useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
@@ -115,11 +107,9 @@ const SidebarProvider = React.forwardRef<
         open,
         setOpen,
         isMobile,
-        openMobile,
-        setOpenMobile,
         toggleSidebar,
       }),
-      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+      [state, open, setOpen, isMobile, toggleSidebar]
     );
 
     return (
@@ -149,17 +139,10 @@ SidebarProvider.displayName = 'SidebarProvider';
 
 const Sidebar = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<'div'> & {
-    side?: 'left' | 'right';
-    variant?: 'sidebar' | 'floating' | 'inset';
-    collapsible?: 'offcanvas' | 'icon' | 'none';
-  }
+  React.ComponentProps<'div'>
 >(
   (
     {
-      side = 'left',
-      variant = 'sidebar',
-      collapsible = 'icon',
       className,
       children,
       ...props
@@ -236,36 +219,6 @@ const SidebarHeader = React.forwardRef<
 });
 SidebarHeader.displayName = 'SidebarHeader';
 
-const SidebarFooter = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<'div'>
->(({ className, ...props }, ref) => {
-  return (
-    <div
-      ref={ref}
-      data-sidebar="footer"
-      className={cn('flex flex-col gap-2 p-2', className)}
-      {...props}
-    />
-  );
-});
-SidebarFooter.displayName = 'SidebarFooter';
-
-const SidebarSeparator = React.forwardRef<
-  React.ElementRef<typeof Separator>,
-  React.ComponentProps<typeof Separator>
->(({ className, ...props }, ref) => {
-  return (
-    <Separator
-      ref={ref}
-      data-sidebar="separator"
-      className={cn('mx-2 w-auto bg-border', className)}
-      {...props}
-    />
-  );
-});
-SidebarSeparator.displayName = 'SidebarSeparator';
-
 const SidebarContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<'div'>
@@ -326,6 +279,25 @@ const SidebarGroupLabel = React.forwardRef<
   );
 });
 SidebarGroupLabel.displayName = 'SidebarGroupLabel';
+
+const SidebarSeparator = React.forwardRef<
+  React.ElementRef<typeof Separator>,
+  React.ComponentProps<typeof Separator>
+>(({ className, ...props }, ref) => {
+  const { state } = useSidebar();
+  return (
+    <Separator
+      ref={ref}
+      className={cn(
+        'my-2 transition-opacity duration-200',
+        state === 'collapsed' && 'opacity-0',
+        className
+      )}
+      {...props}
+    />
+  );
+});
+SidebarSeparator.displayName = 'SidebarSeparator';
 
 
 const SidebarMenu = React.forwardRef<
@@ -447,11 +419,9 @@ const SidebarMenuButton = React.forwardRef<
 );
 SidebarMenuButton.displayName = 'SidebarMenuButton';
 
-
 export {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,

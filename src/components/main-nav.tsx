@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -15,12 +14,12 @@ import {
   SidebarHeader,
   SidebarGroup,
   SidebarGroupLabel,
-} from '@/components/ui/sidebar';
+  SidebarSeparator,
+} from '@/components/sidebar'; 
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Gamepad2, UserCircle, Trophy, ClipboardCheck, X, CalendarDays, Swords } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore, useCollection } from '@/firebase';
 import { GroupSwitcher } from '@/components/group-switcher';
 import {
@@ -107,7 +106,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     }
   }, [user, toast]);
 
-  // Close menu on route change
   React.useEffect(() => { setRadialMenuOpen(false); }, [pathname]);
 
   React.useEffect(() => {
@@ -171,8 +169,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                       </div>
                   )}
                   
-                  <Separator orientation="vertical" className="h-10 mx-1 hidden sm:block" />
-
                   <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="relative h-12 w-12 rounded-full">
@@ -288,7 +284,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                               isActive={pathname.startsWith(item.href)}
                               tooltip={item.label}
                             >
-                              <item.icon />
+                              <item.icon className="h-5 w-5" />
                               <span>{item.label}</span>
                             </SidebarMenuButton>
                           </Link>
@@ -299,7 +295,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                            isActive={isMatchesRelatedPath}
                            tooltip="Partidos & Competiciones"
                         >
-                            <Trophy/>
+                            <Trophy className="h-5 w-5"/>
                             <div className="flex flex-col items-start w-full">
                                 <span>Competición</span>
                                 <div className="flex gap-2 mt-1">
@@ -312,7 +308,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                     </SidebarGroup>
                 </SidebarMenu>
                  <div className="mt-auto">
-                    <Separator className="my-2" />
+                    <SidebarSeparator />
                     <SidebarGroup>
                         <SidebarGroupLabel>Mi Grupo</SidebarGroupLabel>
                         <GroupSwitcher />
@@ -420,5 +416,3 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
-
-    
