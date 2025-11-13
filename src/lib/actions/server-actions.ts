@@ -539,11 +539,11 @@ function getAdminInstances() {
     return { adminDb };
 }
 
-export async function acceptTeamChallengeAction(invitationId: string, teamId: string, userId: string) {
+export async function acceptTeamChallengeAction(invitationId: string, teamId: string, userId: string): Promise<{ success: boolean; matchId: string } | { error: any }> {
   try {
     const { adminDb } = getAdminInstances();
     
-    return await adminDb.runTransaction(async (transaction) => {
+    const result = await adminDb.runTransaction(async (transaction) => {
       const invitationRef = adminDb.doc(`teams/${teamId}/invitations/${invitationId}`);
       const invitationSnap = await transaction.get(invitationRef);
 
@@ -583,16 +583,16 @@ export async function acceptTeamChallengeAction(invitationId: string, teamId: st
       }
       
       const matchRef = adminDb.collection('matches').doc();
-      const newMatch = {
+      const newMatch: Omit<Match, 'id'> = {
         title: `${team1Data.name} vs ${team2Data.name}`,
-        date: matchDate,
-        time: matchTime,
-        location: matchLocation,
+        date: matchDate!,
+        time: matchTime!,
+        location: matchLocation!,
         type: 'intergroup_friendly',
-        matchSize: 22,
-        players: [],
-        playerUids: [],
-        teams: [],
+        matchSize: 22, // Default, can be adjusted
+        players: [], // Will be populated from teams
+        playerUids: [], // Will be populated from teams
+        teams: [], // Will be populated from teams
         status: 'upcoming',
         ownerUid: team1Data.createdBy,
         groupId: team1Data.groupId,
@@ -607,6 +607,9 @@ export async function acceptTeamChallengeAction(invitationId: string, teamId: st
 
       return { success: true, matchId: matchRef.id };
     });
+
+    return result;
+
   } catch (error) {
     return handleServerActionError(error, { invitationId, teamId, userId });
   }
@@ -630,7 +633,7 @@ export async function rejectTeamChallengeAction(invitationId: string, teamId: st
 
         batch.update(invitationSnap.ref, { status: 'declined' });
 
-        const challengingTeamSnap = await adminDb.doc(`teams/${invitation.fromTeamId}`).get();
+        const challengingTeamSnap = await adminDb.doc(`teams/${invitation.fromTeamId}`);
         if (challengingTeamSnap.exists) {
             const challengingTeam = challengingTeamSnap.data() as GroupTeam;
             const notificationRef = adminDb.collection(`users/${challengingTeam.createdBy}/notifications`).doc();
