@@ -16,9 +16,10 @@ import { TeamChallengesList } from '@/components/team-challenge-card';
 import { MyTeamsAvailability } from '@/components/my-teams-availability';
 import { AvailablePostsGrid } from '@/components/available-posts-grid';
 import { CreateLeagueDialog } from '@/components/competitions/create-league-dialog';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Badge } from '@/components/ui/badge';
 
 export default function CompetitionsPage() {
   const { user, loading: userLoading } = useUser();
@@ -132,20 +133,18 @@ export default function CompetitionsPage() {
           </TabsList>
           
           <TabsContent value="friendly" className="mt-6 space-y-8">
-            <div>
-              <div className="border-l-4 border-l-destructive pl-4 mb-4">
-                <h2 className="text-2xl font-bold flex items-center gap-3">
-                  <div className="rounded-lg bg-destructive/10 p-2">
-                    <Bell className="h-6 w-6 text-destructive" />
-                  </div>
-                  Desafíos Pendientes
-                </h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">Desafíos Pendientes</h2>
+                <Button variant="link" size="sm" asChild>
+                  <Link href="/competitions/challenges">Ver Todos</Link>
+                </Button>
               </div>
               {invitationsLoading || teamsLoading ? (
                   <div className="text-center p-4"><Loader2 className="h-6 w-6 animate-spin"/></div>
               ) : myTeams.length > 0 && invitations.length > 0 ? (
                   <TeamChallengesList
-                      invitations={invitations}
+                      invitations={invitations.slice(0, 2)}
                       teamId={myTeams[0].id} 
                       userId={user.uid}
                       onUpdate={fetchInvitations}
@@ -159,29 +158,22 @@ export default function CompetitionsPage() {
               )}
             </div>
             <div className="space-y-4">
-               <div className="border-l-4 border-l-primary pl-4">
-                    <h2 className="text-2xl font-bold">Postulaciones y Búsqueda</h2>
-                </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button variant="outline" className="w-full h-auto p-4 flex flex-col gap-2 text-left justify-start" asChild>
-                    <Link href="/competitions/my-teams">
-                        <h3 className="font-bold text-base">Mis Postulaciones</h3>
-                        <p className="text-xs text-muted-foreground">Publicá la disponibilidad de tus equipos para que otros te desafíen.</p>
-                    </Link>
-                </Button>
-                <Button variant="outline" className="w-full h-auto p-4 flex flex-col gap-2 text-left justify-start" asChild>
-                     <Link href="/competitions/search">
-                        <h3 className="font-bold text-base">Buscar Partidos</h3>
-                        <p className="text-xs text-muted-foreground">Encontrá equipos que publicaron su disponibilidad y aceptá su desafío.</p>
-                    </Link>
-                </Button>
-                 <Button variant="outline" className="w-full h-auto p-4 flex flex-col gap-2 text-left justify-start" asChild>
-                     <Link href="/competitions/history">
-                        <h3 className="font-bold text-base">Historial de Amistosos</h3>
-                        <p className="text-xs text-muted-foreground">Revisá todos los partidos amistosos entre equipos que jugaste.</p>
-                    </Link>
+               <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">Postulaciones Activas</h2>
+                 <Button variant="link" size="sm" asChild>
+                  <Link href="/competitions/my-teams">Gestionar</Link>
                 </Button>
               </div>
+              <MyTeamsAvailability teams={myTeams} userId={user.uid} isActive={true} />
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">Buscar Rivales</h2>
+                 <Button variant="link" size="sm" asChild>
+                  <Link href="/competitions/search">Buscar</Link>
+                </Button>
+              </div>
+               <AvailablePostsGrid userId={user.uid} userTeams={teams || []} isActive={true} />
             </div>
           </TabsContent>
 
