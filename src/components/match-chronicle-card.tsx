@@ -8,7 +8,8 @@ import { Loader2, Sparkles, Newspaper } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { generateMatchChronicleAction } from '@/lib/actions/server-actions';
-import { AnalyzePlayerProgressionOutput, GenerateMatchChronicleOutput } from '@/ai/flows/generate-match-chronicle';
+import { type GenerateMatchChronicleOutput } from '@/ai/flows/generate-match-chronicle';
+import { Separator } from './ui/separator';
 
 interface MatchChronicleCardProps {
   match: Match;
@@ -23,10 +24,10 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
     setIsLoading(true);
     try {
       const result = await generateMatchChronicleAction(match.id);
-      if ('error' in result) {
+      if (result.error) {
         throw new Error(result.error);
       }
-      setChronicle(result);
+      setChronicle(result.data);
       toast({ title: 'Crónica generada', description: 'La crónica del partido está lista.' });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudo generar la crónica.' });
