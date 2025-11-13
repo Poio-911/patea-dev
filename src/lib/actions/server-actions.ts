@@ -14,10 +14,12 @@ import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-
 import { coachConversation, type CoachConversationInput } from '@/ai/flows/coach-conversation';
 import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '@/ai/flows/detect-player-patterns';
 import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '@/ai/flows/analyze-player-progression';
-import { generateMatchChronicle, type GenerateMatchChronicleInput } from '@/ai/flows/generate-match-chronicle';
+import { generateMatchChronicle, type GenerateMatchChronicleInput } from '@/lib/types';
+import { generateMatchChronicleFlow } from '@/ai/flows/generate-match-chronicle';
+
 import { generateDuoImage, type GenerateDuoImageInput } from '@/ai/flows/generate-duo-image';
 
-import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, MatchLocation } from '../types';
+import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, MatchLocation, ErrorResponse } from '../types';
 import { logger } from '../logger';
 import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse } from '../errors';
 
@@ -156,15 +158,24 @@ export async function coachConversationAction(
     const player = playerDocSnap.data() as Player;
     const evaluations = await getPlayerEvaluationsAction(playerId, groupId) as Evaluation[];
 
+    // ✅ FIX: Safely process performanceTags, filtering out invalid ones.
     const recentTags = evaluations
-      .flatMap((e) => e.performanceTags?.map((t: PerformanceTag) => t.name) || [])
-      .slice(0, 10);
-      
+        .flatMap(e => e.performanceTags?.map(t => t?.name).filter(Boolean) || [])
+        .slice(0, 10);
+    
     const positiveTags = evaluations
-      .flatMap((e) => e.performanceTags?.filter((t: PerformanceTag) => t.effects.some((ef) => ef.change > 0)).map((t: PerformanceTag) => t.name) || []);
-      
+        .flatMap(e => e.performanceTags
+            ?.filter(t => t?.effects?.some(ef => ef.change > 0))
+            .map(t => t?.name)
+            .filter(Boolean) || []
+        );
+        
     const negativeTags = evaluations
-      .flatMap((e) => e.performanceTags?.filter((t: PerformanceTag) => t.effects.some((ef) => ef.change < 0)).map((t: PerformanceTag) => t.name) || []);
+        .flatMap(e => e.performanceTags
+            ?.filter(t => t?.effects?.some(ef => ef.change < 0))
+            .map(t => t?.name)
+            .filter(Boolean) || []
+        );
 
     const input: CoachConversationInput = {
       userMessage,
@@ -175,10 +186,10 @@ export async function coachConversationAction(
         position: player.position,
         ovr: player.ovr,
         stats: {
-          matchesPlayed: player.stats.matchesPlayed,
-          goals: player.stats.goals,
+          matchesPlayed: player.stats.matchesPlayed || 0,
+          goals: player.stats.goals || 0,
           assists: player.stats.assists || 0,
-          averageRating: player.stats.averageRating,
+          averageRating: player.stats.averageRating || 0,
         },
         recentTags: recentTags.length > 0 ? recentTags : undefined,
         strengths: positiveTags.length > 0 ? positiveTags : undefined,
@@ -230,6 +241,7 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
           });
       }
   
+      // ✅ FIX: Robust filtering for performanceTags to avoid sending invalid data
       const recentEvaluations = evaluations.slice(0, 15).map(e => {
           const selfEval = selfEvalsByMatchId.get(e.matchId);
           
@@ -254,10 +266,10 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
         position: player.position,
         currentOVR: player.ovr,
         stats: {
-          matchesPlayed: player.stats.matchesPlayed,
-          goals: player.stats.goals,
+          matchesPlayed: player.stats.matchesPlayed || 0,
+          goals: player.stats.goals || 0,
           assists: player.stats.assists || 0,
-          averageRating: player.stats.averageRating,
+          averageRating: player.stats.averageRating || 0,
         },
         recentEvaluations,
         ovrHistory: ovrHistory.length > 0 ? ovrHistory : undefined,
@@ -308,7 +320,7 @@ export async function analyzePlayerProgressionAction(playerId: string, groupId: 
   }
 }
 
-export async function generateMatchChronicleAction(matchId: string) {
+export async function generateMatchChronicleAction(matchId: string): Promise<{ data?: GenerateMatchChronicleOutput; error?: string }> {
     logger.info('[generateMatchChronicleAction] Starting chronicle generation', { matchId });
     try {
         const matchRef = adminDb.doc(`matches/${matchId}`);
@@ -319,21 +331,9 @@ export async function generateMatchChronicleAction(matchId: string) {
         }
 
         const match = { id: matchSnap.id, ...matchSnap.data() } as Match;
-        logger.info('[generateMatchChronicleAction] Match loaded', { 
-            matchId, 
-            status: match.status, 
-            hasTeams: !!match.teams,
-            teamsCount: match.teams?.length || 0 
-        });
-
+        
         if (match.status !== 'evaluated' || !match.teams || match.teams.length < 2) {
-            logger.error('[generateMatchChronicleAction] Invalid match state', { 
-                matchId, 
-                status: match.status,
-                hasTeams: !!match.teams,
-                teamsCount: match.teams?.length || 0
-            });
-            return formatErrorResponse(createError(ErrorCodes.VAL_INVALID_FORMAT, { status: match.status, matchId }));
+            throw createError(ErrorCodes.VAL_INVALID_FORMAT, { status: match.status, matchId });
         }
 
         const evalsQuery = adminDb.collection('evaluations').where('matchId', '==', matchId);
@@ -446,36 +446,19 @@ export async function generateMatchChronicleAction(matchId: string) {
                 reason: 'por su rendimiento excepcional y una calificación de ' + mvp.rating
             }
         };
-
-        logger.info('[generateMatchChronicleAction] Calling AI flow with input', { 
-            matchId, 
-            eventCount: enrichedEvents.length,
-            inputData: {
-                matchTitle: input.matchTitle,
-                teams: `${input.team1Name} ${input.team1Score} - ${input.team2Score} ${input.team2Name}`,
-                mvpName: input.mvp.name
-            }
-        });
-
-        const result = await generateMatchChronicle(input);
+        
+        const result = await generateMatchChronicleFlow(input);
         
         if (!result) {
-            logger.error('[generateMatchChronicleAction] AI flow returned null/undefined', { matchId });
-            return formatErrorResponse(createError(ErrorCodes.AI_GENERATION_FAILED, { matchId }));
+            throw createError(ErrorCodes.AI_GENERATION_FAILED, { matchId });
         }
-
-        logger.info('[generateMatchChronicleAction] Chronicle generated successfully', { 
-            matchId,
-            hasHeadline: !!result.headline,
-            hasConclusion: !!result.conclusion,
-            keyMomentsCount: result.keyMoments?.length || 0
-        });
 
         return { data: result };
 
     } catch (error) {
         logger.error('[generateMatchChronicleAction] Error occurred', error, { matchId, action: 'generateMatchChronicle' });
-        return handleServerActionError(error, {matchId, action: 'generateMatchChronicle'});
+        const formattedError = handleServerActionError(error, {matchId, action: 'generateMatchChronicle'});
+        return { error: formattedError.error };
     }
 }
 
@@ -562,7 +545,7 @@ export async function createTeamAvailabilityPostAction(
     }
 }
 
-export async function getAvailableTeamPostsAction(userId: string): Promise<{ success: boolean; posts: TeamAvailabilityPost[]; } | ErrorResponse> {
+export async function getAvailableTeamPostsAction(userId: string): Promise<{ success: boolean; posts: TeamAvailabilityPost[] } | ErrorResponse> {
     try {
         const today = new Date().toISOString().split('T')[0];
 
@@ -857,3 +840,5 @@ export async function sendTeamChallengeAction(challengingTeamId: string, challen
         return handleServerActionError(error);
     }
 }
+
+    
