@@ -7,13 +7,12 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, Loader2, Users, ChevronRight } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, where, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { TeamsIcon } from '../icons/teams-icon';
 import { JerseyPreview } from './jersey-preview';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
 
 interface TeamListProps {
   groupId: string;
@@ -66,8 +65,8 @@ export function TeamList({ groupId, players, currentUserId }: TeamListProps) {
                     <div className="w-12 h-12 flex-shrink-0">
                         <JerseyPreview jersey={team.jersey} size="sm" />
                     </div>
-                    <div className="flex-1">
-                        <p className="font-semibold">{team.name}</p>
+                    <div className="flex-1 min-w-0">
+                        <p className="font-semibold truncate">{team.name}</p>
                         <p className="text-sm text-muted-foreground">{team.members.length} jugadores</p>
                     </div>
                     <ChevronRight className="h-5 w-5 text-muted-foreground" />

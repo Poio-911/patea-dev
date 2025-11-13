@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Match, Team, Player } from '@/lib/types';
@@ -7,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
-import { JerseyPreview } from '@/components/team-builder/jersey-preview';
+import { JerseyPreview } from './jersey-preview';
 import { cn } from '@/lib/utils';
 import { Shuffle, Loader2, MoreVertical, Pencil } from 'lucide-react';
 import { useMemo } from 'react';
@@ -107,14 +106,14 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
                             backgroundImage: team.jersey ? `linear-gradient(to top, ${team.jersey.primaryColor}08, transparent)` : 'none'
                         }}
                     >
-                        <CardHeader className="flex flex-row items-center justify-between pb-3">
-                            <CardTitle className="flex items-center gap-2 text-lg">
+                        <CardHeader className="flex-row items-center justify-between pb-3">
+                            <CardTitle className="flex items-center gap-3 text-lg flex-1 min-w-0">
                                 {team.jersey && (
-                                    <div className="w-8 h-8">
+                                    <div className="w-8 h-8 flex-shrink-0">
                                         <JerseyPreview jersey={team.jersey} />
                                     </div>
                                 )}
-                                <span className="font-bold">{team.name}</span>
+                                <span className="font-bold truncate">{team.name}</span>
                             </CardTitle>
                             
                             {/* OVR Simple */}

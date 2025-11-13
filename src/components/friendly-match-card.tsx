@@ -48,102 +48,48 @@ export function FriendlyMatchCard({ match }: FriendlyMatchCardProps) {
 
     return (
         <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-            <CardHeader className="gradient-primary pb-8">
-                <div className="flex items-center justify-center gap-8">
+            <CardHeader className="gradient-primary p-4">
+                <div className="flex items-center justify-around gap-2 text-center">
                     {/* Team 1 */}
-                    <div className="flex flex-col items-center gap-3 flex-1">
-                        <div className="w-20 h-20">
-                            <JerseyPreview jersey={team1.jersey!} size="lg" />
+                    <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
+                        <div className="w-16 h-16">
+                            <JerseyPreview jersey={team1.jersey!} size="md" />
                         </div>
-                        <div className="text-center">
-                            <h3 className="font-bold text-lg">{team1.name}</h3>
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-                                <Users className="h-3 w-3" />
-                                <span>{team1.players.length} jugadores</span>
-                            </div>
-                        </div>
+                        <h3 className="font-bold text-sm truncate w-full">{team1.name}</h3>
                     </div>
 
                     {/* VS Divider */}
-                    <div className="flex flex-col items-center">
-                        <div className="bg-primary text-primary-foreground rounded-full w-12 h-12 flex items-center justify-center font-bold text-lg">
-                            VS
-                        </div>
+                    <div className="flex flex-col items-center px-1">
+                        <p className="font-bold text-lg text-muted-foreground">VS</p>
                     </div>
 
                     {/* Team 2 */}
-                    <div className="flex flex-col items-center gap-3 flex-1">
-                        <div className="w-20 h-20">
-                            <JerseyPreview jersey={team2.jersey!} size="lg" />
+                    <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
+                        <div className="w-16 h-16">
+                            <JerseyPreview jersey={team2.jersey!} size="md" />
                         </div>
-                        <div className="text-center">
-                            <h3 className="font-bold text-lg">{team2.name}</h3>
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-                                <Users className="h-3 w-3" />
-                                <span>{team2.players.length} jugadores</span>
-                            </div>
-                        </div>
+                        <h3 className="font-bold text-sm truncate w-full">{team2.name}</h3>
                     </div>
                 </div>
             </CardHeader>
 
-            <CardContent className="pt-6 space-y-4">
-                {/* Match Details */}
-                <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>{format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es })}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span>{match.time}</span>
-                    </div>
-                    <div className="flex items-start gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <div>
-                            <p className="font-medium">{match.location.name}</p>
-                            <p className="text-xs text-muted-foreground">{match.location.address}</p>
-                        </div>
-                    </div>
+            <CardContent className="pt-4 px-4 space-y-3 text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>{format(new Date(match.date), "EEEE, d MMM, yyyy", { locale: es })}</span>
                 </div>
-
-                {/* Creator Info */}
-                {!loading && creator && (
-                    <div className="flex items-center gap-2 pt-2 border-t">
-                        <Avatar className="h-6 w-6">
-                            <AvatarImage src={creator.photoURL || undefined} />
-                            <AvatarFallback className="text-xs">
-                                {creator.displayName?.charAt(0).toUpperCase() || 'U'}
-                            </AvatarFallback>
-                        </Avatar>
-                        <span className="text-xs text-muted-foreground">
-                            Organizado por {creator.displayName || 'Usuario'}
-                        </span>
+                <div className="flex items-start gap-2 text-muted-foreground">
+                    <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <div>
+                        <p className="font-medium text-foreground">{match.location.name}</p>
                     </div>
-                )}
-
-                {/* Status Badge */}
-                <div className="flex justify-center">
-                    <Badge variant={match.status === 'upcoming' ? 'default' : 'secondary'}>
-                        {match.status === 'upcoming' && 'Próximo'}
-                        {match.status === 'active' && 'En curso'}
-                        {match.status === 'completed' && 'Finalizado'}
-                        {match.status === 'evaluated' && 'Evaluado'}
-                    </Badge>
                 </div>
             </CardContent>
 
-            <CardFooter className="flex gap-2 border-t pt-4">
-                <Button asChild variant="outline" className="flex-1">
+            <CardFooter className="flex gap-2 border-t p-2">
+                <Button asChild variant="outline" className="flex-1" size="sm">
                     <Link href={`/matches/${match.id}`}>
-                        <Users className="mr-2 h-4 w-4" />
-                        Ver Equipos
-                    </Link>
-                </Button>
-                <Button asChild className="flex-1">
-                    <Link href={`/matches/${match.id}`}>
-                        <MessageCircle className="mr-2 h-4 w-4" />
-                        Chat
+                        Ver Detalles
                     </Link>
                 </Button>
             </CardFooter>
