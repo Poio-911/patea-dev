@@ -193,7 +193,9 @@ export default function CompetitionsPage() {
                         <Card className="hover:bg-muted/50 transition-colors">
                             <CardHeader>
                                 <CardTitle>{league.name}</CardTitle>
-                                <CardDescription>{league.teams.length} equipos</CardDescription>
+                                <div className="text-sm text-muted-foreground">
+                                    <Badge>{league.teams.length} equipos</Badge>
+                                </div>
                             </CardHeader>
                             <CardContent>
                                 <p>Formato: {league.format === 'round_robin' ? 'Todos contra todos (ida)' : 'Ida y vuelta'}</p>
