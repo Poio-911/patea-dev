@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -15,11 +16,12 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarSeparator,
-} from '@/components/sidebar'; 
+} from '@/components/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Gamepad2, UserCircle, Trophy, ClipboardCheck, X, CalendarDays, Swords } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore, useCollection } from '@/firebase';
 import { GroupSwitcher } from '@/components/group-switcher';
 import {
@@ -30,7 +32,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuGroup,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import type { Player, PlayerPosition, EvaluationAssignment } from '@/lib/types';
 import { doc, collectionGroup, query, where } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
