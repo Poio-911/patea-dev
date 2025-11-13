@@ -13,7 +13,7 @@ import { SetPlayerStatusDialog } from '@/components/set-player-status-dialog';
 interface TeamRosterPlayerProps {
     player: DetailedTeamPlayer;
     team: GroupTeam;
-    onPlayerUpdate: () => void;
+    onPlayerUpdate?: () => void;
 }
 
 export const TeamRosterPlayer = ({ player, team, onPlayerUpdate }: TeamRosterPlayerProps) => {

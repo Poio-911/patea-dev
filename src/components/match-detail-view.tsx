@@ -39,7 +39,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const [ownerProfile, setOwnerProfile] = useState<UserProfile | null>(null);
     
     const matchRef = useMemo(() => firestore ? doc(firestore, 'matches', matchId) : null, [firestore, matchId]);
-    const { data: match, loading: matchLoading, refetch: refetchMatch } = useDoc<Match>(matchRef);
+    const { data: match, loading: matchLoading } = useDoc<Match>(matchRef);
 
     const allGroupPlayersQuery = useMemo(() => {
       if (!firestore || !match?.groupId) return null;
@@ -92,11 +92,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
         return encodeURIComponent(message);
     }, [match]);
 
-    const handlePlayerUpdate = useCallback(() => {
-        logger.info('Player status updated in TeamRoster, refreshing match data.');
-        refetchMatch();
-    }, [refetchMatch]);
-
 
     if (matchLoading) {
         return <div className="flex justify-center items-center h-full"><Loader2 className="h-12 w-12 animate-spin" /></div>;
@@ -138,12 +133,11 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 md:px-0">
                     <div className="lg:col-span-3 space-y-6">
                          {match.teams && match.teams.length > 0 ? (
-                           <MatchTeams 
+                           <MatchTeams
                                 match={match}
                                 isOwner={permissions.isOwner}
                                 onShuffle={actions.handleShuffleTeams}
                                 isShuffling={actions.isShuffling}
-                                onPlayerUpdate={handlePlayerUpdate}
                            />
                          ) : (
                            <PlayersConfirmed match={match} />

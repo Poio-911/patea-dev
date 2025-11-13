@@ -14,7 +14,7 @@ import {
   SidebarHeader,
   SidebarGroup,
   SidebarGroupLabel,
-} from '@/components/ui/sidebar';
+} from '@/components/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Trophy, ClipboardCheck, X } from 'lucide-react';

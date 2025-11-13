@@ -368,7 +368,7 @@ export async function generateMatchChronicleAction(matchId: string): Promise<{ d
                 };
             });
 
-        const enrichedEvents = [...keyEvents];
+        const enrichedEvents: GenerateMatchChronicleInput['keyEvents'] = [...keyEvents];
         const usedMinutes = new Set(enrichedEvents.map(e => e.minute));
 
         function randomMinute() {
@@ -748,8 +748,8 @@ export async function rejectTeamChallengeAction(invitationId: string, teamId: st
 
         batch.update(invitationSnap.ref, { status: 'declined' });
 
-        const challengingTeamSnap = await adminDb.doc(`teams/${invitation.fromTeamId}`);
-        if (challengingTeamSnap.exists()) {
+        const challengingTeamSnap = await adminDb.doc(`teams/${invitation.fromTeamId}`).get();
+        if (challengingTeamSnap.exists) {
             const challengingTeam = challengingTeamSnap.data() as GroupTeam;
             const notificationRef = adminDb.collection(`users/${challengingTeam.createdBy}/notifications`).doc();
             batch.set(notificationRef, {

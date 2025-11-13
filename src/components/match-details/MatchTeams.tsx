@@ -21,7 +21,7 @@ interface MatchTeamsProps {
   isOwner: boolean;
   isShuffling: boolean;
   onShuffle: () => void;
-  onPlayerUpdate: () => void;
+  onPlayerUpdate?: () => void;
 }
 
 const positionBadgeStyles: Record<PlayerPosition, string> = {

@@ -361,6 +361,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   );
                 })}
               </div>
+              </div>
           </nav>
             
           <AnimatePresence>

@@ -27,7 +27,7 @@ type PlayerStatusFormData = z.infer<typeof playerStatusSchema>;
 interface SetPlayerStatusDialogProps {
   player: DetailedTeamPlayer;
   team: GroupTeam;
-  onPlayerUpdate: () => void;
+  onPlayerUpdate?: () => void;
   children: React.ReactNode;
 }
 
@@ -64,7 +64,7 @@ export function SetPlayerStatusDialog({ player, team, onPlayerUpdate, children }
         title: 'Jugador Actualizado',
         description: `Se guardaron los cambios para ${player.name}.`,
       });
-      onPlayerUpdate(); // Trigger re-fetch on the parent page
+      onPlayerUpdate?.(); // Trigger re-fetch on the parent page
       setOpen(false);
     } catch (error) {
       console.error('Error updating player status:', error);
