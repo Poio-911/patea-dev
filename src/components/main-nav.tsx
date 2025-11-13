@@ -1,8 +1,9 @@
+
 'use client';
 
 import * as React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   SidebarProvider,
   Sidebar,
@@ -17,11 +18,10 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Users2, User, BellRing, Sun, Gamepad2, UserCircle, Trophy, ClipboardCheck, X, CalendarDays, Swords } from 'lucide-react';
+import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Gamepad2, UserCircle, Trophy, ClipboardCheck, X, CalendarDays, Swords } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore, useCollection } from '@/firebase';
-import { useRouter } from 'next/navigation';
 import { GroupSwitcher } from '@/components/group-switcher';
 import {
   DropdownMenu,
@@ -45,12 +45,12 @@ import { isToday, parseISO } from 'date-fns';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
 
-
-// NAV FINAL (versión app): 5 items visibles + submenú en Partidos (Partidos + Competiciones)
-const baseNavItems = [
+// ✅ CORREGIDO: Nuevo orden de los ítems de navegación
+const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
-  { href: '/groups', label: 'Grupos', icon: Users2 },
   { href: '/players', label: 'Jugadores', icon: UserCircle },
+  { href: '#', label: 'Partidos', icon: Trophy, isMenu: true }, // Botón central como trigger
+  { href: '/groups', label: 'Grupos', icon: Users2 },
   { href: '/evaluations', label: 'Evaluar', icon: ClipboardCheck },
 ];
 
@@ -70,8 +70,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { toast } = useToast();
   const { setTheme, theme } = useTheme();
-  const [matchesMenuOpen, setMatchesMenuOpen] = React.useState(false);
-  const matchesMenuRef = React.useRef<HTMLDivElement | null>(null);
+  // ✅ NUEVO: Estado para el menú radial
+  const [radialMenuOpen, setRadialMenuOpen] = React.useState(false);
 
   const { requestPermission } = useFcm();
 
@@ -93,7 +93,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const { data: pendingEvaluations } = useCollection<EvaluationAssignment>(pendingEvaluationsQuery);
   const pendingEvaluationsCount = pendingEvaluations?.length || 0;
 
-  // Declarar variables que se usarán en los useEffect
   const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
   const loading = userLoading || playerLoading;
 
@@ -115,23 +114,9 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     }
   }, [user, toast]);
 
-  // Cerrar submenú al navegar de ruta
-  React.useEffect(() => {
-    setMatchesMenuOpen(false);
-  }, [pathname]);
+  // Cerrar menú al cambiar de ruta
+  React.useEffect(() => { setRadialMenuOpen(false); }, [pathname]);
 
-  // Cerrar al hacer click fuera (mobile overlay principalmente)
-  React.useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (matchesMenuOpen && matchesMenuRef.current && !matchesMenuRef.current.contains(e.target as Node)) {
-        setMatchesMenuOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [matchesMenuOpen]);
-
-  // Manejar redirección a login cuando no hay usuario (solo en páginas protegidas)
   React.useEffect(() => {
     if (!loading && !user && !isPublicPage) {
       router.push('/login');
@@ -145,12 +130,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Si es una página pública, renderizarla directamente sin verificar autenticación.
   if (isPublicPage) {
     return <>{children}</>;
   }
 
-  // Para páginas protegidas, verificar la carga y el usuario.
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -167,6 +150,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     );
   }
   
+  const isMatchesRelatedPath = pathname.startsWith('/matches') || pathname.startsWith('/competitions');
+
   return (
     <SidebarProvider>
       <WelcomeDialog />
@@ -303,7 +288,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                 <SidebarMenu>
                     <SidebarGroup>
                       <SidebarGroupLabel>Menú</SidebarGroupLabel>
-                      {baseNavItems.map((item) => (
+                      {navItems.filter(item => !item.isMenu).map((item) => (
                         <SidebarMenuItem key={item.href}>
                           <Link href={item.href}>
                             <SidebarMenuButton
@@ -317,8 +302,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                         </SidebarMenuItem>
                       ))}
                       <SidebarMenuItem>
-                        <SidebarMenuButton
-                           isActive={pathname.startsWith('/matches') || pathname.startsWith('/competitions')}
+                         <SidebarMenuButton
+                           isActive={isMatchesRelatedPath}
                            tooltip="Partidos & Competiciones"
                         >
                             <Trophy/>
@@ -353,72 +338,115 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           </main>
           
           <nav className="fixed bottom-4 left-4 right-4 z-30 h-16 rounded-xl border bg-background/70 shadow-lg backdrop-blur-lg md:hidden">
-            <div className="relative mx-auto h-full max-w-lg">
-                <div className="grid h-full w-full grid-cols-5 font-medium">
-                    {baseNavItems.map((item) => {
-                      const isActive = pathname.startsWith(item.href);
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary', isActive && 'text-primary font-semibold')}
-                        >
-                          <item.icon className={cn('h-5 w-5 transition-all duration-200', isActive && 'scale-110')} />
-                          <span className="text-[10px] leading-none">{item.label}</span>
-                        </Link>
-                      );
-                    })}
-                    <div ref={matchesMenuRef} className="relative flex items-center justify-center">
-                        <button
-                        type="button"
-                        onClick={() => setMatchesMenuOpen((o) => !o)}
-                        className={cn('group relative inline-flex h-full w-full flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary', (pathname.startsWith('/matches') || pathname.startsWith('/competitions')) && 'text-primary font-semibold')}
-                        aria-haspopup="true"
-                        aria-expanded={matchesMenuOpen}
-                        >
-                            <Trophy className={cn('h-5 w-5 transition-all duration-200', (pathname.startsWith('/matches') || pathname.startsWith('/competitions')) && 'scale-110')} />
-                            <span className="text-[10px] leading-none">Partidos</span>
-                        </button>
-                    </div>
-                </div>
-                 <AnimatePresence>
-                    {matchesMenuOpen && (
-                        <motion.div
-                            initial="closed"
-                            animate="open"
-                            exit="closed"
-                            variants={{
-                                open: { transition: { staggerChildren: 0.1 } },
-                                closed: { transition: { staggerChildren: 0.1, staggerDirection: -1 } }
-                            }}
-                            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 flex items-center justify-center gap-4"
-                        >
-                             <motion.div variants={{ closed: { y: 20, opacity: 0 }, open: { y: 0, opacity: 1 } }}>
-                                <Link href="/matches" onClick={() => setMatchesMenuOpen(false)}>
-                                    <div className="flex flex-col items-center gap-2">
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 text-primary border border-primary/30">
-                                            <CalendarDays className="h-6 w-6" />
-                                        </div>
-                                        <span className="text-xs font-semibold">Partidos</span>
-                                    </div>
-                                </Link>
-                             </motion.div>
-                             <motion.div variants={{ closed: { y: 20, opacity: 0 }, open: { y: 0, opacity: 1 } }}>
-                                <Link href="/competitions" onClick={() => setMatchesMenuOpen(false)}>
-                                    <div className="flex flex-col items-center gap-2">
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 text-primary border border-primary/30">
-                                            <Trophy className="h-6 w-6" />
-                                        </div>
-                                        <span className="text-xs font-semibold">Torneos</span>
-                                    </div>
-                                </Link>
-                            </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
+              <div className="relative mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
+                {navItems.map((item) => {
+                  const isActive = item.isMenu ? isMatchesRelatedPath : pathname.startsWith(item.href);
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.href}
+                      onClick={() => {
+                        if (item.isMenu) {
+                          setRadialMenuOpen(o => !o);
+                        } else {
+                          router.push(item.href);
+                        }
+                      }}
+                      className={cn(
+                        'group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary',
+                        isActive && 'text-primary font-semibold',
+                        item.isMenu && 'scale-125 transform -translate-y-2.5 bg-primary text-primary-foreground rounded-full shadow-lg'
+                      )}
+                    >
+                      <Icon className={cn('h-5 w-5 transition-all duration-200', isActive && !item.isMenu && 'scale-110')} />
+                      {!item.isMenu && <span className="text-[10px] leading-none">{item.label}</span>}
+                      
+                      {item.href === '/evaluations' && pendingEvaluationsCount > 0 && (
+                          <span className="absolute top-1 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-white text-[10px] font-bold">
+                            {pendingEvaluationsCount}
+                          </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
           </nav>
+            
+          {/* ✅ NUEVO: Menú Radial con Framer Motion */}
+          <AnimatePresence>
+            {radialMenuOpen && (
+              <>
+                {/* Overlay oscuro */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setRadialMenuOpen(false)}
+                  className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+                />
+
+                {/* Contenedor de los botones que giran */}
+                <div
+                  aria-hidden="true"
+                  className="fixed bottom-12 left-1/2 z-50 -translate-x-1/2 flex items-center justify-center"
+                  style={{ pointerEvents: 'none' }}
+                >
+                    {[
+                        { href: '/matches', label: 'Partidos', icon: CalendarDays, angle: -55 },
+                        { href: '/competitions', label: 'Torneos', icon: Swords, angle: 55 },
+                    ].map(({ href, label, icon: Icon, angle }) => {
+                        const angleInRads = (angle - 90) * (Math.PI / 180);
+                        const radius = 80; // Distancia desde el centro
+                        return (
+                        <motion.div
+                            key={href}
+                            initial={{ x: 0, y: 0, opacity: 0, scale: 0.5 }}
+                            animate={{
+                            x: radius * Math.cos(angleInRads),
+                            y: radius * Math.sin(angleInRads),
+                            opacity: 1,
+                            scale: 1,
+                            }}
+                            exit={{ x: 0, y: 0, opacity: 0, scale: 0.5 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                            className="absolute"
+                            style={{ pointerEvents: 'auto' }}
+                        >
+                            <Link href={href} className="flex flex-col items-center gap-1.5" onClick={() => setRadialMenuOpen(false)}>
+                                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-background border shadow-lg">
+                                    <Icon className="h-6 w-6 text-primary" />
+                                </div>
+                                <span className="text-xs font-semibold text-white/90" style={{textShadow: '0 1px 3px rgba(0,0,0,0.5)'}}>{label}</span>
+                            </Link>
+                        </motion.div>
+                        );
+                    })}
+                </div>
+
+                 {/* Botón central de cierre */}
+                <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 md:hidden">
+                    <Button
+                        className="rounded-full w-16 h-16 bg-background border text-primary shadow-lg"
+                        onClick={() => setRadialMenuOpen(false)}
+                        aria-label="Cerrar menú de partidos"
+                    >
+                        <motion.div
+                            initial={{ rotate: -45, scale: 0 }}
+                            animate={{ rotate: 0, scale: 1 }}
+                            exit={{ rotate: 45, scale: 0 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <X className="h-6 w-6" />
+                        </motion.div>
+                    </Button>
+                </div>
+              </>
+            )}
+          </AnimatePresence>
+
       </div>
     </SidebarProvider>
   );
 }
+
+    
