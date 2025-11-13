@@ -34,7 +34,8 @@
       "WebFetch(domain:medium.com)",
       "WebFetch(domain:www.espnfrontrow.com)",
       "Bash(gsutil cors set:*)",
-      "Bash(gcloud storage buckets update:*)"
+      "Bash(gcloud storage buckets update:*)",
+      "Bash(.env.local)"
     ],
     "deny": [],
     "ask": []
