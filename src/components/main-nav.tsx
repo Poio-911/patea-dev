@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -111,7 +112,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     }
   }, [user, toast]);
 
-  // Cerrar menú al cambiar de ruta
+  // Close menu on route change
   React.useEffect(() => { setRadialMenuOpen(false); }, [pathname]);
 
   React.useEffect(() => {
@@ -352,7 +353,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                       className={cn(
                         'group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary',
                         isActive && 'text-primary font-semibold',
-                        // ✅ CORRECCIÓN: Se eliminaron las clases que hacían el botón más grande
                       )}
                     >
                       <Icon className={cn('h-5 w-5 transition-all duration-200', isActive && 'scale-110', radialMenuOpen && item.isMenu && 'color-cycle-animation')} />
@@ -372,7 +372,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           <AnimatePresence>
             {radialMenuOpen && (
               <>
-                {/* ✅ CORRECCIÓN: Se eliminó el `backdrop-blur-sm` */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -383,7 +382,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
                 <div
                   aria-hidden="true"
-                  className="fixed bottom-12 left-1/2 z-50 -translate-x-1/2 flex items-center justify-center"
+                  className="fixed bottom-14 left-1/2 z-50 -translate-x-1/2 flex items-center justify-center"
                   style={{ pointerEvents: 'none' }}
                 >
                     {[
@@ -417,8 +416,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                         );
                     })}
                 </div>
-
-                {/* ✅ CORRECCIÓN: Se elimina el botón de cierre explícito (X), se vuelve a tocar el ícono central para cerrar. */}
               </>
             )}
           </AnimatePresence>
@@ -427,3 +424,4 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+
