@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file contains all the server-side actions that use the Firebase Admin SDK.
@@ -846,7 +847,8 @@ export async function createLeagueAction(
 ): Promise<{ success: boolean; leagueId?: string; error?: string }> {
     try {
         const { adminDb } = getAdminInstances();
-        
+        const batch = adminDb.batch();
+
         const leagueRef = adminDb.collection('leagues').doc();
         const newLeague: Omit<League, 'id'> = {
             name,
@@ -858,8 +860,55 @@ export async function createLeagueAction(
             status: 'draft',
             createdAt: new Date().toISOString(),
         };
+        batch.set(leagueRef, newLeague);
+
+        // Generate Fixture
+        const teamsData = await Promise.all(teamIds.map(id => adminDb.doc(`teams/${id}`).get()));
+        let teams = teamsData.map(snap => ({ id: snap.id, ...snap.data() } as GroupTeam));
+
+        if (teams.length % 2 !== 0) {
+            teams.push({ id: 'bye', name: 'Descansa' } as GroupTeam);
+        }
+
+        const numRounds = teams.length - 1;
+        const matchesPerRound = teams.length / 2;
+
+        for (let round = 0; round < numRounds; round++) {
+            for (let i = 0; i < matchesPerRound; i++) {
+                const team1 = teams[i];
+                const team2 = teams[teams.length - 1 - i];
+
+                if (team1.id === 'bye' || team2.id === 'bye') continue;
+
+                const matchRef = adminDb.collection('matches').doc();
+                const matchData: Partial<Match> = {
+                    title: `${team1.name} vs ${team2.name}`,
+                    date: new Date().toISOString(),
+                    time: "19:00",
+                    location: { name: "A definir", address: "", lat: 0, lng: 0, placeId: "" },
+                    type: 'league',
+                    matchSize: 22,
+                    status: 'upcoming',
+                    ownerUid,
+                    groupId,
+                    participantTeamIds: [team1.id, team2.id],
+                    teams: [
+                        { name: team1.name, players: [], totalOVR: 0, averageOVR: 0, jersey: team1.jersey },
+                        { name: team2.name, players: [], totalOVR: 0, averageOVR: 0, jersey: team2.jersey },
+                    ],
+                    leagueInfo: {
+                        leagueId: leagueRef.id,
+                        round: round + 1,
+                    },
+                    createdAt: new Date().toISOString(),
+                };
+                batch.set(matchRef, matchData);
+            }
+            // Rotate teams for next round
+            teams.splice(1, 0, teams.pop()!);
+        }
         
-        await leagueRef.set(newLeague);
+        await batch.commit();
 
         return { success: true, leagueId: leagueRef.id };
     } catch (error) {

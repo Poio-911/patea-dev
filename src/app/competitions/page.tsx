@@ -16,10 +16,11 @@ import { TeamChallengesList } from '@/components/team-challenge-card';
 import { MyTeamsAvailability } from '@/components/my-teams-availability';
 import { AvailablePostsGrid } from '@/components/available-posts-grid';
 import { CreateLeagueDialog } from '@/components/competitions/create-league-dialog';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
+import { ArrowRight } from 'lucide-react';
 
 export default function CompetitionsPage() {
   const { user, loading: userLoading } = useUser();
@@ -188,7 +189,8 @@ export default function CompetitionsPage() {
             ) : leagues && leagues.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {leagues.map(league => (
-                        <Card key={league.id}>
+                      <Link key={league.id} href={`/competitions/leagues/${league.id}`} className="block">
+                        <Card className="hover:bg-muted/50 transition-colors">
                             <CardHeader>
                                 <CardTitle>{league.name}</CardTitle>
                                 <CardDescription>{league.teams.length} equipos</CardDescription>
@@ -197,7 +199,11 @@ export default function CompetitionsPage() {
                                 <p>Formato: {league.format === 'round_robin' ? 'Todos contra todos (ida)' : 'Ida y vuelta'}</p>
                                 <p>Estado: <Badge>{league.status}</Badge></p>
                             </CardContent>
+                            <CardFooter>
+                               <Button variant="link" className="p-0 h-auto">Ver Liga <ArrowRight className="ml-2 h-4 w-4"/></Button>
+                            </CardFooter>
                         </Card>
+                      </Link>
                     ))}
                 </div>
             ) : (

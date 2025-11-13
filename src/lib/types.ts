@@ -110,7 +110,11 @@ export type Match = {
   participantTeamIds?: string[];
   createdAt?: string; 
   finalScore?: { team1: number; team2: number } | null; 
-  finalizedAt?: string | null; 
+  finalizedAt?: string | null;
+  leagueInfo?: {
+    leagueId: string;
+    round: number;
+  };
 } & DocumentData;
 
 export type Team = {
