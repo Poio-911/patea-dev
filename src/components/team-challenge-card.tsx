@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -29,7 +30,8 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
   const handleAccept = () => {
     startTransition(async () => {
       const result = await acceptTeamChallengeAction(invitation.id, teamId, userId);
-      if (result.success) {
+      
+      if ('success' in result && result.success) {
         // ✅ Trigger exit animation before removing
         setIsExiting(true);
         celebrationConfetti();
@@ -121,8 +123,8 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
           <p className="text-xs text-muted-foreground mb-3">Tu equipo:</p>
           <div className="flex items-center gap-3">
             <div className="h-12 w-12">
-              {invitation.fromTeamJersey && (
-                <JerseyPreview jersey={invitation.fromTeamJersey} size="sm" />
+              {invitation.toTeamJersey && (
+                <JerseyPreview jersey={invitation.toTeamJersey} size="sm" />
               )}
             </div>
             <div>
