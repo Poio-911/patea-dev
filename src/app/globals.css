@@ -333,4 +333,18 @@
     color: hsl(277 92% 64% / 0.9);
     filter: drop-shadow(0 1px 2px hsl(277 92% 64% / 0.2));
   }
+
+  /* Unified Gradient Utilities (Phase 1) */
+  .gradient-primary { @apply bg-gradient-to-r from-primary/15 to-primary/5; }
+  .gradient-accent { @apply bg-gradient-to-r from-accent/20 to-accent/5; }
+  .gradient-danger { @apply bg-gradient-to-r from-destructive/20 to-destructive/5; }
+  .gradient-neutral { @apply bg-gradient-to-r from-muted to-background; }
+
+  /* Surface Utilities */
+  .surface { @apply bg-card border border-border rounded-lg; }
+  .surface-muted { @apply bg-muted/50 border border-border/40 rounded-lg; }
+  .glass { @apply bg-background/60 backdrop-blur-sm border border-border/50 rounded-lg; }
+
+  /* Position Badge Utility (optional future usage) */
+  .badge-pos { @apply text-xs font-bold px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground; }
 }

@@ -331,7 +331,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
     return (
         <Card className="flex flex-col overflow-hidden shadow-lg hover:shadow-primary/20 transition-shadow duration-300">
-            <CardHeader className={cn('relative bg-gradient-to-br to-transparent p-4', currentStatus.gradientClass)}>
+            <CardHeader className={cn('relative gradient-primary p-4', currentStatus.gradientClass)}>
                 <div className="flex items-start justify-between gap-4">
                     <CardTitle className={cn("text-xl font-bold", currentStatus.neonClass)}>
                         {match.title}

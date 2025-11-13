@@ -170,7 +170,7 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
   }
 
   return (
-    <Card className="hover:shadow-md transition-shadow duration-200">
+    <Card className="surface hover:shadow-md transition-shadow duration-200">
       <CardHeader>
         <CardTitle className="flex items-center gap-3 text-lg font-semibold">
           <Newspaper className="h-5 w-5 text-primary" />
@@ -195,14 +195,14 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
         ) : chronicle ? (
           <div className="space-y-4">
             {/* Titular */}
-            <div className="p-4 border-l-4 border-primary bg-muted/50 rounded">
+            <div className="p-4 border-l-4 border-primary gradient-primary rounded">
               <h3 className="text-xl font-bold text-foreground">
                 {chronicle.headline}
               </h3>
             </div>
             
             {/* Introducción */}
-            <div className="p-3 bg-muted/30 rounded border">
+            <div className="p-3 surface-muted">
               <p className="text-sm leading-relaxed text-muted-foreground italic">
                 &ldquo;{chronicle.introduction}&rdquo;
               </p>
@@ -210,12 +210,12 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
             
             {/* Momentos clave */}
             <div className="space-y-3">
-              <h4 className="font-semibold text-sm text-primary border-b border-primary/20 pb-1">
+              <h4 className="font-semibold text-sm text-primary border-b border-border pb-1">
                 Momentos Clave
               </h4>
               
               {chronicle.keyMoments.map((moment, index) => (
-                <div key={index} className="flex gap-3 p-3 bg-muted/30 rounded border hover:bg-muted/50 transition-colors">
+                <div key={index} className="flex gap-3 p-3 surface-muted hover:bg-muted/60 transition-colors">
                   <div className="flex-shrink-0">
                     <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
                       <span className="font-bold text-xs text-primary">{moment.minute}'</span>
@@ -229,7 +229,7 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
             </div>
             
             {/* Conclusión */}
-            <div className="p-3 bg-muted/30 rounded border">
+            <div className="p-3 surface-muted">
               <p className="font-medium text-sm leading-relaxed">{chronicle.conclusion}</p>
             </div>
             
@@ -237,7 +237,7 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
             
             {/* Sección de Imagen de Dúo */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 border-b border-muted pb-2">
+              <div className="flex items-center gap-2 border-b border-border pb-2">
                 <Users className="h-4 w-4 text-primary" />
                 <h4 className="font-semibold text-sm text-primary">Generar Chromo</h4>
               </div>
@@ -253,7 +253,7 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
                   Crear Chromo de Jugadores
                 </Button>
               ) : (
-                <div className="space-y-4 p-4 bg-muted/30 border rounded">
+                <div className="space-y-4 p-4 surface-muted">
                   <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="player1" className="text-sm font-medium">

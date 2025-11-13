@@ -48,7 +48,7 @@ export function FriendlyMatchCard({ match }: FriendlyMatchCardProps) {
 
     return (
         <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-            <CardHeader className="bg-gradient-to-r from-primary/10 via-background to-primary/10 pb-8">
+            <CardHeader className="gradient-primary pb-8">
                 <div className="flex items-center justify-center gap-8">
                     {/* Team 1 */}
                     <div className="flex flex-col items-center gap-3 flex-1">

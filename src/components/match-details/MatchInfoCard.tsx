@@ -42,7 +42,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
   onJoinOrLeave,
 }: MatchInfoCardProps) {
   return (
-    <Card className="group relative overflow-hidden border-2 border-t-4 border-t-primary text-foreground dark:text-white rounded-xl shadow-2xl bg-card/85 backdrop-blur-xl hover:shadow-3xl hover:shadow-primary/20 transition-all duration-500">
+    <Card className="group relative overflow-hidden border-2 border-t-4 border-t-primary text-foreground dark:text-white rounded-xl shadow-md glass hover:shadow-lg transition-all duration-300">
       {/* Background video - visible en AMBOS temas */}
       <div className="absolute inset-0 -z-10 rounded-lg overflow-hidden">
         <video
@@ -56,8 +56,8 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
         >
           <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-black/40 to-black/60" />
-        <div className="absolute inset-0 bg-gradient-to-t from-primary/10 via-transparent to-transparent opacity-70" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/30 to-black/50" />
+        <div className="absolute inset-0 gradient-primary opacity-40" />
       </div>
 
       <CardContent className="relative z-10 p-8 pt-8 space-y-6 bg-transparent text-white [text-shadow:0_2px_4px_rgb(0_0_0_/_0.6)] transition-all duration-300">
