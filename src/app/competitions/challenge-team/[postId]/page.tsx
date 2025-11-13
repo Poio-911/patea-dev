@@ -64,11 +64,11 @@ export default function ChallengeTeamPage() {
         const fetchPost = async () => {
             try {
                 const result = await getAvailableTeamPostsAction(user.uid);
-                if ('error' in result && result.error) {
+                if ('error' in result) {
                     throw new Error(result.error as string);
                 }
                 if ('posts' in result && result.posts) {
-                    const foundPost = result.posts.find(p => p.id === postId);
+                    const foundPost = result.posts.find((p: TeamAvailabilityPost) => p.id === postId);
                     if (!foundPost) {
                         throw new Error('Postulación no encontrada');
                     }
@@ -118,9 +118,8 @@ export default function ChallengeTeamPage() {
             });
 
             // Redirigir al partido creado
-            // Navegación tras crear desafío (matchId opcional en respuesta extendida futura)
-            if ((result as any).matchId) {
-                router.push(`/matches/${(result as any).matchId}`);
+            if ('matchId' in result && result.matchId) {
+                router.push(`/matches/${result.matchId}`);
             } else {
                 router.push('/competitions');
             }
