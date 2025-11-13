@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import type { Match, Player, UserProfile } from '@/lib/types';
 import { doc, getDoc, query, where, collection } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
@@ -16,6 +17,7 @@ import { MatchChatView } from './match-chat-view';
 import { MatchTeams } from './match-details/MatchTeams';
 import { PlayersConfirmed } from './match-details/PlayersConfirmed';
 import { MatchChronicleCard } from './match-chronicle-card';
+import { logger } from '@/lib/logger';
 
 interface MatchDetailViewProps {
   matchId: string;
@@ -37,7 +39,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const [ownerProfile, setOwnerProfile] = useState<UserProfile | null>(null);
     
     const matchRef = useMemo(() => firestore ? doc(firestore, 'matches', matchId) : null, [firestore, matchId]);
-    const { data: match, loading: matchLoading } = useDoc<Match>(matchRef);
+    const { data: match, loading: matchLoading, refetch: refetchMatch } = useDoc<Match>(matchRef);
 
     const allGroupPlayersQuery = useMemo(() => {
       if (!firestore || !match?.groupId) return null;
@@ -90,6 +92,12 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
         return encodeURIComponent(message);
     }, [match]);
 
+    const handlePlayerUpdate = useCallback(() => {
+        logger.info('Player status updated in TeamRoster, refreshing match data.');
+        refetchMatch();
+    }, [refetchMatch]);
+
+
     if (matchLoading) {
         return <div className="flex justify-center items-center h-full"><Loader2 className="h-12 w-12 animate-spin" /></div>;
     }
@@ -135,6 +143,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                 isOwner={permissions.isOwner}
                                 onShuffle={actions.handleShuffleTeams}
                                 isShuffling={actions.isShuffling}
+                                onPlayerUpdate={handlePlayerUpdate}
                            />
                          ) : (
                            <PlayersConfirmed match={match} />
