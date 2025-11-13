@@ -1,16 +1,15 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@/firebase';
 import type { Player } from '@/lib/types';
-import { PlayerCard } from '@/components/player-card';
+import { PlayerDetailCard } from '@/components/player-detail-card';
 import { Sparkles, Scissors, Loader2, LineChart, BrainCircuit } from 'lucide-react';
 import { ImageCropperDialog } from '@/components/image-cropper-dialog';
 import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button } from './ui/button';
 import Link from 'next/link';
 import { PlayerRecentActivity } from './player-recent-activity';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -33,7 +32,8 @@ export default function PlayerProfileView({ playerId, player: initialPlayer }: P
 
   const handlePhotoUpdate = (newUrl: string) => {
     setPlayer(prevPlayer => ({ ...prevPlayer, photoUrl: newUrl }));
-    // No need to reload the page, state update will trigger re-render
+    // The useUser hook will eventually pick up the auth change and update the global state.
+    // This local state update provides immediate UI feedback.
   };
 
   const handleGenerateAIPhoto = async () => {
@@ -44,14 +44,11 @@ export default function PlayerProfileView({ playerId, player: initialPlayer }: P
 
       if ('error' in result) {
         toast({ variant: 'destructive', title: 'Error al generar imagen', description: result.error });
-      } else {
-        toast({ title: 'Foto generada con éxito', description: 'Tu foto profesional ha sido creada con IA.' });
-        if (result.newPhotoURL) {
-          // The useUser hook will pick up the change from Auth and update the context,
-          // which will re-render components that use it.
-          // For local component state, we still update it manually.
-          handlePhotoUpdate(result.newPhotoURL);
-        }
+        return;
+      }
+      toast({ title: 'Foto generada con éxito', description: 'Tu foto profesional ha sido creada con IA.' });
+      if (result.newPhotoURL) {
+        handlePhotoUpdate(result.newPhotoURL);
       }
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Error', description: e.message || 'Fallo inesperado.' });
@@ -62,7 +59,7 @@ export default function PlayerProfileView({ playerId, player: initialPlayer }: P
 
   return (
     <div className="flex flex-col gap-8">
-      <PlayerCard player={player} />
+      <PlayerDetailCard player={player} />
 
       {isCurrentUserProfile && (
         <div className="flex flex-col items-center gap-3 -mt-2">
@@ -70,7 +67,7 @@ export default function PlayerProfileView({ playerId, player: initialPlayer }: P
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="default" size="sm" disabled={isGeneratingAI || (player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0)}>
-                  <Sparkles className="mr-2 h-4 w-4" /> 
+                  <Sparkles className="mr-2 h-4 w-4" />
                   {isGeneratingAI ? 'Generando...' : 'Generar Foto IA'}
                 </Button>
               </AlertDialogTrigger>
@@ -88,7 +85,6 @@ export default function PlayerProfileView({ playerId, player: initialPlayer }: P
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <span className="text-xs font-semibold px-2 py-1 rounded-full bg-muted inline-flex items-center justify-center">{player.cardGenerationCredits || 0} créditos</span>
             <ImageCropperDialog player={player} onSaveComplete={handlePhotoUpdate}>
               <Button variant="outline" size="sm" disabled={isGeneratingAI}>
                 <Scissors className="mr-2 h-4 w-4" /> Cambiar Foto
@@ -134,7 +130,6 @@ export default function PlayerProfileView({ playerId, player: initialPlayer }: P
       )}
 
       <PlayerRecentActivity playerId={playerId} />
-
     </div>
   );
 }

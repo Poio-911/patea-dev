@@ -11,3 +11,5 @@ import '@/ai/flows/coach-conversation.ts';
 import '@/ai/flows/detect-player-patterns.ts';
 import '@/ai/flows/get-app-help.ts';
 import '@/ai/flows/analyze-player-progression.ts';
+import '@/ai/flows/generate-match-chronicle.ts';
+import '@/ai/flows/generate-duo-image.ts';

@@ -15,6 +15,7 @@ import { useMatchActions } from '@/hooks/use-match-actions';
 import { MatchChatView } from './match-chat-view';
 import { MatchTeams } from './match-details/MatchTeams';
 import { PlayersConfirmed } from './match-details/PlayersConfirmed';
+import { MatchChronicleCard } from './match-chronicle-card';
 
 interface MatchDetailViewProps {
   matchId: string;
@@ -138,6 +139,8 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                          ) : (
                            <PlayersConfirmed match={match} />
                          )}
+                         
+                         {match.status === 'evaluated' && <MatchChronicleCard match={match} />}
                     </div>
                     {permissions.isOwner && (
                         <div className="lg:col-span-3">
