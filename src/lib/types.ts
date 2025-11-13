@@ -1,5 +1,3 @@
-
-
 import { DocumentData, DocumentReference } from "firebase/firestore";
 import type { PerformanceTag as Pt } from "./performance-tags";
 import { z } from 'zod';
@@ -72,7 +70,7 @@ export type AvailablePlayer = {
 
 
 export type MatchStatus = 'upcoming' | 'active' | 'completed' | 'evaluated';
-export type MatchType = 'manual' | 'collaborative' | 'by_teams' | 'intergroup_friendly';
+export type MatchType = 'manual' | 'collaborative' | 'by_teams' | 'intergroup_friendly' | 'league' | 'cup';
 export type MatchSize = 10 | 14 | 22;
 
 export type MatchLocation = {
@@ -173,7 +171,7 @@ export type Group = {
 } & DocumentData;
 
 
-export type NotificationType = 'match_invite' | 'new_joiner' | 'evaluation_pending' | 'match_update';
+export type NotificationType = 'match_invite' | 'new_joiner' | 'evaluation_pending' | 'match_update' | 'challenge_received' | 'challenge_accepted' | 'challenge_rejected' | 'league_application';
 
 export type Notification = {
     id: string;
@@ -349,3 +347,45 @@ export const GenerateDuoImageInputSchema = z.object({
   prompt: z.string().describe("La instrucción que describe la escena a generar entre los jugadores."),
 });
 export type GenerateDuoImageInput = z.infer<typeof GenerateDuoImageInputSchema>;
+
+// NEW: Entities for Leagues and Cups
+export type CompetitionFormat = 'league' | 'cup';
+export type LeagueFormat = 'round_robin' | 'double_round_robin';
+export type CupFormat = 'single_elimination';
+export type CompetitionStatus = 'draft' | 'open_for_applications' | 'in_progress' | 'completed';
+
+export type League = {
+  id: string;
+  name: string;
+  format: LeagueFormat;
+  status: CompetitionStatus;
+  ownerUid: string;
+  groupId: string; // The "home" group of the league
+  isPublic: boolean;
+  teams: string[]; // Array of teamIds
+  createdAt: string;
+} & DocumentData;
+
+export type Cup = {
+  id: string;
+  name: string;
+  format: CupFormat;
+  status: CompetitionStatus;
+  ownerUid: string;
+  groupId: string;
+  isPublic: boolean;
+  teams: string[];
+  createdAt: string;
+} & DocumentData;
+
+export type CompetitionApplication = {
+    id: string;
+    competitionId: string;
+    competitionType: CompetitionFormat;
+    teamId: string;
+    teamName: string;
+    teamJersey: Jersey;
+    status: 'pending' | 'approved' | 'rejected';
+    submittedAt: string;
+    submittedBy: string; // userId of team owner
+} & DocumentData;

@@ -17,6 +17,7 @@ interface CompetitionCardProps {
     label: string;
     value: string | number;
   }[];
+  disabled?: boolean;
 }
 
 const variantStyles = {
@@ -50,59 +51,63 @@ export function CompetitionCard({
   variant,
   count,
   stats,
+  disabled = false,
 }: CompetitionCardProps) {
   const styles = variantStyles[variant];
 
-  return (
-    <Link href={href} className="block">
-      <div
-        className={cn(
-          'relative overflow-hidden rounded-xl p-6 h-full min-h-[200px]',
-          'champions-glass champions-hover',
-          styles.gradient,
-          styles.border
+  const content = (
+    <div
+      className={cn(
+        'relative overflow-hidden rounded-xl p-6 h-full min-h-[200px]',
+        'champions-glass champions-hover',
+        styles.gradient,
+        styles.border,
+        disabled && 'opacity-50 pointer-events-none'
+      )}
+    >
+      {/* Header con icono y badge */}
+      <div className="flex items-start justify-between mb-4">
+        <div className={cn('p-3 rounded-lg bg-background/50', styles.icon)}>
+          <Icon className="h-8 w-8" />
+        </div>
+        {count !== undefined && count > 0 && (
+          <Badge variant="secondary" className="text-sm font-bold">
+            {count}
+          </Badge>
         )}
-      >
-        {/* Header con icono y badge */}
-        <div className="flex items-start justify-between mb-4">
-          <div className={cn('p-3 rounded-lg bg-background/50', styles.icon)}>
-            <Icon className="h-8 w-8" />
-          </div>
-          {count !== undefined && count > 0 && (
-            <Badge variant="secondary" className="text-sm font-bold">
-              {count}
-            </Badge>
-          )}
-        </div>
-
-        {/* Contenido */}
-        <div className="space-y-2 mb-4">
-          <h3 className="text-2xl font-bold tracking-tight">{title}</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {description}
-          </p>
-        </div>
-
-        {/* Stats opcionales */}
-        {stats && stats.length > 0 && (
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            {stats.map((stat, index) => (
-              <div
-                key={index}
-                className="rounded-lg bg-background/30 p-3 border border-border/50"
-              >
-                <p className="text-xs text-muted-foreground mb-1">{stat.label}</p>
-                <p className="text-lg font-bold">{stat.value}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Arrow indicator */}
-        <div className="absolute bottom-6 right-6 opacity-50 group-hover:opacity-100 transition-opacity">
-          <ArrowRight className="h-5 w-5" />
-        </div>
       </div>
-    </Link>
+
+      {/* Contenido */}
+      <div className="space-y-2 mb-4">
+        <h3 className="text-xl font-bold tracking-tight">{title}</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          {description}
+        </p>
+      </div>
+
+      {/* Stats opcionales */}
+      {stats && stats.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          {stats.map((stat, index) => (
+            <div
+              key={index}
+              className="rounded-lg bg-background/30 p-3 border border-border/50"
+            >
+              <p className="text-xs text-muted-foreground mb-1">{stat.label}</p>
+              <p className="text-lg font-bold">{stat.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Arrow indicator */}
+      {!disabled && (
+          <div className="absolute bottom-6 right-6 opacity-50 group-hover:opacity-100 transition-opacity">
+            <ArrowRight className="h-5 w-5" />
+          </div>
+      )}
+    </div>
   );
+  
+  return disabled ? <div>{content}</div> : <Link href={href} className="block">{content}</Link>;
 }
