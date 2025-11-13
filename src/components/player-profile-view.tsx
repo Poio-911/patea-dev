@@ -1,18 +1,15 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@/firebase';
 import type { Player } from '@/lib/types';
 import { PlayerDetailCard } from '@/components/player-detail-card';
-import { Sparkles, Scissors, Loader2, LineChart, BrainCircuit } from 'lucide-react';
-import { ImageCropperDialog } from '@/components/image-cropper-dialog';
-import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
-import { useToast } from '@/hooks/use-toast';
+import { LineChart, BrainCircuit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import Link from 'next/link';
 import { PlayerRecentActivity } from './player-recent-activity';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -23,8 +20,6 @@ export default function PlayerProfileView({ playerId, player: initialPlayer }: P
   const { user } = useUser();
   const [player, setPlayer] = useState<Player>(initialPlayer);
   const isCurrentUserProfile = user?.uid === playerId;
-  const { toast } = useToast();
-  const [isGeneratingAI, setIsGeneratingAI] = React.useState(false);
 
   useEffect(() => {
     setPlayer(initialPlayer);
@@ -32,67 +27,15 @@ export default function PlayerProfileView({ playerId, player: initialPlayer }: P
 
   const handlePhotoUpdate = (newUrl: string) => {
     setPlayer(prevPlayer => ({ ...prevPlayer, photoUrl: newUrl }));
-    // The useUser hook will eventually pick up the auth change and update the global state.
-    // This local state update provides immediate UI feedback.
-  };
-
-  const handleGenerateAIPhoto = async () => {
-    if (!user?.uid) return;
-    setIsGeneratingAI(true);
-    try {
-      const result = await generatePlayerCardImageAction(user.uid);
-
-      if ('error' in result) {
-        toast({ variant: 'destructive', title: 'Error al generar imagen', description: result.error });
-        return;
-      }
-      toast({ title: 'Foto generada con éxito', description: 'Tu foto profesional ha sido creada con IA.' });
-      if (result.newPhotoURL) {
-        handlePhotoUpdate(result.newPhotoURL);
-      }
-    } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Error', description: e.message || 'Fallo inesperado.' });
-    } finally {
-      setIsGeneratingAI(false);
-    }
   };
 
   return (
     <div className="flex flex-col gap-8">
-      <PlayerDetailCard player={player} />
-
-      {isCurrentUserProfile && (
-        <div className="flex flex-col items-center gap-3 -mt-2">
-          <div className="flex flex-wrap justify-center gap-2 w-full px-2">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="default" size="sm" disabled={isGeneratingAI || (player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0)}>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  {isGeneratingAI ? 'Generando...' : 'Generar Foto IA'}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>¿Confirmar generación de imagen?</AlertDialogTitle>
-                  <AlertDialogDescription>Esto usará 1 de tus {player.cardGenerationCredits} créditos. Esta acción no se puede deshacer.</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleGenerateAIPhoto} disabled={isGeneratingAI}>
-                    {isGeneratingAI ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                    Confirmar y Usar Crédito
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            <ImageCropperDialog player={player} onSaveComplete={handlePhotoUpdate}>
-              <Button variant="outline" size="sm" disabled={isGeneratingAI}>
-                <Scissors className="mr-2 h-4 w-4" /> Cambiar Foto
-              </Button>
-            </ImageCropperDialog>
-          </div>
-        </div>
-      )}
+      <PlayerDetailCard 
+        player={player} 
+        onPhotoUpdate={handlePhotoUpdate}
+        isCurrentUserProfile={isCurrentUserProfile} 
+      />
       
       {isCurrentUserProfile && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
