@@ -20,6 +20,23 @@ import { logger } from '../logger';
 
 // --- ADMIN SDK INITIALIZATION ---
 function getAdminInstances() {
+    // Limpiar variables de emulador si NO queremos usar emulador
+    const useEmulator = process.env.FIREBASE_USE_EMULATOR === 'true';
+    if (!useEmulator) {
+        const emulatorVars = [
+            'FIRESTORE_EMULATOR_HOST',
+            'FIREBASE_EMULATOR_HUB',
+            'FIREBASE_AUTH_EMULATOR_HOST',
+            'FIREBASE_STORAGE_EMULATOR_HOST',
+            'FIREBASE_DATABASE_EMULATOR_HOST'
+        ];
+        for (const v of emulatorVars) {
+            if ((process.env as any)[v]) {
+                delete (process.env as any)[v];
+            }
+        }
+    }
+
     if (getApps().length > 0) {
         const adminApp = getApps()[0];
         return {
@@ -27,7 +44,7 @@ function getAdminInstances() {
             adminAuth: getAdminAuth(adminApp),
         };
     }
-    
+
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
     if (!serviceAccountKey) {
         throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.");
@@ -476,11 +493,24 @@ export async function getAvailableTeamPostsAction(userId: string) {
         const posts = postsSnapshot.docs
             .map(doc => ({ id: doc.id, ...doc.data() } as TeamAvailabilityPost))
             .filter(post => {
+                // ✅ Filtrar solo posts activos (o sin status para retrocompatibilidad)
+                const isActive = !post.status || post.status === 'active';
+
                 // Additional time filtering for today's date
                 const postDateTime = new Date(`${post.date}T${post.time}`);
-                const isValid = postDateTime > new Date();
-                console.log('[getAvailableTeamPostsAction] Time filter:', { teamName: post.teamName, postDateTime, now: new Date(), isValid });
-                return isValid;
+                const isValidTime = postDateTime > new Date();
+
+                console.log('[getAvailableTeamPostsAction] Filters:', {
+                    teamName: post.teamName,
+                    status: post.status,
+                    isActive,
+                    postDateTime,
+                    now: new Date(),
+                    isValidTime,
+                    final: isActive && isValidTime
+                });
+
+                return isActive && isValidTime;
             });
 
         console.log('[getAvailableTeamPostsAction] Posts after time filter:', posts.length);
@@ -593,61 +623,35 @@ export async function acceptTeamChallengeAction(
 ) {
     const { adminDb } = getAdminInstances();
     try {
-        const batch = adminDb.batch();
+        // ✅ Primero obtener la invitation para saber qué equipos están involucrados
+        const invitationRef = adminDb.doc(`teams/${teamId}/invitations/${invitationId}`);
+        const invitationDoc = await invitationRef.get();
 
-        // Get the invitation
-        const invitationSnap = await adminDb.doc(`teams/${teamId}/invitations/${invitationId}`).get();
-        if (!invitationSnap.exists) {
+        if (!invitationDoc.exists) {
             throw new Error("La invitación no existe.");
         }
 
-        const invitation = { id: invitationSnap.id, ...invitationSnap.data() } as Invitation;
+        const invitationData = { id: invitationDoc.id, ...invitationDoc.data() } as Invitation;
 
-        if (invitation.type !== 'team_challenge') {
-            throw new Error("Esta no es una invitación de desafío de equipos.");
-        }
-
-        // Update invitation status
-        batch.update(invitationSnap.ref, { status: 'accepted' });
-
-        // Get both teams
-        const [team1Snap, team2Snap] = await Promise.all([
-            adminDb.doc(`teams/${invitation.toTeamId}`).get(),
-            adminDb.doc(`teams/${invitation.fromTeamId}`).get(),
+        // Pre-cargar los players ANTES de la transaction para evitar muchas lecturas dentro
+        const team1Ref = adminDb.doc(`teams/${invitationData.toTeamId}`);
+        const team2Ref = adminDb.doc(`teams/${invitationData.fromTeamId}`);
+        const [team1Doc, team2Doc] = await Promise.all([
+            team1Ref.get(),
+            team2Ref.get(),
         ]);
 
-        if (!team1Snap.exists || !team2Snap.exists) {
+        if (!team1Doc.exists || !team2Doc.exists) {
             throw new Error("Uno de los equipos no existe.");
         }
 
-        const team1 = { id: team1Snap.id, ...team1Snap.data() } as GroupTeam;
-        const team2 = { id: team2Snap.id, ...team2Snap.data() } as GroupTeam;
+        const team1Data = team1Doc.data() as GroupTeam;
+        const team2Data = team2Doc.data() as GroupTeam;
 
-        // Get the post if it exists (to get date/time/location)
-        let matchDate = new Date().toISOString().split('T')[0];
-        let matchTime = '19:00';
-        let matchLocation: MatchLocation = {
-            name: 'Por definir',
-            address: 'Por definir',
-            lat: 0,
-            lng: 0,
-            placeId: '',
-        };
-
-        if (invitation.postId) {
-            const postSnap = await adminDb.doc(`teamAvailabilityPosts/${invitation.postId}`).get();
-            if (postSnap.exists) {
-                const post = postSnap.data() as TeamAvailabilityPost;
-                matchDate = post.date;
-                matchTime = post.time;
-                matchLocation = post.location;
-            }
-        }
-
-        // Get players from both teams
+        // Get players from both teams (FUERA de transaction)
         const [team1PlayersSnaps, team2PlayersSnaps] = await Promise.all([
-            Promise.all(team1.members.map(m => adminDb.doc(`players/${m.playerId}`).get())),
-            Promise.all(team2.members.map(m => adminDb.doc(`players/${m.playerId}`).get())),
+            Promise.all(team1Data.members.map(m => adminDb.doc(`players/${m.playerId}`).get())),
+            Promise.all(team2Data.members.map(m => adminDb.doc(`players/${m.playerId}`).get())),
         ]);
 
         const team1Players = team1PlayersSnaps
@@ -657,85 +661,198 @@ export async function acceptTeamChallengeAction(
             .filter(snap => snap.exists)
             .map(snap => ({ id: snap.id, ...snap.data() } as Player));
 
-        // Create the match
-        const matchRef = adminDb.collection('matches').doc();
-        const newMatch: Omit<Match, 'id'> = {
-            title: `${team1.name} vs ${team2.name}`,
-            date: matchDate,
-            time: matchTime,
-            location: matchLocation,
-            type: 'intergroup_friendly',
-            matchSize: 22, // Default to 11v11
-            players: [...team1Players, ...team2Players].map(p => ({
-                uid: p.id,
-                displayName: p.name,
-                ovr: p.ovr,
-                position: p.position,
-                photoUrl: p.photoUrl || '',
-            })),
-            playerUids: [...team1Players, ...team2Players].map(p => p.id),
-            teams: [
-                {
-                    id: team1.id,
-                    name: team1.name,
-                    jersey: team1.jersey,
-                    players: team1Players.map(p => ({
-                        uid: p.id,
-                        displayName: p.name,
-                        position: p.position,
-                        ovr: p.ovr,
-                    })),
-                    totalOVR: team1Players.reduce((sum, p) => sum + p.ovr, 0),
-                    averageOVR: team1Players.reduce((sum, p) => sum + p.ovr, 0) / team1Players.length,
-                },
-                {
-                    id: team2.id,
-                    name: team2.name,
-                    jersey: team2.jersey,
-                    players: team2Players.map(p => ({
-                        uid: p.id,
-                        displayName: p.name,
-                        position: p.position,
-                        ovr: p.ovr,
-                    })),
-                    totalOVR: team2Players.reduce((sum, p) => sum + p.ovr, 0),
-                    averageOVR: team2Players.reduce((sum, p) => sum + p.ovr, 0) / team2Players.length,
-                },
-            ],
-            status: 'upcoming',
-            ownerUid: team1.createdBy, // The team that was challenged is the "owner"
-            groupId: team1.groupId,
-            isPublic: false,
-        };
+        // ✅ AHORA SI: TRANSACTION con todas las validaciones y escrituras
+        return await adminDb.runTransaction(async (transaction) => {
+            // ========================================
+            // PASO 1: TODAS LAS LECTURAS PRIMERO
+            // ========================================
 
-        batch.set(matchRef, newMatch);
+            // Re-read the invitation dentro de la transaction para asegurar atomicidad
+            const invitationSnap = await transaction.get(invitationRef);
 
-        // Create notifications for both team owners
-        const notification1Ref = adminDb.collection(`users/${team1.createdBy}/notifications`).doc();
-        const notification1: Omit<Notification, 'id'> = {
-            type: 'match_update',
-            title: '¡Desafío Aceptado!',
-            message: `Has aceptado el desafío de "${team2.name}". El partido ha sido creado.`,
-            link: `/matches/${matchRef.id}`,
-            isRead: false,
-            createdAt: new Date().toISOString(),
-        };
-        batch.set(notification1Ref, notification1);
+            if (!invitationSnap.exists) {
+                throw new Error("La invitación no existe.");
+            }
 
-        const notification2Ref = adminDb.collection(`users/${team2.createdBy}/notifications`).doc();
-        const notification2: Omit<Notification, 'id'> = {
-            type: 'match_update',
-            title: '¡Desafío Aceptado!',
-            message: `"${team1.name}" ha aceptado tu desafío. El partido ha sido creado.`,
-            link: `/matches/${matchRef.id}`,
-            isRead: false,
-            createdAt: new Date().toISOString(),
-        };
-        batch.set(notification2Ref, notification2);
+            const invitation = { id: invitationSnap.id, ...invitationSnap.data() } as Invitation;
 
-        await batch.commit();
+            // ✅ VALIDAR STATUS - Previene doble aceptación
+            if (invitation.status !== 'pending') {
+                throw new Error("Esta invitación ya fue procesada.");
+            }
 
-        return { success: true, matchId: matchRef.id };
+            if (invitation.type !== 'team_challenge') {
+                throw new Error("Esta no es una invitación de desafío de equipos.");
+            }
+
+            // ✅ VALIDAR OWNERSHIP - Solo el dueño del equipo puede aceptar
+            const teamRef = adminDb.doc(`teams/${teamId}`);
+            const teamSnap = await transaction.get(teamRef);
+            if (!teamSnap.exists) {
+                throw new Error("El equipo no existe.");
+            }
+            const teamData = teamSnap.data();
+            if (teamData?.createdBy !== userId) {
+                throw new Error("No tenés permiso para aceptar esta invitación.");
+            }
+
+            // Get both teams
+            const team1Ref = adminDb.doc(`teams/${invitation.toTeamId}`);
+            const team2Ref = adminDb.doc(`teams/${invitation.fromTeamId}`);
+            const [team1Snap, team2Snap] = await Promise.all([
+                transaction.get(team1Ref),
+                transaction.get(team2Ref),
+            ]);
+
+            if (!team1Snap.exists || !team2Snap.exists) {
+                throw new Error("Uno de los equipos no existe.");
+            }
+
+            const team1 = { id: team1Snap.id, ...team1Snap.data() } as GroupTeam;
+            const team2 = { id: team2Snap.id, ...team2Snap.data() } as GroupTeam;
+
+            // Get the post if it exists (to get date/time/location)
+            let matchDate = new Date().toISOString().split('T')[0];
+            let matchTime = '19:00';
+            let matchLocation: MatchLocation = {
+                name: 'Por definir',
+                address: 'Por definir',
+                lat: 0,
+                lng: 0,
+                placeId: '',
+            };
+            let postRef = null;
+            let postData = null;
+
+            if (invitation.postId) {
+                postRef = adminDb.doc(`teamAvailabilityPosts/${invitation.postId}`);
+                const postSnap = await transaction.get(postRef);
+                if (postSnap.exists) {
+                    postData = postSnap.data() as TeamAvailabilityPost;
+                    matchDate = postData.date;
+                    matchTime = postData.time;
+                    matchLocation = postData.location;
+
+                    // ✅ VALIDAR FECHA FUTURA (mínimo 30 minutos)
+                    const matchDateTime = new Date(`${matchDate}T${matchTime}:00`);
+                    const now = new Date();
+                    const minAdvance = new Date(now.getTime() + 30 * 60 * 1000);
+                    if (matchDateTime < minAdvance) {
+                        throw new Error("No se puede crear un partido con menos de 30 minutos de anticipación.");
+                    }
+                }
+            }
+
+            // ========================================
+            // PASO 2: TODAS LAS ESCRITURAS DESPUÉS
+            // ========================================
+
+            // Update invitation status
+            transaction.update(invitationRef, { status: 'accepted' });
+
+            // Create the match
+            const matchRef = adminDb.collection('matches').doc();
+            const matchDateTime = new Date(`${matchDate}T${matchTime}:00`);
+            const now = new Date();
+
+            const newMatch: Omit<Match, 'id'> = {
+                title: `${team1.name} vs ${team2.name}`,
+                date: matchDate,
+                time: matchTime,
+                location: matchLocation,
+                type: 'intergroup_friendly',
+                matchSize: 22, // Default to 11v11
+                players: [...team1Players, ...team2Players].map(p => ({
+                    uid: p.id,
+                    displayName: p.name,
+                    ovr: p.ovr,
+                    position: p.position,
+                    photoUrl: p.photoUrl || '',
+                })),
+                playerUids: [...team1Players, ...team2Players].map(p => p.id),
+                teams: [
+                    {
+                        id: team1.id,
+                        name: team1.name,
+                        jersey: team1.jersey,
+                        players: team1Players.map(p => ({
+                            uid: p.id,
+                            displayName: p.name,
+                            position: p.position,
+                            ovr: p.ovr,
+                        })),
+                        totalOVR: team1Players.reduce((sum, p) => sum + p.ovr, 0),
+                        // ✅ FIX: Prevenir división por cero
+                        averageOVR: team1Players.length > 0
+                            ? team1Players.reduce((sum, p) => sum + p.ovr, 0) / team1Players.length
+                            : 0,
+                    },
+                    {
+                        id: team2.id,
+                        name: team2.name,
+                        jersey: team2.jersey,
+                        players: team2Players.map(p => ({
+                            uid: p.id,
+                            displayName: p.name,
+                            position: p.position,
+                            ovr: p.ovr,
+                        })),
+                        totalOVR: team2Players.reduce((sum, p) => sum + p.ovr, 0),
+                        // ✅ FIX: Prevenir división por cero
+                        averageOVR: team2Players.length > 0
+                            ? team2Players.reduce((sum, p) => sum + p.ovr, 0) / team2Players.length
+                            : 0,
+                    },
+                ],
+                status: 'upcoming',
+                ownerUid: team1.createdBy, // The team that was challenged is the "owner"
+                groupId: team1.groupId,
+                isPublic: false,
+                // ✅ NUEVO: Campos para queries eficientes y ciclo de vida completo (FASE 1.3)
+                startTimestamp: matchDateTime.toISOString(), // ISO timestamp para ordenar/paginar
+                participantTeamIds: [team1.id!, team2.id!], // Array de IDs de equipos para queries
+                createdAt: now.toISOString(), // Timestamp de creación
+                finalScore: null, // Inicializar como null, se llenará al finalizar
+                finalizedAt: null, // Se llenará cuando el partido termine
+            };
+
+            transaction.set(matchRef, newMatch);
+
+            // ✅ MARCAR POST COMO MATCHED (si existe)
+            if (postRef) {
+                transaction.update(postRef, {
+                    status: 'matched',
+                    matchedWithTeamId: team2.id,
+                    matchId: matchRef.id
+                });
+            }
+
+            // Create notifications for both team owners
+            const notification1Ref = adminDb.collection(`users/${team1.createdBy}/notifications`).doc();
+            const notification1: Omit<Notification, 'id'> = {
+                type: 'match_update',
+                title: '¡Desafío Aceptado!',
+                message: `Has aceptado el desafío de "${team2.name}". El partido ha sido creado.`,
+                link: `/matches/${matchRef.id}`,
+                isRead: false,
+                createdAt: new Date().toISOString(),
+            };
+            transaction.set(notification1Ref, notification1);
+
+            const notification2Ref = adminDb.collection(`users/${team2.createdBy}/notifications`).doc();
+            const notification2: Omit<Notification, 'id'> = {
+                type: 'match_update',
+                title: '¡Desafío Aceptado!',
+                message: `"${team1.name}" ha aceptado tu desafío. El partido ha sido creado.`,
+                link: `/matches/${matchRef.id}`,
+                isRead: false,
+                createdAt: new Date().toISOString(),
+            };
+            transaction.set(notification2Ref, notification2);
+
+            // ✅ Transaction se commitea automáticamente al retornar
+            return { success: true, matchId: matchRef.id };
+        }); // Fin de la transaction
     } catch (error: any) {
         logger.error('Error accepting team challenge', error);
         return { error: error.message || "No se pudo aceptar el desafío." };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition, useRef } from 'react';
+import { useState, useEffect, useTransition, useRef, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,11 +8,13 @@ import { Calendar, MapPin, Trash2, PlusCircle, Loader2 } from 'lucide-react';
 import { GroupTeam, TeamAvailabilityPost } from '@/lib/types';
 import { JerseyPreview } from './team-builder/jersey-preview';
 import { TeamAvailabilityDialog } from './team-availability-dialog';
-import { getUserTeamPostsAction, deleteTeamAvailabilityPostAction } from '@/lib/actions/server-actions';
+import { deleteTeamAvailabilityPostAction } from '@/lib/actions/server-actions';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from './ui/alert';
+import { useFirestore, useCollection } from '@/firebase';
+import { collection, query, where, orderBy } from 'firebase/firestore';
 
 interface MyTeamsAvailabilityProps {
   teams: GroupTeam[];
@@ -21,28 +23,35 @@ interface MyTeamsAvailabilityProps {
 }
 
 export function MyTeamsAvailability({ teams, userId, isActive = true }: MyTeamsAvailabilityProps) {
-  const [posts, setPosts] = useState<TeamAvailabilityPost[]>([]);
-  const [loading, setLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const firestore = useFirestore();
   const hasLoadedRef = useRef(false);
 
-  const loadPosts = async () => {
-    setLoading(true);
-    const result = await getUserTeamPostsAction(userId);
-    if (result.success) {
-      setPosts(result.posts);
-    }
-    setLoading(false);
-  };
-
+  // Actualizar ref cuando el tab se activa
   useEffect(() => {
-    // Only load when active and hasn't loaded before
     if (isActive && !hasLoadedRef.current) {
       hasLoadedRef.current = true;
-      loadPosts();
     }
-  }, [isActive, userId]);
+  }, [isActive]);
+
+  // Query de Firestore para obtener postulaciones del usuario
+  const postsQuery = useMemo(() => {
+    if (!firestore || !userId || !isActive) return null;
+    return query(
+      collection(firestore, 'teamAvailabilityPosts'),
+      where('createdBy', '==', userId),
+      orderBy('date', 'asc')
+    );
+  }, [firestore, userId, isActive]);
+
+  const { data: postsData, loading } = useCollection<TeamAvailabilityPost>(postsQuery);
+  const posts = postsData || []; // Asegurar que siempre sea un array
+
+  // Función vacía para onSuccess - useCollection se actualiza automáticamente
+  const loadPosts = () => {
+    // No hace nada - useCollection actualiza automáticamente
+  };
 
   const handleDeletePost = (postId: string) => {
     startTransition(async () => {
@@ -52,7 +61,7 @@ export function MyTeamsAvailability({ teams, userId, isActive = true }: MyTeamsA
           title: 'Postulación eliminada',
           description: 'Tu postulación ha sido eliminada correctamente.',
         });
-        loadPosts();
+        // No necesitamos recargar - useCollection se actualiza automáticamente
       } else {
         toast({
           title: 'Error',

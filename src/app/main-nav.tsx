@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Users2, User, BellRing, HelpCircle, CheckCircle, Moon, Sun, Laptop } from 'lucide-react';
+import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Trophy, ClipboardCheck, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -50,11 +50,11 @@ import { isToday, parseISO } from 'date-fns';
 import { useTheme } from 'next-themes';
 
 
-const navItems = [
+// NAV FINAL (versión app): 5 items visibles + submenú en Partidos (Partidos + Competiciones)
+const baseNavItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
   { href: '/groups', label: 'Grupos', icon: Users2 },
   { href: '/players', label: 'Jugadores', icon: SoccerPlayerIcon },
-  { href: '/matches', label: 'Partidos', icon: MatchIcon },
   { href: '/evaluations', label: 'Evaluaciones', icon: EvaluationIcon },
 ];
 
@@ -66,6 +66,9 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { toast } = useToast();
   const { setTheme } = useTheme();
+  const [matchesMenuOpen, setMatchesMenuOpen] = React.useState(false);
+  const matchesMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const EvaluationsIcon = baseNavItems[3].icon;
 
   const { requestPermission } = useFcm();
 
@@ -105,6 +108,18 @@ export function MainNav({ children }: { children: React.ReactNode }) {
         }
     }
   }, [user, toast]);
+
+  // Cierra el submenú al cambiar ruta
+  React.useEffect(() => { setMatchesMenuOpen(false); }, [pathname]);
+  React.useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (matchesMenuOpen && matchesMenuRef.current && !matchesMenuRef.current.contains(e.target as Node)) {
+        setMatchesMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [matchesMenuOpen]);
 
   const handleLogout = async () => {
     if (auth) {
@@ -240,19 +255,66 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                 <SidebarMenu>
                     <SidebarGroup>
                       <SidebarGroupLabel>Menú</SidebarGroupLabel>
-                      {navItems.map((item) => (
-                      <SidebarMenuItem key={item.href}>
+                      {baseNavItems.slice(0,3).map((item) => (
+                        <SidebarMenuItem key={item.href}>
                           <Link href={item.href}>
-                          <SidebarMenuButton
+                            <SidebarMenuButton
                               isActive={pathname.startsWith(item.href)}
                               tooltip={item.label}
-                          >
+                            >
                               <item.icon />
                               <span>{item.label}</span>
-                          </SidebarMenuButton>
+                            </SidebarMenuButton>
                           </Link>
-                      </SidebarMenuItem>
+                        </SidebarMenuItem>
                       ))}
+                      <SidebarMenuItem>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setMatchesMenuOpen(o => !o)}
+                            className={cn(
+                              "w-full flex items-center gap-2 rounded-md px-2 py-2 text-sm transition hover:bg-accent",
+                              (pathname.startsWith('/matches') || pathname.startsWith('/competitions')) && 'bg-accent/80'
+                            )}
+                            aria-haspopup="true"
+                            aria-expanded={matchesMenuOpen}
+                          >
+                            <Trophy className="h-4 w-4" />
+                            <span className="flex-1 text-left">Partidos</span>
+                            <span className="text-xs opacity-60">{matchesMenuOpen ? '▲' : '▼'}</span>
+                          </button>
+                          {matchesMenuOpen && (
+                            <div ref={matchesMenuRef} className="absolute left-0 -top-2 translate-y-[-100%] w-48 rounded-lg border bg-background/80 backdrop-blur-xl shadow-lg p-2 flex flex-col gap-1 z-50">
+                              <Link href="/matches" className={cn("flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent", pathname.startsWith('/matches') && 'bg-accent/70 font-medium')}>
+                                <Trophy className="h-4 w-4" />
+                                <span>Partidos</span>
+                              </Link>
+                              <Link href="/competitions" className={cn("flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent", pathname.startsWith('/competitions') && 'bg-accent/70 font-medium')}>
+                                <Trophy className="h-4 w-4" />
+                                <span>Competiciones</span>
+                              </Link>
+                              <button
+                                onClick={() => setMatchesMenuOpen(false)}
+                                className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground hover:text-primary self-end flex items-center gap-1"
+                              >
+                                <X className="h-3 w-3" /> Cerrar
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </SidebarMenuItem>
+                      <SidebarMenuItem>
+                        <Link href={baseNavItems[3].href}>
+                          <SidebarMenuButton
+                            isActive={pathname.startsWith(baseNavItems[3].href)}
+                            tooltip={baseNavItems[3].label}
+                          >
+                            <EvaluationsIcon />
+                            <span>{baseNavItems[3].label}</span>
+                          </SidebarMenuButton>
+                        </Link>
+                      </SidebarMenuItem>
                     </SidebarGroup>
                 </SidebarMenu>
                  <div className="mt-auto">
@@ -274,26 +336,68 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             </div>
           </main>
           
-          <nav className="fixed bottom-0 left-0 right-0 z-20 h-16 border-t bg-background/70 backdrop-blur-lg md:hidden">
-              <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
-              {navItems.map((item) => {
+          <nav className="fixed bottom-4 left-4 right-4 z-30 h-16 rounded-xl border bg-background/70 backdrop-blur-lg shadow-lg md:hidden">
+            <div className="relative mx-auto h-full max-w-lg">
+              <div className="grid h-full w-full grid-cols-5 font-medium">
+                {baseNavItems.slice(0,3).map((item) => {
                   const isActive = pathname.startsWith(item.href);
-                  const isMatchIcon = item.href === '/matches';
                   return (
-                  <Link
+                    <Link
                       key={item.href}
                       href={item.href}
-                      className={cn(
-                      'group inline-flex flex-col items-center justify-center px-1 text-muted-foreground transition-colors hover:text-primary',
-                      isActive && 'text-primary'
-                      )}
-                  >
-                      <item.icon className={cn("h-6 w-6", isMatchIcon && "h-7 w-7")} />
-                      <span className="text-xs">{item.label}</span>
-                  </Link>
+                      className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary', isActive && 'text-primary font-semibold')}
+                    >
+                      <item.icon className={cn('h-5 w-5 transition-all duration-200', isActive && 'scale-110')} />
+                      <span className="text-[10px] leading-none">{item.label}</span>
+                    </Link>
                   );
-              })}
+                })}
+                <button
+                  type="button"
+                  onClick={() => setMatchesMenuOpen(o => !o)}
+                  className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary', (pathname.startsWith('/matches') || pathname.startsWith('/competitions')) && 'text-primary font-semibold')}
+                  aria-haspopup="true"
+                  aria-expanded={matchesMenuOpen}
+                >
+                  <Trophy className={cn('h-5 w-5 transition-all duration-200', (pathname.startsWith('/matches') || pathname.startsWith('/competitions')) && 'scale-110')} />
+                  <span className="text-[10px] leading-none">Partidos</span>
+                </button>
+                <Link
+                  href={baseNavItems[3].href}
+                  className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary', pathname.startsWith(baseNavItems[3].href) && 'text-primary font-semibold')}
+                >
+                  <EvaluationsIcon className={cn('h-5 w-5 transition-all duration-200', pathname.startsWith(baseNavItems[3].href) && 'scale-110')} />
+                  <span className="text-[10px] leading-none">{baseNavItems[3].label}</span>
+                </Link>
               </div>
+              {matchesMenuOpen && (
+                <div
+                  ref={matchesMenuRef}
+                  className="absolute bottom-16 left-1/2 -translate-x-1/2 mb-2 w-56 rounded-xl border bg-background/80 backdrop-blur-xl shadow-xl p-2 flex flex-col gap-1 animate-in fade-in zoom-in"
+                >
+                  <div className="flex items-center justify-between px-1 pb-1">
+                    <span className="text-xs font-semibold tracking-wide text-muted-foreground">Partidos & Competiciones</span>
+                    <button onClick={() => setMatchesMenuOpen(false)} className="text-muted-foreground hover:text-primary" aria-label="Cerrar">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <Link
+                    href="/matches"
+                    className={cn('flex items-center gap-2 rounded-md px-2 py-2 text-sm transition hover:bg-accent', pathname.startsWith('/matches') && 'bg-accent/70 font-medium')}
+                  >
+                    <Trophy className="h-4 w-4" />
+                    <span>Partidos</span>
+                  </Link>
+                  <Link
+                    href="/competitions"
+                    className={cn('flex items-center gap-2 rounded-md px-2 py-2 text-sm transition hover:bg-accent', pathname.startsWith('/competitions') && 'bg-accent/70 font-medium')}
+                  >
+                    <Trophy className="h-4 w-4" />
+                    <span>Competiciones</span>
+                  </Link>
+                </div>
+              )}
+            </div>
           </nav>
       </div>
     </SidebarProvider>

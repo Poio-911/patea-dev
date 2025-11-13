@@ -29,7 +29,10 @@
       "Bash(unset FIRESTORE_EMULATOR_HOST:*)",
       "Bash(unset:*)",
       "Bash(firebase deploy:*)",
-      "Bash(firebase projects:list:*)"
+      "Bash(firebase projects:list:*)",
+      "WebFetch(domain:dribbble.com)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:www.espnfrontrow.com)"
     ],
     "deny": [],
     "ask": []

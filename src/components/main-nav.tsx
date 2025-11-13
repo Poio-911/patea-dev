@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Users2, User, BellRing, HelpCircle, CheckCircle, Moon, Sun, Laptop, Gamepad2, UserCircle, Trophy, ClipboardCheck } from 'lucide-react';
+import { LayoutDashboard, LogOut, Users2, User, BellRing, Sun, Gamepad2, UserCircle, Trophy, ClipboardCheck, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore, useCollection } from '@/firebase';
@@ -46,12 +46,13 @@ import { isToday, parseISO } from 'date-fns';
 import { useTheme } from 'next-themes';
 
 
-const navItems = [
+// NAV FINAL: EXACTAMENTE 5 items visibles: Panel, Grupos, Jugadores, Partidos (expandible), Evaluar.
+// Submenú de Partidos (aparece hacia ARRIBA) con 2 opciones: Partidos (/matches) y Competiciones (/competitions).
+// Para asegurar el conteo, "Partidos" ocupa 1 slot y expande internamente.
+const baseNavItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
   { href: '/groups', label: 'Grupos', icon: Users2 },
   { href: '/players', label: 'Jugadores', icon: UserCircle },
-  { href: '/matches', label: 'Partidos', icon: Trophy },
-  { href: '/competitions', label: 'Competiciones', icon: Trophy },
   { href: '/evaluations', label: 'Evaluar', icon: ClipboardCheck },
 ];
 
@@ -73,6 +74,9 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const { setTheme, theme } = useTheme();
 
   const { requestPermission } = useFcm();
+  const [matchesMenuOpen, setMatchesMenuOpen] = React.useState(false);
+  const matchesMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const EvaluationsIcon = baseNavItems[3].icon;
 
   const playerRef = React.useMemo(() => {
     if (!firestore || !user?.uid) return null;
@@ -92,12 +96,15 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const { data: pendingEvaluations } = useCollection<EvaluationAssignment>(pendingEvaluationsQuery);
   const pendingEvaluationsCount = pendingEvaluations?.length || 0;
 
+  // Declarar variables que se usarán en los useEffect
+  const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
+  const loading = userLoading || playerLoading;
 
   React.useEffect(() => {
     if (user) {
         const lastLoginStr = localStorage.getItem('lastDailyLogin');
         const today = new Date();
-        
+
         if (!lastLoginStr || !isToday(parseISO(lastLoginStr))) {
             localStorage.setItem('lastDailyLogin', today.toISOString());
             setTimeout(() => {
@@ -111,15 +118,35 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     }
   }, [user, toast]);
 
+  // Cerrar submenú al navegar de ruta
+  React.useEffect(() => {
+    setMatchesMenuOpen(false);
+  }, [pathname]);
+
+  // Cerrar al hacer click fuera (mobile overlay principalmente)
+  React.useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (matchesMenuOpen && matchesMenuRef.current && !matchesMenuRef.current.contains(e.target as Node)) {
+        setMatchesMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [matchesMenuOpen]);
+
+  // Manejar redirección a login cuando no hay usuario (solo en páginas protegidas)
+  React.useEffect(() => {
+    if (!loading && !user && !isPublicPage) {
+      router.push('/login');
+    }
+  }, [loading, user, isPublicPage, router]);
+
   const handleLogout = async () => {
     if (auth) {
       await auth.signOut();
       router.push('/');
     }
   };
-  
-  // ✅ CORRECCIÓN CRÍTICA: Identificar las páginas públicas.
-  const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
 
   // Si es una página pública, renderizarla directamente sin verificar autenticación.
   if (isPublicPage) {
@@ -127,8 +154,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   }
 
   // Para páginas protegidas, verificar la carga y el usuario.
-  const loading = userLoading || playerLoading;
-
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -137,9 +162,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     );
   }
   
-  // Si no está cargando pero no hay usuario, redirigir a login (esto solo aplicará a páginas protegidas)
+  // Si no está cargando pero no hay usuario, mostrar loader (la redirección se maneja en useEffect)
   if (!user) {
-    router.push('/login');
     return (
         <div className="flex h-screen w-full items-center justify-center">
           <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
@@ -283,25 +307,72 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                 <SidebarMenu>
                     <SidebarGroup>
                       <SidebarGroupLabel>Menú</SidebarGroupLabel>
-                      {navItems.map((item) => {
-                        const isEval = item.href === '/evaluations';
-                        return (
-                          <SidebarMenuItem key={item.href}>
-                              <Link href={item.href}>
-                              <SidebarMenuButton
-                                  isActive={pathname.startsWith(item.href)}
-                                  tooltip={item.label}
-                              >
-                                  <item.icon />
-                                  <span>{item.label}</span>
-                                  {isEval && pendingEvaluationsCount > 0 && (
-                                    <Badge className="ml-auto">{pendingEvaluationsCount}</Badge>
-                                  )}
-                              </SidebarMenuButton>
+                      {baseNavItems.slice(0,3).map((item) => (
+                        <SidebarMenuItem key={item.href}>
+                          <Link href={item.href}>
+                            <SidebarMenuButton
+                              isActive={pathname.startsWith(item.href)}
+                              tooltip={item.label}
+                            >
+                              <item.icon />
+                              <span>{item.label}</span>
+                            </SidebarMenuButton>
+                          </Link>
+                        </SidebarMenuItem>
+                      ))}
+                      {/* Partidos expandible */}
+                      <SidebarMenuItem>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setMatchesMenuOpen((o) => !o)}
+                            className={cn(
+                              "w-full flex items-center gap-2 rounded-md px-2 py-2 text-sm transition hover:bg-accent", 
+                              pathname.startsWith('/matches') || pathname.startsWith('/competitions') ? 'bg-accent/80' : ''
+                            )}
+                            aria-haspopup="true"
+                            aria-expanded={matchesMenuOpen}
+                          >
+                            <Trophy className="h-4 w-4" />
+                            <span className="flex-1 text-left">Partidos</span>
+                            <span className="text-xs opacity-60">{matchesMenuOpen ? '▲' : '▼'}</span>
+                          </button>
+                          {matchesMenuOpen && (
+                            <div className="absolute left-0 -top-2 translate-y-[-100%] w-48 rounded-lg border bg-background/80 backdrop-blur-xl shadow-lg p-2 flex flex-col gap-1 z-50" ref={matchesMenuRef}>
+                              <Link href="/matches" className={cn("flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent", pathname.startsWith('/matches') && 'bg-accent/70 font-medium')}>
+                                <Trophy className="h-4 w-4" />
+                                <span>Partidos</span>
                               </Link>
-                          </SidebarMenuItem>
-                        )
-                      })}
+                              <Link href="/competitions" className={cn("flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent", pathname.startsWith('/competitions') && 'bg-accent/70 font-medium')}>
+                                <Trophy className="h-4 w-4" />
+                                <span>Competiciones</span>
+                              </Link>
+                              <button
+                                onClick={() => setMatchesMenuOpen(false)}
+                                className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground hover:text-primary self-end flex items-center gap-1"
+                                aria-label="Cerrar submenú Partidos"
+                              >
+                                <X className="h-3 w-3" /> Cerrar
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </SidebarMenuItem>
+                      {/* Evaluar (último) */}
+                      <SidebarMenuItem>
+                        <Link href={baseNavItems[3].href}>
+                          <SidebarMenuButton
+                            isActive={pathname.startsWith(baseNavItems[3].href)}
+                            tooltip={baseNavItems[3].label}
+                          >
+                            <EvaluationsIcon />
+                            <span>{baseNavItems[3].label}</span>
+                            {pendingEvaluationsCount > 0 && (
+                              <Badge className="ml-auto">{pendingEvaluationsCount}</Badge>
+                            )}
+                          </SidebarMenuButton>
+                        </Link>
+                      </SidebarMenuItem>
                     </SidebarGroup>
                 </SidebarMenu>
                  <div className="mt-auto">
@@ -323,35 +394,76 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             </div>
           </main>
           
-          <nav className="fixed bottom-4 left-4 right-4 z-20 h-16 rounded-xl border bg-background/70 shadow-lg backdrop-blur-lg md:hidden">
-              <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
-              {navItems.map((item) => {
+          {/* Mobile bottom nav (5 items). Partidos abre panel hacia arriba con 2 subopciones. */}
+          <nav className="fixed bottom-4 left-4 right-4 z-30 h-16 rounded-xl border bg-background/70 shadow-lg backdrop-blur-lg md:hidden">
+            <div className="relative mx-auto h-full max-w-lg">
+              <div className="grid h-full w-full grid-cols-5 font-medium">
+                {baseNavItems.slice(0,3).map((item) => {
                   const isActive = pathname.startsWith(item.href);
-                  const isEval = item.href === '/evaluations';
                   return (
-                  <Link
+                    <Link
                       key={item.href}
                       href={item.href}
-                      className={cn(
-                      'group relative inline-flex flex-col items-center justify-center gap-1 px-2 text-muted-foreground transition-all duration-200 hover:text-primary',
-                      isActive && 'text-primary font-semibold'
-                      )}
-                  >
-                      {isEval && pendingEvaluationsCount > 0 && (
-                        <span className="absolute top-1.5 right-1/4 flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                        </span>
-                      )}
-                      <item.icon className={cn(
-                        "h-5 w-5 transition-all duration-200",
-                        isActive && "scale-110"
-                      )} />
+                      className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary', isActive && 'text-primary font-semibold')}
+                    >
+                      <item.icon className={cn('h-5 w-5 transition-all duration-200', isActive && 'scale-110')} />
                       <span className="text-[10px] leading-none">{item.label}</span>
-                  </Link>
+                    </Link>
                   );
-              })}
+                })}
+                {/* Partidos slot */}
+                <button
+                  type="button"
+                  onClick={() => setMatchesMenuOpen((o) => !o)}
+                  className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary', (pathname.startsWith('/matches') || pathname.startsWith('/competitions')) && 'text-primary font-semibold')}
+                  aria-haspopup="true"
+                  aria-expanded={matchesMenuOpen}
+                >
+                  <Trophy className={cn('h-5 w-5 transition-all duration-200', (pathname.startsWith('/matches') || pathname.startsWith('/competitions')) && 'scale-110')} />
+                  <span className="text-[10px] leading-none">Partidos</span>
+                </button>
+                {/* Evaluar slot */}
+                <Link
+                  href={baseNavItems[3].href}
+                  className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary', pathname.startsWith(baseNavItems[3].href) && 'text-primary font-semibold')}
+                >
+                  <EvaluationsIcon className={cn('h-5 w-5 transition-all duration-200', pathname.startsWith(baseNavItems[3].href) && 'scale-110')} />
+                  <span className="text-[10px] leading-none">{baseNavItems[3].label}</span>
+                  {pendingEvaluationsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                      {pendingEvaluationsCount}
+                    </span>
+                  )}
+                </Link>
               </div>
+              {matchesMenuOpen && (
+                <div
+                  ref={matchesMenuRef}
+                  className="absolute bottom-16 left-1/2 -translate-x-1/2 mb-2 w-56 rounded-xl border bg-background/80 backdrop-blur-xl shadow-xl p-2 flex flex-col gap-1 animate-in fade-in zoom-in"
+                >
+                  <div className="flex items-center justify-between px-1 pb-1">
+                    <span className="text-xs font-semibold tracking-wide text-muted-foreground">Partidos & Competiciones</span>
+                    <button onClick={() => setMatchesMenuOpen(false)} className="text-muted-foreground hover:text-primary" aria-label="Cerrar">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <Link
+                    href="/matches"
+                    className={cn('flex items-center gap-2 rounded-md px-2 py-2 text-sm transition hover:bg-accent', pathname.startsWith('/matches') && 'bg-accent/70 font-medium')}
+                  >
+                    <Trophy className="h-4 w-4" />
+                    <span>Partidos</span>
+                  </Link>
+                  <Link
+                    href="/competitions"
+                    className={cn('flex items-center gap-2 rounded-md px-2 py-2 text-sm transition hover:bg-accent', pathname.startsWith('/competitions') && 'bg-accent/70 font-medium')}
+                  >
+                    <Trophy className="h-4 w-4" />
+                    <span>Competiciones</span>
+                  </Link>
+                </div>
+              )}
+            </div>
           </nav>
       </div>
     </SidebarProvider>

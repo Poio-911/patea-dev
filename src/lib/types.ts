@@ -105,6 +105,12 @@ export type Match = {
     temperature: number;
   };
   chronicle?: string; // AI-generated match summary
+  // ✅ NUEVO: Campos para queries eficientes y ciclo de vida completo (FASE 1.3)
+  startTimestamp?: string; // ISO timestamp para ordenar/paginar
+  participantTeamIds?: string[]; // [teamId1, teamId2] para queries eficientes
+  createdAt?: string; // ISO timestamp para auditoría
+  finalScore?: { team1: number; team2: number } | null; // Score final del partido
+  finalizedAt?: string | null; // Timestamp de finalización
 } & DocumentData;
 
 export type Team = {
@@ -188,6 +194,10 @@ export type TeamAvailabilityPost = {
     description?: string;
     createdBy: string; // UID of the team owner who created the post
     createdAt: string; // ISO 8601 timestamp
+    // ✅ NUEVO: Estado del post
+    status?: 'active' | 'matched' | 'expired';
+    matchedWithTeamId?: string; // ID del equipo que aceptó el desafío
+    matchId?: string; // ID del partido creado
 } & DocumentData;
 
 export type Invitation = {

@@ -115,8 +115,9 @@ export default function ChallengeTeamPage() {
             });
 
             // Redirigir al partido creado
-            if (result.matchId) {
-                router.push(`/matches/${result.matchId}`);
+            // Navegación tras crear desafío (matchId opcional en respuesta extendida futura)
+            if ((result as any).matchId) {
+                router.push(`/matches/${(result as any).matchId}`);
             } else {
                 router.push('/competitions');
             }
@@ -156,7 +157,7 @@ export default function ChallengeTeamPage() {
                     title="Seleccionar Tu Equipo"
                     description="Elegí el equipo con el que querés desafiar"
                 />
-                <Button asChild variant="outline">
+                <Button asChild variant="outline" className="shrink-0">
                     <Link href="/competitions">
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Volver

@@ -2,10 +2,17 @@
   {
     "origin": [
       "http://localhost:3000",
+      "http://localhost:3001",
       "https://*.cloudworkstations.dev",
       "https://mil-disculpis.web.app",
       "https://mil-disculpis.firebaseapp.com",
-      "https://studio--mil-disculpis.us-central1.hosted.app"
+      "https://mil-disculpis.firebasestorage.app",
+      "https://firebasestorage.googleapis.com",
+      "https://studio--mil-disculpis.us-central1.hosted.app",
+      "https://patea.app",
+      "https://www.patea.app",
+      "https://studio.patea.app",
+      "https://dev.patea.app"
     ],
     "method": [
       "GET",
@@ -23,8 +30,7 @@
       "X-Goog-Resumable",
       "X-Goog-Upload-Command",
       "X-Goog-Upload-Protocol",
-      "x-firebase-gmpid",
-      "Access-Control-Allow-Origin"
+      "x-firebase-gmpid"
     ],
     "maxAgeSeconds": 3600
   }

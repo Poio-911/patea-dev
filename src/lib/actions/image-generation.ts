@@ -1,7 +1,7 @@
 
 'use server';
 
-import { adminDb, adminAuth, adminStorage } from '@/firebase/admin-init';
+import { adminDb, adminAuth, adminStorage, buildPublicFileURL } from '@/firebase/admin-init';
 import { FieldValue } from 'firebase-admin/firestore';
 import { generatePlayerCardImage } from '@/ai/flows/generate-player-card-image';
 import type { Player } from '@/lib/types';
@@ -37,8 +37,24 @@ export async function generatePlayerCardImageAction(userId: string) {
     // ✅ PASO 1: Descargar la imagen directamente desde Firebase Storage en el servidor.
     // Esto evita enviar un archivo pesado desde el cliente.
     const url = new URL(player.photoUrl);
-    // Extraer el path del archivo desde la URL de storage.googleapis.com
-    const filePath = decodeURIComponent(url.pathname.substring(url.pathname.indexOf('/o/') + 3));
+    // Extraer el path del archivo soportando ambos formatos:
+    // 1) https://firebasestorage.googleapis.com/v0/b/<bucket>/o/<encodedPath>?alt=media
+    // 2) https://storage.googleapis.com/<bucket>/<rawPath>
+    function extractFilePath(u: URL): string {
+      const oIndex = u.pathname.indexOf('/o/');
+      if (oIndex !== -1) {
+        // v0 form
+        return decodeURIComponent(u.pathname.substring(oIndex + 3));
+      }
+      // storage.googleapis.com form: /<bucket>/<path>
+      const parts = u.pathname.split('/').filter(Boolean);
+      if (parts.length >= 2) {
+        // bucket = parts[0]; rest = parts.slice(1)
+        return decodeURIComponent(parts.slice(1).join('/'));
+      }
+      throw new Error('No se pudo extraer la ruta del archivo de la URL de la foto.');
+    }
+    const filePath = extractFilePath(url);
     const file = adminStorage.file(filePath);
 
     const [imageBuffer] = await file.download();
@@ -56,8 +72,10 @@ export async function generatePlayerCardImageAction(userId: string) {
       metadata: { contentType: 'image/png' },
     });
     
-    await newFile.makePublic();
-    const newPhotoURL = `https://storage.googleapis.com/${adminStorage.name}/${newFilePath}`;
+  // Usamos la URL canónica (v0) que respeta CORS y permisos.
+  // No necesitamos makePublic si las reglas y token permiten acceso mediante alt=media, pero mantenemos publicación para retrocompatibilidad.
+  await newFile.makePublic();
+  const newPhotoURL = buildPublicFileURL(newFilePath);
 
     const batch = adminDb.batch();
     const userRef = adminDb.doc(`users/${userId}`);

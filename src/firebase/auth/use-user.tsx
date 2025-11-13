@@ -26,14 +26,16 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     };
 
+    let unsubUser: (() => void) | null = null;
+
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         const userRef = doc(firestore, 'users', firebaseUser.uid);
-        
-        const unsubUser = onSnapshot(userRef, async (userDoc) => {
+
+        unsubUser = onSnapshot(userRef, async (userDoc) => {
           if (userDoc.exists()) {
              const userData = userDoc.data() as UserProfile;
-             
+
              // --- DATA REPAIR & CREDIT RESET LOGIC ---
              const playerRef = doc(firestore, 'players', firebaseUser.uid);
              try {
@@ -95,11 +97,12 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(null);
           setLoading(false);
         });
-
-        return () => {
-          unsubUser();
-        };
       } else {
+        // Limpiar listener cuando el usuario cierra sesión
+        if (unsubUser) {
+          unsubUser();
+          unsubUser = null;
+        }
         setUser(null);
         setLoading(false);
       }

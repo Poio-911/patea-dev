@@ -22,6 +22,7 @@ interface TeamChallengeCardProps {
 
 export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: TeamChallengeCardProps) {
   const [isPending, startTransition] = useTransition();
+  const [isExiting, setIsExiting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -29,20 +30,26 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
     startTransition(async () => {
       const result = await acceptTeamChallengeAction(invitation.id, teamId, userId);
       if (result.success) {
+        // ✅ Trigger exit animation before removing
+        setIsExiting(true);
         celebrationConfetti();
         toast({
-          title: '¡Desafío aceptado!',
-          description: `El partido contra "${invitation.fromTeamName}" ha sido creado.`,
+          title: '¡Desafío aceptado! 🎉',
+          description: `El partido contra "${invitation.fromTeamName}" ha sido creado. Próximos pasos: 1) Reservar la cancha, 2) Confirmar asistencia de jugadores, 3) Coordinar horario final.`,
           action: result.matchId ? (
             <Button
               size="sm"
               onClick={() => router.push(`/matches/${result.matchId}`)}
             >
-              Ver Partido
+              Ver Detalles
             </Button>
           ) : undefined,
+          duration: 8000, // 8 segundos para leer los próximos pasos
         });
-        onUpdate?.();
+        // Wait for animation to complete before calling onUpdate
+        setTimeout(() => {
+          onUpdate?.();
+        }, 300); // Match animation duration
       } else {
         toast({
           title: 'Error',
@@ -57,11 +64,16 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
     startTransition(async () => {
       const result = await rejectTeamChallengeAction(invitation.id, teamId, userId);
       if (result.success) {
+        // ✅ Trigger exit animation before removing
+        setIsExiting(true);
         toast({
           title: 'Desafío rechazado',
           description: `Has rechazado el desafío de "${invitation.fromTeamName}".`,
         });
-        onUpdate?.();
+        // Wait for animation to complete before calling onUpdate
+        setTimeout(() => {
+          onUpdate?.();
+        }, 300); // Match animation duration
       } else {
         toast({
           title: 'Error',
@@ -73,7 +85,9 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
   };
 
   return (
-    <Card className="border-primary/50 bg-gradient-to-br from-primary/5 to-transparent">
+    <Card className={`border-primary/50 bg-gradient-to-br from-primary/5 to-transparent transition-all duration-300 ${
+      isExiting ? 'opacity-0 scale-95 -translate-x-4' : 'opacity-100 scale-100 translate-x-0'
+    }`}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
