@@ -84,7 +84,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const googleMapsUrl = match ? `https://www.google.com/maps/search/?api=1&query_place_id=${match.location.placeId}` : '';
     
     const whatsAppShareText = useMemo(() => {
-        if (!match) return '';
+        if (!match || !match.players) return '';
         const spotsLeft = match.matchSize - match.players.length;
         const matchUrl = typeof window !== 'undefined' ? `${window.location.origin}/matches/${match.id}` : '';
         let message = `¡Hey! Estamos armando un partido: *${match.title}*.\n`;
