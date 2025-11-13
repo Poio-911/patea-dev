@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
-import { JerseyPreview } from '../team-builder/jersey-preview';
+import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { cn } from '@/lib/utils';
 import { Shuffle, Loader2, MoreVertical, Pencil } from 'lucide-react';
 import { useMemo } from 'react';
