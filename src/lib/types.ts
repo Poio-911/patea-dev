@@ -1,3 +1,4 @@
+
 import { DocumentData, DocumentReference } from "firebase/firestore";
 import type { PerformanceTag as Pt } from "./performance-tags";
 
@@ -194,7 +195,6 @@ export type TeamAvailabilityPost = {
     description?: string;
     createdBy: string; // UID of the team owner who created the post
     createdAt: string; // ISO 8601 timestamp
-    // ✅ NUEVO: Estado del post
     status?: 'active' | 'matched' | 'expired';
     matchedWithTeamId?: string; // ID del equipo que aceptó el desafío
     matchId?: string; // ID del partido creado
@@ -299,3 +299,12 @@ export type AppHelpInput = {
         content: string;
     }[];
 };
+
+export type ChatMessage = {
+  id: string;
+  text: string;
+  senderId: string;
+  senderName: string;
+  senderPhotoUrl: string;
+  createdAt: any; // Can be Timestamp from server or Date on client
+} & DocumentData;
