@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useTransition, useRef, useMemo } from 'react';
@@ -50,22 +51,23 @@ export function MyTeamsAvailability({ teams, userId, isActive = true }: MyTeamsA
 
   // Función vacía para onSuccess - useCollection se actualiza automáticamente
   const loadPosts = () => {
-    // No hace nada - useCollection actualiza automáticamente
+    // No hace nada - useCollection se actualiza automáticamente
   };
 
   const handleDeletePost = (postId: string) => {
     startTransition(async () => {
       const result = await deleteTeamAvailabilityPostAction(postId, userId);
-      if (result.success) {
+      if ('success' in result && result.success) {
         toast({
           title: 'Postulación eliminada',
           description: 'Tu postulación ha sido eliminada correctamente.',
         });
         // No necesitamos recargar - useCollection se actualiza automáticamente
       } else {
+        const errorMessage = ('error' in result && result.error) ? result.error : 'No se pudo eliminar la postulación.';
         toast({
           title: 'Error',
-          description: result.error || 'No se pudo eliminar la postulación.',
+          description: String(errorMessage),
           variant: 'destructive',
         });
       }
