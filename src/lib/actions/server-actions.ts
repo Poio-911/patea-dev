@@ -14,12 +14,10 @@ import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-
 import { coachConversation, type CoachConversationInput } from '@/ai/flows/coach-conversation';
 import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '@/ai/flows/detect-player-patterns';
 import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '@/ai/flows/analyze-player-progression';
-import { generateMatchChronicle, type GenerateMatchChronicleInput } from '@/lib/types';
+import { GenerateMatchChronicleOutput, type GenerateMatchChronicleInput } from '@/lib/types';
 import { generateMatchChronicleFlow } from '@/ai/flows/generate-match-chronicle';
-
-import { generateDuoImage, type GenerateDuoImageInput } from '@/ai/flows/generate-duo-image';
-
-import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, MatchLocation, ErrorResponse } from '../types';
+import { generateDuoImage } from '@/ai/flows/generate-duo-image';
+import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, MatchLocation, ErrorResponse, GenerateDuoImageInput } from '../types';
 import { logger } from '../logger';
 import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse } from '../errors';
 

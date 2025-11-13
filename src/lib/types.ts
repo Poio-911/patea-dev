@@ -240,6 +240,14 @@ export type Evaluation = {
 } & DocumentData;
 
 
+export type SelfEvaluation = {
+  id: string;
+  playerId: string;
+  matchId: string;
+  goals: number;
+  reportedAt: string;
+} & DocumentData;
+
 export type EvaluationAssignment = {
     id: string;
     matchId: string;
@@ -247,14 +255,6 @@ export type EvaluationAssignment = {
     subjectId: string; 
     status: 'pending' | 'completed';
     evaluationId?: string; 
-} & DocumentData;
-
-export type SelfEvaluation = {
-  id: string;
-  playerId: string;
-  matchId: string;
-  goals: number;
-  reportedAt: string;
 } & DocumentData;
 
 export type PlayerEvaluationFormData = {
@@ -341,3 +341,11 @@ export const GenerateMatchChronicleOutputSchema = z.object({
 });
 export type GenerateMatchChronicleOutput = z.infer<typeof GenerateMatchChronicleOutputSchema>;
 
+export const GenerateDuoImageInputSchema = z.object({
+  player1PhotoUrl: z.string().describe("URL de Firebase Storage de la foto del primer jugador."),
+  player1Name: z.string().describe("Nombre del primer jugador."),
+  player2PhotoUrl: z.string().optional().describe("URL de Firebase Storage de la foto del segundo jugador (opcional para imagen individual)."),
+  player2Name: z.string().optional().describe("Nombre del segundo jugador (opcional para imagen individual)."),
+  prompt: z.string().describe("La instrucción que describe la escena a generar entre los jugadores."),
+});
+export type GenerateDuoImageInput = z.infer<typeof GenerateDuoImageInputSchema>;

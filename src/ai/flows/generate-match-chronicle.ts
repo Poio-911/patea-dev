@@ -51,8 +51,3 @@ export const generateMatchChronicleFlow = ai.defineFlow(
     return output;
   }
 );
-
-// Wrapper async function to be called from server actions
-export async function generateMatchChronicle(input: GenerateMatchChronicleInput) {
-    return await generateMatchChronicleFlow(input);
-}

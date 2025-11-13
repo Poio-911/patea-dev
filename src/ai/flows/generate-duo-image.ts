@@ -1,5 +1,5 @@
-// Removed 'use server' directive: this file exports non-async schema objects so it must not be marked as a server action file.
-// Server action wrapper calls this async function elsewhere safely.
+
+'use server';
 
 /**
  * @fileOverview An AI flow to generate an image depicting an interaction between two players.
@@ -9,16 +9,9 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { GenerateDuoImageInputSchema, type GenerateDuoImageInput } from '@/lib/types';
 import { z } from 'genkit';
 
-export const GenerateDuoImageInputSchema = z.object({
-  player1PhotoUrl: z.string().describe("URL de Firebase Storage de la foto del primer jugador."),
-  player1Name: z.string().describe("Nombre del primer jugador."),
-  player2PhotoUrl: z.string().optional().describe("URL de Firebase Storage de la foto del segundo jugador (opcional para imagen individual)."),
-  player2Name: z.string().optional().describe("Nombre del segundo jugador (opcional para imagen individual)."),
-  prompt: z.string().describe("La instrucción que describe la escena a generar entre los jugadores."),
-});
-export type GenerateDuoImageInput = z.infer<typeof GenerateDuoImageInputSchema>;
 
 export async function generateDuoImage(player1DataUri: string, player2DataUri: string, player1Name: string, player2Name: string, prompt: string): Promise<string> {
   const isIndividualImage = !player2DataUri || player1DataUri === player2DataUri;
