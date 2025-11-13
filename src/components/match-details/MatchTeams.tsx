@@ -108,7 +108,7 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
                        <CardHeader className="flex flex-row items-center justify-between gap-4 p-4">
                             <div className="flex items-center gap-3 flex-1 min-w-0">
                                 {team.jersey && (
-                                    <div className="w-10 h-10 flex-shrink-0">
+                                    <div className="w-12 h-12 flex-shrink-0">
                                         <JerseyPreview jersey={team.jersey} />
                                     </div>
                                 )}
