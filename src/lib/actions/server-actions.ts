@@ -14,12 +14,12 @@ import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-
 import { coachConversation, type CoachConversationInput } from '@/ai/flows/coach-conversation';
 import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '@/ai/flows/detect-player-patterns';
 import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '@/ai/flows/analyze-player-progression';
-import { GenerateMatchChronicleOutput, type GenerateMatchChronicleInput } from '@/lib/types';
+import { type GenerateMatchChronicleOutput, type GenerateMatchChronicleInput } from '@/lib/types';
 import { generateMatchChronicleFlow } from '@/ai/flows/generate-match-chronicle';
 import { generateDuoImage } from '@/ai/flows/generate-duo-image';
-import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, MatchLocation, ErrorResponse, GenerateDuoImageInput } from '../types';
+import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, MatchLocation, GenerateDuoImageInput } from '../types';
 import { logger } from '../logger';
-import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse } from '../errors';
+import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse, type ErrorResponse } from '../errors';
 
 // --- Server Actions ---
 
@@ -126,7 +126,7 @@ export async function getWeatherForecastAction(input: GetMatchDayForecastInput) 
 export async function findBestFitPlayerAction(input: Omit<FindBestFitPlayerInput, 'spotsToFill'>) {
     try {
         const result = await findBestFitPlayer(input);
-        if ('error' in result) {
+        if (isErrorResponse(result)) {
             throw new Error(String(result.error));
         }
         return result;
@@ -838,5 +838,7 @@ export async function sendTeamChallengeAction(challengingTeamId: string, challen
         return handleServerActionError(error);
     }
 }
+
+    
 
     
