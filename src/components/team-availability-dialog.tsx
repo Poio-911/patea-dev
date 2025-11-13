@@ -173,7 +173,7 @@ export function TeamAvailabilityDialog({ team, userId, trigger, onSuccess }: Tea
         }
       );
 
-      if (result.success) {
+      if ('success' in result && result.success) {
         celebrationConfetti();
         toast({
           title: '¡Postulación creada!',
@@ -185,7 +185,7 @@ export function TeamAvailabilityDialog({ team, userId, trigger, onSuccess }: Tea
       } else {
         toast({
           title: 'Error',
-          description: result.error || 'No se pudo crear la postulación.',
+          description: ('error' in result && result.error) || 'No se pudo crear la postulación.',
           variant: 'destructive',
         });
       }
