@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview This file contains all the server-side actions that use the Firebase Admin SDK.
@@ -17,7 +16,7 @@ import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '@/
 import { type GenerateMatchChronicleOutput, type GenerateMatchChronicleInput } from '@/lib/types';
 import { generateMatchChronicleFlow } from '@/ai/flows/generate-match-chronicle';
 import { generateDuoImage } from '@/ai/flows/generate-duo-image';
-import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, MatchLocation, GenerateDuoImageInput } from '../types';
+import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, MatchLocation, GenerateDuoImageInput, League, LeagueFormat } from '../types';
 import { logger } from '../logger';
 import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse, type ErrorResponse } from '../errors';
 
@@ -156,7 +155,6 @@ export async function coachConversationAction(
     const player = playerDocSnap.data() as Player;
     const evaluations = await getPlayerEvaluationsAction(playerId, groupId) as Evaluation[];
 
-    // ✅ FIX: Safely process performanceTags, filtering out invalid ones.
     const recentTags = evaluations
         .flatMap(e => e.performanceTags?.map(t => t?.name).filter(Boolean) || [])
         .slice(0, 10);
@@ -239,7 +237,6 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
           });
       }
   
-      // ✅ FIX: Robust filtering for performanceTags to avoid sending invalid data
       const recentEvaluations = evaluations.slice(0, 15).map(e => {
           const selfEval = selfEvalsByMatchId.get(e.matchId);
           
@@ -839,6 +836,37 @@ export async function sendTeamChallengeAction(challengingTeamId: string, challen
     }
 }
 
+export async function createLeagueAction(
+    name: string,
+    format: LeagueFormat,
+    teamIds: string[],
+    isPublic: boolean,
+    groupId: string,
+    ownerUid: string
+): Promise<{ success: boolean; leagueId?: string; error?: string }> {
+    try {
+        const { adminDb } = getAdminInstances();
+        
+        const leagueRef = adminDb.collection('leagues').doc();
+        const newLeague: Omit<League, 'id'> = {
+            name,
+            format,
+            teams: teamIds,
+            isPublic,
+            groupId,
+            ownerUid,
+            status: 'draft',
+            createdAt: new Date().toISOString(),
+        };
+        
+        await leagueRef.set(newLeague);
+
+        return { success: true, leagueId: leagueRef.id };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
     
 
     
