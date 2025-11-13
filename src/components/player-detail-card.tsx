@@ -4,10 +4,8 @@
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from './ui/separator';
-import type { Player, AttributeKey, PlayerPosition } from '@/lib/types';
+import type { Player, PlayerPosition } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { playerSpecialties } from '@/lib/data';
 import { useUser } from '@/firebase';
 import { Button } from './ui/button';
 import { Sparkles, Loader2, Scissors } from 'lucide-react';
@@ -15,22 +13,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/lib/logger';
 import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
-import { PlayerOvr, getPositionBadgeClasses, AttributesGrid, PlayerPhoto } from '@/components/player-styles';
+import { PlayerOvr, getPositionBadgeClasses, AttributesGrid, PlayerPhoto, positionConfig } from '@/components/player-styles';
 import { ImageCropperDialog } from './image-cropper-dialog';
 import { Dialog, DialogContent, DialogTrigger } from './ui/dialog';
-import { DelIcon, MedIcon, DefIcon, PorIcon } from '@/components/icons/positions';
 
 type PlayerDetailCardProps = {
   player: Player;
   onPhotoUpdate: (newUrl: string) => void;
   isCurrentUserProfile: boolean;
-};
-
-const positionIcons: Record<PlayerPosition, React.ElementType> = {
-  DEL: DelIcon,
-  MED: MedIcon,
-  DEF: DefIcon,
-  POR: PorIcon,
 };
 
 const getOvrLevel = (ovr: number) => {
@@ -55,7 +45,7 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile }
 
   const playerName = player.name || 'Jugador';
   
-  const PositionIcon = positionIcons[player.position];
+  const PositionIcon = positionConfig[player.position].Icon;
   const ovrLevel = getOvrLevel(player.ovr);
   const selectedAuraClass = auraClasses[ovrLevel]; 
 
@@ -97,7 +87,7 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile }
         </div>
         <div className="relative z-10 flex flex-col h-full justify-between">
           <div className="flex items-start justify-between mb-2">
-            <Badge className={cn('uppercase font-bold', getPositionBadgeClasses(player.position))}>
+            <Badge className={cn('font-headline uppercase font-bold', getPositionBadgeClasses(player.position))}>
               {player.position}
             </Badge>
             <PlayerOvr value={player.ovr} />

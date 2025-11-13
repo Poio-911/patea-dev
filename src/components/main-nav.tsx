@@ -15,7 +15,7 @@ import {
   SidebarHeader,
   SidebarGroup,
   SidebarGroupLabel,
-} from '@/components/ui/sidebar';
+} from '@/components/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Gamepad2, UserCircle, Trophy, ClipboardCheck, X, CalendarDays, Swords } from 'lucide-react';
@@ -44,6 +44,8 @@ import { useToast } from '@/hooks/use-toast';
 import { isToday, parseISO } from 'date-fns';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
+import { positionConfig } from '@/components/player-styles';
+
 
 const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
@@ -52,14 +54,6 @@ const navItems = [
   { href: '/groups', label: 'Grupos', icon: Users2 },
   { href: '/evaluations', label: 'Evaluar', icon: ClipboardCheck },
 ];
-
-const positionBadgeStyles: Record<PlayerPosition, string> = {
-  POR: 'text-orange-600 game:text-orange-400',
-  DEF: 'text-green-600 game:text-green-400',
-  MED: 'text-blue-600 game:text-blue-400',
-  DEL: 'text-red-600 game:text-red-400',
-};
-
 
 export function MainNav({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -70,6 +64,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const { setTheme, theme } = useTheme();
   const [radialMenuOpen, setRadialMenuOpen] = React.useState(false);
+  const EvaluationsIcon = navItems[4].icon;
 
   const { requestPermission } = useFcm();
 
@@ -98,7 +93,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     if (user) {
         const lastLoginStr = localStorage.getItem('lastDailyLogin');
         const today = new Date();
-
+        
         if (!lastLoginStr || !isToday(parseISO(lastLoginStr))) {
             localStorage.setItem('lastDailyLogin', today.toISOString());
             setTimeout(() => {
@@ -168,7 +163,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                       <div className="flex items-center gap-3">
                           <div className="text-right">
                               <p className="font-bold text-sm truncate max-w-[100px] sm:max-w-none">{player.name}</p>
-                              <p className={cn("text-xs font-semibold", positionBadgeStyles[player.position])}>{player.position}</p>
+                              <p className={cn("text-xs font-headline font-bold uppercase", positionConfig[player.position].textColor)}>{positionConfig[player.position].name}</p>
                           </div>
                            <div className="flex items-center justify-center h-10 w-10 text-xl font-bold rounded-full bg-primary/10 border-2 border-primary/20 text-primary">
                               {player.ovr}
@@ -336,7 +331,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           </main>
           
           <nav className="fixed bottom-4 left-4 right-4 z-30 h-16 rounded-xl border bg-background/70 shadow-lg backdrop-blur-lg md:hidden">
-              <div className="relative mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
+              <div className="relative mx-auto h-full max-w-lg">
+              <div className="grid h-full w-full grid-cols-5 font-medium">
                 {navItems.map((item) => {
                   const isActive = item.isMenu ? isMatchesRelatedPath : pathname.startsWith(item.href);
                   const Icon = item.icon;
@@ -424,4 +420,3 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
-
