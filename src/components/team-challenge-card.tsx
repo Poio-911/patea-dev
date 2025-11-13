@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -98,17 +99,14 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
         {/* Challenging Team */}
         <div className="rounded-lg border bg-background p-4">
           <p className="text-xs text-muted-foreground mb-3">Equipo desafiante:</p>
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 flex-shrink-0">
-              {invitation.fromTeamJersey && (
-                <JerseyPreview jersey={invitation.fromTeamJersey} size="sm" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-base truncate">{invitation.fromTeamName}</h4>
-              <p className="text-sm text-muted-foreground">
-                Quiere jugar contra tu equipo
-              </p>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="h-12 w-12 flex-shrink-0">
+                  {invitation.fromTeamJersey && (
+                    <JerseyPreview jersey={invitation.fromTeamJersey} size="sm" />
+                  )}
+                </div>
+                <h4 className="font-bold text-base truncate">{invitation.fromTeamName}</h4>
             </div>
           </div>
         </div>
@@ -116,14 +114,14 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
         {/* Your Team */}
         <div className="rounded-lg border bg-muted/50 p-4">
           <p className="text-xs text-muted-foreground mb-3">Tu equipo:</p>
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 flex-shrink-0">
-              {invitation.toTeamJersey && (
-                <JerseyPreview jersey={invitation.toTeamJersey} size="sm" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-semibold truncate">{invitation.toTeamName}</h4>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="h-12 w-12 flex-shrink-0">
+                  {invitation.toTeamJersey && (
+                    <JerseyPreview jersey={invitation.toTeamJersey} size="sm" />
+                  )}
+                </div>
+                <h4 className="font-semibold truncate">{invitation.toTeamName}</h4>
             </div>
           </div>
         </div>

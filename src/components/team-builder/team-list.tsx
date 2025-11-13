@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -9,10 +10,11 @@ import { useFirestore } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, query, where } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useToast } from '@/hooks/use-toast';
 import { TeamsIcon } from '../icons/teams-icon';
 import { JerseyPreview } from './jersey-preview';
 import Link from 'next/link';
+import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
+import { Separator } from '../ui/separator';
 
 interface TeamListProps {
   groupId: string;
@@ -56,26 +58,38 @@ export function TeamList({ groupId, players, currentUserId }: TeamListProps) {
             Crear Equipo
         </Button>
       </div>
+      
+      <Separator />
 
       {teams && teams.length > 0 ? (
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {teams.map(team => (
             <Link key={team.id} href={`/groups/teams/${team.id}`} className="block">
-                <div className="flex items-center gap-4 rounded-lg border p-3 hover:bg-muted/50 transition-colors cursor-pointer">
-                    <div className="w-12 h-12 flex-shrink-0">
-                        <JerseyPreview jersey={team.jersey} size="sm" />
+                <Card className="hover:bg-muted/50 transition-colors h-full">
+                  <CardHeader className="flex flex-row items-center justify-between gap-4 p-4">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-12 h-12 flex-shrink-0">
+                              <JerseyPreview jersey={team.jersey} size="sm" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                              <CardTitle className="text-base font-bold truncate">{team.name}</CardTitle>
+                          </div>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        <span>{team.members.length} jugadores</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="font-semibold truncate">{team.name}</p>
-                        <p className="text-sm text-muted-foreground">{team.members.length} jugadores</p>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </div>
+                  </CardContent>
+                </Card>
             </Link>
           ))}
         </div>
       ) : (
-        <Alert>
+        <Alert className="text-center py-10">
+          <TeamsIcon className="mx-auto h-8 w-8 mb-2" />
           <AlertTitle>No hay equipos creados</AlertTitle>
           <AlertDescription>
             Creá el primer equipo del grupo. Podrás usarlos para armar partidos y llevar estadísticas.

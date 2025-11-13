@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Match, Team, Player } from '@/lib/types';
@@ -8,11 +9,9 @@ import { Button } from '@/components/ui/button';
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { cn } from '@/lib/utils';
-import { Shuffle, Loader2, MoreVertical, Pencil } from 'lucide-react';
+import { Shuffle, Loader2, Pencil } from 'lucide-react';
 import { useMemo } from 'react';
 import { EditableTeamsDialog } from '../editable-teams-dialog';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-
 
 interface MatchTeamsProps {
   match: Match;
@@ -97,7 +96,7 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
                 )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {(match.teams || []).map((team, index) => (
+                {(match.teams || []).map((team) => (
                     <Card 
                         key={team.name} 
                         className="bg-card border-2 border-l-4 transition-all duration-300 hover:shadow-lg"
@@ -106,19 +105,21 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
                             backgroundImage: team.jersey ? `linear-gradient(to top, ${team.jersey.primaryColor}08, transparent)` : 'none'
                         }}
                     >
-                        <CardHeader className="flex flex-row items-center justify-between gap-3 p-4">
-                             <div className="flex items-center gap-3 flex-1 min-w-0">
+                       <CardHeader className="flex flex-row items-center justify-between gap-4 p-4">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
                                 {team.jersey && (
                                     <div className="w-10 h-10 flex-shrink-0">
                                         <JerseyPreview jersey={team.jersey} />
                                     </div>
                                 )}
-                                <CardTitle className="text-lg font-bold truncate">{team.name}</CardTitle>
-                             </div>
+                                <div className="flex-1 min-w-0">
+                                    <CardTitle className="text-base font-bold truncate">{team.name}</CardTitle>
+                                </div>
+                            </div>
                             <Badge 
                                 variant="secondary" 
                                 className={cn(
-                                    "font-bold text-sm px-3 py-1",
+                                    "font-bold text-sm px-3 py-1 self-start",
                                     team.averageOVR >= 80 ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" :
                                     team.averageOVR >= 75 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" :
                                     team.averageOVR >= 70 ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" : 

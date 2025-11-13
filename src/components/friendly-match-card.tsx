@@ -1,46 +1,20 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
-import type { Match, UserProfile } from '@/lib/types';
+import type { Match } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { JerseyPreview } from './team-builder/jersey-preview';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Calendar, Clock, MapPin, Users, MessageCircle } from 'lucide-react';
+import { Calendar, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
-import { useFirestore } from '@/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 
 interface FriendlyMatchCardProps {
     match: Match;
 }
 
 export function FriendlyMatchCard({ match }: FriendlyMatchCardProps) {
-    const firestore = useFirestore();
-    const [creator, setCreator] = useState<UserProfile | null>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchCreator = async () => {
-            if (!firestore || !match.ownerUid) return;
-            try {
-                const userDoc = await getDoc(doc(firestore, 'users', match.ownerUid));
-                if (userDoc.exists()) {
-                    setCreator(userDoc.data() as UserProfile);
-                }
-            } catch (error) {
-                console.error('Error fetching creator:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchCreator();
-    }, [firestore, match.ownerUid]);
-
     const team1 = match.teams?.[0];
     const team2 = match.teams?.[1];
 
