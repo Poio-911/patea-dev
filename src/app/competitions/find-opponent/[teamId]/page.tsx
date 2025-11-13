@@ -56,7 +56,7 @@ export default function FindOpponentForTeamPage() {
         setIsChallenging(challengedTeamId);
         try {
             const result = await sendTeamChallengeAction(teamId as string, challengedTeamId, user.uid);
-            if ('error' in result && result.error) {
+            if ('error' in result) {
                 throw new Error(result.error);
             }
             celebrationConfetti();

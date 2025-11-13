@@ -65,7 +65,7 @@ export default function ChallengeTeamPage() {
             try {
                 const result = await getAvailableTeamPostsAction(user.uid);
                 if ('error' in result) {
-                    throw new Error(result.error as string);
+                    throw new Error(result.error);
                 }
                 if ('posts' in result && result.posts) {
                     const foundPost = result.posts.find((p: TeamAvailabilityPost) => p.id === postId);
@@ -101,14 +101,14 @@ export default function ChallengeTeamPage() {
     };
 
     const handleConfirmChallenge = async () => {
-        if (!selectedTeamId || !user) return;
+        if (!selectedTeamId || !user || !postId) return;
 
         setShowCodeOfConduct(false);
         setChallenging(true);
         try {
             const result = await challengeTeamPostAction(postId as string, selectedTeamId, user.uid);
             if ('error' in result && result.error) {
-                throw new Error(result.error as string);
+                throw new Error(String(result.error));
             }
 
             celebrationConfetti();

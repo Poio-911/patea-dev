@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useTransition, useRef, useMemo } from 'react';
@@ -5,11 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Calendar, MapPin, Loader2, Swords, CheckCircle2, Search, Filter, X } from 'lucide-react';
+import { Calendar, MapPin, Trash2, PlusCircle, Loader2, Swords, CheckCircle2, Search, Filter, X } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GroupTeam, TeamAvailabilityPost, Invitation } from '@/lib/types';
 import { JerseyPreview } from './team-builder/jersey-preview';
-import { getAvailableTeamPostsAction, challengeTeamPostAction } from '@/lib/actions/server-actions';
+import { getAvailableTeamPostsAction, challengeTeamPostAction, deleteTeamAvailabilityPostAction } from '@/lib/actions/server-actions';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -67,7 +68,7 @@ export function AvailablePostsGrid({ userId, userTeams, isActive = true }: Avail
   // Create a Set of postIds that have been challenged
   const challengedPostIds = useMemo(() => {
     if (!sentInvitations) return new Set<string>();
-    return new Set(sentInvitations.map(inv => inv.postId).filter(Boolean));
+    return new Set(sentInvitations.map(inv => inv.postId).filter(Boolean) as string[]);
   }, [sentInvitations]);
 
   // ✅ FASE 2.4: Filter posts based on search term and date
@@ -116,7 +117,7 @@ export function AvailablePostsGrid({ userId, userTeams, isActive = true }: Avail
   const loadPosts = async () => {
     setLoading(true);
     const result = await getAvailableTeamPostsAction(userId);
-    if (result.success) {
+    if ('posts' in result && result.posts) {
       setPosts(result.posts);
     }
     setLoading(false);
@@ -135,7 +136,7 @@ export function AvailablePostsGrid({ userId, userTeams, isActive = true }: Avail
 
     startTransition(async () => {
       const result = await challengeTeamPostAction(selectedPost.id, selectedTeamId, userId);
-      if (result.success) {
+      if ('success' in result && result.success) {
         celebrationConfetti();
         toast({
           title: '¡Desafío enviado! 🎉',
@@ -148,7 +149,7 @@ export function AvailablePostsGrid({ userId, userTeams, isActive = true }: Avail
       } else {
         toast({
           title: 'Error',
-          description: result.error || 'No se pudo enviar el desafío.',
+          description: ('error' in result && result.error) || 'No se pudo enviar el desafío.',
           variant: 'destructive',
         });
       }

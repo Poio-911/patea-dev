@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Match, Evaluation, SelfEvaluation, Player, PerformanceTag, GenerateMatchChronicleOutput } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Label } from './ui/label';
 import { useFirestore, useUser } from '@/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import { logger } from '@/lib/logger';
 
 interface MatchChronicleCardProps {
   match: Match;
@@ -40,8 +41,8 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
     try {
       const result = await generateMatchChronicleAction(match.id);
       
-      if ('error' in result && result.error) {
-        throw new Error(result.error);
+      if ('error' in result) {
+        throw new Error(String(result.error));
       }
       
       if ('data' in result && result.data) {
@@ -63,10 +64,10 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
     const player1SelfEval = selfEvaluations.find(se => se.playerId === player1Id);
     const player1Goals = player1SelfEval?.goals || 0;
     
-    if (!player2Id) {
+    if (!player2Id || player2Id === 'none') {
       const tags = player1Evals.flatMap(e => e.performanceTags || []);
-      const avgRating = player1Evals.length > 0 ? 
-        player1Evals.reduce((sum, e) => sum + (e.rating || 0), 0) / player1Evals.filter(e => e.rating).length : 0;
+      const ratings = player1Evals.map(e => e.rating).filter(r => r !== undefined) as number[];
+      const avgRating = ratings.length > 0 ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length : 0;
       
       if (player1Goals >= 2) {
         return `${match.players.find(p => p.uid === player1Id)?.displayName} celebrando un gol espectacular, con expresión de triunfo y los brazos levantados al cielo en un momento épico del partido`;
@@ -134,7 +135,7 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
       });
       
       if ('error' in result) {
-        throw new Error(result.error);
+        throw new Error(String(result.error));
       }
       
       setDuoImage(result.imageUrl);
