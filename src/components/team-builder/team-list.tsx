@@ -66,7 +66,7 @@ export function TeamList({ groupId, players, currentUserId }: TeamListProps) {
           {teams.map(team => (
             <Link key={team.id} href={`/groups/teams/${team.id}`} className="block">
                 <Card className="hover:bg-muted/50 transition-colors h-full">
-                  <CardHeader className="flex flex-row items-center justify-between gap-4 p-4">
+                  <CardHeader className="flex-row items-center justify-between gap-4 p-4">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div className="w-12 h-12 flex-shrink-0">
                               <JerseyPreview jersey={team.jersey} size="sm" />

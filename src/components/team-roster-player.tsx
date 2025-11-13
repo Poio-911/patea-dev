@@ -1,9 +1,7 @@
-
 'use client';
 
 import type { GroupTeam, DetailedTeamPlayer, Player, PlayerPosition } from '@/lib/types';
 import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { MoreVertical } from 'lucide-react';

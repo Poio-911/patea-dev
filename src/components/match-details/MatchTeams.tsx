@@ -1,10 +1,9 @@
 
 'use client';
 
-import type { Match, Team, Player, PlayerPosition } from '@/lib/types';
+import type { Match, Team, Player, PlayerPosition, DetailedTeamPlayer } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
@@ -12,12 +11,17 @@ import { cn } from '@/lib/utils';
 import { Shuffle, Loader2, Pencil } from 'lucide-react';
 import { useMemo } from 'react';
 import { EditableTeamsDialog } from '../editable-teams-dialog';
+import { TeamRosterPlayer } from '../team-roster-player';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+
 
 interface MatchTeamsProps {
   match: Match;
   isOwner: boolean;
   isShuffling: boolean;
   onShuffle: () => void;
+  onPlayerUpdate: () => void;
 }
 
 const positionBadgeStyles: Record<PlayerPosition, string> = {
@@ -27,7 +31,16 @@ const positionBadgeStyles: Record<PlayerPosition, string> = {
   POR: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-purple-300/50 shadow-lg shadow-purple-500/25',
 };
 
-export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeamsProps) => {
+export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle, onPlayerUpdate }: MatchTeamsProps) => {
+    const firestore = useFirestore();
+    const teamPlayerIds = useMemo(() => match.teams?.flatMap(t => t.players.map(p => p.uid)) || [], [match.teams]);
+
+    const playersQuery = useMemo(() => {
+        if (!firestore || teamPlayerIds.length === 0) return null;
+        return query(collection(firestore, 'players'), where('__name__', 'in', teamPlayerIds));
+    }, [firestore, teamPlayerIds]);
+
+    const { data: teamPlayersData } = useCollection<Player>(playersQuery);
 
     const whatsAppTeamsText = useMemo(() => {
         if (!match || !match.teams || match.teams.length < 2) return '';
@@ -89,89 +102,46 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
                 )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {(match.teams || []).map((team) => (
-                    <Card 
-                        key={team.name} 
-                        className="bg-card border-2 border-l-4 transition-all duration-300 hover:shadow-lg"
-                        style={{ 
-                            borderLeftColor: team.jersey?.primaryColor || 'hsl(var(--border))',
-                            backgroundImage: team.jersey ? `linear-gradient(to top, ${team.jersey.primaryColor}08, transparent)` : 'none'
-                        }}
-                    >
-                       <CardHeader className="flex flex-row items-center justify-between gap-4 p-4">
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                                {team.jersey && (
-                                    <div className="w-12 h-12 flex-shrink-0">
-                                        <JerseyPreview jersey={team.jersey} size="sm"/>
-                                    </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                    <CardTitle className="text-base font-bold truncate">{team.name}</CardTitle>
+                {(match.teams || []).map((team) => {
+                    const teamMembersWithDetails: DetailedTeamPlayer[] = team.players
+                        .map(p => {
+                            const details = teamPlayersData?.find(pd => pd.id === p.uid);
+                            return details ? { ...details, number: 0, status: 'titular' } : null;
+                        })
+                        .filter((p): p is DetailedTeamPlayer => p !== null)
+                        .sort((a,b) => b.ovr - a.ovr);
+
+                    return (
+                        <Card 
+                            key={team.name} 
+                            className="bg-card border-2 border-l-4 transition-all duration-300 hover:shadow-lg"
+                            style={{ 
+                                borderLeftColor: team.jersey?.primaryColor || 'hsl(var(--border))',
+                                backgroundImage: team.jersey ? `linear-gradient(to top, ${team.jersey.primaryColor}08, transparent)` : 'none'
+                            }}
+                        >
+                           <CardHeader className="flex flex-col items-center justify-center p-4 gap-2">
+                                <JerseyPreview jersey={team.jersey} size="md" />
+                                <div className="text-center">
+                                    <h3 className="text-lg font-bold">{team.name}</h3>
+                                    <Badge variant="secondary" className="mt-1 font-bold">OVR {team.averageOVR.toFixed(1)}</Badge>
                                 </div>
-                            </div>
-                            <Badge 
-                                variant="secondary" 
-                                className={cn(
-                                    "font-bold text-sm px-3 py-1 self-start",
-                                    team.averageOVR >= 80 ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" :
-                                    team.averageOVR >= 75 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" :
-                                    team.averageOVR >= 70 ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" : 
-                                    "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
-                                )}
-                            >
-                                OVR {team.averageOVR.toFixed(1)}
-                            </Badge>
-                        </CardHeader>
-                        <CardContent className="pt-0 p-2">
-                            <div className="space-y-1">
-                                {team.players.map((player) => {
-                                    const playerInfo = match.players.find(p => p.uid === player.uid);
-                                    return (
-                                        <div 
-                                            key={player.uid} 
-                                            className="flex items-center justify-between p-3 border-b last:border-b-0 border-border/20 hover:bg-muted/30 transition-colors duration-200 rounded"
-                                        >
-                                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                <Avatar className="h-10 w-10">
-                                                    <AvatarImage 
-                                                        src={playerInfo?.photoUrl} 
-                                                        alt={player.displayName} 
-                                                        data-ai-hint="player portrait" 
-                                                    />
-                                                    <AvatarFallback className="text-sm font-medium">
-                                                        {player.displayName.charAt(0)}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-semibold text-sm truncate">
-                                                        {player.displayName}
-                                                    </p>
-                                                    <div className="flex items-center gap-2 mt-0.5">
-                                                        <Badge 
-                                                            className={cn(
-                                                                "text-xs px-2 py-0.5 font-medium", 
-                                                                positionBadgeStyles[player.position as keyof typeof positionBadgeStyles]
-                                                            )}
-                                                        >
-                                                            {player.position}
-                                                        </Badge>
-                                                        <Badge 
-                                                            variant="secondary" 
-                                                            className="text-xs px-2 py-0.5 font-bold"
-                                                        >
-                                                            {player.ovr}
-                                                        </Badge>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
+                            </CardHeader>
+                            <CardContent className="pt-0 p-2">
+                                <div className="grid grid-cols-2 gap-3">
+                                    {teamMembersWithDetails.map((player) => (
+                                        <TeamRosterPlayer 
+                                            key={player.id}
+                                            player={player}
+                                            team={match as any} // Cast as team has members
+                                            onPlayerUpdate={onPlayerUpdate}
+                                        />
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
             </div>
         </div>
     );
