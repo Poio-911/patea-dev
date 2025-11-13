@@ -867,7 +867,7 @@ export async function createLeagueAction(
         let teams = teamsData.map(snap => ({ id: snap.id, ...snap.data() } as GroupTeam));
 
         if (teams.length % 2 !== 0) {
-            teams.push({ id: 'bye', name: 'Descansa' } as GroupTeam);
+            teams.push({ id: 'bye', name: 'Descansa', jersey: { type: 'plain', primaryColor: '#ffffff', secondaryColor: '#000000' }} as GroupTeam);
         }
 
         const numRounds = teams.length - 1;
