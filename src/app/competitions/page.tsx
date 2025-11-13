@@ -1,3 +1,4 @@
+
 'use client';
 
 import { PageHeader } from '@/components/page-header';
@@ -229,7 +230,7 @@ export default function CompetitionsPage() {
         onOpenChange={setCreateLeagueOpen}
         groupId={user.activeGroupId}
         userId={user.uid}
-        teams={myTeams}
+        teams={teams || []}
       />
     </>
   );
