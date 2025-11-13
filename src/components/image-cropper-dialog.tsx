@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -98,7 +97,6 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
     }
   };
 
-  // ✅ Cargar la imagen existente cuando se abre el diálogo
   useEffect(() => {
     if (open && player.photoUrl) {
       setIsLoadingImage(true);
@@ -126,7 +124,7 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
           setIsLoadingImage(false);
         });
     }
-  }, [open, player.photoUrl]);
+  }, [open, player.photoUrl, toast]);
 
   const handleSaveCrop = async () => {
     if (!completedCrop || !imgRef.current) {
@@ -143,7 +141,6 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
       }
       
       if (!user || !auth?.currentUser) {
-        // Handle case for non-logged-in user (e.g., registration)
         const reader = new FileReader();
         reader.onloadend = () => {
             if (onSaveComplete) {

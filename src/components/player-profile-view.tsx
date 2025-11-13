@@ -1,31 +1,39 @@
 
 'use client';
 
-import React from 'react';
-import { useUser } from '@/firebase';
+import React, { useState, useEffect } from 'react';
+import { useUser, useFirestore } from '@/firebase';
 import type { Player } from '@/lib/types';
 import { PlayerCard } from '@/components/player-card';
-import { PlayerDetailCard } from '@/components/player-detail-card'; // Solo usaremos sus botones, no reemplazaremos el layout base
-import { Sparkles, Scissors } from 'lucide-react';
+import { Sparkles, Scissors, Loader2, LineChart, BrainCircuit } from 'lucide-react';
 import { ImageCropperDialog } from '@/components/image-cropper-dialog';
 import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { LineChart, BrainCircuit } from 'lucide-react';
 import Link from 'next/link';
 import { PlayerRecentActivity } from './player-recent-activity';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 type PlayerProfileViewProps = {
   playerId: string;
   player: Player;
 };
 
-export default function PlayerProfileView({ playerId, player }: PlayerProfileViewProps) {
+export default function PlayerProfileView({ playerId, player: initialPlayer }: PlayerProfileViewProps) {
   const { user } = useUser();
+  const [player, setPlayer] = useState<Player>(initialPlayer);
   const isCurrentUserProfile = user?.uid === playerId;
   const { toast } = useToast();
   const [isGeneratingAI, setIsGeneratingAI] = React.useState(false);
+
+  useEffect(() => {
+    setPlayer(initialPlayer);
+  }, [initialPlayer]);
+
+  const handlePhotoUpdate = (newUrl: string) => {
+    setPlayer(prevPlayer => ({ ...prevPlayer, photoUrl: newUrl }));
+  };
 
   const handleGenerateAIPhoto = async () => {
     if (!user?.uid) return;
@@ -36,9 +44,9 @@ export default function PlayerProfileView({ playerId, player }: PlayerProfileVie
         toast({ variant: 'destructive', title: 'Error al generar imagen', description: result.error });
       } else {
         toast({ title: 'Foto generada con éxito', description: 'Tu foto profesional ha sido creada con IA.' });
-        // Pequeño refresh local sin recargar toda la app (optimización simple)
-        // Idealmente usaríamos un refetch; por ahora forzamos reload de la página de perfil.
-        setTimeout(() => window.location.reload(), 800);
+        if (result.newPhotoURL) {
+          handlePhotoUpdate(result.newPhotoURL);
+        }
       }
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Error', description: e.message || 'Fallo inesperado.' });
@@ -49,31 +57,34 @@ export default function PlayerProfileView({ playerId, player }: PlayerProfileVie
 
   return (
     <div className="flex flex-col gap-8">
-      {/* Mantener EXACTO layout visual de PlayerCard para consistencia con vista jugadores */}
       <PlayerCard player={player} />
 
-      {/* Botones IA + recorte SOLO si es mi perfil, reutilizando lógica pero sin alterar la tarjeta base */}
       {isCurrentUserProfile && (
         <div className="flex flex-col items-center gap-3 -mt-2">
           <div className="flex flex-wrap justify-center gap-2 w-full px-2">
-            <Button
-              variant="default"
-              size="sm"
-              disabled={isGeneratingAI || (player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0)}
-              onClick={handleGenerateAIPhoto}
-            >
-              {isGeneratingAI ? (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4 animate-pulse" /> Generando...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" /> Generar Foto IA
-                </>
-              )}
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="default" size="sm" disabled={isGeneratingAI || (player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0)}>
+                  <Sparkles className="mr-2 h-4 w-4" /> 
+                  {isGeneratingAI ? 'Generando...' : 'Generar Foto IA'}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Confirmar generación de imagen?</AlertDialogTitle>
+                  <AlertDialogDescription>Esto usará 1 de tus {player.cardGenerationCredits} créditos. Esta acción no se puede deshacer.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleGenerateAIPhoto} disabled={isGeneratingAI}>
+                    {isGeneratingAI ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                    Confirmar y Usar Crédito
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <span className="text-xs font-semibold px-2 py-1 rounded-full bg-muted inline-flex items-center justify-center">{player.cardGenerationCredits || 0} créditos</span>
-            <ImageCropperDialog player={player} onSaveComplete={() => setTimeout(() => window.location.reload(), 500)}>
+            <ImageCropperDialog player={player} onSaveComplete={handlePhotoUpdate}>
               <Button variant="outline" size="sm" disabled={isGeneratingAI}>
                 <Scissors className="mr-2 h-4 w-4" /> Cambiar Foto
               </Button>
@@ -117,7 +128,6 @@ export default function PlayerProfileView({ playerId, player }: PlayerProfileVie
         </div>
       )}
 
-      {/* Componente para la actividad reciente */}
       <PlayerRecentActivity playerId={playerId} />
 
     </div>
