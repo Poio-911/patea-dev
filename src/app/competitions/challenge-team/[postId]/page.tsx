@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -63,14 +64,16 @@ export default function ChallengeTeamPage() {
         const fetchPost = async () => {
             try {
                 const result = await getAvailableTeamPostsAction(user.uid);
-                if (result.error) {
-                    throw new Error(result.error);
+                if ('error' in result && result.error) {
+                    throw new Error(result.error as string);
                 }
-                const foundPost = result.posts?.find(p => p.id === postId);
-                if (!foundPost) {
-                    throw new Error('Postulación no encontrada');
+                if ('posts' in result && result.posts) {
+                    const foundPost = result.posts.find(p => p.id === postId);
+                    if (!foundPost) {
+                        throw new Error('Postulación no encontrada');
+                    }
+                    setPost(foundPost);
                 }
-                setPost(foundPost);
             } catch (error: any) {
                 toast({
                     variant: 'destructive',
@@ -104,8 +107,8 @@ export default function ChallengeTeamPage() {
         setChallenging(true);
         try {
             const result = await challengeTeamPostAction(postId as string, selectedTeamId, user.uid);
-            if (result.error) {
-                throw new Error(result.error);
+            if ('error' in result && result.error) {
+                throw new Error(result.error as string);
             }
 
             celebrationConfetti();

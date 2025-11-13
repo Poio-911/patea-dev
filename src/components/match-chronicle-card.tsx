@@ -1,14 +1,14 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Match, Evaluation, SelfEvaluation, Player, PerformanceTag } from '@/lib/types';
+import type { Match, Evaluation, SelfEvaluation, Player, PerformanceTag, GenerateMatchChronicleOutput } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { Loader2, Sparkles, Newspaper, Users, Image } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { generateMatchChronicleAction, generateDuoImageAction } from '@/lib/actions/server-actions';
-import { type GenerateMatchChronicleOutput } from '@/ai/flows/generate-match-chronicle';
 import { Separator } from './ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from './ui/badge';
@@ -36,42 +36,34 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
   const { user } = useUser();
 
   const handleGenerateChronicle = async () => {
-    console.log('[MatchChronicleCard] Starting chronicle generation for match:', match.id);
     setIsLoading(true);
     try {
-      console.log('[MatchChronicleCard] Calling server action...');
       const result = await generateMatchChronicleAction(match.id);
-      console.log('[MatchChronicleCard] Server action result:', result);
       
-      if (result.error) {
-        console.error('[MatchChronicleCard] Server returned error:', result.error);
+      if ('error' in result && result.error) {
         throw new Error(result.error);
       }
       
-      if (!result.data) {
-        console.error('[MatchChronicleCard] Server returned no data');
+      if ('data' in result && result.data) {
+        setChronicle(result.data);
+        toast({ title: 'Crónica generada', description: 'La crónica del partido está lista.' });
+      } else {
         throw new Error('No se recibieron datos de la crónica');
       }
       
-      console.log('[MatchChronicleCard] Chronicle generated successfully:', result.data);
-      setChronicle(result.data);
-      toast({ title: 'Crónica generada', description: 'La crónica del partido está lista.' });
     } catch (error: any) {
-      console.error('[MatchChronicleCard] Error in handleGenerateChronicle:', error);
       toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudo generar la crónica.' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Función para generar prompt inteligente basado en evaluaciones de jugadores
   const generateIntelligentPrompt = (player1Id: string, player2Id?: string): string => {
     const player1Evals = evaluations.filter(e => e.playerId === player1Id);
     const player1SelfEval = selfEvaluations.find(se => se.playerId === player1Id);
     const player1Goals = player1SelfEval?.goals || 0;
     
     if (!player2Id) {
-      // Imagen de un solo jugador
       const tags = player1Evals.flatMap(e => e.performanceTags || []);
       const avgRating = player1Evals.length > 0 ? 
         player1Evals.reduce((sum, e) => sum + (e.rating || 0), 0) / player1Evals.filter(e => e.rating).length : 0;
@@ -88,7 +80,6 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
         return `${match.players.find(p => p.uid === player1Id)?.displayName} en acción durante el partido, mostrando intensidad y pasión por el fútbol`;
       }
     } else {
-      // Imagen de dos jugadores
       const player2Evals = evaluations.filter(e => e.playerId === player2Id);
       const player2SelfEval = selfEvaluations.find(se => se.playerId === player2Id);
       const player2Goals = player2SelfEval?.goals || 0;
@@ -99,7 +90,6 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
       const player1Name = match.players.find(p => p.uid === player1Id)?.displayName;
       const player2Name = match.players.find(p => p.uid === player2Id)?.displayName;
       
-      // Analizar coincidencias de rendimiento
       if (player1Goals > 0 && player2Goals > 0) {
         return `${player1Name} y ${player2Name} celebrando juntos un gol, abrazándose con alegría y emoción después de una jugada espectacular`;
       } else if (player1Tags.some(t => t.name?.includes('Pase')) && player2Tags.some(t => t.name?.includes('Gol'))) {
@@ -112,7 +102,6 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
     }
   };
 
-  // Función para generar imagen de dúo
   const handleGenerateDuoImage = async () => {
     if (!selectedPlayer1) {
       toast({ variant: 'destructive', title: 'Error', description: 'Debes seleccionar al menos un jugador.' });
@@ -154,7 +143,6 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
         description: `¡La imagen de ${player2 ? 'la dupla' : 'el jugador'} está lista!` 
       });
     } catch (error: any) {
-      console.error('Error generating duo image:', error);
       toast({ 
         variant: 'destructive', 
         title: 'Error', 
@@ -194,21 +182,18 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
           </div>
         ) : chronicle ? (
           <div className="space-y-4">
-            {/* Titular */}
             <div className="p-4 border-l-4 border-primary gradient-primary rounded">
               <h3 className="text-xl font-bold text-foreground">
                 {chronicle.headline}
               </h3>
             </div>
             
-            {/* Introducción */}
             <div className="p-3 surface-muted">
               <p className="text-sm leading-relaxed text-muted-foreground italic">
                 &ldquo;{chronicle.introduction}&rdquo;
               </p>
             </div>
             
-            {/* Momentos clave */}
             <div className="space-y-3">
               <h4 className="font-semibold text-sm text-primary border-b border-border pb-1">
                 Momentos Clave
@@ -228,14 +213,12 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
               ))}
             </div>
             
-            {/* Conclusión */}
             <div className="p-3 surface-muted">
               <p className="font-medium text-sm leading-relaxed">{chronicle.conclusion}</p>
             </div>
             
             <Separator className="my-6" />
             
-            {/* Sección de Imagen de Dúo */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 border-b border-border pb-2">
                 <Users className="h-4 w-4 text-primary" />
@@ -265,7 +248,7 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
                         </SelectTrigger>
                         <SelectContent>
                           {match.players
-                            .filter(p => p.photoUrl) // Solo jugadores con foto
+                            .filter(p => p.photoUrl) 
                             .map(player => (
                               <SelectItem key={player.uid} value={player.uid}>
                                 <div className="flex items-center gap-2">

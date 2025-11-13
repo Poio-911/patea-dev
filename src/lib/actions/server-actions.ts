@@ -14,12 +14,12 @@ import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-
 import { coachConversation, type CoachConversationInput } from '@/ai/flows/coach-conversation';
 import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '@/ai/flows/detect-player-patterns';
 import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '@/ai/flows/analyze-player-progression';
-import { generateMatchChronicleFlow, type GenerateMatchChronicleInput } from '@/ai/flows/generate-match-chronicle';
+import { generateMatchChronicle, type GenerateMatchChronicleInput } from '@/ai/flows/generate-match-chronicle';
 import { generateDuoImage, type GenerateDuoImageInput } from '@/ai/flows/generate-duo-image';
 
 import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, MatchLocation } from '../types';
 import { logger } from '../logger';
-import { handleServerActionError, createError, ErrorCodes, formatErrorResponse } from '../errors';
+import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse } from '../errors';
 
 // --- Server Actions ---
 
@@ -195,81 +195,80 @@ export async function coachConversationAction(
 }
 
 export async function detectPlayerPatternsAction(playerId: string, groupId: string) {
-  try {
-    const playerDocRef = adminDb.doc(`players/${playerId}`);
-    const playerDocSnap = await playerDocRef.get();
-
-    if (!playerDocSnap.exists) {
-      return { error: 'No se pudo encontrar al jugador.' };
+    try {
+      const playerDocRef = adminDb.doc(`players/${playerId}`);
+      const playerDocSnap = await playerDocRef.get();
+  
+      if (!playerDocSnap.exists) {
+        return { error: 'No se pudo encontrar al jugador.' };
+      }
+      const player = playerDocSnap.data() as Player;
+  
+      const evaluations = await getPlayerEvaluationsAction(playerId, groupId) as Evaluation[];
+  
+      const ovrHistorySnapshot = await adminDb
+        .collection(`players/${playerId}/ovrHistory`)
+        .orderBy('date', 'desc')
+        .limit(20)
+        .get();
+      const ovrHistory = ovrHistorySnapshot.docs.map(doc => doc.data() as OvrHistory);
+      
+      const recentMatchIds = [...new Set(evaluations.slice(0, 15).map(e => e.matchId))];
+      
+      const selfEvalsByMatchId = new Map<string, SelfEvaluation>();
+      if (recentMatchIds.length > 0) {
+          const selfEvalsPromises = recentMatchIds.map(matchId => 
+              adminDb.collection(`matches/${matchId}/selfEvaluations`).where('playerId', '==', playerId).get()
+          );
+          const selfEvalsSnapshots = await Promise.all(selfEvalsPromises);
+          
+          selfEvalsSnapshots.forEach(snapshot => {
+              snapshot.forEach(doc => {
+                  const selfEval = doc.data() as SelfEvaluation;
+                  selfEvalsByMatchId.set(selfEval.matchId, selfEval);
+              });
+          });
+      }
+  
+      const recentEvaluations = evaluations.slice(0, 15).map(e => {
+          const selfEval = selfEvalsByMatchId.get(e.matchId);
+          
+          const validTags = (e.performanceTags || [])
+            .filter((tag): tag is PerformanceTag => tag && typeof tag === 'object' && !!tag.name && !!tag.impact)
+            .map(tag => ({
+              name: tag.name,
+              impact: tag.impact,
+            }));
+  
+          return {
+              matchDate: e.evaluatedAt || new Date().toISOString(),
+              rating: e.rating,
+              performanceTags: validTags,
+              goals: selfEval?.goals || 0,
+          };
+      });
+  
+      const input: DetectPlayerPatternsInput = {
+        playerId,
+        playerName: player.name,
+        position: player.position,
+        currentOVR: player.ovr,
+        stats: {
+          matchesPlayed: player.stats.matchesPlayed,
+          goals: player.stats.goals,
+          assists: player.stats.assists || 0,
+          averageRating: player.stats.averageRating,
+        },
+        recentEvaluations,
+        ovrHistory: ovrHistory.length > 0 ? ovrHistory : undefined,
+      };
+  
+      const result = await detectPlayerPatterns(input);
+      return result;
+    } catch (error: any) {
+      logger.error('Error detecting player patterns', error, { playerId });
+      return { error: error.message || 'No se pudo analizar el rendimiento del jugador.' };
     }
-    const player = playerDocSnap.data() as Player;
-
-    const evaluations = await getPlayerEvaluationsAction(playerId, groupId) as Evaluation[];
-
-    const ovrHistorySnapshot = await adminDb
-      .collection(`players/${playerId}/ovrHistory`)
-      .orderBy('date', 'desc')
-      .limit(20)
-      .get();
-    const ovrHistory = ovrHistorySnapshot.docs.map(doc => doc.data() as OvrHistory);
-    
-    const recentMatchIds = [...new Set(evaluations.slice(0, 15).map(e => e.matchId))];
-    
-    const selfEvalsByMatchId = new Map<string, SelfEvaluation>();
-    if (recentMatchIds.length > 0) {
-        const selfEvalsPromises = recentMatchIds.map(matchId => 
-            adminDb.collection(`matches/${matchId}/selfEvaluations`).where('playerId', '==', playerId).get()
-        );
-        const selfEvalsSnapshots = await Promise.all(selfEvalsPromises);
-        
-        selfEvalsSnapshots.forEach(snapshot => {
-            snapshot.forEach(doc => {
-                const selfEval = doc.data() as SelfEvaluation;
-                selfEvalsByMatchId.set(selfEval.matchId, selfEval);
-            });
-        });
-    }
-
-    const recentEvaluations = evaluations.slice(0, 15).map(e => {
-        const selfEval = selfEvalsByMatchId.get(e.matchId);
-        
-        // ✅ FIX: Ensure tags are valid objects with 'name' and 'impact' before sending to AI.
-        const validTags = (e.performanceTags || [])
-          .filter(tag => tag && typeof tag === 'object' && tag.name && tag.impact)
-          .map(tag => ({
-            name: tag.name,
-            impact: tag.impact,
-          }));
-
-        return {
-            matchDate: e.evaluatedAt || new Date().toISOString(),
-            rating: e.rating,
-            performanceTags: validTags,
-            goals: selfEval?.goals || 0,
-        };
-    });
-
-    const input: DetectPlayerPatternsInput = {
-      playerId,
-      playerName: player.name,
-      position: player.position,
-      currentOVR: player.ovr,
-      stats: {
-        matchesPlayed: player.stats.matchesPlayed,
-        goals: player.stats.goals,
-        assists: player.stats.assists || 0,
-        averageRating: player.stats.averageRating,
-      },
-      recentEvaluations,
-      ovrHistory: ovrHistory.length > 0 ? ovrHistory : undefined,
-    };
-
-    const result = await detectPlayerPatterns(input);
-    return result;
-  } catch (error: any) {
-    logger.error('Error detecting player patterns', error, { playerId });
-    return { error: error.message || 'No se pudo analizar el rendimiento del jugador.' };
-  }
 }
 
 export async function analyzePlayerProgressionAction(playerId: string, groupId: string) {
@@ -458,7 +457,7 @@ export async function generateMatchChronicleAction(matchId: string) {
             }
         });
 
-        const result = await generateMatchChronicleFlow(input);
+        const result = await generateMatchChronicle(input);
         
         if (!result) {
             logger.error('[generateMatchChronicleAction] AI flow returned null/undefined', { matchId });
@@ -563,7 +562,7 @@ export async function createTeamAvailabilityPostAction(
     }
 }
 
-export async function getAvailableTeamPostsAction(userId: string) {
+export async function getAvailableTeamPostsAction(userId: string): Promise<{ success: boolean; posts: TeamAvailabilityPost[]; } | ErrorResponse> {
     try {
         const today = new Date().toISOString().split('T')[0];
 
@@ -586,7 +585,7 @@ export async function getAvailableTeamPostsAction(userId: string) {
 
         return { success: true, posts };
     } catch (error: any) {
-        return handleServerActionError(error);
+        return handleServerActionError(error, {userId});
     }
 }
 
@@ -672,7 +671,7 @@ function getAdminInstances() {
     return { adminDb };
 }
 
-export async function acceptTeamChallengeAction(invitationId: string, teamId: string, userId: string): Promise<{ success: boolean; matchId: string } | { error: any }> {
+export async function acceptTeamChallengeAction(invitationId: string, teamId: string, userId: string): Promise<{ success: boolean; matchId: string } | ErrorResponse> {
   try {
     const { adminDb } = getAdminInstances();
     
@@ -769,7 +768,7 @@ export async function rejectTeamChallengeAction(invitationId: string, teamId: st
         batch.update(invitationSnap.ref, { status: 'declined' });
 
         const challengingTeamSnap = await adminDb.doc(`teams/${invitation.fromTeamId}`);
-        if (challengingTeamSnap.exists) {
+        if (challengingTeamSnap.exists()) {
             const challengingTeam = challengingTeamSnap.data() as GroupTeam;
             const notificationRef = adminDb.collection(`users/${challengingTeam.createdBy}/notifications`).doc();
             batch.set(notificationRef, {

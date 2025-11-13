@@ -1,6 +1,8 @@
 
+
 import { DocumentData, DocumentReference } from "firebase/firestore";
 import type { PerformanceTag as Pt } from "./performance-tags";
+import { z } from 'zod';
 
 export type PerformanceTag = Pt;
 
@@ -106,12 +108,11 @@ export type Match = {
     temperature: number;
   };
   chronicle?: string; // AI-generated match summary
-  // ✅ NUEVO: Campos para queries eficientes y ciclo de vida completo (FASE 1.3)
-  startTimestamp?: string; // ISO timestamp para ordenar/paginar
-  participantTeamIds?: string[]; // [teamId1, teamId2] para queries eficientes
-  createdAt?: string; // ISO timestamp para auditoría
-  finalScore?: { team1: number; team2: number } | null; // Score final del partido
-  finalizedAt?: string | null; // Timestamp de finalización
+  startTimestamp?: string; 
+  participantTeamIds?: string[];
+  createdAt?: string; 
+  finalScore?: { team1: number; team2: number } | null; 
+  finalizedAt?: string | null; 
 } & DocumentData;
 
 export type Team = {
@@ -159,7 +160,7 @@ export type GroupTeam = {
   members: GroupTeamMember[];
   createdBy: string;
   createdAt: string;
-  isChallengeable?: boolean; // New field to allow challenges
+  isChallengeable?: boolean; 
 } & DocumentData;
 
 
@@ -181,7 +182,7 @@ export type Notification = {
     message: string;
     link: string;
     isRead: boolean;
-    createdAt: string; // ISO 8601 string
+    createdAt: string; 
 } & DocumentData;
 
 export type TeamAvailabilityPost = {
@@ -189,38 +190,34 @@ export type TeamAvailabilityPost = {
     teamId: string;
     teamName: string;
     jersey: Jersey;
-    date: string; // ISO 8601 date string
-    time: string; // HH:MM format
+    date: string; 
+    time: string; 
     location: MatchLocation;
     description?: string;
-    createdBy: string; // UID of the team owner who created the post
-    createdAt: string; // ISO 8601 timestamp
+    createdBy: string; 
+    createdAt: string; 
     status?: 'active' | 'matched' | 'expired';
-    matchedWithTeamId?: string; // ID del equipo que aceptó el desafío
-    matchId?: string; // ID del partido creado
+    matchedWithTeamId?: string; 
+    matchId?: string; 
 } & DocumentData;
 
 export type Invitation = {
     id: string;
     type: 'player_to_match' | 'team_challenge';
     status: 'pending' | 'accepted' | 'declined';
-    createdBy: string; // UID of the user who sent the invite
+    createdBy: string; 
     createdAt: string;
-
-    // For player invites to a match
     matchId?: string;
     matchTitle?: string;
     matchDate?: string;
     playerId?: string;
-
-    // For team challenges
     fromTeamId?: string;
     fromTeamName?: string;
     fromTeamJersey?: Jersey;
     toTeamId?: string;
     toTeamName?: string;
-    postId?: string; // Reference to the TeamAvailabilityPost that was challenged
-
+    toTeamJersey?: Jersey;
+    postId?: string;
 } & DocumentData;
 
     
@@ -232,13 +229,13 @@ export type FcmToken = {
 
 export type Evaluation = {
     id: string;
-    assignmentId: string; // The ID of the assignment this evaluation fulfills
-    playerId: string; // The player being evaluated
-    evaluatorId: string; // The user UID who submitted the evaluation
-    matchId: string; // The ID of the match, for easier querying
-    rating?: number; // Scale 1-10
-    goals: number; // Goals scored by the evaluator in that match
-    performanceTags?: PerformanceTag[]; // Array of full PerformanceTag objects
+    assignmentId: string; 
+    playerId: string; 
+    evaluatorId: string; 
+    matchId: string; 
+    rating?: number; 
+    goals: number; 
+    performanceTags?: PerformanceTag[]; 
     evaluatedAt: string;
 } & DocumentData;
 
@@ -246,10 +243,10 @@ export type Evaluation = {
 export type EvaluationAssignment = {
     id: string;
     matchId: string;
-    evaluatorId: string; // Who has to do the evaluation
-    subjectId: string; // Who is being evaluated
+    evaluatorId: string; 
+    subjectId: string; 
     status: 'pending' | 'completed';
-    evaluationId?: string; // The ID of the resulting evaluation doc
+    evaluationId?: string; 
 } & DocumentData;
 
 export type SelfEvaluation = {
@@ -306,5 +303,41 @@ export type ChatMessage = {
   senderId: string;
   senderName: string;
   senderPhotoUrl: string;
-  createdAt: any; // Can be Timestamp from server or Date on client
+  createdAt: any; 
 } & DocumentData;
+
+const KeyEventSchema = z.object({
+  minute: z.number().describe("Minuto aproximado del evento (e.g., 15, 40, 75)."),
+  type: z.enum(['Goal', 'Assist', 'Save', 'KeyDefensivePlay', 'KeyPlay']).describe("Tipo de evento."),
+  playerName: z.string().describe("Nombre del jugador protagonista."),
+  description: z.string().describe("Descripción de la acción basada en su etiqueta de rendimiento (e.g., 'Definió como los dioses', 'Cierre providencial')."),
+  relatedPlayerName: z.string().optional().describe("Nombre de un segundo jugador involucrado (e.g., el asistidor)."),
+});
+
+export const GenerateMatchChronicleInputSchema = z.object({
+  matchTitle: z.string().describe("Título del partido."),
+  team1Name: z.string().describe("Nombre del Equipo 1."),
+  team1Score: z.number().describe("Goles del Equipo 1."),
+  team2Name: z.string().describe("Nombre del Equipo 2."),
+  team2Score: z.number().describe("Goles del Equipo 2."),
+  keyEvents: z.array(KeyEventSchema).describe("Lista de 3 a 5 eventos clave del partido."),
+  mvp: z.object({
+    name: z.string(),
+    reason: z.string(),
+  }).describe("El Jugador Más Valioso (MVP) y la razón."),
+});
+export type GenerateMatchChronicleInput = z.infer<typeof GenerateMatchChronicleInputSchema>;
+
+export const GenerateMatchChronicleOutputSchema = z.object({
+  headline: z.string().describe("Un titular periodístico y llamativo para la crónica."),
+  introduction: z.string().describe("Un párrafo introductorio que resume el partido y el resultado final."),
+  keyMoments: z.array(
+    z.object({
+      minute: z.string().describe("El minuto del evento, en formato 'Min XX'."),
+      event: z.string().describe("La descripción del evento clave, narrado en estilo de relator de fútbol."),
+    })
+  ).describe("Una lista de los 3-4 momentos más importantes del partido."),
+  conclusion: z.string().describe("Un párrafo final que resume el partido y nombra al MVP."),
+});
+export type GenerateMatchChronicleOutput = z.infer<typeof GenerateMatchChronicleOutputSchema>;
+
