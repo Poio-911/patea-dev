@@ -1,4 +1,8 @@
-'use server';
+// NOTE: Removed 'use server' directive.
+// This file defines AI flow utilities and exports non-async objects (schemas, prompt definitions).
+// Using 'use server' here triggers Next.js server action validation which requires only async function exports,
+// causing the runtime error: "A 'use server' file can only export async functions, found object.".
+// Server actions that call this flow (e.g. generateMatchChronicleAction) reside in a proper 'use server' file.
 
 /**
  * @fileOverview An AI flow to generate a journalistic chronicle of a football match.

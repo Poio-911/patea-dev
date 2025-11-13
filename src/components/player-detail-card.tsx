@@ -16,6 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/lib/logger';
 import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
+import { PlayerOvr, getPositionBadgeClasses, AttributesGrid, PlayerPhoto } from '@/components/player-styles';
 import { ImageCropperDialog } from './image-cropper-dialog';
 import { Dialog, DialogContent, DialogTrigger } from './ui/dialog';
 
@@ -24,17 +25,10 @@ type PlayerDetailCardProps = {
 };
 
 const positionTextColors: Record<PlayerPosition, string> = {
-  POR: 'text-orange-600 game:text-orange-400',
-  DEF: 'text-green-600 game:text-green-400',
-  MED: 'text-blue-600 game:text-blue-400',
-  DEL: 'text-red-600 game:text-red-400',
-};
-
-const positionBorderColors: Record<PlayerPosition, string> = {
-    POR: 'border-orange-400',
-    DEF: 'border-green-400',
-    MED: 'border-blue-400',
-    DEL: 'border-red-400',
+  POR: 'text-orange-600',
+  DEF: 'text-green-600',
+  MED: 'text-blue-600',
+  DEL: 'text-red-600',
 };
 
 
@@ -129,73 +123,36 @@ export function PlayerDetailCard({ player: initialPlayer }: PlayerDetailCardProp
           <div className="flex flex-col items-center gap-4">
             <div className="text-center">
               <h2 className="text-3xl font-bold font-headline">{playerName}</h2>
-              <div className="flex items-center justify-center gap-4 mt-2">
-                <div
-                  className={cn(
-                    "flex items-center justify-center h-20 w-20 rounded-full shadow-lg",
-                    "bg-card text-5xl font-black",
-                    "game:bg-white/10 game:text-yellow-400",
-                    player.ovr >= 85 && "game:text-glow"
-                  )}
-                >
-                  {player.ovr}
-                </div>
-                <div className="flex flex-col items-start">
-                    <Badge
-                      variant="secondary"
-                      className={cn(
-                          "text-lg font-bold px-3 py-1.5 shadow-md",
-                          positionTextColors[player.position]
-                      )}
-                    >
-                      {player.position}
-                    </Badge>
-                     {showSpecialty && (
-                        <div
-                            className="flex items-center justify-center gap-2 mt-2"
-                        >
-                            <specialty.icon className="h-5 w-5 text-primary animate-pulse" />
-                            <span className="text-base font-bold text-primary game:text-glow">{specialty.nickname}</span>
-                        </div>
-                    )}
-                </div>
+              <div className="flex items-center justify-center gap-6 mt-2">
+                <PlayerOvr value={player.ovr} />
+                <Badge className={cn('px-3 py-1 font-bold uppercase', getPositionBadgeClasses(player.position))}>{player.position}</Badge>
               </div>
+              {showSpecialty && (
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <specialty.icon className="h-5 w-5 text-primary" />
+                  <span className="text-xs font-semibold text-primary">{specialty.nickname}</span>
+                </div>
+              )}
             </div>
             <div className="relative w-full flex flex-col items-center gap-4">
               <div className="group relative">
                 <Dialog>
-                    <DialogTrigger asChild>
-                         <button aria-label="Ampliar imagen de perfil">
-                            <Avatar className={cn(
-                                "h-40 w-40 overflow-hidden",
-                                "border-4 shadow-2xl",
-                                "transition-all duration-300",
-                                positionBorderColors[player.position]
-                            )}>
-                            {isGeneratingAI && (
-                                <div className="absolute inset-0 z-10 bg-black/70 flex flex-col items-center justify-center text-white">
-                                    <Sparkles className="h-8 w-8 color-cycle-animation" />
-                                    <p className="text-xs font-semibold mt-2">Creando magia...</p>
-                                </div>
-                            )}
-                            <AvatarImage
-                                src={player.photoUrl} alt={player.name} data-ai-hint="player portrait"
-                                className={cn(
-                                    isGeneratingAI && "opacity-30 blur-sm"
-                                )}
-                                style={{ objectFit: 'cover', objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`, transform: `scale(${player.cropZoom || 1})`, transformOrigin: 'center center' }}
-                            />
-                            <AvatarFallback className="font-black text-5xl">{playerName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                        </button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl p-0 border-0 bg-transparent shadow-none">
-                        <img
-                            src={player.photoUrl}
-                            alt={player.name}
-                            className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
-                        />
-                    </DialogContent>
+                  <DialogTrigger asChild>
+                    <button aria-label="Ampliar imagen de perfil" className="cursor-pointer">
+                      <div className="relative">
+                        {isGeneratingAI && (
+                          <div className="absolute inset-0 z-10 bg-black/60 flex flex-col items-center justify-center text-white rounded-full">
+                            <Sparkles className="h-6 w-6 animate-pulse" />
+                            <p className="text-[10px] font-semibold mt-1">Generando...</p>
+                          </div>
+                        )}
+                        <PlayerPhoto player={player} size="profile" />
+                      </div>
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl p-0 border-0 bg-transparent shadow-none">
+                    <img src={player.photoUrl} alt={player.name} className="w-full h-auto max-h-[80vh] object-contain rounded-lg" />
+                  </DialogContent>
                 </Dialog>
               </div>
               {isCurrentUserProfile && (
@@ -236,12 +193,8 @@ export function PlayerDetailCard({ player: initialPlayer }: PlayerDetailCardProp
             </div>
           </div>
           <Separator className="my-6 game:bg-white/10"/>
-          <div className="w-full px-4">
-            <div className="grid grid-cols-2 gap-2 sm:gap-3 my-3 sm:my-4">
-              {stats.map((stat, index) => (
-                <StatPill key={stat.label} label={stat.label} value={stat.value} isPrimary={stat.key === primaryStat.key} index={index} />
-              ))}
-            </div>
+          <div className="w-full px-2 mt-2">
+            <AttributesGrid player={player} />
           </div>
         </CardContent>
       </Card>

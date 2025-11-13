@@ -19,7 +19,7 @@ import { generateDuoImage, type GenerateDuoImageInput } from '@/ai/flows/generat
 
 import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, MatchLocation } from '../types';
 import { logger } from '../logger';
-import { handleServerActionError, createError, ErrorCodes } from '../errors';
+import { handleServerActionError, createError, ErrorCodes, formatErrorResponse } from '../errors';
 
 // --- Server Actions ---
 
@@ -304,14 +304,31 @@ export async function analyzePlayerProgressionAction(playerId: string, groupId: 
 }
 
 export async function generateMatchChronicleAction(matchId: string) {
+    logger.info('[generateMatchChronicleAction] Starting chronicle generation', { matchId });
     try {
         const matchRef = adminDb.doc(`matches/${matchId}`);
         const matchSnap = await matchRef.get();
-        if (!matchSnap.exists()) throw createError(ErrorCodes.DATA_NOT_FOUND, {matchId});
+        if (!matchSnap.exists) {
+            logger.error('[generateMatchChronicleAction] Match not found', { matchId });
+            throw createError(ErrorCodes.DATA_NOT_FOUND, {matchId});
+        }
 
         const match = { id: matchSnap.id, ...matchSnap.data() } as Match;
+        logger.info('[generateMatchChronicleAction] Match loaded', { 
+            matchId, 
+            status: match.status, 
+            hasTeams: !!match.teams,
+            teamsCount: match.teams?.length || 0 
+        });
+
         if (match.status !== 'evaluated' || !match.teams || match.teams.length < 2) {
-            throw createError(ErrorCodes.VAL_INVALID_FORMAT, { status: match.status });
+            logger.error('[generateMatchChronicleAction] Invalid match state', { 
+                matchId, 
+                status: match.status,
+                hasTeams: !!match.teams,
+                teamsCount: match.teams?.length || 0
+            });
+            return formatErrorResponse(createError(ErrorCodes.VAL_INVALID_FORMAT, { status: match.status, matchId }));
         }
 
         const evalsQuery = adminDb.collection('evaluations').where('matchId', '==', matchId);
@@ -333,16 +350,84 @@ export async function generateMatchChronicleAction(matchId: string) {
 
         const playersMap = new Map(match.players.map(p => [p.uid, p.displayName]));
         
+        // Base events from performance tags (if any)
         const keyEvents = evaluations
-            .filter(e => e.performanceTags && e.performanceTags.length > 0)
+            .filter(e => Array.isArray(e.performanceTags) && e.performanceTags.length > 0)
             .sort(() => 0.5 - Math.random())
             .slice(0, 5)
-            .map(e => ({
-                minute: Math.floor(Math.random() * 85) + 5,
-                type: 'KeyPlay' as const,
-                playerName: playersMap.get(e.playerId) || 'Un jugador',
-                description: e.performanceTags![0].description,
-            }));
+            .map(e => {
+                const firstTag = e.performanceTags![0];
+                const safeDescription = firstTag?.description || firstTag?.name || 'Acción destacada';
+                return {
+                    minute: Math.floor(Math.random() * 85) + 5,
+                    type: 'KeyPlay' as const,
+                    playerName: playersMap.get(e.playerId) || 'Un jugador',
+                    description: safeDescription,
+                };
+            });
+
+        // Fallback enrichment when we have too few tag-based events
+        const enrichedEvents = [...keyEvents];
+        const usedMinutes = new Set(enrichedEvents.map(e => e.minute));
+
+        function randomMinute() {
+            let m = Math.floor(Math.random() * 85) + 5;
+            let attempts = 0;
+            while (usedMinutes.has(m) && attempts < 10) {
+                m = Math.floor(Math.random() * 85) + 5;
+                attempts++;
+            }
+            usedMinutes.add(m);
+            return m;
+        }
+
+        // Add goal events if missing (prioritize top scorers)
+        if (enrichedEvents.length < 3) {
+            const goalEntries = Object.entries(goalsByPlayer)
+                .filter(([, g]) => g > 0)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3);
+            for (const [playerId, goals] of goalEntries) {
+                if (enrichedEvents.length >= 5) break;
+                const displayName = playersMap.get(playerId) || 'Jugador';
+                const description = goals > 1
+                    ? `Marcó un doblete decisivo para su equipo.`
+                    : `Definió con categoría para abrir el marcador.`;
+                enrichedEvents.push({
+                    minute: randomMinute(),
+                    type: 'Goal' as const,
+                    playerName: displayName,
+                    description,
+                });
+            }
+        }
+
+        // Add high rating highlights if still fewer than 3 events
+        if (enrichedEvents.length < 3) {
+            const ratedEvals = evaluations
+                .filter(e => typeof e.rating === 'number' && e.rating && e.rating >= 7)
+                .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+                .slice(0, 3);
+            for (const ev of ratedEvals) {
+                if (enrichedEvents.length >= 5) break;
+                enrichedEvents.push({
+                    minute: randomMinute(),
+                    type: 'KeyPlay' as const,
+                    playerName: playersMap.get(ev.playerId) || 'Jugador',
+                    description: `Actuación destacada con calificación ${ev.rating}.`,
+                });
+            }
+        }
+
+        // Final safety: if still empty, synthesize a neutral event
+        if (enrichedEvents.length === 0) {
+            enrichedEvents.push({
+                minute: randomMinute(),
+                type: 'KeyPlay',
+                playerName: 'El partido',
+                description: 'Partido parejo sin acciones destacadas registradas.',
+            });
+        }
 
         const mvp = evaluations.reduce((best, current) => {
             if (!current.rating) return best;
@@ -355,25 +440,75 @@ export async function generateMatchChronicleAction(matchId: string) {
             team1Score,
             team2Name: match.teams[1].name,
             team2Score,
-            keyEvents,
+            keyEvents: enrichedEvents,
             mvp: {
                 name: playersMap.get(mvp.playerId) || 'El Equipo',
                 reason: 'por su rendimiento excepcional y una calificación de ' + mvp.rating
             }
         };
 
+        logger.info('[generateMatchChronicleAction] Calling AI flow with input', { 
+            matchId, 
+            eventCount: enrichedEvents.length,
+            inputData: {
+                matchTitle: input.matchTitle,
+                teams: `${input.team1Name} ${input.team1Score} - ${input.team2Score} ${input.team2Name}`,
+                mvpName: input.mvp.name
+            }
+        });
+
         const result = await generateMatchChronicleFlow(input);
+        
+        if (!result) {
+            logger.error('[generateMatchChronicleAction] AI flow returned null/undefined', { matchId });
+            return formatErrorResponse(createError(ErrorCodes.AI_GENERATION_FAILED, { matchId }));
+        }
+
+        logger.info('[generateMatchChronicleAction] Chronicle generated successfully', { 
+            matchId,
+            hasHeadline: !!result.headline,
+            hasConclusion: !!result.conclusion,
+            keyMomentsCount: result.keyMoments?.length || 0
+        });
+
         return { data: result };
 
     } catch (error) {
-        return handleServerActionError(error, {matchId});
+        logger.error('[generateMatchChronicleAction] Error occurred', error, { matchId, action: 'generateMatchChronicle' });
+        return handleServerActionError(error, {matchId, action: 'generateMatchChronicle'});
     }
 }
 
 
 export async function generateDuoImageAction(input: GenerateDuoImageInput) {
     try {
-        const imageUrl = await generateDuoImage(input);
+        // Convertir las URLs de Firebase Storage a base64 usando el método del servidor
+        const { convertStorageUrlToBase64 } = await import('./image-generation');
+        
+        const player1Result = await convertStorageUrlToBase64(input.player1PhotoUrl);
+        if (player1Result.error || !player1Result.dataUri) {
+            throw new Error(player1Result.error || 'No se pudo procesar la foto del primer jugador.');
+        }
+        
+        let player2DataUri = player1Result.dataUri; // Por defecto, usar la misma foto para imagen individual
+        
+        if (input.player2PhotoUrl && input.player2PhotoUrl !== input.player1PhotoUrl) {
+            const player2Result = await convertStorageUrlToBase64(input.player2PhotoUrl);
+            if (player2Result.error || !player2Result.dataUri) {
+                throw new Error(player2Result.error || 'No se pudo procesar la foto del segundo jugador.');
+            }
+            player2DataUri = player2Result.dataUri;
+        }
+        
+        // Generar la imagen usando las funciones base64 convertidas
+        const imageUrl = await generateDuoImage(
+            player1Result.dataUri,
+            player2DataUri,
+            input.player1Name,
+            input.player2Name || input.player1Name,
+            input.prompt
+        );
+        
         return { success: true, imageUrl };
     } catch(error) {
         return handleServerActionError(error);

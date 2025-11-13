@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Player, AttributeKey, PlayerPosition } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { DelIcon, MedIcon, DefIcon, PorIcon } from '@/components/icons/positions';
+import { PlayerOvr, getPositionBadgeClasses, AttributesGrid, PlayerPhoto } from '@/components/player-styles';
 import { Skeleton } from './ui/skeleton';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
@@ -25,17 +26,10 @@ const attributeDetails: Record<AttributeKey, { name: string }> = {
 };
 
 const positionTextColors: Record<PlayerPosition, string> = {
-  POR: 'text-orange-600 game:text-orange-400',
-  DEF: 'text-green-600 game:text-green-400',
-  MED: 'text-blue-600 game:text-blue-400',
-  DEL: 'text-red-600 game:text-red-400',
-};
-
-const positionBorderColors: Record<PlayerPosition, string> = {
-  POR: 'border-orange-400',
-  DEF: 'border-green-400',
-  MED: 'border-blue-400',
-  DEL: 'border-red-400',
+    POR: 'text-orange-600',
+    DEF: 'text-green-600',
+    MED: 'text-blue-600',
+    DEL: 'text-red-600',
 };
 
 const positionIcons: Record<PlayerPosition, React.ElementType> = {
@@ -84,10 +78,6 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
         { key: 'PHY', value: player.phy },
     ] as const, [player]);
 
-    const highestStat = React.useMemo(() => {
-        return stats.reduce((max, stat) => stat.value > max.value ? stat : max, stats[0]);
-    }, [stats]);
-
     const PositionIcon = positionIcons[player.position];
     const ovrLevel = getOvrLevel(player.ovr);
     const selectedAuraClass = auraClasses[ovrLevel]; 
@@ -110,70 +100,26 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                     </div>
                     {/* Contenido principal de la tarjeta */}
                     <div className="relative z-10 flex flex-col h-full justify-between">
-                        {/* --- OVR Y POSICIÓN --- */}
-                         <div className="flex items-start justify-between">
-                           <div className="flex flex-col items-start text-left">
-                             <span className={cn("font-headline text-2xl font-bold uppercase", positionTextColors[player.position])}>
-                                 {player.position}
-                             </span>
-                           </div>
-                            <div className="flex flex-col items-end">
-                              <span className="font-headline text-5xl font-bold text-slate-900 game:text-yellow-400 -mb-2">{player.ovr}</span>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col items-center gap-1 my-2">
-                            <Dialog>
-                                <DialogTrigger asChild>
-                                    <button>
-                                        <Avatar className={cn("h-24 w-24 rounded-full border-4 object-cover shadow-md bg-muted cursor-pointer", positionBorderColors[player.position])}>
-                                            <AvatarImage 
-                                                src={player.photoUrl} 
-                                                alt={playerName} 
-                                                data-ai-hint="player portrait" 
-                                                style={{ 
-                                                    objectFit: 'cover', 
-                                                    objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`, 
-                                                    transform: `scale(${player.cropZoom || 1})`, 
-                                                    transformOrigin: 'center center' 
-                                                }} 
-                                            />
-                                            <AvatarFallback className="text-3xl font-black">{playerName.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                    </button>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none">
-                                    <img
-                                        src={player.photoUrl}
-                                        alt={player.name}
-                                        className="w-full h-auto rounded-lg"
-                                    />
-                                </DialogContent>
-                            </Dialog>
-                            <Link href={`/players/${player.id}`} className="w-full">
-                                <h3 className="w-full truncate text-center text-base font-semibold mt-1 game:text-white hover:text-primary transition-colors">{playerName}</h3>
-                            </Link>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-1 text-center text-xs">
-                            {stats.map(stat => (
-                                <div
-                                    key={stat.key}
-                                    className={cn(
-                                        "rounded-lg py-1 border-2",
-                                        "bg-black/5 game:bg-white/5",
-                                        stat.key === highestStat.key ? "border-yellow-400/50 game:border-yellow-400/50" : "border-transparent"
-                                    )}
-                                >
-                                    <p className="text-base font-bold text-slate-800 game:text-white">
-                                        {stat.value}
-                                        <span className="ml-1 text-gray-500 game:text-gray-400 text-xs font-semibold">
-                                            {attributeDetails[stat.key].name}
-                                        </span>
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
+                                                <div className="flex items-start justify-between mb-2">
+                                                    <Badge className={cn('uppercase font-bold', getPositionBadgeClasses(player.position))}>{player.position}</Badge>
+                                                    <PlayerOvr value={player.ovr} />
+                                                </div>
+                                                <div className="flex flex-col items-center gap-2 mb-2">
+                                                    <Dialog>
+                                                        <DialogTrigger asChild>
+                                                            <button aria-label="Ver foto jugador" className="cursor-pointer">
+                                                                <PlayerPhoto player={player} />
+                                                            </button>
+                                                        </DialogTrigger>
+                                                        <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none">
+                                                            <img src={player.photoUrl} alt={player.name} className="w-full h-auto rounded-lg" />
+                                                        </DialogContent>
+                                                    </Dialog>
+                                                    <Link href={`/players/${player.id}`} className="w-full">
+                                                        <h3 className="w-full truncate text-center text-sm font-semibold hover:text-primary transition-colors">{playerName}</h3>
+                                                    </Link>
+                                                </div>
+                                                <AttributesGrid player={player} />
                     </div>
                 </CardContent>
             </Card>

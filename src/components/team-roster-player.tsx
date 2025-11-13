@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { MoreVertical } from 'lucide-react';
+import { PlayerOvr, getPositionBadgeClasses, PlayerPhoto } from '@/components/player-styles';
 import { Button } from '@/components/ui/button';
 import { SetPlayerStatusDialog } from '@/components/set-player-status-dialog';
 import { DelIcon, MedIcon, DefIcon, PorIcon } from '@/components/icons/positions';
@@ -18,10 +19,10 @@ interface TeamRosterPlayerProps {
 }
 
 const positionBadgeStyles: Record<Player['position'], string> = {
-  POR: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
-  DEF: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-  MED: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
-  DEL: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+    POR: getPositionBadgeClasses('POR'),
+    DEF: getPositionBadgeClasses('DEF'),
+    MED: getPositionBadgeClasses('MED'),
+    DEL: getPositionBadgeClasses('DEL'),
 };
 
 const positionIconAndColor: Record<PlayerPosition, { Icon: React.ElementType, colorClass: string }> = {
@@ -45,24 +46,21 @@ export const TeamRosterPlayer = ({ player, team, onPlayerUpdate }: TeamRosterPla
             </SetPlayerStatusDialog>
         </div>
 
-        <div className="relative mt-4">
-             <Avatar className="h-16 w-16 border">
-              <AvatarImage src={player.photoUrl} alt={player.name} />
-              <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <Badge className="absolute -bottom-2 -right-2 text-base font-bold rounded-full h-8 w-8 flex items-center justify-center border-2 border-background">
-                {player.number}
-            </Badge>
-        </div>
+                <div className="relative mt-4">
+                    <PlayerPhoto player={player as any} size="compact" />
+                    <Badge className="absolute -bottom-2 -right-2 text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center border-2 border-background">
+                        {player.number}
+                    </Badge>
+                </div>
         <div className="flex flex-col items-center">
             <div className="flex items-center gap-2">
                 <Icon className={cn("h-5 w-5 rounded-full border-2 p-0.5", colorClass)} />
                 <p className="font-bold truncate w-24 text-base">{player.name}</p>
             </div>
-            <div className="flex items-center justify-center gap-1.5 mt-1">
-                <Badge variant="secondary" className="text-xs">{player.ovr}</Badge>
-                <Badge variant="outline" className={cn("text-xs", positionBadgeStyles[player.position])}>{player.position}</Badge>
-            </div>
+                        <div className="flex items-center justify-center gap-2 mt-1">
+                            <PlayerOvr value={player.ovr} size="compact" />
+                            <Badge variant="outline" className={cn('text-[10px] font-semibold', positionBadgeStyles[player.position])}>{player.position}</Badge>
+                        </div>
         </div>
     </Card>
   );

@@ -42,7 +42,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
   onJoinOrLeave,
 }: MatchInfoCardProps) {
   return (
-    <Card className="relative overflow-hidden border-2 border-t-4 border-t-primary text-foreground dark:text-white rounded-lg shadow-lg bg-card/80 backdrop-blur-md">
+    <Card className="group relative overflow-hidden border-2 border-t-4 border-t-primary text-foreground dark:text-white rounded-xl shadow-2xl bg-card/85 backdrop-blur-xl hover:shadow-3xl hover:shadow-primary/20 transition-all duration-500">
       {/* Background video - visible en AMBOS temas */}
       <div className="absolute inset-0 -z-10 rounded-lg overflow-hidden">
         <video
@@ -56,16 +56,17 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
         >
           <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-black/40 to-black/60" />
+        <div className="absolute inset-0 bg-gradient-to-t from-primary/10 via-transparent to-transparent opacity-70" />
       </div>
 
-      <CardContent className="p-6 pt-6 space-y-4 bg-transparent text-white [text-shadow:0_1px_3px_rgb(0_0_0_/_0.5)]">
+      <CardContent className="relative z-10 p-8 pt-8 space-y-6 bg-transparent text-white [text-shadow:0_2px_4px_rgb(0_0_0_/_0.6)] transition-all duration-300">
         {/* Fecha y organizador */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row gap-6 justify-between">
+          <div className="space-y-4">
             <div className="flex items-center gap-3 text-lg">
-              <Calendar className="h-5 w-5" aria-hidden="true" />
-              <span className="font-semibold">
+              <Calendar className="h-5 w-5 text-white/90" aria-hidden="true" />
+              <span className="font-semibold text-white">
                 {format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es })}
               </span>
             </div>
@@ -73,40 +74,42 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
               <div className="flex items-center gap-2">
                 <Avatar className="h-6 w-6">
                   <AvatarImage src={ownerProfile.photoURL || ''} alt={ownerProfile.displayName || ''} />
-                  <AvatarFallback>{ownerProfile.displayName?.charAt(0)}</AvatarFallback>
+                  <AvatarFallback className="text-xs">{ownerProfile.displayName?.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <p className="text-sm text-white/90">{`Organizado por ${ownerProfile.displayName}`}</p>
+                <p className="text-sm text-white/80">{`Organizado por ${ownerProfile.displayName}`}</p>
               </div>
             )}
           </div>
 
           {/* Hora y clima */}
-          <div className="space-y-3 text-left sm:text-right">
+          <div className="space-y-4 text-left sm:text-right">
             <div className="flex items-center gap-3 text-lg justify-start sm:justify-end">
-              <Clock className="h-5 w-5" aria-hidden="true" />
-              <span className="font-semibold">{match.time} hs</span>
+              <Clock className="h-5 w-5 text-white/90" aria-hidden="true" />
+              <span className="font-semibold text-white">{match.time} hs</span>
               {WeatherIcon && match.weather && (
-                <span className="flex items-center gap-1.5 text-sm text-white/90">
-                  <WeatherIcon className="h-4 w-4 text-blue-400" aria-hidden="true" />
+                <span className="flex items-center gap-1.5 text-sm text-white/80">
+                  <WeatherIcon className="h-4 w-4 text-blue-300" aria-hidden="true" />
                   <span>({match.weather.temperature}°C)</span>
                 </span>
               )}
             </div>
-            <Badge variant="outline" className="capitalize text-sm bg-white/20 border-white/30 text-white">
-              {match.type === 'by_teams' ? 'Por Equipos' : match.type}
-            </Badge>
+            <div className="flex justify-start sm:justify-end">
+              <Badge variant="outline" className="capitalize text-sm bg-white/10 border-white/30 text-white">
+                {match.type === 'by_teams' ? 'Por Equipos' : match.type}
+              </Badge>
+            </div>
           </div>
         </div>
 
         <Separator className="bg-white/20" />
 
         {/* Ubicación y acciones */}
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-          <div className="flex items-start gap-3">
-            <MapPin className="h-5 w-5 mt-1 flex-shrink-0" aria-hidden="true" />
-            <p className="font-semibold">{match.location.name}</p>
+        <div className="flex flex-col sm:flex-row gap-6 items-center justify-between">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <MapPin className="h-5 w-5 mt-0.5 flex-shrink-0 text-white/90" aria-hidden="true" />
+            <p className="font-semibold text-white">{match.location.name}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3 flex-shrink-0">
             <Button asChild variant="secondary" size="sm">
               <a
                 href={googleMapsUrl}
@@ -122,7 +125,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
                 variant="outline"
                 size="sm"
                 asChild
-                className="bg-white/20 border-white/30 hover:bg-white/30"
+                className="bg-white/10 border-white/30 hover:bg-white/20 text-white"
               >
                 <a
                   href={`https://wa.me/?text=${whatsAppShareText}`}
@@ -145,7 +148,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full font-bold text-base"
+                className="w-full font-bold text-base bg-white/5 border-white/20 text-white/60"
                 disabled
                 aria-label="Partido completo"
               >
@@ -157,7 +160,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
                 size="lg"
                 onClick={onJoinOrLeave}
                 disabled={isJoining}
-                className="w-full min-h-[48px]"
+                className="w-full min-h-[48px] font-semibold"
                 aria-label={isUserInMatch ? 'Darse de baja del partido' : 'Apuntarse al partido'}
               >
                 {isJoining ? (

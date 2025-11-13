@@ -23,10 +23,17 @@ interface MatchTeamsProps {
 }
 
 const positionBadgeStyles: Record<Player['position'], string> = {
-  DEL: 'bg-chart-1 text-white',
-  MED: 'bg-chart-2 text-white',
-  DEF: 'bg-chart-3 text-white',
-  POR: 'bg-chart-4 text-white',
+  DEL: 'bg-gradient-to-r from-red-500 to-orange-500 text-white border-red-300/50 shadow-lg shadow-red-500/25',
+  MED: 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-blue-300/50 shadow-lg shadow-blue-500/25',
+  DEF: 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-green-300/50 shadow-lg shadow-green-500/25',
+  POR: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-purple-300/50 shadow-lg shadow-purple-500/25',
+};
+
+const ovrStyles = (ovr: number): string => {
+  if (ovr >= 85) return 'text-yellow-400 font-black text-lg drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]';
+  if (ovr >= 75) return 'text-green-400 font-bold text-lg drop-shadow-[0_0_6px_rgba(34,197,94,0.4)]';
+  if (ovr >= 65) return 'text-blue-400 font-semibold text-lg drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]';
+  return 'text-gray-400 font-medium text-lg';
 };
 
 export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeamsProps) => {
@@ -46,21 +53,43 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <h2 className="text-xl font-bold text-foreground/90 pt-6">Equipos Generados</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                <div>
+                    <h2 className="text-xl font-bold text-foreground mb-1">
+                        Equipos Generados
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                        {match.teams?.length || 0} equipos • {match.players.length} jugadores
+                    </p>
+                </div>
                 {isOwner && match.status === 'upcoming' && (
-                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                         <Button onClick={onShuffle} disabled={isShuffling} variant="outline" size="sm" className="w-full sm:w-auto">
+                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                         <Button 
+                             onClick={onShuffle} 
+                             disabled={isShuffling} 
+                             variant="outline" 
+                             size="sm" 
+                             className="w-full sm:w-auto bg-gradient-to-r from-primary/10 to-primary/5 border-primary/30 hover:from-primary/20 hover:to-primary/10 transition-all duration-300"
+                         >
                              {isShuffling ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Shuffle className="mr-2 h-4 w-4 text-primary"/>}
                              Volver a Sortear
                          </Button>
                          <EditableTeamsDialog match={match}>
-                             <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                             <Button 
+                                 variant="outline" 
+                                 size="sm" 
+                                 className="w-full sm:w-auto bg-gradient-to-r from-amber-500/10 to-orange-500/5 border-amber-500/30 hover:from-amber-500/20 hover:to-orange-500/10 transition-all duration-300"
+                             >
                                  <Pencil className="mr-2 h-4 w-4 text-amber-500" />
                                  Editar Equipos
                              </Button>
                          </EditableTeamsDialog>
-                         <Button size="sm" variant="outline" asChild className="w-full sm:w-auto">
+                         <Button 
+                             size="sm" 
+                             variant="outline" 
+                             asChild 
+                             className="w-full sm:w-auto bg-gradient-to-r from-green-500/10 to-emerald-500/5 border-green-500/30 hover:from-green-500/20 hover:to-emerald-500/10 transition-all duration-300"
+                         >
                             <a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer">
                               <WhatsAppIcon className="mr-2 h-4 w-4 text-green-500"/>Compartir
                             </a>
@@ -68,27 +97,86 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
                      </div>
                 )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {(match.teams || []).map(team => (
-                    <Card key={team.name} className="bg-card/60 backdrop-blur-sm border-2 border-l-4 transition-all duration-300" style={{ borderLeftColor: team.jersey?.primaryColor || 'hsl(var(--border))', backgroundImage: team.jersey ? `linear-gradient(to top, ${team.jersey.primaryColor}08, transparent)` : 'none'}}>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle className="flex items-center gap-2">{team.jersey && <div className="w-8 h-8"><JerseyPreview jersey={team.jersey} /></div>}<span>{team.name}</span></CardTitle>
-                            <Badge variant="secondary">OVR {team.averageOVR.toFixed(1)}</Badge>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-1">
-                                {team.players.map(player => (
-                                    <div key={player.uid} className="flex items-center justify-between p-2 border-b last:border-b-0 border-foreground/10 hover:bg-background/40 transition-all duration-300 rounded">
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="h-9 w-9"><AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoUrl} alt={player.displayName} data-ai-hint="player portrait" /><AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback></Avatar>
-                                            <div className="flex-1"><p className="font-semibold text-sm">{player.displayName}</p></div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Badge className={cn("text-xs", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>{player.position}</Badge>
-                                            <Badge variant="secondary" className="text-xs w-10 justify-center">{player.ovr}</Badge>
-                                        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {(match.teams || []).map((team, index) => (
+                    <Card 
+                        key={team.name} 
+                        className="bg-card border-2 border-l-4 transition-all duration-300 hover:shadow-lg"
+                        style={{ 
+                            borderLeftColor: team.jersey?.primaryColor || 'hsl(var(--border))',
+                            backgroundImage: team.jersey ? `linear-gradient(to top, ${team.jersey.primaryColor}08, transparent)` : 'none'
+                        }}
+                    >
+                        <CardHeader className="flex flex-row items-center justify-between pb-3">
+                            <CardTitle className="flex items-center gap-2 text-lg">
+                                {team.jersey && (
+                                    <div className="w-8 h-8">
+                                        <JerseyPreview jersey={team.jersey} />
                                     </div>
-                                ))}
+                                )}
+                                <span className="font-bold">{team.name}</span>
+                            </CardTitle>
+                            
+                            {/* OVR Simple */}
+                            <Badge 
+                                variant="secondary" 
+                                className={cn(
+                                    "font-bold text-sm px-3 py-1",
+                                    team.averageOVR >= 80 ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" :
+                                    team.averageOVR >= 75 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" :
+                                    team.averageOVR >= 70 ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" : 
+                                    "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+                                )}
+                            >
+                                OVR {team.averageOVR.toFixed(1)}
+                            </Badge>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                            <div className="space-y-1">
+                                {team.players.map((player) => {
+                                    const playerInfo = match.players.find(p => p.uid === player.uid);
+                                    return (
+                                        <div 
+                                            key={player.uid} 
+                                            className="flex items-center justify-between p-3 border-b last:border-b-0 border-border/20 hover:bg-muted/30 transition-colors duration-200 rounded"
+                                        >
+                                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                <Avatar className="h-10 w-10">
+                                                    <AvatarImage 
+                                                        src={playerInfo?.photoUrl} 
+                                                        alt={player.displayName} 
+                                                        data-ai-hint="player portrait" 
+                                                    />
+                                                    <AvatarFallback className="text-sm font-medium">
+                                                        {player.displayName.charAt(0)}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-semibold text-sm truncate">
+                                                        {player.displayName}
+                                                    </p>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        <Badge 
+                                                            className={cn(
+                                                                "text-xs px-2 py-0.5 font-medium", 
+                                                                positionBadgeStyles[player.position as keyof typeof positionBadgeStyles]
+                                                            )}
+                                                        >
+                                                            {player.position}
+                                                        </Badge>
+                                                        <Badge 
+                                                            variant="secondary" 
+                                                            className="text-xs px-2 py-0.5 font-bold"
+                                                        >
+                                                            {player.ovr}
+                                                        </Badge>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </CardContent>
                     </Card>
