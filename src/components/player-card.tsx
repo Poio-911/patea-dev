@@ -11,6 +11,7 @@ import { DelIcon, MedIcon, DefIcon, PorIcon } from '@/components/icons/positions
 import { PlayerOvr, getPositionBadgeClasses, AttributesGrid, PlayerPhoto } from '@/components/player-styles';
 import { Skeleton } from './ui/skeleton';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 
 type PlayerCardProps = {
   player: Player & { displayName?: string };
