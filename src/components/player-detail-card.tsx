@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/lib/logger';
 import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
 import { ImageCropperDialog } from './image-cropper-dialog';
-import { Dialog, DialogContent } from './ui/dialog';
+import { Dialog, DialogContent, DialogTrigger } from './ui/dialog';
 
 type PlayerDetailCardProps = {
   player: Player;
@@ -65,14 +65,18 @@ const StatPill = ({ label, value, isPrimary, index }: { label: string; value: nu
     );
 };
 
-export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
+export function PlayerDetailCard({ player: initialPlayer }: PlayerDetailCardProps) {
   const { user } = useUser();
   const { toast } = useToast();
+  const [player, setPlayer] = useState<Player>(initialPlayer);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-  const [showImageDialog, setShowImageDialog] = useState(false);
 
   const isCurrentUserProfile = user?.uid === player.id;
   const playerName = player.name || 'Jugador';
+
+  const handlePhotoUpdate = (newUrl: string) => {
+    setPlayer(prev => ({...prev, photoUrl: newUrl}));
+  }
 
   const stats = [
     { label: 'RIT', value: player.pac, key: 'PAC' },
@@ -99,6 +103,9 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
         return;
       }
       toast({ title: 'Foto generada con éxito', description: 'Tu foto profesional ha sido creada con IA.' });
+      if (result.newPhotoURL) {
+        handlePhotoUpdate(result.newPhotoURL);
+      }
     } catch (error: any) {
       logger.error('Error generating AI photo', error, { userId: user?.uid });
       toast({ variant: 'destructive', title: 'Error al generar imagen', description: error.message || 'No se pudo generar la imagen con IA. Asegúrate de tener una foto real subida.' });
@@ -109,15 +116,6 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
 
   return (
     <>
-      <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
-        <DialogContent className="max-w-2xl p-0 border-0 bg-transparent shadow-none">
-            <img
-                src={player.photoUrl}
-                alt={player.name}
-                className="w-full h-auto max-h-[80vh] object-contain"
-            />
-        </DialogContent>
-      </Dialog>
       <Card className={cn(
           "relative overflow-hidden border-2 shadow-lg h-full flex flex-col",
           "shimmer-bg", // Fondo estático para modo claro
@@ -165,29 +163,40 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
             </div>
             <div className="relative w-full flex flex-col items-center gap-4">
               <div className="group relative">
-                <button onClick={() => setShowImageDialog(true)} aria-label="Ampliar imagen de perfil">
-                   <Avatar className={cn(
-                        "h-40 w-40 overflow-hidden",
-                        "border-4 shadow-2xl",
-                        "transition-all duration-300",
-                        positionBorderColors[player.position]
-                    )}>
-                    {isGeneratingAI && (
-                      <div className="absolute inset-0 z-10 bg-black/70 flex flex-col items-center justify-center text-white">
-                        <Sparkles className="h-8 w-8 color-cycle-animation" />
-                        <p className="text-xs font-semibold mt-2">Creando magia...</p>
-                      </div>
-                    )}
-                    <AvatarImage
-                      src={player.photoUrl} alt={player.name} data-ai-hint="player portrait"
-                      className={cn(
-                        isGeneratingAI && "opacity-30 blur-sm"
-                      )}
-                      style={{ objectFit: 'cover', objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`, transform: `scale(${player.cropZoom || 1})`, transformOrigin: 'center center' }}
-                    />
-                    <AvatarFallback className="font-black text-5xl">{playerName.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                </button>
+                <Dialog>
+                    <DialogTrigger asChild>
+                         <button aria-label="Ampliar imagen de perfil">
+                            <Avatar className={cn(
+                                "h-40 w-40 overflow-hidden",
+                                "border-4 shadow-2xl",
+                                "transition-all duration-300",
+                                positionBorderColors[player.position]
+                            )}>
+                            {isGeneratingAI && (
+                                <div className="absolute inset-0 z-10 bg-black/70 flex flex-col items-center justify-center text-white">
+                                    <Sparkles className="h-8 w-8 color-cycle-animation" />
+                                    <p className="text-xs font-semibold mt-2">Creando magia...</p>
+                                </div>
+                            )}
+                            <AvatarImage
+                                src={player.photoUrl} alt={player.name} data-ai-hint="player portrait"
+                                className={cn(
+                                    isGeneratingAI && "opacity-30 blur-sm"
+                                )}
+                                style={{ objectFit: 'cover', objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`, transform: `scale(${player.cropZoom || 1})`, transformOrigin: 'center center' }}
+                            />
+                            <AvatarFallback className="font-black text-5xl">{playerName.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                        </button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl p-0 border-0 bg-transparent shadow-none">
+                        <img
+                            src={player.photoUrl}
+                            alt={player.name}
+                            className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+                        />
+                    </DialogContent>
+                </Dialog>
               </div>
               {isCurrentUserProfile && (
                 <div className="w-full flex flex-col items-center gap-2">
@@ -195,7 +204,8 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="default" size="sm" disabled={isGeneratingAI || (player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0)}>
-                          <Sparkles className="mr-2 h-4 w-4" /> Generar Foto IA
+                          <Sparkles className="mr-2 h-4 w-4" /> 
+                          {isGeneratingAI ? 'Generando...' : 'Generar Foto IA'}
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
@@ -205,7 +215,10 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleGenerateAIPhoto}>Confirmar y Usar Crédito</AlertDialogAction>
+                          <AlertDialogAction onClick={handleGenerateAIPhoto} disabled={isGeneratingAI}>
+                            {isGeneratingAI ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                            Confirmar y Usar Crédito
+                          </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
@@ -213,7 +226,7 @@ export function PlayerDetailCard({ player }: PlayerDetailCardProps) {
                       {player.cardGenerationCredits || 0}
                     </Badge>
                   </div>
-                  <ImageCropperDialog player={player} onSaveComplete={() => window.location.reload()}>
+                  <ImageCropperDialog player={player} onSaveComplete={handlePhotoUpdate}>
                     <Button variant="outline" size="sm" disabled={isGeneratingAI}>
                       <Scissors className="mr-2 h-4 w-4" /> Cambiar Foto
                     </Button>

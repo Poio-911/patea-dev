@@ -9,6 +9,7 @@ import type { Player, AttributeKey, PlayerPosition } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { DelIcon, MedIcon, DefIcon, PorIcon } from '@/components/icons/positions';
 import { Skeleton } from './ui/skeleton';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 type PlayerCardProps = {
   player: Player & { displayName?: string };
@@ -92,7 +93,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
     const selectedAuraClass = auraClasses[ovrLevel]; 
 
     return (
-        <Link href={`/players/${player.id}`} className="block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-2xl h-full w-full" aria-label={`Ver perfil de ${playerName}`}>
+        <div className="h-full w-full">
             <Card
                 className={cn(
                     "player-card relative h-full flex flex-col overflow-hidden rounded-2xl shadow-lg",
@@ -122,21 +123,36 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                         </div>
 
                         <div className="flex flex-col items-center gap-1 my-2">
-                            <Avatar className={cn("h-24 w-24 rounded-full border-4 object-cover shadow-md bg-muted", positionBorderColors[player.position])}>
-                                <AvatarImage 
-                                    src={player.photoUrl} 
-                                    alt={playerName} 
-                                    data-ai-hint="player portrait" 
-                                    style={{ 
-                                        objectFit: 'cover', 
-                                        objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`, 
-                                        transform: `scale(${player.cropZoom || 1})`, 
-                                        transformOrigin: 'center center' 
-                                    }} 
-                                />
-                                <AvatarFallback className="text-3xl font-black">{playerName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <h3 className="w-full truncate text-center text-base font-semibold mt-1 game:text-white">{playerName}</h3>
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <button>
+                                        <Avatar className={cn("h-24 w-24 rounded-full border-4 object-cover shadow-md bg-muted cursor-pointer", positionBorderColors[player.position])}>
+                                            <AvatarImage 
+                                                src={player.photoUrl} 
+                                                alt={playerName} 
+                                                data-ai-hint="player portrait" 
+                                                style={{ 
+                                                    objectFit: 'cover', 
+                                                    objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`, 
+                                                    transform: `scale(${player.cropZoom || 1})`, 
+                                                    transformOrigin: 'center center' 
+                                                }} 
+                                            />
+                                            <AvatarFallback className="text-3xl font-black">{playerName.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                    </button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none">
+                                    <img
+                                        src={player.photoUrl}
+                                        alt={player.name}
+                                        className="w-full h-auto rounded-lg"
+                                    />
+                                </DialogContent>
+                            </Dialog>
+                            <Link href={`/players/${player.id}`} className="w-full">
+                                <h3 className="w-full truncate text-center text-base font-semibold mt-1 game:text-white hover:text-primary transition-colors">{playerName}</h3>
+                            </Link>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-1 text-center text-xs">
@@ -161,6 +177,6 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                     </div>
                 </CardContent>
             </Card>
-        </Link>
+        </div>
     );
 });
