@@ -63,7 +63,7 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle, onPlayerUpd
                         Equipos Generados
                     </h2>
                     <p className="text-sm text-muted-foreground">
-                        {match.teams?.length || 0} equipos • {match.players.length} jugadores
+                        {match.teams?.length || 0} equipos • {match.players?.length || 0} jugadores
                     </p>
                 </div>
                 {isOwner && match.status === 'upcoming' && (
