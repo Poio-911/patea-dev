@@ -1,3 +1,6 @@
+
+'use client';
+
 import { useMemo } from 'react';
 import type { Match } from '@/lib/types';
 
@@ -15,16 +18,16 @@ export function useMatchPermissions(match: Match | null | undefined, userId: str
   }, [userId, match?.ownerUid]);
 
   const isUserInMatch = useMemo(() => {
-    if (!userId || !match) return false;
+    if (!userId || !match?.playerUids) return false;
     return match.playerUids.includes(userId);
   }, [match?.playerUids, userId]);
 
   const canEdit = useMemo(() => isOwner, [isOwner]);
 
   const canJoin = useMemo(() => {
-    if (!match || isUserInMatch) return false;
+    if (!match || isUserInMatch || !match.players) return false; // ✅ FIX: Check if match.players exists
     return match.status === 'upcoming' && match.players.length < match.matchSize;
-  }, [match?.status, match?.players.length, match?.matchSize, isUserInMatch]);
+  }, [match?.status, match?.players, match?.matchSize, isUserInMatch]);
 
   const canLeave = useMemo(() => {
     if (!match || !isUserInMatch) return false;
@@ -32,16 +35,16 @@ export function useMatchPermissions(match: Match | null | undefined, userId: str
   }, [match?.status, isUserInMatch]);
 
   const canFinalize = useMemo(() => {
-    if (!match || !isOwner) return false;
+    if (!match || !isOwner || !match.players) return false; // ✅ FIX: Check if match.players exists
     return match.status === 'upcoming' && match.players.length >= 2;
-  }, [match?.status, match?.players.length, isOwner]);
+  }, [match?.status, match?.players, isOwner]);
 
   const canDelete = useMemo(() => isOwner, [isOwner]);
 
   const canGenerateTeams = useMemo(() => {
-    if (!match || !isOwner) return false;
+    if (!match || !isOwner || !match.players) return false; // ✅ FIX: Check if match.players exists
     return match.status === 'upcoming' && match.players.length >= 2;
-  }, [match?.status, match?.players.length, isOwner]);
+  }, [match?.status, match?.players, isOwner]);
 
   return {
     isOwner,
