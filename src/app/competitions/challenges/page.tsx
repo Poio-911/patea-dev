@@ -1,3 +1,4 @@
+
 'use client';
 
 import { PageHeader } from '@/components/page-header';
@@ -7,18 +8,16 @@ import { useUser, useFirestore, useCollection } from '@/firebase';
 import { Loader2, Users, Bell, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { InvitationsSheet } from '@/components/invitations-sheet';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { TeamChallengesList } from '@/components/team-challenge-card';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useMemo, useState, useEffect } from 'react';
 import type { GroupTeam, Invitation } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ChallengesPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
 
-  // Query for user's teams
   const teamsQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
     return query(
@@ -29,74 +28,46 @@ export default function ChallengesPage() {
 
   const { data: teams, loading: teamsLoading } = useCollection<GroupTeam>(teamsQuery);
 
-  // Optimized invitations loading with parallel queries
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [invitationsLoading, setInvitationsLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchInvitations = useMemo(() => async () => {
     if (!firestore || !teams || !user) {
       setInvitationsLoading(false);
       return;
     }
-
     const userTeamIds = teams.filter(t => t.createdBy === user.uid).map(t => t.id);
     if (userTeamIds.length === 0) {
       setInvitations([]);
       setInvitationsLoading(false);
       return;
     }
-
     setInvitationsLoading(true);
-
-    // Parallel queries for each team (no waterfall!)
-    const fetchInvitations = async () => {
-      try {
-        const allInvitations = await Promise.all(
-          userTeamIds.map(async (teamId) => {
-            const q = query(
-              collection(firestore, 'teams', teamId, 'invitations'),
-              where('type', '==', 'team_challenge'),
-              where('status', '==', 'pending')
-            );
-            const snapshot = await getDocs(q);
-            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Invitation));
-          })
-        );
-
-        setInvitations(allInvitations.flat());
-      } catch (error) {
-        console.error('Error fetching invitations:', error);
-        setInvitations([]);
-      } finally {
-        setInvitationsLoading(false);
-      }
-    };
-
-    fetchInvitations();
+    try {
+      const allInvitations = await Promise.all(
+        userTeamIds.map(async (teamId) => {
+          const q = query(
+            collection(firestore, 'teams', teamId, 'invitations'),
+            where('type', '==', 'team_challenge'),
+            where('status', '==', 'pending')
+          );
+          const snapshot = await getDocs(q);
+          return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Invitation));
+        })
+      );
+      setInvitations(allInvitations.flat());
+    } catch (error) {
+      console.error('Error fetching invitations:', error);
+      setInvitations([]);
+    } finally {
+      setInvitationsLoading(false);
+    }
   }, [firestore, teams, user]);
+  
+  useEffect(() => {
+    fetchInvitations();
+  }, [fetchInvitations]);
 
-  const refetchInvitations = async () => {
-    if (!firestore || !teams || !user) return;
-
-    const userTeamIds = teams.filter(t => t.createdBy === user.uid).map(t => t.id);
-    if (userTeamIds.length === 0) return;
-
-    const allInvitations = await Promise.all(
-      userTeamIds.map(async (teamId) => {
-        const q = query(
-          collection(firestore, 'teams', teamId, 'invitations'),
-          where('type', '==', 'team_challenge'),
-          where('status', '==', 'pending')
-        );
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Invitation));
-      })
-    );
-
-    setInvitations(allInvitations.flat());
-  };
-
-  // Show auth/group errors immediately
   if (userLoading) {
     return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
@@ -154,15 +125,11 @@ export default function ChallengesPage() {
         {invitationsLoading || teamsLoading ? (
           <div className="grid gap-4 md:grid-cols-2">
             {[1, 2].map((i) => (
-              <Card key={i}>
-                <CardHeader>
+              <div key={i} className="border rounded-lg p-4 space-y-3">
                   <Skeleton className="h-6 w-3/4" />
                   <Skeleton className="h-4 w-full mt-2" />
-                </CardHeader>
-                <CardContent>
                   <Skeleton className="h-10 w-full" />
-                </CardContent>
-              </Card>
+              </div>
             ))}
           </div>
         ) : userTeam && invitations ? (
@@ -170,7 +137,7 @@ export default function ChallengesPage() {
             invitations={invitations}
             teamId={userTeam.id}
             userId={user.uid}
-            onUpdate={refetchInvitations}
+            onUpdate={fetchInvitations}
           />
         ) : (
           <Alert>

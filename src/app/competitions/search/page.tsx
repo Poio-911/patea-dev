@@ -1,3 +1,4 @@
+
 'use client';
 
 import { PageHeader } from '@/components/page-header';
@@ -26,10 +27,11 @@ export default function SearchPage() {
     );
   }, [firestore, user?.activeGroupId]);
 
-  const { data: teams } = useCollection<GroupTeam>(teamsQuery);
+  const { data: teams, loading: teamsLoading } = useCollection<GroupTeam>(teamsQuery);
 
-  // Show auth/group errors immediately
-  if (userLoading) {
+  const loading = userLoading || teamsLoading;
+
+  if (loading) {
     return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 

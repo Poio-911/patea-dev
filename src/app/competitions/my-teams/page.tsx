@@ -1,3 +1,4 @@
+
 'use client';
 
 import { PageHeader } from '@/components/page-header';
@@ -8,8 +9,6 @@ import { useUser, useFirestore, useCollection } from '@/firebase';
 import { Loader2, Users } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { InvitationsSheet } from '@/components/invitations-sheet';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { MyTeamsAvailability } from '@/components/my-teams-availability';
 import { collection, query, where } from 'firebase/firestore';
 import { useMemo } from 'react';
@@ -29,9 +28,9 @@ export default function MyTeamsPage() {
   }, [firestore, user?.activeGroupId]);
 
   const { data: teams, loading: teamsLoading } = useCollection<GroupTeam>(teamsQuery);
+  const loading = userLoading || teamsLoading;
 
-  // Show auth/group errors immediately
-  if (userLoading) {
+  if (loading) {
     return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
@@ -84,24 +83,7 @@ export default function MyTeamsPage() {
           </h2>
         </div>
         {teamsLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <Card key={i}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="h-12 w-12 rounded-full" />
-                    <div className="flex-1">
-                      <Skeleton className="h-5 w-24" />
-                      <Skeleton className="h-3 w-16 mt-2" />
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-10 w-full" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+            <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
         ) : teams ? (
           <MyTeamsAvailability teams={teams} userId={user.uid} isActive={true} />
         ) : (
