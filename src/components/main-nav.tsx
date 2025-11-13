@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -45,11 +44,10 @@ import { isToday, parseISO } from 'date-fns';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// ✅ CORREGIDO: Nuevo orden de los ítems de navegación
 const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
   { href: '/players', label: 'Jugadores', icon: UserCircle },
-  { href: '#', label: 'Partidos', icon: Trophy, isMenu: true }, // Botón central como trigger
+  { href: '/matches', label: 'Partidos', icon: Trophy, isMenu: true }, 
   { href: '/groups', label: 'Grupos', icon: Users2 },
   { href: '/evaluations', label: 'Evaluar', icon: ClipboardCheck },
 ];
@@ -70,7 +68,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { toast } = useToast();
   const { setTheme, theme } = useTheme();
-  // ✅ NUEVO: Estado para el menú radial
   const [radialMenuOpen, setRadialMenuOpen] = React.useState(false);
 
   const { requestPermission } = useFcm();
@@ -355,11 +352,11 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                       className={cn(
                         'group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary',
                         isActive && 'text-primary font-semibold',
-                        item.isMenu && 'scale-125 transform -translate-y-2.5 bg-primary text-primary-foreground rounded-full shadow-lg'
+                        // ✅ CORRECCIÓN: Se eliminaron las clases que hacían el botón más grande
                       )}
                     >
-                      <Icon className={cn('h-5 w-5 transition-all duration-200', isActive && !item.isMenu && 'scale-110')} />
-                      {!item.isMenu && <span className="text-[10px] leading-none">{item.label}</span>}
+                      <Icon className={cn('h-5 w-5 transition-all duration-200', isActive && 'scale-110', radialMenuOpen && item.isMenu && 'color-cycle-animation')} />
+                       <span className="text-[10px] leading-none">{item.label}</span>
                       
                       {item.href === '/evaluations' && pendingEvaluationsCount > 0 && (
                           <span className="absolute top-1 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-white text-[10px] font-bold">
@@ -372,20 +369,18 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               </div>
           </nav>
             
-          {/* ✅ NUEVO: Menú Radial con Framer Motion */}
           <AnimatePresence>
             {radialMenuOpen && (
               <>
-                {/* Overlay oscuro */}
+                {/* ✅ CORRECCIÓN: Se eliminó el `backdrop-blur-sm` */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   onClick={() => setRadialMenuOpen(false)}
-                  className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+                  className="fixed inset-0 z-40 bg-black/60 md:hidden"
                 />
 
-                {/* Contenedor de los botones que giran */}
                 <div
                   aria-hidden="true"
                   className="fixed bottom-12 left-1/2 z-50 -translate-x-1/2 flex items-center justify-center"
@@ -396,7 +391,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                         { href: '/competitions', label: 'Torneos', icon: Swords, angle: 55 },
                     ].map(({ href, label, icon: Icon, angle }) => {
                         const angleInRads = (angle - 90) * (Math.PI / 180);
-                        const radius = 80; // Distancia desde el centro
+                        const radius = 80;
                         return (
                         <motion.div
                             key={href}
@@ -423,23 +418,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                     })}
                 </div>
 
-                 {/* Botón central de cierre */}
-                <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 md:hidden">
-                    <Button
-                        className="rounded-full w-16 h-16 bg-background border text-primary shadow-lg"
-                        onClick={() => setRadialMenuOpen(false)}
-                        aria-label="Cerrar menú de partidos"
-                    >
-                        <motion.div
-                            initial={{ rotate: -45, scale: 0 }}
-                            animate={{ rotate: 0, scale: 1 }}
-                            exit={{ rotate: 45, scale: 0 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <X className="h-6 w-6" />
-                        </motion.div>
-                    </Button>
-                </div>
+                {/* ✅ CORRECCIÓN: Se elimina el botón de cierre explícito (X), se vuelve a tocar el ícono central para cerrar. */}
               </>
             )}
           </AnimatePresence>
@@ -448,5 +427,3 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
-
-    
