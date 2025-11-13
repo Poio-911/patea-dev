@@ -42,14 +42,13 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           if (userDoc.exists()) {
              const userData = userDoc.data() as UserProfile;
 
-             // ✅ FIX: The local firebaseUser object can be stale. Create a new object with the latest data.
-             // This ensures that changes to photoURL or displayName are reflected everywhere immediately.
+             // ✅ FIX: Start with Firestore data and overwrite with fresh auth data.
+             // This prevents duplicate property errors.
              const freshUserProfile: UserProfile = {
-                // uid is already in userData, so we don't need to specify it again.
+                ...userData, // Firestore data has priority (e.g. activeGroupId, uid)
                 email: firebaseUser.email,
                 displayName: firebaseUser.displayName,
                 photoURL: firebaseUser.photoURL,
-                ...userData, // Firestore data has priority (e.g. activeGroupId, uid)
              };
 
              // --- DATA REPAIR & CREDIT RESET LOGIC ---
