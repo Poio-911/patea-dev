@@ -30,7 +30,11 @@
       "X-Goog-Resumable",
       "X-Goog-Upload-Command",
       "X-Goog-Upload-Protocol",
-      "x-firebase-gmpid"
+      "x-firebase-gmpid",
+      "Access-Control-Allow-Origin",
+      "Access-Control-Allow-Methods",
+      "Access-Control-Allow-Headers",
+      "Access-Control-Expose-Headers"
     ],
     "maxAgeSeconds": 3600
   }

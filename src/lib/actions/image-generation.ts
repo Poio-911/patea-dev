@@ -102,3 +102,55 @@ export async function generatePlayerCardImageAction(userId: string) {
     return { error: error.message || "Un error inesperado ocurrió en el servidor." };
   }
 }
+
+/**
+ * Convierte una URL de Firebase Storage a base64 (data URI)
+ * Esto evita problemas de CORS al cargar imágenes para cropear
+ */
+export async function convertStorageUrlToBase64(storageUrl: string): Promise<{ success?: boolean; dataUri?: string; error?: string }> {
+  try {
+    if (!storageUrl) {
+      return { error: 'URL no proporcionada' };
+    }
+
+    // Si ya es un data URI, devolverlo directamente
+    if (storageUrl.startsWith('data:')) {
+      return { success: true, dataUri: storageUrl };
+    }
+
+    const url = new URL(storageUrl);
+
+    // Función para extraer el path del archivo desde la URL
+    function extractFilePath(u: URL): string {
+      const oIndex = u.pathname.indexOf('/o/');
+      if (oIndex !== -1) {
+        // Formato v0: https://firebasestorage.googleapis.com/v0/b/<bucket>/o/<encodedPath>?alt=media
+        return decodeURIComponent(u.pathname.substring(oIndex + 3));
+      }
+      // Formato storage.googleapis.com: https://storage.googleapis.com/<bucket>/<rawPath>
+      const parts = u.pathname.split('/').filter(Boolean);
+      if (parts.length >= 2) {
+        return decodeURIComponent(parts.slice(1).join('/'));
+      }
+      throw new Error('No se pudo extraer la ruta del archivo de la URL.');
+    }
+
+    const filePath = extractFilePath(url);
+    const file = adminStorage.file(filePath);
+
+    // Descargar la imagen desde Storage
+    const [imageBuffer] = await file.download();
+
+    // Detectar el tipo MIME desde los metadatos o usar jpeg por defecto
+    const [metadata] = await file.getMetadata();
+    const contentType = metadata.contentType || 'image/jpeg';
+
+    // Convertir a base64
+    const dataUri = `data:${contentType};base64,${imageBuffer.toString('base64')}`;
+
+    return { success: true, dataUri };
+  } catch (error: any) {
+    logger.error('Error converting storage URL to base64', error);
+    return { error: error.message || 'No se pudo convertir la imagen.' };
+  }
+}

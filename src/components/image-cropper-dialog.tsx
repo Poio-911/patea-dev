@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,7 @@ import { doc, writeBatch } from 'firebase/firestore';
 import { Loader2, Upload, Scissors } from 'lucide-react';
 import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { convertStorageUrlToBase64 } from '@/lib/actions/image-generation';
 
 interface ImageCropperDialogProps {
   player: {
@@ -72,6 +73,7 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [isUploading, setIsUploading] = useState(false);
+  const [isLoadingImage, setIsLoadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const { user } = useUser();
@@ -89,14 +91,42 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
   
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
-    if (isOpen) {
-        setImgSrc(player.photoUrl || '');
-    } else {
-        setImgSrc('');
-        setCrop(undefined);
-        setCompletedCrop(undefined);
+    if (!isOpen) {
+      setImgSrc('');
+      setCrop(undefined);
+      setCompletedCrop(undefined);
     }
-  }
+  };
+
+  // ✅ Cargar la imagen existente cuando se abre el diálogo
+  useEffect(() => {
+    if (open && player.photoUrl) {
+      setIsLoadingImage(true);
+      convertStorageUrlToBase64(player.photoUrl)
+        .then((result) => {
+          if (result.success && result.dataUri) {
+            setImgSrc(result.dataUri);
+          } else {
+            toast({
+              variant: 'destructive',
+              title: 'Error al cargar imagen',
+              description: result.error || 'No se pudo cargar la imagen actual.',
+            });
+          }
+        })
+        .catch((error) => {
+          console.error('Error loading image:', error);
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Hubo un problema al cargar tu foto actual.',
+          });
+        })
+        .finally(() => {
+          setIsLoadingImage(false);
+        });
+    }
+  }, [open, player.photoUrl]);
 
   const handleSaveCrop = async () => {
     if (!completedCrop || !imgRef.current) {
@@ -170,7 +200,12 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
           </DialogDescription>
         </DialogHeader>
         <div className="flex justify-center items-center bg-muted/50 p-4 rounded-md">
-          {imgSrc ? (
+          {isLoadingImage ? (
+            <div className="h-64 flex flex-col items-center justify-center text-muted-foreground">
+              <Loader2 className="h-10 w-10 mb-2 animate-spin" />
+              <p>Cargando imagen...</p>
+            </div>
+          ) : imgSrc ? (
             <ReactCrop
               crop={crop}
               onChange={(_, percentCrop) => setCrop(percentCrop)}
@@ -183,7 +218,6 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
                 src={imgSrc}
                 alt="Crop preview"
                 style={{ maxHeight: '60vh' }}
-                crossOrigin="anonymous" 
               />
             </ReactCrop>
           ) : (
@@ -205,7 +239,7 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
                 type="button"
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
+                disabled={isUploading || isLoadingImage}
             >
                 <Upload className="mr-2 h-4 w-4" />
                 Subir Nueva Foto
@@ -213,7 +247,7 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
             <Button
                 type="button"
                 onClick={handleSaveCrop}
-                disabled={!completedCrop || isUploading}
+                disabled={!completedCrop || isUploading || isLoadingImage}
             >
                 {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Scissors className="mr-2 h-4 w-4" />}
                 {isUploading ? 'Guardando...' : 'Guardar Recorte'}

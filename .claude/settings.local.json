@@ -32,7 +32,9 @@
       "Bash(firebase projects:list:*)",
       "WebFetch(domain:dribbble.com)",
       "WebFetch(domain:medium.com)",
-      "WebFetch(domain:www.espnfrontrow.com)"
+      "WebFetch(domain:www.espnfrontrow.com)",
+      "Bash(gsutil cors set:*)",
+      "Bash(gcloud storage buckets update:*)"
     ],
     "deny": [],
     "ask": []
