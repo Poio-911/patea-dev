@@ -58,14 +58,13 @@ export function CompetitionCard({
   const content = (
     <div
       className={cn(
-        'relative overflow-hidden rounded-xl p-6 h-full min-h-[200px]',
+        'group relative overflow-hidden rounded-xl p-6 h-full min-h-[200px] flex flex-col',
         'champions-glass champions-hover',
         styles.gradient,
         styles.border,
         disabled && 'opacity-50 pointer-events-none'
       )}
     >
-      {/* Header con icono y badge */}
       <div className="flex items-start justify-between mb-4">
         <div className={cn('p-3 rounded-lg bg-background/50', styles.icon)}>
           <Icon className="h-8 w-8" />
@@ -77,17 +76,15 @@ export function CompetitionCard({
         )}
       </div>
 
-      {/* Contenido */}
-      <div className="space-y-2 mb-4">
+      <div className="space-y-2 flex-grow">
         <h3 className="text-xl font-bold tracking-tight">{title}</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
           {description}
         </p>
       </div>
 
-      {/* Stats opcionales */}
       {stats && stats.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="grid grid-cols-2 gap-3 mt-4">
           {stats.map((stat, index) => (
             <div
               key={index}
@@ -99,10 +96,9 @@ export function CompetitionCard({
           ))}
         </div>
       )}
-
-      {/* Arrow indicator */}
+      
       {!disabled && (
-          <div className="absolute bottom-6 right-6 opacity-50 group-hover:opacity-100 transition-opacity">
+          <div className="absolute bottom-4 right-4 text-muted-foreground opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-transform">
             <ArrowRight className="h-5 w-5" />
           </div>
       )}
