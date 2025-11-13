@@ -125,7 +125,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     weatherIcon={WeatherIcon ?? undefined}
                     isOwner={permissions.isOwner}
                     isUserInMatch={permissions.isUserInMatch}
-                    isMatchFull={match.players.length >= match.matchSize}
+                    isMatchFull={(match.players?.length || 0) >= match.matchSize}
                     isJoining={actions.isJoining}
                     onJoinOrLeave={actions.handleJoinOrLeave}
                 />
