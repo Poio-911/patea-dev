@@ -45,11 +45,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
              // ✅ FIX: The local firebaseUser object can be stale. Create a new object with the latest data.
              // This ensures that changes to photoURL or displayName are reflected everywhere immediately.
              const freshUserProfile: UserProfile = {
-                uid: firebaseUser.uid,
+                // uid is already in userData, so we don't need to specify it again.
                 email: firebaseUser.email,
                 displayName: firebaseUser.displayName,
                 photoURL: firebaseUser.photoURL,
-                ...userData, // Firestore data has priority (e.g. activeGroupId)
+                ...userData, // Firestore data has priority (e.g. activeGroupId, uid)
              };
 
              // --- DATA REPAIR & CREDIT RESET LOGIC ---
