@@ -53,7 +53,7 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
       } else {
         toast({
           title: 'Error',
-          description: ('error' in result && result.error) || 'No se pudo aceptar el desafío.',
+          description: (result && 'error' in result && result.error) || 'No se pudo aceptar el desafío.',
           variant: 'destructive',
         });
       }
@@ -63,7 +63,7 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
   const handleReject = () => {
     startTransition(async () => {
       const result = await rejectTeamChallengeAction(invitation.id, teamId, userId);
-      if (result.success) {
+      if ('success' in result && result.success) {
         setIsExiting(true);
         toast({
           title: 'Desafío rechazado',
@@ -75,7 +75,7 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
       } else {
         toast({
           title: 'Error',
-          description: result.error || 'No se pudo rechazar el desafío.',
+          description: (result && 'error' in result && result.error) || 'No se pudo rechazar el desafío.',
           variant: 'destructive',
         });
       }
