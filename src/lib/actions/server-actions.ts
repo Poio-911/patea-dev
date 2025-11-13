@@ -339,7 +339,7 @@ export async function generateMatchChronicleAction(matchId: string) {
             .slice(0, 5)
             .map(e => ({
                 minute: Math.floor(Math.random() * 85) + 5,
-                type: 'KeyPlay',
+                type: 'KeyPlay' as const,
                 playerName: playersMap.get(e.playerId) || 'Un jugador',
                 description: e.performanceTags![0].description,
             }));
@@ -533,6 +533,10 @@ export async function challengeTeamPostAction(
     } catch (error: any) {
         return handleServerActionError(error);
     }
+}
+
+function getAdminInstances() {
+    return { adminDb };
 }
 
 export async function acceptTeamChallengeAction(invitationId: string, teamId: string, userId: string) {
