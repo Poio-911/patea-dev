@@ -232,13 +232,19 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
 
     const recentEvaluations = evaluations.slice(0, 15).map(e => {
         const selfEval = selfEvalsByMatchId.get(e.matchId);
+        
+        // ✅ FIX: Ensure tags are valid objects with 'name' and 'impact' before sending to AI.
+        const validTags = (e.performanceTags || [])
+          .filter(tag => tag && typeof tag === 'object' && tag.name && tag.impact)
+          .map(tag => ({
+            name: tag.name,
+            impact: tag.impact,
+          }));
+
         return {
             matchDate: e.evaluatedAt || new Date().toISOString(),
             rating: e.rating,
-            performanceTags: (e.performanceTags || []).map((tag: any) => ({
-                name: tag.name,
-                impact: tag.impact,
-            })),
+            performanceTags: validTags,
             goals: selfEval?.goals || 0,
         };
     });
@@ -350,7 +356,6 @@ export async function generateMatchChronicleAction(matchId: string) {
 
         const playersMap = new Map(match.players.map(p => [p.uid, p.displayName]));
         
-        // Base events from performance tags (if any)
         const keyEvents = evaluations
             .filter(e => Array.isArray(e.performanceTags) && e.performanceTags.length > 0)
             .sort(() => 0.5 - Math.random())
@@ -366,7 +371,6 @@ export async function generateMatchChronicleAction(matchId: string) {
                 };
             });
 
-        // Fallback enrichment when we have too few tag-based events
         const enrichedEvents = [...keyEvents];
         const usedMinutes = new Set(enrichedEvents.map(e => e.minute));
 
@@ -381,7 +385,6 @@ export async function generateMatchChronicleAction(matchId: string) {
             return m;
         }
 
-        // Add goal events if missing (prioritize top scorers)
         if (enrichedEvents.length < 3) {
             const goalEntries = Object.entries(goalsByPlayer)
                 .filter(([, g]) => g > 0)
@@ -402,7 +405,6 @@ export async function generateMatchChronicleAction(matchId: string) {
             }
         }
 
-        // Add high rating highlights if still fewer than 3 events
         if (enrichedEvents.length < 3) {
             const ratedEvals = evaluations
                 .filter(e => typeof e.rating === 'number' && e.rating && e.rating >= 7)
@@ -419,7 +421,6 @@ export async function generateMatchChronicleAction(matchId: string) {
             }
         }
 
-        // Final safety: if still empty, synthesize a neutral event
         if (enrichedEvents.length === 0) {
             enrichedEvents.push({
                 minute: randomMinute(),
@@ -482,7 +483,6 @@ export async function generateMatchChronicleAction(matchId: string) {
 
 export async function generateDuoImageAction(input: GenerateDuoImageInput) {
     try {
-        // Convertir las URLs de Firebase Storage a base64 usando el método del servidor
         const { convertStorageUrlToBase64 } = await import('./image-generation');
         
         const player1Result = await convertStorageUrlToBase64(input.player1PhotoUrl);
@@ -490,7 +490,7 @@ export async function generateDuoImageAction(input: GenerateDuoImageInput) {
             throw new Error(player1Result.error || 'No se pudo procesar la foto del primer jugador.');
         }
         
-        let player2DataUri = player1Result.dataUri; // Por defecto, usar la misma foto para imagen individual
+        let player2DataUri = player1Result.dataUri;
         
         if (input.player2PhotoUrl && input.player2PhotoUrl !== input.player1PhotoUrl) {
             const player2Result = await convertStorageUrlToBase64(input.player2PhotoUrl);
@@ -500,7 +500,6 @@ export async function generateDuoImageAction(input: GenerateDuoImageInput) {
             player2DataUri = player2Result.dataUri;
         }
         
-        // Generar la imagen usando las funciones base64 convertidas
         const imageUrl = await generateDuoImage(
             player1Result.dataUri,
             player2DataUri,
@@ -536,7 +535,6 @@ export async function createTeamAvailabilityPostAction(
 
         const team = { id: teamSnap.id, ...teamSnap.data() } as GroupTeam;
 
-        // Verify user is the owner
         if (team.createdBy !== userId) {
             throw createError(ErrorCodes.AUTH_INSUFFICIENT_PERMISSIONS, { userId, teamId });
         }
@@ -703,7 +701,9 @@ export async function acceptTeamChallengeAction(invitationId: string, teamId: st
         throw createError(ErrorCodes.AUTH_INSUFFICIENT_PERMISSIONS);
       }
 
-      let matchDate, matchTime, matchLocation;
+      let matchDate: string = new Date().toISOString().split('T')[0];
+      let matchTime: string = '19:00';
+      let matchLocation: MatchLocation = { name: 'A confirmar', address: '', lat: 0, lng: 0, placeId: '' };
       
       if (invitation.postId) {
         const postRef = adminDb.doc(`teamAvailabilityPosts/${invitation.postId}`);
@@ -720,14 +720,14 @@ export async function acceptTeamChallengeAction(invitationId: string, teamId: st
       const matchRef = adminDb.collection('matches').doc();
       const newMatch: Omit<Match, 'id'> = {
         title: `${team1Data.name} vs ${team2Data.name}`,
-        date: matchDate!,
-        time: matchTime!,
-        location: matchLocation!,
+        date: matchDate,
+        time: matchTime,
+        location: matchLocation,
         type: 'intergroup_friendly',
-        matchSize: 22, // Default, can be adjusted
-        players: [], // Will be populated from teams
-        playerUids: [], // Will be populated from teams
-        teams: [], // Will be populated from teams
+        matchSize: 22,
+        players: [],
+        playerUids: [],
+        teams: [],
         status: 'upcoming',
         ownerUid: team1Data.createdBy,
         groupId: team1Data.groupId,
@@ -805,6 +805,56 @@ export async function deleteTeamAvailabilityPostAction(postId: string, userId: s
         await postRef.delete();
         return { success: true };
     } catch(error) {
+        return handleServerActionError(error);
+    }
+}
+export async function sendTeamChallengeAction(challengingTeamId: string, challengedTeamId: string, challengerUserId: string) {
+    try {
+        const { adminDb } = getAdminInstances();
+        const batch = adminDb.batch();
+
+        const [challengingTeamSnap, challengedTeamSnap] = await Promise.all([
+            adminDb.doc(`teams/${challengingTeamId}`).get(),
+            adminDb.doc(`teams/${challengedTeamId}`).get(),
+        ]);
+        
+        if (!challengingTeamSnap.exists || !challengedTeamSnap.exists) {
+            throw createError(ErrorCodes.DATA_NOT_FOUND, { challengingTeamId, challengedTeamId });
+        }
+        
+        const challengingTeam = { id: challengingTeamSnap.id, ...challengingTeamSnap.data() } as GroupTeam;
+        const challengedTeam = { id: challengedTeamSnap.id, ...challengedTeamSnap.data() } as GroupTeam;
+        
+        const invitationRef = adminDb.collection(`teams/${challengedTeam.id}/invitations`).doc();
+        const newInvitation: Omit<Invitation, 'id'> = {
+            type: 'team_challenge',
+            fromTeamId: challengingTeam.id,
+            fromTeamName: challengingTeam.name,
+            fromTeamJersey: challengingTeam.jersey,
+            toTeamId: challengedTeam.id,
+            toTeamName: challengedTeam.name,
+            toTeamJersey: challengedTeam.jersey,
+            status: 'pending',
+            createdBy: challengerUserId,
+            createdAt: new Date().toISOString(),
+        };
+        batch.set(invitationRef, newInvitation);
+        
+        const notificationRef = adminDb.collection(`users/${challengedTeam.createdBy}/notifications`).doc();
+        const notification: Omit<Notification, 'id'> = {
+            type: 'match_invite',
+            title: '¡Nuevo Desafío!',
+            message: `El equipo "${challengingTeam.name}" te ha desafiado a un amistoso.`,
+            link: '/competitions/challenges',
+            isRead: false,
+            createdAt: new Date().toISOString(),
+        };
+        batch.set(notificationRef, notification);
+
+        await batch.commit();
+
+        return { success: true };
+    } catch (error: any) {
         return handleServerActionError(error);
     }
 }
