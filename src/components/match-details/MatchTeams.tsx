@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { Match, Team, Player } from '@/lib/types';
+import type { Match, Team, Player, PlayerPosition } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,18 +20,11 @@ interface MatchTeamsProps {
   onShuffle: () => void;
 }
 
-const positionBadgeStyles: Record<Player['position'], string> = {
+const positionBadgeStyles: Record<PlayerPosition, string> = {
   DEL: 'bg-gradient-to-r from-red-500 to-orange-500 text-white border-red-300/50 shadow-lg shadow-red-500/25',
   MED: 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-blue-300/50 shadow-lg shadow-blue-500/25',
   DEF: 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-green-300/50 shadow-lg shadow-green-500/25',
   POR: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-purple-300/50 shadow-lg shadow-purple-500/25',
-};
-
-const ovrStyles = (ovr: number): string => {
-  if (ovr >= 85) return 'text-yellow-400 font-black text-lg drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]';
-  if (ovr >= 75) return 'text-green-400 font-bold text-lg drop-shadow-[0_0_6px_rgba(34,197,94,0.4)]';
-  if (ovr >= 65) return 'text-blue-400 font-semibold text-lg drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]';
-  return 'text-gray-400 font-medium text-lg';
 };
 
 export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeamsProps) => {
@@ -109,7 +102,7 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
                             <div className="flex items-center gap-3 flex-1 min-w-0">
                                 {team.jersey && (
                                     <div className="w-12 h-12 flex-shrink-0">
-                                        <JerseyPreview jersey={team.jersey} />
+                                        <JerseyPreview jersey={team.jersey} size="sm"/>
                                     </div>
                                 )}
                                 <div className="flex-1 min-w-0">
