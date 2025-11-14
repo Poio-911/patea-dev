@@ -32,7 +32,7 @@ export async function generatePlayerCardImageAction(userId: string) {
       return { error: 'La generación de imágenes no funciona con fotos de marcador de posición. Por favor, sube una foto tuya real.' };
     }
     
-    // ✅ PASO 1: Descargar la imagen directamente desde Firebase Storage en el servidor.
+    // Convert current photo to data URI to send to AI
     const url = new URL(player.photoUrl);
     function extractFilePath(u: URL): string {
       const oIndex = u.pathname.indexOf('/o/');
@@ -51,9 +51,10 @@ export async function generatePlayerCardImageAction(userId: string) {
     const [imageBuffer] = await file.download();
     const photoDataUri = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
 
-    // ✅ PASO 2: Llamar al flujo de IA con el Data URI.
+    // Call AI flow
     const generatedImageDataUri = await generatePlayerCardImage(photoDataUri);
 
+    // Upload new image to storage
     const generatedImageBuffer = Buffer.from(generatedImageDataUri.split(',')[1], 'base64');
     const newFilePath = `profile-images/${userId}/generated_${Date.now()}.png`;
     const newFile = adminStorage.file(newFilePath);
@@ -62,17 +63,18 @@ export async function generatePlayerCardImageAction(userId: string) {
       metadata: { contentType: 'image/png' },
     });
     
-  await newFile.makePublic();
-  const newPhotoURL = buildPublicFileURL(newFilePath);
+    await newFile.makePublic();
+    const newPhotoURL = buildPublicFileURL(newFilePath);
 
+    // Update Firestore and Auth in a batch
     const batch = adminDb.batch();
     const userRef = adminDb.doc(`users/${userId}`);
     batch.update(userRef, { photoURL: newPhotoURL });
     batch.update(playerRef, {
       photoUrl: newPhotoURL,
       cardGenerationCredits: FieldValue.increment(-1),
-      cropPosition: { x: 50, y: 50 },
-      cropZoom: 1,
+      cropPosition: { x: 50, y: 50 }, // Reset crop to center the new image
+      cropZoom: 1, // Reset zoom
     });
 
     const availablePlayerRef = adminDb.doc(`availablePlayers/${userId}`);
@@ -82,8 +84,8 @@ export async function generatePlayerCardImageAction(userId: string) {
     }
 
     await batch.commit();
-    // ✅ PASO 3: Actualizar el perfil de autenticación.
-    // Esto fuerza a que el onAuthStateChanged del cliente reciba el cambio inmediatamente.
+
+    // Force update auth user profile for immediate UI change on client
     await adminAuth.updateUser(userId, { photoURL: newPhotoURL });
 
     return { success: true, newPhotoURL };
