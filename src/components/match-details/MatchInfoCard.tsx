@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -134,7 +135,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
                   aria-label="Compartir partido por WhatsApp"
                 >
                   <WhatsAppIcon className="mr-2 h-4 w-4" />
-                  Compartir Partido
+                  Compartir
                 </a>
               </Button>
             )}

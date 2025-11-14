@@ -141,7 +141,7 @@ export function UserGroupsList() {
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" onClick={(e) => e.preventDefault()}>
                      <EditGroupDialog group={group}>
                         <DropdownMenuItem onSelect={e => e.preventDefault()}>
                             <Edit className="mr-2 h-4 w-4"/> Editar
