@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -85,7 +86,7 @@ export function LeagueCard({ league, matches = [], standings = [] }: LeagueCardP
             <div className="flex items-center gap-3 p-3 rounded-md bg-muted/30 border">
               <Trophy className="h-4 w-4 text-yellow-600 shrink-0" />
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <JerseyPreview jersey={leader.teamJersey} size="xs" />
+                <JerseyPreview jersey={leader.teamJersey} size="sm" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate">{leader.teamName}</p>
                   <p className="text-xs text-muted-foreground">{leader.points} pts</p>
