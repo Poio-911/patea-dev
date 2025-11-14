@@ -13,6 +13,8 @@ export type PlayerStats = {
   goals: number;
   assists: number;
   averageRating: number;
+  yellowCards?: number;
+  redCards?: number;
 };
 
 export type OvrHistory = {
@@ -70,7 +72,7 @@ export type AvailablePlayer = {
 
 
 export type MatchStatus = 'upcoming' | 'active' | 'completed' | 'evaluated';
-export type MatchType = 'manual' | 'collaborative' | 'by_teams' | 'intergroup_friendly' | 'league' | 'cup';
+export type MatchType = 'manual' | 'collaborative' | 'by_teams' | 'intergroup_friendly' | 'league' | 'cup' | 'league_final';
 export type MatchSize = 10 | 14 | 22;
 
 export type MatchLocation = {
@@ -80,6 +82,21 @@ export type MatchLocation = {
     lng: number;
     placeId: string;
 }
+
+export type MatchGoalScorer = {
+  playerId: string;
+  playerName: string;
+  teamId: string;
+};
+
+export type CardType = 'yellow' | 'red';
+
+export type MatchCard = {
+  playerId: string;
+  playerName: string;
+  teamId: string;
+  cardType: CardType;
+};
 
 export type TeamFormation = {
   [key: string]: { x: number, y: number } // player.uid -> {x, y} percentage coordinates
@@ -106,15 +123,17 @@ export type Match = {
     temperature: number;
   };
   chronicle?: string; // AI-generated match summary
-  startTimestamp?: string; 
+  startTimestamp?: string;
   participantTeamIds?: string[];
-  createdAt?: string; 
-  finalScore?: { team1: number; team2: number } | null; 
+  createdAt?: string;
+  finalScore?: { team1: number; team2: number } | null;
   finalizedAt?: string | null;
   leagueInfo?: {
     leagueId: string;
     round: number;
   };
+  goalScorers?: MatchGoalScorer[]; // Individual goal scorers
+  cards?: MatchCard[]; // Yellow and red cards
 } & DocumentData;
 
 export type Team = {
@@ -136,6 +155,7 @@ export type Team = {
   };
   jersey?: Jersey;
   formation?: TeamFormation;
+  finalScore?: number; // Score for this team in the match
 };
 
 export type JerseyType = 'plain' | 'vertical' | 'band' | 'chevron' | 'thirds' | 'lines';
@@ -375,6 +395,14 @@ export type League = {
   matchDayOfWeek?: number; // 0-6 (Sunday-Saturday)
   matchTime?: string; // HH:mm format
   defaultLocation?: Location; // Default location for matches
+  // Champion and tiebreaker
+  championTeamId?: string;
+  championTeamName?: string;
+  runnerUpTeamId?: string;
+  runnerUpTeamName?: string;
+  completedAt?: string; // ISO date when league was completed
+  requiresTiebreaker?: boolean; // If final match needed
+  finalMatchId?: string; // Reference to tiebreaker match
 } & DocumentData;
 
 // League standings/statistics
@@ -405,6 +433,18 @@ export type LeagueTeamStats = {
   goalsAgainst: number;
   cleanSheets: number; // Partidos sin goles en contra
   topScorers: Array<{ playerId: string; playerName: string; goals: number }>;
+};
+
+// Player statistics in a specific league
+export type LeaguePlayerStats = {
+  playerId: string;
+  playerName: string;
+  teamId: string;
+  teamName: string;
+  matchesPlayed: number;
+  goals: number;
+  yellowCards: number;
+  redCards: number;
 };
 
 export type Cup = {

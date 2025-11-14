@@ -13,6 +13,8 @@ import { LeagueHeader } from '@/components/leagues/LeagueHeader';
 import { LeagueStandingsTable } from '@/components/leagues/LeagueStandingsTable';
 import { LeagueFixture } from '@/components/leagues/LeagueFixture';
 import { MatchScheduleDialog } from '@/components/leagues/MatchScheduleDialog';
+import { ChampionCelebration } from '@/components/leagues/ChampionCelebration';
+import { LeagueTopScorers } from '@/components/leagues/LeagueTopScorers';
 import { calculateLeagueStandings, getCurrentRound } from '@/lib/utils/league-standings';
 import { updateLeagueStatusAction, deleteLeagueAction } from '@/lib/actions/server-actions';
 import { useToast } from '@/hooks/use-toast';
@@ -29,7 +31,7 @@ import {
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-type LeagueTab = 'standings' | 'fixture' | 'teams';
+type LeagueTab = 'standings' | 'fixture' | 'teams' | 'scorers';
 
 export default function LeagueDetailPage() {
   const { id: leagueId } = useParams();
@@ -208,6 +210,16 @@ export default function LeagueDetailPage() {
         onDeleteLeague={() => setShowDeleteDialog(true)}
       />
 
+      {/* Champion Celebration */}
+      {league.status === 'completed' && league.championTeamId && (
+        <ChampionCelebration
+          championName={league.championTeamName || 'Campeón'}
+          championJersey={teams?.find(t => t.id === league.championTeamId)?.jersey}
+          runnerUpName={league.runnerUpTeamName || 'Subcampeón'}
+          runnerUpJersey={teams?.find(t => t.id === league.runnerUpTeamId)?.jersey}
+        />
+      )}
+
       {/* Tab Content */}
       {activeTab === 'standings' && (
         <LeagueStandingsTable standings={standings} />
@@ -221,6 +233,10 @@ export default function LeagueDetailPage() {
           leagueId={league.id}
           onEditMatch={handleEditMatch}
         />
+      )}
+
+      {activeTab === 'scorers' && matches && (
+        <LeagueTopScorers matches={matches} />
       )}
 
       {activeTab === 'teams' && teams && (

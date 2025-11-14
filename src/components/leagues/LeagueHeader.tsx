@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeft, Play, Trophy, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type LeagueTab = 'standings' | 'fixture' | 'teams';
+type LeagueTab = 'standings' | 'fixture' | 'teams' | 'scorers';
 
 type LeagueHeaderProps = {
   league: League;
@@ -106,6 +106,7 @@ export function LeagueHeader({
         <TabsList>
           <TabsTrigger value="standings">Tabla de Posiciones</TabsTrigger>
           <TabsTrigger value="fixture">Fixture</TabsTrigger>
+          <TabsTrigger value="scorers">Goleadores</TabsTrigger>
           <TabsTrigger value="teams">Equipos</TabsTrigger>
         </TabsList>
       </Tabs>

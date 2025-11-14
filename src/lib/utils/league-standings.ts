@@ -188,3 +188,135 @@ export function getNextMatchForTeam(matches: Match[], teamId: string): Match | u
     )
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
 }
+
+/**
+ * Calculate head-to-head record between two teams
+ * @param matches - All league matches (completed only)
+ * @param team1Id - First team ID
+ * @param team2Id - Second team ID
+ * @returns Object with wins for each team and goal difference
+ */
+function calculateHeadToHead(matches: Match[], team1Id: string, team2Id: string) {
+  const h2hMatches = matches.filter(match => {
+    if (!match.participantTeamIds || match.participantTeamIds.length !== 2) return false;
+    if (match.status !== 'completed' && match.status !== 'evaluated') return false;
+    const ids = match.participantTeamIds;
+    return (ids[0] === team1Id && ids[1] === team2Id) ||
+           (ids[0] === team2Id && ids[1] === team1Id);
+  });
+
+  let team1Wins = 0;
+  let team2Wins = 0;
+  let team1Goals = 0;
+  let team2Goals = 0;
+
+  h2hMatches.forEach(match => {
+    const team1Index = match.participantTeamIds![0] === team1Id ? 0 : 1;
+    const team2Index = team1Index === 0 ? 1 : 0;
+
+    const team1Score = match.teams![team1Index].finalScore ?? 0;
+    const team2Score = match.teams![team2Index].finalScore ?? 0;
+
+    team1Goals += team1Score;
+    team2Goals += team2Score;
+
+    if (team1Score > team2Score) {
+      team1Wins++;
+    } else if (team2Score > team1Score) {
+      team2Wins++;
+    }
+  });
+
+  return {
+    team1Wins,
+    team2Wins,
+    team1Goals,
+    team2Goals,
+    team1GoalDiff: team1Goals - team2Goals,
+  };
+}
+
+/**
+ * Determine the champion and runner-up from final standings
+ * @param standings - Sorted array of league standings
+ * @param matches - All completed league matches
+ * @returns Object with champion info and whether a tiebreaker is needed
+ */
+export function determineChampion(
+  standings: LeagueStanding[],
+  matches: Match[]
+): {
+  championId: string;
+  championName: string;
+  runnerUpId: string;
+  runnerUpName: string;
+  requiresTiebreaker: boolean;
+} | null {
+  if (standings.length < 2) return null;
+
+  const first = standings[0];
+  const second = standings[1];
+
+  // If clear winner (different points), no tiebreaker needed
+  if (first.points !== second.points) {
+    return {
+      championId: first.teamId,
+      championName: first.teamName,
+      runnerUpId: second.teamId,
+      runnerUpName: second.teamName,
+      requiresTiebreaker: false,
+    };
+  }
+
+  // Teams are tied on points, check head-to-head
+  const h2h = calculateHeadToHead(matches, first.teamId, second.teamId);
+
+  // If one team has more wins in head-to-head, they win
+  if (h2h.team1Wins > h2h.team2Wins) {
+    return {
+      championId: first.teamId,
+      championName: first.teamName,
+      runnerUpId: second.teamId,
+      runnerUpName: second.teamName,
+      requiresTiebreaker: false,
+    };
+  } else if (h2h.team2Wins > h2h.team1Wins) {
+    return {
+      championId: second.teamId,
+      championName: second.teamName,
+      runnerUpId: first.teamId,
+      runnerUpName: first.teamName,
+      requiresTiebreaker: false,
+    };
+  }
+
+  // If head-to-head is also tied, check head-to-head goal difference
+  if (h2h.team1GoalDiff !== 0) {
+    if (h2h.team1GoalDiff > 0) {
+      return {
+        championId: first.teamId,
+        championName: first.teamName,
+        runnerUpId: second.teamId,
+        runnerUpName: second.teamName,
+        requiresTiebreaker: false,
+      };
+    } else {
+      return {
+        championId: second.teamId,
+        championName: second.teamName,
+        runnerUpId: first.teamId,
+        runnerUpName: first.teamName,
+        requiresTiebreaker: false,
+      };
+    }
+  }
+
+  // Complete tie - need a final match
+  return {
+    championId: first.teamId, // Temporary, will be determined by final
+    championName: first.teamName,
+    runnerUpId: second.teamId,
+    runnerUpName: second.teamName,
+    requiresTiebreaker: true,
+  };
+}
