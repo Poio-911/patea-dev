@@ -17,9 +17,10 @@ import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '@/
 import { type GenerateMatchChronicleOutput, type GenerateMatchChronicleInput } from '@/lib/types';
 import { generateMatchChronicleFlow } from '@/ai/flows/generate-match-chronicle';
 import { generateDuoImage } from '@/ai/flows/generate-duo-image';
-import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, MatchLocation, GenerateDuoImageInput, League, LeagueFormat } from '../types';
+import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, MatchLocation, GenerateDuoImageInput, League, LeagueFormat, CompetitionStatus } from '../types';
 import { logger } from '../logger';
 import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse, type ErrorResponse } from '../errors';
+import { addDays, format } from 'date-fns';
 
 // --- Server Actions ---
 
@@ -849,7 +850,7 @@ export async function createLeagueAction(
         matchFrequency: 'weekly' | 'biweekly' | 'custom';
         matchDayOfWeek: number;
         matchTime: string;
-        defaultLocation?: Location;
+        defaultLocation?: MatchLocation;
     },
     logoUrl?: string
 ): Promise<{ success: boolean; leagueId?: string; error?: string }> {
@@ -1049,7 +1050,7 @@ export async function updateMatchDateAction(
     matchId: string,
     date: string,
     time: string,
-    location?: Location
+    location?: MatchLocation
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const { adminDb } = getAdminInstances();
@@ -1073,5 +1074,4 @@ export async function updateMatchDateAction(
     }
 }
 
-
-
+  
