@@ -1,7 +1,8 @@
+
 'use server';
 
 import { adminDb as db } from '@/firebase/admin-init';
-import type { League, Match, GroupTeam, MatchLocation } from '@/lib/types';
+import type { League, Match, GroupTeam, MatchLocation, Player } from '@/lib/types';
 import { calculateLeagueStandings, determineChampion } from '@/lib/utils/league-standings';
 import { addDays, format } from 'date-fns';
 
@@ -159,7 +160,7 @@ async function createTiebreakerMatch(
   const players = playersSnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data(),
-  }));
+  })) as Player[];
 
   // Build team1 players array
   const team1Players = team1.members.map(member => {
