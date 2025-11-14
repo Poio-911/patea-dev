@@ -8,10 +8,10 @@ import { cn } from '@/lib/utils';
 import { DelIcon, MedIcon, DefIcon, PorIcon } from './icons/positions';
 
 export const positionConfig: Record<PlayerPosition, { name: string; Icon: React.ElementType, badgeClasses: string, textColor: string }> = {
-  POR: { name: 'Portero', Icon: PorIcon, badgeClasses: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300', textColor: 'text-orange-600 game:text-orange-400' },
-  DEF: { name: 'Defensa', Icon: DefIcon, badgeClasses: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300', textColor: 'text-green-600 game:text-green-400' },
-  MED: { name: 'Medio', Icon: MedIcon, badgeClasses: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300', textColor: 'text-blue-600 game:text-blue-400' },
-  DEL: { name: 'Delantero', Icon: DelIcon, badgeClasses: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300', textColor: 'text-red-600 game:text-red-400' },
+  POR: { name: 'Portero', Icon: PorIcon, badgeClasses: 'bg-orange-100 text-orange-800 game:bg-orange-900/80 game:text-orange-200 dark:bg-orange-900/40 dark:text-orange-300', textColor: 'text-orange-600 game:text-orange-400' },
+  DEF: { name: 'Defensa', Icon: DefIcon, badgeClasses: 'bg-green-100 text-green-800 game:bg-green-900/80 game:text-green-200 dark:bg-green-900/40 dark:text-green-300', textColor: 'text-green-600 game:text-green-400' },
+  MED: { name: 'Medio', Icon: MedIcon, badgeClasses: 'bg-blue-100 text-blue-800 game:bg-blue-900/80 game:text-blue-200 dark:bg-blue-900/40 dark:text-blue-300', textColor: 'text-blue-600 game:text-blue-400' },
+  DEL: { name: 'Delantero', Icon: DelIcon, badgeClasses: 'bg-red-100 text-red-800 game:bg-red-900/80 game:text-red-200 dark:bg-red-900/40 dark:text-red-300', textColor: 'text-red-600 game:text-red-400' },
 };
 
 export const getPositionBadgeClasses = (position: PlayerPosition) => positionConfig[position].badgeClasses;
