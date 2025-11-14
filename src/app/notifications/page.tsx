@@ -1,25 +1,30 @@
+
 'use client';
 
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { collection, query, orderBy, writeBatch, doc } from 'firebase/firestore';
-import type { Notification } from '@/lib/types';
+import type { Notification, NotificationType } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Bell, CheckCheck, FileSignature, UserPlus, Info } from 'lucide-react';
+import { Loader2, Bell, CheckCheck, FileSignature, UserPlus, Info, Swords, CheckCircle2, XCircle, FileText } from 'lucide-react';
 import { format, formatDistanceToNow, isToday, isYesterday, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 
-const notificationIcons: Record<Notification['type'], React.ElementType> = {
+const notificationIcons: Record<NotificationType, React.ElementType> = {
     match_invite: UserPlus,
     new_joiner: UserPlus,
     evaluation_pending: FileSignature,
     match_update: Info,
+    challenge_received: Swords,
+    challenge_accepted: CheckCircle2,
+    challenge_rejected: XCircle,
+    league_application: FileText,
 };
 
 const IconWrapper = ({ type, className, ...props }: { type: Notification['type'], className?: string }) => {
@@ -32,6 +37,10 @@ const IconWrapper = ({ type, className, ...props }: { type: Notification['type']
                 type === 'new_joiner' && 'bg-green-500/10 text-green-500',
                 type === 'evaluation_pending' && 'bg-yellow-500/10 text-yellow-500',
                 type === 'match_update' && 'bg-purple-500/10 text-purple-500',
+                type === 'challenge_received' && 'bg-orange-500/10 text-orange-500',
+                type === 'challenge_accepted' && 'bg-emerald-500/10 text-emerald-500',
+                type === 'challenge_rejected' && 'bg-red-500/10 text-red-500',
+                type === 'league_application' && 'bg-indigo-500/10 text-indigo-500',
             )}>
                 <Icon className="h-5 w-5" />
             </AvatarFallback>
