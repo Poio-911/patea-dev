@@ -303,16 +303,6 @@ export type EvaluationSubmission = {
     }
 } & DocumentData;
     
-export type OvrHistory = {
-  id: string;
-  date: string;
-  oldOVR: number;
-  newOVR: number;
-  change: number;
-  matchId: string;
-  attributeChanges?: Partial<Pick<Player, 'pac' | 'sho' | 'pas' | 'dri' | 'def' | 'phy'>>;
-};
-
 export type UserProfile = {
   uid: string;
   email: string | null;
