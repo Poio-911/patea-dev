@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -10,8 +11,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Button } from './ui/button';
-import { Bell, CheckCheck, FileSignature, UserPlus, Info } from 'lucide-react';
-import type { Notification } from '@/lib/types';
+import { Bell, CheckCheck, FileSignature, UserPlus, Info, Swords, CheckCircle2, XCircle, FileText } from 'lucide-react';
+import type { Notification, NotificationType } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ScrollArea } from './ui/scroll-area';
@@ -23,15 +24,19 @@ interface NotificationBellProps {
   isPopoverContent?: boolean;
 }
 
-const notificationIcons: Record<Notification['type'], React.ElementType> = {
+const notificationIcons: Record<NotificationType, React.ElementType> = {
     match_invite: SoccerPlayerIcon,
     new_joiner: UserPlus,
     evaluation_pending: FileSignature,
     match_update: Info,
+    challenge_received: Swords,
+    challenge_accepted: CheckCircle2,
+    challenge_rejected: XCircle,
+    league_application: FileText,
 };
 
 const IconWrapper = ({ type, className, ...props }: { type: Notification['type'], className?: string }) => {
-    const Icon = notificationIcons[type];
+    const Icon = notificationIcons[type] || Info;
     return (
         <Avatar {...props} className={cn(className)}>
             <AvatarFallback className={cn(
@@ -40,6 +45,10 @@ const IconWrapper = ({ type, className, ...props }: { type: Notification['type']
                 type === 'new_joiner' && 'bg-green-500/20 text-green-500',
                 type === 'evaluation_pending' && 'bg-yellow-500/20 text-yellow-500',
                 type === 'match_update' && 'bg-purple-500/20 text-purple-500',
+                type === 'challenge_received' && 'bg-orange-500/10 text-orange-500',
+                type === 'challenge_accepted' && 'bg-emerald-500/10 text-emerald-500',
+                type === 'challenge_rejected' && 'bg-red-500/10 text-red-500',
+                type === 'league_application' && 'bg-indigo-500/10 text-indigo-500',
             )}>
                 <Icon className="h-4 w-4" />
             </AvatarFallback>
