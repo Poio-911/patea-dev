@@ -5,7 +5,7 @@
  * It is marked with 'use server' to ensure it only runs on the server.
  */
 
-import { adminDb } from '@/firebase/admin-init';
+import { adminDb, adminStorage } from '@/firebase/admin-init';
 import { FieldValue } from 'firebase-admin/firestore';
 import { generateBalancedTeams, GenerateBalancedTeamsInput } from '@/ai/flows/generate-balanced-teams';
 import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/flows/suggest-player-improvements';
@@ -14,10 +14,10 @@ import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-
 import { coachConversation, type CoachConversationInput } from '@/ai/flows/coach-conversation';
 import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '@/ai/flows/detect-player-patterns';
 import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '@/ai/flows/analyze-player-progression';
-import { type GenerateMatchChronicleOutput, type GenerateMatchChronicleInput } from '@/lib/types';
+import { type GenerateMatchChronicleOutput, type GenerateMatchChronicleInput, MatchLocation } from '@/lib/types';
 import { generateMatchChronicleFlow } from '@/ai/flows/generate-match-chronicle';
 import { generateDuoImage } from '@/ai/flows/generate-duo-image';
-import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, MatchLocation, GenerateDuoImageInput, League, LeagueFormat, CompetitionStatus } from '../types';
+import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, GenerateDuoImageInput, League, LeagueFormat, CompetitionStatus } from '../types';
 import { logger } from '../logger';
 import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse, type ErrorResponse } from '../errors';
 import { addDays, format } from 'date-fns';
@@ -647,14 +647,9 @@ export async function challengeTeamPostAction(
     }
 }
 
-function getAdminInstances() {
-    return { adminDb };
-}
 
 export async function acceptTeamChallengeAction(invitationId: string, teamId: string, userId: string): Promise<{ success: boolean; matchId: string } | ErrorResponse> {
   try {
-    const { adminDb } = getAdminInstances();
-    
     const result = await adminDb.runTransaction(async (transaction) => {
       const invitationRef = adminDb.doc(`teams/${teamId}/invitations/${invitationId}`);
       const invitationSnap = await transaction.get(invitationRef);
@@ -731,7 +726,6 @@ export async function acceptTeamChallengeAction(invitationId: string, teamId: st
 
 export async function rejectTeamChallengeAction(invitationId: string, teamId: string, userId: string) {
     try {
-        const { adminDb } = getAdminInstances();
         const batch = adminDb.batch();
 
         const invitationSnap = await adminDb.doc(`teams/${teamId}/invitations/${invitationId}`).get();
@@ -769,7 +763,6 @@ export async function rejectTeamChallengeAction(invitationId: string, teamId: st
 
 export async function deleteTeamAvailabilityPostAction(postId: string, userId: string) {
     try {
-        const { adminDb } = getAdminInstances();
         const postRef = adminDb.doc(`teamAvailabilityPosts/${postId}`);
         const postSnap = await postRef.get();
 
@@ -789,7 +782,6 @@ export async function deleteTeamAvailabilityPostAction(postId: string, userId: s
 }
 export async function sendTeamChallengeAction(challengingTeamId: string, challengedTeamId: string, challengerUserId: string) {
     try {
-        const { adminDb } = getAdminInstances();
         const batch = adminDb.batch();
 
         const [challengingTeamSnap, challengedTeamSnap] = await Promise.all([
@@ -855,7 +847,6 @@ export async function createLeagueAction(
     logoUrl?: string
 ): Promise<{ success: boolean; leagueId?: string; error?: string }> {
     try {
-        const { adminDb } = getAdminInstances();
         const batch = adminDb.batch();
 
         const leagueRef = adminDb.collection('leagues').doc();
@@ -981,7 +972,6 @@ export async function updateLeagueStatusAction(
     newStatus: CompetitionStatus
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { adminDb } = getAdminInstances();
         const leagueRef = adminDb.collection('leagues').doc(leagueId);
 
         await leagueRef.update({
@@ -1002,8 +992,6 @@ export async function deleteLeagueAction(
     leagueId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { adminDb, adminStorage } = getAdminInstances();
-
         // Delete all matches associated with this league
         const matchesSnapshot = await adminDb
             .collection('matches')
@@ -1053,7 +1041,6 @@ export async function updateMatchDateAction(
     location?: MatchLocation
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const { adminDb } = getAdminInstances();
         const matchRef = adminDb.collection('matches').doc(matchId);
 
         const updateData: any = {
@@ -1073,5 +1060,3 @@ export async function updateMatchDateAction(
         return { success: false, error: err.error };
     }
 }
-
-  
