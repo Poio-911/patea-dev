@@ -1,3 +1,4 @@
+
 import { DocumentData, DocumentReference } from "firebase/firestore";
 import type { PerformanceTag as Pt } from "./performance-tags";
 import { z } from 'zod';
@@ -302,6 +303,16 @@ export type EvaluationSubmission = {
     }
 } & DocumentData;
     
+export type OvrHistory = {
+  id: string;
+  date: string;
+  oldOVR: number;
+  newOVR: number;
+  change: number;
+  matchId: string;
+  attributeChanges?: Partial<Pick<Player, 'pac' | 'sho' | 'pas' | 'dri' | 'def' | 'phy'>>;
+};
+
 export type UserProfile = {
   uid: string;
   email: string | null;
@@ -394,7 +405,7 @@ export type League = {
   matchFrequency?: 'weekly' | 'biweekly' | 'custom'; // How often matches occur
   matchDayOfWeek?: number; // 0-6 (Sunday-Saturday)
   matchTime?: string; // HH:mm format
-  defaultLocation?: Location; // Default location for matches
+  defaultLocation?: MatchLocation; // Default location for matches
   // Champion and tiebreaker
   championTeamId?: string;
   championTeamName?: string;
