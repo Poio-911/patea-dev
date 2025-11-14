@@ -2,17 +2,18 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore, useCollection, useDoc } from '@/firebase';
 import {
   collection,
   query,
   where,
   orderBy,
-  limit
+  limit,
+  doc
 } from 'firebase/firestore';
-import type { Player, Match } from '@/lib/types';
+import type { Player, Match, Group } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { Loader2, Users2, Swords, BarChart2, Shield } from 'lucide-react';
+import { Loader2, Users2, Swords, BarChart2, Shield, Copy } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -25,10 +26,13 @@ import { motion } from 'framer-motion';
 import { GroupSwitcher } from '@/components/group-switcher';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GroupsFab } from '@/components/groups/groups-fab';
+import { useToast } from '@/hooks/use-toast';
+import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 
 export default function GroupsPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
+  const { toast } = useToast();
   
   const groupPlayersQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
@@ -52,7 +56,24 @@ export default function GroupsPage() {
   }, [firestore, user?.activeGroupId]);
   const { data: friendlyMatches, loading: friendlyMatchesLoading } = useCollection<Match>(friendlyMatchesQuery);
 
-  const loading = userLoading || playersLoading || matchesLoading || friendlyMatchesLoading;
+  const activeGroupRef = useMemo(() => {
+    if (!firestore || !user?.activeGroupId) return null;
+    return doc(firestore, 'groups', user.activeGroupId);
+  }, [firestore, user?.activeGroupId]);
+  const { data: activeGroup, loading: groupLoading } = useDoc<Group>(activeGroupRef);
+
+  const loading = userLoading || playersLoading || matchesLoading || friendlyMatchesLoading || groupLoading;
+
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast({ title: '¡Copiado!', description: 'Código de invitación copiado al portapapeles.' });
+  };
+  
+  const whatsAppShareText = useMemo(() => {
+    if (!activeGroup) return '';
+    const message = `¡Sumate a nuestro grupo de fútbol "${activeGroup.name}" en Pateá! Usá este código para unirte: ${activeGroup.inviteCode}`;
+    return encodeURIComponent(message);
+  }, [activeGroup]);
   
   return (
     <div className="flex flex-col gap-6">
@@ -70,13 +91,32 @@ export default function GroupsPage() {
       
         {loading ? (
             <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
-        ) : !user?.activeGroupId ? (
+        ) : !user?.activeGroupId || !activeGroup ? (
             <Alert className="text-center py-10">
               <Users2 className="h-6 w-6 mx-auto mb-2" />
               <AlertTitle>No hay un grupo activo</AlertTitle>
               <AlertDescription>Creá un grupo o unite a uno para empezar.</AlertDescription>
             </Alert>
         ) : (
+          <>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg border bg-card">
+              <div>
+                  <h2 className="text-xl font-bold">{activeGroup.name}</h2>
+                  <div className="flex items-center gap-2 mt-2">
+                      <p className="text-sm text-muted-foreground">Código:</p>
+                      <code className="text-sm font-bold font-mono bg-muted px-2 py-1 rounded-md">{activeGroup.inviteCode}</code>
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleCopyCode(activeGroup.inviteCode)}>
+                          <Copy className="h-4 w-4"/>
+                      </Button>
+                  </div>
+              </div>
+              <Button asChild size="sm" className="bg-[#25D366] hover:bg-[#25D366]/90 text-white">
+                  <a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer">
+                      <WhatsAppIcon className="mr-2 h-4 w-4"/>
+                      Compartir Grupo
+                  </a>
+              </Button>
+            </div>
             <Tabs defaultValue="teams" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="teams"><Shield className="h-4 w-4 mr-2"/>Equipos</TabsTrigger>
@@ -118,6 +158,7 @@ export default function GroupsPage() {
                 </TabsContent>
               </motion.div>
             </Tabs>
+          </>
         )}
 
         <GroupsFab />
