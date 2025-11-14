@@ -16,6 +16,7 @@ import { TeamChallengesList } from '@/components/team-challenge-card';
 import { MyTeamsAvailability } from '@/components/my-teams-availability';
 import { AvailablePostsGrid } from '@/components/available-posts-grid';
 import { CreateLeagueDialog } from '@/components/competitions/create-league-dialog';
+import { LeagueCard } from '@/components/leagues/LeagueCard';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -187,25 +188,9 @@ export default function CompetitionsPage() {
             {leaguesLoading ? (
                  <div className="text-center p-4"><Loader2 className="h-6 w-6 animate-spin"/></div>
             ) : leagues && leagues.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {leagues.map(league => (
-                      <Link key={league.id} href={`/competitions/leagues/${league.id}`} className="block">
-                        <Card className="hover:bg-muted/50 transition-colors">
-                            <CardHeader>
-                                <CardTitle>{league.name}</CardTitle>
-                                <div className="text-sm text-muted-foreground">
-                                    <Badge>{league.teams.length} equipos</Badge>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <p>Formato: {league.format === 'round_robin' ? 'Todos contra todos (ida)' : 'Ida y vuelta'}</p>
-                                <p>Estado: <Badge>{league.status}</Badge></p>
-                            </CardContent>
-                            <CardFooter>
-                               <Button variant="link" className="p-0 h-auto">Ver Liga <ArrowRight className="ml-2 h-4 w-4"/></Button>
-                            </CardFooter>
-                        </Card>
-                      </Link>
+                      <LeagueCard key={league.id} league={league} />
                     ))}
                 </div>
             ) : (

@@ -368,7 +368,44 @@ export type League = {
   isPublic: boolean;
   teams: string[]; // Array of teamIds
   createdAt: string;
+  logoUrl?: string; // URL to league logo image
+  // Schedule configuration
+  startDate?: string; // ISO date string of first match
+  matchFrequency?: 'weekly' | 'biweekly' | 'custom'; // How often matches occur
+  matchDayOfWeek?: number; // 0-6 (Sunday-Saturday)
+  matchTime?: string; // HH:mm format
+  defaultLocation?: Location; // Default location for matches
 } & DocumentData;
+
+// League standings/statistics
+export type LeagueStanding = {
+  teamId: string;
+  teamName: string;
+  teamJersey: Jersey;
+  position: number; // Current position in table
+  matchesPlayed: number; // PJ
+  wins: number; // PG
+  draws: number; // PE
+  losses: number; // PP
+  goalsFor: number; // GF
+  goalsAgainst: number; // GC
+  goalDifference: number; // DG
+  points: number; // Pts
+};
+
+// Team statistics in a league
+export type LeagueTeamStats = {
+  teamId: string;
+  teamName: string;
+  matchesPlayed: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  cleanSheets: number; // Partidos sin goles en contra
+  topScorers: Array<{ playerId: string; playerName: string; goals: number }>;
+};
 
 export type Cup = {
   id: string;

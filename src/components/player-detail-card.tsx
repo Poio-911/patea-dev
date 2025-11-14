@@ -61,9 +61,7 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile }
         return;
       }
       toast({ title: 'Foto generada con éxito', description: 'Tu foto profesional ha sido creada con IA.' });
-      if (result.newPhotoURL) {
-        onPhotoUpdate(result.newPhotoURL);
-      }
+      // La actualización se propagará automáticamente vía Firestore
     } catch (error: any) {
       logger.error('Error generating AI photo', error, { userId: user?.uid });
       toast({ variant: 'destructive', title: 'Error al generar imagen', description: error.message || 'No se pudo generar la imagen con IA. Asegúrate de tener una foto real subida.' });

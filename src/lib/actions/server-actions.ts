@@ -843,7 +843,15 @@ export async function createLeagueAction(
     teamIds: string[],
     isPublic: boolean,
     groupId: string,
-    ownerUid: string
+    ownerUid: string,
+    scheduleConfig?: {
+        startDate: string;
+        matchFrequency: 'weekly' | 'biweekly' | 'custom';
+        matchDayOfWeek: number;
+        matchTime: string;
+        defaultLocation?: Location;
+    },
+    logoUrl?: string
 ): Promise<{ success: boolean; leagueId?: string; error?: string }> {
     try {
         const { adminDb } = getAdminInstances();
@@ -859,6 +867,14 @@ export async function createLeagueAction(
             ownerUid,
             status: 'draft',
             createdAt: new Date().toISOString(),
+            ...(logoUrl && { logoUrl }),
+            ...(scheduleConfig && {
+                startDate: scheduleConfig.startDate,
+                matchFrequency: scheduleConfig.matchFrequency,
+                matchDayOfWeek: scheduleConfig.matchDayOfWeek,
+                matchTime: scheduleConfig.matchTime,
+                defaultLocation: scheduleConfig.defaultLocation,
+            }),
         };
         batch.set(leagueRef, newLeague);
 
@@ -872,42 +888,81 @@ export async function createLeagueAction(
 
         const numRounds = teams.length - 1;
         const matchesPerRound = teams.length / 2;
+        const isDoubleRoundRobin = format === 'double_round_robin';
+        const totalPhases = isDoubleRoundRobin ? 2 : 1; // Ida y vuelta
 
-        for (let round = 0; round < numRounds; round++) {
-            for (let i = 0; i < matchesPerRound; i++) {
-                const team1 = teams[i];
-                const team2 = teams[teams.length - 1 - i];
-
-                if (team1.id === 'bye' || team2.id === 'bye') continue;
-
-                const matchRef = adminDb.collection('matches').doc();
-                const matchData: Partial<Match> = {
-                    title: `${team1.name} vs ${team2.name}`,
-                    date: new Date().toISOString(),
-                    time: "19:00",
-                    location: { name: "A definir", address: "", lat: 0, lng: 0, placeId: "" },
-                    type: 'league',
-                    matchSize: 22,
-                    status: 'upcoming',
-                    ownerUid,
-                    groupId,
-                    participantTeamIds: [team1.id, team2.id],
-                    teams: [
-                        { name: team1.name, players: [], totalOVR: 0, averageOVR: 0, jersey: team1.jersey },
-                        { name: team2.name, players: [], totalOVR: 0, averageOVR: 0, jersey: team2.jersey },
-                    ],
-                    leagueInfo: {
-                        leagueId: leagueRef.id,
-                        round: round + 1,
-                    },
-                    createdAt: new Date().toISOString(),
-                };
-                batch.set(matchRef, matchData);
+        // Helper function to calculate match date
+        const getMatchDate = (round: number): Date => {
+            if (!scheduleConfig) {
+                return new Date(); // Fallback to current date if no schedule
             }
-            // Rotate teams for next round
-            teams.splice(1, 0, teams.pop()!);
+
+            const startDate = new Date(scheduleConfig.startDate);
+            const daysToAdd = scheduleConfig.matchFrequency === 'weekly' ? round * 7 : round * 14;
+            const matchDate = new Date(startDate);
+            matchDate.setDate(matchDate.getDate() + daysToAdd);
+
+            // Set time
+            const [hours, minutes] = scheduleConfig.matchTime.split(':');
+            matchDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+            return matchDate;
+        };
+
+        let globalRound = 0;
+
+        for (let phase = 0; phase < totalPhases; phase++) {
+            // Reset teams rotation for second phase
+            if (phase === 1) {
+                teams = teamsData.map(snap => ({ id: snap.id, ...snap.data() } as GroupTeam));
+                if (teams.length % 2 !== 0) {
+                    teams.push({ id: 'bye', name: 'Descansa', jersey: { type: 'plain', primaryColor: '#ffffff', secondaryColor: '#000000' }} as GroupTeam);
+                }
+            }
+
+            for (let round = 0; round < numRounds; round++) {
+                globalRound++;
+                const matchDate = getMatchDate(globalRound - 1);
+
+                for (let i = 0; i < matchesPerRound; i++) {
+                    const team1 = teams[i];
+                    const team2 = teams[teams.length - 1 - i];
+
+                    if (team1.id === 'bye' || team2.id === 'bye') continue;
+
+                    // For second phase (vuelta), invert home/away
+                    const homeTeam = phase === 0 ? team1 : team2;
+                    const awayTeam = phase === 0 ? team2 : team1;
+
+                    const matchRef = adminDb.collection('matches').doc();
+                    const matchData: Partial<Match> = {
+                        title: `${homeTeam.name} vs ${awayTeam.name}`,
+                        date: matchDate.toISOString(),
+                        time: scheduleConfig?.matchTime || "19:00",
+                        location: scheduleConfig?.defaultLocation || { name: "A definir", address: "", lat: 0, lng: 0, placeId: "" },
+                        type: 'league',
+                        matchSize: 22,
+                        status: 'upcoming',
+                        ownerUid,
+                        groupId,
+                        participantTeamIds: [homeTeam.id, awayTeam.id],
+                        teams: [
+                            { name: homeTeam.name, players: [], totalOVR: 0, averageOVR: 0, jersey: homeTeam.jersey },
+                            { name: awayTeam.name, players: [], totalOVR: 0, averageOVR: 0, jersey: awayTeam.jersey },
+                        ],
+                        leagueInfo: {
+                            leagueId: leagueRef.id,
+                            round: globalRound,
+                        },
+                        createdAt: new Date().toISOString(),
+                    };
+                    batch.set(matchRef, matchData);
+                }
+                // Rotate teams for next round
+                teams.splice(1, 0, teams.pop()!);
+            }
         }
-        
+
         await batch.commit();
 
         return { success: true, leagueId: leagueRef.id };
@@ -916,6 +971,107 @@ export async function createLeagueAction(
         return { success: false, error: err.error };
     }
 }
-    
 
-    
+/**
+ * Update league status (draft -> in_progress -> completed)
+ */
+export async function updateLeagueStatusAction(
+    leagueId: string,
+    newStatus: CompetitionStatus
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const { adminDb } = getAdminInstances();
+        const leagueRef = adminDb.collection('leagues').doc(leagueId);
+
+        await leagueRef.update({
+            status: newStatus,
+        });
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Delete a league and all its associated matches
+ */
+export async function deleteLeagueAction(
+    leagueId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const { adminDb, adminStorage } = getAdminInstances();
+
+        // Delete all matches associated with this league
+        const matchesSnapshot = await adminDb
+            .collection('matches')
+            .where('leagueInfo.leagueId', '==', leagueId)
+            .get();
+
+        const deleteMatchesPromises = matchesSnapshot.docs.map(doc => doc.ref.delete());
+        await Promise.all(deleteMatchesPromises);
+
+        // Get league data to check for logo
+        const leagueDoc = await adminDb.collection('leagues').doc(leagueId).get();
+        const leagueData = leagueDoc.data();
+
+        // Delete logo from storage if it exists
+        if (leagueData?.logoUrl) {
+            try {
+                const bucket = adminStorage.bucket();
+                // Extract file path from URL
+                const urlParts = leagueData.logoUrl.split('/o/')[1];
+                if (urlParts) {
+                    const filePath = decodeURIComponent(urlParts.split('?')[0]);
+                    await bucket.file(filePath).delete();
+                }
+            } catch (storageError) {
+                console.error('Error deleting logo from storage:', storageError);
+                // Continue with league deletion even if logo deletion fails
+            }
+        }
+
+        // Delete the league document
+        await adminDb.collection('leagues').doc(leagueId).delete();
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Update match date/time/location
+ */
+export async function updateMatchDateAction(
+    matchId: string,
+    date: string,
+    time: string,
+    location?: Location
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const { adminDb } = getAdminInstances();
+        const matchRef = adminDb.collection('matches').doc(matchId);
+
+        const updateData: any = {
+            date,
+            time,
+        };
+
+        if (location) {
+            updateData.location = location;
+        }
+
+        await matchRef.update(updateData);
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+
+
