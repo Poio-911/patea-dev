@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState } from 'react';
-import type { Match, Location } from '@/lib/types';
+import type { Match, MatchLocation } from '@/lib/types';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -39,7 +40,7 @@ export function MatchScheduleDialog({ match, open, onOpenChange, onSuccess }: Ma
       const dateTimeString = new Date(`${formData.date}T${formData.time}`).toISOString();
 
       // Create location object (keeping existing data if available)
-      const location: Location | undefined = formData.location
+      const location: MatchLocation | undefined = formData.location
         ? {
             name: formData.location,
             address: match.location?.address || '',
