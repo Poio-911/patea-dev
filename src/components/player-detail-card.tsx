@@ -115,37 +115,37 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile }
           </div>
 
           {isCurrentUserProfile && (
-             <div className="grid grid-cols-2 gap-2 w-full my-4">
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="default" size="lg" className="h-12" disabled={isGeneratingAI || (player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0)}>
-                        <div className="flex items-center gap-2">
-                          <Sparkles />
-                          <span>Generar IA</span>
-                          <Badge className="bg-primary-foreground/20 text-primary-foreground">{player.cardGenerationCredits || 0}</Badge>
-                        </div>
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>¿Confirmar generación de imagen?</AlertDialogTitle>
-                        <AlertDialogDescription>Esto usará 1 de tus {player.cardGenerationCredits} créditos mensuales. Esta acción no se puede deshacer.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleGenerateAIPhoto} disabled={isGeneratingAI}>
-                          {isGeneratingAI ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                          Confirmar y Usar Crédito
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-                <ImageCropperDialog player={player} onSaveComplete={onPhotoUpdate}>
-                  <Button variant="secondary" size="lg" className="h-12" disabled={isGeneratingAI}>
-                    <Scissors className="mr-2" />
-                    Recortar
-                  </Button>
-                </ImageCropperDialog>
+            <div className="grid grid-cols-2 gap-2 w-full my-4">
+              <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="default" size="sm" disabled={isGeneratingAI || (player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0)}>
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4" />
+                        <span>Generar IA</span>
+                        <Badge className="bg-primary-foreground/20 text-primary-foreground">{player.cardGenerationCredits || 0}</Badge>
+                      </div>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Confirmar generación de imagen?</AlertDialogTitle>
+                      <AlertDialogDescription>Esto usará 1 de tus {player.cardGenerationCredits} créditos mensuales. Esta acción no se puede deshacer.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleGenerateAIPhoto} disabled={isGeneratingAI}>
+                        {isGeneratingAI ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                        Confirmar y Usar Crédito
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+              </AlertDialog>
+              <ImageCropperDialog player={player} onSaveComplete={onPhotoUpdate}>
+                <Button variant="secondary" size="sm" disabled={isGeneratingAI}>
+                  <Scissors className="mr-2 h-4 w-4" />
+                  Cambiar Foto
+                </Button>
+              </ImageCropperDialog>
             </div>
           )}
 
