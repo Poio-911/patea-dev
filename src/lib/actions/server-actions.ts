@@ -1008,7 +1008,7 @@ export async function deleteLeagueAction(
         // Delete logo from storage if it exists
         if (leagueData?.logoUrl) {
             try {
-                const bucket = adminStorage.bucket();
+                const bucket = adminStorage;
                 // Extract file path from URL
                 const urlParts = leagueData.logoUrl.split('/o/')[1];
                 if (urlParts) {
