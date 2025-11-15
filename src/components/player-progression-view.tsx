@@ -13,12 +13,13 @@ import { Loader2, BrainCircuit, TrendingUp, TrendingDown, Info, Medal, ChevronsU
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Button } from './ui/button';
 import { analyzePlayerProgressionAction } from '@/lib/actions/server-actions';
-import { AnalyzePlayerProgressionOutput } from '@/ai/flows/analyze-player-progression';
+import type { AnalyzePlayerProgressionOutput } from '@/ai/flows/analyze-player-progression';
 import { Separator } from './ui/separator';
 import { attributeDescriptions } from '@/lib/data';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Label } from '@/components/ui/label';
 
 interface PlayerProgressionViewProps {
     playerId: string;
@@ -170,7 +171,7 @@ export function PlayerProgressionView({ playerId }: PlayerProgressionViewProps) 
             if ('error' in result) {
                 setAnalysisError(result.error);
             } else {
-                setAnalysis(result);
+                setAnalysis(result as AnalyzePlayerProgressionOutput);
             }
         });
     }
