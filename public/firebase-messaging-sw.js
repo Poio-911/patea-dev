@@ -1,8 +1,8 @@
 
 // This file needs to be in the public folder.
 
-importScripts("https://www.gstatic.com/firebasejs/9.2.0/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/9.2.0/firebase-messaging-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/11.1.0/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/11.1.0/firebase-messaging-compat.js");
 
 // IMPORTANT: Replace this with your project's web app config object.
 const firebaseConfig = {

@@ -14,6 +14,8 @@ import { useJsApiLoader } from '@react-google-maps/api';
 import { libraries } from '@/lib/google-maps';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { ThemeBackground } from './theme-background';
+import { InstallPrompt } from './pwa/install-prompt';
+import { UpdateNotification } from './pwa/update-notification';
 
 type FirebaseClientProviderProps = {
   children: React.ReactNode;
@@ -80,6 +82,8 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
       >
         <UserProvider>
           <MainNav>{children}</MainNav>
+          <InstallPrompt />
+          <UpdateNotification />
         </UserProvider>
       </FirebaseProvider>
     </ThemeProvider>

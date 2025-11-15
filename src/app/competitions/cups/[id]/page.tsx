@@ -186,9 +186,10 @@ export default function CupDetailPage() {
         {/* Champion Celebration */}
         {isCompleted && cup.championTeamId && cup.championTeamName && (
           <ChampionCelebration
-            teamName={cup.championTeamName}
-            competitionName={cup.name}
-            competitionType="cup"
+            championName={cup.championTeamName}
+            championJersey={teams?.find(t => t.id === cup.championTeamId)?.jersey}
+            runnerUpName="Subcampeón"
+            runnerUpJersey={undefined}
           />
         )}
 
