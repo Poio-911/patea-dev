@@ -2,14 +2,14 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
-import type { OvrHistory, AttributeKey } from '@/lib/types';
+import { useCollection, useFirestore, useUser, useDoc } from '@/firebase';
+import { collection, query, orderBy, doc } from 'firebase/firestore';
+import type { OvrHistory, AttributeKey, Player } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Loader2, BrainCircuit, TrendingUp, TrendingDown, Info, Medal, ChevronsUp, ChevronsDown } from 'lucide-react';
+import { Loader2, BrainCircuit, TrendingUp, TrendingDown, Info, Medal, ChevronsUp, ChevronsDown, Goal } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Button } from './ui/button';
 import { analyzePlayerProgressionAction } from '@/lib/actions/server-actions';
@@ -77,9 +77,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return null;
 };
 
-const getPlayerMilestones = (history: OvrHistory[]) => {
-    if (history.length < 2) return null;
-    const maxOvr = Math.max(...history.map(h => h.newOVR));
+const getPlayerMilestones = (history: OvrHistory[], player: Player) => {
+    if (history.length < 1) return null;
+    const maxOvr = Math.max(...history.map(h => h.newOVR), player.ovr);
     const biggestJump = history.reduce((max, h) => h.change > max.change ? h : max, { change: -Infinity, newOVR: 0, oldOVR: 0, date: '' });
     const biggestDrop = history.reduce((min, h) => h.change < min.change ? h : min, { change: Infinity, newOVR: 0, oldOVR: 0, date: '' });
 
@@ -101,6 +101,7 @@ const getPlayerMilestones = (history: OvrHistory[]) => {
 
     return {
         maxOvr,
+        totalGoals: player.stats?.goals || 0,
         biggestJump: biggestJump.change > 0 ? biggestJump : null,
         biggestDrop: biggestDrop.change < 0 ? biggestDrop : null,
         longestPositiveStreak: streaks.maxPositive,
@@ -115,6 +116,9 @@ export function PlayerProgressionView({ playerId }: PlayerProgressionViewProps) 
     const [analysisError, setAnalysisError] = useState<string | null>(null);
     const [visibleAttributes, setVisibleAttributes] = useState<AttributeKey[]>([]);
 
+    const playerRef = useMemo(() => firestore ? doc(firestore, 'players', playerId) : null, [firestore, playerId]);
+    const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
+
     const ovrHistoryQuery = useMemo(() => {
         if (!firestore) return null;
         return query(
@@ -123,12 +127,11 @@ export function PlayerProgressionView({ playerId }: PlayerProgressionViewProps) 
         );
     }, [firestore, playerId]);
 
-    const { data: ovrHistory, loading } = useCollection<OvrHistory>(ovrHistoryQuery);
+    const { data: ovrHistory, loading: historyLoading } = useCollection<OvrHistory>(ovrHistoryQuery);
     
     const chartData = useMemo(() => {
         if (!ovrHistory) return [];
         let currentAttrs: Record<AttributeKey, number> = { PAC: 0, SHO: 0, PAS: 0, DRI: 0, DEF: 0, PHY: 0 };
-        // Find initial attributes from the first record with changes, or estimate
         const firstWithAttrs = ovrHistory.find(h => h.attributeChanges);
         if (firstWithAttrs) {
             const baseOvr = firstWithAttrs.oldOVR;
@@ -158,7 +161,7 @@ export function PlayerProgressionView({ playerId }: PlayerProgressionViewProps) 
         });
     }, [ovrHistory]);
 
-    const milestones = useMemo(() => ovrHistory ? getPlayerMilestones(ovrHistory) : null, [ovrHistory]);
+    const milestones = useMemo(() => ovrHistory && player ? getPlayerMilestones(ovrHistory, player) : null, [ovrHistory, player]);
 
     const handleAnalyze = () => {
         startTransition(async () => {
@@ -175,6 +178,8 @@ export function PlayerProgressionView({ playerId }: PlayerProgressionViewProps) 
             }
         });
     }
+    
+    const loading = playerLoading || historyLoading;
 
     if (loading) {
         return (
@@ -197,7 +202,7 @@ export function PlayerProgressionView({ playerId }: PlayerProgressionViewProps) 
                     <Alert>
                         <AlertTitle>No hay suficientes datos</AlertTitle>
                         <AlertDescription>
-                            Jugá y completá algunas evaluaciones para empezar a ver tu progreso.
+                            Jugá algunos partidos para empezar a ver tu progreso.
                         </AlertDescription>
                     </Alert>
                 </CardContent>
@@ -208,11 +213,12 @@ export function PlayerProgressionView({ playerId }: PlayerProgressionViewProps) 
     return (
         <div className="space-y-6">
             {milestones && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                     <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">OVR Máximo</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><Medal className="h-6 w-6 text-yellow-500"/><span className="text-3xl font-bold">{milestones.maxOvr}</span></div></CardContent></Card>
+                    <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Goles Totales</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><Goal className="h-6 w-6 text-blue-500"/><span className="text-3xl font-bold">{milestones.totalGoals}</span></div></CardContent></Card>
                     <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Mayor Subida</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><ChevronsUp className="h-6 w-6 text-green-500"/><span className="text-3xl font-bold">+{milestones.biggestJump?.change || 0}</span></div></CardContent></Card>
                     <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Mayor Bajada</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><ChevronsDown className="h-6 w-6 text-red-500"/><span className="text-3xl font-bold">{milestones.biggestDrop?.change || 0}</span></div></CardContent></Card>
-                    <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Mejor Racha</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><TrendingUp className="h-6 w-6 text-blue-500"/><span className="text-3xl font-bold">{milestones.longestPositiveStreak}</span><span className="text-sm text-muted-foreground">partidos</span></div></CardContent></Card>
+                    <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Mejor Racha</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><TrendingUp className="h-6 w-6 text-indigo-500"/><span className="text-3xl font-bold">{milestones.longestPositiveStreak}</span><span className="text-sm text-muted-foreground">partidos</span></div></CardContent></Card>
                 </div>
             )}
             <Card>
@@ -317,3 +323,5 @@ export function PlayerProgressionView({ playerId }: PlayerProgressionViewProps) 
         </div>
     );
 }
+
+    
