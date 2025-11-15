@@ -17,10 +17,11 @@ import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '@/
 import { type GenerateMatchChronicleOutput, type GenerateMatchChronicleInput, MatchLocation } from '@/lib/types';
 import { generateMatchChronicleFlow } from '@/ai/flows/generate-match-chronicle';
 import { generateDuoImage } from '@/ai/flows/generate-duo-image';
-import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, GenerateDuoImageInput, League, LeagueFormat, CompetitionStatus } from '../types';
+import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, GenerateDuoImageInput, League, LeagueFormat, CompetitionStatus, Cup, CupFormat, BracketMatch, CompetitionApplication, CompetitionFormat } from '../types';
 import { logger } from '../logger';
 import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse, type ErrorResponse } from '../errors';
 import { addDays, format } from 'date-fns';
+import { generateBracket, advanceWinner, isTournamentComplete, getChampion, getRunnerUp } from '@/lib/utils/cup-bracket';
 
 // --- Server Actions ---
 
@@ -1031,6 +1032,158 @@ export async function deleteLeagueAction(
     }
 }
 
+// ===== CUP ACTIONS =====
+
+/**
+ * Create a new cup
+ */
+export async function createCupAction(
+    name: string,
+    format: CupFormat,
+    isPublic: boolean,
+    teamIds: string[],
+    groupId: string,
+    ownerUid: string,
+    logoUrl?: string,
+    startDate?: string,
+    defaultLocation?: MatchLocation
+): Promise<{ success: boolean; cupId?: string; error?: string }> {
+    try {
+        if (teamIds.length < 2 || ![2, 4, 8, 16, 32].includes(teamIds.length)) {
+            return {
+                success: false,
+                error: 'El número de equipos debe ser 2, 4, 8, 16 o 32'
+            };
+        }
+
+        const cupData: Omit<Cup, 'id'> = {
+            name,
+            format,
+            status: 'draft',
+            ownerUid,
+            groupId,
+            isPublic,
+            teams: teamIds,
+            createdAt: new Date().toISOString(),
+            logoUrl,
+            startDate,
+            defaultLocation,
+        };
+
+        const cupRef = await adminDb.collection('cups').add(cupData);
+
+        return { success: true, cupId: cupRef.id };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Start cup and generate bracket
+ */
+export async function startCupAction(
+    cupId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const cupDoc = await adminDb.collection('cups').doc(cupId).get();
+        if (!cupDoc.exists) {
+            return { success: false, error: 'Copa no encontrada' };
+        }
+
+        const cup = { id: cupDoc.id, ...cupDoc.data() } as Cup;
+
+        if (cup.status !== 'draft') {
+            return { success: false, error: 'La copa ya fue iniciada' };
+        }
+
+        // Get teams data
+        const teamsSnapshot = await adminDb
+            .collection('teams')
+            .where('__name__', 'in', cup.teams)
+            .get();
+
+        const teams = teamsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        })) as GroupTeam[];
+
+        // Generate bracket
+        const bracket = generateBracket(teams);
+
+        // Update cup with bracket
+        await adminDb.collection('cups').doc(cupId).update({
+            status: 'in_progress',
+            bracket,
+            currentRound: bracket[0]?.round || 'final',
+        });
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Update cup status
+ */
+export async function updateCupStatusAction(
+    cupId: string,
+    status: CompetitionStatus
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        await adminDb.collection('cups').doc(cupId).update({ status });
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Delete cup
+ */
+export async function deleteCupAction(
+    cupId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        // Delete all matches
+        const matchesSnapshot = await adminDb
+            .collection('matches')
+            .where('leagueInfo.leagueId', '==', cupId) // Using same field for cups
+            .get();
+
+        const deleteMatchesPromises = matchesSnapshot.docs.map(doc => doc.ref.delete());
+        await Promise.all(deleteMatchesPromises);
+
+        // Get cup data for logo
+        const cupDoc = await adminDb.collection('cups').doc(cupId).get();
+        const cupData = cupDoc.data();
+
+        // Delete logo
+        if (cupData?.logoUrl) {
+            try {
+                const bucket = adminStorage;
+                const urlParts = cupData.logoUrl.split('/o/')[1];
+                if (urlParts) {
+                    const filePath = decodeURIComponent(urlParts.split('?')[0]);
+                    await bucket.file(filePath).delete();
+                }
+            } catch (storageError) {
+                console.error('Error deleting logo:', storageError);
+            }
+        }
+
+        await adminDb.collection('cups').doc(cupId).delete();
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
 /**
  * Update match date/time/location
  */
@@ -1053,6 +1206,193 @@ export async function updateMatchDateAction(
         }
 
         await matchRef.update(updateData);
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+// ============================================================================
+// COMPETITION APPLICATIONS
+// ============================================================================
+
+/**
+ * Get all public leagues and cups that are open for applications
+ */
+export async function getPublicCompetitionsAction(): Promise<{
+    success: boolean;
+    leagues?: League[];
+    cups?: Cup[];
+    error?: string;
+}> {
+    try {
+        // Fetch public leagues
+        const leaguesSnapshot = await adminDb
+            .collection('leagues')
+            .where('isPublic', '==', true)
+            .where('status', '==', 'open_for_applications')
+            .get();
+
+        const leagues = leaguesSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as League));
+
+        // Fetch public cups
+        const cupsSnapshot = await adminDb
+            .collection('cups')
+            .where('isPublic', '==', true)
+            .where('status', '==', 'open_for_applications')
+            .get();
+
+        const cups = cupsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as Cup));
+
+        return { success: true, leagues, cups };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Submit an application for a team to join a competition
+ */
+export async function submitCompetitionApplicationAction(
+    competitionId: string,
+    competitionType: CompetitionFormat,
+    teamId: string,
+    userId: string
+): Promise<{ success: boolean; applicationId?: string; error?: string }> {
+    try {
+        // Fetch team data
+        const teamDoc = await adminDb.collection('teams').doc(teamId).get();
+        if (!teamDoc.exists) {
+            return { success: false, error: 'Equipo no encontrado.' };
+        }
+
+        const team = teamDoc.data() as GroupTeam;
+
+        // Check if user owns the team
+        if (team.createdBy !== userId) {
+            return { success: false, error: 'No tienes permiso para postular este equipo.' };
+        }
+
+        // Check if application already exists
+        const existingApplications = await adminDb
+            .collection('competitionApplications')
+            .where('competitionId', '==', competitionId)
+            .where('teamId', '==', teamId)
+            .where('status', 'in', ['pending', 'approved'])
+            .get();
+
+        if (!existingApplications.empty) {
+            return { success: false, error: 'Ya existe una postulación para este equipo en esta competición.' };
+        }
+
+        // Create application
+        const applicationData: Omit<CompetitionApplication, 'id'> = {
+            competitionId,
+            competitionType,
+            teamId,
+            teamName: team.name,
+            teamJersey: team.jersey,
+            status: 'pending',
+            submittedAt: new Date().toISOString(),
+            submittedBy: userId,
+        };
+
+        const applicationRef = await adminDb.collection('competitionApplications').add(applicationData);
+
+        return { success: true, applicationId: applicationRef.id };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Get all applications for a specific competition
+ */
+export async function getCompetitionApplicationsAction(
+    competitionId: string,
+    competitionType: CompetitionFormat
+): Promise<{ success: boolean; applications?: CompetitionApplication[]; error?: string }> {
+    try {
+        const snapshot = await adminDb
+            .collection('competitionApplications')
+            .where('competitionId', '==', competitionId)
+            .where('competitionType', '==', competitionType)
+            .orderBy('submittedAt', 'asc')
+            .get();
+
+        const applications = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as CompetitionApplication));
+
+        return { success: true, applications };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Approve a competition application and add team to the competition
+ */
+export async function approveApplicationAction(
+    applicationId: string,
+    competitionId: string,
+    competitionType: CompetitionFormat
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const applicationRef = adminDb.collection('competitionApplications').doc(applicationId);
+        const applicationDoc = await applicationRef.get();
+
+        if (!applicationDoc.exists) {
+            return { success: false, error: 'Aplicación no encontrada.' };
+        }
+
+        const application = applicationDoc.data() as CompetitionApplication;
+
+        // Update application status
+        await applicationRef.update({ status: 'approved' });
+
+        // Add team to competition
+        const competitionCollection = competitionType === 'league' ? 'leagues' : 'cups';
+        const competitionRef = adminDb.collection(competitionCollection).doc(competitionId);
+
+        await competitionRef.update({
+            teams: FieldValue.arrayUnion(application.teamId)
+        });
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Reject a competition application
+ */
+export async function rejectApplicationAction(
+    applicationId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const applicationRef = adminDb.collection('competitionApplications').doc(applicationId);
+        const applicationDoc = await applicationRef.get();
+
+        if (!applicationDoc.exists) {
+            return { success: false, error: 'Aplicación no encontrada.' };
+        }
+
+        await applicationRef.update({ status: 'rejected' });
 
         return { success: true };
     } catch (error) {

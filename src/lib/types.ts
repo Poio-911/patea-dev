@@ -448,16 +448,48 @@ export type LeaguePlayerStats = {
   redCards: number;
 };
 
+// Cup rounds enum
+export type CupRound = 'round_of_32' | 'round_of_16' | 'round_of_8' | 'semifinals' | 'final';
+
+// Bracket match for cup knockout structure
+export type BracketMatch = {
+  id: string;
+  round: CupRound;
+  matchNumber: number; // Position in the round (1, 2, 3, 4...)
+  team1Id?: string; // undefined until determined
+  team2Id?: string;
+  team1Name?: string;
+  team2Name?: string;
+  team1Jersey?: Jersey;
+  team2Jersey?: Jersey;
+  winnerId?: string;
+  matchId?: string; // Reference to actual Match document when played
+  nextMatchNumber?: number; // Which match the winner advances to
+};
+
 export type Cup = {
   id: string;
   name: string;
   format: CupFormat;
   status: CompetitionStatus;
   ownerUid: string;
-  groupId: string;
+  groupId: string; // The "home" group of the cup
   isPublic: boolean;
-  teams: string[];
+  teams: string[]; // Array of teamIds
   createdAt: string;
+  logoUrl?: string; // URL to cup logo image
+  // Scheduling configuration
+  startDate?: string; // ISO date string of first match
+  defaultLocation?: MatchLocation; // Default location for matches
+  // Bracket structure
+  bracket?: BracketMatch[]; // Generated when cup starts
+  currentRound?: CupRound; // Track which round is active
+  // Champion tracking
+  championTeamId?: string;
+  championTeamName?: string;
+  runnerUpTeamId?: string;
+  runnerUpTeamName?: string;
+  completedAt?: string; // ISO date when cup was completed
 } & DocumentData;
 
 export type CompetitionApplication = {

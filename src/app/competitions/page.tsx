@@ -11,12 +11,15 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useMemo, useState, useEffect } from 'react';
-import type { GroupTeam, Invitation, League } from '@/lib/types';
+import type { GroupTeam, Invitation, League, Cup } from '@/lib/types';
 import { TeamChallengesList } from '@/components/team-challenge-card';
 import { MyTeamsAvailability } from '@/components/my-teams-availability';
 import { AvailablePostsGrid } from '@/components/available-posts-grid';
 import { CreateLeagueDialog } from '@/components/competitions/create-league-dialog';
+import { CreateCupDialog } from '@/components/competitions/create-cup-dialog';
 import { LeagueCard } from '@/components/leagues/LeagueCard';
+import { CupCard } from '@/components/competitions/cup-card';
+import { PublicCompetitionsBrowser } from '@/components/competitions/public-competitions-browser';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -27,6 +30,7 @@ export default function CompetitionsPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const [createLeagueOpen, setCreateLeagueOpen] = useState(false);
+  const [createCupOpen, setCreateCupOpen] = useState(false);
 
   const teamsQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
@@ -49,6 +53,16 @@ export default function CompetitionsPage() {
   }, [firestore, user?.activeGroupId]);
 
   const { data: leagues, loading: leaguesLoading } = useCollection<League>(leaguesQuery);
+
+  const cupsQuery = useMemo(() => {
+    if (!firestore || !user?.activeGroupId) return null;
+    return query(
+        collection(firestore, 'cups'),
+        where('groupId', '==', user.activeGroupId)
+    );
+  }, [firestore, user?.activeGroupId]);
+
+  const { data: cups, loading: cupsLoading } = useCollection<Cup>(cupsQuery);
 
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [invitationsLoading, setInvitationsLoading] = useState(true);
@@ -128,10 +142,11 @@ export default function CompetitionsPage() {
         </PageHeader>
 
         <Tabs defaultValue="friendly" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="friendly">Amistosos</TabsTrigger>
             <TabsTrigger value="leagues">Ligas</TabsTrigger>
             <TabsTrigger value="cups">Copas</TabsTrigger>
+            <TabsTrigger value="public">Públicas</TabsTrigger>
           </TabsList>
           
           <TabsContent value="friendly" className="mt-6 space-y-8">
@@ -201,18 +216,52 @@ export default function CompetitionsPage() {
                 </Alert>
             )}
           </TabsContent>
-          <TabsContent value="cups" className="mt-6">
-              <div className="text-center py-16 border-2 border-dashed rounded-xl">
-                  <Trophy className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-4 text-lg font-semibold">Copas de Eliminación</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">Próximamente podrás armar copas de eliminación directa.</p>
+          <TabsContent value="cups" className="mt-6 space-y-6">
+            <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Copas</h2>
+                <Button onClick={() => setCreateCupOpen(true)}>Crear Copa</Button>
+            </div>
+
+            {cupsLoading ? (
+                 <div className="text-center p-4"><Loader2 className="h-6 w-6 animate-spin"/></div>
+            ) : cups && cups.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {cups.map(cup => (
+                      <CupCard key={cup.id} cup={cup} />
+                    ))}
+                </div>
+            ) : (
+                <Alert>
+                    <AlertDescription>
+                        Aún no hay copas creadas en este grupo. ¡Sé el primero en organizar una!
+                    </AlertDescription>
+                </Alert>
+            )}
+          </TabsContent>
+
+          <TabsContent value="public" className="mt-6 space-y-6">
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-2xl font-bold">Competiciones Públicas</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Explorá y postulate a ligas y copas abiertas de otros grupos
+                </p>
               </div>
+              <PublicCompetitionsBrowser userId={user.uid} userTeams={myTeams} />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
       <CreateLeagueDialog
         open={createLeagueOpen}
         onOpenChange={setCreateLeagueOpen}
+        groupId={user.activeGroupId}
+        userId={user.uid}
+        teams={teams || []}
+      />
+      <CreateCupDialog
+        open={createCupOpen}
+        onOpenChange={setCreateCupOpen}
         groupId={user.activeGroupId}
         userId={user.uid}
         teams={teams || []}
