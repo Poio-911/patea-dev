@@ -281,8 +281,8 @@ export async function resolveTiebreakerFinal(
       return { success: false, message: 'Datos del partido inválidos' };
     }
 
-    const team1Score = match.teams[0].finalScore ?? 0;
-    const team2Score = match.teams[1].finalScore ?? 0;
+    const team1Score = match.finalScore ? match.finalScore.team1 : (match.teams[0].finalScore ?? 0);
+    const team2Score = match.finalScore ? match.finalScore.team2 : (match.teams[1].finalScore ?? 0);
 
     // Check for draw (shouldn't happen in a final, but handle it)
     if (team1Score === team2Score) {

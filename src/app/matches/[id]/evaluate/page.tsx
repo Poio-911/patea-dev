@@ -145,13 +145,14 @@ export default function EvaluateMatchPage() {
 
             const { evaluatorId, submission: formData } = submissionData;
 
-            // Create self-evaluation if player scored goals
-            if (formData.evaluatorGoals > 0) {
+            // Create self-evaluation if player contributed (goals or assists)
+            if (formData.evaluatorGoals > 0 || (formData.evaluatorAssists && formData.evaluatorAssists > 0)) {
                 const selfEvalRef = doc(collection(firestore, `matches/${matchId}/selfEvaluations`));
                 transaction.set(selfEvalRef, {
                     playerId: evaluatorId,
                     matchId,
                     goals: formData.evaluatorGoals,
+                    assists: formData.evaluatorAssists || 0,
                     reportedAt: submissionData.submittedAt,
                 });
             }
@@ -326,8 +327,10 @@ export default function EvaluateMatchPage() {
 
                 const playerSelfEval = selfEvalsByPlayerId.get(playerId);
                 const goalsInMatch = playerSelfEval?.goals || 0;
+                const assistsInMatch = playerSelfEval?.assists || 0;
                 const newMatchesPlayed = (player.stats.matchesPlayed || 0) + 1;
                 const newTotalGoals = (player.stats.goals || 0) + goalsInMatch;
+                const newTotalAssists = (player.stats.assists || 0) + assistsInMatch;
 
                 // Clarification: averageRating represents the average rating PER MATCH, not per individual evaluation.
                 const avgRatingFromPoints = pointBasedEvals.length > 0 ? pointBasedEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0) / pointBasedEvals.length : player.stats.averageRating;
@@ -341,7 +344,7 @@ export default function EvaluateMatchPage() {
                     stats: {
                         matchesPlayed: newMatchesPlayed,
                         goals: newTotalGoals,
-                        assists: player.stats.assists || 0,
+                        assists: newTotalAssists,
                         averageRating: newAvgRating,
                     },
                 });

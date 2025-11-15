@@ -268,6 +268,7 @@ export type SelfEvaluation = {
   playerId: string;
   matchId: string;
   goals: number;
+  assists?: number;
   reportedAt: string;
 } & DocumentData;
 
@@ -299,6 +300,7 @@ export type EvaluationSubmission = {
     submittedAt: string;
     submission: {
         evaluatorGoals: number;
+    evaluatorAssists?: number;
         evaluations: PlayerEvaluationFormData[];
     }
 } & DocumentData;

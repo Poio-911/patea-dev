@@ -41,9 +41,8 @@ export function calculateLeagueStandings(
     const team1Data = match.teams[0];
     const team2Data = match.teams[1];
 
-    // Get goals (from finalScore or default to 0)
-    const team1Goals = team1Data.finalScore ?? 0;
-    const team2Goals = team2Data.finalScore ?? 0;
+    const team1Goals = match.finalScore ? match.finalScore.team1 : (team1Data.finalScore ?? 0);
+    const team2Goals = match.finalScore ? match.finalScore.team2 : (team2Data.finalScore ?? 0);
 
     const team1Standing = standingsMap.get(team1Id);
     const team2Standing = standingsMap.get(team2Id);
@@ -214,8 +213,15 @@ function calculateHeadToHead(matches: Match[], team1Id: string, team2Id: string)
     const team1Index = match.participantTeamIds![0] === team1Id ? 0 : 1;
     const team2Index = team1Index === 0 ? 1 : 0;
 
-    const team1Score = match.teams![team1Index].finalScore ?? 0;
-    const team2Score = match.teams![team2Index].finalScore ?? 0;
+    let team1Score: number;
+    let team2Score: number;
+    if (match.finalScore) {
+      team1Score = team1Index === 0 ? match.finalScore.team1 : match.finalScore.team2;
+      team2Score = team2Index === 0 ? match.finalScore.team1 : match.finalScore.team2;
+    } else {
+      team1Score = match.teams![team1Index].finalScore ?? 0;
+      team2Score = match.teams![team2Index].finalScore ?? 0;
+    }
 
     team1Goals += team1Score;
     team2Goals += team2Score;

@@ -345,11 +345,25 @@ export async function generateMatchChronicleAction(matchId: string): Promise<{ d
             acc[ev.playerId] = (acc[ev.playerId] || 0) + ev.goals;
             return acc;
         }, {} as Record<string, number>);
+        const assistsByPlayer = selfEvaluations.reduce((acc, ev) => {
+            if (typeof ev.assists === 'number') {
+              acc[ev.playerId] = (acc[ev.playerId] || 0) + ev.assists;
+            }
+            return acc;
+        }, {} as Record<string, number>);
 
-        let team1Score = 0;
-        let team2Score = 0;
-        match.teams[0].players.forEach(p => team1Score += goalsByPlayer[p.uid] || 0);
-        match.teams[1].players.forEach(p => team2Score += goalsByPlayer[p.uid] || 0);
+        // Prefer canonical match.finalScore if present; fallback reconstructing from selfEvaluations
+        let team1Score: number;
+        let team2Score: number;
+        if (match.finalScore && typeof match.finalScore.team1 === 'number' && typeof match.finalScore.team2 === 'number') {
+            team1Score = match.finalScore.team1;
+            team2Score = match.finalScore.team2;
+        } else {
+            let t1 = 0; let t2 = 0;
+            match.teams[0].players.forEach(p => t1 += goalsByPlayer[p.uid] || 0);
+            match.teams[1].players.forEach(p => t2 += goalsByPlayer[p.uid] || 0);
+            team1Score = t1; team2Score = t2;
+        }
 
         const playersMap = new Map(match.players.map(p => [p.uid, p.displayName]));
         
@@ -382,7 +396,7 @@ export async function generateMatchChronicleAction(matchId: string): Promise<{ d
             return m;
         }
 
-        if (enrichedEvents.length < 3) {
+                if (enrichedEvents.length < 3) {
             const goalEntries = Object.entries(goalsByPlayer)
                 .filter(([, g]) => g > 0)
                 .sort((a, b) => b[1] - a[1])
@@ -401,6 +415,26 @@ export async function generateMatchChronicleAction(matchId: string): Promise<{ d
                 });
             }
         }
+
+                if (enrichedEvents.length < 5) {
+                    const assistEntries = Object.entries(assistsByPlayer)
+                        .filter(([, a]) => a > 0)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 3);
+                    for (const [playerId, assists] of assistEntries) {
+                        if (enrichedEvents.length >= 5) break;
+                        const displayName = playersMap.get(playerId) || 'Jugador';
+                        const description = assists > 1
+                            ? `Repartió ${assists} asistencias clave que inclinaron el partido.`
+                            : `Asistencia precisa que cambió el marcador.`;
+                        enrichedEvents.push({
+                            minute: randomMinute(),
+                            type: 'Assist' as const,
+                            playerName: displayName,
+                            description,
+                        });
+                    }
+                }
 
         if (enrichedEvents.length < 3) {
             const ratedEvals = evaluations
@@ -457,6 +491,111 @@ export async function generateMatchChronicleAction(matchId: string): Promise<{ d
         logger.error('[generateMatchChronicleAction] Error occurred', error, { matchId, action: 'generateMatchChronicle' });
         const formattedError = handleServerActionError(error, {matchId, action: 'generateMatchChronicle'});
         return { error: formattedError.error };
+    }
+}
+
+// ============================================================================
+// LEGACY FINAL SCORE MIGRATION
+// ============================================================================
+export async function migrateLegacyFinalScoresAction(batchSize: number = 200): Promise<{ success: boolean; updated: number; skipped: number; error?: string }> {
+    try {
+        const matchesSnap = await adminDb.collection('matches').get();
+        let updated = 0; let skipped = 0; const writeBatch = adminDb.batch();
+        matchesSnap.docs.forEach(doc => {
+            const data = doc.data() as Partial<Match>;
+            if (!data.teams || data.teams.length !== 2) { skipped++; return; }
+            // Already migrated
+            if (data.finalScore && typeof data.finalScore.team1 === 'number') { skipped++; return; }
+            const t1 = data.teams[0].finalScore;
+            const t2 = data.teams[1].finalScore;
+            if (typeof t1 === 'number' && typeof t2 === 'number') {
+                writeBatch.update(doc.ref, {
+                    finalScore: { team1: t1, team2: t2 },
+                });
+                updated++;
+            } else {
+                skipped++;
+            }
+        });
+        if (updated > 0) {
+            await writeBatch.commit();
+        }
+        return { success: true, updated, skipped };
+    } catch (error) {
+        const err = handleServerActionError(error, { action: 'migrateLegacyFinalScores' });
+        return { success: false, updated: 0, skipped: 0, error: err.error };
+    }
+}
+
+// ============================================================================
+// MIGRATION: Add assists field to existing selfEvaluations
+// ============================================================================
+export async function migrateAddAssistsToSelfEvaluationsAction(): Promise<{ success: boolean; updated: number; skipped: number; error?: string }> {
+    try {
+        const matchesSnap = await adminDb.collection('matches').get();
+        let updated = 0; let skipped = 0;
+        for (const matchDoc of matchesSnap.docs) {
+            const selfEvalsSnap = await adminDb.collection(`matches/${matchDoc.id}/selfEvaluations`).get();
+            const batch = adminDb.batch();
+            let batchHasWrites = false;
+            selfEvalsSnap.docs.forEach(evDoc => {
+                const data = evDoc.data();
+                if (typeof data.assists === 'number') { skipped++; return; }
+                batch.update(evDoc.ref, { assists: 0 });
+                updated++; batchHasWrites = true;
+            });
+            if (batchHasWrites) {
+                await batch.commit();
+            }
+        }
+        return { success: true, updated, skipped };
+    } catch (error) {
+        const err = handleServerActionError(error, { action: 'migrateAddAssistsToSelfEvaluations' });
+        return { success: false, updated: 0, skipped: 0, error: err.error };
+    }
+}
+
+// ============================================================================
+// ACTION: Update player contribution (goals/assists) for a match
+// ============================================================================
+export async function updateMatchPlayerContributionAction(
+    matchId: string,
+    playerId: string,
+    goalsDelta: number = 0,
+    assistsDelta: number = 0,
+    userId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const matchRef = adminDb.collection('matches').doc(matchId);
+        const matchSnap = await matchRef.get();
+        if (!matchSnap.exists) return { success: false, error: 'Partido no encontrado.' };
+        const match = { id: matchSnap.id, ...matchSnap.data() } as Match;
+        if (match.ownerUid !== userId) return { success: false, error: 'No autorizado.' };
+
+        const selfEvalRef = adminDb.collection(`matches/${matchId}/selfEvaluations`).where('playerId', '==', playerId);
+        const existingSnap = await selfEvalRef.get();
+        let docRefToUpdate;
+        if (existingSnap.empty) {
+            docRefToUpdate = adminDb.collection(`matches/${matchId}/selfEvaluations`).doc();
+            await docRefToUpdate.set({
+                playerId,
+                matchId,
+                goals: Math.max(0, goalsDelta),
+                assists: Math.max(0, assistsDelta),
+                reportedAt: new Date().toISOString(),
+            });
+        } else {
+            docRefToUpdate = existingSnap.docs[0].ref;
+            const data = existingSnap.docs[0].data();
+            await docRefToUpdate.update({
+                goals: Math.max(0, (data.goals || 0) + goalsDelta),
+                assists: Math.max(0, (data.assists || 0) + assistsDelta),
+            });
+        }
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error, { action: 'updateMatchPlayerContribution' });
+        return { success: false, error: err.error };
     }
 }
 
@@ -1397,6 +1536,57 @@ export async function rejectApplicationAction(
         return { success: true };
     } catch (error) {
         const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+// ============================================================================
+// MATCH FINAL SCORE NORMALIZATION
+// ============================================================================
+export async function updateMatchFinalScoreAction(
+    matchId: string,
+    team1Score: number,
+    team2Score: number,
+    userId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const matchRef = adminDb.collection('matches').doc(matchId);
+        const matchSnap = await matchRef.get();
+        if (!matchSnap.exists) {
+            return { success: false, error: 'Partido no encontrado.' };
+        }
+        const match = { id: matchSnap.id, ...matchSnap.data() } as Match;
+
+        if (!match.participantTeamIds || match.participantTeamIds.length !== 2) {
+            return { success: false, error: 'Estructura de equipos inválida.' };
+        }
+        if (!match.teams || match.teams.length !== 2) {
+            return { success: false, error: 'Datos de equipos incompletos.' };
+        }
+
+        // Basic permission: only owner can set score (extend later for admins)
+        if (match.ownerUid !== userId) {
+            return { success: false, error: 'No autorizado para actualizar el resultado.' };
+        }
+
+        const updateData: Partial<Match> = {
+            finalScore: { team1: team1Score, team2: team2Score },
+            teams: [
+                { ...match.teams[0], finalScore: team1Score },
+                { ...match.teams[1], finalScore: team2Score },
+            ],
+        };
+
+        // Auto-complete match if not yet finalized
+        if (match.status === 'upcoming' || match.status === 'active') {
+            updateData.status = 'completed';
+            updateData.finalizedAt = new Date().toISOString();
+        }
+
+        await matchRef.update(updateData as any);
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error, { matchId });
         return { success: false, error: err.error };
     }
 }
