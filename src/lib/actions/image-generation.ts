@@ -1,7 +1,7 @@
 
 'use server';
 
-import { adminDb, adminAuth, adminStorage, buildPublicFileURL } from '@/firebase/admin-init';
+import { adminDb, adminAuth, adminStorage } from '@/firebase/admin-init';
 import { FieldValue } from 'firebase-admin/firestore';
 import { generatePlayerCardImage } from '@/ai/flows/generate-player-card-image';
 import type { Player } from '@/lib/types';
@@ -58,13 +58,16 @@ export async function generatePlayerCardImageAction(userId: string) {
     const generatedImageBuffer = Buffer.from(generatedImageDataUri.split(',')[1], 'base64');
     const newFilePath = `profile-images/${userId}/generated_${Date.now()}.png`;
     const newFile = adminStorage.file(newFilePath);
-    
+
     await newFile.save(generatedImageBuffer, {
       metadata: { contentType: 'image/png' },
     });
-    
-    await newFile.makePublic();
-    const newPhotoURL = buildPublicFileURL(newFilePath);
+
+    // Get download URL with access token (same method as crop - this works reliably)
+    const [newPhotoURL] = await newFile.getSignedUrl({
+      action: 'read',
+      expires: '03-01-2500', // Far future expiration
+    });
 
     // Update Firestore and Auth in a batch
     const batch = adminDb.batch();

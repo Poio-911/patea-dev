@@ -44,11 +44,12 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
              // ✅ FIX: Start with Firestore data and overwrite with fresh auth data.
              // This prevents duplicate property errors.
+             // IMPORTANT: photoURL comes from Firestore (source of truth), not from stale auth data
              const freshUserProfile: UserProfile = {
-                ...userData, // Firestore data has priority (e.g. activeGroupId, uid)
+                ...userData, // Firestore data has priority (e.g. activeGroupId, uid, photoURL)
                 email: firebaseUser.email,
                 displayName: firebaseUser.displayName,
-                photoURL: firebaseUser.photoURL,
+                photoURL: userData.photoURL || firebaseUser.photoURL, // Use Firestore photoURL (updated in real-time)
              };
 
              // --- DATA REPAIR & CREDIT RESET LOGIC ---

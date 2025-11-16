@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useUser } from '@/firebase';
 import type { Player } from '@/lib/types';
 import { PlayerDetailCard } from '@/components/player-detail-card';
@@ -16,17 +16,14 @@ type PlayerProfileViewProps = {
   player: Player;
 };
 
-export default function PlayerProfileView({ playerId, player: initialPlayer }: PlayerProfileViewProps) {
+export default function PlayerProfileView({ playerId, player }: PlayerProfileViewProps) {
   const { user } = useUser();
-  const [player, setPlayer] = useState<Player>(initialPlayer);
   const isCurrentUserProfile = user?.uid === playerId;
 
-  useEffect(() => {
-    setPlayer(initialPlayer);
-  }, [initialPlayer]);
-
-  const handlePhotoUpdate = (newUrl: string) => {
-    setPlayer(prevPlayer => ({ ...prevPlayer, photoUrl: newUrl }));
+  // Callback opcional para compatibilidad - la actualización real viene de useDoc
+  const handlePhotoUpdate = () => {
+    // No es necesario actualizar estado local
+    // useDoc ya maneja la sincronización automática desde Firestore
   };
 
   return (
