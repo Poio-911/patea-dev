@@ -17,7 +17,7 @@ import {
 } from '@/components/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Trophy, ClipboardCheck, X } from 'lucide-react';
+import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Trophy, ClipboardCheck, X, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -286,13 +286,17 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                           </button>
                           {matchesMenuOpen && (
                             <div ref={matchesMenuRef} className="absolute left-0 -top-2 translate-y-[-100%] w-48 rounded-lg border bg-background/80 backdrop-blur-xl shadow-lg p-2 flex flex-col gap-1 z-50">
-                              <Link href="/matches" className={cn("flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent", pathname.startsWith('/matches') && 'bg-accent/70 font-medium')}>
+                              <Link href="/matches" className={cn("flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent", pathname.startsWith('/matches') && !pathname.startsWith('/find-match') && 'bg-accent/70 font-medium')}>
                                 <Trophy className="h-4 w-4" />
                                 <span>Partidos</span>
                               </Link>
                               <Link href="/competitions" className={cn("flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent", pathname.startsWith('/competitions') && 'bg-accent/70 font-medium')}>
                                 <Trophy className="h-4 w-4" />
                                 <span>Competiciones</span>
+                              </Link>
+                              <Link href="/find-match" className={cn("flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent", pathname.startsWith('/find-match') && 'bg-accent/70 font-medium')}>
+                                <Search className="h-4 w-4" />
+                                <span>Buscar</span>
                               </Link>
                               <button
                                 onClick={() => setMatchesMenuOpen(false)}
