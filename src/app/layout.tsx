@@ -5,6 +5,9 @@ import { Toaster } from '@/components/ui/toaster';
 import { ClientProviders } from '@/components/client-providers';
 import { cn } from '@/lib/utils';
 
+// Force dynamic rendering for all pages (Firebase requires client-side context)
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Pateá',
   description: 'Pateá es una app para organizar los partidos entre amigos: armás equipos, anotás los resultados y llevás la cuenta de quién juega bien y quién se hace el lesionado.',
