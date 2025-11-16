@@ -64,7 +64,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
                 {changeEntries.map(([key, value]) => (
                   <div key={key} className={`flex justify-between items-center text-xs ${(value as number) > 0 ? 'text-green-500' : 'text-red-500'}`}>
                     <span>{attributeDescriptions[key as AttributeKey]?.name || key}</span>
-                    <span className="font-semibold">{(value as number) > 0 ? '+' : ''}{value}</span>
+                    <span className="font-semibold">{(value as number) > 0 ? '+' : ''}{value as number}</span>
                   </div>
                 ))}
               </div>
@@ -130,13 +130,19 @@ export function PlayerProgressionView({ playerId }: PlayerProgressionViewProps) 
     const { data: ovrHistory, loading: historyLoading } = useCollection<OvrHistory>(ovrHistoryQuery);
     
     const chartData = useMemo(() => {
-        if (!ovrHistory) return [];
-        let currentAttrs: Record<AttributeKey, number> = { PAC: 0, SHO: 0, PAS: 0, DRI: 0, DEF: 0, PHY: 0 };
-        const firstWithAttrs = ovrHistory.find(h => h.attributeChanges);
-        if (firstWithAttrs) {
-            const baseOvr = firstWithAttrs.oldOVR;
-            Object.keys(currentAttrs).forEach(key => {
-                currentAttrs[key as AttributeKey] = baseOvr;
+        if (!ovrHistory || !player) return [];
+
+        let currentAttrs: Record<AttributeKey, number> = { 
+            PAC: player.pac, SHO: player.sho, PAS: player.pas, 
+            DRI: player.dri, DEF: player.def, PHY: player.phy 
+        };
+        
+        // Find initial stats
+        const firstEntry = ovrHistory[0];
+        if (firstEntry) {
+            let initialOvr = firstEntry.oldOVR;
+             Object.keys(currentAttrs).forEach(key => {
+                currentAttrs[key as AttributeKey] = initialOvr;
             });
         }
         
@@ -159,7 +165,7 @@ export function PlayerProgressionView({ playerId }: PlayerProgressionViewProps) 
                 ...currentAttrs
             };
         });
-    }, [ovrHistory]);
+    }, [ovrHistory, player]);
 
     const milestones = useMemo(() => ovrHistory && player ? getPlayerMilestones(ovrHistory, player) : null, [ovrHistory, player]);
 
@@ -213,11 +219,10 @@ export function PlayerProgressionView({ playerId }: PlayerProgressionViewProps) 
     return (
         <div className="space-y-6">
             {milestones && (
-                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">OVR Máximo</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><Medal className="h-6 w-6 text-yellow-500"/><span className="text-3xl font-bold">{milestones.maxOvr}</span></div></CardContent></Card>
                     <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Goles Totales</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><Goal className="h-6 w-6 text-blue-500"/><span className="text-3xl font-bold">{milestones.totalGoals}</span></div></CardContent></Card>
                     <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Mayor Subida</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><ChevronsUp className="h-6 w-6 text-green-500"/><span className="text-3xl font-bold">+{milestones.biggestJump?.change || 0}</span></div></CardContent></Card>
-                    <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Mayor Bajada</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><ChevronsDown className="h-6 w-6 text-red-500"/><span className="text-3xl font-bold">{milestones.biggestDrop?.change || 0}</span></div></CardContent></Card>
                     <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Mejor Racha</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><TrendingUp className="h-6 w-6 text-indigo-500"/><span className="text-3xl font-bold">{milestones.longestPositiveStreak}</span><span className="text-sm text-muted-foreground">partidos</span></div></CardContent></Card>
                 </div>
             )}
@@ -323,5 +328,3 @@ export function PlayerProgressionView({ playerId }: PlayerProgressionViewProps) 
         </div>
     );
 }
-
-    
