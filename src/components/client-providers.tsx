@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase/index';
 import type { FirebaseApp } from 'firebase/app';
@@ -44,28 +43,37 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
     firestore: Firestore;
   } | null>(null);
 
+  // Determina si el código se está ejecutando en el servidor
+  const isServer = typeof window === 'undefined';
+
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
     libraries,
+    // No cargamos el script en el servidor
+    preventGoogleFontsLoading: isServer,
   });
 
   useEffect(() => {
-    const instances = initializeFirebase();
-    setFirebaseInstances(instances);
-  }, []);
+    // Solo inicializar Firebase en el cliente
+    if (!isServer) {
+      const instances = initializeFirebase();
+      setFirebaseInstances(instances);
+    }
+  }, [isServer]);
 
   if (loadError) {
     console.error("Google Maps API failed to load: ", loadError);
   }
 
-  // ✅ CORRECCIÓN CLAVE: No renderizar NADA hasta que Firebase y Google Maps estén listos.
-  if (!firebaseInstances || !isLoaded) {
+  // ✅ CORRECCIÓN: Si estamos en el servidor, o si los proveedores del cliente no están listos,
+  // mostramos la pantalla de carga. Esto evita que los hooks que usan `useContext`
+  // fallen durante el build del servidor (prerendering).
+  if (isServer || !firebaseInstances || !isLoaded) {
     return <LoadingScreen />;
   }
 
-  // Una vez que Firebase y Maps están listos, montar los proveedores UNA SOLA VEZ.
-  // Esta estructura es estable y no se volverá a renderizar, evitando race conditions.
+  // Una vez que estamos en el cliente y todo está cargado, montamos los proveedores.
   return (
     <ThemeProvider
       attribute="class"
