@@ -17,6 +17,7 @@ import { MatchChatView } from './match-chat-view';
 import { MatchTeams } from './match-details/MatchTeams';
 import { PlayersConfirmed } from './match-details/PlayersConfirmed';
 import { MatchChronicleCard } from './match-chronicle-card';
+import { AvailablePlayersSection } from './available-players-section';
 import { logger } from '@/lib/logger';
 
 interface MatchDetailViewProps {
@@ -142,7 +143,15 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                          ) : (
                            <PlayersConfirmed match={match} />
                          )}
-                         
+
+                         {/* Show player search section if match is incomplete */}
+                         {(match.players?.length || 0) < match.matchSize && (
+                           <AvailablePlayersSection
+                             match={match}
+                             isOwner={permissions.isOwner}
+                           />
+                         )}
+
                          {match.status === 'evaluated' && <MatchChronicleCard match={match} />}
                     </div>
                     {permissions.isOwner && (

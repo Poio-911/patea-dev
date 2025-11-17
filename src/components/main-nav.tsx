@@ -19,7 +19,7 @@ import {
 } from '@/components/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Gamepad2, UserCircle, Trophy, ClipboardCheck, X, CalendarDays, Swords } from 'lucide-react';
+import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Gamepad2, UserCircle, Trophy, ClipboardCheck, X, CalendarDays, Swords, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore, useCollection } from '@/firebase';
@@ -143,7 +143,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     );
   }
   
-  const isMatchesRelatedPath = pathname.startsWith('/matches') || pathname.startsWith('/competitions');
+  const isMatchesRelatedPath = pathname.startsWith('/matches') || pathname.startsWith('/competitions') || pathname.startsWith('/find-match');
 
   return (
     <SidebarProvider>
@@ -300,9 +300,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                             <Trophy className="h-5 w-5"/>
                             <div className="flex flex-col items-start w-full">
                                 <span>Competición</span>
-                                <div className="flex gap-2 mt-1">
-                                    <Button size="sm" variant={pathname.startsWith('/matches') ? 'secondary' : 'ghost'} className="h-7 px-2 text-xs" asChild><Link href="/matches">Partidos</Link></Button>
+                                <div className="flex gap-2 mt-1 flex-wrap">
+                                    <Button size="sm" variant={pathname.startsWith('/matches') && !pathname.startsWith('/find-match') ? 'secondary' : 'ghost'} className="h-7 px-2 text-xs" asChild><Link href="/matches">Partidos</Link></Button>
                                     <Button size="sm" variant={pathname.startsWith('/competitions') ? 'secondary' : 'ghost'} className="h-7 px-2 text-xs" asChild><Link href="/competitions">Torneos</Link></Button>
+                                    <Button size="sm" variant={pathname.startsWith('/find-match') ? 'secondary' : 'ghost'} className="h-7 px-2 text-xs" asChild><Link href="/find-match">Buscar</Link></Button>
                                 </div>
                             </div>
                         </SidebarMenuButton>
@@ -381,8 +382,9 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   style={{ pointerEvents: 'none' }}
                 >
                     {[
-                        { href: '/matches', label: 'Partidos', icon: CalendarDays, angle: -55 },
-                        { href: '/competitions', label: 'Torneos', icon: Swords, angle: 55 },
+                        { href: '/matches', label: 'Partidos', icon: CalendarDays, angle: -60 },
+                        { href: '/find-match', label: 'Buscar', icon: Search, angle: 0 },
+                        { href: '/competitions', label: 'Torneos', icon: Swords, angle: 60 },
                     ].map(({ href, label, icon: Icon, angle }) => {
                         const angleInRads = (angle - 90) * (Math.PI / 180);
                         const radius = 80;
