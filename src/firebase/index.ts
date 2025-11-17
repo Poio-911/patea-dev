@@ -11,31 +11,20 @@ import { useUser } from './auth/use-user';
 
 
 export function initializeFirebase() {
-  // Si por error hay variables de emulador seteadas pero NO queremos emulador, las limpiamos antes de inicializar Firestore.
-  if (typeof process !== 'undefined') {
-    const useEmulator = process.env.FIREBASE_USE_EMULATOR === 'true';
-    if (!useEmulator) {
-      const emulatorVars = [
-        'FIRESTORE_EMULATOR_HOST',
-        'FIREBASE_EMULATOR_HUB',
-        'FIREBASE_AUTH_EMULATOR_HOST',
-        'FIREBASE_STORAGE_EMULATOR_HOST',
-        'FIREBASE_DATABASE_EMULATOR_HOST'
-      ];
-      for (const v of emulatorVars) {
-        if ((process.env as any)[v]) {
-          delete (process.env as any)[v];
-        }
-      }
-    }
-  }
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const firestore = getFirestore(app);
   let messaging: Messaging | null = null;
+  
+  // ✅ FIX: Only initialize messaging on the client-side where 'window' is available.
   if (typeof window !== 'undefined') {
-    messaging = getMessaging(app);
+    try {
+      messaging = getMessaging(app);
+    } catch (error) {
+      console.warn("Firebase Messaging is not supported in this browser:", error);
+    }
   }
+
   return { firebaseApp: app, auth, firestore, messaging };
 }
 

@@ -2,54 +2,51 @@ import { initializeApp, cert, getApps, App, ServiceAccount } from 'firebase-admi
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
+import { logger } from '@/lib/logger';
 
-// Restored admin initialization (was removed). Many server actions still import adminDb/adminAuth/adminStorage.
-// This recreates the previous working behavior while keeping a single cached app instance.
+// --- Firebase Admin SDK Initialization ---
+// This file should only be imported in server-side code (e.g., Server Actions).
+// It ensures a single instance of the Firebase Admin app is created.
 
-// ✅ IMPORTANTE: Limpiar variables del emulador si NO queremos usar emulador
-// El Admin SDK automáticamente usa el emulador si detecta estas variables
-const useEmulator = process.env.FIREBASE_USE_EMULATOR === 'true';
-if (!useEmulator) {
-	const emulatorVars = [
-		'FIRESTORE_EMULATOR_HOST',
-		'FIREBASE_EMULATOR_HUB',
-		'FIREBASE_AUTH_EMULATOR_HOST',
-		'FIREBASE_STORAGE_EMULATOR_HOST',
-		'FIREBASE_DATABASE_EMULATOR_HOST'
-	];
-	for (const v of emulatorVars) {
-		if (process.env[v]) {
-			delete (process.env as any)[v];
-		}
-	}
+let adminApp: App | undefined;
+
+function initializeAdminApp(): App {
+    if (getApps().some(app => app.name === '[DEFAULT]')) {
+        return getApps().find(app => app.name === '[DEFAULT]')!;
+    }
+    
+    const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    if (!rawServiceAccount) {
+        throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.');
+    }
+    
+    try {
+        const serviceAccount: ServiceAccount = JSON.parse(rawServiceAccount);
+        const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+        if (!storageBucket) {
+            throw new Error("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET environment variable is not set.");
+        }
+        
+        return initializeApp({
+            credential: cert(serviceAccount),
+            storageBucket: storageBucket,
+        });
+
+    } catch (e: any) {
+        logger.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY. Make sure it's a valid JSON string.", e);
+        throw new Error("Could not initialize Firebase Admin SDK.");
+    }
 }
 
-let app: App;
-
-function ensureApp(): App {
-	if (getApps().length) {
-		return getApps()[0];
-	}
-	const raw = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-	if (!raw) {
-		throw new Error('Missing FIREBASE_SERVICE_ACCOUNT_KEY env var for Firebase Admin initialization');
-	}
-	const serviceAccount: ServiceAccount = JSON.parse(raw);
-	const storageBucket = process.env.FIREBASE_STORAGE_BUCKET || process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'mil-disculpis.firebasestorage.app';
-	return initializeApp({ credential: cert(serviceAccount), storageBucket });
+function getAdminApp(): App {
+    if (!adminApp) {
+        adminApp = initializeAdminApp();
+    }
+    return adminApp;
 }
 
-app = ensureApp();
+const app = getAdminApp();
 
 export const adminDb = getFirestore(app);
 export const adminAuth = getAuth(app);
-// Especificar el bucket explícitamente para evitar errores
-const bucketName = process.env.FIREBASE_STORAGE_BUCKET || process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'mil-disculpis.firebasestorage.app';
-export const adminStorage = getStorage(app).bucket(bucketName);
-
-// Helper to produce canonical public URL (v0 endpoint) for objects without requiring makePublic()
-export function buildPublicFileURL(objectPath: string) {
-	const bucketName = adminStorage.name; // e.g. mil-disculpis.appspot.com
-	const encoded = encodeURIComponent(objectPath).replace(/%2F/g, '/');
-	return `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encoded}?alt=media`;
-}
+export const adminStorage = getStorage(app).bucket();
