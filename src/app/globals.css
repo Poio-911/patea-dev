@@ -78,15 +78,37 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
     min-height: 100svh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    
+    /* Subtle Animated Gradient Background for light theme */
+    background: linear-gradient(
+      -45deg,
+      hsla(var(--primary), 0.1),
+      hsla(var(--accent), 0.05),
+      hsla(0, 0%, 100%, 0),
+      hsla(210, 40%, 98%, 1)
+    );
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
   }
 
-  /* Game Mode Background - Canvas renders the animated background */
   .game body {
     background: #041c47;
+  }
+
+  @keyframes gradientBG {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
   }
 }
 
