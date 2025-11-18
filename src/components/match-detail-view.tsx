@@ -160,7 +160,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                                 match={match}
                                 allGroupPlayers={allGroupPlayers || []}
                                 canFinalize={permissions.canFinalize}
-                                canInvite={permissions.canGenerateTeams}
                                 isFinishing={actions.isFinishing}
                                 isDeleting={actions.isDeleting}
                                 onFinish={actions.handleFinish}

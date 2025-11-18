@@ -19,7 +19,7 @@ import {
 } from '@/components/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Gamepad2, UserCircle, Trophy, ClipboardCheck, X, CalendarDays, Swords, Search } from 'lucide-react';
+import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Gamepad2, UserCircle, Trophy, ClipboardCheck, X, CalendarDays, Swords, Search, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore, useCollection } from '@/firebase';
@@ -33,7 +33,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
-import type { Player, PlayerPosition, EvaluationAssignment } from '@/lib/types';
+import type { Player, PlayerPosition, EvaluationAssignment, AvailablePlayer } from '@/lib/types';
 import { doc, collectionGroup, query, where } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
@@ -75,6 +75,12 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   }, [firestore, user?.uid]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
   
+  const availablePlayerRef = React.useMemo(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'availablePlayers', user.uid);
+  }, [firestore, user?.uid]);
+  const { data: availablePlayerData, loading: availablePlayerLoading } = useDoc<AvailablePlayer>(availablePlayerRef);
+  
   const pendingEvaluationsQuery = React.useMemo(() => {
     if (!firestore || !user?.uid) return null;
     return query(
@@ -88,7 +94,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const pendingEvaluationsCount = pendingEvaluations?.length || 0;
 
   const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
-  const loading = userLoading || playerLoading;
+  const loading = userLoading || playerLoading || availablePlayerLoading;
 
   React.useEffect(() => {
     if (user) {
@@ -144,6 +150,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   }
   
   const isMatchesRelatedPath = pathname.startsWith('/matches') || pathname.startsWith('/competitions') || pathname.startsWith('/find-match');
+  const isPlayerPublic = !!availablePlayerData;
 
   return (
     <SidebarProvider>
@@ -311,6 +318,16 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                     </SidebarGroup>
                 </SidebarMenu>
                  <div className="mt-auto">
+                    <SidebarSeparator />
+                     <SidebarGroup>
+                        <SidebarGroupLabel>Estado</SidebarGroupLabel>
+                        <div className="px-2">
+                            <Badge variant={isPlayerPublic ? 'default' : 'outline'} className={cn('w-full justify-center gap-2 text-xs', isPlayerPublic && 'bg-green-600/20 text-green-600 border-green-600/30')}>
+                                {isPlayerPublic ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                                {isPlayerPublic ? 'Perfil Público' : 'Perfil Privado'}
+                            </Badge>
+                        </div>
+                    </SidebarGroup>
                     <SidebarSeparator />
                     <SidebarGroup>
                         <SidebarGroupLabel>Mi Grupo</SidebarGroupLabel>

@@ -69,7 +69,7 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
   // ✅ CORRECCIÓN: Si estamos en el servidor, o si los proveedores del cliente no están listos,
   // mostramos la pantalla de carga. Esto evita que los hooks que usan `useContext`
   // fallen durante el build del servidor (prerendering).
-  if (isServer || !firebaseInstances || !isLoaded) {
+  if (isServer || !firebaseInstances) {
     return <LoadingScreen />;
   }
 
@@ -89,7 +89,11 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
         firestore={firebaseInstances.firestore}
       >
         <UserProvider>
-          <MainNav>{children}</MainNav>
+           {!isLoaded ? (
+            <LoadingScreen />
+          ) : (
+            <MainNav>{children}</MainNav>
+          )}
           <InstallPrompt />
           <UpdateNotification />
         </UserProvider>

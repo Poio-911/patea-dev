@@ -4,11 +4,12 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, doc, getDoc, writeBatch } from 'firebase/firestore';
-import type { Match, AvailablePlayer, Player, Invitation, Notification } from '@/lib/types';
+import { collection, query } from 'firebase/firestore';
+import type { Match, AvailablePlayer } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { Loader2, MapPin, Calendar, Users, LocateFixed, Search, SlidersHorizontal, Sparkles, AlertCircle, Send, Check } from 'lucide-react';
+import { Loader2, MapPin, Search, SlidersHorizontal, Users } from 'lucide-react';
 import { MatchMarker } from '@/components/match-marker';
+import { PlayerMarker } from '@/components/player-marker';
 import { libraries } from '@/lib/google-maps';
 import { mapStyles } from '@/lib/map-styles';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -18,13 +19,16 @@ import { format, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PlayerCard } from '@/components/player-card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { InvitePlayerDialog } from '@/components/invite-player-dialog';
 
 const containerStyle = {
   width: '100%',
@@ -52,17 +56,21 @@ const getDistance = (pos1: { lat: number; lng: number } | null, pos2: { lat: num
 export default function FindMatchPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
-  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('matches');
   const [activeMarker, setActiveMarker] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
-
-  const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
-  const [matchSearchCompleted, setMatchSearchCompleted] = useState(false);
-  const [matchDateFilter, setMatchDateFilter] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
-  const [matchSizeFilter, setMatchSizeFilter] = useState<string[]>([]);
   const [searchRadius, setSearchRadius] = useState(7);
+  const [filtersApplied, setFiltersApplied] = useState(false);
+
+  // Match Filters
+  const [matchDateFilter, setMatchDateFilter] = useState<string>('');
+  const [matchSizeFilter, setMatchSizeFilter] = useState<string[]>([]);
+
+  // Player Filters
+  const [playerPositionFilter, setPlayerPositionFilter] = useState('all');
+  const [playerOvrFilter, setPlayerOvrFilter] = useState([40, 99]);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -70,20 +78,25 @@ export default function FindMatchPage() {
     libraries,
   });
 
+  // Data fetching
   const publicMatchesQuery = useMemo(() => firestore ? query(collection(firestore, 'matches'), where('isPublic', '==', true), where('status', '==', 'upcoming')) : null, [firestore]);
+  const availablePlayersQuery = useMemo(() => firestore ? query(collection(firestore, 'availablePlayers'), where('uid', '!=', user?.uid || '')) : null, [firestore, user?.uid]);
+
   const { data: allPublicMatches, loading: matchesLoading } = useCollection<Match>(publicMatchesQuery);
+  const { data: allAvailablePlayers, loading: playersLoading } = useCollection<AvailablePlayer>(availablePlayersQuery);
 
-  const handleMarkerClick = (id: string) => {
-    setActiveMarker(activeMarker === id ? null : id);
-     const element = document.getElementById(`match-card-${id}`);
-    if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const applyFilters = useCallback(() => {
+    if (!userLocation) {
+        setLocationError('Primero tienes que indicar tu ubicación para poder buscar.');
+        return;
     }
-  };
+    setFiltersApplied(true);
+  }, [userLocation]);
 
-  const applyMatchFilters = useCallback(() => {
-    if (!allPublicMatches || !userLocation) return;
-    const filtered = allPublicMatches.filter(match => {
+
+  const filteredMatches = useMemo(() => {
+    if (!allPublicMatches || !userLocation || !filtersApplied) return [];
+    return allPublicMatches.filter(match => {
         if (!match.location?.lat || !match.location?.lng) return false;
         const distance = getDistance(userLocation, match.location);
         if (distance > searchRadius) return false;
@@ -91,11 +104,30 @@ export default function FindMatchPage() {
         if (matchSizeFilter.length > 0 && !matchSizeFilter.includes(String(match.matchSize))) return false;
         return true;
     }).sort((a,b) => getDistance(userLocation, a.location) - getDistance(userLocation, b.location));
-    setFilteredMatches(filtered);
-    setMatchSearchCompleted(true);
-  }, [allPublicMatches, userLocation, searchRadius, matchDateFilter, matchSizeFilter]);
+  }, [allPublicMatches, userLocation, searchRadius, matchDateFilter, matchSizeFilter, filtersApplied]);
 
-  const handleSearchNearby = useCallback(() => {
+  const filteredPlayers = useMemo(() => {
+    if (!allAvailablePlayers || !userLocation || !filtersApplied) return [];
+    return allAvailablePlayers.filter(player => {
+        if (!player.location?.lat || !player.location?.lng) return false;
+        const distance = getDistance(userLocation, player.location);
+        if (distance > searchRadius) return false;
+        if (playerPositionFilter !== 'all' && player.position !== playerPositionFilter) return false;
+        if (player.ovr < playerOvrFilter[0] || player.ovr > playerOvrFilter[1]) return false;
+        return true;
+    }).sort((a,b) => getDistance(userLocation, a.location) - getDistance(userLocation, b.location));
+  }, [allAvailablePlayers, userLocation, searchRadius, playerPositionFilter, playerOvrFilter, filtersApplied]);
+
+
+  const handleMarkerClick = (id: string) => {
+    setActiveMarker(activeMarker === id ? null : id);
+     const element = document.getElementById(`card-${id}`);
+    if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  const handleSearchClick = useCallback(() => {
     setIsSearching(true);
     setLocationError(null);
     if (!navigator.geolocation) {
@@ -105,41 +137,97 @@ export default function FindMatchPage() {
     }
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const currentUserLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
-        setUserLocation(currentUserLocation);
+        setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
         setIsSearching(false);
+        setFiltersApplied(true);
       },
       (error) => {
-        const message = error.code === 1 ? 'Debes permitir el acceso a la ubicación en tu navegador para buscar.' : 'No se pudo obtener tu ubicación. Inténtalo de nuevo.';
+        const message = error.code === 1 ? 'Debes permitir el acceso a la ubicación para buscar.' : 'No se pudo obtener tu ubicación.';
         setLocationError(message);
         setIsSearching(false);
       }
     );
   }, []);
+
+  const itemsToDisplay = activeTab === 'matches' ? filteredMatches : filteredPlayers;
   
-  useEffect(() => { if (userLocation) { applyMatchFilters(); } }, [userLocation, applyMatchFilters]);
-
-  const loading = userLoading || matchesLoading || !isLoaded;
-
-  const renderContent = () => {
-    if (loading && !matchSearchCompleted) return <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
-    if (!matchSearchCompleted) return <Card><CardHeader className="p-4"><CardTitle className="text-center">Encontrá Partidos Cerca Tuyo</CardTitle><CardDescription className="text-center text-xs sm:text-sm">Ajustá los filtros y dale al botón para encontrar partidos públicos.</CardDescription></CardHeader><CardContent className="p-4 space-y-4"><div className="w-full space-y-4"><div><div className="flex justify-between font-medium mb-1"><Label>Radio de Búsqueda:</Label><span className="text-primary">{searchRadius} km</span></div><Slider value={[searchRadius]} onValueChange={(value) => setSearchRadius(value[0])} max={50} step={1} disabled={isSearching} /></div><div><Label className="font-medium">Fecha del Partido</Label><Input type="date" value={matchDateFilter} onChange={e => setMatchDateFilter(e.target.value)} /></div><div><Label className="font-medium">Tamaño del Partido</Label><ToggleGroup type="multiple" value={matchSizeFilter} onValueChange={setMatchSizeFilter} variant="outline" className="justify-start mt-1"><ToggleGroupItem value="10">Fútbol 5</ToggleGroupItem><ToggleGroupItem value="14">Fútbol 7</ToggleGroupItem><ToggleGroupItem value="22">Fútbol 11</ToggleGroupItem></ToggleGroup></div></div>{locationError && (<Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error de Ubicación</AlertTitle><AlertDescription>{locationError}<Button variant="link" className="p-0 h-auto ml-1 text-destructive" onClick={handleSearchNearby}>Reintentar</Button></AlertDescription></Alert>)}</CardContent><CardFooter className="p-4 border-t"><Button onClick={handleSearchNearby} disabled={isSearching} size="lg" className="w-full">{isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LocateFixed className="mr-2 h-5 w-5" />}{isSearching ? 'Buscando...' : 'Buscar Partidos Cercanos'}</Button></CardFooter></Card>;
-    
-    return <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full"><div className="lg:col-span-1 h-full flex flex-col gap-4"><Card className="flex-grow flex flex-col"><CardHeader className="p-4 flex-row items-center justify-between"><CardTitle className="text-lg">Partidos ({filteredMatches.length})</CardTitle><Button variant="ghost" size="icon" onClick={() => {setMatchSearchCompleted(false); setLocationError(null);}}><SlidersHorizontal className="h-4 w-4" /></Button></CardHeader><CardContent className="p-2 flex-grow overflow-hidden"><ScrollArea className="h-full"><div className="space-y-2 p-1">{filteredMatches.length > 0 ? filteredMatches.map((match) => <div id={`match-card-${match.id}`} key={match.id}><Card className={cn("cursor-pointer transition-all duration-200", activeMarker === match.id ? "border-primary shadow-lg" : "hover:border-muted-foreground/50")} onMouseEnter={() => setActiveMarker(match.id)} onMouseLeave={() => setActiveMarker(null)}><div className="p-4 grid grid-cols-3 gap-4 items-center"><div className="col-span-2 space-y-2"><h3 className="font-bold leading-tight">{match.title}</h3><div className="text-xs text-muted-foreground flex items-center gap-2"><Calendar className="h-3 w-3" /><span>{format(new Date(match.date), "d MMM, yyyy", { locale: es })} - {match.time}hs</span></div></div><div className="col-span-1 flex flex-col items-end justify-center gap-2"><div className="flex items-center gap-2 text-sm font-semibold"><Users className="h-4 w-4" /><span>{match.players.length}/{match.matchSize}</span></div></div></div></Card></div>) : <Alert className="m-2"><AlertTitle>Sin Resultados</AlertTitle><AlertDescription>No se encontraron partidos con esos filtros. Intenta ampliar tu búsqueda.</AlertDescription></Alert>}</div></ScrollArea></CardContent></Card></div><div className="h-[400px] lg:h-full w-full rounded-lg overflow-hidden lg:col-span-2"><GoogleMap mapContainerStyle={containerStyle} center={userLocation || defaultCenter} zoom={12} options={{ styles: mapStyles, disableDefaultUI: true, zoomControl: true, }}>{filteredMatches.map((match) => ( <MatchMarker key={match.id} match={match} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} /> ))}</GoogleMap></div></div>;
+  if (userLoading || !isLoaded) {
+    return <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   }
 
   return (
     <div className="flex flex-col gap-4 h-[calc(100vh-8rem)] pb-16 md:pb-0">
-        <FirstTimeInfoDialog
-            featureKey="hasSeenFindMatchInfo"
-            title="Sección de Búsqueda de Partidos"
-            description="Acá podés encontrar partidos públicos que hayan creado otros organizadores cerca de tu zona. Ajustá los filtros, buscá y ¡sumate a jugar!"
-        />
-        <PageHeader
-            title="Buscar Partidos"
-            description="Encontrá partidos públicos y sumate a la acción."
-        />
-        {renderContent()}
+      <FirstTimeInfoDialog
+        featureKey="hasSeenFindMatchInfo"
+        title="Sección de Búsqueda"
+        description="Acá podés encontrar partidos públicos que hayan creado otros organizadores cerca de tu zona, o buscar jugadores libres para invitar a tus propios partidos."
+      />
+      <PageHeader title="Buscar" description="Encontrá partidos y jugadores cerca tuyo." />
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
+        <div className="lg:col-span-1 h-full flex flex-col gap-4">
+          <Card>
+            <CardHeader className="p-4">
+              <CardTitle className="text-lg">Filtros de Búsqueda</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 space-y-4">
+              <Tabs value={activeTab} onValueChange={v => setActiveTab(v)} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="matches">Partidos</TabsTrigger>
+                  <TabsTrigger value="players">Jugadores</TabsTrigger>
+                </TabsList>
+                <TabsContent value="matches" className="space-y-4 pt-2">
+                  <div><Label>Fecha</Label><Input type="date" value={matchDateFilter} onChange={e => setMatchDateFilter(e.target.value)} /></div>
+                  <div><Label>Tamaño del Partido</Label><ToggleGroup type="multiple" value={matchSizeFilter} onValueChange={setMatchSizeFilter} variant="outline" className="justify-start mt-1"><ToggleGroupItem value="10">F5</ToggleGroupItem><ToggleGroupItem value="14">F7</ToggleGroupItem><ToggleGroupItem value="22">F11</ToggleGroupItem></ToggleGroup></div>
+                </TabsContent>
+                <TabsContent value="players" className="space-y-4 pt-2">
+                   <div><Label>Posición</Label><Select value={playerPositionFilter} onValueChange={setPlayerPositionFilter}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="all">Todas</SelectItem><SelectItem value="POR">Portero</SelectItem><SelectItem value="DEF">Defensa</SelectItem><SelectItem value="MED">Medio</SelectItem><SelectItem value="DEL">Delantero</SelectItem></SelectContent></Select></div>
+                   <div><Label>Rango de OVR: {playerOvrFilter[0]} - {playerOvrFilter[1]}</Label><Slider value={playerOvrFilter} onValueChange={setPlayerOvrFilter} min={40} max={99} step={1} /></div>
+                </TabsContent>
+              </Tabs>
+              <div><Label>Radio de Búsqueda: {searchRadius} km</Label><Slider value={[searchRadius]} onValueChange={(v) => setSearchRadius(v[0])} max={50} step={1} /></div>
+              {locationError && (<Alert variant="destructive"><AlertDescription>{locationError}</AlertDescription></Alert>)}
+            </CardContent>
+            <CardFooter className="p-4 border-t">
+              <Button onClick={handleSearchClick} disabled={isSearching} size="lg" className="w-full">
+                {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
+                {isSearching ? 'Buscando...' : 'Buscar'}
+              </Button>
+            </CardFooter>
+          </Card>
+          
+          <Card className="flex-grow flex flex-col">
+            <CardHeader className="p-4"><CardTitle className="text-lg">Resultados ({itemsToDisplay.length})</CardTitle></CardHeader>
+            <CardContent className="p-2 flex-grow overflow-hidden"><ScrollArea className="h-full">
+              {filtersApplied && (
+                <div className="space-y-2 p-1">
+                  {itemsToDisplay.length > 0 ? itemsToDisplay.map((item: Match | AvailablePlayer) => (
+                    <div id={`card-${(item as Match).id || (item as AvailablePlayer).uid}`} key={(item as Match).id || (item as AvailablePlayer).uid}>
+                      {activeTab === 'matches' ? (
+                          <Card className={cn("cursor-pointer", activeMarker === item.id ? "border-primary" : "")} onMouseEnter={() => setActiveMarker(item.id)} onMouseLeave={() => setActiveMarker(null)}>
+                            <div className="p-3 grid grid-cols-3 gap-2 items-center"><div className="col-span-2 space-y-1"><h3 className="font-semibold text-sm leading-tight">{(item as Match).title}</h3><div className="text-xs text-muted-foreground flex items-center gap-1.5"><Calendar className="h-3 w-3" /><span>{format(new Date((item as Match).date), "d MMM", { locale: es })} - {(item as Match).time}hs</span></div></div><div className="col-span-1 flex flex-col items-end gap-1"><Badge variant="secondary">{(item as Match).players.length}/{(item as Match).matchSize}</Badge><InvitePlayerDialog userMatches={[item as Match]} selectedMatchId={item.id}><Button size="sm" variant="default" className="h-7 text-xs w-full">Invitar</Button></InvitePlayerDialog></div></div>
+                          </Card>
+                      ) : (
+                          <div className="w-full" onMouseEnter={() => setActiveMarker((item as AvailablePlayer).uid)} onMouseLeave={() => setActiveMarker(null)}>
+                            <PlayerCard player={item as any} />
+                          </div>
+                      )}
+                    </div>
+                  )) : <Alert><AlertDescription>No se encontraron {activeTab === 'matches' ? 'partidos' : 'jugadores'} con esos filtros.</AlertDescription></Alert>}
+                </div>
+              )}
+            </ScrollArea></CardContent>
+          </Card>
+        </div>
+        
+        <div className="h-[400px] lg:h-full w-full rounded-lg overflow-hidden lg:col-span-2">
+          <GoogleMap mapContainerStyle={containerStyle} center={userLocation || defaultCenter} zoom={13} options={{ styles: mapStyles, disableDefaultUI: true, zoomControl: true }}>
+            {userLocation && <PlayerMarker player={{uid: 'user-location', location: userLocation} as AvailablePlayer} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} />}
+            {filtersApplied && activeTab === 'matches' && filteredMatches.map((match) => <MatchMarker key={match.id} match={match} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} />)}
+            {filtersApplied && activeTab === 'players' && filteredPlayers.map((player) => <PlayerMarker key={player.uid} player={player} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} />)}
+          </GoogleMap>
+        </div>
+      </div>
     </div>
   );
 }

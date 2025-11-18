@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -14,7 +15,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { InvitePlayerDialog } from '@/components/invite-player-dialog';
+import { InvitePlayerDialog } from '../invite-player-dialog';
 import { Loader2, CheckCircle, Trash2, UserPlus, FileSignature } from 'lucide-react';
 import Link from 'next/link';
 
@@ -22,7 +23,6 @@ interface MatchManagementActionsProps {
   match: Match;
   allGroupPlayers: Player[];
   canFinalize: boolean;
-  canInvite: boolean;
   isFinishing: boolean;
   isDeleting: boolean;
   onFinish: () => void;
@@ -37,7 +37,6 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
   match,
   allGroupPlayers,
   canFinalize,
-  canInvite,
   isFinishing,
   isDeleting,
   onFinish,
@@ -72,26 +71,7 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
              </Link>
            </Button>
         )}
-
-        {canInvite && (
-          <InvitePlayerDialog
-            playerToInvite={null}
-            userMatches={[match]}
-            allGroupPlayers={allGroupPlayers}
-            match={match}
-          >
-            <Button
-              variant="outline"
-              size="sm"
-              className="min-h-[48px] w-full sm:w-auto"
-              aria-label="Invitar jugador"
-            >
-              <UserPlus className="mr-2 h-4 w-4 text-primary" aria-hidden="true" />
-              Invitar
-            </Button>
-          </InvitePlayerDialog>
-        )}
-
+        
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
