@@ -22,7 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Gamepad2, UserCircle, Trophy, ClipboardCheck, X, CalendarDays, Swords, Search, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { useUser, useAuth, useDoc, useFirestore, useCollection } from '@/firebase';
+import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
 import { GroupSwitcher } from '@/components/group-switcher';
 import {
   DropdownMenu,
@@ -156,7 +156,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <WelcomeDialog />
       <div className="relative h-screen w-full">
-          <header className="fixed top-0 left-0 right-0 z-20 flex h-16 shrink-0 items-center justify-between border-b bg-background/70 px-4 backdrop-blur-lg sm:px-6 md:left-[var(--sidebar-width)] md:data-[state=collapsed]:left-[var(--sidebar-width-icon)] transition-all duration-300 ease-in-out">
+        <div className="sticky top-0 z-20">
+          <header className="relative z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background/70 px-4 backdrop-blur-lg sm:px-6 md:left-[var(--sidebar-width)] md:data-[state=collapsed]:left-[var(--sidebar-width-icon)] transition-all duration-300 ease-in-out">
               <div className="flex items-center gap-2">
                   <div className="hidden md:block">
                       <SidebarTrigger />
@@ -274,6 +275,13 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   </DropdownMenu>
               </div>
           </header>
+          {isPlayerPublic && (
+                <div className="relative z-0 bg-green-600/10 text-green-700 dark:text-green-300 dark:bg-green-800/20 text-xs font-semibold p-2 flex items-center justify-center gap-2 text-center md:pl-[var(--sidebar-width)] md:data-[state=collapsed]:pl-[var(--sidebar-width-icon)] transition-all duration-300 ease-in-out">
+                    <Eye className="h-3.5 w-3.5"/>
+                    Tu perfil es público y visible para otros organizadores.
+                </div>
+            )}
+        </div>
 
           <Sidebar>
             <SidebarHeader>
@@ -331,12 +339,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               "h-screen overflow-y-auto pt-16 md:pl-[var(--sidebar-width)] transition-[padding] duration-300 ease-in-out",
               "group-data-[state=collapsed]/sidebar-wrapper:md:pl-[var(--sidebar-width-icon)]"
           )}>
-            {isPlayerPublic && (
-                <div className="bg-green-600/10 text-green-700 dark:text-green-300 dark:bg-green-800/20 text-xs font-semibold p-2 flex items-center justify-center gap-2">
-                    <Eye className="h-3.5 w-3.5"/>
-                    Tu perfil es público y visible para otros organizadores.
-                </div>
-            )}
             <div className="p-4 md:p-6 pb-24 md:pb-6">
                 {children}
             </div>
@@ -434,3 +436,4 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+
