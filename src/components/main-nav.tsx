@@ -170,7 +170,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                       <div className="flex items-center gap-3">
                           <div className="text-right">
                               <p className="font-bold text-sm truncate max-w-[100px] sm:max-w-none">{player.name}</p>
-                              <p className={cn("text-xs font-headline font-bold uppercase", positionConfig[player.position].textColor)}>{positionConfig[player.position].name}</p>
+                               <Badge variant={isPlayerPublic ? 'default' : 'outline'} className={cn('justify-center gap-1 text-xs', isPlayerPublic && 'bg-green-600/20 text-green-600 border-green-600/30')}>
+                                {isPlayerPublic ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                                {isPlayerPublic ? 'Público' : 'Privado'}
+                              </Badge>
                           </div>
                            <div className="flex items-center justify-center h-10 w-10 text-xl font-bold rounded-full bg-primary/10 border-2 border-primary/20 text-primary">
                               {player.ovr}
@@ -318,16 +321,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                     </SidebarGroup>
                 </SidebarMenu>
                  <div className="mt-auto">
-                    <SidebarSeparator />
-                     <SidebarGroup>
-                        <SidebarGroupLabel>Estado</SidebarGroupLabel>
-                        <div className="px-2">
-                            <Badge variant={isPlayerPublic ? 'default' : 'outline'} className={cn('w-full justify-center gap-2 text-xs', isPlayerPublic && 'bg-green-600/20 text-green-600 border-green-600/30')}>
-                                {isPlayerPublic ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                                {isPlayerPublic ? 'Perfil Público' : 'Perfil Privado'}
-                            </Badge>
-                        </div>
-                    </SidebarGroup>
                     <SidebarSeparator />
                     <SidebarGroup>
                         <SidebarGroupLabel>Mi Grupo</SidebarGroupLabel>
