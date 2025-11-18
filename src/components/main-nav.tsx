@@ -22,7 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Gamepad2, UserCircle, Trophy, ClipboardCheck, X, CalendarDays, Swords, Search, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
+import { useUser, useAuth, useDoc, useFirestore, useCollection } from '@/firebase';
 import { GroupSwitcher } from '@/components/group-switcher';
 import {
   DropdownMenu,
@@ -337,7 +337,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
           <main className={cn(
               "h-screen overflow-y-auto pt-16 md:pl-[var(--sidebar-width)] transition-[padding] duration-300 ease-in-out",
-              "group-data-[state=collapsed]/sidebar-wrapper:md:pl-[var(--sidebar-width-icon)]"
+              "group-data-[state=collapsed]/sidebar-wrapper:md:pl-[var(--sidebar-width-icon)]",
+              isPlayerPublic && "pt-[calc(4rem+2.25rem)]"
           )}>
             <div className="p-4 md:p-6 pb-24 md:pb-6">
                 {children}
@@ -436,4 +437,3 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
-
