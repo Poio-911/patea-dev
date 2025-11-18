@@ -170,10 +170,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                       <div className="flex items-center gap-3">
                           <div className="text-right">
                               <p className="font-bold text-sm truncate max-w-[100px] sm:max-w-none">{player.name}</p>
-                               <Badge variant={isPlayerPublic ? 'default' : 'outline'} className={cn('justify-center gap-1 text-xs', isPlayerPublic && 'bg-green-600/20 text-green-600 border-green-600/30')}>
-                                {isPlayerPublic ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                                {isPlayerPublic ? 'Público' : 'Privado'}
-                              </Badge>
+                               <p className="text-xs text-muted-foreground">{player.position}</p>
                           </div>
                            <div className="flex items-center justify-center h-10 w-10 text-xl font-bold rounded-full bg-primary/10 border-2 border-primary/20 text-primary">
                               {player.ovr}
@@ -334,6 +331,12 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               "h-screen overflow-y-auto pt-16 md:pl-[var(--sidebar-width)] transition-[padding] duration-300 ease-in-out",
               "group-data-[state=collapsed]/sidebar-wrapper:md:pl-[var(--sidebar-width-icon)]"
           )}>
+            {isPlayerPublic && (
+                <div className="bg-green-600/10 text-green-700 dark:text-green-300 dark:bg-green-800/20 text-xs font-semibold p-2 flex items-center justify-center gap-2">
+                    <Eye className="h-3.5 w-3.5"/>
+                    Tu perfil es público y visible para otros organizadores.
+                </div>
+            )}
             <div className="p-4 md:p-6 pb-24 md:pb-6">
                 {children}
             </div>
