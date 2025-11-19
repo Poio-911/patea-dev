@@ -218,13 +218,13 @@ export function handleServerActionError(
   context?: Record<string, any>
 ): ErrorResponse {
   // Error de Firebase Auth
-  if (error.code?.startsWith('auth/')) {
+  if (typeof error.code === 'string' && error.code.startsWith('auth/')) {
     const appError = createError(ErrorCodes.AUTH_UNAUTHORIZED, context, error);
     return formatErrorResponse(appError);
   }
 
   // Error de Firestore
-  if (error.code?.startsWith('firestore/')) {
+  if (typeof error.code === 'string' && error.code.startsWith('firestore/')) {
     const appError = createError(ErrorCodes.SYS_DATABASE_ERROR, context, error);
     return formatErrorResponse(appError);
   }

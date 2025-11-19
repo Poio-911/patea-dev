@@ -11,7 +11,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Button } from './ui/button';
-import { Bell, CheckCheck, FileSignature, UserPlus, Info, Swords, CheckCircle2, XCircle, FileText } from 'lucide-react';
+import { Bell, CheckCheck, FileSignature, UserPlus, Info, Swords, CheckCircle2, XCircle, FileText, Users, CalendarClock, TrendingUp, Award } from 'lucide-react';
 import type { Notification, NotificationType } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -33,6 +33,11 @@ const notificationIcons: Record<NotificationType, React.ElementType> = {
     challenge_accepted: CheckCircle2,
     challenge_rejected: XCircle,
     league_application: FileText,
+    new_follower: Users,
+    match_invitation: CalendarClock,
+    match_reminder: CalendarClock,
+    ovr_milestone: TrendingUp,
+    achievement_unlocked: Award,
 };
 
 const IconWrapper = ({ type, className, ...props }: { type: Notification['type'], className?: string }) => {
@@ -49,6 +54,11 @@ const IconWrapper = ({ type, className, ...props }: { type: Notification['type']
                 type === 'challenge_accepted' && 'bg-emerald-500/10 text-emerald-500',
                 type === 'challenge_rejected' && 'bg-red-500/10 text-red-500',
                 type === 'league_application' && 'bg-indigo-500/10 text-indigo-500',
+                type === 'new_follower' && 'bg-pink-500/20 text-pink-500',
+                type === 'match_invitation' && 'bg-blue-500/20 text-blue-500',
+                type === 'match_reminder' && 'bg-amber-500/20 text-amber-500',
+                type === 'ovr_milestone' && 'bg-green-500/20 text-green-500',
+                type === 'achievement_unlocked' && 'bg-yellow-500/20 text-yellow-500',
             )}>
                 <Icon className="h-4 w-4" />
             </AvatarFallback>

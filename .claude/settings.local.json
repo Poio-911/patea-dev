@@ -35,7 +35,19 @@
       "WebFetch(domain:www.espnfrontrow.com)",
       "Bash(gsutil cors set:*)",
       "Bash(gcloud storage buckets update:*)",
-      "Bash(.env.local)"
+      "Bash(.env.local)",
+      "Bash(git restore:*)",
+      "Bash(if exist \"C:\\pateá\\src\\app\\competitions\\leagues\\[leagueId]\" rmdir /s /q \"C:\\pateá\\src\\app\\competitions\\leagues\\[leagueId]\")",
+      "Bash(grep:*)",
+      "Bash(npm run build:*)",
+      "Bash(git log:*)",
+      "Bash(firebase apps:list:*)",
+      "Bash(firebase apphosting:backends:list:*)",
+      "Bash(firebase apphosting:rollouts:create:*)",
+      "Bash(firebase apphosting:rollouts:list:*)",
+      "Bash(timeout /t 10)",
+      "Bash(timeout:*)",
+      "Bash(if exist \"C:\\pateá\\src\\app\\api\\debug\" rmdir /s /q \"C:\\pateá\\src\\app\\api\\debug\")"
     ],
     "deny": [],
     "ask": []

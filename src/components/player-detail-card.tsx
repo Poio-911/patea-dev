@@ -8,7 +8,7 @@ import type { Player } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
 import { Button } from './ui/button';
-import { Sparkles, Loader2, Scissors } from 'lucide-react';
+import { Sparkles, Loader2, Scissors, Share2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/lib/logger';
@@ -16,6 +16,8 @@ import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
 import { PlayerOvr, getPositionBadgeClasses, AttributesGrid, PlayerPhoto, positionConfig } from '@/components/player-styles';
 import { ImageCropperDialog } from './image-cropper-dialog';
 import { Dialog, DialogContent, DialogTrigger } from './ui/dialog';
+import { FollowButton } from './social/follow-button';
+import { ShareButton } from './social/share-button';
 
 type PlayerDetailCardProps = {
   player: Player;
@@ -118,6 +120,22 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile }
             </Dialog>
             <h3 className="w-full truncate text-center text-xl font-semibold">{playerName}</h3>
           </div>
+
+          {/* Social actions for other users' profiles */}
+          {!isCurrentUserProfile && (
+            <div className="flex items-center justify-center gap-2 my-3">
+              <FollowButton targetUserId={player.id} variant="default" size="sm" />
+              <ShareButton
+                title={`${player.name} - OVR ${player.ovr}`}
+                text={`Mirá el perfil de ${player.name} en Pateá!`}
+                url={typeof window !== 'undefined' ? window.location.href : ''}
+                imageUrl={player.photoUrl}
+                variant="outline"
+                size="sm"
+                showLabel={false}
+              />
+            </div>
+          )}
 
           {isCurrentUserProfile && (
             <div className="grid grid-cols-2 gap-2 w-full my-4">

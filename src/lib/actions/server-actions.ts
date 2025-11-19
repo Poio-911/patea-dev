@@ -2431,23 +2431,44 @@ export async function followUserAction(
             return { success: false, error: 'No podés seguirte a vos mismo.' };
         }
 
-        // Check if already following
-        const existingFollow = await adminDb
-            .collection('follows')
-            .where('followerId', '==', followerId)
-            .where('followingId', '==', followingId)
+        // Check if already following using subcollection
+        const followingDoc = await adminDb
+            .collection('users')
+            .doc(followerId)
+            .collection('following')
+            .doc(followingId)
             .get();
 
-        if (!existingFollow.empty) {
+        if (followingDoc.exists) {
             return { success: false, error: 'Ya estás siguiendo a este usuario.' };
         }
 
-        // Create follow relationship
-        await adminDb.collection('follows').add({
-            followerId,
-            followingId,
+        // Create follow relationship using batch
+        const batch = adminDb.batch();
+
+        // Add to follower's "following" subcollection
+        const followingRef = adminDb
+            .collection('users')
+            .doc(followerId)
+            .collection('following')
+            .doc(followingId);
+        batch.set(followingRef, {
+            userId: followingId,
             createdAt: new Date().toISOString(),
         });
+
+        // Add to target user's "followers" subcollection
+        const followerRef = adminDb
+            .collection('users')
+            .doc(followingId)
+            .collection('followers')
+            .doc(followerId);
+        batch.set(followerRef, {
+            userId: followerId,
+            createdAt: new Date().toISOString(),
+        });
+
+        await batch.commit();
 
         // Create notification for the followed user
         await createNotificationAction(followingId, {
@@ -2455,6 +2476,7 @@ export async function followUserAction(
             title: 'Nuevo Seguidor',
             message: 'Te está siguiendo',
             fromUserId: followerId,
+            link: `/players/${followerId}`,
         });
 
         // Create social activity
@@ -2480,21 +2502,37 @@ export async function unfollowUserAction(
     followingId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const followsSnapshot = await adminDb
-            .collection('follows')
-            .where('followerId', '==', followerId)
-            .where('followingId', '==', followingId)
+        // Check if following using subcollection
+        const followingDoc = await adminDb
+            .collection('users')
+            .doc(followerId)
+            .collection('following')
+            .doc(followingId)
             .get();
 
-        if (followsSnapshot.empty) {
+        if (!followingDoc.exists) {
             return { success: false, error: 'No estás siguiendo a este usuario.' };
         }
 
-        // Delete all follow relationships (should be only one, but just in case)
+        // Delete follow relationship using batch
         const batch = adminDb.batch();
-        followsSnapshot.docs.forEach((doc) => {
-            batch.delete(doc.ref);
-        });
+
+        // Remove from follower's "following" subcollection
+        const followingRef = adminDb
+            .collection('users')
+            .doc(followerId)
+            .collection('following')
+            .doc(followingId);
+        batch.delete(followingRef);
+
+        // Remove from target user's "followers" subcollection
+        const followerRef = adminDb
+            .collection('users')
+            .doc(followingId)
+            .collection('followers')
+            .doc(followerId);
+        batch.delete(followerRef);
+
         await batch.commit();
 
         logger.info('User unfollowed successfully', { followerId, followingId });
@@ -2513,13 +2551,14 @@ export async function isFollowingAction(
     followingId: string
 ): Promise<{ success: boolean; isFollowing: boolean; error?: string }> {
     try {
-        const followsSnapshot = await adminDb
-            .collection('follows')
-            .where('followerId', '==', followerId)
-            .where('followingId', '==', followingId)
+        const followingDoc = await adminDb
+            .collection('users')
+            .doc(followerId)
+            .collection('following')
+            .doc(followingId)
             .get();
 
-        return { success: true, isFollowing: !followsSnapshot.empty };
+        return { success: true, isFollowing: followingDoc.exists };
     } catch (error) {
         const err = handleServerActionError(error);
         return { success: false, isFollowing: false, error: err.error };
@@ -2534,11 +2573,12 @@ export async function getFollowersAction(
 ): Promise<{ success: boolean; followers?: string[]; count?: number; error?: string }> {
     try {
         const followersSnapshot = await adminDb
-            .collection('follows')
-            .where('followingId', '==', userId)
+            .collection('users')
+            .doc(userId)
+            .collection('followers')
             .get();
 
-        const followers = followersSnapshot.docs.map((doc) => doc.data().followerId);
+        const followers = followersSnapshot.docs.map((doc) => doc.id);
 
         return { success: true, followers, count: followers.length };
     } catch (error) {
@@ -2555,11 +2595,12 @@ export async function getFollowingAction(
 ): Promise<{ success: boolean; following?: string[]; count?: number; error?: string }> {
     try {
         const followingSnapshot = await adminDb
-            .collection('follows')
-            .where('followerId', '==', userId)
+            .collection('users')
+            .doc(userId)
+            .collection('following')
             .get();
 
-        const following = followingSnapshot.docs.map((doc) => doc.data().followingId);
+        const following = followingSnapshot.docs.map((doc) => doc.id);
 
         return { success: true, following, count: following.length };
     } catch (error) {
@@ -2635,7 +2676,7 @@ async function createNotificationAction(
         matchId?: string;
         achievementId?: string;
         playerId?: string;
-        actionUrl?: string;
+        link?: string;
     }
 ): Promise<void> {
     // Get fromUser details if provided
@@ -2651,12 +2692,11 @@ async function createNotificationAction(
         }
     }
 
-    await adminDb.collection('notifications').add({
-        userId,
+    await adminDb.collection('users').doc(userId).collection('notifications').add({
         type: notification.type,
         title: notification.title,
         message: notification.message,
-        read: false,
+        isRead: false,
         createdAt: new Date().toISOString(),
         metadata: {
             fromUserId: notification.fromUserId,
@@ -2666,7 +2706,7 @@ async function createNotificationAction(
             achievementId: notification.achievementId,
             playerId: notification.playerId,
         },
-        actionUrl: notification.actionUrl,
+        link: notification.link || '/dashboard',
     });
 }
 
@@ -2679,8 +2719,9 @@ export async function getNotificationsAction(
 ): Promise<{ success: boolean; notifications?: Notification[]; unreadCount?: number; error?: string }> {
     try {
         const notificationsSnapshot = await adminDb
+            .collection('users')
+            .doc(userId)
             .collection('notifications')
-            .where('userId', '==', userId)
             .orderBy('createdAt', 'desc')
             .limit(limit)
             .get();
@@ -2690,7 +2731,7 @@ export async function getNotificationsAction(
             ...doc.data(),
         })) as Notification[];
 
-        const unreadCount = notifications.filter((n) => !n.read).length;
+        const unreadCount = notifications.filter((n) => !n.isRead).length;
 
         return { success: true, notifications, unreadCount };
     } catch (error) {
@@ -2703,12 +2744,18 @@ export async function getNotificationsAction(
  * Mark notification as read
  */
 export async function markNotificationAsReadAction(
+    userId: string,
     notificationId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        await adminDb.collection('notifications').doc(notificationId).update({
-            read: true,
-        });
+        await adminDb
+            .collection('users')
+            .doc(userId)
+            .collection('notifications')
+            .doc(notificationId)
+            .update({
+                isRead: true,
+            });
 
         return { success: true };
     } catch (error) {
@@ -2725,14 +2772,15 @@ export async function markAllNotificationsAsReadAction(
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const unreadNotifications = await adminDb
+            .collection('users')
+            .doc(userId)
             .collection('notifications')
-            .where('userId', '==', userId)
-            .where('read', '==', false)
+            .where('isRead', '==', false)
             .get();
 
         const batch = adminDb.batch();
         unreadNotifications.docs.forEach((doc) => {
-            batch.update(doc.ref, { read: true });
+            batch.update(doc.ref, { isRead: true });
         });
         await batch.commit();
 

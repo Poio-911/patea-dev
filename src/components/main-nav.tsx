@@ -19,7 +19,7 @@ import {
 } from '@/components/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Gamepad2, UserCircle, Trophy, ClipboardCheck, X, CalendarDays, Swords, Search, Eye, EyeOff } from 'lucide-react';
+import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Gamepad2, UserCircle, Trophy, ClipboardCheck, X, CalendarDays, Swords, Search, Eye, EyeOff, Settings, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore, useCollection } from '@/firebase';
@@ -216,6 +216,18 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                                   <Link href="/profile">
                                       <User className="mr-2 h-4 w-4" />
                                       <span>Mi Perfil</span>
+                                  </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                  <Link href="/social">
+                                      <Activity className="mr-2 h-4 w-4" />
+                                      <span>Feed Social</span>
+                                  </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                  <Link href="/settings">
+                                      <Settings className="mr-2 h-4 w-4" />
+                                      <span>Configuración</span>
                                   </Link>
                               </DropdownMenuItem>
                               <DropdownMenuItem asChild>

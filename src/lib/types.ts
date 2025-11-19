@@ -196,7 +196,20 @@ export type Group = {
 } & DocumentData;
 
 
-export type NotificationType = 'match_invite' | 'new_joiner' | 'evaluation_pending' | 'match_update' | 'challenge_received' | 'challenge_accepted' | 'challenge_rejected' | 'league_application';
+export type NotificationType =
+    | 'match_invite'
+    | 'new_joiner'
+    | 'evaluation_pending'
+    | 'match_update'
+    | 'challenge_received'
+    | 'challenge_accepted'
+    | 'challenge_rejected'
+    | 'league_application'
+    | 'new_follower'
+    | 'match_invitation'
+    | 'match_reminder'
+    | 'ovr_milestone'
+    | 'achievement_unlocked';
 
 export type Notification = {
     id: string;
@@ -205,7 +218,16 @@ export type Notification = {
     message: string;
     link: string;
     isRead: boolean;
-    createdAt: string; 
+    createdAt: string;
+    // Optional metadata for additional context
+    metadata?: {
+        fromUserId?: string;
+        fromUserName?: string;
+        fromUserPhoto?: string;
+        matchId?: string;
+        achievementId?: string;
+        playerId?: string;
+    };
 } & DocumentData;
 
 export type TeamAvailabilityPost = {
@@ -637,32 +659,4 @@ export type SocialActivity = {
     };
 } & DocumentData;
 
-// Notification types
-export type NotificationType =
-    | 'new_follower'
-    | 'match_invitation'
-    | 'match_reminder'
-    | 'ovr_milestone'
-    | 'achievement_unlocked';
-
-// User notification
-export type Notification = {
-    id: string;
-    userId: string; // User who receives the notification
-    type: NotificationType;
-    title: string;
-    message: string;
-    read: boolean;
-    createdAt: string; // ISO timestamp
-    // Type-specific data
-    metadata?: {
-        fromUserId?: string;
-        fromUserName?: string;
-        fromUserPhoto?: string;
-        matchId?: string;
-        achievementId?: string;
-        playerId?: string;
-    };
-    // Optional action URL
-    actionUrl?: string;
-} & DocumentData;
+// Note: Notification types are now unified with the main notification system above (lines 199-231)
