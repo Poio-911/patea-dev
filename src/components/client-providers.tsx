@@ -12,6 +12,7 @@ import { ThemeProvider } from 'next-themes';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { libraries } from '@/lib/google-maps';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
+import { ThemeBackground } from '@/components/theme-background';
 
 type FirebaseClientProviderProps = {
   children: React.ReactNode;
@@ -44,10 +45,12 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
     return (
       <ThemeProvider
         attribute="class"
-        defaultTheme="system"
-        enableSystem
+        themes={['light', 'game']}
+        defaultTheme="light"
+        enableSystem={false}
         disableTransitionOnChange
       >
+        <ThemeBackground />
         <div className="flex h-screen w-full items-center justify-center bg-background">
           <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
         </div>
@@ -59,10 +62,12 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
   return (
     <ThemeProvider
       attribute="class"
-      defaultTheme="system"
-      enableSystem
+      themes={['light', 'game']}
+      defaultTheme="light"
+      enableSystem={false}
       disableTransitionOnChange
     >
+      <ThemeBackground />
       <FirebaseProvider
         firebaseApp={firebaseInstances.firebaseApp}
         auth={firebaseInstances.auth}

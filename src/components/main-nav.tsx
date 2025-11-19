@@ -288,7 +288,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               </div>
           </header>
           {isPlayerPublic && (
-                <div className="relative z-0 bg-green-600/10 text-green-700 dark:text-green-300 dark:bg-green-800/20 text-xs font-semibold p-2 flex items-center justify-center gap-2 text-center md:pl-[var(--sidebar-width)] md:data-[state=collapsed]:pl-[var(--sidebar-width-icon)] transition-all duration-300 ease-in-out">
+                <div className="relative z-0 bg-green-600/10 text-green-700 game:bg-primary/20 game:text-primary game:border-b game:border-primary/40 text-xs font-semibold p-2 flex items-center justify-center gap-2 text-center md:pl-[var(--sidebar-width)] md:data-[state=collapsed]:pl-[var(--sidebar-width-icon)] transition-all duration-300 ease-in-out">
                     <Eye className="h-3.5 w-3.5"/>
                     Tu perfil es público y visible para otros organizadores.
                 </div>
@@ -349,8 +349,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
 
           <main className={cn(
               "h-screen overflow-y-auto pt-16 md:pl-[var(--sidebar-width)] transition-[padding] duration-300 ease-in-out",
-              "group-data-[state=collapsed]/sidebar-wrapper:md:pl-[var(--sidebar-width-icon)]",
-              isPlayerPublic && "pt-[calc(4rem+2.25rem)]"
+              "group-data-[state=collapsed]/sidebar-wrapper:md:pl-[var(--sidebar-width-icon)]"
           )}>
             <div className="p-4 md:p-6 pb-24 md:pb-6">
                 {children}
