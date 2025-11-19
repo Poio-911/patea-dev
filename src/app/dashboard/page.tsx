@@ -28,6 +28,10 @@ import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 import { logger } from '@/lib/logger';
 import { motion } from 'framer-motion';
 import { FindMatchIcon } from '@/components/icons/find-match-icon';
+import { PlayerStatsCard } from '@/components/dashboard/player-stats-card';
+import { OVRProgressionChart } from '@/components/dashboard/ovr-progression-chart';
+import { SocialFeed } from '@/components/social/social-feed';
+import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
     upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
@@ -47,6 +51,18 @@ const listVariants = {
     opacity: 1,
     transition: {
       staggerChildren: 0.1,
+    },
+  },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: 'easeOut',
     },
   },
 };
@@ -190,7 +206,7 @@ function DashboardContent() {
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center h-full"><SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" /></div>;
+    return <DashboardSkeleton />;
   }
   
   if (!user?.activeGroupId) {
@@ -238,22 +254,50 @@ function DashboardContent() {
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-8">
+        <motion.div
+          className="lg:col-span-2 space-y-8"
+          variants={listVariants}
+          initial="hidden"
+          animate="visible"
+        >
           {nextMatch && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-primary" />
-                    Próximo Partido
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <NextMatchCard match={nextMatch} />
-              </CardContent>
-            </Card>
+            <motion.div variants={cardVariants}>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-primary" />
+                      Próximo Partido
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <NextMatchCard match={nextMatch} />
+                </CardContent>
+              </Card>
+            </motion.div>
           )}
 
-          <Card>
+          {player && matches && matches.length > 0 && (
+            <motion.div variants={cardVariants}>
+              <PlayerStatsCard
+                matches={matches}
+                playerId={user!.uid}
+                currentOVR={player.ovr}
+              />
+            </motion.div>
+          )}
+
+          {player && matches && (
+            <motion.div variants={cardVariants}>
+              <OVRProgressionChart
+                matches={matches}
+                playerId={user!.uid}
+                currentOVR={player.ovr}
+              />
+            </motion.div>
+          )}
+
+          <motion.div variants={cardVariants}>
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FindMatchIcon className="h-5 w-5 text-primary" />
@@ -270,33 +314,42 @@ function DashboardContent() {
                     </Link>
                 </Button>
               </CardContent>
-          </Card>
+            </Card>
+          </motion.div>
 
-          <Card>
-            <CardHeader>
-                <CardTitle>Partidos Anteriores</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                {recentMatches && recentMatches.length > 0 ? recentMatches.map(match => {
-                     const statusInfo = statusConfig[match.status] || { label: 'Desconocido', className: 'bg-gray-100 text-gray-800' };
-                     return (
-                        <Link key={match.id} href={`/matches/${match.id}`} className="block">
-                            <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                                <div>
-                                    <p className="font-semibold">{match.title}</p>
-                                    <p className="text-sm text-muted-foreground">{format(new Date(match.date), "dd 'de' MMMM, yyyy", { locale: es })}</p>
-                                </div>
-                                <Badge variant="outline" className={cn(statusInfo.className)}>{statusInfo.label}</Badge>
-                            </div>
-                        </Link>
-                     )
-                }) : <p className="text-sm text-muted-foreground text-center py-4">Aún no hay partidos jugados en este grupo.</p>}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="lg:col-span-1 space-y-8">
+          <motion.div variants={cardVariants}>
             <Card>
+              <CardHeader>
+                  <CardTitle>Partidos Anteriores</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                  {recentMatches && recentMatches.length > 0 ? recentMatches.map(match => {
+                       const statusInfo = statusConfig[match.status] || { label: 'Desconocido', className: 'bg-gray-100 text-gray-800' };
+                       return (
+                          <Link key={match.id} href={`/matches/${match.id}`} className="block">
+                              <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                                  <div>
+                                      <p className="font-semibold">{match.title}</p>
+                                      <p className="text-sm text-muted-foreground">{format(new Date(match.date), "dd 'de' MMMM, yyyy", { locale: es })}</p>
+                                  </div>
+                                  <Badge variant="outline" className={cn(statusInfo.className)}>{statusInfo.label}</Badge>
+                              </div>
+                          </Link>
+                       )
+                  }) : <p className="text-sm text-muted-foreground text-center py-4">Aún no hay partidos jugados en este grupo.</p>}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
+
+        <motion.div
+          className="lg:col-span-1 space-y-8"
+          variants={listVariants}
+          initial="hidden"
+          animate="visible"
+        >
+            <motion.div variants={cardVariants}>
+              <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Star className="h-5 w-5 text-primary" />
@@ -346,8 +399,10 @@ function DashboardContent() {
                 </motion.div>
               </CardContent>
             </Card>
+            </motion.div>
 
-            <Card>
+            <motion.div variants={cardVariants}>
+              <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Eye className="h-5 w-5 text-primary" />
@@ -394,7 +449,12 @@ function DashboardContent() {
                     </SetAvailabilityDialog>
                 </CardContent>
             </Card>
-        </div>
+            </motion.div>
+
+            <motion.div variants={cardVariants}>
+              <SocialFeed limit={10} showHeader={true} />
+            </motion.div>
+        </motion.div>
       </div>
     </motion.div>
   );
@@ -402,7 +462,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
     return (
-        <Suspense fallback={<div className="flex justify-center items-center h-full"><SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" /></div>}>
+        <Suspense fallback={<DashboardSkeleton />}>
             <DashboardContent />
         </Suspense>
     )
