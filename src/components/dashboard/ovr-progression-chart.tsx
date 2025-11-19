@@ -3,47 +3,51 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { TrendingUp } from 'lucide-react';
-import type { Match } from '@/lib/types';
+import type { Player, OvrHistory } from '@/lib/types';
 import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion } from 'framer-motion';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
 
 interface OVRProgressionChartProps {
-  matches: Match[];
-  playerId: string;
-  currentOVR: number;
+  player: Player;
 }
 
-export function OVRProgressionChart({ matches, playerId, currentOVR }: OVRProgressionChartProps) {
+export function OVRProgressionChart({ player }: OVRProgressionChartProps) {
+  const firestore = useFirestore();
+
+  // Fetch OVR history
+  const ovrHistoryQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, `players/${player.id}/ovrHistory`),
+      orderBy('date', 'asc')
+    );
+  }, [firestore, player.id]);
+
+  const { data: ovrHistory } = useCollection<OvrHistory>(ovrHistoryQuery);
+
   const chartData = useMemo(() => {
-    // Filter matches where the player participated and were evaluated
-    const playerMatches = matches.filter(
-      (m) => m.status === 'evaluated' && m.players?.some((p) => p.id === playerId)
-    );
+    if (!ovrHistory) return [];
 
-    // Sort by date
-    const sortedMatches = playerMatches.sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-
-    // Map to chart data
-    const data = sortedMatches.map((match) => {
-      const playerData = match.players?.find((p) => p.id === playerId);
+    // Map ovrHistory to chart data
+    const data = ovrHistory.map((entry, index) => {
       return {
-        date: format(new Date(match.date), 'dd/MM', { locale: es }),
-        fullDate: format(new Date(match.date), "dd 'de' MMMM", { locale: es }),
-        ovr: playerData?.ovr || currentOVR,
-        matchTitle: match.title,
+        date: format(new Date(entry.date), 'dd/MM', { locale: es }),
+        fullDate: format(new Date(entry.date), "dd 'de' MMMM", { locale: es }),
+        ovr: entry.newOVR,
+        matchId: entry.matchId,
       };
     });
 
     return data;
-  }, [matches, playerId, currentOVR]);
+  }, [ovrHistory]);
 
   // Calculate statistics
   const stats = useMemo(() => {
-    if (chartData.length === 0) return { change: 0, highest: currentOVR, lowest: currentOVR };
+    if (chartData.length === 0) return { change: 0, highest: player.ovr, lowest: player.ovr };
 
     const ovrs = chartData.map((d) => d.ovr);
     const firstOVR = ovrs[0];
@@ -51,10 +55,10 @@ export function OVRProgressionChart({ matches, playerId, currentOVR }: OVRProgre
 
     return {
       change: lastOVR - firstOVR,
-      highest: Math.max(...ovrs),
-      lowest: Math.min(...ovrs),
+      highest: Math.max(...ovrs, player.ovr),
+      lowest: Math.min(...ovrs, player.ovr),
     };
-  }, [chartData, currentOVR]);
+  }, [chartData, player.ovr]);
 
   if (chartData.length === 0) {
     return (
@@ -154,7 +158,6 @@ export function OVRProgressionChart({ matches, playerId, currentOVR }: OVRProgre
               formatter={(value: any, name: string, props: any) => {
                 return [
                   <span key="ovr" className="text-primary font-bold">{value} OVR</span>,
-                  <span key="match" className="text-muted-foreground block text-xs mt-1">{props.payload.matchTitle}</span>,
                 ];
               }}
               labelFormatter={(label: string, payload: any) => {

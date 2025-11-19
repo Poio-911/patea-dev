@@ -3,40 +3,42 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trophy, Target, TrendingUp, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { Match } from '@/lib/types';
+import type { Player, OvrHistory } from '@/lib/types';
 import { useMemo } from 'react';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
 
 interface PlayerStatsCardProps {
-  matches: Match[];
-  playerId: string;
-  currentOVR: number;
+  player: Player;
 }
 
-export function PlayerStatsCard({ matches, playerId, currentOVR }: PlayerStatsCardProps) {
+export function PlayerStatsCard({ player }: PlayerStatsCardProps) {
+  const firestore = useFirestore();
+
+  // Fetch OVR history for trend calculation
+  const ovrHistoryQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, `players/${player.id}/ovrHistory`),
+      orderBy('date', 'asc')
+    );
+  }, [firestore, player.id]);
+
+  const { data: ovrHistory } = useCollection<OvrHistory>(ovrHistoryQuery);
+
   const stats = useMemo(() => {
-    const playerMatches = matches.filter(
-      (m) => m.status === 'evaluated' && m.players?.some((p) => p.id === playerId)
-    );
+    // Use player.stats which already contains the calculated values
+    const totalMatches = player.stats?.matchesPlayed || 0;
+    const totalGoals = player.stats?.goals || 0;
 
-    const totalGoals = playerMatches.reduce((total, match) => {
-      const playerData = match.players?.find((p) => p.id === playerId);
-      return total + (playerData?.goals || 0);
-    }, 0);
-
-    const totalMatches = playerMatches.length;
-
-    // Calculate OVR trend (simple: compare first and last evaluated match)
-    const sortedMatches = playerMatches.sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-    const firstMatch = sortedMatches[0];
-    const lastMatch = sortedMatches[sortedMatches.length - 1];
-
+    // Calculate OVR trend from ovrHistory
     let ovrTrend = 0;
-    if (firstMatch && lastMatch && firstMatch.id !== lastMatch.id) {
-      const firstOVR = firstMatch.players?.find((p) => p.id === playerId)?.ovr || currentOVR;
-      const lastOVR = lastMatch.players?.find((p) => p.id === playerId)?.ovr || currentOVR;
-      ovrTrend = lastOVR - firstOVR;
+    if (ovrHistory && ovrHistory.length > 0) {
+      const firstEntry = ovrHistory[0];
+      const lastEntry = ovrHistory[ovrHistory.length - 1];
+      if (firstEntry && lastEntry) {
+        ovrTrend = lastEntry.newOVR - firstEntry.oldOVR;
+      }
     }
 
     return {
@@ -45,7 +47,7 @@ export function PlayerStatsCard({ matches, playerId, currentOVR }: PlayerStatsCa
       ovrTrend,
       avgGoalsPerMatch: totalMatches > 0 ? (totalGoals / totalMatches).toFixed(1) : '0.0',
     };
-  }, [matches, playerId, currentOVR]);
+  }, [player.stats, ovrHistory]);
 
   const statCards = [
     {

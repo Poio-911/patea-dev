@@ -276,23 +276,15 @@ function DashboardContent() {
             </motion.div>
           )}
 
-          {player && matches && matches.length > 0 && (
+          {player && (
             <motion.div variants={cardVariants}>
-              <PlayerStatsCard
-                matches={matches}
-                playerId={user!.uid}
-                currentOVR={player.ovr}
-              />
+              <PlayerStatsCard player={player} />
             </motion.div>
           )}
 
-          {player && matches && (
+          {player && (
             <motion.div variants={cardVariants}>
-              <OVRProgressionChart
-                matches={matches}
-                playerId={user!.uid}
-                currentOVR={player.ovr}
-              />
+              <OVRProgressionChart player={player} />
             </motion.div>
           )}
 
