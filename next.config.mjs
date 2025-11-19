@@ -3,6 +3,10 @@ import withPWA from '@ducanh2912/next-pwa';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+
+  // Disable source maps in production to avoid exposing file paths
+  productionBrowserSourceMaps: false,
+
   images: {
     remotePatterns: [
       {
@@ -23,6 +27,15 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
+  },
+
+  // Webpack config to ensure clean paths
+  webpack: (config, { isServer }) => {
+    // Override default devtool to not include absolute paths
+    if (!isServer) {
+      config.devtool = false;
+    }
+    return config;
   },
 };
 
