@@ -17,6 +17,7 @@ import { ChampionCelebration } from '@/components/leagues/ChampionCelebration';
 import { LeagueTopScorers } from '@/components/leagues/LeagueTopScorers';
 import { calculateLeagueStandings, getCurrentRound } from '@/lib/utils/league-standings';
 import { updateLeagueStatusAction, deleteLeagueAction } from '@/lib/actions/server-actions';
+import { ApplicationsManager } from '@/components/competitions/applications-manager';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -31,7 +32,7 @@ import {
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-type LeagueTab = 'standings' | 'fixture' | 'teams' | 'scorers';
+type LeagueTab = 'standings' | 'fixture' | 'teams' | 'scorers' | 'applications';
 
 export default function LeagueDetailPage() {
   const { id: leagueId } = useParams();
@@ -262,6 +263,14 @@ export default function LeagueDetailPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {activeTab === 'applications' && league && isOwner && (
+        <ApplicationsManager
+          competitionId={league.id}
+          competitionType="league"
+          competitionName={league.name}
+        />
       )}
 
       {/* Match Schedule Dialog */}

@@ -17,6 +17,7 @@ import { Progress } from '@/components/ui/progress';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { logger } from '@/lib/logger';
+import { updateLeagueStandingsAction, advanceCupWinnerAction } from '@/lib/actions/server-actions';
 
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
@@ -369,6 +370,37 @@ export default function EvaluateMatchPage() {
             spread: 70,
             origin: { y: 0.6 }
         });
+
+        // Update league standings if this is a league match
+        if (match.type === 'league' && match.leagueInfo?.leagueId) {
+            try {
+                await updateLeagueStandingsAction(match.leagueInfo.leagueId);
+                logger.info('League standings updated', { leagueId: match.leagueInfo.leagueId, matchId: match.id });
+            } catch (error) {
+                logger.error('Error updating league standings', error);
+                // Don't block the flow if standings update fails
+            }
+        }
+
+        // Advance winner in cup bracket if this is a cup match
+        if (match.type === 'cup' && match.leagueInfo?.leagueId && match.finalScore && match.participantTeamIds) {
+            try {
+                // Determine winner
+                const team1Score = match.finalScore.team1;
+                const team2Score = match.finalScore.team2;
+
+                if (team1Score !== team2Score) {
+                    const winnerId = team1Score > team2Score ? match.participantTeamIds[0] : match.participantTeamIds[1];
+                    await advanceCupWinnerAction(match.leagueInfo.leagueId, match.id, winnerId);
+                    logger.info('Cup winner advanced', { cupId: match.leagueInfo.leagueId, winnerId, matchId: match.id });
+                } else {
+                    logger.warn('Cup match ended in a tie - winner not advanced', { matchId: match.id });
+                }
+            } catch (error) {
+                logger.error('Error advancing cup winner', error);
+                // Don't block the flow if cup advancement fails
+            }
+        }
 
         toast({
             title: "¡Evaluación Finalizada!",

@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeft, Play, Trophy, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type LeagueTab = 'standings' | 'fixture' | 'teams' | 'scorers';
+type LeagueTab = 'standings' | 'fixture' | 'teams' | 'scorers' | 'applications';
 
 type LeagueHeaderProps = {
   league: League;
@@ -108,6 +108,9 @@ export function LeagueHeader({
           <TabsTrigger value="fixture">Fixture</TabsTrigger>
           <TabsTrigger value="scorers">Goleadores</TabsTrigger>
           <TabsTrigger value="teams">Equipos</TabsTrigger>
+          {isOwner && (league.status === 'draft' || league.status === 'open_for_applications') && (
+            <TabsTrigger value="applications">Aplicaciones</TabsTrigger>
+          )}
         </TabsList>
       </Tabs>
     </div>

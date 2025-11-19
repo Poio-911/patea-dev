@@ -17,7 +17,8 @@ import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '@/
 import { type GenerateMatchChronicleOutput, type GenerateMatchChronicleInput, MatchLocation } from '@/lib/types';
 import { generateMatchChronicleFlow } from '@/ai/flows/generate-match-chronicle';
 import { generateDuoImage } from '@/ai/flows/generate-duo-image';
-import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, GenerateDuoImageInput, League, LeagueFormat, CompetitionStatus, Cup, CupFormat, BracketMatch, CompetitionApplication, CompetitionFormat } from '../types';
+import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, GenerateDuoImageInput, League, LeagueFormat, CompetitionStatus, Cup, CupFormat, BracketMatch, CompetitionApplication, CompetitionFormat, HealthConnection, PlayerPerformance, GoogleFitAuthUrl, GoogleFitSession, SocialActivity, Follow, NotificationType } from '../types';
+import { GOOGLE_FIT_CONFIG, calculateAttributeImpact } from '../config/google-fit';
 import { logger } from '../logger';
 import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse, type ErrorResponse } from '../errors';
 import { addDays, format } from 'date-fns';
@@ -1587,6 +1588,1157 @@ export async function updateMatchFinalScoreAction(
         return { success: true };
     } catch (error) {
         const err = handleServerActionError(error, { matchId });
+        return { success: false, error: err.error };
+    }
+}
+
+// ============================================================================
+// LEAGUE STANDINGS
+// ============================================================================
+
+/**
+ * Update league standings table based on all completed matches
+ * This should be called after a league match is finalized
+ */
+export async function updateLeagueStandingsAction(
+    leagueId: string
+): Promise<{ success: boolean; standings?: any[]; error?: string }> {
+    try {
+        // Get league data
+        const leagueDoc = await adminDb.collection('leagues').doc(leagueId).get();
+        if (!leagueDoc.exists) {
+            return { success: false, error: 'Liga no encontrada.' };
+        }
+        const league = { id: leagueDoc.id, ...leagueDoc.data() } as League;
+
+        // Get all league matches that are completed or evaluated
+        const matchesSnapshot = await adminDb
+            .collection('matches')
+            .where('leagueInfo.leagueId', '==', leagueId)
+            .where('status', 'in', ['completed', 'evaluated'])
+            .get();
+
+        const matches = matchesSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as Match));
+
+        // Get team data to include jersey info
+        const teamsSnapshot = await adminDb
+            .collection('teams')
+            .where('__name__', 'in', league.teams)
+            .get();
+
+        const teamsMap = new Map(
+            teamsSnapshot.docs.map(doc => [doc.id, { id: doc.id, ...doc.data() } as GroupTeam])
+        );
+
+        // Initialize standings for each team
+        const standingsMap = new Map<string, {
+            teamId: string;
+            teamName: string;
+            teamJersey: any;
+            matchesPlayed: number;
+            wins: number;
+            draws: number;
+            losses: number;
+            goalsFor: number;
+            goalsAgainst: number;
+            goalDifference: number;
+            points: number;
+        }>();
+
+        // Initialize all teams with zero stats
+        league.teams.forEach(teamId => {
+            const team = teamsMap.get(teamId);
+            if (team) {
+                standingsMap.set(teamId, {
+                    teamId,
+                    teamName: team.name,
+                    teamJersey: team.jersey,
+                    matchesPlayed: 0,
+                    wins: 0,
+                    draws: 0,
+                    losses: 0,
+                    goalsFor: 0,
+                    goalsAgainst: 0,
+                    goalDifference: 0,
+                    points: 0,
+                });
+            }
+        });
+
+        // Process each completed match
+        matches.forEach(match => {
+            if (!match.participantTeamIds || match.participantTeamIds.length !== 2) return;
+            if (!match.finalScore) return;
+
+            const team1Id = match.participantTeamIds[0];
+            const team2Id = match.participantTeamIds[1];
+            const team1Score = match.finalScore.team1;
+            const team2Score = match.finalScore.team2;
+
+            const team1Stats = standingsMap.get(team1Id);
+            const team2Stats = standingsMap.get(team2Id);
+
+            if (!team1Stats || !team2Stats) return;
+
+            // Update matches played
+            team1Stats.matchesPlayed++;
+            team2Stats.matchesPlayed++;
+
+            // Update goals
+            team1Stats.goalsFor += team1Score;
+            team1Stats.goalsAgainst += team2Score;
+            team2Stats.goalsFor += team2Score;
+            team2Stats.goalsAgainst += team1Score;
+
+            // Update results
+            if (team1Score > team2Score) {
+                // Team 1 wins
+                team1Stats.wins++;
+                team1Stats.points += 3;
+                team2Stats.losses++;
+            } else if (team2Score > team1Score) {
+                // Team 2 wins
+                team2Stats.wins++;
+                team2Stats.points += 3;
+                team1Stats.losses++;
+            } else {
+                // Draw
+                team1Stats.draws++;
+                team2Stats.draws++;
+                team1Stats.points++;
+                team2Stats.points++;
+            }
+
+            // Update goal difference
+            team1Stats.goalDifference = team1Stats.goalsFor - team1Stats.goalsAgainst;
+            team2Stats.goalDifference = team2Stats.goalsFor - team2Stats.goalsAgainst;
+        });
+
+        // Convert to array and sort
+        const standings = Array.from(standingsMap.values()).sort((a, b) => {
+            // 1. Sort by points (descending)
+            if (b.points !== a.points) return b.points - a.points;
+            // 2. Sort by goal difference (descending)
+            if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+            // 3. Sort by goals for (descending)
+            if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+            // 4. Alphabetically by team name
+            return a.teamName.localeCompare(b.teamName);
+        });
+
+        // Add position
+        const standingsWithPosition = standings.map((team, index) => ({
+            ...team,
+            position: index + 1,
+        }));
+
+        // Save standings to league document
+        await adminDb.collection('leagues').doc(leagueId).update({
+            standings: standingsWithPosition,
+        });
+
+        return { success: true, standings: standingsWithPosition };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+// ============================================================================
+// CUP BRACKET ADVANCEMENT
+// ============================================================================
+
+/**
+ * Advance winner in cup bracket and create next match if both teams are ready
+ * This should be called after a cup match is finalized
+ */
+export async function advanceCupWinnerAction(
+    cupId: string,
+    matchId: string,
+    winnerId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        // Get cup data
+        const cupDoc = await adminDb.collection('cups').doc(cupId).get();
+        if (!cupDoc.exists) {
+            return { success: false, error: 'Copa no encontrada.' };
+        }
+        const cup = { id: cupDoc.id, ...cupDoc.data() } as Cup;
+
+        if (!cup.bracket) {
+            return { success: false, error: 'Bracket no generado.' };
+        }
+
+        // Get match data
+        const matchDoc = await adminDb.collection('matches').doc(matchId).get();
+        if (!matchDoc.exists) {
+            return { success: false, error: 'Partido no encontrado.' };
+        }
+        const match = { id: matchDoc.id, ...matchDoc.data() } as Match;
+
+        // Find the bracket match
+        const bracketMatch = cup.bracket.find(bm => bm.matchId === matchId);
+        if (!bracketMatch) {
+            return { success: false, error: 'Partido no encontrado en el bracket.' };
+        }
+
+        // Get winner team data
+        const winnerTeamDoc = await adminDb.collection('teams').doc(winnerId).get();
+        if (!winnerTeamDoc.exists) {
+            return { success: false, error: 'Equipo ganador no encontrado.' };
+        }
+        const winnerTeam = { id: winnerTeamDoc.id, ...winnerTeamDoc.data() } as GroupTeam;
+
+        // Advance winner in bracket
+        const updatedBracket = advanceWinner(
+            cup.bracket,
+            bracketMatch.id,
+            winnerId,
+            winnerTeam.name,
+            winnerTeam.jersey
+        );
+
+        // Check if tournament is complete
+        const isComplete = isTournamentComplete(updatedBracket);
+
+        const updateData: Partial<Cup> = {
+            bracket: updatedBracket,
+        };
+
+        if (isComplete) {
+            const champion = getChampion(updatedBracket);
+            const runnerUp = getRunnerUp(updatedBracket);
+
+            updateData.status = 'completed';
+            updateData.completedAt = new Date().toISOString();
+            if (champion) {
+                updateData.championTeamId = champion.teamId;
+                updateData.championTeamName = champion.teamName;
+            }
+            if (runnerUp) {
+                updateData.runnerUpTeamId = runnerUp.teamId;
+                updateData.runnerUpTeamName = runnerUp.teamName;
+            }
+        } else {
+            // Check if we need to create next match
+            // Find the next match in the bracket
+            const nextRound = getNextRound(bracketMatch.round);
+            if (nextRound) {
+                const nextMatchNumber = bracketMatch.nextMatchNumber;
+                if (nextMatchNumber) {
+                    const nextBracketMatch = updatedBracket.find(
+                        bm => bm.round === nextRound && bm.matchNumber === nextMatchNumber
+                    );
+
+                    // If both teams are defined and match hasn't been created yet
+                    if (nextBracketMatch && nextBracketMatch.team1Id && nextBracketMatch.team2Id && !nextBracketMatch.matchId) {
+                        // Create the next match
+                        const nextMatchRef = adminDb.collection('matches').doc();
+                        const nextMatchData: Partial<Match> = {
+                            title: `${nextBracketMatch.team1Name} vs ${nextBracketMatch.team2Name}`,
+                            date: cup.startDate || new Date().toISOString(),
+                            time: '19:00',
+                            location: cup.defaultLocation || { name: 'A definir', address: '', lat: 0, lng: 0, placeId: '' },
+                            type: 'cup',
+                            matchSize: 22,
+                            status: 'upcoming',
+                            ownerUid: cup.ownerUid,
+                            groupId: cup.groupId,
+                            participantTeamIds: [nextBracketMatch.team1Id, nextBracketMatch.team2Id],
+                            teams: [
+                                { name: nextBracketMatch.team1Name || '', players: [], totalOVR: 0, averageOVR: 0, jersey: nextBracketMatch.team1Jersey || { type: 'plain', primaryColor: '#000000', secondaryColor: '#ffffff' } },
+                                { name: nextBracketMatch.team2Name || '', players: [], totalOVR: 0, averageOVR: 0, jersey: nextBracketMatch.team2Jersey || { type: 'plain', primaryColor: '#000000', secondaryColor: '#ffffff' } },
+                            ],
+                            leagueInfo: {
+                                leagueId: cupId, // Using same field for cups
+                                round: 0, // Not used for cups
+                            },
+                            createdAt: new Date().toISOString(),
+                        };
+
+                        await nextMatchRef.set(nextMatchData);
+
+                        // Update bracket with matchId
+                        const bracketIndex = updatedBracket.findIndex(
+                            bm => bm.round === nextRound && bm.matchNumber === nextMatchNumber
+                        );
+                        if (bracketIndex !== -1) {
+                            updatedBracket[bracketIndex].matchId = nextMatchRef.id;
+                        }
+
+                        updateData.bracket = updatedBracket;
+                    }
+                }
+            }
+        }
+
+        // Update cup document
+        await adminDb.collection('cups').doc(cupId).update(updateData);
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+// ============================================================================
+// GOOGLE FIT INTEGRATION (Smartwatch)
+// ============================================================================
+
+/**
+ * Generate Google Fit OAuth2 authorization URL
+ * Step 1: User initiates connection
+ */
+export async function generateGoogleFitAuthUrlAction(
+    userId: string
+): Promise<{ success: boolean; authUrl?: string; state?: string; error?: string }> {
+    try {
+        const clientId = process.env.GOOGLE_FIT_CLIENT_ID;
+        const redirectUri = process.env.GOOGLE_FIT_REDIRECT_URI;
+
+        if (!clientId || !redirectUri) {
+            return {
+                success: false,
+                error: 'Google Fit credentials not configured. Please contact support.',
+            };
+        }
+
+        // Generate CSRF token (state)
+        const state = Buffer.from(
+            JSON.stringify({
+                userId,
+                timestamp: Date.now(),
+                nonce: Math.random().toString(36).substring(7),
+            })
+        ).toString('base64');
+
+        // Build OAuth2 URL
+        const params = new URLSearchParams({
+            client_id: clientId,
+            redirect_uri: redirectUri,
+            response_type: 'code',
+            scope: GOOGLE_FIT_CONFIG.scopes.join(' '),
+            access_type: 'offline', // Request refresh token
+            prompt: 'consent', // Force consent screen to get refresh token
+            state,
+        });
+
+        const authUrl = `${GOOGLE_FIT_CONFIG.authEndpoint}?${params.toString()}`;
+
+        return { success: true, authUrl, state };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Exchange authorization code for tokens and save connection
+ * Step 2: After user authorizes, process callback
+ */
+export async function processGoogleFitCallbackAction(
+    code: string,
+    state: string
+): Promise<{ success: boolean; tokens?: any; userId?: string; error?: string }> {
+    try {
+        console.log('[processGoogleFitCallback] Starting...');
+
+        // Decode and validate state
+        const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
+        const userId = stateData.userId;
+
+        console.log('[processGoogleFitCallback] User ID:', userId);
+
+        if (!userId) {
+            return { success: false, error: 'Invalid state parameter.' };
+        }
+
+        const clientId = process.env.GOOGLE_FIT_CLIENT_ID;
+        const clientSecret = process.env.GOOGLE_FIT_CLIENT_SECRET;
+        const redirectUri = process.env.GOOGLE_FIT_REDIRECT_URI;
+
+        console.log('[processGoogleFitCallback] Config:', {
+            hasClientId: !!clientId,
+            hasClientSecret: !!clientSecret,
+            hasRedirectUri: !!redirectUri,
+            redirectUri
+        });
+
+        if (!clientId || !clientSecret || !redirectUri) {
+            return { success: false, error: 'Server configuration error.' };
+        }
+
+        // Exchange code for tokens
+        console.log('[processGoogleFitCallback] Exchanging code for tokens...');
+        const tokenResponse = await fetch(GOOGLE_FIT_CONFIG.tokenEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                code,
+                client_id: clientId,
+                client_secret: clientSecret,
+                redirect_uri: redirectUri,
+                grant_type: 'authorization_code',
+            }),
+        });
+
+        console.log('[processGoogleFitCallback] Token response status:', tokenResponse.status);
+
+        if (!tokenResponse.ok) {
+            const errorData = await tokenResponse.json();
+            console.error('[processGoogleFitCallback] Token exchange failed:', errorData);
+            logger.error('Google Fit token exchange failed', errorData);
+            return { success: false, error: 'Failed to connect to Google Fit.' };
+        }
+
+        const tokens = await tokenResponse.json();
+        console.log('[processGoogleFitCallback] Tokens received:', {
+            hasAccessToken: !!tokens.access_token,
+            hasRefreshToken: !!tokens.refresh_token,
+            expiresIn: tokens.expires_in
+        });
+
+        // Calculate token expiration
+        const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
+
+        // Return tokens to client to save via client SDK
+        console.log('[processGoogleFitCallback] Returning tokens to client for saving');
+        return {
+            success: true,
+            userId,
+            tokens: {
+                accessToken: tokens.access_token,
+                refreshToken: tokens.refresh_token,
+                expiresAt,
+                scopes: GOOGLE_FIT_CONFIG.scopes,
+                connectedAt: new Date().toISOString(),
+                isActive: true,
+            }
+        };
+    } catch (error) {
+        console.error('[processGoogleFitCallback] Exception:', error);
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Fetch activity sessions from Google Fit for a specific date range
+ * Step 3: Search for activities around match time
+ */
+export async function fetchGoogleFitActivitiesAction(
+    userId: string,
+    startTime: string, // ISO timestamp
+    endTime: string // ISO timestamp
+): Promise<{ success: boolean; sessions?: GoogleFitSession[]; error?: string }> {
+    try {
+        // Get user's Google Fit connection
+        const connectionDoc = await adminDb
+            .collection('users')
+            .doc(userId)
+            .collection('healthConnections')
+            .doc('google_fit')
+            .get();
+
+        if (!connectionDoc.exists) {
+            return {
+                success: false,
+                error: 'Google Fit not connected. Please connect your account first.',
+            };
+        }
+
+        const connection = connectionDoc.data() as HealthConnection;
+
+        // Check if token expired
+        if (new Date(connection.expiresAt) < new Date()) {
+            // TODO: Implement token refresh
+            return {
+                success: false,
+                error: 'Google Fit connection expired. Please reconnect.',
+            };
+        }
+
+        // Convert ISO timestamps to milliseconds
+        const startTimeMs = new Date(startTime).getTime();
+        const endTimeMs = new Date(endTime).getTime();
+
+        // Fetch sessions from Google Fit API
+        const sessionsUrl = `${GOOGLE_FIT_CONFIG.fitnessApiBase}/sessions?startTime=${startTimeMs * 1000000}&endTime=${endTimeMs * 1000000}`;
+
+        const sessionsResponse = await fetch(sessionsUrl, {
+            headers: {
+                Authorization: `Bearer ${connection.accessToken}`,
+            },
+        });
+
+        if (!sessionsResponse.ok) {
+            logger.error('Failed to fetch Google Fit sessions', {
+                status: sessionsResponse.status,
+            });
+            return {
+                success: false,
+                error: 'Failed to fetch activities from Google Fit.',
+            };
+        }
+
+        const sessionsData = await sessionsResponse.json();
+        const sessions: GoogleFitSession[] = [];
+
+        // Process each session
+        for (const session of sessionsData.session || []) {
+            const sessionStartMs = parseInt(session.startTimeMillis);
+            const sessionEndMs = parseInt(session.endTimeMillis);
+
+            // Fetch aggregated data for this session
+            const aggregateUrl = `${GOOGLE_FIT_CONFIG.fitnessApiBase}/dataset:aggregate`;
+            const aggregateBody = {
+                aggregateBy: [
+                    { dataTypeName: 'com.google.distance.delta' },
+                    { dataTypeName: 'com.google.step_count.delta' },
+                    { dataTypeName: 'com.google.calories.expended' },
+                    { dataTypeName: 'com.google.heart_rate.bpm' },
+                ],
+                bucketBySession: {
+                    minDurationMillis: 60000, // 1 minute minimum
+                },
+                startTimeMillis: sessionStartMs,
+                endTimeMillis: sessionEndMs,
+            };
+
+            const aggregateResponse = await fetch(aggregateUrl, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${connection.accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(aggregateBody),
+            });
+
+            let metrics = {};
+
+            if (aggregateResponse.ok) {
+                const aggregateData = await aggregateResponse.json();
+
+                // Extract metrics
+                for (const bucket of aggregateData.bucket || []) {
+                    for (const dataset of bucket.dataset || []) {
+                        const dataTypeName = dataset.dataTypeName;
+
+                        for (const point of dataset.point || []) {
+                            if (dataTypeName.includes('distance.delta')) {
+                                const meters = point.value[0]?.fpVal || 0;
+                                metrics = { ...metrics, distance: meters / 1000 }; // Convert to km
+                            } else if (dataTypeName.includes('step_count.delta')) {
+                                metrics = { ...metrics, steps: point.value[0]?.intVal || 0 };
+                            } else if (dataTypeName.includes('calories.expended')) {
+                                metrics = { ...metrics, calories: point.value[0]?.fpVal || 0 };
+                            } else if (dataTypeName.includes('heart_rate.bpm')) {
+                                const hr = point.value[0]?.fpVal || 0;
+                                if (!metrics.avgHeartRate) {
+                                    metrics = { ...metrics, avgHeartRate: hr, maxHeartRate: hr };
+                                } else {
+                                    metrics = {
+                                        ...metrics,
+                                        avgHeartRate:
+                                            (metrics.avgHeartRate + hr) / 2,
+                                        maxHeartRate: Math.max(
+                                            metrics.maxHeartRate,
+                                            hr
+                                        ),
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            sessions.push({
+                id: session.id,
+                name: session.name || 'Unnamed Activity',
+                description: session.description,
+                startTime: new Date(sessionStartMs).toISOString(),
+                endTime: new Date(sessionEndMs).toISOString(),
+                activityType: session.activityType?.toString() || 'unknown',
+                duration: sessionEndMs - sessionStartMs,
+                metrics,
+            });
+        }
+
+        return { success: true, sessions };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Link a Google Fit activity to a match
+ * Step 4: User selects activity and links to match
+ */
+export async function linkActivityToMatchAction(
+    userId: string,
+    playerId: string,
+    matchId: string,
+    activityData: {
+        distance?: number;
+        avgHeartRate?: number;
+        maxHeartRate?: number;
+        steps?: number;
+        calories?: number;
+        duration?: number;
+        activityStartTime: string;
+        activityEndTime: string;
+        source: 'google_fit' | 'manual';
+        rawData?: any;
+    }
+): Promise<{ success: boolean; performanceId?: string; error?: string }> {
+    try {
+        // Calculate attribute impact
+        const impact = calculateAttributeImpact(activityData);
+
+        // Create performance record
+        const performanceData: Omit<PlayerPerformance, 'id'> = {
+            playerId,
+            matchId,
+            userId,
+            distance: activityData.distance,
+            avgHeartRate: activityData.avgHeartRate,
+            maxHeartRate: activityData.maxHeartRate,
+            steps: activityData.steps,
+            calories: activityData.calories,
+            duration: activityData.duration,
+            source: activityData.source,
+            activityStartTime: activityData.activityStartTime,
+            activityEndTime: activityData.activityEndTime,
+            linkedAt: new Date().toISOString(),
+            impactOnAttributes: impact,
+            rawData: activityData.rawData,
+        };
+
+        const performanceRef = await adminDb
+            .collection('matches')
+            .doc(matchId)
+            .collection('playerPerformance')
+            .add(performanceData);
+
+        logger.info('Activity linked to match', {
+            matchId,
+            playerId,
+            performanceId: performanceRef.id,
+            impact,
+        });
+
+        return { success: true, performanceId: performanceRef.id };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Get player performance data for a specific match
+ */
+export async function getPlayerPerformanceAction(
+    matchId: string,
+    playerId: string
+): Promise<{ success: boolean; performance?: PlayerPerformance; error?: string }> {
+    try {
+        const performanceSnapshot = await adminDb
+            .collection('matches')
+            .doc(matchId)
+            .collection('playerPerformance')
+            .where('playerId', '==', playerId)
+            .limit(1)
+            .get();
+
+        if (performanceSnapshot.empty) {
+            return { success: true, performance: undefined };
+        }
+
+        const performance = {
+            id: performanceSnapshot.docs[0].id,
+            ...performanceSnapshot.docs[0].data(),
+        } as PlayerPerformance;
+
+        return { success: true, performance };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Disconnect Google Fit
+ */
+export async function disconnectGoogleFitAction(
+    userId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        await adminDb
+            .collection('users')
+            .doc(userId)
+            .collection('healthConnections')
+            .doc('google_fit')
+            .delete();
+
+        logger.info('Google Fit disconnected', { userId });
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Add manual physical performance data (for users without smartwatch)
+ * Includes validation to prevent abuse
+ */
+export async function addManualPerformanceAction(
+    userId: string,
+    playerId: string,
+    matchId: string,
+    manualData: {
+        distance?: number;
+        duration?: number; // in minutes
+    }
+): Promise<{ success: boolean; performanceId?: string; error?: string }> {
+    try {
+        // Validation: Reasonable limits
+        if (manualData.distance && (manualData.distance < 0 || manualData.distance > 20)) {
+            return {
+                success: false,
+                error: 'La distancia debe estar entre 0 y 20 km.',
+            };
+        }
+
+        if (manualData.duration && (manualData.duration < 0 || manualData.duration > 180)) {
+            return {
+                success: false,
+                error: 'La duración debe estar entre 0 y 180 minutos.',
+            };
+        }
+
+        // Get match data to use as activity time
+        const matchDoc = await adminDb.collection('matches').doc(matchId).get();
+        if (!matchDoc.exists) {
+            return { success: false, error: 'Partido no encontrado.' };
+        }
+
+        const matchData = matchDoc.data();
+        const matchDateTime = new Date(matchData.date);
+
+        // Estimate metrics based on manual input
+        // These are rough estimates, not precise like smartwatch data
+        const estimatedMetrics: any = {};
+
+        if (manualData.distance) {
+            estimatedMetrics.distance = manualData.distance;
+
+            // Rough estimates based on distance
+            if (manualData.duration) {
+                // Calculate average pace
+                const paceMinPerKm = manualData.duration / manualData.distance;
+
+                // Estimate steps (very rough: ~1300 steps per km)
+                estimatedMetrics.steps = Math.round(manualData.distance * 1300);
+
+                // Estimate calories (very rough: ~65 kcal per km for average person)
+                estimatedMetrics.calories = Math.round(manualData.distance * 65);
+
+                // Estimate heart rate based on pace (very rough)
+                if (paceMinPerKm < 5) {
+                    // Fast pace
+                    estimatedMetrics.avgHeartRate = 160;
+                    estimatedMetrics.maxHeartRate = 175;
+                } else if (paceMinPerKm < 6) {
+                    // Moderate pace
+                    estimatedMetrics.avgHeartRate = 145;
+                    estimatedMetrics.maxHeartRate = 165;
+                } else {
+                    // Slower pace
+                    estimatedMetrics.avgHeartRate = 130;
+                    estimatedMetrics.maxHeartRate = 150;
+                }
+            }
+        }
+
+        // Calculate impact (same function as smartwatch data)
+        const impact = calculateAttributeImpact(estimatedMetrics);
+
+        // Create performance record
+        const performanceData: Omit<PlayerPerformance, 'id'> = {
+            playerId,
+            matchId,
+            userId,
+            distance: estimatedMetrics.distance,
+            avgHeartRate: estimatedMetrics.avgHeartRate,
+            maxHeartRate: estimatedMetrics.maxHeartRate,
+            steps: estimatedMetrics.steps,
+            calories: estimatedMetrics.calories,
+            duration: manualData.duration,
+            source: 'manual',
+            activityStartTime: matchDateTime.toISOString(),
+            activityEndTime: new Date(
+                matchDateTime.getTime() + (manualData.duration || 90) * 60000
+            ).toISOString(),
+            linkedAt: new Date().toISOString(),
+            impactOnAttributes: impact,
+            rawData: {
+                manualInput: manualData,
+                note: 'Estimated metrics based on manual input',
+            },
+        };
+
+        const performanceRef = await adminDb
+            .collection('matches')
+            .doc(matchId)
+            .collection('playerPerformance')
+            .add(performanceData);
+
+        logger.info('Manual performance data added', {
+            matchId,
+            playerId,
+            performanceId: performanceRef.id,
+            impact,
+        });
+
+        return { success: true, performanceId: performanceRef.id };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+// ============================================
+// SOCIAL FEATURES - Follow System
+// ============================================
+
+/**
+ * Follow a user
+ */
+export async function followUserAction(
+    followerId: string,
+    followingId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        if (followerId === followingId) {
+            return { success: false, error: 'No podés seguirte a vos mismo.' };
+        }
+
+        // Check if already following
+        const existingFollow = await adminDb
+            .collection('follows')
+            .where('followerId', '==', followerId)
+            .where('followingId', '==', followingId)
+            .get();
+
+        if (!existingFollow.empty) {
+            return { success: false, error: 'Ya estás siguiendo a este usuario.' };
+        }
+
+        // Create follow relationship
+        await adminDb.collection('follows').add({
+            followerId,
+            followingId,
+            createdAt: new Date().toISOString(),
+        });
+
+        // Create notification for the followed user
+        await createNotificationAction(followingId, {
+            type: 'new_follower',
+            title: 'Nuevo Seguidor',
+            message: 'Te está siguiendo',
+            fromUserId: followerId,
+        });
+
+        // Create social activity
+        await createActivityAction({
+            type: 'new_follower',
+            userId: followerId,
+            timestamp: new Date().toISOString(),
+        });
+
+        logger.info('User followed successfully', { followerId, followingId });
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Unfollow a user
+ */
+export async function unfollowUserAction(
+    followerId: string,
+    followingId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const followsSnapshot = await adminDb
+            .collection('follows')
+            .where('followerId', '==', followerId)
+            .where('followingId', '==', followingId)
+            .get();
+
+        if (followsSnapshot.empty) {
+            return { success: false, error: 'No estás siguiendo a este usuario.' };
+        }
+
+        // Delete all follow relationships (should be only one, but just in case)
+        const batch = adminDb.batch();
+        followsSnapshot.docs.forEach((doc) => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+
+        logger.info('User unfollowed successfully', { followerId, followingId });
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Check if user is following another user
+ */
+export async function isFollowingAction(
+    followerId: string,
+    followingId: string
+): Promise<{ success: boolean; isFollowing: boolean; error?: string }> {
+    try {
+        const followsSnapshot = await adminDb
+            .collection('follows')
+            .where('followerId', '==', followerId)
+            .where('followingId', '==', followingId)
+            .get();
+
+        return { success: true, isFollowing: !followsSnapshot.empty };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, isFollowing: false, error: err.error };
+    }
+}
+
+/**
+ * Get followers of a user
+ */
+export async function getFollowersAction(
+    userId: string
+): Promise<{ success: boolean; followers?: string[]; count?: number; error?: string }> {
+    try {
+        const followersSnapshot = await adminDb
+            .collection('follows')
+            .where('followingId', '==', userId)
+            .get();
+
+        const followers = followersSnapshot.docs.map((doc) => doc.data().followerId);
+
+        return { success: true, followers, count: followers.length };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Get users that a user is following
+ */
+export async function getFollowingAction(
+    userId: string
+): Promise<{ success: boolean; following?: string[]; count?: number; error?: string }> {
+    try {
+        const followingSnapshot = await adminDb
+            .collection('follows')
+            .where('followerId', '==', userId)
+            .get();
+
+        const following = followingSnapshot.docs.map((doc) => doc.data().followingId);
+
+        return { success: true, following, count: following.length };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+// ============================================
+// SOCIAL FEATURES - Activity Feed
+// ============================================
+
+/**
+ * Create a social activity (internal function)
+ */
+async function createActivityAction(activity: Omit<SocialActivity, 'id'>): Promise<void> {
+    await adminDb.collection('socialActivities').add(activity);
+}
+
+/**
+ * Get social feed for a user (activities from users they follow)
+ */
+export async function getFeedActivitiesAction(
+    userId: string,
+    limit: number = 20
+): Promise<{ success: boolean; activities?: SocialActivity[]; error?: string }> {
+    try {
+        // Get list of users that this user follows
+        const followingResult = await getFollowingAction(userId);
+        if (!followingResult.success || !followingResult.following) {
+            return { success: true, activities: [] };
+        }
+
+        const following = followingResult.following;
+
+        // Include own activities too
+        const userIds = [userId, ...following];
+
+        // Get activities from followed users (limited)
+        const activitiesSnapshot = await adminDb
+            .collection('socialActivities')
+            .where('userId', 'in', userIds.slice(0, 10)) // Firestore 'in' query limited to 10 items
+            .orderBy('timestamp', 'desc')
+            .limit(limit)
+            .get();
+
+        const activities = activitiesSnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+        })) as SocialActivity[];
+
+        return { success: true, activities };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+// ============================================
+// SOCIAL FEATURES - Notifications
+// ============================================
+
+/**
+ * Create a notification (internal function)
+ */
+async function createNotificationAction(
+    userId: string,
+    notification: {
+        type: NotificationType;
+        title: string;
+        message: string;
+        fromUserId?: string;
+        matchId?: string;
+        achievementId?: string;
+        playerId?: string;
+        actionUrl?: string;
+    }
+): Promise<void> {
+    // Get fromUser details if provided
+    let fromUserName: string | undefined;
+    let fromUserPhoto: string | undefined;
+
+    if (notification.fromUserId) {
+        const userDoc = await adminDb.collection('users').doc(notification.fromUserId).get();
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            fromUserName = userData?.displayName;
+            fromUserPhoto = userData?.photoURL;
+        }
+    }
+
+    await adminDb.collection('notifications').add({
+        userId,
+        type: notification.type,
+        title: notification.title,
+        message: notification.message,
+        read: false,
+        createdAt: new Date().toISOString(),
+        metadata: {
+            fromUserId: notification.fromUserId,
+            fromUserName,
+            fromUserPhoto,
+            matchId: notification.matchId,
+            achievementId: notification.achievementId,
+            playerId: notification.playerId,
+        },
+        actionUrl: notification.actionUrl,
+    });
+}
+
+/**
+ * Get notifications for a user
+ */
+export async function getNotificationsAction(
+    userId: string,
+    limit: number = 20
+): Promise<{ success: boolean; notifications?: Notification[]; unreadCount?: number; error?: string }> {
+    try {
+        const notificationsSnapshot = await adminDb
+            .collection('notifications')
+            .where('userId', '==', userId)
+            .orderBy('createdAt', 'desc')
+            .limit(limit)
+            .get();
+
+        const notifications = notificationsSnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+        })) as Notification[];
+
+        const unreadCount = notifications.filter((n) => !n.read).length;
+
+        return { success: true, notifications, unreadCount };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Mark notification as read
+ */
+export async function markNotificationAsReadAction(
+    notificationId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        await adminDb.collection('notifications').doc(notificationId).update({
+            read: true,
+        });
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Mark all notifications as read for a user
+ */
+export async function markAllNotificationsAsReadAction(
+    userId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const unreadNotifications = await adminDb
+            .collection('notifications')
+            .where('userId', '==', userId)
+            .where('read', '==', false)
+            .get();
+
+        const batch = adminDb.batch();
+        unreadNotifications.docs.forEach((doc) => {
+            batch.update(doc.ref, { read: true });
+        });
+        await batch.commit();
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
         return { success: false, error: err.error };
     }
 }

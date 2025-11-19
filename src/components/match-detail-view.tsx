@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState, useEffect, useCallback } from 'react';
-import type { Match, Player, UserProfile } from '@/lib/types';
+import type { Match, Player, UserProfile, PlayerPerformance } from '@/lib/types';
 import { doc, getDoc, query, where, collection } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -18,6 +18,8 @@ import { MatchTeams } from './match-details/MatchTeams';
 import { PlayersConfirmed } from './match-details/PlayersConfirmed';
 import { MatchChronicleCard } from './match-chronicle-card';
 import { AvailablePlayersSection } from './available-players-section';
+import { ImportActivityDialog } from './health/import-activity-dialog';
+import { PhysicalMetricsCard } from './health/physical-metrics-card';
 import { logger } from '@/lib/logger';
 
 interface MatchDetailViewProps {
@@ -38,7 +40,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     const firestore = useFirestore();
     const { user } = useUser();
     const [ownerProfile, setOwnerProfile] = useState<UserProfile | null>(null);
-    
+
     const matchRef = useMemo(() => firestore ? doc(firestore, 'matches', matchId) : null, [firestore, matchId]);
     const { data: match, loading: matchLoading } = useDoc<Match>(matchRef);
 
@@ -47,6 +49,24 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
       return query(collection(firestore, 'players'), where('groupId', '==', match.groupId));
     }, [firestore, match?.groupId]);
     const { data: allGroupPlayers } = useCollection<Player>(allGroupPlayersQuery);
+
+    // Find user's player in this match
+    const userPlayerInMatch = useMemo(() => {
+      if (!user?.uid || !match?.players) return null;
+      return match.players.find(p => p.uid === user.uid);
+    }, [user?.uid, match?.players]);
+
+    // Fetch performance data for the current user
+    const performanceQuery = useMemo(() => {
+      if (!firestore || !userPlayerInMatch || !user?.uid) return null;
+      return query(
+        collection(firestore, 'matches', matchId, 'playerPerformance'),
+        where('userId', '==', user.uid)
+      );
+    }, [firestore, matchId, userPlayerInMatch, user?.uid]);
+    const { data: performanceData } = useCollection<PlayerPerformance>(performanceQuery);
+
+    const userPerformance = performanceData && performanceData.length > 0 ? performanceData[0] : null;
 
     useEffect(() => {
         const fetchOwnerProfile = async () => {
@@ -153,6 +173,30 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                          )}
 
                          {match.status === 'evaluated' && <MatchChronicleCard match={match} />}
+
+                         {/* Physical Metrics Section - Only for players who participated */}
+                         {userPlayerInMatch && (match.status === 'finalized' || match.status === 'evaluated') && (
+                           <div className="space-y-4">
+                             {userPerformance ? (
+                               <PhysicalMetricsCard performance={userPerformance} />
+                             ) : (
+                               <div className="flex flex-col gap-4 p-6 border rounded-lg bg-muted/30">
+                                 <div className="space-y-2">
+                                   <h3 className="text-lg font-semibold">Métricas Físicas</h3>
+                                   <p className="text-sm text-muted-foreground">
+                                     Vinculá tus datos de actividad física para obtener pequeños bonus en tus atributos PAC y PHY.
+                                     Es completamente opcional y no afecta tu evaluación principal.
+                                   </p>
+                                 </div>
+                                 <ImportActivityDialog
+                                   matchId={matchId}
+                                   playerId={userPlayerInMatch.id}
+                                   matchDate={new Date(match.date)}
+                                 />
+                               </div>
+                             )}
+                           </div>
+                         )}
                     </div>
                     {permissions.isOwner && (
                         <div className="lg:col-span-3">

@@ -406,6 +406,8 @@ export type League = {
   completedAt?: string; // ISO date when league was completed
   requiresTiebreaker?: boolean; // If final match needed
   finalMatchId?: string; // Reference to tiebreaker match
+  // Standings table (updated after each match)
+  standings?: LeagueStanding[];
 } & DocumentData;
 
 // League standings/statistics
@@ -504,4 +506,163 @@ export type CompetitionApplication = {
     status: 'pending' | 'approved' | 'rejected';
     submittedAt: string;
     submittedBy: string; // userId of team owner
+} & DocumentData;
+
+// ============================================================================
+// HEALTH & FITNESS INTEGRATION (Smartwatch)
+// ============================================================================
+
+export type HealthProvider = 'google_fit' | 'apple_health';
+
+export type HealthConnection = {
+    id: string;
+    provider: HealthProvider;
+    userId: string;
+    accessToken: string; // Should be encrypted in production
+    refreshToken: string; // Should be encrypted in production
+    expiresAt: string; // ISO timestamp when access token expires
+    scopes: string[]; // OAuth scopes granted
+    connectedAt: string; // ISO timestamp when first connected
+    lastSyncAt?: string; // ISO timestamp of last successful sync
+    isActive: boolean; // Whether connection is still valid
+} & DocumentData;
+
+export type PlayerPerformance = {
+    id: string;
+    playerId: string;
+    matchId: string;
+    userId: string; // uid of the user who owns this performance data
+    // Physical metrics
+    distance?: number; // kilometers
+    avgHeartRate?: number; // bpm
+    maxHeartRate?: number; // bpm
+    steps?: number;
+    calories?: number; // kcal
+    duration?: number; // minutes
+    // Source and timing
+    source: 'google_fit' | 'apple_health' | 'manual';
+    activityStartTime: string; // ISO timestamp
+    activityEndTime: string; // ISO timestamp
+    linkedAt: string; // ISO timestamp when linked to match
+    // Impact on player attributes
+    impactOnAttributes?: {
+        pac?: number;
+        phy?: number;
+    };
+    // Raw data for debugging/auditing
+    rawData?: any;
+} & DocumentData;
+
+// OAuth2 configuration
+export type GoogleFitAuthUrl = {
+    authUrl: string;
+    state: string; // CSRF token
+};
+
+// Activity session from Google Fit
+export type GoogleFitSession = {
+    id: string;
+    name: string;
+    description?: string;
+    startTime: string;
+    endTime: string;
+    activityType: string; // 'running', 'soccer', 'walking', etc.
+    duration: number; // milliseconds
+    metrics?: {
+        distance?: number;
+        steps?: number;
+        calories?: number;
+        avgHeartRate?: number;
+        maxHeartRate?: number;
+    };
+};
+
+// Flattened activity data from Google Fit (for UI usage)
+export type GoogleFitActivity = {
+    id: string;
+    name: string;
+    description?: string;
+    startTime: string;
+    endTime: string;
+    activityType: string;
+    duration: number; // milliseconds
+    distance?: number; // meters
+    steps?: number;
+    calories?: number; // kcal
+    avgHeartRate?: number; // bpm
+    maxHeartRate?: number; // bpm
+};
+
+// ============================================
+// SOCIAL FEATURES
+// ============================================
+
+// Follow relationship between users/players
+export type Follow = {
+    id: string;
+    followerId: string; // UID of user who is following
+    followingId: string; // UID of user being followed
+    createdAt: string; // ISO timestamp
+} & DocumentData;
+
+// Activity types for the social feed
+export type ActivityType =
+    | 'match_played'
+    | 'ovr_increased'
+    | 'ovr_decreased'
+    | 'goal_scored'
+    | 'achievement_unlocked'
+    | 'player_created'
+    | 'new_follower';
+
+// Social activity for the feed
+export type SocialActivity = {
+    id: string;
+    type: ActivityType;
+    userId: string; // User who performed the activity
+    playerId?: string; // Player involved (if applicable)
+    playerName?: string;
+    playerPhotoUrl?: string;
+    timestamp: string; // ISO timestamp
+    // Activity-specific data
+    metadata?: {
+        matchId?: string;
+        matchTitle?: string;
+        oldOvr?: number;
+        newOvr?: number;
+        ovrChange?: number;
+        goals?: number;
+        achievementName?: string;
+        achievementIcon?: string;
+    };
+} & DocumentData;
+
+// Notification types
+export type NotificationType =
+    | 'new_follower'
+    | 'match_invitation'
+    | 'match_reminder'
+    | 'ovr_milestone'
+    | 'achievement_unlocked';
+
+// User notification
+export type Notification = {
+    id: string;
+    userId: string; // User who receives the notification
+    type: NotificationType;
+    title: string;
+    message: string;
+    read: boolean;
+    createdAt: string; // ISO timestamp
+    // Type-specific data
+    metadata?: {
+        fromUserId?: string;
+        fromUserName?: string;
+        fromUserPhoto?: string;
+        matchId?: string;
+        achievementId?: string;
+        playerId?: string;
+    };
+    // Optional action URL
+    actionUrl?: string;
 } & DocumentData;
