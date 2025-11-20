@@ -30,6 +30,7 @@ import { addDoc, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { PlayerPosition } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { publishActivityAction } from '@/lib/actions/social-actions';
 
 const playerSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio'),
@@ -92,7 +93,7 @@ export function AddPlayerDialog() {
     );
 
     try {
-      await addDoc(collection(firestore, 'players'), {
+      const docRef = await addDoc(collection(firestore, 'players'), {
         ...data,
         ovr,
         ownerUid: user.uid,
@@ -100,6 +101,24 @@ export function AddPlayerDialog() {
         stats: { matchesPlayed: 0, goals: 0, assists: 0, averageRating: 0 },
         photoUrl: `https://picsum.photos/seed/${data.name}/400/400`,
       });
+
+      // Publish social activity for player creation
+      try {
+        await publishActivityAction({
+          type: 'player_created',
+          userId: user.uid,
+          metadata: {
+            playerName: data.name,
+            playerId: docRef.id,
+            position: data.position,
+            ovr: ovr
+          }
+        });
+      } catch (socialError) {
+        console.warn('Failed to publish player creation activity:', socialError);
+        // Don't fail the player creation if social activity fails
+      }
+
       toast({ title: '¡Jugador Agregado!', description: 'El jugador se sumó al plantel.' });
       setOpen(false);
       reset();

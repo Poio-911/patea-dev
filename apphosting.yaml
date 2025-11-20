@@ -78,7 +78,3 @@ runConfig:
       availability:
         - BUILD
         - RUNTIME
-    - variable: FIREBASE_USE_EMULATOR
-      value: 'false'
-      availability:
-        - RUNTIME

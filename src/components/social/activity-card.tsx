@@ -3,7 +3,7 @@ import type { SocialActivity } from '@/lib/types';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils/cn';
+import { cn } from '@/lib/utils';
 import { UserPlus, Star, Trophy, ArrowUp, ArrowDown, Goal, Users, CheckCircle } from 'lucide-react';
 
 // Map activity type to icon and styling
@@ -46,7 +46,9 @@ interface Props { activity: SocialActivity; }
 
 export const ActivityCard: FC<Props> = ({ activity }) => {
   const cfg = typeConfig[activity.type];
-  const timeAgo = formatDistanceToNowStrict(new Date(activity.timestamp), { locale: es });
+  const rawTs: any = activity.timestamp;
+  const dateObj = rawTs && typeof rawTs?.toDate === 'function' ? rawTs.toDate() : new Date(rawTs);
+  const timeAgo = formatDistanceToNowStrict(dateObj, { locale: es });
   return (
     <div className={cn('flex gap-3 px-4 py-3 border-b border-neutral-200 dark:border-neutral-800')}>      
       <Avatar className="h-10 w-10 shrink-0 ring-2 ring-white/50">

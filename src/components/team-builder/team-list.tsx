@@ -20,9 +20,10 @@ interface TeamListProps {
   groupId: string;
   players: Player[];
   currentUserId: string;
+  compact?: boolean;
 }
 
-export function TeamList({ groupId, players, currentUserId }: TeamListProps) {
+export function TeamList({ groupId, players, currentUserId, compact = false }: TeamListProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const firestore = useFirestore();
 
@@ -37,6 +38,56 @@ export function TeamList({ groupId, players, currentUserId }: TeamListProps) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (compact) {
+    return (
+      <div className="space-y-4">
+        <Button onClick={() => setCreateDialogOpen(true)} className="w-full" variant="outline">
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Crear Equipo
+        </Button>
+
+        {teams && teams.length > 0 ? (
+          <div className="space-y-2">
+            {teams.map(team => (
+              <Link key={team.id} href={`/groups/teams/${team.id}`} className="block">
+                <Card className="hover:bg-muted/50 transition-colors">
+                  <CardContent className="flex items-center justify-between gap-3 p-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 flex-shrink-0">
+                        <JerseyPreview jersey={team.jersey} size="sm" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate">{team.name}</p>
+                        <p className="text-xs text-muted-foreground">{team.members.length} jugadores</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <Alert className="text-center py-6">
+            <TeamsIcon className="mx-auto h-6 w-6 mb-2" />
+            <AlertTitle className="text-sm">No hay equipos</AlertTitle>
+            <AlertDescription className="text-xs">
+              Creá el primer equipo del grupo.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <CreateTeamDialog
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
+          groupId={groupId}
+          players={players || []}
+          currentUserId={currentUserId}
+        />
       </div>
     );
   }
@@ -58,7 +109,7 @@ export function TeamList({ groupId, players, currentUserId }: TeamListProps) {
             Crear Equipo
         </Button>
       </div>
-      
+
       <Separator />
 
       {teams && teams.length > 0 ? (

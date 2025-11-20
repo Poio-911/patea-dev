@@ -73,8 +73,8 @@ export function ImportActivityDialog({ matchId, playerId, matchDate, children }:
         endTime.toISOString()
       );
 
-      if (result.success && result.activities) {
-        setActivities(result.activities);
+      if (result.success && result.sessions) {
+        setActivities(result.sessions);
       } else {
         toast({
           variant: 'destructive',
@@ -103,7 +103,18 @@ export function ImportActivityDialog({ matchId, playerId, matchDate, children }:
         user.uid,
         playerId,
         matchId,
-        activity
+        {
+          distance: activity.distance,
+          avgHeartRate: activity.avgHeartRate,
+          maxHeartRate: activity.maxHeartRate,
+          steps: activity.steps,
+          calories: activity.calories,
+          duration: activity.duration,
+          activityStartTime: activity.startTime,
+          activityEndTime: activity.endTime,
+          source: 'google_fit',
+          rawData: activity,
+        }
       );
 
       if (result.success) {

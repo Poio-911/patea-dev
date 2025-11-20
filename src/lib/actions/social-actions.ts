@@ -5,12 +5,52 @@ import { FieldValue } from 'firebase-admin/firestore';
 import type { SocialActivity, Follow, Player, OvrHistory } from '@/lib/types';
 import { handleServerActionError, createError, ErrorCodes } from '@/lib/errors';
 
-// Generic publisher for social activities
+// Generic publisher for social activities with fan-out system
 export async function publishActivityAction(activity: Omit<SocialActivity, 'id'>) {
   try {
-    const ref = await adminDb.collection('socialActivities').add(activity);
+    // Ensure timestamp uses serverTimestamp for consistent ordering
+    const baseActivity: Omit<SocialActivity, 'id'> = {
+      ...activity,
+      timestamp: FieldValue.serverTimestamp() as any,
+    };
+
+    // 1. Add to main socialActivities collection (for <= 10 followers case)
+    const ref = await adminDb.collection('socialActivities').add(baseActivity).catch(err => {
+      console.error('[publishActivityAction] Failed main write', err);
+      throw err;
+    });
+    const activityWithId = { ...baseActivity, id: ref.id };
+
+    // 2. Fan-out: Add to follower feeds (for > 10 followers case)
+    try {
+      // Get all followers of this user
+      const followsSnapshot = await adminDb
+        .collection('follows')
+        .where('followingId', '==', activity.userId)
+        .get();
+
+      if (!followsSnapshot.empty) {
+        const batch = adminDb.batch();
+        
+        followsSnapshot.docs.forEach(followDoc => {
+          const followerData = followDoc.data();
+          const followerFeedRef = adminDb
+            .collection(`users/${followerData.followerId}/feeds`)
+            .doc();
+          
+          batch.set(followerFeedRef, activityWithId);
+        });
+
+        await batch.commit().catch(err => console.error('[publishActivityAction] Fan-out batch failed', err));
+      }
+    } catch (fanOutError) {
+      console.warn('Failed to fan-out activity to follower feeds:', fanOutError);
+      // Don't fail the main activity creation if fan-out fails
+    }
+
     return { success: true, id: ref.id };
   } catch (error) {
+    console.error('[publishActivityAction] Error creating activity', error);
     const err = handleServerActionError(error, { activityType: activity.type });
     return { success: false, error: err.error };
   }
@@ -45,7 +85,7 @@ export async function followUserAction(followerId: string, followingId: string) 
     await publishActivityAction({
       type: 'new_follower',
       userId: followerId,
-      timestamp: new Date().toISOString(),
+      timestamp: FieldValue.serverTimestamp() as any,
       metadata: { achievementName: 'Nuevo seguidor', achievementIcon: 'user-plus' },
     });
 
@@ -79,7 +119,29 @@ export async function unfollowUserAction(followerId: string, followingId: string
     if (existing.empty) {
       return { success: false, error: 'No sigues a este usuario.' };
     }
+    
+    // Delete the follow relationship
     await existing.docs[0].ref.delete();
+    
+    // Clean up: Remove unfollowed user's activities from follower's feed
+    try {
+      const followerFeedSnapshot = await adminDb
+        .collection(`users/${followerId}/feeds`)
+        .where('userId', '==', followingId)
+        .get();
+      
+      if (!followerFeedSnapshot.empty) {
+        const batch = adminDb.batch();
+        followerFeedSnapshot.docs.forEach(doc => {
+          batch.delete(doc.ref);
+        });
+        await batch.commit();
+      }
+    } catch (cleanupError) {
+      console.warn('Failed to cleanup unfollowed user activities from feed:', cleanupError);
+      // Don't fail the unfollow operation if cleanup fails
+    }
+    
     return { success: true };
   } catch (error) {
     const err = handleServerActionError(error, { followerId, followingId });
@@ -96,7 +158,7 @@ export async function publishOvrChangeActivity(player: Player, history: OvrHisto
     playerId: player.id,
     playerName: player.name,
     playerPhotoUrl: player.photoUrl,
-    timestamp: new Date().toISOString(),
+    timestamp: FieldValue.serverTimestamp() as any,
     metadata: {
       oldOvr: history.oldOVR,
       newOvr: history.newOVR,
@@ -110,7 +172,20 @@ export async function publishMatchPlayedActivity(userId: string, matchId: string
   await publishActivityAction({
     type: 'match_played',
     userId,
-    timestamp: new Date().toISOString(),
+    timestamp: FieldValue.serverTimestamp() as any,
     metadata: { matchId, matchTitle },
   });
+}
+
+// Seed a few test activities for debugging the feed
+export async function seedActivitiesAction(userId: string) {
+  const examples: Array<Omit<SocialActivity, 'id'>> = [
+    { type: 'player_created', userId, playerName: 'Jugador Seed', timestamp: FieldValue.serverTimestamp() as any },
+    { type: 'achievement_unlocked', userId, metadata: { achievementName: 'Primer Logro' }, timestamp: FieldValue.serverTimestamp() as any },
+    { type: 'match_played', userId, metadata: { matchTitle: 'Partido Seed' }, timestamp: FieldValue.serverTimestamp() as any },
+  ];
+  for (const act of examples) {
+    await publishActivityAction(act);
+  }
+  return { success: true, count: examples.length };
 }

@@ -47,7 +47,11 @@
       "Bash(firebase apphosting:rollouts:list:*)",
       "Bash(timeout /t 10)",
       "Bash(timeout:*)",
-      "Bash(if exist \"C:\\pateá\\src\\app\\api\\debug\" rmdir /s /q \"C:\\pateá\\src\\app\\api\\debug\")"
+      "Bash(if exist \"C:\\pateá\\src\\app\\api\\debug\" rmdir /s /q \"C:\\pateá\\src\\app\\api\\debug\")",
+      "Bash(firebase firestore:indexes:*)",
+      "Bash(set FIRESTORE_EMULATOR_HOST=)",
+      "Bash(del \"C:\\pateá\\src\\components\\set-player-status-dialog.tsx\")",
+      "Bash(\"C:\\pateá\\src\\components\\set-player-status-dialog.tsx\")"
     ],
     "deny": [],
     "ask": []

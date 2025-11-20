@@ -8,7 +8,7 @@ import { doc, collection, query, where, updateDoc } from 'firebase/firestore';
 import type { GroupTeam, Player, DetailedTeamPlayer, Match } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Loader2, ArrowLeft, ShieldCheck, UserCheck, History, Globe, Swords } from 'lucide-react';
-import { TeamRosterPlayer } from '@/components/team-roster-player';
+import { GroupTeamRosterPlayer } from '@/components/group-team-roster-player';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -179,7 +179,7 @@ export default function TeamDetailPage() {
             <h2 className="text-xl font-bold flex items-center gap-2"><ShieldCheck className="h-6 w-6 text-primary"/> Titulares ({titulares.length})</h2>
              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {titulares.map((player: DetailedTeamPlayer) => (
-                    <TeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={handlePlayerUpdate} />
+                    <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={handlePlayerUpdate} />
                 ))}
              </div>
              {titulares.length === 0 && (
@@ -198,7 +198,7 @@ export default function TeamDetailPage() {
             <h2 className="text-xl font-bold flex items-center gap-2"><UserCheck className="h-6 w-6 text-muted-foreground"/> Suplentes ({suplentes.length})</h2>
              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {suplentes.map((player: DetailedTeamPlayer) => (
-                    <TeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={handlePlayerUpdate} />
+                    <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={handlePlayerUpdate} />
                 ))}
              </div>
              {suplentes.length === 0 && <p className="text-sm text-muted-foreground">No hay jugadores suplentes definidos.</p>}

@@ -24,15 +24,17 @@ export default function PlayerDetailPage() {
     return doc(firestore, 'players', playerId as string);
   }, [firestore, playerId]);
   const { user } = useUser();
-  const followsQuery = useMemo(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, 'follows'), where('followerId', '==', user.uid), where('followingId', '==', player?.ownerUid || '___'));
-  }, [firestore, user, player?.ownerUid]);
-  const { data: followDocs } = useCollection<any>(followsQuery);
-  const isFollowing = (followDocs || []).length > 0;
   const [pending, setPending] = useState(false);
 
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
+
+  const followsQuery = useMemo(() => {
+    if (!firestore || !user || !player?.ownerUid) return null;
+    return query(collection(firestore, 'follows'), where('followerId', '==', user.uid), where('followingId', '==', player.ownerUid));
+  }, [firestore, user, player?.ownerUid]);
+  
+  const { data: followDocs } = useCollection<any>(followsQuery);
+  const isFollowing = (followDocs || []).length > 0;
 
   if (playerLoading) {
     return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;

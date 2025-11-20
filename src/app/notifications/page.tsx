@@ -9,7 +9,7 @@ import type { Notification, NotificationType } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Bell, CheckCheck, FileSignature, UserPlus, Info, Swords, CheckCircle2, XCircle, FileText } from 'lucide-react';
+import { Loader2, Bell, CheckCheck, FileSignature, UserPlus, Info, Swords, CheckCircle2, XCircle, FileText, Users, Calendar, TrendingUp, Trophy } from 'lucide-react';
 import { format, formatDistanceToNow, isToday, isYesterday, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,11 @@ const notificationIcons: Record<NotificationType, React.ElementType> = {
     challenge_accepted: CheckCircle2,
     challenge_rejected: XCircle,
     league_application: FileText,
+    new_follower: Users,
+    match_invitation: Calendar,
+    match_reminder: Bell,
+    ovr_milestone: TrendingUp,
+    achievement_unlocked: Trophy,
 };
 
 const IconWrapper = ({ type, className, ...props }: { type: Notification['type'], className?: string }) => {

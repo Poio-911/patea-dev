@@ -12,11 +12,41 @@ import { JerseyPreview } from '../team-builder/jersey-preview';
 interface UpcomingMatchesFeedProps {
     matches: Match[];
     teamName?: string; // Prop opcional para la vista compacta
+    compact?: boolean; // Prop para layout compacto en columnas
 }
 
-export function UpcomingMatchesFeed({ matches, teamName }: UpcomingMatchesFeedProps) {
+export function UpcomingMatchesFeed({ matches, teamName, compact = false }: UpcomingMatchesFeedProps) {
     if (matches.length === 0) {
-        return null;
+        return (
+            <div className="text-center py-8">
+                <p className="text-sm text-muted-foreground">No hay partidos próximos</p>
+            </div>
+        );
+    }
+
+    if (compact) {
+        // --- VISTA COMPACTA PARA LAYOUT DE COLUMNAS ---
+        return (
+            <div className="space-y-3">
+                {matches.map(match => (
+                    <Link key={match.id} href={`/matches`} passHref>
+                        <Card className="hover:bg-muted/50 transition-colors">
+                            <CardContent className="p-3">
+                                <p className="font-semibold text-sm truncate mb-1">{match.title}</p>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                                    <Calendar className="h-3 w-3" />
+                                    <span>{format(new Date(match.date), "E, d MMM", { locale: es })}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <MapPin className="h-3 w-3" />
+                                    <span className="truncate">{match.location.name}</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </Link>
+                ))}
+            </div>
+        );
     }
 
     if (teamName) {

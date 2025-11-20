@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { Match, Team, Player, PlayerPosition, DetailedTeamPlayer } from '@/lib/types';
+import type { Match, Player, PlayerPosition } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,6 @@ interface MatchTeamsProps {
   isOwner: boolean;
   isShuffling: boolean;
   onShuffle: () => void;
-  onPlayerUpdate?: () => void;
 }
 
 const positionBadgeStyles: Record<PlayerPosition, string> = {
@@ -31,7 +30,7 @@ const positionBadgeStyles: Record<PlayerPosition, string> = {
   POR: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-purple-300/50 shadow-lg shadow-purple-500/25',
 };
 
-export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle, onPlayerUpdate }: MatchTeamsProps) => {
+export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeamsProps) => {
     const firestore = useFirestore();
     const teamPlayerIds = useMemo(() => match.teams?.flatMap(t => t.players.map(p => p.uid)) || [], [match.teams]);
 
@@ -103,19 +102,19 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle, onPlayerUpd
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {(match.teams || []).map((team) => {
-                    const teamMembersWithDetails: DetailedTeamPlayer[] = team.players
+                    const teamMembersWithDetails: Player[] = team.players
                         .map(p => {
                             const details = teamPlayersData?.find(pd => pd.id === p.uid);
-                            return details ? { ...details, number: 0, status: 'titular' } : null;
+                            return details || null;
                         })
-                        .filter((p): p is DetailedTeamPlayer => p !== null)
+                        .filter((p): p is Player => p !== null)
                         .sort((a,b) => b.ovr - a.ovr);
 
                     return (
-                        <Card 
-                            key={team.name} 
+                        <Card
+                            key={team.name}
                             className="bg-card border-2 border-l-4 transition-all duration-300 hover:shadow-lg"
-                            style={{ 
+                            style={{
                                 borderLeftColor: team.jersey?.primaryColor || 'hsl(var(--border))',
                                 backgroundImage: team.jersey ? `linear-gradient(to top, ${team.jersey.primaryColor}08, transparent)` : 'none'
                             }}
@@ -130,11 +129,11 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle, onPlayerUpd
                             <CardContent className="pt-0 p-2">
                                 <div className="grid grid-cols-2 gap-3">
                                     {teamMembersWithDetails.map((player) => (
-                                        <TeamRosterPlayer 
+                                        <TeamRosterPlayer
                                             key={player.id}
                                             player={player}
-                                            team={match as any} // Cast as team has members
-                                            onPlayerUpdate={onPlayerUpdate}
+                                            match={match}
+                                            isOwner={isOwner}
                                         />
                                     ))}
                                 </div>

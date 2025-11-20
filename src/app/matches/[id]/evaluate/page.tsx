@@ -17,6 +17,7 @@ import { Progress } from '@/components/ui/progress';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { logger } from '@/lib/logger';
+import { publishMatchPlayedActivity, publishOvrChangeActivity } from '@/lib/actions/social-actions';
 import { updateLeagueStandingsAction, advanceCupWinnerAction } from '@/lib/actions/server-actions';
 
 // Helper to determine if a player is a "real user"
@@ -252,13 +253,18 @@ export default function EvaluateMatchPage() {
             throw new Error("No hay evaluaciones completadas para procesar.");
         }
 
+        // Declare these outside transaction so they're available later
+        let playerIdsToUpdate: string[] = [];
+        const playerDocs = new Map<string, Player>();
+        let peerEvalsByPlayer: Record<string, Evaluation[]> = {};
+
         await runTransaction(firestore, async (transaction) => {
             if (!matchRef) return;
             const matchDoc = await transaction.get(matchRef);
             if (!matchDoc.exists() || matchDoc.data().status === 'evaluated') {
                 throw new Error("Este partido ya ha sido evaluado o no existe.");
             }
-            
+
             // Ensure no pending submissions before finalizing
             const pendingSubmissionsQuery = query(collection(firestore, 'evaluationSubmissions'), where('matchId', '==', match.id));
             const pendingSubmissionsSnapshot = await getDocs(pendingSubmissionsQuery);
@@ -275,14 +281,13 @@ export default function EvaluateMatchPage() {
             const matchSelfEvals = selfEvalsSnapshot.docs.map(doc => ({...doc.data(), id: doc.id} as SelfEvaluation));
             const selfEvalsByPlayerId = new Map(matchSelfEvals.map(ev => [ev.playerId, ev]));
 
-            const peerEvalsByPlayer = matchPeerEvals.reduce((acc, ev) => {
+            peerEvalsByPlayer = matchPeerEvals.reduce((acc, ev) => {
                 acc[ev.playerId] = acc[ev.playerId] || [];
                 acc[ev.playerId].push(ev);
                 return acc;
             }, {} as Record<string, Evaluation[]>);
 
-            const playerIdsToUpdate = Object.keys(peerEvalsByPlayer);
-            const playerDocs = new Map<string, Player>();
+            playerIdsToUpdate = Object.keys(peerEvalsByPlayer);
             
             // Pre-fetch all player documents
             if (playerIdsToUpdate.length > 0) {
@@ -370,6 +375,59 @@ export default function EvaluateMatchPage() {
             spread: 70,
             origin: { y: 0.6 }
         });
+
+        // Publish social activities for match participation and OVR changes
+        try {
+            const uniqueUsers = new Set<string>();
+            const playerOvrChanges = new Map<string, { player: Player; oldOvr: number; newOvr: number; change: number }>();
+            
+            // Collect unique users and OVR changes
+            for (const playerId of playerIdsToUpdate) {
+                const player = playerDocs.get(playerId);
+                if (!player) continue;
+                uniqueUsers.add(player.ownerUid);
+                
+                const playerPeerEvals = peerEvalsByPlayer[playerId] || [];
+                const pointBasedEvals = playerPeerEvals.filter(ev => ev.rating !== undefined && ev.rating !== null);
+                const tagBasedEvals = playerPeerEvals.filter(ev => ev.performanceTags && ev.performanceTags.length > 0);
+                
+                let ovrChange = 0;
+                if (pointBasedEvals.length > 0) {
+                    const avgRating = pointBasedEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0) / pointBasedEvals.length;
+                    ovrChange = calculateOvrChange(player.ovr, avgRating);
+                }
+                
+                // Add tag-based changes (simplified estimation)
+                if (tagBasedEvals.length > 0) {
+                    const tagEffect = tagBasedEvals.flatMap(ev => ev.performanceTags || [])
+                        .reduce((sum, tag) => sum + (tag.effects?.reduce((s, e) => s + e.change, 0) || 0), 0);
+                    ovrChange += Math.round(tagEffect / 6); // Rough average across attributes
+                }
+                
+                const newOvr = Math.max(40, Math.min(99, player.ovr + ovrChange));
+                if (ovrChange !== 0) {
+                    playerOvrChanges.set(playerId, { player, oldOvr: player.ovr, newOvr, change: ovrChange });
+                }
+            }
+            
+            // Publish match_played activities
+            const publishPromises = [];
+            for (const userId of uniqueUsers) {
+                publishPromises.push(publishMatchPlayedActivity(userId, match.id, match.title));
+            }
+            
+            // Publish OVR change activities
+            for (const [playerId, { player, oldOvr, newOvr, change }] of playerOvrChanges) {
+                const historyEntry = { oldOVR: oldOvr, newOVR: newOvr, change, date: new Date().toISOString(), matchId: match.id, id: '' };
+                publishPromises.push(publishOvrChangeActivity(player, historyEntry));
+            }
+            
+            await Promise.allSettled(publishPromises);
+            logger.info('Social activities published', { matchId: match.id, userCount: uniqueUsers.size, ovrChanges: playerOvrChanges.size });
+        } catch (error) {
+            logger.error('Error publishing social activities', error);
+            // Don't block evaluation if social activities fail
+        }
 
         // Update league standings if this is a league match
         if (match.type === 'league' && match.leagueInfo?.leagueId) {

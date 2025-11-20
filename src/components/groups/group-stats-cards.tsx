@@ -45,7 +45,7 @@ export function GroupStatsCards({ players }: GroupStatsCardsProps) {
             photoUrl: p.photoUrl
         }));
     }, [players]);
-    
+
     const topGoalScorers = useMemo(() => {
         return [...players].sort((a, b) => (b.stats?.goals || 0) - (a.stats?.goals || 0)).slice(0, 3).map(p => ({
             name: p.name,
@@ -63,13 +63,10 @@ export function GroupStatsCards({ players }: GroupStatsCardsProps) {
     }, [players]);
 
     return (
-        <div>
-            <h2 className="text-2xl font-bold mb-4">Estadísticas del Grupo</h2>
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <StatCard title="Mejores Jugadores" icon={<Star className="h-5 w-5" />} data={topPlayers} />
-                <StatCard title="Máximos Goleadores" icon={<Goal className="h-5 w-5" />} data={topGoalScorers} />
-                <StatCard title="Más Partidos Jugados" icon={<Users className="h-5 w-5" />} data={mostMatchesPlayed} />
-            </div>
+        <div className="space-y-4">
+            <StatCard title="Mejores Jugadores" icon={<Star className="h-5 w-5" />} data={topPlayers} />
+            <StatCard title="Máximos Goleadores" icon={<Goal className="h-5 w-5" />} data={topGoalScorers} />
+            <StatCard title="Más Partidos Jugados" icon={<Users className="h-5 w-5" />} data={mostMatchesPlayed} />
         </div>
     );
 }

@@ -7,7 +7,7 @@ import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { Match, AvailablePlayer } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { Loader2, MapPin, Search, SlidersHorizontal, Users } from 'lucide-react';
+import { Loader2, MapPin, Search, SlidersHorizontal, Users, Calendar } from 'lucide-react';
 import { MatchMarker } from '@/components/match-marker';
 import { PlayerMarker } from '@/components/player-marker';
 import { libraries } from '@/lib/google-maps';
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { format, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -205,7 +206,7 @@ export default function FindMatchPage() {
                     <div id={`card-${(item as Match).id || (item as AvailablePlayer).uid}`} key={(item as Match).id || (item as AvailablePlayer).uid}>
                       {activeTab === 'matches' ? (
                           <Card className={cn("cursor-pointer", activeMarker === item.id ? "border-primary" : "")} onMouseEnter={() => setActiveMarker(item.id)} onMouseLeave={() => setActiveMarker(null)}>
-                            <div className="p-3 grid grid-cols-3 gap-2 items-center"><div className="col-span-2 space-y-1"><h3 className="font-semibold text-sm leading-tight">{(item as Match).title}</h3><div className="text-xs text-muted-foreground flex items-center gap-1.5"><Calendar className="h-3 w-3" /><span>{format(new Date((item as Match).date), "d MMM", { locale: es })} - {(item as Match).time}hs</span></div></div><div className="col-span-1 flex flex-col items-end gap-1"><Badge variant="secondary">{(item as Match).players.length}/{(item as Match).matchSize}</Badge><InvitePlayerDialog userMatches={[item as Match]} selectedMatchId={item.id}><Button size="sm" variant="default" className="h-7 text-xs w-full">Invitar</Button></InvitePlayerDialog></div></div>
+                            <div className="p-3 grid grid-cols-3 gap-2 items-center"><div className="col-span-2 space-y-1"><h3 className="font-semibold text-sm leading-tight">{(item as Match).title}</h3><div className="text-xs text-muted-foreground flex items-center gap-1.5"><Calendar className="h-3 w-3" /><span>{format(new Date((item as Match).date), "d MMM", { locale: es })} - {(item as Match).time}hs</span></div></div><div className="col-span-1 flex flex-col items-end gap-1"><Badge variant="secondary">{(item as Match).players.length}/{(item as Match).matchSize}</Badge><InvitePlayerDialog userMatches={[item as Match]} match={item as Match}><Button size="sm" variant="default" className="h-7 text-xs w-full">Invitar</Button></InvitePlayerDialog></div></div>
                           </Card>
                       ) : (
                           <div className="w-full" onMouseEnter={() => setActiveMarker((item as AvailablePlayer).uid)} onMouseLeave={() => setActiveMarker(null)}>

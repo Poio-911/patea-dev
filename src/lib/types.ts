@@ -1,5 +1,5 @@
 
-import { DocumentData, DocumentReference } from "firebase/firestore";
+import { DocumentData, DocumentReference, Timestamp } from "firebase/firestore";
 import type { PerformanceTag as Pt } from "./performance-tags";
 import { z } from 'zod';
 
@@ -640,24 +640,25 @@ export type ActivityType =
 
 // Social activity for the feed
 export type SocialActivity = {
-    id: string;
-    type: ActivityType;
-    userId: string; // User who performed the activity
-    playerId?: string; // Player involved (if applicable)
-    playerName?: string;
-    playerPhotoUrl?: string;
-    timestamp: string; // ISO timestamp
-    // Activity-specific data
-    metadata?: {
-        matchId?: string;
-        matchTitle?: string;
-        oldOvr?: number;
-        newOvr?: number;
-        ovrChange?: number;
-        goals?: number;
-        achievementName?: string;
-        achievementIcon?: string;
-    };
+  id: string;
+  type: ActivityType;
+  userId: string; // User who performed the activity
+  playerId?: string; // Player involved (if applicable)
+  playerName?: string;
+  playerPhotoUrl?: string;
+  // Accept either a Firestore Timestamp (serverTimestamp result) or legacy ISO string
+  timestamp: Timestamp | string;
+  // Activity-specific data
+  metadata?: {
+    matchId?: string;
+    matchTitle?: string;
+    oldOvr?: number;
+    newOvr?: number;
+    ovrChange?: number;
+    goals?: number;
+    achievementName?: string;
+    achievementIcon?: string;
+  };
 } & DocumentData;
 
 // Note: Notification types are now unified with the main notification system above (lines 199-231)

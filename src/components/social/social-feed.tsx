@@ -260,10 +260,15 @@ export function SocialFeed({ limit = 20, showHeader = true }: SocialFeedProps) {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm leading-relaxed">{getActivityTitle(activity)}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {formatDistanceToNow(new Date(activity.timestamp), {
-                          addSuffix: true,
-                          locale: es,
-                        })}
+                        {formatDistanceToNow(
+                          activity.timestamp && typeof (activity as any).timestamp?.toDate === 'function'
+                            ? (activity as any).timestamp.toDate()
+                            : new Date(activity.timestamp as any),
+                          {
+                            addSuffix: true,
+                            locale: es,
+                          }
+                        )}
                       </p>
                     </div>
                   </div>

@@ -2572,13 +2572,24 @@ export async function getFollowersAction(
     userId: string
 ): Promise<{ success: boolean; followers?: string[]; count?: number; error?: string }> {
     try {
-        const followersSnapshot = await adminDb
-            .collection('users')
-            .doc(userId)
-            .collection('followers')
+        // New model: top-level 'follows' collection with documents { followerId, followingId }
+        const topLevelSnapshot = await adminDb
+            .collection('follows')
+            .where('followingId', '==', userId)
             .get();
 
-        const followers = followersSnapshot.docs.map((doc) => doc.id);
+        let followers: string[] = [];
+        if (!topLevelSnapshot.empty) {
+            followers = topLevelSnapshot.docs.map(d => (d.data() as any).followerId).filter(Boolean);
+        } else {
+            // Fallback to legacy subcollection if exists
+            const legacySnapshot = await adminDb
+                .collection('users')
+                .doc(userId)
+                .collection('followers')
+                .get();
+            followers = legacySnapshot.docs.map(doc => doc.id);
+        }
 
         return { success: true, followers, count: followers.length };
     } catch (error) {
@@ -2594,13 +2605,22 @@ export async function getFollowingAction(
     userId: string
 ): Promise<{ success: boolean; following?: string[]; count?: number; error?: string }> {
     try {
-        const followingSnapshot = await adminDb
-            .collection('users')
-            .doc(userId)
-            .collection('following')
+        const topLevelSnapshot = await adminDb
+            .collection('follows')
+            .where('followerId', '==', userId)
             .get();
 
-        const following = followingSnapshot.docs.map((doc) => doc.id);
+        let following: string[] = [];
+        if (!topLevelSnapshot.empty) {
+            following = topLevelSnapshot.docs.map(d => (d.data() as any).followingId).filter(Boolean);
+        } else {
+            const legacySnapshot = await adminDb
+                .collection('users')
+                .doc(userId)
+                .collection('following')
+                .get();
+            following = legacySnapshot.docs.map(doc => doc.id);
+        }
 
         return { success: true, following, count: following.length };
     } catch (error) {
