@@ -4,7 +4,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { Match, AvailablePlayer } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Loader2, MapPin, Search, SlidersHorizontal, Users } from 'lucide-react';
