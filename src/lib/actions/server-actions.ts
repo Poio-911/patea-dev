@@ -2616,7 +2616,7 @@ export async function getFollowingAction(
 /**
  * Create a social activity (internal function)
  */
-async function createActivityAction(activity: Omit<SocialActivity, 'id'>): Promise<void> {
+export async function createActivityAction(activity: Omit<SocialActivity, 'id'>): Promise<void> {
     await adminDb.collection('socialActivities').add(activity);
 }
 

@@ -630,6 +630,7 @@ export type Follow = {
 // Activity types for the social feed
 export type ActivityType =
     | 'match_played'
+    | 'match_organized'
     | 'ovr_increased'
     | 'ovr_decreased'
     | 'goal_scored'

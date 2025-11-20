@@ -33,7 +33,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Checkbox } from './ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { generateTeamsAction, getWeatherForecastAction } from '@/lib/actions/server-actions';
+import { generateTeamsAction, getWeatherForecastAction, createActivityAction } from '@/lib/actions/server-actions';
 import { Progress } from './ui/progress';
 import { GetMatchDayForecastOutput } from '@/ai/flows/get-match-day-forecast';
 import { Switch } from './ui/switch';
@@ -420,7 +420,24 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       newMatchData.weather = weather;
     }
 
-    await addDoc(collection(firestore, 'matches'), newMatchData);
+    const matchDoc = await addDoc(collection(firestore, 'matches'), newMatchData);
+
+    // Create social activity
+    const currentPlayer = allPlayers.find(p => p.id === user.uid);
+    if (currentPlayer) {
+      await createActivityAction({
+        type: 'match_organized',
+        userId: user.uid,
+        playerId: currentPlayer.id,
+        playerName: currentPlayer.name,
+        playerPhotoUrl: currentPlayer.photoUrl,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          matchId: matchDoc.id,
+          matchTitle: data.title,
+        },
+      });
+    }
   };
 
 
@@ -499,7 +516,24 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       newMatch.weather = weather;
     }
 
-    await addDoc(collection(firestore!, 'matches'), newMatch);
+    const matchDoc = await addDoc(collection(firestore!, 'matches'), newMatch);
+
+    // Create social activity
+    const currentPlayer = allPlayers.find(p => p.id === user.uid);
+    if (currentPlayer) {
+      await createActivityAction({
+        type: 'match_organized',
+        userId: user.uid,
+        playerId: currentPlayer.id,
+        playerName: currentPlayer.name,
+        playerPhotoUrl: currentPlayer.photoUrl,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          matchId: matchDoc.id,
+          matchTitle: data.title,
+        },
+      });
+    }
   }
 
   const WeatherIcon = weather ? weatherIcons[weather.icon] : null;

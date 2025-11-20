@@ -65,6 +65,8 @@ export function SocialFeed({ limit = 20, showHeader = true }: SocialFeedProps) {
     switch (type) {
       case 'match_played':
         return <Trophy className="h-5 w-5 text-blue-500" />;
+      case 'match_organized':
+        return <Trophy className="h-5 w-5 text-primary" />;
       case 'ovr_increased':
         return <TrendingUp className="h-5 w-5 text-green-500" />;
       case 'ovr_decreased':
@@ -91,6 +93,15 @@ export function SocialFeed({ limit = 20, showHeader = true }: SocialFeedProps) {
         return (
           <span>
             <strong>{playerName}</strong> jugó un partido
+            {metadata?.matchTitle && (
+              <span className="text-muted-foreground"> - {metadata.matchTitle}</span>
+            )}
+          </span>
+        );
+      case 'match_organized':
+        return (
+          <span>
+            <strong>{playerName}</strong> organizó un partido
             {metadata?.matchTitle && (
               <span className="text-muted-foreground"> - {metadata.matchTitle}</span>
             )}
