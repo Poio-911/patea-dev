@@ -2,7 +2,7 @@
 'use client';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Users2, Calendar, Loader2, Info, LayoutGrid, CalendarDays } from 'lucide-react';
+import { Users2, Calendar, Loader2, Info, LayoutGrid, CalendarDays, Trophy, Swords } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { useMemo, useState } from 'react';
@@ -69,24 +69,36 @@ export default function MatchesPage() {
     const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(groupMatchesQuery);
     const { data: joinedPublicMatches, loading: joinedPublicMatchesLoading } = useCollection<Match>(joinedPublicMatchesQuery);
     
-    const matches = useMemo(() => {
+    const { regularMatches, competitionMatches } = useMemo(() => {
         const allMatchesMap = new Map<string, Match>();
 
         (groupMatches || []).forEach(match => allMatchesMap.set(match.id, match));
         (joinedPublicMatches || []).forEach(match => allMatchesMap.set(match.id, match));
 
-        // Filter out friendly matches - they should appear in Groups/Competitions sections instead
-        return Array.from(allMatchesMap.values())
-            .filter(match => match.type !== 'intergroup_friendly')
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const allMatches = Array.from(allMatchesMap.values())
+            .filter(match => match.type !== 'intergroup_friendly');
+
+        // Separate competition matches from regular matches
+        const competition = allMatches.filter(match =>
+            match.type === 'league' || match.type === 'cup' || match.type === 'league_final'
+        );
+
+        const regular = allMatches.filter(match =>
+            match.type !== 'league' && match.type !== 'cup' && match.type !== 'league_final'
+        );
+
+        return {
+            regularMatches: regular.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+            competitionMatches: competition.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        };
     }, [groupMatches, joinedPublicMatches]);
     
-    const { upcomingMatches, pastMatches } = useMemo(() => {
+    const regularMatchesSplit = useMemo(() => {
         const upcoming: Match[] = [];
         const past: Match[] = [];
         const now = new Date();
-        
-        matches.forEach(match => {
+
+        regularMatches.forEach(match => {
             const matchDate = new Date(match.date);
             if (matchDate >= now || match.status === 'upcoming' || match.status === 'active') {
                 upcoming.push(match);
@@ -95,11 +107,34 @@ export default function MatchesPage() {
             }
         });
 
-        // Sort upcoming matches by date ascending
         upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        
+
         return { upcomingMatches: upcoming, pastMatches: past };
-    }, [matches]);
+    }, [regularMatches]);
+
+    const competitionMatchesSplit = useMemo(() => {
+        const upcoming: Match[] = [];
+        const past: Match[] = [];
+        const now = new Date();
+
+        competitionMatches.forEach(match => {
+            const matchDate = new Date(match.date);
+            if (matchDate >= now || match.status === 'upcoming' || match.status === 'active') {
+                upcoming.push(match);
+            } else {
+                past.push(match);
+            }
+        });
+
+        upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        return { upcomingMatches: upcoming, pastMatches: past };
+    }, [competitionMatches]);
+
+    // Combined for calendar view
+    const allMatches = useMemo(() => {
+        return [...regularMatches, ...competitionMatches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [regularMatches, competitionMatches]);
 
     const loading = userLoading || playersLoading || groupMatchesLoading || joinedPublicMatchesLoading;
     
@@ -157,60 +192,122 @@ export default function MatchesPage() {
 
             {user?.activeGroupId && (
                 viewMode === 'calendar' ? (
-                    <MatchesCalendar matches={matches} allPlayers={sortedPlayers} />
+                    <MatchesCalendar matches={allMatches} allPlayers={sortedPlayers} />
                 ) : (
                     <Tabs defaultValue="upcoming" className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="upcoming">Próximos</TabsTrigger>
                             <TabsTrigger value="history">Historial</TabsTrigger>
                         </TabsList>
-                        <TabsContent value="upcoming" className="mt-6">
-                            {upcomingMatches.length > 0 ? (
-                                <motion.div 
-                                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                                    variants={listVariants}
-                                    initial="hidden"
-                                    animate="visible"
-                                >
-                                    {upcomingMatches.map(match => (
-                                        <motion.div key={match.id} variants={itemVariants}>
-                                            <MatchCard match={match} allPlayers={sortedPlayers} />
-                                        </motion.div>
-                                    ))}
-                                </motion.div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl">
-                                    <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
-                                    <h2 className="text-xl font-semibold mb-2">No hay partidos programados</h2>
-                                    <p className="text-muted-foreground mb-6 max-w-md">
-                                    ¡Es hora de organizar el próximo encuentro!
-                                    </p>
+                        <TabsContent value="upcoming" className="mt-6 space-y-8">
+                            {/* Competition Matches Section */}
+                            {competitionMatchesSplit.upcomingMatches.length > 0 && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <Swords className="h-5 w-5 text-primary" />
+                                        <h3 className="text-lg font-semibold">Partidos de Competición</h3>
+                                    </div>
+                                    <motion.div
+                                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                        variants={listVariants}
+                                        initial="hidden"
+                                        animate="visible"
+                                    >
+                                        {competitionMatchesSplit.upcomingMatches.map(match => (
+                                            <motion.div key={match.id} variants={itemVariants}>
+                                                <MatchCard match={match} allPlayers={sortedPlayers} />
+                                            </motion.div>
+                                        ))}
+                                    </motion.div>
                                 </div>
                             )}
+
+                            {/* Regular Matches Section */}
+                            <div className="space-y-4">
+                                {competitionMatchesSplit.upcomingMatches.length > 0 && (
+                                    <div className="flex items-center gap-2">
+                                        <Calendar className="h-5 w-5 text-primary" />
+                                        <h3 className="text-lg font-semibold">Partidos Regulares</h3>
+                                    </div>
+                                )}
+                                {regularMatchesSplit.upcomingMatches.length > 0 ? (
+                                    <motion.div
+                                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                        variants={listVariants}
+                                        initial="hidden"
+                                        animate="visible"
+                                    >
+                                        {regularMatchesSplit.upcomingMatches.map(match => (
+                                            <motion.div key={match.id} variants={itemVariants}>
+                                                <MatchCard match={match} allPlayers={sortedPlayers} />
+                                            </motion.div>
+                                        ))}
+                                    </motion.div>
+                                ) : competitionMatchesSplit.upcomingMatches.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl">
+                                        <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
+                                        <h2 className="text-xl font-semibold mb-2">No hay partidos programados</h2>
+                                        <p className="text-muted-foreground mb-6 max-w-md">
+                                        ¡Es hora de organizar el próximo encuentro!
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
                         </TabsContent>
-                        <TabsContent value="history" className="mt-6">
-                            {pastMatches.length > 0 ? (
-                                <motion.div 
-                                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                                    variants={listVariants}
-                                    initial="hidden"
-                                    animate="visible"
-                                >
-                                    {pastMatches.map(match => (
-                                        <motion.div key={match.id} variants={itemVariants}>
-                                            <MatchCard match={match} allPlayers={sortedPlayers} />
-                                        </motion.div>
-                                    ))}
-                                </motion.div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl">
-                                    <Info className="h-16 w-16 text-muted-foreground mb-4" />
-                                    <h2 className="text-xl font-semibold mb-2">Sin Historial</h2>
-                                    <p className="text-muted-foreground mb-6 max-w-md">
-                                        Cuando los partidos finalicen, aparecerán acá.
-                                    </p>
+                        <TabsContent value="history" className="mt-6 space-y-8">
+                            {/* Competition Matches Section */}
+                            {competitionMatchesSplit.pastMatches.length > 0 && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <Swords className="h-5 w-5 text-primary" />
+                                        <h3 className="text-lg font-semibold">Partidos de Competición</h3>
+                                    </div>
+                                    <motion.div
+                                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                        variants={listVariants}
+                                        initial="hidden"
+                                        animate="visible"
+                                    >
+                                        {competitionMatchesSplit.pastMatches.map(match => (
+                                            <motion.div key={match.id} variants={itemVariants}>
+                                                <MatchCard match={match} allPlayers={sortedPlayers} />
+                                            </motion.div>
+                                        ))}
+                                    </motion.div>
                                 </div>
                             )}
+
+                            {/* Regular Matches Section */}
+                            <div className="space-y-4">
+                                {competitionMatchesSplit.pastMatches.length > 0 && (
+                                    <div className="flex items-center gap-2">
+                                        <Calendar className="h-5 w-5 text-primary" />
+                                        <h3 className="text-lg font-semibold">Partidos Regulares</h3>
+                                    </div>
+                                )}
+                                {regularMatchesSplit.pastMatches.length > 0 ? (
+                                    <motion.div
+                                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                        variants={listVariants}
+                                        initial="hidden"
+                                        animate="visible"
+                                    >
+                                        {regularMatchesSplit.pastMatches.map(match => (
+                                            <motion.div key={match.id} variants={itemVariants}>
+                                                <MatchCard match={match} allPlayers={sortedPlayers} />
+                                            </motion.div>
+                                        ))}
+                                    </motion.div>
+                                ) : competitionMatchesSplit.pastMatches.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl">
+                                        <Info className="h-16 w-16 text-muted-foreground mb-4" />
+                                        <h2 className="text-xl font-semibold mb-2">Sin Historial</h2>
+                                        <p className="text-muted-foreground mb-6 max-w-md">
+                                            Cuando los partidos finalicen, aparecerán acá.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
                         </TabsContent>
                     </Tabs>
                 )
