@@ -16,7 +16,7 @@ import type { GroupTeam, Player, DetailedTeamPlayer } from '@/lib/types';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Users } from 'lucide-react';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-import { TeamRosterPlayer } from '@/components/team-roster-player';
+import { GroupTeamRosterPlayer } from '@/components/group-team-roster-player';
 
 
 interface TeamDetailDialogProps {
@@ -76,7 +76,7 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
                     </h3>
                     <div className="space-y-1">
                         {teamPlayersWithDetails.map((player) => (
-                            <TeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={() => {}} />
+                            <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={() => {}} />
                         ))}
                     </div>
                 </div>
