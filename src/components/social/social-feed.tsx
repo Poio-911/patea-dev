@@ -193,8 +193,8 @@ export function SocialFeed({ limit = 20, showHeader = true }: SocialFeedProps) {
       <Card>
         {showHeader && (
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-3">
+              <Activity className="h-5 w-5" aria-hidden="true" />
               Feed de Actividad
             </CardTitle>
           </CardHeader>
@@ -219,8 +219,8 @@ export function SocialFeed({ limit = 20, showHeader = true }: SocialFeedProps) {
       {showHeader && (
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-3">
+              <Activity className="h-5 w-5" aria-hidden="true" />
               Feed de Actividad
             </CardTitle>
             <Button

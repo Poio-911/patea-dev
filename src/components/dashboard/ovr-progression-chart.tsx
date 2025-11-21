@@ -64,8 +64,8 @@ export function OVRProgressionChart({ player }: OVRProgressionChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
+          <CardTitle className="flex items-center gap-3">
+            <TrendingUp className="h-5 w-5 text-primary" aria-hidden="true" />
             Progresión de OVR
           </CardTitle>
           <CardDescription>Tu evolución a lo largo de los partidos evaluados.</CardDescription>
@@ -129,54 +129,54 @@ export function OVRProgressionChart({ player }: OVRProgressionChartProps) {
           transition={{ delay: 0.4, duration: 0.5 }}
         >
           <ResponsiveContainer width="100%" height={250}>
-          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <defs>
-              <linearGradient id="colorOvr" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-            <XAxis
-              dataKey="date"
-              className="text-xs"
-              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-            />
-            <YAxis
-              domain={['dataMin - 2', 'dataMax + 2']}
-              className="text-xs"
-              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: 'hsl(var(--background))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
-                fontSize: '12px',
-              }}
-              labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
-              formatter={(value: any, name: string, props: any) => {
-                return [
-                  <span key="ovr" className="text-primary font-bold">{value} OVR</span>,
-                ];
-              }}
-              labelFormatter={(label: string, payload: any) => {
-                if (payload && payload[0]) {
-                  return payload[0].payload.fullDate;
-                }
-                return label;
-              }}
-            />
-            <Area
-              type="monotone"
-              dataKey="ovr"
-              stroke="hsl(var(--primary))"
-              strokeWidth={3}
-              fill="url(#colorOvr)"
-              activeDot={{ r: 6, fill: 'hsl(var(--primary))' }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorOvr" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis
+                dataKey="date"
+                className="text-xs"
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+              />
+              <YAxis
+                domain={['dataMin - 2', 'dataMax + 2']}
+                className="text-xs"
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--background))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                }}
+                labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
+                formatter={(value: any, name: string, props: any) => {
+                  return [
+                    <span key="ovr" className="text-primary font-bold">{value} OVR</span>,
+                  ];
+                }}
+                labelFormatter={(label: string, payload: any) => {
+                  if (payload && payload[0]) {
+                    return payload[0].payload.fullDate;
+                  }
+                  return label;
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="ovr"
+                stroke="hsl(var(--primary))"
+                strokeWidth={3}
+                fill="url(#colorOvr)"
+                activeDot={{ r: 6, fill: 'hsl(var(--primary))' }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         </motion.div>
       </CardContent>
     </Card>

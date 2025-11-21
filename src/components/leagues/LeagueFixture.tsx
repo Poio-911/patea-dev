@@ -62,7 +62,7 @@ export function LeagueFixture({ matches, currentRound, isOwner, leagueId, onEdit
           <Card key={round} className={isRoundLocked ? 'opacity-60' : ''}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-3">
                   Fecha {round}
                   {isCurrentRound && (
                     <Badge variant="default" className="ml-2">

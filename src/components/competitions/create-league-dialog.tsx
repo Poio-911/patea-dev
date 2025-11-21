@@ -189,23 +189,23 @@ export function CreateLeagueDialog({ open, onOpenChange, groupId, userId, teams 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Trophy className="h-5 w-5 text-primary" /> Crear Nueva Liga</DialogTitle>
+          <DialogTitle className="flex items-center gap-3"><Trophy className="h-5 w-5 text-primary" aria-hidden="true" /> Crear Nueva Liga</DialogTitle>
           <DialogDescription>
             Configurá los detalles de tu liga de todos contra todos.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex items-center justify-center gap-2 my-2">
-            {[1, 2, 3].map(i => (
-                <div key={i} className="flex items-center gap-2">
-                    <div className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${step >= i ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{i}</div>
-                    <p className={`text-sm font-medium ${step >= i ? 'text-foreground' : 'text-muted-foreground'}`}>
-                      {i === 1 ? 'Detalles' : i === 2 ? 'Programación' : 'Equipos'}
-                    </p>
-                </div>
-            ))}
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex items-center gap-2">
+              <div className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${step >= i ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{i}</div>
+              <p className={`text-sm font-medium ${step >= i ? 'text-foreground' : 'text-muted-foreground'}`}>
+                {i === 1 ? 'Detalles' : i === 2 ? 'Programación' : 'Equipos'}
+              </p>
+            </div>
+          ))}
         </div>
-        
+
         <form onSubmit={handleSubmit(onSubmit)} className="flex-grow flex flex-col overflow-hidden">
           <div className="flex-grow overflow-y-auto -mx-6 px-6">
             <AnimatePresence mode="wait">
@@ -255,26 +255,26 @@ export function CreateLeagueDialog({ open, onOpenChange, groupId, userId, teams 
 
                     <div className="space-y-2">
                       <Label>Formato</Label>
-                       <Controller name="format" control={control} render={({ field }) => (
-                         <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-2 gap-4">
-                            <Label className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
-                                <RadioGroupItem value="round_robin" className="sr-only" />
-                                <h3 className="font-semibold">Todos contra todos</h3>
-                                <p className="text-xs text-muted-foreground text-center">Cada equipo juega contra todos una vez.</p>
-                            </Label>
-                             <Label className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
-                                <RadioGroupItem value="double_round_robin" className="sr-only" />
-                                <h3 className="font-semibold">Ida y vuelta</h3>
-                                <p className="text-xs text-muted-foreground text-center">Cada equipo juega contra todos dos veces.</p>
-                            </Label>
-                         </RadioGroup>
-                       )} />
+                      <Controller name="format" control={control} render={({ field }) => (
+                        <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-2 gap-4">
+                          <Label className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
+                            <RadioGroupItem value="round_robin" className="sr-only" />
+                            <h3 className="font-semibold">Todos contra todos</h3>
+                            <p className="text-xs text-muted-foreground text-center">Cada equipo juega contra todos una vez.</p>
+                          </Label>
+                          <Label className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
+                            <RadioGroupItem value="double_round_robin" className="sr-only" />
+                            <h3 className="font-semibold">Ida y vuelta</h3>
+                            <p className="text-xs text-muted-foreground text-center">Cada equipo juega contra todos dos veces.</p>
+                          </Label>
+                        </RadioGroup>
+                      )} />
                     </div>
-                     <div className="flex items-center space-x-2">
-                        <Controller name="isPublic" control={control} render={({ field }) => (
-                           <Switch id="is-public" checked={field.value} onCheckedChange={field.onChange} />
-                        )} />
-                        <Label htmlFor="is-public">Permitir que equipos de otros grupos se postulen</Label>
+                    <div className="flex items-center space-x-2">
+                      <Controller name="isPublic" control={control} render={({ field }) => (
+                        <Switch id="is-public" checked={field.value} onCheckedChange={field.onChange} />
+                      )} />
+                      <Label htmlFor="is-public">Permitir que equipos de otros grupos se postulen</Label>
                     </div>
                   </div>
                 )}

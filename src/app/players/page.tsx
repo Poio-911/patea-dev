@@ -42,7 +42,7 @@ export default function PlayersPage() {
   const { data: players, loading: playersLoading } = useCollection<Player>(playersQuery);
 
   const loading = userLoading || playersLoading;
-  
+
   const sortedPlayers = useMemo(() => {
     if (!players) return [];
     return [...players].sort((a, b) => b.ovr - a.ovr);
@@ -64,40 +64,40 @@ export default function PlayersPage() {
       </PageHeader>
 
       <AttributesHelpDialog>
-          <Button variant="link" className="p-0 h-auto self-start">¿Qué significan los atributos?</Button>
+        <Button variant="link" className="p-0 h-auto self-start">¿Qué significan los atributos?</Button>
       </AttributesHelpDialog>
 
-       {loading && (
-          <div className="flex items-center justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="ml-4 text-muted-foreground">Cargando jugadores...</p>
-          </div>
-       )}
+      {loading && (
+        <div className="flex items-center justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="ml-4 text-muted-foreground">Cargando jugadores...</p>
+        </div>
+      )}
 
-       {!loading && !user?.activeGroupId && (
-         <Alert>
-            <Users2 className="h-4 w-4" />
-            <AlertTitle>No hay grupo activo</AlertTitle>
-            <AlertDescription>
-                No tenés un grupo activo seleccionado. Por favor, creá o unite a un grupo para ver a tus jugadores.
-                <Button asChild variant="link" className="p-0 h-auto ml-1">
-                    <Link href="/groups">Ir a la página de grupos</Link>
-                </Button>
-            </AlertDescription>
-         </Alert>
-       )}
-
-      {!loading && user?.activeGroupId && sortedPlayers?.length === 0 && (
+      {!loading && !user?.activeGroupId && (
         <Alert>
-            <Users className="h-4 w-4" />
-            <AlertTitle>No hay jugadores en este grupo</AlertTitle>
-            <AlertDescription>
-                Todavía no agregaste ningún jugador a este grupo. ¡Empezá por sumar al primero!
-            </AlertDescription>
+          <Users2 className="h-4 w-4" />
+          <AlertTitle>No hay grupo activo</AlertTitle>
+          <AlertDescription>
+            No tenés un grupo activo seleccionado. Por favor, creá o unite a un grupo para ver a tus jugadores.
+            <Button asChild variant="link" className="p-0 h-auto ml-1">
+              <Link href="/groups">Ir a la página de grupos</Link>
+            </Button>
+          </AlertDescription>
         </Alert>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      {!loading && user?.activeGroupId && sortedPlayers?.length === 0 && (
+        <Alert>
+          <Users className="h-4 w-4" />
+          <AlertTitle>No hay jugadores en este grupo</AlertTitle>
+          <AlertDescription>
+            Todavía no agregaste ningún jugador a este grupo. ¡Empezá por sumar al primero!
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {sortedPlayers && sortedPlayers.map((player) => (
           <PlayerCard key={player.id} player={player} />
         ))}

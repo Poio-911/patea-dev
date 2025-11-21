@@ -94,8 +94,8 @@ export function LeagueTopScorers({ matches }: LeagueTopScorersProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-3">
+            <Target className="h-5 w-5" aria-hidden="true" />
             Estadísticas de Jugadores
           </CardTitle>
         </CardHeader>

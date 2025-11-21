@@ -51,45 +51,45 @@ export function UserGroupsList() {
     navigator.clipboard.writeText(code);
     toast({ title: '¡Copiado!', description: 'Código de invitación copiado al portapapeles.' });
   }
-  
+
   const handleDeleteGroup = async (groupId: string, groupName: string) => {
     if (!firestore || !user?.uid) return;
     setIsDeletingGroup(groupId);
-    
+
     const batch = writeBatch(firestore);
 
     try {
-        const playersQuery = query(collection(firestore, 'players'), where('groupId', '==', groupId));
-        const playersSnap = await getDocs(playersQuery);
-        playersSnap.forEach(playerDoc => batch.delete(playerDoc.ref));
+      const playersQuery = query(collection(firestore, 'players'), where('groupId', '==', groupId));
+      const playersSnap = await getDocs(playersQuery);
+      playersSnap.forEach(playerDoc => batch.delete(playerDoc.ref));
 
-        const matchesQuery = query(collection(firestore, 'matches'), where('groupId', '==', groupId));
-        const matchesSnap = await getDocs(matchesQuery);
-        matchesSnap.forEach(matchDoc => batch.delete(matchDoc.ref));
-        
-        const teamsQuery = query(collection(firestore, 'teams'), where('groupId', '==', groupId));
-        const teamsSnap = await getDocs(teamsQuery);
-        teamsSnap.forEach(teamDoc => batch.delete(teamDoc.ref));
+      const matchesQuery = query(collection(firestore, 'matches'), where('groupId', '==', groupId));
+      const matchesSnap = await getDocs(matchesQuery);
+      matchesSnap.forEach(matchDoc => batch.delete(matchDoc.ref));
 
-        batch.delete(doc(firestore, 'groups', groupId));
+      const teamsQuery = query(collection(firestore, 'teams'), where('groupId', '==', groupId));
+      const teamsSnap = await getDocs(teamsQuery);
+      teamsSnap.forEach(teamDoc => batch.delete(teamDoc.ref));
 
-        const userRef = doc(firestore, 'users', user.uid);
-        const userGroups = user.groups || [];
-        const userUpdate: any = {
-            groups: userGroups.filter(id => id !== groupId)
-        };
-        if (user.activeGroupId === groupId) {
-            userUpdate.activeGroupId = userGroups.length > 1 ? userGroups.find(id => id !== groupId) : null;
-        }
-        batch.update(userRef, userUpdate);
-        
-        await batch.commit();
-        toast({ title: 'Grupo Eliminado', description: `El grupo "${groupName}" y todos sus datos han sido eliminados.` });
+      batch.delete(doc(firestore, 'groups', groupId));
+
+      const userRef = doc(firestore, 'users', user.uid);
+      const userGroups = user.groups || [];
+      const userUpdate: any = {
+        groups: userGroups.filter(id => id !== groupId)
+      };
+      if (user.activeGroupId === groupId) {
+        userUpdate.activeGroupId = userGroups.length > 1 ? userGroups.find(id => id !== groupId) : null;
+      }
+      batch.update(userRef, userUpdate);
+
+      await batch.commit();
+      toast({ title: 'Grupo Eliminado', description: `El grupo "${groupName}" y todos sus datos han sido eliminados.` });
     } catch (error) {
-        console.error("Error deleting group:", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el grupo.' });
+      console.error("Error deleting group:", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el grupo.' });
     } finally {
-        setIsDeletingGroup(null);
+      setIsDeletingGroup(null);
     }
   };
 
@@ -117,21 +117,21 @@ export function UserGroupsList() {
           <Card key={group.id} className={cn("flex flex-col", isActive && 'border-primary ring-2 ring-primary/50')}>
             <CardHeader className="flex-row items-start justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-3">
                   <span>{group.name}</span>
-                   {isOwner && (
-                      <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/20">
-                          <Crown className="h-3 w-3 mr-1"/>
-                          Dueño
-                      </Badge>
+                  {isOwner && (
+                    <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+                      <Crown className="h-3 w-3 mr-1" />
+                      Dueño
+                    </Badge>
                   )}
                 </CardTitle>
                 <div className="flex items-center gap-2 mt-2">
-                    <p className="text-xs text-muted-foreground">Código:</p>
-                    <code className="text-sm font-bold font-mono bg-muted px-2 py-1 rounded-md">{group.inviteCode}</code>
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleCopyCode(group.inviteCode)}>
-                        <Copy className="h-4 w-4"/>
-                    </Button>
+                  <p className="text-xs text-muted-foreground">Código:</p>
+                  <code className="text-sm font-bold font-mono bg-muted px-2 py-1 rounded-md">{group.inviteCode}</code>
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleCopyCode(group.inviteCode)}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
               {isOwner && (
@@ -142,32 +142,32 @@ export function UserGroupsList() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" onClick={(e) => e.preventDefault()}>
-                     <EditGroupDialog group={group}>
-                        <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                            <Edit className="mr-2 h-4 w-4"/> Editar
-                        </DropdownMenuItem>
+                    <EditGroupDialog group={group}>
+                      <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                        <Edit className="mr-2 h-4 w-4" /> Editar
+                      </DropdownMenuItem>
                     </EditGroupDialog>
                     <DropdownMenuSeparator />
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4"/> Eliminar
+                          <Trash2 className="mr-2 h-4 w-4" /> Eliminar
                         </DropdownMenuItem>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>¿Borrar "{group.name}"?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta acción es permanente. Se borrarán todos los jugadores y partidos asociados a este grupo.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDeleteGroup(group.id, group.name)} disabled={isDeletingGroup === group.id} className="bg-destructive hover:bg-destructive/90">
-                              {isDeletingGroup === group.id && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                              Borrar
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Borrar "{group.name}"?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta acción es permanente. Se borrarán todos los jugadores y partidos asociados a este grupo.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDeleteGroup(group.id, group.name)} disabled={isDeletingGroup === group.id} className="bg-destructive hover:bg-destructive/90">
+                            {isDeletingGroup === group.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Borrar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
                   </DropdownMenuContent>

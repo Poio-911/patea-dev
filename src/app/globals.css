@@ -8,32 +8,35 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-    
+
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
-    
+
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    
-    --primary: 217 91% 60%; /* AZUL como primario */
+
+    --primary: 217 91% 60%;
+    /* AZUL como primario */
     --primary-foreground: 210 40% 98%;
-    
+
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-    
+
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    
-    --accent: 43 96% 56%; /* AMARILLO/ÁMBAR como acento */
+
+    --accent: 43 96% 56%;
+    /* AMARILLO/ÁMBAR como acento */
     --accent-foreground: 222.2 47.4% 11.2%;
-    
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    
+
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 217 91% 60%; /* Ring ahora azul */
-    
+    --ring: 217 91% 60%;
+    /* Ring ahora azul */
+
     --radius: 0.5rem;
 
     /* Colores para gráficos */
@@ -42,34 +45,51 @@
     --chart-3: 217 91% 60%;
     --chart-4: 38 92% 50%;
     --chart-5: 27 87% 67%;
+    --chart-5: 27 87% 67%;
+
+    /* Semantic Colors */
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 222.2 47.4% 11.2%;
+    --info: 217 91% 60%;
+    --info-foreground: 210 40% 98%;
   }
 
   /* Game Mode (FC SPORT inspired) palette scoped by .game theme class on <html> */
   .game {
-    --background: 216 22% 6%; /* Carbon dark */
+    --background: 216 22% 6%;
+    /* Carbon dark */
     --foreground: 210 40% 96%;
     --card: 220 18% 10%;
     --card-foreground: 210 40% 96%;
     --popover: 220 18% 8%;
     --popover-foreground: 210 40% 96%;
-    --primary: 72 100% 58%; /* Volt Yellow */
+    --primary: 72 100% 58%;
+    /* Volt Yellow */
     --primary-foreground: 230 20% 10%;
     --secondary: 220 18% 16%;
     --secondary-foreground: 210 40% 92%;
     --muted: 220 18% 22%;
     --muted-foreground: 215 12% 72%;
-    --accent: 173 100% 45%; /* Turquoise */
+    --accent: 173 100% 45%;
+    /* Turquoise */
     --accent-foreground: 210 40% 98%;
     --destructive: 0 72% 46%;
     --destructive-foreground: 210 40% 96%;
     --border: 220 18% 28%;
     --input: 220 18% 28%;
     --ring: 72 100% 58%;
-    --chart-1: 72 100% 58%; /* Volt */
-    --chart-2: 173 100% 45%; /* Turquoise */
-    --chart-3: 277 92% 64%; /* Violet accent */
-    --chart-4: 198 100% 52%; /* Cyan pulse */
-    --chart-5: 32 100% 54%; /* Orange alt */
+    --chart-1: 72 100% 58%;
+    /* Volt */
+    --chart-2: 173 100% 45%;
+    /* Turquoise */
+    --chart-3: 277 92% 64%;
+    /* Violet accent */
+    --chart-4: 198 100% 52%;
+    /* Cyan pulse */
+    --chart-5: 32 100% 54%;
+    /* Orange alt */
   }
 }
 
@@ -77,22 +97,26 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply text-foreground;
     min-height: 100svh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    
-    /* Subtle Animated Gradient Background for light theme */
-    background: linear-gradient(
-      -45deg,
-      hsla(var(--primary), 0.1),
-      hsla(var(--accent), 0.05),
-      hsla(0, 0%, 100%, 0),
-      hsla(210, 40%, 98%, 1)
-    );
+
+    /* Super Subtle Animated Gradient Background for light theme */
+    background: linear-gradient(-45deg,
+        hsla(217, 91%, 60%, 0.03),
+        /* Primary azul muy suave */
+        hsla(43, 96%, 56%, 0.02),
+        /* Accent amarillo casi invisible */
+        hsla(0, 0%, 100%, 0),
+        /* Transparente */
+        hsla(210, 40%, 99%, 1)
+        /* Blanco casi puro */
+      );
     background-size: 400% 400%;
-    animation: gradientBG 15s ease infinite;
+    animation: gradientBG 20s ease-in-out infinite;
   }
 
   .game body {
@@ -103,9 +127,11 @@
     0% {
       background-position: 0% 50%;
     }
+
     50% {
       background-position: 100% 50%;
     }
+
     100% {
       background-position: 0% 50%;
     }
@@ -113,11 +139,13 @@
 }
 
 @layer utilities {
+
   /* Animación de Brillo Holográfico */
   @keyframes shimmer {
     0% {
       transform: translateX(-100%) skewX(-15deg);
     }
+
     100% {
       transform: translateX(200%) skewX(-15deg);
     }
@@ -134,12 +162,10 @@
     left: 0;
     width: 50%;
     height: 100%;
-    background: linear-gradient(
-      to right,
-      transparent 0%,
-      rgba(255, 255, 255, 0.4) 50%,
-      transparent 100%
-    );
+    background: linear-gradient(to right,
+        transparent 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        transparent 100%);
     animation: shimmer 4s infinite;
     opacity: 0.8;
   }
@@ -149,67 +175,82 @@
   .player-card [class*="text-5xl"] {
     font-weight: 900 !important;
   }
+
   .game .player-card .ovr-value,
   .game .player-card [class*="text-5xl"] {
     color: #aafe48 !important;
     text-shadow: 0 2px 8px rgba(170, 254, 72, 0.4),
-                 0 0 20px rgba(170, 254, 72, 0.2) !important;
+      0 0 20px rgba(170, 254, 72, 0.2) !important;
   }
 
   .game .player-card [class*="text-2xl"] {
-    text-shadow: 0 1px 4px rgba(0,0,0,0.5) !important;
-  }
-  
-  .game .player-card h3,
-  .game .player-card .player-name {
-    color: rgba(255,255,255,0.95) !important;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.8) !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5) !important;
   }
 
-  .game .player-card [class*="grid"] > div {
-    background: rgba(255,255,255,0.08) !important;
-    border-color: rgba(255,255,255,0.1) !important;
+  .game .player-card h3,
+  .game .player-card .player-name {
+    color: rgba(255, 255, 255, 0.95) !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
   }
-  
+
+  .game .player-card [class*="grid"]>div {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
   .game .player-card [class*="border-yellow"] {
     background: rgba(170, 255, 90, 0.15) !important;
     border-color: rgba(170, 255, 90, 0.4) !important;
   }
-  
+
   .game .player-card [class*="text-slate-800"],
   .game .player-card [class*="font-bold"] {
-    color: rgba(255,255,255,0.95) !important;
+    color: rgba(255, 255, 255, 0.95) !important;
   }
-  
+
   .game .player-card [class*="text-gray-500"] {
-    color: rgba(255,255,255,0.5) !important;
+    color: rgba(255, 255, 255, 0.5) !important;
   }
 
   /* Player Card Aura Effects */
-  .aura-bronze { background-image: radial-gradient(ellipse at top right, rgba(205, 127, 50, 0.2) 0%, transparent 70%); }
-  .game .aura-bronze { background-image: radial-gradient(ellipse at top right, rgba(205, 127, 50, 0.3) 0%, transparent 70%); }
+  .aura-bronze {
+    background-image: radial-gradient(ellipse at top right, rgba(205, 127, 50, 0.2) 0%, transparent 70%);
+  }
 
-  .aura-silver { background-image: radial-gradient(ellipse at top right, hsla(220, 15%, 75%, 0.25) 0%, transparent 70%); }
-  .game .aura-silver { background-image: radial-gradient(ellipse at top right, hsla(220, 15%, 75%, 0.35) 0%, transparent 70%); }
+  .game .aura-bronze {
+    background-image: radial-gradient(ellipse at top right, rgba(205, 127, 50, 0.3) 0%, transparent 70%);
+  }
 
-  .aura-gold { background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.2) 0%, transparent 70%); }
-  .game .aura-gold { background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.3) 0%, transparent 70%); }
+  .aura-silver {
+    background-image: radial-gradient(ellipse at top right, hsla(220, 15%, 75%, 0.25) 0%, transparent 70%);
+  }
+
+  .game .aura-silver {
+    background-image: radial-gradient(ellipse at top right, hsla(220, 15%, 75%, 0.35) 0%, transparent 70%);
+  }
+
+  .aura-gold {
+    background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.2) 0%, transparent 70%);
+  }
+
+  .game .aura-gold {
+    background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.3) 0%, transparent 70%);
+  }
 
   .aura-elite {
     background-image: radial-gradient(ellipse at top right,
-      hsla(270, 80%, 60%, 0.3) 0%,
-      hsla(217, 91%, 60%, 0.15) 30%,
-      hsla(43, 96%, 56%, 0.05) 60%,
-      transparent 80%
-    );
+        hsla(270, 80%, 60%, 0.3) 0%,
+        hsla(217, 91%, 60%, 0.15) 30%,
+        hsla(43, 96%, 56%, 0.05) 60%,
+        transparent 80%);
   }
+
   .game .aura-elite {
-     background-image: radial-gradient(ellipse at top right,
-      hsla(270, 80%, 60%, 0.35) 0%,
-      hsla(217, 91%, 60%, 0.2) 30%,
-      hsla(43, 96%, 56%, 0.1) 60%,
-      transparent 80%
-    );
+    background-image: radial-gradient(ellipse at top right,
+        hsla(270, 80%, 60%, 0.35) 0%,
+        hsla(217, 91%, 60%, 0.2) 30%,
+        hsla(43, 96%, 56%, 0.1) 60%,
+        transparent 80%);
   }
 
   .text-glow {
@@ -217,9 +258,55 @@
   }
 
   @keyframes color-cycle {
-    0%, 100% { color: hsl(var(--primary)); }
-    33% { color: hsl(var(--chart-2)); }
-    66% { color: hsl(var(--chart-4)); }
+
+    0%,
+    100% {
+      color: hsl(var(--primary));
+    }
+
+    33% {
+      color: hsl(var(--accent));
+    }
+
+    66% {
+      color: hsl(var(--secondary));
+    }
+  }
+
+  @keyframes shake {
+
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+
+    25% {
+      transform: translateX(-5px);
+    }
+
+    75% {
+      transform: translateX(5px);
+    }
+  }
+
+  @keyframes bounce-subtle {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+
+  .animate-shake {
+    animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+
+  .animate-bounce-subtle {
+    animation: bounce-subtle 0.5s ease-in-out;
   }
 
   .color-cycle-animation {
@@ -231,46 +318,50 @@
   /* Gradientes de fondo para cards de competición */
   .champions-gradient-challenges {
     background: linear-gradient(135deg,
-      hsl(0 84% 60% / 0.08) 0%,
-      hsl(25 100% 50% / 0.05) 100%);
+        hsl(0 84% 60% / 0.08) 0%,
+        hsl(25 100% 50% / 0.05) 100%);
   }
+
   .game .champions-gradient-challenges {
     background: linear-gradient(135deg,
-      hsl(0 84% 60% / 0.12) 0%,
-      hsl(25 100% 50% / 0.08) 100%);
+        hsl(0 84% 60% / 0.12) 0%,
+        hsl(25 100% 50% / 0.08) 100%);
   }
 
   .champions-gradient-teams {
     background: linear-gradient(135deg,
-      hsl(217 91% 60% / 0.08) 0%,
-      hsl(195 100% 60% / 0.05) 100%);
+        hsl(217 91% 60% / 0.08) 0%,
+        hsl(195 100% 60% / 0.05) 100%);
   }
+
   .game .champions-gradient-teams {
     background: linear-gradient(135deg,
-      hsl(217 91% 60% / 0.12) 0%,
-      hsl(195 100% 60% / 0.08) 100%);
+        hsl(217 91% 60% / 0.12) 0%,
+        hsl(195 100% 60% / 0.08) 100%);
   }
 
   .champions-gradient-search {
     background: linear-gradient(135deg,
-      hsl(43 96% 56% / 0.08) 0%,
-      hsl(142 76% 36% / 0.05) 100%);
+        hsl(43 96% 56% / 0.08) 0%,
+        hsl(142 76% 36% / 0.05) 100%);
   }
+
   .game .champions-gradient-search {
     background: linear-gradient(135deg,
-      hsl(43 96% 56% / 0.12) 0%,
-      hsl(142 76% 36% / 0.08) 100%);
+        hsl(43 96% 56% / 0.12) 0%,
+        hsl(142 76% 36% / 0.08) 100%);
   }
 
   .champions-gradient-history {
     background: linear-gradient(135deg,
-      hsl(277 92% 64% / 0.08) 0%,
-      hsl(328 86% 70% / 0.05) 100%);
+        hsl(277 92% 64% / 0.08) 0%,
+        hsl(328 86% 70% / 0.05) 100%);
   }
+
   .game .champions-gradient-history {
     background: linear-gradient(135deg,
-      hsl(277 92% 64% / 0.12) 0%,
-      hsl(328 86% 70% / 0.08) 100%);
+        hsl(277 92% 64% / 0.12) 0%,
+        hsl(328 86% 70% / 0.08) 100%);
   }
 
   /* Bordes iluminados sutiles (no glow saturado) */
@@ -278,6 +369,7 @@
     border: 1px solid hsl(0 84% 60% / 0.25);
     box-shadow: 0 1px 3px hsl(0 84% 60% / 0.1);
   }
+
   .game .champions-border-challenges {
     border: 1px solid hsl(0 84% 60% / 0.35);
     box-shadow: 0 1px 4px hsl(0 84% 60% / 0.15);
@@ -287,6 +379,7 @@
     border: 1px solid hsl(217 91% 60% / 0.25);
     box-shadow: 0 1px 3px hsl(217 91% 60% / 0.1);
   }
+
   .game .champions-border-teams {
     border: 1px solid hsl(217 91% 60% / 0.35);
     box-shadow: 0 1px 4px hsl(217 91% 60% / 0.15);
@@ -296,6 +389,7 @@
     border: 1px solid hsl(43 96% 56% / 0.25);
     box-shadow: 0 1px 3px hsl(43 96% 56% / 0.1);
   }
+
   .game .champions-border-search {
     border: 1px solid hsl(43 96% 56% / 0.35);
     box-shadow: 0 1px 4px hsl(43 96% 56% / 0.15);
@@ -305,6 +399,7 @@
     border: 1px solid hsl(277 92% 64% / 0.25);
     box-shadow: 0 1px 3px hsl(277 92% 64% / 0.1);
   }
+
   .game .champions-border-history {
     border: 1px solid hsl(277 92% 64% / 0.35);
     box-shadow: 0 1px 4px hsl(277 92% 64% / 0.15);
@@ -316,6 +411,7 @@
     -webkit-backdrop-filter: blur(8px);
     background: hsl(var(--card) / 0.6);
   }
+
   .game .champions-glass {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -324,8 +420,13 @@
 
   /* Animación hover sutil */
   @keyframes champions-hover {
-    0% { transform: translateY(0) scale(1); }
-    100% { transform: translateY(-2px) scale(1.01); }
+    0% {
+      transform: translateY(0) scale(1);
+    }
+
+    100% {
+      transform: translateY(-2px) scale(1.01);
+    }
   }
 
   .champions-hover {
@@ -358,16 +459,37 @@
   }
 
   /* Unified Gradient Utilities (Phase 1) */
-  .gradient-primary { @apply bg-gradient-to-r from-primary/15 to-primary/5; }
-  .gradient-accent { @apply bg-gradient-to-r from-accent/20 to-accent/5; }
-  .gradient-danger { @apply bg-gradient-to-r from-destructive/20 to-destructive/5; }
-  .gradient-neutral { @apply bg-gradient-to-r from-muted to-background; }
+  .gradient-primary {
+    @apply bg-gradient-to-r from-primary/15 to-primary/5;
+  }
+
+  .gradient-accent {
+    @apply bg-gradient-to-r from-accent/20 to-accent/5;
+  }
+
+  .gradient-danger {
+    @apply bg-gradient-to-r from-destructive/20 to-destructive/5;
+  }
+
+  .gradient-neutral {
+    @apply bg-gradient-to-r from-muted to-background;
+  }
 
   /* Surface Utilities */
-  .surface { @apply bg-card border border-border rounded-lg; }
-  .surface-muted { @apply bg-muted/50 border border-border/40 rounded-lg; }
-  .glass { @apply bg-background/60 backdrop-blur-sm border border-border/50 rounded-lg; }
+  .surface {
+    @apply bg-card border border-border rounded-lg;
+  }
+
+  .surface-muted {
+    @apply bg-muted/50 border border-border/40 rounded-lg;
+  }
+
+  .glass {
+    @apply bg-background/60 backdrop-blur-sm border border-border/50 rounded-lg;
+  }
 
   /* Position Badge Utility (optional future usage) */
-  .badge-pos { @apply text-xs font-bold px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground; }
+  .badge-pos {
+    @apply text-xs font-bold px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground;
+  }
 }

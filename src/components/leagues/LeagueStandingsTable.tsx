@@ -20,8 +20,8 @@ export function LeagueStandingsTable({ standings, highlightTeamId }: LeagueStand
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-3">
+            <Trophy className="h-5 w-5" aria-hidden="true" />
             Tabla de Posiciones
           </CardTitle>
         </CardHeader>
@@ -97,13 +97,12 @@ export function LeagueStandingsTable({ standings, highlightTeamId }: LeagueStand
                     <TableCell className="text-center">
                       {standing.goalsAgainst}
                     </TableCell>
-                    <TableCell className={`text-center font-medium ${
-                      standing.goalDifference > 0
-                        ? 'text-green-600'
-                        : standing.goalDifference < 0
+                    <TableCell className={`text-center font-medium ${standing.goalDifference > 0
+                      ? 'text-green-600'
+                      : standing.goalDifference < 0
                         ? 'text-red-600'
                         : 'text-muted-foreground'
-                    }`}>
+                      }`}>
                       {standing.goalDifference > 0 ? '+' : ''}{standing.goalDifference}
                     </TableCell>
                     <TableCell className="text-center font-bold text-lg">
