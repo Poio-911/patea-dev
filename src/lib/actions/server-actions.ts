@@ -2118,7 +2118,13 @@ export async function fetchGoogleFitActivitiesAction(
                 body: JSON.stringify(aggregateBody),
             });
 
-            let metrics = {};
+            let metrics: {
+                distance?: number;
+                steps?: number;
+                calories?: number;
+                avgHeartRate?: number;
+                maxHeartRate?: number;
+            } = {};
 
             if (aggregateResponse.ok) {
                 const aggregateData = await aggregateResponse.json();
