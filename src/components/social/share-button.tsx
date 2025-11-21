@@ -112,7 +112,7 @@ export function ShareButton({
   };
 
   const handleNativeShare = async () => {
-    if (navigator.share) {
+    if (typeof window !== 'undefined' && 'share' in navigator) {
       try {
         await navigator.share({
           title,
