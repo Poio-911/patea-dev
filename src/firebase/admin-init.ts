@@ -24,7 +24,7 @@ function initializeAdminApp(): App {
 
     try {
         const serviceAccount: ServiceAccount = JSON.parse(rawServiceAccount);
-        console.log('[Firebase Admin] Service account parsed. Project ID:', serviceAccount.project_id);
+        console.log('[Firebase Admin] Service account parsed. Project ID:', serviceAccount.projectId);
 
         const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
         if (!storageBucket) {
