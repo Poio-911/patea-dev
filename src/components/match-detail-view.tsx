@@ -8,7 +8,6 @@ import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { PageHeader } from './page-header';
 import { Button } from './ui/button';
-import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { MatchInfoCard } from './match-details/MatchInfoCard';
 import { MatchManagementActions } from './match-details/MatchManagementActions';
@@ -114,7 +113,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     return encodeURIComponent(message);
   }, [match]);
 
-
   if (matchLoading) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-12 w-12 animate-spin" /></div>;
   }
@@ -122,32 +120,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
   if (!match) {
     return <div className="text-center p-8"><h2 className="text-xl font-bold">Partido no encontrado</h2></div>;
   }
-
-  // Competition context state
-  const [competitionName, setCompetitionName] = useState<string | null>(null);
-
-  // Fetch competition name if leagueInfo or cupInfo present
-  useEffect(() => {
-    const fetchCompetition = async () => {
-      if (!firestore || !match) return;
-      if (match.leagueInfo) {
-        try {
-          const leagueDoc = await getDoc(doc(firestore, 'leagues', match.leagueInfo.leagueId));
-          if (leagueDoc.exists()) setCompetitionName(leagueDoc.data().name);
-        } catch (e) {
-          console.error('Error fetching league info', e);
-        }
-      } else if (match.cupInfo) {
-        try {
-          const cupDoc = await getDoc(doc(firestore, 'cups', match.cupInfo.cupId));
-          if (cupDoc.exists()) setCompetitionName(cupDoc.data().name);
-        } catch (e) {
-          console.error('Error fetching cup info', e);
-        }
-      }
-    };
-    fetchCompetition();
-  }, [firestore, match]);
 
   const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
 
