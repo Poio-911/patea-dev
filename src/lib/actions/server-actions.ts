@@ -22,7 +22,7 @@ import { GOOGLE_FIT_CONFIG, calculateAttributeImpact } from '../config/google-fi
 import { logger } from '../logger';
 import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse, type ErrorResponse } from '../errors';
 import { addDays, format } from 'date-fns';
-import { generateBracket, advanceWinner, isTournamentComplete, getChampion, getRunnerUp } from '@/lib/utils/cup-bracket';
+import { generateBracket, advanceWinner, isTournamentComplete, getChampion, getRunnerUp, getNextRound } from '@/lib/utils/cup-bracket';
 
 // --- Server Actions ---
 
