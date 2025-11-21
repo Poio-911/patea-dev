@@ -174,7 +174,7 @@ export function ShareButton({
           </DropdownMenuItem>
         )}
 
-        {navigator.share && (
+        {typeof window !== 'undefined' && 'share' in navigator && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleNativeShare}>
