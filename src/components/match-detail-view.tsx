@@ -149,6 +149,8 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     fetchCompetition();
   }, [firestore, match]);
 
+  const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
+
   return (
     <div className="relative isolate">
       <div className="relative flex flex-col gap-8 md:p-6 text-foreground dark:text-white">
