@@ -56,6 +56,12 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     return match.players.find(p => p.uid === user.uid);
   }, [user?.uid, match?.players]);
 
+  // Find the full player object (with id) from allGroupPlayers
+  const userPlayer = useMemo(() => {
+    if (!user?.uid || !allGroupPlayers) return null;
+    return allGroupPlayers.find(p => p.ownerUid === user.uid);
+  }, [user?.uid, allGroupPlayers]);
+
   // Fetch performance data for the current user
   const performanceQuery = useMemo(() => {
     if (!firestore || !userPlayerInMatch || !user?.uid) return null;
@@ -174,7 +180,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
             {match.status === 'evaluated' && <MatchChronicleCard match={match} />}
 
             {/* Physical Metrics Section - Only for players who participated */}
-            {userPlayerInMatch && (match.status === 'completed' || match.status === 'evaluated') && (
+            {userPlayerInMatch && userPlayer && (match.status === 'completed' || match.status === 'evaluated') && (
               <div className="space-y-4">
                 {userPerformance ? (
                   <PhysicalMetricsCard performance={userPerformance} />
@@ -189,7 +195,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                     </div>
                     <ImportActivityDialog
                       matchId={matchId}
-                      playerId={userPlayerInMatch.id}
+                      playerId={userPlayer.id}
                       matchDate={new Date(match.date)}
                     />
                   </div>
