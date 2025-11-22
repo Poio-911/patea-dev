@@ -2337,6 +2337,9 @@ export async function addManualPerformanceAction(
         }
 
         const matchData = matchDoc.data();
+        if (!matchData) {
+            return { success: false, error: 'Datos del partido no encontrados.' };
+        }
         const matchDateTime = new Date(matchData.date);
 
         // Estimate metrics based on manual input
