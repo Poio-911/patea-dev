@@ -2152,7 +2152,7 @@ export async function fetchGoogleFitActivitiesAction(
                                         avgHeartRate:
                                             (metrics.avgHeartRate + hr) / 2,
                                         maxHeartRate: Math.max(
-                                            metrics.maxHeartRate,
+                                            metrics.maxHeartRate ?? 0,
                                             hr
                                         ),
                                     };
