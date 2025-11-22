@@ -4,6 +4,9 @@ import withPWA from '@ducanh2912/next-pwa';
 const nextConfig = {
   reactStrictMode: true,
 
+  // Use server output mode instead of export for Firebase App Hosting
+  output: 'standalone',
+
   // Disable source maps in production to avoid exposing file paths
   productionBrowserSourceMaps: false,
 
