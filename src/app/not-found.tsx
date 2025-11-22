@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { ArrowLeft } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default function NotFound() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background text-center p-4">
