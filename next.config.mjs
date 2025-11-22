@@ -3,7 +3,6 @@ import withPWA from '@ducanh2912/next-pwa';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone',
 
   // Disable source maps in production to avoid exposing file paths
   productionBrowserSourceMaps: false,
