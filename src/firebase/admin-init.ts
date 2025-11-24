@@ -1,4 +1,4 @@
-import { initializeApp, getApps, App } from 'firebase-admin/app';
+import { initializeApp, cert, getApps, App, ServiceAccount } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
@@ -16,9 +16,16 @@ function initializeAdminApp(): App {
         return getApps().find(app => app.name === '[DEFAULT]')!;
     }
 
-    console.log('[Firebase Admin] Initializing with Application Default Credentials...');
+    console.log('[Firebase Admin] Initializing...');
+    const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    if (!rawServiceAccount) {
+        throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.');
+    }
 
     try {
+        const serviceAccount: ServiceAccount = JSON.parse(rawServiceAccount);
+        console.log('[Firebase Admin] Service account parsed. Project ID:', serviceAccount.projectId);
+
         const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
         if (!storageBucket) {
             throw new Error("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET environment variable is not set.");
@@ -26,19 +33,17 @@ function initializeAdminApp(): App {
 
         console.log('[Firebase Admin] Storage bucket:', storageBucket);
 
-        // Use Application Default Credentials (ADC)
-        // Firebase App Hosting automatically provides authentication
-        // No explicit credentials needed!
         const app = initializeApp({
+            credential: cert(serviceAccount),
             storageBucket: storageBucket,
         });
 
-        console.log('[Firebase Admin] Initialized successfully with ADC');
+        console.log('[Firebase Admin] Initialized successfully');
         return app;
 
     } catch (e: any) {
         console.error('[Firebase Admin] Initialization failed:', e);
-        logger.error("Failed to initialize Firebase Admin SDK with ADC.", e);
+        logger.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY. Make sure it's a valid JSON string.", e);
         throw new Error("Could not initialize Firebase Admin SDK.");
     }
 }
