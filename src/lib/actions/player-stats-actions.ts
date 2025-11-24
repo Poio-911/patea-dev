@@ -121,7 +121,7 @@ export async function recalculateAllPlayerStats(groupId?: string): Promise<{
     })) as Player[];
 
     // Get all completed matches
-    const matchesSnapshot = await db
+    const matchesSnapshot = await getAdminDb()
       .collection('matches')
       .where('status', 'in', ['completed', 'evaluated'])
       .get();

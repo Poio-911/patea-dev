@@ -33,7 +33,7 @@ export async function checkAndCompleteLeague(leagueId: string): Promise<{
     }
 
     // Get all league matches
-    const matchesSnapshot = await db
+    const matchesSnapshot = await getAdminDb()
       .collection('matches')
       .where('leagueInfo.leagueId', '==', leagueId)
       .where('type', '==', 'league')
@@ -57,7 +57,7 @@ export async function checkAndCompleteLeague(leagueId: string): Promise<{
     }
 
     // Get teams data
-    const teamsSnapshot = await db
+    const teamsSnapshot = await getAdminDb()
       .collection('teams')
       .where('__name__', 'in', league.teams)
       .get();
@@ -152,7 +152,7 @@ async function createTiebreakerMatch(
     ...team2.members.map(m => m.playerId),
   ];
 
-  const playersSnapshot = await db
+  const playersSnapshot = await getAdminDb()
     .collection('players')
     .where('__name__', 'in', allPlayerIds)
     .get();
