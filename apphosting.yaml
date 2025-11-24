@@ -15,10 +15,6 @@ runConfig:
       availability:
         - BUILD
         - RUNTIME
-    - variable: FIREBASE_SERVICE_ACCOUNT_KEY
-      secret: FIREBASE_SERVICE_ACCOUNT_KEY
-      availability:
-        - RUNTIME
 
     # Public variables (exposed to the client)
     - variable: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
