@@ -10,17 +10,16 @@ import {
   DialogTitle,
   DialogFooter,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { useUser, useAuth, initializeFirebase } from '@/firebase';
-import { useToast } from '@/hooks/use-toast';
+} from '../components/ui/dialog';
+import { Button } from '../components/ui/button';
+import { useUser, useAuth, initializeFirebase } from '../firebase';
+import { useToast } from '../hooks/use-toast';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import { doc, writeBatch } from 'firebase/firestore';
 import { Loader2, Upload, Scissors } from 'lucide-react';
 import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import { convertStorageUrlToBase64 } from '@/lib/actions/image-generation';
 
 interface ImageCropperDialogProps {
   player: {
@@ -100,24 +99,32 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
   useEffect(() => {
     if (open && player.photoUrl) {
       setIsLoadingImage(true);
-      convertStorageUrlToBase64(player.photoUrl)
-        .then((result) => {
-          if (result.success && result.dataUri) {
-            setImgSrc(result.dataUri);
-          } else {
-            toast({
-              variant: 'destructive',
-              title: 'Error al cargar imagen',
-              description: result.error || 'No se pudo cargar la imagen actual.',
-            });
+
+      // Fetch image directly from client (Firebase Storage URLs are public with token)
+      fetch(player.photoUrl)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error('Failed to fetch image');
           }
+          return response.blob();
+        })
+        .then((blob) => {
+          return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        })
+        .then((dataUri) => {
+          setImgSrc(dataUri);
         })
         .catch((error) => {
           console.error('Error loading image:', error);
           toast({
             variant: 'destructive',
-            title: 'Error',
-            description: 'Hubo un problema al cargar tu foto actual.',
+            title: 'Error al cargar imagen',
+            description: 'No se pudo cargar la imagen actual.',
           });
         })
         .finally(() => {
