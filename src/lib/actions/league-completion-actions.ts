@@ -1,9 +1,9 @@
 
 'use server';
 
-import { adminDb as db } from '@/firebase/admin-init';
-import type { League, Match, GroupTeam, MatchLocation, Player } from '@/lib/types';
-import { calculateLeagueStandings, determineChampion } from '@/lib/utils/league-standings';
+import { getAdminDb } from '../../firebase/admin-init';
+import type { League, Match, GroupTeam, MatchLocation, Player } from '../../lib/types';
+import { calculateLeagueStandings, determineChampion } from '../../lib/utils/league-standings';
 import { addDays, format } from 'date-fns';
 
 /**
@@ -20,7 +20,7 @@ export async function checkAndCompleteLeague(leagueId: string): Promise<{
 }> {
   try {
     // Get league document
-    const leagueDoc = await db.collection('leagues').doc(leagueId).get();
+    const leagueDoc = await getAdminDb().collection('leagues').doc(leagueId).get();
     if (!leagueDoc.exists) {
       return { success: false, message: 'Liga no encontrada' };
     }
@@ -87,7 +87,7 @@ export async function checkAndCompleteLeague(leagueId: string): Promise<{
       );
 
       // Update league with tiebreaker status
-      await db.collection('leagues').doc(leagueId).update({
+      await getAdminDb().collection('leagues').doc(leagueId).update({
         requiresTiebreaker: true,
         finalMatchId: finalMatch.id,
       });
@@ -101,7 +101,7 @@ export async function checkAndCompleteLeague(leagueId: string): Promise<{
     }
 
     // No tiebreaker needed, declare champion
-    await db.collection('leagues').doc(leagueId).update({
+    await getAdminDb().collection('leagues').doc(leagueId).update({
       status: 'completed',
       championTeamId: championResult.championId,
       championTeamName: championResult.championName,
@@ -236,7 +236,7 @@ async function createTiebreakerMatch(
     },
   };
 
-  const matchRef = await db.collection('matches').add(matchData);
+  const matchRef = await getAdminDb().collection('matches').add(matchData);
 
   return {
     id: matchRef.id,
@@ -261,7 +261,7 @@ export async function resolveTiebreakerFinal(
 }> {
   try {
     // Get the match
-    const matchDoc = await db.collection('matches').doc(matchId).get();
+    const matchDoc = await getAdminDb().collection('matches').doc(matchId).get();
     if (!matchDoc.exists) {
       return { success: false, message: 'Partido no encontrado' };
     }
@@ -299,7 +299,7 @@ export async function resolveTiebreakerFinal(
     const runnerUpName = team1Score > team2Score ? match.teams[1].name : match.teams[0].name;
 
     // Update league with champion
-    await db.collection('leagues').doc(leagueId).update({
+    await getAdminDb().collection('leagues').doc(leagueId).update({
       status: 'completed',
       championTeamId: championId,
       championTeamName: championName,

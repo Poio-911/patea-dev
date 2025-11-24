@@ -1,14 +1,14 @@
 
 'use server';
 
-import { adminDb, adminAuth, adminStorage } from '@/firebase/admin-init';
+import { getAdminDb, getAdminAuth, getAdminStorage } from '../../firebase/admin-init';
 import { FieldValue } from 'firebase-admin/firestore';
-import { generatePlayerCardImage } from '@/ai/flows/generate-player-card-image';
-import type { Player } from '@/lib/types';
-import { logger } from '@/lib/logger';
+import { generatePlayerCardImage } from '../../ai/flows/generate-player-card-image';
+import type { Player } from '../../lib/types';
+import { logger } from '../../lib/logger';
 
 export async function generatePlayerCardImageAction(userId: string) {
-  const playerRef = adminDb.doc(`players/${userId}`);
+  const playerRef = getAdminDb().doc(`players/${userId}`);
 
   try {
     const playerSnap = await playerRef.get();
@@ -46,7 +46,7 @@ export async function generatePlayerCardImageAction(userId: string) {
       throw new Error('No se pudo extraer la ruta del archivo de la URL de la foto.');
     }
     const filePath = extractFilePath(url);
-    const file = adminStorage.file(filePath);
+    const file = getAdminStorage().file(filePath);
 
     const [imageBuffer] = await file.download();
     const photoDataUri = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
@@ -57,7 +57,7 @@ export async function generatePlayerCardImageAction(userId: string) {
     // Upload new image to storage
     const generatedImageBuffer = Buffer.from(generatedImageDataUri.split(',')[1], 'base64');
     const newFilePath = `profile-images/${userId}/generated_${Date.now()}.png`;
-    const newFile = adminStorage.file(newFilePath);
+    const newFile = getAdminStorage().file(newFilePath);
 
     await newFile.save(generatedImageBuffer, {
       metadata: { contentType: 'image/png' },
@@ -70,8 +70,8 @@ export async function generatePlayerCardImageAction(userId: string) {
     });
 
     // Update Firestore and Auth in a batch
-    const batch = adminDb.batch();
-    const userRef = adminDb.doc(`users/${userId}`);
+    const batch = getAdminDb().batch();
+    const userRef = getAdminDb().doc(`users/${userId}`);
     batch.update(userRef, { photoURL: newPhotoURL });
     batch.update(playerRef, {
       photoUrl: newPhotoURL,
@@ -80,7 +80,7 @@ export async function generatePlayerCardImageAction(userId: string) {
       cropZoom: 1, // Reset zoom
     });
 
-    const availablePlayerRef = adminDb.doc(`availablePlayers/${userId}`);
+    const availablePlayerRef = getAdminDb().doc(`availablePlayers/${userId}`);
     const availablePlayerSnap = await availablePlayerRef.get();
     if (availablePlayerSnap.exists) {
       batch.update(availablePlayerRef, { photoUrl: newPhotoURL });
@@ -89,7 +89,7 @@ export async function generatePlayerCardImageAction(userId: string) {
     await batch.commit();
 
     // Force update auth user profile for immediate UI change on client
-    await adminAuth.updateUser(userId, { photoURL: newPhotoURL });
+    await getAdminAuth().updateUser(userId, { photoURL: newPhotoURL });
 
     return { success: true, newPhotoURL };
   } catch (error: any) {
@@ -123,7 +123,7 @@ export async function convertStorageUrlToBase64(storageUrl: string): Promise<{ s
     }
 
     const filePath = extractFilePath(url);
-    const file = adminStorage.file(filePath);
+    const file = getAdminStorage().file(filePath);
 
     const [imageBuffer] = await file.download();
     const [metadata] = await file.getMetadata();

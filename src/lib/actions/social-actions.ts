@@ -1,9 +1,9 @@
 'use server';
 
-import { adminDb } from '@/firebase/admin-init';
+import { getAdminDb } from '../../firebase/admin-init';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { SocialActivity, Follow, Player, OvrHistory } from '@/lib/types';
-import { handleServerActionError, createError, ErrorCodes } from '@/lib/errors';
+import type { SocialActivity, Follow, Player, OvrHistory } from '../../lib/types';
+import { handleServerActionError, createError, ErrorCodes } from '../../lib/errors';
 
 // Generic publisher for social activities with fan-out system
 export async function publishActivityAction(activity: Omit<SocialActivity, 'id'>) {
@@ -15,7 +15,7 @@ export async function publishActivityAction(activity: Omit<SocialActivity, 'id'>
     };
 
     // 1. Add to main socialActivities collection (for <= 10 followers case)
-    const ref = await adminDb.collection('socialActivities').add(baseActivity).catch(err => {
+    const ref = await getAdminDb().collection('socialActivities').add(baseActivity).catch(err => {
       console.error('[publishActivityAction] Failed main write', err);
       throw err;
     });
@@ -24,17 +24,17 @@ export async function publishActivityAction(activity: Omit<SocialActivity, 'id'>
     // 2. Fan-out: Add to follower feeds (for > 10 followers case)
     try {
       // Get all followers of this user
-      const followsSnapshot = await adminDb
+      const followsSnapshot = await getAdminDb()
         .collection('follows')
         .where('followingId', '==', activity.userId)
         .get();
 
       if (!followsSnapshot.empty) {
-        const batch = adminDb.batch();
+        const batch = getAdminDb().batch();
         
         followsSnapshot.docs.forEach(followDoc => {
           const followerData = followDoc.data();
-          const followerFeedRef = adminDb
+          const followerFeedRef = getAdminDb()
             .collection(`users/${followerData.followerId}/feeds`)
             .doc();
           
@@ -64,7 +64,7 @@ export async function followUserAction(followerId: string, followingId: string) 
     }
 
     // Check existing follow
-    const existing = await adminDb
+    const existing = await getAdminDb()
       .collection('follows')
       .where('followerId', '==', followerId)
       .where('followingId', '==', followingId)
@@ -79,7 +79,7 @@ export async function followUserAction(followerId: string, followingId: string) 
       followingId,
       createdAt: new Date().toISOString(),
     };
-    const docRef = await adminDb.collection('follows').add(followData);
+    const docRef = await getAdminDb().collection('follows').add(followData);
 
     // Publish social activity (new follower)
     await publishActivityAction({
@@ -90,7 +90,7 @@ export async function followUserAction(followerId: string, followingId: string) 
     });
 
     // Optional: Notification to followed user
-    await adminDb.collection(`users/${followingId}/notifications`).add({
+    await getAdminDb().collection(`users/${followingId}/notifications`).add({
       type: 'new_follower',
       title: 'Nuevo seguidor',
       message: `Un usuario ha comenzado a seguirte.`,
@@ -110,7 +110,7 @@ export async function followUserAction(followerId: string, followingId: string) 
 // Unfollow
 export async function unfollowUserAction(followerId: string, followingId: string) {
   try {
-    const existing = await adminDb
+    const existing = await getAdminDb()
       .collection('follows')
       .where('followerId', '==', followerId)
       .where('followingId', '==', followingId)
@@ -125,13 +125,13 @@ export async function unfollowUserAction(followerId: string, followingId: string
     
     // Clean up: Remove unfollowed user's activities from follower's feed
     try {
-      const followerFeedSnapshot = await adminDb
+      const followerFeedSnapshot = await getAdminDb()
         .collection(`users/${followerId}/feeds`)
         .where('userId', '==', followingId)
         .get();
       
       if (!followerFeedSnapshot.empty) {
-        const batch = adminDb.batch();
+        const batch = getAdminDb().batch();
         followerFeedSnapshot.docs.forEach(doc => {
           batch.delete(doc.ref);
         });

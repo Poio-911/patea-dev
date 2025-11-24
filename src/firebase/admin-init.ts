@@ -2,7 +2,7 @@ import { initializeApp, cert, getApps, App, ServiceAccount } from 'firebase-admi
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
-import { logger } from '@/lib/logger';
+import { logger } from '../lib/logger';
 
 // --- Firebase Admin SDK Initialization ---
 // This file should only be imported in server-side code (e.g., Server Actions).
@@ -55,8 +55,28 @@ function getAdminApp(): App {
     return adminApp;
 }
 
-const app = getAdminApp();
+// Memoization for lazy initialization
+let _adminDb: ReturnType<typeof getFirestore> | undefined;
+let _adminAuth: ReturnType<typeof getAuth> | undefined;
+let _adminStorage: ReturnType<ReturnType<typeof getStorage>['bucket']> | undefined;
 
-export const adminDb = getFirestore(app);
-export const adminAuth = getAuth(app);
-export const adminStorage = getStorage(app).bucket();
+export function getAdminDb() {
+    if (!_adminDb) {
+        _adminDb = getFirestore(getAdminApp());
+    }
+    return _adminDb;
+}
+
+export function getAdminAuth() {
+    if (!_adminAuth) {
+        _adminAuth = getAuth(getAdminApp());
+    }
+    return _adminAuth;
+}
+
+export function getAdminStorage() {
+    if (!_adminStorage) {
+        _adminStorage = getStorage(getAdminApp()).bucket();
+    }
+    return _adminStorage;
+}

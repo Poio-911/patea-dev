@@ -1,8 +1,8 @@
 
 'use server';
 
-import { adminAuth } from '@/firebase/admin-init';
-import { logger } from '@/lib/logger';
+import { getAdminAuth } from '../firebase/admin-init';
+import { logger } from '../lib/logger';
 import { cookies } from 'next/headers';
 import { createError, ErrorCodes } from './errors';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -11,9 +11,9 @@ const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
 
 export async function createSessionCookie(idToken: string) {
   try {
-    const decodedIdToken = await adminAuth.verifyIdToken(idToken, true);
+    const decodedIdToken = await getAdminAuth().verifyIdToken(idToken, true);
     if (new Date().getTime() / 1000 - decodedIdToken.auth_time < 5 * 60) {
-      const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+      const sessionCookie = await getAdminAuth().createSessionCookie(idToken, { expiresIn });
       const options = {
         name: 'session',
         value: sessionCookie,

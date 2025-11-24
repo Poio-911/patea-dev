@@ -5,24 +5,24 @@
  * It is marked with 'use server' to ensure it only runs on the server.
  */
 
-import { adminDb, adminStorage } from '@/firebase/admin-init';
+import { getAdminDb, getAdminStorage } from '../../firebase/admin-init';
 import { FieldValue } from 'firebase-admin/firestore';
-import { generateBalancedTeams, GenerateBalancedTeamsInput } from '@/ai/flows/generate-balanced-teams';
-import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '@/ai/flows/suggest-player-improvements';
-import { getMatchDayForecast, GetMatchDayForecastInput } from '@/ai/flows/get-match-day-forecast';
-import { findBestFitPlayer, FindBestFitPlayerInput } from '@/ai/flows/find-best-fit-player';
-import { coachConversation, type CoachConversationInput } from '@/ai/flows/coach-conversation';
-import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '@/ai/flows/detect-player-patterns';
-import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '@/ai/flows/analyze-player-progression';
-import { type GenerateMatchChronicleOutput, type GenerateMatchChronicleInput, MatchLocation } from '@/lib/types';
-import { generateMatchChronicleFlow } from '@/ai/flows/generate-match-chronicle';
-import { generateDuoImage } from '@/ai/flows/generate-duo-image';
+import { generateBalancedTeams, GenerateBalancedTeamsInput } from '../../ai/flows/generate-balanced-teams';
+import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '../../ai/flows/suggest-player-improvements';
+import { getMatchDayForecast, GetMatchDayForecastInput } from '../../ai/flows/get-match-day-forecast';
+import { findBestFitPlayer, FindBestFitPlayerInput } from '../../ai/flows/find-best-fit-player';
+import { coachConversation, type CoachConversationInput } from '../../ai/flows/coach-conversation';
+import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '../../ai/flows/detect-player-patterns';
+import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '../../ai/flows/analyze-player-progression';
+import { type GenerateMatchChronicleOutput, type GenerateMatchChronicleInput, MatchLocation } from '../../lib/types';
+import { generateMatchChronicleFlow } from '../../ai/flows/generate-match-chronicle';
+import { generateDuoImage } from '../../ai/flows/generate-duo-image';
 import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, GenerateDuoImageInput, League, LeagueFormat, CompetitionStatus, Cup, CupFormat, BracketMatch, CompetitionApplication, CompetitionFormat, HealthConnection, PlayerPerformance, GoogleFitAuthUrl, GoogleFitSession, SocialActivity, Follow, NotificationType } from '../types';
 import { GOOGLE_FIT_CONFIG, calculateAttributeImpact } from '../config/google-fit';
 import { logger } from '../logger';
 import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse, type ErrorResponse } from '../errors';
 import { addDays, format } from 'date-fns';
-import { generateBracket, advanceWinner, isTournamentComplete, getChampion, getRunnerUp, getNextRound } from '@/lib/utils/cup-bracket';
+import { generateBracket, advanceWinner, isTournamentComplete, getChampion, getRunnerUp, getNextRound } from '../../lib/utils/cup-bracket';
 
 // --- Server Actions ---
 
@@ -67,8 +67,8 @@ export async function generateTeamsAction(players: Player[]) {
 }
 
 export async function getPlayerEvaluationsAction(playerId: string, groupId: string): Promise<Partial<Evaluation>[]> {
-    const evalsSnapshot = await adminDb.collection('evaluations').where('playerId', '==', playerId).orderBy('evaluatedAt', 'desc').get();
-    const matchesSnapshot = await adminDb.collection('matches').where('groupId', '==', groupId).get();
+    const evalsSnapshot = await getAdminDb().collection('evaluations').where('playerId', '==', playerId).orderBy('evaluatedAt', 'desc').get();
+    const matchesSnapshot = await getAdminDb().collection('matches').where('groupId', '==', groupId).get();
     const groupMatchIds = new Set(matchesSnapshot.docs.map(doc => doc.id));
     
     const evaluations: Partial<Evaluation>[] = [];
@@ -85,7 +85,7 @@ export async function getPlayerEvaluationsAction(playerId: string, groupId: stri
 
 export async function getPlayerImprovementSuggestionsAction(playerId: string, groupId: string) {
     try {
-        const playerDocRef = adminDb.doc(`players/${playerId}`);
+        const playerDocRef = getAdminDb().doc(`players/${playerId}`);
         const playerDocSnap = await playerDocRef.get();
 
         if (!playerDocSnap.exists) {
@@ -149,7 +149,7 @@ export async function coachConversationAction(
   conversationHistory?: CoachConversationInput['conversationHistory']
 ) {
   try {
-    const playerDocRef = adminDb.doc(`players/${playerId}`);
+    const playerDocRef = getAdminDb().doc(`players/${playerId}`);
     const playerDocSnap = await playerDocRef.get();
 
     if (!playerDocSnap.exists) {
@@ -207,7 +207,7 @@ export async function coachConversationAction(
 
 export async function detectPlayerPatternsAction(playerId: string, groupId: string) {
     try {
-      const playerDocRef = adminDb.doc(`players/${playerId}`);
+      const playerDocRef = getAdminDb().doc(`players/${playerId}`);
       const playerDocSnap = await playerDocRef.get();
   
       if (!playerDocSnap.exists) {
@@ -217,7 +217,7 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
   
       const evaluations = await getPlayerEvaluationsAction(playerId, groupId) as Evaluation[];
   
-      const ovrHistorySnapshot = await adminDb
+      const ovrHistorySnapshot = await getAdminDb()
         .collection(`players/${playerId}/ovrHistory`)
         .orderBy('date', 'desc')
         .limit(20)
@@ -229,7 +229,7 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
       const selfEvalsByMatchId = new Map<string, SelfEvaluation>();
       if (recentMatchIds.length > 0) {
           const selfEvalsPromises = recentMatchIds.map(matchId => 
-              adminDb.collection(`matches/${matchId}/selfEvaluations`).where('playerId', '==', playerId).get()
+              getAdminDb().collection(`matches/${matchId}/selfEvaluations`).where('playerId', '==', playerId).get()
           );
           const selfEvalsSnapshots = await Promise.all(selfEvalsPromises);
           
@@ -284,7 +284,7 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
 
 export async function analyzePlayerProgressionAction(playerId: string, groupId: string) {
   try {
-      const playerDocRef = adminDb.doc(`players/${playerId}`);
+      const playerDocRef = getAdminDb().doc(`players/${playerId}`);
       const playerDocSnap = await playerDocRef.get();
       if (!playerDocSnap.exists) {
           return { error: 'No se pudo encontrar al jugador.' };
@@ -293,7 +293,7 @@ export async function analyzePlayerProgressionAction(playerId: string, groupId: 
 
       const evaluations = await getPlayerEvaluationsAction(playerId, groupId) as Evaluation[];
       
-      const ovrHistorySnapshot = await adminDb.collection(`players/${playerId}/ovrHistory`).orderBy('date', 'desc').limit(10).get();
+      const ovrHistorySnapshot = await getAdminDb().collection(`players/${playerId}/ovrHistory`).orderBy('date', 'desc').limit(10).get();
       const ovrHistory = ovrHistorySnapshot.docs.map(doc => doc.data() as OvrHistory).reverse();
       
       const recentEvaluationsForAI = evaluations.slice(0, 10).map(e => ({
@@ -322,7 +322,7 @@ export async function analyzePlayerProgressionAction(playerId: string, groupId: 
 export async function generateMatchChronicleAction(matchId: string): Promise<{ data?: GenerateMatchChronicleOutput; error?: string }> {
     logger.info('[generateMatchChronicleAction] Starting chronicle generation', { matchId });
     try {
-        const matchRef = adminDb.doc(`matches/${matchId}`);
+        const matchRef = getAdminDb().doc(`matches/${matchId}`);
         const matchSnap = await matchRef.get();
         if (!matchSnap.exists) {
             logger.error('[generateMatchChronicleAction] Match not found', { matchId });
@@ -335,8 +335,8 @@ export async function generateMatchChronicleAction(matchId: string): Promise<{ d
             throw createError(ErrorCodes.VAL_INVALID_FORMAT, { status: match.status, matchId });
         }
 
-        const evalsQuery = adminDb.collection('evaluations').where('matchId', '==', matchId);
-        const selfEvalsQuery = adminDb.collection(`matches/${matchId}/selfEvaluations`);
+        const evalsQuery = getAdminDb().collection('evaluations').where('matchId', '==', matchId);
+        const selfEvalsQuery = getAdminDb().collection(`matches/${matchId}/selfEvaluations`);
         const [evalsSnap, selfEvalsSnap] = await Promise.all([evalsQuery.get(), selfEvalsQuery.get()]);
         
         const evaluations = evalsSnap.docs.map(d => d.data() as Evaluation);
@@ -500,8 +500,8 @@ export async function generateMatchChronicleAction(matchId: string): Promise<{ d
 // ============================================================================
 export async function migrateLegacyFinalScoresAction(batchSize: number = 200): Promise<{ success: boolean; updated: number; skipped: number; error?: string }> {
     try {
-        const matchesSnap = await adminDb.collection('matches').get();
-        let updated = 0; let skipped = 0; const writeBatch = adminDb.batch();
+        const matchesSnap = await getAdminDb().collection('matches').get();
+        let updated = 0; let skipped = 0; const writeBatch = getAdminDb().batch();
         matchesSnap.docs.forEach(doc => {
             const data = doc.data() as Partial<Match>;
             if (!data.teams || data.teams.length !== 2) { skipped++; return; }
@@ -533,11 +533,11 @@ export async function migrateLegacyFinalScoresAction(batchSize: number = 200): P
 // ============================================================================
 export async function migrateAddAssistsToSelfEvaluationsAction(): Promise<{ success: boolean; updated: number; skipped: number; error?: string }> {
     try {
-        const matchesSnap = await adminDb.collection('matches').get();
+        const matchesSnap = await getAdminDb().collection('matches').get();
         let updated = 0; let skipped = 0;
         for (const matchDoc of matchesSnap.docs) {
-            const selfEvalsSnap = await adminDb.collection(`matches/${matchDoc.id}/selfEvaluations`).get();
-            const batch = adminDb.batch();
+            const selfEvalsSnap = await getAdminDb().collection(`matches/${matchDoc.id}/selfEvaluations`).get();
+            const batch = getAdminDb().batch();
             let batchHasWrites = false;
             selfEvalsSnap.docs.forEach(evDoc => {
                 const data = evDoc.data();
@@ -567,17 +567,17 @@ export async function updateMatchPlayerContributionAction(
     userId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const matchRef = adminDb.collection('matches').doc(matchId);
+        const matchRef = getAdminDb().collection('matches').doc(matchId);
         const matchSnap = await matchRef.get();
         if (!matchSnap.exists) return { success: false, error: 'Partido no encontrado.' };
         const match = { id: matchSnap.id, ...matchSnap.data() } as Match;
         if (match.ownerUid !== userId) return { success: false, error: 'No autorizado.' };
 
-        const selfEvalRef = adminDb.collection(`matches/${matchId}/selfEvaluations`).where('playerId', '==', playerId);
+        const selfEvalRef = getAdminDb().collection(`matches/${matchId}/selfEvaluations`).where('playerId', '==', playerId);
         const existingSnap = await selfEvalRef.get();
         let docRefToUpdate;
         if (existingSnap.empty) {
-            docRefToUpdate = adminDb.collection(`matches/${matchId}/selfEvaluations`).doc();
+            docRefToUpdate = getAdminDb().collection(`matches/${matchId}/selfEvaluations`).doc();
             await docRefToUpdate.set({
                 playerId,
                 matchId,
@@ -648,7 +648,7 @@ export async function createTeamAvailabilityPostAction(
     }
 ) {
     try {
-        const teamSnap = await adminDb.doc(`teams/${teamId}`).get();
+        const teamSnap = await getAdminDb().doc(`teams/${teamId}`).get();
         if (!teamSnap.exists) {
             throw createError(ErrorCodes.DATA_NOT_FOUND, { teamId });
         }
@@ -659,7 +659,7 @@ export async function createTeamAvailabilityPostAction(
             throw createError(ErrorCodes.AUTH_INSUFFICIENT_PERMISSIONS, { userId, teamId });
         }
 
-        const postRef = adminDb.collection('teamAvailabilityPosts').doc();
+        const postRef = getAdminDb().collection('teamAvailabilityPosts').doc();
         const newPost: any = {
             teamId: team.id,
             teamName: team.name,
@@ -687,7 +687,7 @@ export async function getAvailableTeamPostsAction(userId: string): Promise<{ suc
     try {
         const today = new Date().toISOString().split('T')[0];
 
-        const postsSnapshot = await adminDb
+        const postsSnapshot = await getAdminDb()
             .collection('teamAvailabilityPosts')
             .where('createdBy', '!=', userId)
             .where('date', '>=', today)
@@ -712,7 +712,7 @@ export async function getAvailableTeamPostsAction(userId: string): Promise<{ suc
 
 export async function getUserTeamPostsAction(userId: string) {
     try {
-        const postsSnapshot = await adminDb
+        const postsSnapshot = await getAdminDb()
             .collection('teamAvailabilityPosts')
             .where('createdBy', '==', userId)
             .orderBy('date', 'asc')
@@ -735,11 +735,11 @@ export async function challengeTeamPostAction(
     challengerUserId: string
 ) {
     try {
-        const batch = adminDb.batch();
+        const batch = getAdminDb().batch();
 
         const [postSnap, challengingTeamSnap] = await Promise.all([
-            adminDb.doc(`teamAvailabilityPosts/${postId}`).get(),
-            adminDb.doc(`teams/${challengingTeamId}`).get(),
+            getAdminDb().doc(`teamAvailabilityPosts/${postId}`).get(),
+            getAdminDb().doc(`teams/${challengingTeamId}`).get(),
         ]);
 
         if (!postSnap.exists || !challengingTeamSnap.exists) {
@@ -749,11 +749,11 @@ export async function challengeTeamPostAction(
         const post = { id: postSnap.id, ...postSnap.data() } as TeamAvailabilityPost;
         const challengingTeam = { id: challengingTeamSnap.id, ...challengingTeamSnap.data() } as GroupTeam;
         
-        const challengedTeamSnap = await adminDb.doc(`teams/${post.teamId}`).get();
+        const challengedTeamSnap = await getAdminDb().doc(`teams/${post.teamId}`).get();
         if (!challengedTeamSnap.exists) throw new Error("El equipo desafiado no existe.");
         const challengedTeam = { id: challengedTeamSnap.id, ...challengedTeamSnap.data() } as GroupTeam;
 
-        const invitationRef = adminDb.collection(`teams/${post.teamId}/invitations`).doc();
+        const invitationRef = getAdminDb().collection(`teams/${post.teamId}/invitations`).doc();
         const newInvitation: Omit<Invitation, 'id'> = {
             type: 'team_challenge',
             fromTeamId: challengingTeam.id,
@@ -769,7 +769,7 @@ export async function challengeTeamPostAction(
         };
         batch.set(invitationRef, newInvitation);
 
-        const notificationRef = adminDb.collection(`users/${challengedTeam.createdBy}/notifications`).doc();
+        const notificationRef = getAdminDb().collection(`users/${challengedTeam.createdBy}/notifications`).doc();
         const notification: Omit<Notification, 'id'> = {
             type: 'match_invite',
             title: '¡Desafío Recibido!',
@@ -791,8 +791,8 @@ export async function challengeTeamPostAction(
 
 export async function acceptTeamChallengeAction(invitationId: string, teamId: string, userId: string): Promise<{ success: boolean; matchId: string } | ErrorResponse> {
   try {
-    const result = await adminDb.runTransaction(async (transaction) => {
-      const invitationRef = adminDb.doc(`teams/${teamId}/invitations/${invitationId}`);
+    const result = await getAdminDb().runTransaction(async (transaction) => {
+      const invitationRef = getAdminDb().doc(`teams/${teamId}/invitations/${invitationId}`);
       const invitationSnap = await transaction.get(invitationRef);
 
       if (!invitationSnap.exists || invitationSnap.data()?.status !== 'pending') {
@@ -801,8 +801,8 @@ export async function acceptTeamChallengeAction(invitationId: string, teamId: st
 
       const invitation = invitationSnap.data() as Invitation;
       
-      const team1Ref = adminDb.doc(`teams/${invitation.toTeamId}`);
-      const team2Ref = adminDb.doc(`teams/${invitation.fromTeamId}`);
+      const team1Ref = getAdminDb().doc(`teams/${invitation.toTeamId}`);
+      const team2Ref = getAdminDb().doc(`teams/${invitation.fromTeamId}`);
       const [team1Snap, team2Snap] = await Promise.all([transaction.get(team1Ref), transaction.get(team2Ref)]);
 
       if (!team1Snap.exists || !team2Snap.exists) {
@@ -821,7 +821,7 @@ export async function acceptTeamChallengeAction(invitationId: string, teamId: st
       let matchLocation: MatchLocation = { name: 'A confirmar', address: '', lat: 0, lng: 0, placeId: '' };
       
       if (invitation.postId) {
-        const postRef = adminDb.doc(`teamAvailabilityPosts/${invitation.postId}`);
+        const postRef = getAdminDb().doc(`teamAvailabilityPosts/${invitation.postId}`);
         const postSnap = await transaction.get(postRef);
         if (postSnap.exists) {
           const postData = postSnap.data() as TeamAvailabilityPost;
@@ -832,7 +832,7 @@ export async function acceptTeamChallengeAction(invitationId: string, teamId: st
         }
       }
       
-      const matchRef = adminDb.collection('matches').doc();
+      const matchRef = getAdminDb().collection('matches').doc();
       const newMatch: Omit<Match, 'id'> = {
         title: `${team1Data.name} vs ${team2Data.name}`,
         date: matchDate,
@@ -867,25 +867,25 @@ export async function acceptTeamChallengeAction(invitationId: string, teamId: st
 
 export async function rejectTeamChallengeAction(invitationId: string, teamId: string, userId: string) {
     try {
-        const batch = adminDb.batch();
+        const batch = getAdminDb().batch();
 
-        const invitationSnap = await adminDb.doc(`teams/${teamId}/invitations/${invitationId}`).get();
+        const invitationSnap = await getAdminDb().doc(`teams/${teamId}/invitations/${invitationId}`).get();
         if (!invitationSnap.exists) {
             throw createError(ErrorCodes.DATA_NOT_FOUND, { invitationId });
         }
         const invitation = invitationSnap.data() as Invitation;
         
-        const challengedTeamSnap = await adminDb.doc(`teams/${teamId}`).get();
+        const challengedTeamSnap = await getAdminDb().doc(`teams/${teamId}`).get();
         if (challengedTeamSnap.data()?.createdBy !== userId) {
             throw createError(ErrorCodes.AUTH_INSUFFICIENT_PERMISSIONS);
         }
 
         batch.update(invitationSnap.ref, { status: 'declined' });
 
-        const challengingTeamSnap = await adminDb.doc(`teams/${invitation.fromTeamId}`).get();
+        const challengingTeamSnap = await getAdminDb().doc(`teams/${invitation.fromTeamId}`).get();
         if (challengingTeamSnap.exists) {
             const challengingTeam = challengingTeamSnap.data() as GroupTeam;
-            const notificationRef = adminDb.collection(`users/${challengingTeam.createdBy}/notifications`).doc();
+            const notificationRef = getAdminDb().collection(`users/${challengingTeam.createdBy}/notifications`).doc();
             batch.set(notificationRef, {
                 type: 'match_update',
                 title: 'Desafío Rechazado',
@@ -904,7 +904,7 @@ export async function rejectTeamChallengeAction(invitationId: string, teamId: st
 
 export async function deleteTeamAvailabilityPostAction(postId: string, userId: string) {
     try {
-        const postRef = adminDb.doc(`teamAvailabilityPosts/${postId}`);
+        const postRef = getAdminDb().doc(`teamAvailabilityPosts/${postId}`);
         const postSnap = await postRef.get();
 
         if (!postSnap.exists) {
@@ -923,11 +923,11 @@ export async function deleteTeamAvailabilityPostAction(postId: string, userId: s
 }
 export async function sendTeamChallengeAction(challengingTeamId: string, challengedTeamId: string, challengerUserId: string) {
     try {
-        const batch = adminDb.batch();
+        const batch = getAdminDb().batch();
 
         const [challengingTeamSnap, challengedTeamSnap] = await Promise.all([
-            adminDb.doc(`teams/${challengingTeamId}`).get(),
-            adminDb.doc(`teams/${challengedTeamId}`).get(),
+            getAdminDb().doc(`teams/${challengingTeamId}`).get(),
+            getAdminDb().doc(`teams/${challengedTeamId}`).get(),
         ]);
         
         if (!challengingTeamSnap.exists || !challengedTeamSnap.exists) {
@@ -937,7 +937,7 @@ export async function sendTeamChallengeAction(challengingTeamId: string, challen
         const challengingTeam = { id: challengingTeamSnap.id, ...challengingTeamSnap.data() } as GroupTeam;
         const challengedTeam = { id: challengedTeamSnap.id, ...challengedTeamSnap.data() } as GroupTeam;
         
-        const invitationRef = adminDb.collection(`teams/${challengedTeam.id}/invitations`).doc();
+        const invitationRef = getAdminDb().collection(`teams/${challengedTeam.id}/invitations`).doc();
         const newInvitation: Omit<Invitation, 'id'> = {
             type: 'team_challenge',
             fromTeamId: challengingTeam.id,
@@ -952,7 +952,7 @@ export async function sendTeamChallengeAction(challengingTeamId: string, challen
         };
         batch.set(invitationRef, newInvitation);
         
-        const notificationRef = adminDb.collection(`users/${challengedTeam.createdBy}/notifications`).doc();
+        const notificationRef = getAdminDb().collection(`users/${challengedTeam.createdBy}/notifications`).doc();
         const notification: Omit<Notification, 'id'> = {
             type: 'match_invite',
             title: '¡Nuevo Desafío!',
@@ -988,9 +988,9 @@ export async function createLeagueAction(
     logoUrl?: string
 ): Promise<{ success: boolean; leagueId?: string; error?: string }> {
     try {
-        const batch = adminDb.batch();
+        const batch = getAdminDb().batch();
 
-        const leagueRef = adminDb.collection('leagues').doc();
+        const leagueRef = getAdminDb().collection('leagues').doc();
         const newLeague: Omit<League, 'id'> = {
             name,
             format,
@@ -1012,7 +1012,7 @@ export async function createLeagueAction(
         batch.set(leagueRef, newLeague);
 
         // Generate Fixture
-        const teamsData = await Promise.all(teamIds.map(id => adminDb.doc(`teams/${id}`).get()));
+        const teamsData = await Promise.all(teamIds.map(id => getAdminDb().doc(`teams/${id}`).get()));
         let teams = teamsData.map(snap => ({ id: snap.id, ...snap.data() } as GroupTeam));
 
         if (teams.length % 2 !== 0) {
@@ -1067,7 +1067,7 @@ export async function createLeagueAction(
                     const homeTeam = phase === 0 ? team1 : team2;
                     const awayTeam = phase === 0 ? team2 : team1;
 
-                    const matchRef = adminDb.collection('matches').doc();
+                    const matchRef = getAdminDb().collection('matches').doc();
                     const matchData: Partial<Match> = {
                         title: `${homeTeam.name} vs ${awayTeam.name}`,
                         date: matchDate.toISOString(),
@@ -1113,7 +1113,7 @@ export async function updateLeagueStatusAction(
     newStatus: CompetitionStatus
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const leagueRef = adminDb.collection('leagues').doc(leagueId);
+        const leagueRef = getAdminDb().collection('leagues').doc(leagueId);
 
         await leagueRef.update({
             status: newStatus,
@@ -1134,7 +1134,7 @@ export async function deleteLeagueAction(
 ): Promise<{ success: boolean; error?: string }> {
     try {
         // Delete all matches associated with this league
-        const matchesSnapshot = await adminDb
+        const matchesSnapshot = await getAdminDb()
             .collection('matches')
             .where('leagueInfo.leagueId', '==', leagueId)
             .get();
@@ -1143,13 +1143,13 @@ export async function deleteLeagueAction(
         await Promise.all(deleteMatchesPromises);
 
         // Get league data to check for logo
-        const leagueDoc = await adminDb.collection('leagues').doc(leagueId).get();
+        const leagueDoc = await getAdminDb().collection('leagues').doc(leagueId).get();
         const leagueData = leagueDoc.data();
 
         // Delete logo from storage if it exists
         if (leagueData?.logoUrl) {
             try {
-                const bucket = adminStorage;
+                const bucket = getAdminStorage();
                 // Extract file path from URL
                 const urlParts = leagueData.logoUrl.split('/o/')[1];
                 if (urlParts) {
@@ -1163,7 +1163,7 @@ export async function deleteLeagueAction(
         }
 
         // Delete the league document
-        await adminDb.collection('leagues').doc(leagueId).delete();
+        await getAdminDb().collection('leagues').doc(leagueId).delete();
 
         return { success: true };
     } catch (error) {
@@ -1210,7 +1210,7 @@ export async function createCupAction(
             defaultLocation,
         };
 
-        const cupRef = await adminDb.collection('cups').add(cupData);
+        const cupRef = await getAdminDb().collection('cups').add(cupData);
 
         return { success: true, cupId: cupRef.id };
     } catch (error) {
@@ -1226,7 +1226,7 @@ export async function startCupAction(
     cupId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const cupDoc = await adminDb.collection('cups').doc(cupId).get();
+        const cupDoc = await getAdminDb().collection('cups').doc(cupId).get();
         if (!cupDoc.exists) {
             return { success: false, error: 'Copa no encontrada' };
         }
@@ -1238,7 +1238,7 @@ export async function startCupAction(
         }
 
         // Get teams data
-        const teamsSnapshot = await adminDb
+        const teamsSnapshot = await getAdminDb()
             .collection('teams')
             .where('__name__', 'in', cup.teams)
             .get();
@@ -1252,7 +1252,7 @@ export async function startCupAction(
         const bracket = generateBracket(teams);
 
         // Update cup with bracket
-        await adminDb.collection('cups').doc(cupId).update({
+        await getAdminDb().collection('cups').doc(cupId).update({
             status: 'in_progress',
             bracket,
             currentRound: bracket[0]?.round || 'final',
@@ -1273,7 +1273,7 @@ export async function updateCupStatusAction(
     status: CompetitionStatus
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        await adminDb.collection('cups').doc(cupId).update({ status });
+        await getAdminDb().collection('cups').doc(cupId).update({ status });
         return { success: true };
     } catch (error) {
         const err = handleServerActionError(error);
@@ -1289,7 +1289,7 @@ export async function deleteCupAction(
 ): Promise<{ success: boolean; error?: string }> {
     try {
         // Delete all matches
-        const matchesSnapshot = await adminDb
+        const matchesSnapshot = await getAdminDb()
             .collection('matches')
             .where('leagueInfo.leagueId', '==', cupId) // Using same field for cups
             .get();
@@ -1298,13 +1298,13 @@ export async function deleteCupAction(
         await Promise.all(deleteMatchesPromises);
 
         // Get cup data for logo
-        const cupDoc = await adminDb.collection('cups').doc(cupId).get();
+        const cupDoc = await getAdminDb().collection('cups').doc(cupId).get();
         const cupData = cupDoc.data();
 
         // Delete logo
         if (cupData?.logoUrl) {
             try {
-                const bucket = adminStorage;
+                const bucket = getAdminStorage();
                 const urlParts = cupData.logoUrl.split('/o/')[1];
                 if (urlParts) {
                     const filePath = decodeURIComponent(urlParts.split('?')[0]);
@@ -1315,7 +1315,7 @@ export async function deleteCupAction(
             }
         }
 
-        await adminDb.collection('cups').doc(cupId).delete();
+        await getAdminDb().collection('cups').doc(cupId).delete();
 
         return { success: true };
     } catch (error) {
@@ -1334,7 +1334,7 @@ export async function updateMatchDateAction(
     location?: MatchLocation
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const matchRef = adminDb.collection('matches').doc(matchId);
+        const matchRef = getAdminDb().collection('matches').doc(matchId);
 
         const updateData: any = {
             date,
@@ -1369,7 +1369,7 @@ export async function getPublicCompetitionsAction(): Promise<{
 }> {
     try {
         // Fetch public leagues
-        const leaguesSnapshot = await adminDb
+        const leaguesSnapshot = await getAdminDb()
             .collection('leagues')
             .where('isPublic', '==', true)
             .where('status', '==', 'open_for_applications')
@@ -1381,7 +1381,7 @@ export async function getPublicCompetitionsAction(): Promise<{
         } as League));
 
         // Fetch public cups
-        const cupsSnapshot = await adminDb
+        const cupsSnapshot = await getAdminDb()
             .collection('cups')
             .where('isPublic', '==', true)
             .where('status', '==', 'open_for_applications')
@@ -1410,7 +1410,7 @@ export async function submitCompetitionApplicationAction(
 ): Promise<{ success: boolean; applicationId?: string; error?: string }> {
     try {
         // Fetch team data
-        const teamDoc = await adminDb.collection('teams').doc(teamId).get();
+        const teamDoc = await getAdminDb().collection('teams').doc(teamId).get();
         if (!teamDoc.exists) {
             return { success: false, error: 'Equipo no encontrado.' };
         }
@@ -1423,7 +1423,7 @@ export async function submitCompetitionApplicationAction(
         }
 
         // Check if application already exists
-        const existingApplications = await adminDb
+        const existingApplications = await getAdminDb()
             .collection('competitionApplications')
             .where('competitionId', '==', competitionId)
             .where('teamId', '==', teamId)
@@ -1446,7 +1446,7 @@ export async function submitCompetitionApplicationAction(
             submittedBy: userId,
         };
 
-        const applicationRef = await adminDb.collection('competitionApplications').add(applicationData);
+        const applicationRef = await getAdminDb().collection('competitionApplications').add(applicationData);
 
         return { success: true, applicationId: applicationRef.id };
     } catch (error) {
@@ -1463,7 +1463,7 @@ export async function getCompetitionApplicationsAction(
     competitionType: CompetitionFormat
 ): Promise<{ success: boolean; applications?: CompetitionApplication[]; error?: string }> {
     try {
-        const snapshot = await adminDb
+        const snapshot = await getAdminDb()
             .collection('competitionApplications')
             .where('competitionId', '==', competitionId)
             .where('competitionType', '==', competitionType)
@@ -1491,7 +1491,7 @@ export async function approveApplicationAction(
     competitionType: CompetitionFormat
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const applicationRef = adminDb.collection('competitionApplications').doc(applicationId);
+        const applicationRef = getAdminDb().collection('competitionApplications').doc(applicationId);
         const applicationDoc = await applicationRef.get();
 
         if (!applicationDoc.exists) {
@@ -1505,7 +1505,7 @@ export async function approveApplicationAction(
 
         // Add team to competition
         const competitionCollection = competitionType === 'league' ? 'leagues' : 'cups';
-        const competitionRef = adminDb.collection(competitionCollection).doc(competitionId);
+        const competitionRef = getAdminDb().collection(competitionCollection).doc(competitionId);
 
         await competitionRef.update({
             teams: FieldValue.arrayUnion(application.teamId)
@@ -1525,7 +1525,7 @@ export async function rejectApplicationAction(
     applicationId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const applicationRef = adminDb.collection('competitionApplications').doc(applicationId);
+        const applicationRef = getAdminDb().collection('competitionApplications').doc(applicationId);
         const applicationDoc = await applicationRef.get();
 
         if (!applicationDoc.exists) {
@@ -1551,7 +1551,7 @@ export async function updateMatchFinalScoreAction(
     userId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const matchRef = adminDb.collection('matches').doc(matchId);
+        const matchRef = getAdminDb().collection('matches').doc(matchId);
         const matchSnap = await matchRef.get();
         if (!matchSnap.exists) {
             return { success: false, error: 'Partido no encontrado.' };
@@ -1605,14 +1605,14 @@ export async function updateLeagueStandingsAction(
 ): Promise<{ success: boolean; standings?: any[]; error?: string }> {
     try {
         // Get league data
-        const leagueDoc = await adminDb.collection('leagues').doc(leagueId).get();
+        const leagueDoc = await getAdminDb().collection('leagues').doc(leagueId).get();
         if (!leagueDoc.exists) {
             return { success: false, error: 'Liga no encontrada.' };
         }
         const league = { id: leagueDoc.id, ...leagueDoc.data() } as League;
 
         // Get all league matches that are completed or evaluated
-        const matchesSnapshot = await adminDb
+        const matchesSnapshot = await getAdminDb()
             .collection('matches')
             .where('leagueInfo.leagueId', '==', leagueId)
             .where('status', 'in', ['completed', 'evaluated'])
@@ -1624,7 +1624,7 @@ export async function updateLeagueStandingsAction(
         } as Match));
 
         // Get team data to include jersey info
-        const teamsSnapshot = await adminDb
+        const teamsSnapshot = await getAdminDb()
             .collection('teams')
             .where('__name__', 'in', league.teams)
             .get();
@@ -1736,7 +1736,7 @@ export async function updateLeagueStandingsAction(
         }));
 
         // Save standings to league document
-        await adminDb.collection('leagues').doc(leagueId).update({
+        await getAdminDb().collection('leagues').doc(leagueId).update({
             standings: standingsWithPosition,
         });
 
@@ -1762,7 +1762,7 @@ export async function advanceCupWinnerAction(
 ): Promise<{ success: boolean; error?: string }> {
     try {
         // Get cup data
-        const cupDoc = await adminDb.collection('cups').doc(cupId).get();
+        const cupDoc = await getAdminDb().collection('cups').doc(cupId).get();
         if (!cupDoc.exists) {
             return { success: false, error: 'Copa no encontrada.' };
         }
@@ -1773,7 +1773,7 @@ export async function advanceCupWinnerAction(
         }
 
         // Get match data
-        const matchDoc = await adminDb.collection('matches').doc(matchId).get();
+        const matchDoc = await getAdminDb().collection('matches').doc(matchId).get();
         if (!matchDoc.exists) {
             return { success: false, error: 'Partido no encontrado.' };
         }
@@ -1786,7 +1786,7 @@ export async function advanceCupWinnerAction(
         }
 
         // Get winner team data
-        const winnerTeamDoc = await adminDb.collection('teams').doc(winnerId).get();
+        const winnerTeamDoc = await getAdminDb().collection('teams').doc(winnerId).get();
         if (!winnerTeamDoc.exists) {
             return { success: false, error: 'Equipo ganador no encontrado.' };
         }
@@ -1836,7 +1836,7 @@ export async function advanceCupWinnerAction(
                     // If both teams are defined and match hasn't been created yet
                     if (nextBracketMatch && nextBracketMatch.team1Id && nextBracketMatch.team2Id && !nextBracketMatch.matchId) {
                         // Create the next match
-                        const nextMatchRef = adminDb.collection('matches').doc();
+                        const nextMatchRef = getAdminDb().collection('matches').doc();
                         const nextMatchData: Partial<Match> = {
                             title: `${nextBracketMatch.team1Name} vs ${nextBracketMatch.team2Name}`,
                             date: cup.startDate || new Date().toISOString(),
@@ -1876,7 +1876,7 @@ export async function advanceCupWinnerAction(
         }
 
         // Update cup document
-        await adminDb.collection('cups').doc(cupId).update(updateData);
+        await getAdminDb().collection('cups').doc(cupId).update(updateData);
 
         return { success: true };
     } catch (error) {
@@ -2037,7 +2037,7 @@ export async function fetchGoogleFitActivitiesAction(
 ): Promise<{ success: boolean; sessions?: GoogleFitSession[]; error?: string }> {
     try {
         // Get user's Google Fit connection
-        const connectionDoc = await adminDb
+        const connectionDoc = await getAdminDb()
             .collection('users')
             .doc(userId)
             .collection('healthConnections')
@@ -2226,7 +2226,7 @@ export async function linkActivityToMatchAction(
             rawData: activityData.rawData,
         };
 
-        const performanceRef = await adminDb
+        const performanceRef = await getAdminDb()
             .collection('matches')
             .doc(matchId)
             .collection('playerPerformance')
@@ -2254,7 +2254,7 @@ export async function getPlayerPerformanceAction(
     playerId: string
 ): Promise<{ success: boolean; performance?: PlayerPerformance; error?: string }> {
     try {
-        const performanceSnapshot = await adminDb
+        const performanceSnapshot = await getAdminDb()
             .collection('matches')
             .doc(matchId)
             .collection('playerPerformance')
@@ -2285,7 +2285,7 @@ export async function disconnectGoogleFitAction(
     userId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        await adminDb
+        await getAdminDb()
             .collection('users')
             .doc(userId)
             .collection('healthConnections')
@@ -2331,7 +2331,7 @@ export async function addManualPerformanceAction(
         }
 
         // Get match data to use as activity time
-        const matchDoc = await adminDb.collection('matches').doc(matchId).get();
+        const matchDoc = await getAdminDb().collection('matches').doc(matchId).get();
         if (!matchDoc.exists) {
             return { success: false, error: 'Partido no encontrado.' };
         }
@@ -2404,7 +2404,7 @@ export async function addManualPerformanceAction(
             },
         };
 
-        const performanceRef = await adminDb
+        const performanceRef = await getAdminDb()
             .collection('matches')
             .doc(matchId)
             .collection('playerPerformance')
@@ -2441,7 +2441,7 @@ export async function followUserAction(
         }
 
         // Check if already following using subcollection
-        const followingDoc = await adminDb
+        const followingDoc = await getAdminDb()
             .collection('users')
             .doc(followerId)
             .collection('following')
@@ -2453,10 +2453,10 @@ export async function followUserAction(
         }
 
         // Create follow relationship using batch
-        const batch = adminDb.batch();
+        const batch = getAdminDb().batch();
 
         // Add to follower's "following" subcollection
-        const followingRef = adminDb
+        const followingRef = getAdminDb()
             .collection('users')
             .doc(followerId)
             .collection('following')
@@ -2467,7 +2467,7 @@ export async function followUserAction(
         });
 
         // Add to target user's "followers" subcollection
-        const followerRef = adminDb
+        const followerRef = getAdminDb()
             .collection('users')
             .doc(followingId)
             .collection('followers')
@@ -2512,7 +2512,7 @@ export async function unfollowUserAction(
 ): Promise<{ success: boolean; error?: string }> {
     try {
         // Check if following using subcollection
-        const followingDoc = await adminDb
+        const followingDoc = await getAdminDb()
             .collection('users')
             .doc(followerId)
             .collection('following')
@@ -2524,10 +2524,10 @@ export async function unfollowUserAction(
         }
 
         // Delete follow relationship using batch
-        const batch = adminDb.batch();
+        const batch = getAdminDb().batch();
 
         // Remove from follower's "following" subcollection
-        const followingRef = adminDb
+        const followingRef = getAdminDb()
             .collection('users')
             .doc(followerId)
             .collection('following')
@@ -2535,7 +2535,7 @@ export async function unfollowUserAction(
         batch.delete(followingRef);
 
         // Remove from target user's "followers" subcollection
-        const followerRef = adminDb
+        const followerRef = getAdminDb()
             .collection('users')
             .doc(followingId)
             .collection('followers')
@@ -2560,7 +2560,7 @@ export async function isFollowingAction(
     followingId: string
 ): Promise<{ success: boolean; isFollowing: boolean; error?: string }> {
     try {
-        const followingDoc = await adminDb
+        const followingDoc = await getAdminDb()
             .collection('users')
             .doc(followerId)
             .collection('following')
@@ -2582,7 +2582,7 @@ export async function getFollowersAction(
 ): Promise<{ success: boolean; followers?: string[]; count?: number; error?: string }> {
     try {
         // New model: top-level 'follows' collection with documents { followerId, followingId }
-        const topLevelSnapshot = await adminDb
+        const topLevelSnapshot = await getAdminDb()
             .collection('follows')
             .where('followingId', '==', userId)
             .get();
@@ -2592,7 +2592,7 @@ export async function getFollowersAction(
             followers = topLevelSnapshot.docs.map(d => (d.data() as any).followerId).filter(Boolean);
         } else {
             // Fallback to legacy subcollection if exists
-            const legacySnapshot = await adminDb
+            const legacySnapshot = await getAdminDb()
                 .collection('users')
                 .doc(userId)
                 .collection('followers')
@@ -2614,7 +2614,7 @@ export async function getFollowingAction(
     userId: string
 ): Promise<{ success: boolean; following?: string[]; count?: number; error?: string }> {
     try {
-        const topLevelSnapshot = await adminDb
+        const topLevelSnapshot = await getAdminDb()
             .collection('follows')
             .where('followerId', '==', userId)
             .get();
@@ -2623,7 +2623,7 @@ export async function getFollowingAction(
         if (!topLevelSnapshot.empty) {
             following = topLevelSnapshot.docs.map(d => (d.data() as any).followingId).filter(Boolean);
         } else {
-            const legacySnapshot = await adminDb
+            const legacySnapshot = await getAdminDb()
                 .collection('users')
                 .doc(userId)
                 .collection('following')
@@ -2646,7 +2646,7 @@ export async function getFollowingAction(
  * Create a social activity (internal function)
  */
 export async function createActivityAction(activity: Omit<SocialActivity, 'id'>): Promise<void> {
-    await adminDb.collection('socialActivities').add(activity);
+    await getAdminDb().collection('socialActivities').add(activity);
 }
 
 /**
@@ -2669,7 +2669,7 @@ export async function getFeedActivitiesAction(
         const userIds = [userId, ...following];
 
         // Get activities from followed users (limited)
-        const activitiesSnapshot = await adminDb
+        const activitiesSnapshot = await getAdminDb()
             .collection('socialActivities')
             .where('userId', 'in', userIds.slice(0, 10)) // Firestore 'in' query limited to 10 items
             .orderBy('timestamp', 'desc')
@@ -2713,7 +2713,7 @@ async function createNotificationAction(
     let fromUserPhoto: string | undefined;
 
     if (notification.fromUserId) {
-        const userDoc = await adminDb.collection('users').doc(notification.fromUserId).get();
+        const userDoc = await getAdminDb().collection('users').doc(notification.fromUserId).get();
         if (userDoc.exists) {
             const userData = userDoc.data();
             fromUserName = userData?.displayName;
@@ -2721,7 +2721,7 @@ async function createNotificationAction(
         }
     }
 
-    await adminDb.collection('users').doc(userId).collection('notifications').add({
+    await getAdminDb().collection('users').doc(userId).collection('notifications').add({
         type: notification.type,
         title: notification.title,
         message: notification.message,
@@ -2747,7 +2747,7 @@ export async function getNotificationsAction(
     limit: number = 20
 ): Promise<{ success: boolean; notifications?: Notification[]; unreadCount?: number; error?: string }> {
     try {
-        const notificationsSnapshot = await adminDb
+        const notificationsSnapshot = await getAdminDb()
             .collection('users')
             .doc(userId)
             .collection('notifications')
@@ -2777,7 +2777,7 @@ export async function markNotificationAsReadAction(
     notificationId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        await adminDb
+        await getAdminDb()
             .collection('users')
             .doc(userId)
             .collection('notifications')
@@ -2800,14 +2800,14 @@ export async function markAllNotificationsAsReadAction(
     userId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const unreadNotifications = await adminDb
+        const unreadNotifications = await getAdminDb()
             .collection('users')
             .doc(userId)
             .collection('notifications')
             .where('isRead', '==', false)
             .get();
 
-        const batch = adminDb.batch();
+        const batch = getAdminDb().batch();
         unreadNotifications.docs.forEach((doc) => {
             batch.update(doc.ref, { isRead: true });
         });

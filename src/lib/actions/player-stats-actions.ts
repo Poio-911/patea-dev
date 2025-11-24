@@ -1,7 +1,7 @@
 'use server';
 
-import { adminDb as db } from '@/firebase/admin-init';
-import type { Match, Player, MatchGoalScorer, MatchCard } from '@/lib/types';
+import { getAdminDb } from '../../firebase/admin-init';
+import type { Match, Player, MatchGoalScorer, MatchCard } from '../../lib/types';
 import { FieldValue } from 'firebase-admin/firestore';
 
 /**
@@ -15,7 +15,7 @@ export async function updatePlayerStatsFromMatch(matchId: string): Promise<{
 }> {
   try {
     // Get match data
-    const matchDoc = await db.collection('matches').doc(matchId).get();
+    const matchDoc = await getAdminDb().collection('matches').doc(matchId).get();
     if (!matchDoc.exists) {
       return { success: false, message: 'Partido no encontrado' };
     }
@@ -44,10 +44,10 @@ export async function updatePlayerStatsFromMatch(matchId: string): Promise<{
     }
 
     // Process stats updates for each player
-    const batch = db.batch();
+    const batch = getAdminDb().batch();
 
     for (const playerId of playerIds) {
-      const playerRef = db.collection('players').doc(playerId);
+      const playerRef = getAdminDb().collection('players').doc(playerId);
       const playerDoc = await playerRef.get();
 
       if (!playerDoc.exists) {
@@ -109,7 +109,7 @@ export async function recalculateAllPlayerStats(groupId?: string): Promise<{
 }> {
   try {
     // Get all players (optionally filtered by group)
-    let playersQuery = db.collection('players');
+    let playersQuery = getAdminDb().collection('players');
     if (groupId) {
       playersQuery = playersQuery.where('groupId', '==', groupId) as any;
     }
@@ -132,7 +132,7 @@ export async function recalculateAllPlayerStats(groupId?: string): Promise<{
     })) as Match[];
 
     // Calculate stats for each player
-    const batch = db.batch();
+    const batch = getAdminDb().batch();
     let updatedCount = 0;
 
     for (const player of players) {
@@ -159,7 +159,7 @@ export async function recalculateAllPlayerStats(groupId?: string): Promise<{
       });
 
       // Update player stats
-      const playerRef = db.collection('players').doc(player.id);
+      const playerRef = getAdminDb().collection('players').doc(player.id);
       batch.update(playerRef, {
         'stats.matchesPlayed': matchesPlayed,
         'stats.goals': totalGoals,
