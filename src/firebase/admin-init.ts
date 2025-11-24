@@ -16,6 +16,11 @@ function initializeAdminApp(): App {
         return getApps().find(app => app.name === '[DEFAULT]')!;
     }
 
+    // Explicitly disable emulator to force production connection
+    delete process.env.FIRESTORE_EMULATOR_HOST;
+    delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
+    delete process.env.FIREBASE_STORAGE_EMULATOR_HOST;
+
     console.log('[Firebase Admin] Initializing...');
     const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
     if (!rawServiceAccount) {
@@ -23,8 +28,8 @@ function initializeAdminApp(): App {
     }
 
     try {
-        const serviceAccount: ServiceAccount = JSON.parse(rawServiceAccount);
-        console.log('[Firebase Admin] Service account parsed. Project ID:', serviceAccount.projectId);
+        const serviceAccountJson = JSON.parse(rawServiceAccount);
+        console.log('[Firebase Admin] Service account parsed. Project ID:', serviceAccountJson.project_id);
 
         const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
         if (!storageBucket) {
@@ -34,7 +39,8 @@ function initializeAdminApp(): App {
         console.log('[Firebase Admin] Storage bucket:', storageBucket);
 
         const app = initializeApp({
-            credential: cert(serviceAccount),
+            credential: cert(serviceAccountJson as ServiceAccount),
+            projectId: 'mil-disculpis', // Explicitly set to force production connection
             storageBucket: storageBucket,
         });
 
