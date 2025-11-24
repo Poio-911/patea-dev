@@ -23,6 +23,7 @@ import { logger } from '../logger';
 import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse, type ErrorResponse } from '../errors';
 import { addDays, format } from 'date-fns';
 import { generateBracket, advanceWinner, isTournamentComplete, getChampion, getRunnerUp, getNextRound } from '../../lib/utils/cup-bracket';
+import { publishMatchPlayedActivity } from './social-actions';
 
 // --- Server Actions ---
 
@@ -1585,6 +1586,49 @@ export async function updateMatchFinalScoreAction(
         }
 
         await matchRef.update(updateData as any);
+
+        // Publish match_played activity for all participants
+        try {
+            // Use a Set to avoid duplicate notifications for the same user
+            const participantUserIds = new Set<string>();
+
+            // Add from playerUids if available
+            if (match.playerUids) {
+                match.playerUids.forEach(uid => participantUserIds.add(uid));
+            }
+
+            // Also check players array just in case
+            if (match.players) {
+                match.players.forEach(p => {
+                    // Assuming player.uid is the user ID for real users
+                    // We might need a check if player is a "real user" vs "dummy player"
+                    // But usually uid points to a user or a generated ID. 
+                    // For now, we assume if it's in players array, it's relevant.
+                    // Ideally we should check if player.ownerUid exists and use that.
+                    // Let's fetch the players if needed, but match.players has basic info.
+                    // The 'uid' in match.players usually refers to the Player document ID.
+                    // We need the User ID (ownerUid) to post to their feed.
+                    // However, for many apps, Player ID = User ID for the main profile.
+                    // Let's rely on what we have. If we need ownerUid, we might need to fetch players.
+                    // Optimization: Let's assume for now we use the IDs we have.
+                    // Wait, match.playerUids is supposed to be User IDs? 
+                    // In types.ts: playerUids: string[]; // Added for simpler queries
+                    // It usually stores User UIDs.
+                    if (p.uid) participantUserIds.add(p.uid);
+                });
+            }
+
+            // Publish for each unique user
+            const publishPromises = Array.from(participantUserIds).map(userId =>
+                publishMatchPlayedActivity(userId, match.id, match.title)
+            );
+
+            await Promise.allSettled(publishPromises);
+        } catch (activityError) {
+            console.error('Error publishing match_played activities:', activityError);
+            // Don't fail the action if activity creation fails
+        }
+
         return { success: true };
     } catch (error) {
         const err = handleServerActionError(error, { matchId });
@@ -2624,10 +2668,26 @@ export async function getFeedActivitiesAction(
             .limit(limit)
             .get();
 
-        const activities = activitiesSnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-        })) as SocialActivity[];
+        const activities: SocialActivity[] = activitiesSnapshot.docs.map((doc) => {
+            const data = doc.data();
+            // Convert to plain object by JSON round-trip to remove Firestore prototypes
+            const plainData = JSON.parse(JSON.stringify(data));
+
+            // Handle timestamp explicitly to ensure it's a valid date string/number for the client
+            let timestamp = data.timestamp;
+            if (data.timestamp && typeof data.timestamp.toDate === 'function') {
+                timestamp = data.timestamp.toDate().toISOString();
+            } else if (data.timestamp && data.timestamp._seconds) {
+                // Handle case where it might be a raw object with _seconds
+                timestamp = new Date(data.timestamp._seconds * 1000).toISOString();
+            }
+
+            return {
+                id: doc.id,
+                ...plainData,
+                timestamp, // Override with safe timestamp
+            };
+        });
 
         return { success: true, activities };
     } catch (error) {

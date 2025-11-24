@@ -18,7 +18,7 @@ export default function SocialPage() {
         </p>
       </div>
 
-      <SocialFeed limit={50} />
+      <SocialFeed limit={50} showHeader={false} />
     </div>
   );
 }
