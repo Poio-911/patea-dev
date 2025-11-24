@@ -58,38 +58,52 @@
 
   /* Game Mode (FC SPORT inspired) palette scoped by .game theme class on <html> */
   .game {
-    --background: 216 22% 6%;
-    /* Carbon dark */
-    --foreground: 210 40% 96%;
-    --card: 220 18% 10%;
-    --card-foreground: 210 40% 96%;
-    --popover: 220 18% 8%;
-    --popover-foreground: 210 40% 96%;
-    --primary: 72 100% 58%;
+    --background: 220 25% 6%;
+    /* Carbon dark - slightly more blue for depth */
+    --foreground: 210 40% 98%;
+    /* Nearly pure white for maximum text contrast */
+    --card: 220 20% 12%;
+    /* Lighter than background for better card separation */
+    --card-foreground: 210 40% 98%;
+    --popover: 220 20% 10%;
+    /* Dark for floating menus */
+    --popover-foreground: 210 40% 98%;
+    --primary: 75 100% 60%;
+    /* Volt Yellow - vibrant but readable */
+    --primary-foreground: 230 25% 10%;
+    /* Dark text on neon yellow */
+    --secondary: 220 20% 20%;
+    /* Brighter for visible secondary buttons */
+    --secondary-foreground: 210 40% 96%;
+    /* Clear text on secondary */
+    --muted: 220 20% 20%;
+    /* Background for disabled/secondary elements */
+    --muted-foreground: 215 20% 75%;
+    /* Brighter for better readability on dark backgrounds */
+    --accent: 175 100% 45%;
+    /* Turquoise - maintained for detail accents */
+    --accent-foreground: 230 25% 10%;
+    /* Dark text on accent */
+    --destructive: 0 85% 60%;
+    /* Brighter neon red for better visibility */
+    --destructive-foreground: 0 0% 100%;
+    /* White on red */
+    --border: 220 20% 30%;
+    /* More visible for defining inputs and cards */
+    --input: 220 20% 25%;
+    /* Input background slightly differentiated from border */
+    --ring: 75 100% 60%;
+    /* Focus ring matches primary (Volt) */
+    --chart-1: 75 100% 60%;
     /* Volt Yellow */
-    --primary-foreground: 230 20% 10%;
-    --secondary: 220 18% 16%;
-    --secondary-foreground: 210 40% 92%;
-    --muted: 220 18% 22%;
-    --muted-foreground: 215 12% 72%;
-    --accent: 173 100% 45%;
+    --chart-2: 175 100% 45%;
     /* Turquoise */
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 72% 46%;
-    --destructive-foreground: 210 40% 96%;
-    --border: 220 18% 28%;
-    --input: 220 18% 28%;
-    --ring: 72 100% 58%;
-    --chart-1: 72 100% 58%;
-    /* Volt */
-    --chart-2: 173 100% 45%;
-    /* Turquoise */
-    --chart-3: 277 92% 64%;
-    /* Violet accent */
-    --chart-4: 198 100% 52%;
-    /* Cyan pulse */
-    --chart-5: 32 100% 54%;
-    /* Orange alt */
+    --chart-3: 280 85% 65%;
+    /* Electric Purple */
+    --chart-4: 195 90% 55%;
+    /* Cyan */
+    --chart-5: 35 95% 60%;
+    /* Orange Neon */
   }
 }
 

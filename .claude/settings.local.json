@@ -51,7 +51,9 @@
       "Bash(firebase firestore:indexes:*)",
       "Bash(set FIRESTORE_EMULATOR_HOST=)",
       "Bash(del \"C:\\pateá\\src\\components\\set-player-status-dialog.tsx\")",
-      "Bash(\"C:\\pateá\\src\\components\\set-player-status-dialog.tsx\")"
+      "Bash(\"C:\\pateá\\src\\components\\set-player-status-dialog.tsx\")",
+      "Bash(git rev-parse:*)",
+      "Bash(node -e:*)"
     ],
     "deny": [],
     "ask": []

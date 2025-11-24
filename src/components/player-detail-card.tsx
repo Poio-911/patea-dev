@@ -15,7 +15,7 @@ import { logger } from '@/lib/logger';
 import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
 import { PlayerOvr, getPositionBadgeClasses, AttributesGrid, PlayerPhoto, positionConfig } from '@/components/player-styles';
 import { ImageCropperDialog } from './image-cropper-dialog';
-import { Dialog, DialogContent, DialogTrigger } from './ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from './ui/dialog';
 import { FollowButton } from './social/follow-button';
 import { ShareButton } from './social/share-button';
 
@@ -115,6 +115,7 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile }
                 </button>
               </DialogTrigger>
               <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none">
+                <DialogTitle className="sr-only">Imagen de perfil de {playerName}</DialogTitle>
                 <img src={player.photoUrl} alt={player.name} className="w-full h-auto rounded-lg" />
               </DialogContent>
             </Dialog>

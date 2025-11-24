@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { UserPlus, UserCheck, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, getDoc, collection, getCountFromServer, writeBatch, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, getCountFromServer, writeBatch, setDoc, deleteDoc, serverTimestamp, query, where, getDocs, addDoc } from 'firebase/firestore';
 
 interface FollowButtonProps {
   targetUserId: string; // UID of the user to follow/unfollow
@@ -29,7 +29,7 @@ export function FollowButton({
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
 
-  // Check if current user is following target user using client SDK
+  // Check if current user is following target user using top-level /follows/ collection
   useEffect(() => {
     const checkFollowStatus = async () => {
       if (!firestore || !user || user.uid === targetUserId) {
@@ -39,10 +39,14 @@ export function FollowButton({
 
       setIsChecking(true);
       try {
-        const followingDoc = await getDoc(
-          doc(firestore, 'users', user.uid, 'following', targetUserId)
+        // Query /follows/ collection for this specific follow relationship
+        const followsQuery = query(
+          collection(firestore, 'follows'),
+          where('followerId', '==', user.uid),
+          where('followingId', '==', targetUserId)
         );
-        setIsFollowing(followingDoc.exists());
+        const followsSnapshot = await getDocs(followsQuery);
+        setIsFollowing(!followsSnapshot.empty);
       } catch (error) {
         console.error('Error checking follow status:', error);
       } finally {
@@ -53,15 +57,26 @@ export function FollowButton({
     checkFollowStatus();
   }, [firestore, user, targetUserId]);
 
-  // Load follower/following counts if showCounts is true using client SDK
+  // Load follower/following counts if showCounts is true using top-level /follows/ collection
   useEffect(() => {
     const loadCounts = async () => {
       if (!firestore || !showCounts) return;
 
       try {
+        // Count followers: where followingId == targetUserId
+        const followersQuery = query(
+          collection(firestore, 'follows'),
+          where('followingId', '==', targetUserId)
+        );
+        // Count following: where followerId == target userId
+        const followingQuery = query(
+          collection(firestore, 'follows'),
+          where('followerId', '==', targetUserId)
+        );
+
         const [followersSnapshot, followingSnapshot] = await Promise.all([
-          getCountFromServer(collection(firestore, 'users', targetUserId, 'followers')),
-          getCountFromServer(collection(firestore, 'users', targetUserId, 'following')),
+          getCountFromServer(followersQuery),
+          getCountFromServer(followingQuery),
         ]);
 
         setFollowersCount(followersSnapshot.data().count);
@@ -92,18 +107,23 @@ export function FollowButton({
 
     try {
       if (isFollowing) {
-        // Unfollow using client SDK
-        const batch = writeBatch(firestore);
+        // Unfollow: Delete from /follows/ collection
+        // First, find the follow document
+        const followsQuery = query(
+          collection(firestore, 'follows'),
+          where('followerId', '==', user.uid),
+          where('followingId', '==', targetUserId)
+        );
+        const followsSnapshot = await getDocs(followsQuery);
 
-        // Remove from follower's "following" subcollection
-        const followingRef = doc(firestore, 'users', user.uid, 'following', targetUserId);
-        batch.delete(followingRef);
-
-        // Remove from target user's "followers" subcollection
-        const followerRef = doc(firestore, 'users', targetUserId, 'followers', user.uid);
-        batch.delete(followerRef);
-
-        await batch.commit();
+        if (!followsSnapshot.empty) {
+          // Delete all matching documents (should only be one)
+          const batch = writeBatch(firestore);
+          followsSnapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+          });
+          await batch.commit();
+        }
 
         setIsFollowing(false);
         setFollowersCount((prev) => Math.max(0, prev - 1));
@@ -112,24 +132,12 @@ export function FollowButton({
           description: 'Ya no seguís a este usuario.',
         });
       } else {
-        // Follow using client SDK
-        const batch = writeBatch(firestore);
-
-        // Add to follower's "following" subcollection
-        const followingRef = doc(firestore, 'users', user.uid, 'following', targetUserId);
-        batch.set(followingRef, {
-          userId: targetUserId,
+        // Follow: Add to /follows/ collection
+        await addDoc(collection(firestore, 'follows'), {
+          followerId: user.uid,
+          followingId: targetUserId,
           createdAt: new Date().toISOString(),
         });
-
-        // Add to target user's "followers" subcollection
-        const followerRef = doc(firestore, 'users', targetUserId, 'followers', user.uid);
-        batch.set(followerRef, {
-          userId: user.uid,
-          createdAt: new Date().toISOString(),
-        });
-
-        await batch.commit();
 
         setIsFollowing(true);
         setFollowersCount((prev) => prev + 1);

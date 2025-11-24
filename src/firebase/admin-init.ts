@@ -82,7 +82,11 @@ export function getAdminAuth() {
 
 export function getAdminStorage() {
     if (!_adminStorage) {
-        _adminStorage = getStorage(getAdminApp()).bucket();
+        const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+        if (!storageBucket) {
+            throw new Error("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET environment variable is not set.");
+        }
+        _adminStorage = getStorage(getAdminApp()).bucket(storageBucket);
     }
     return _adminStorage;
 }
