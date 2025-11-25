@@ -50,3 +50,6 @@ src/.env
 next-env.d.ts
 mil-disculpis-firebase-adminsdk-*.json
 nul
+
+# claude code local settings
+.claude/settings.local.json
