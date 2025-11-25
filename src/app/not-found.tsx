@@ -1,3 +1,6 @@
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+
 export default function NotFound() {
   return (
     <div style={{
@@ -15,16 +18,11 @@ export default function NotFound() {
         <p style={{ marginTop: '0.5rem' }}>
           Parece que te metiste en una cancha que no existe. ¡No pasa nada, hasta a Messi le ha pasado!
         </p>
-        <a href="/dashboard" style={{
-          marginTop: '2rem',
-          display: 'inline-block',
-          padding: '0.5rem 1rem',
-          textDecoration: 'none',
-          border: '1px solid #ccc',
-          borderRadius: '4px'
-        }}>
-          Volver al Vestuario
-        </a>
+        <Button asChild style={{ marginTop: '2rem' }}>
+          <Link href="/dashboard">
+            Volver al Vestuario
+          </Link>
+        </Button>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 
 export default function Error({
   error,
@@ -31,12 +32,12 @@ export default function Error({
           Parece que metimos un gol en contra. ¡No te preocupes, vamos a arreglarlo!
         </p>
         <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-          <button onClick={() => reset()} style={{ padding: '0.5rem 1rem', cursor: 'pointer' }}>
+          <Button onClick={() => reset()} variant="outline">
             Intentar de nuevo
-          </button>
-          <a href="/dashboard" style={{ padding: '0.5rem 1rem', textDecoration: 'none' }}>
-            Volver al inicio
-          </a>
+          </Button>
+          <Button asChild>
+            <a href="/dashboard">Volver al inicio</a>
+          </Button>
         </div>
       </div>
     </div>
