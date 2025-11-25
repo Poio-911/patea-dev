@@ -1,28 +1,39 @@
-
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
-import { ArrowLeft } from 'lucide-react';
-
 export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+export const revalidate = 0;
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background text-center p-4">
-      <div className="max-w-md">
-        <SoccerPlayerIcon className="mx-auto h-20 w-20 text-primary animate-bounce" />
-        <h1 className="mt-8 text-5xl font-bold font-headline text-foreground">404</h1>
-        <h2 className="mt-4 text-2xl font-semibold text-foreground">Página no encontrada</h2>
-        <p className="mt-2 text-muted-foreground">
-          Parece que te metiste en una cancha que no existe. ¡No pasa nada, hasta a Messi le ha pasado!
-        </p>
-        <Button asChild className="mt-8">
-          <Link href="/dashboard">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver al Vestuario
-          </Link>
-        </Button>
-      </div>
-    </div>
+    <html lang="es">
+      <body>
+        <div style={{
+          display: 'flex',
+          minHeight: '100vh',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          padding: '1rem'
+        }}>
+          <div style={{ maxWidth: '28rem' }}>
+            <h1 style={{ marginTop: '2rem', fontSize: '3rem', fontWeight: 'bold' }}>404</h1>
+            <h2 style={{ marginTop: '1rem', fontSize: '1.5rem', fontWeight: '600' }}>Página no encontrada</h2>
+            <p style={{ marginTop: '0.5rem' }}>
+              Parece que te metiste en una cancha que no existe. ¡No pasa nada, hasta a Messi le ha pasado!
+            </p>
+            <a href="/dashboard" style={{
+              marginTop: '2rem',
+              display: 'inline-block',
+              padding: '0.5rem 1rem',
+              textDecoration: 'none',
+              border: '1px solid #ccc',
+              borderRadius: '4px'
+            }}>
+              Volver al Vestuario
+            </a>
+          </div>
+        </div>
+      </body>
+    </html>
   );
 }

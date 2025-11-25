@@ -1,12 +1,10 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+export const revalidate = 0;
 
 export default function Error({
   error,
@@ -21,27 +19,34 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background text-center p-4">
-      <div className="max-w-md">
-        <SoccerPlayerIcon className="mx-auto h-20 w-20 text-destructive" />
-        <h1 className="mt-8 text-5xl font-bold font-headline text-foreground">500</h1>
-        <h2 className="mt-4 text-2xl font-semibold text-foreground">Algo salió mal</h2>
-        <p className="mt-2 text-muted-foreground">
-          Parece que metimos un gol en contra. ¡No te preocupes, vamos a arreglarlo!
-        </p>
-        <div className="mt-8 flex gap-4 justify-center">
-          <Button onClick={() => reset()} variant="default">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Intentar de nuevo
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/dashboard">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Volver al inicio
-            </Link>
-          </Button>
+    <html lang="es">
+      <body>
+        <div style={{
+          display: 'flex',
+          minHeight: '100vh',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          padding: '1rem'
+        }}>
+          <div style={{ maxWidth: '28rem' }}>
+            <h1 style={{ marginTop: '2rem', fontSize: '3rem', fontWeight: 'bold' }}>500</h1>
+            <h2 style={{ marginTop: '1rem', fontSize: '1.5rem', fontWeight: '600' }}>Algo salió mal</h2>
+            <p style={{ marginTop: '0.5rem' }}>
+              Parece que metimos un gol en contra. ¡No te preocupes, vamos a arreglarlo!
+            </p>
+            <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button onClick={() => reset()} style={{ padding: '0.5rem 1rem', cursor: 'pointer' }}>
+                Intentar de nuevo
+              </button>
+              <a href="/dashboard" style={{ padding: '0.5rem 1rem', textDecoration: 'none' }}>
+                Volver al inicio
+              </a>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </body>
+    </html>
   );
 }
