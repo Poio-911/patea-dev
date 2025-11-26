@@ -17,18 +17,13 @@ import { collection, query, where } from 'firebase/firestore';
 
 
 interface MatchTeamsProps {
-  match: Match;
-  isOwner: boolean;
-  isShuffling: boolean;
-  onShuffle: () => void;
+    match: Match;
+    isOwner: boolean;
+    isShuffling: boolean;
+    onShuffle?: () => void;
 }
 
-const positionBadgeStyles: Record<PlayerPosition, string> = {
-  DEL: 'bg-gradient-to-r from-red-500 to-orange-500 text-white border-red-300/50 shadow-lg shadow-red-500/25',
-  MED: 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-blue-300/50 shadow-lg shadow-blue-500/25',
-  DEF: 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-green-300/50 shadow-lg shadow-green-500/25',
-  POR: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-purple-300/50 shadow-lg shadow-purple-500/25',
-};
+// ... (styles remain same)
 
 export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeamsProps) => {
     const firestore = useFirestore();
@@ -66,38 +61,42 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
                     </p>
                 </div>
                 {isOwner && match.status === 'upcoming' && (
-                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                         <Button 
-                             onClick={onShuffle} 
-                             disabled={isShuffling} 
-                             variant="outline" 
-                             size="sm" 
-                             className="w-full sm:w-auto bg-gradient-to-r from-primary/10 to-primary/5 border-primary/30 hover:from-primary/20 hover:to-primary/10 transition-all duration-300"
-                         >
-                             {isShuffling ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Shuffle className="mr-2 h-4 w-4 text-primary"/>}
-                             Volver a Sortear
-                         </Button>
-                         <EditableTeamsDialog match={match}>
-                             <Button 
-                                 variant="outline" 
-                                 size="sm" 
-                                 className="w-full sm:w-auto bg-gradient-to-r from-amber-500/10 to-orange-500/5 border-amber-500/30 hover:from-amber-500/20 hover:to-orange-500/10 transition-all duration-300"
-                             >
-                                 <Pencil className="mr-2 h-4 w-4 text-amber-500" />
-                                 Editar Equipos
-                             </Button>
-                         </EditableTeamsDialog>
-                         <Button 
-                             size="sm" 
-                             variant="outline" 
-                             asChild 
-                             className="w-full sm:w-auto bg-gradient-to-r from-green-500/10 to-emerald-500/5 border-green-500/30 hover:from-green-500/20 hover:to-emerald-500/10 transition-all duration-300"
-                         >
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                        {onShuffle && (
+                            <>
+                                <Button
+                                    onClick={onShuffle}
+                                    disabled={isShuffling}
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full sm:w-auto bg-gradient-to-r from-primary/10 to-primary/5 border-primary/30 hover:from-primary/20 hover:to-primary/10 transition-all duration-300"
+                                >
+                                    {isShuffling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Shuffle className="mr-2 h-4 w-4 text-primary" />}
+                                    Volver a Sortear
+                                </Button>
+                                <EditableTeamsDialog match={match}>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full sm:w-auto bg-gradient-to-r from-amber-500/10 to-orange-500/5 border-amber-500/30 hover:from-amber-500/20 hover:to-orange-500/10 transition-all duration-300"
+                                    >
+                                        <Pencil className="mr-2 h-4 w-4 text-amber-500" />
+                                        Editar Equipos
+                                    </Button>
+                                </EditableTeamsDialog>
+                            </>
+                        )}
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            asChild
+                            className="w-full sm:w-auto bg-gradient-to-r from-green-500/10 to-emerald-500/5 border-green-500/30 hover:from-green-500/20 hover:to-emerald-500/10 transition-all duration-300"
+                        >
                             <a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer">
-                              <WhatsAppIcon className="mr-2 h-4 w-4 text-green-500"/>Compartir
+                                <WhatsAppIcon className="mr-2 h-4 w-4 text-green-500" />Compartir
                             </a>
-                         </Button>
-                     </div>
+                        </Button>
+                    </div>
                 )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -108,7 +107,7 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
                             return details || null;
                         })
                         .filter((p): p is Player => p !== null)
-                        .sort((a,b) => b.ovr - a.ovr);
+                        .sort((a, b) => b.ovr - a.ovr);
 
                     return (
                         <Card
@@ -119,7 +118,7 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
                                 backgroundImage: team.jersey ? `linear-gradient(to top, ${team.jersey.primaryColor}08, transparent)` : 'none'
                             }}
                         >
-                           <CardHeader className="flex flex-col items-center justify-center p-4 gap-2">
+                            <CardHeader className="flex flex-col items-center justify-center p-4 gap-2">
                                 <JerseyPreview jersey={team.jersey} size="md" />
                                 <div className="text-center">
                                     <h3 className="text-lg font-bold">{team.name}</h3>

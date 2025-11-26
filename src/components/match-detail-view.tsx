@@ -11,6 +11,7 @@ import { Button } from './ui/button';
 import Link from 'next/link';
 import { MatchInfoCard } from './match-details/MatchInfoCard';
 import { MatchManagementActions } from './match-details/MatchManagementActions';
+import { CompetitionMatchControls } from './match-details/CompetitionMatchControls';
 import { useMatchPermissions } from '@/hooks/use-match-permissions';
 import { useMatchActions } from '@/hooks/use-match-actions';
 import { MatchChatView } from './match-chat-view';
@@ -20,6 +21,7 @@ import { MatchChronicleCard } from './match-chronicle-card';
 import { AvailablePlayersSection } from './available-players-section';
 import { ImportActivityDialog } from './health/import-activity-dialog';
 import { PhysicalMetricsCard } from './health/physical-metrics-card';
+import { CupMatchView } from './cup/CupMatchView';
 import { logger } from '@/lib/logger';
 
 interface MatchDetailViewProps {
@@ -129,6 +131,13 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
 
   const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
 
+  const isCompetitionMatch = ['league', 'cup', 'league_final'].includes(match.type);
+
+  // Use simplified view for cup matches
+  if (match.type === 'cup' && match.competitionId && user?.uid) {
+    return <CupMatchView match={match} cupId={match.competitionId} userId={user.uid} />;
+  }
+
   return (
     <div className="relative isolate">
       <div className="relative flex flex-col gap-8 md:p-6 text-foreground dark:text-white">
@@ -153,24 +162,31 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
           isUserInMatch={permissions.isUserInMatch}
           isMatchFull={(match.players?.length || 0) >= match.matchSize}
           isJoining={actions.isJoining}
-          onJoinOrLeave={actions.handleJoinOrLeave}
+          onJoinOrLeave={isCompetitionMatch ? undefined : actions.handleJoinOrLeave}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 md:px-0">
+        {/* Competition Controls */}
+        {isCompetitionMatch && permissions.isOwner && (
+          <div className="px-4 md:px-0 mt-6">
+            <CompetitionMatchControls match={match} />
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 md:px-0 mt-6">
           <div className="lg:col-span-3 space-y-6">
             {match.teams && match.teams.length > 0 ? (
               <MatchTeams
                 match={match}
                 isOwner={permissions.isOwner}
-                onShuffle={actions.handleShuffleTeams}
+                onShuffle={isCompetitionMatch ? undefined : actions.handleShuffleTeams}
                 isShuffling={actions.isShuffling}
               />
             ) : (
               <PlayersConfirmed match={match} />
             )}
 
-            {/* Show player search section if match is incomplete */}
-            {(match.players?.length || 0) < match.matchSize && (
+            {/* Show player search section if match is incomplete AND not competition */}
+            {!isCompetitionMatch && (match.players?.length || 0) < match.matchSize && (
               <AvailablePlayersSection
                 match={match}
                 isOwner={permissions.isOwner}
@@ -213,6 +229,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 isDeleting={actions.isDeleting}
                 onFinish={actions.handleFinish}
                 onDelete={actions.handleDelete}
+                isCompetitionMatch={isCompetitionMatch}
               />
             </div>
           )}
