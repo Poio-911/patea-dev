@@ -83,7 +83,7 @@ function seedByOVR<T extends { ovr?: number }>(teams: T[]): T[] {
  * @param seedingType - 'random' for shuffle or 'ovr_based' for seeded bracket
  */
 export function generateBracket(
-  teams: GroupTeam[],
+  teams: (GroupTeam & { ovr?: number })[],
   seedingType: CupSeedingType = 'random'
 ): BracketMatch[] {
   const numTeams = teams.length;
