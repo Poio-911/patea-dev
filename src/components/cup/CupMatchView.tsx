@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -67,6 +68,11 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
                 ? (match.participantTeamIds?.[0] || team1.id)
                 : (match.participantTeamIds?.[1] || team2.id);
 
+            // ✅ FIX: Ensure winnerId is a valid string before proceeding
+            if (!winnerId) {
+                throw new Error('No se pudo determinar el ID del equipo ganador.');
+            }
+
             // Advance winner in bracket
             const advanceResult = await advanceCupWinnerAction(cupId, match.id, winnerId);
 
@@ -122,25 +128,25 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
                     <CardContent className="space-y-4">
                         <div className="flex items-center justify-between gap-4">
                             <div className="flex-1 space-y-2 text-center">
-                                <Label className="block font-bold text-base">{team1.name}</Label>
+                                <Label className="truncate block font-bold text-base">{team1.name}</Label>
                                 <Input
                                     type="number"
                                     min="0"
                                     value={team1Score}
                                     onChange={(e) => setTeam1Score(e.target.value)}
-                                    className="text-center text-2xl font-bold h-16"
+                                    className="text-center text-2xl font-bold h-16 w-full"
                                     disabled={isCompleted}
                                 />
                             </div>
                             <div className="text-2xl font-bold text-muted-foreground">VS</div>
                             <div className="flex-1 space-y-2 text-center">
-                                <Label className="block font-bold text-base">{team2.name}</Label>
+                                <Label className="truncate block font-bold text-base">{team2.name}</Label>
                                 <Input
                                     type="number"
                                     min="0"
                                     value={team2Score}
                                     onChange={(e) => setTeam2Score(e.target.value)}
-                                    className="text-center text-2xl font-bold h-16"
+                                    className="text-center text-2xl font-bold h-16 w-full"
                                     disabled={isCompleted}
                                 />
                             </div>
