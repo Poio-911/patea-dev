@@ -134,8 +134,8 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
   const isCompetitionMatch = ['league', 'cup', 'league_final'].includes(match.type);
 
   // Use simplified view for cup matches
-  if (match.type === 'cup' && match.competitionId && user?.uid) {
-    return <CupMatchView match={match} cupId={match.competitionId} userId={user.uid} />;
+  if (match.type === 'cup' && match.leagueInfo?.leagueId && user?.uid) {
+    return <CupMatchView match={match} cupId={match.leagueInfo.leagueId} userId={user.uid} />;
   }
 
   return (
