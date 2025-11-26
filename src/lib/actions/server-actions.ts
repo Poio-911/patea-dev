@@ -17,7 +17,7 @@ import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '..
 import { type GenerateMatchChronicleOutput, type GenerateMatchChronicleInput, MatchLocation } from '../../lib/types';
 import { generateMatchChronicleFlow } from '../../ai/flows/generate-match-chronicle';
 import { generateDuoImage } from '../../ai/flows/generate-duo-image';
-import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, TeamAvailabilityPost, Match, GenerateDuoImageInput, League, LeagueFormat, CompetitionStatus, Cup, CupFormat, BracketMatch, CompetitionApplication, CompetitionFormat, HealthConnection, PlayerPerformance, GoogleFitAuthUrl, GoogleFitSession, SocialActivity, Follow, NotificationType } from '../types';
+import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, GroupTeamMember, TeamAvailabilityPost, Match, GenerateDuoImageInput, League, LeagueFormat, CompetitionStatus, Cup, CupFormat, BracketMatch, CompetitionApplication, CompetitionFormat, HealthConnection, PlayerPerformance, GoogleFitAuthUrl, GoogleFitSession, SocialActivity, Follow, NotificationType } from '../types';
 import { GOOGLE_FIT_CONFIG, calculateAttributeImpact } from '../config/google-fit';
 import { logger } from '../logger';
 import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse, type ErrorResponse } from '../errors';
@@ -1206,9 +1206,9 @@ export async function createCupAction(
             isPublic,
             teams: teamIds,
             createdAt: new Date().toISOString(),
-            logoUrl,
-            startDate,
-            defaultLocation,
+            ...(logoUrl && { logoUrl }),
+            ...(startDate && { startDate }),
+            ...(defaultLocation && { defaultLocation }),
         };
 
         const cupRef = await getAdminDb().collection('cups').add(cupData);
@@ -1796,6 +1796,179 @@ export async function updateLeagueStandingsAction(
 // ============================================================================
 
 /**
+ * Create a match document for a cup bracket match if it doesn't exist
+ * or return the existing matchId
+ */
+export async function createCupMatchAction(
+    cupId: string,
+    bracketMatchId: string
+): Promise<{ success: boolean; matchId?: string; error?: string }> {
+    try {
+        // Get cup data
+        const cupDoc = await getAdminDb().collection('cups').doc(cupId).get();
+        if (!cupDoc.exists) {
+            return { success: false, error: 'Copa no encontrada.' };
+        }
+        const cup = { id: cupDoc.id, ...cupDoc.data() } as Cup;
+
+        if (!cup.bracket) {
+            return { success: false, error: 'Bracket no generado.' };
+        }
+
+        // Find the bracket match
+        const bracketMatchIndex = cup.bracket.findIndex(bm => bm.id === bracketMatchId);
+        if (bracketMatchIndex === -1) {
+            return { success: false, error: 'Partido no encontrado en el bracket.' };
+        }
+        const bracketMatch = cup.bracket[bracketMatchIndex];
+
+        // If match already exists, return its ID
+        if (bracketMatch.matchId) {
+            return { success: true, matchId: bracketMatch.matchId };
+        }
+
+        // Check if teams are ready
+        if (!bracketMatch.team1Id || !bracketMatch.team2Id) {
+            return { success: false, error: 'Los equipos para este partido aún no están definidos.' };
+        }
+
+        // Fetch full team data from Firestore
+        console.log('[createCupMatchAction] Cup groupId:', cup.groupId);
+        console.log('[createCupMatchAction] Fetching team1 from teams collection:', bracketMatch.team1Id);
+        console.log('[createCupMatchAction] Fetching team2 from teams collection:', bracketMatch.team2Id);
+
+        const team1Ref = getAdminDb().collection('teams').doc(bracketMatch.team1Id!);
+        const team2Ref = getAdminDb().collection('teams').doc(bracketMatch.team2Id!);
+
+        const [team1Snap, team2Snap] = await Promise.all([team1Ref.get(), team2Ref.get()]);
+
+        console.log('[createCupMatchAction] Team1 exists:', team1Snap.exists);
+        console.log('[createCupMatchAction] Team2 exists:', team2Snap.exists);
+
+        if (team1Snap.exists) {
+            const team1Data = team1Snap.data();
+            console.log('[createCupMatchAction] Team1 data keys:', Object.keys(team1Data || {}));
+            console.log('[createCupMatchAction] Team1 members field:', team1Data?.members);
+        }
+
+        if (team2Snap.exists) {
+            const team2Data = team2Snap.data();
+            console.log('[createCupMatchAction] Team2 data keys:', Object.keys(team2Data || {}));
+            console.log('[createCupMatchAction] Team2 members field:', team2Data?.members);
+        }
+
+        const team1 = team1Snap.exists ? { id: team1Snap.id, ...team1Snap.data() } as GroupTeam : null;
+        const team2 = team2Snap.exists ? { id: team2Snap.id, ...team2Snap.data() } as GroupTeam : null;
+
+        // Collect all player IDs
+        const team1PlayerIds = team1?.members.map(m => m.playerId) || [];
+        const team2PlayerIds = team2?.members.map(m => m.playerId) || [];
+        const allPlayerIds = [...new Set([...team1PlayerIds, ...team2PlayerIds])]; // Deduplicate just in case
+
+        // Fetch all player documents
+        let playersMap = new Map<string, Player>();
+        if (allPlayerIds.length > 0) {
+            const playerRefs = allPlayerIds.map(id => getAdminDb().collection('players').doc(id));
+            const playerDocs = await getAdminDb().getAll(...playerRefs);
+
+            playerDocs.forEach(doc => {
+                if (doc.exists) {
+                    playersMap.set(doc.id, { id: doc.id, ...doc.data() } as Player);
+                }
+            });
+        }
+
+        // Map members to MatchPlayer format
+        const mapToMatchPlayers = (members: GroupTeamMember[] | undefined, teamId: string) => {
+            if (!members) return [];
+            return members.map(m => {
+                const player = playersMap.get(m.playerId);
+                if (!player) return null;
+                return {
+                    uid: player.id,
+                    displayName: player.name || 'Jugador',
+                    photoUrl: player.photoUrl || '',
+                    position: player.position || 'MED',
+                    ovr: player.ovr || 50,
+                    teamId: teamId
+                };
+            }).filter((p): p is NonNullable<typeof p> => p !== null);
+        };
+
+        const team1Players = mapToMatchPlayers(team1?.members, team1?.id || '');
+        const team2Players = mapToMatchPlayers(team2?.members, team2?.id || '');
+
+        const allPlayers = [...team1Players, ...team2Players];
+
+        // Log for debugging
+        console.log('[createCupMatchAction] Team1 members:', team1?.members?.length || 0);
+        console.log('[createCupMatchAction] Team2 members:', team2?.members?.length || 0);
+        console.log('[createCupMatchAction] Total players mapped:', allPlayers.length);
+        console.log('[createCupMatchAction] Team1Id:', bracketMatch.team1Id);
+        console.log('[createCupMatchAction] Team2Id:', bracketMatch.team2Id);
+
+        // Create the match document
+        const matchRef = getAdminDb().collection('matches').doc();
+        const matchData: Partial<Match> = {
+            title: `${bracketMatch.team1Name} vs ${bracketMatch.team2Name}`,
+            date: cup.startDate || new Date().toISOString(),
+            time: '19:00', // Default time
+            location: cup.defaultLocation || { name: 'A definir', address: '', lat: 0, lng: 0, placeId: '' },
+            type: 'cup',
+            matchSize: 22, // Default size
+            status: 'upcoming',
+            ownerUid: cup.ownerUid,
+            groupId: cup.groupId,
+            participantTeamIds: [bracketMatch.team1Id!, bracketMatch.team2Id!],
+            players: allPlayers,
+            playerUids: allPlayers.map(p => p.uid),
+            teams: [
+                {
+                    id: bracketMatch.team1Id!,
+                    name: bracketMatch.team1Name || '',
+                    players: team1Players,
+                    totalOVR: 0,
+                    averageOVR: 0,
+                    jersey: bracketMatch.team1Jersey || { type: 'plain', primaryColor: '#000000', secondaryColor: '#ffffff' }
+                },
+                {
+                    id: bracketMatch.team2Id!,
+                    name: bracketMatch.team2Name || '',
+                    players: team2Players,
+                    totalOVR: 0,
+                    averageOVR: 0,
+                    jersey: bracketMatch.team2Jersey || { type: 'plain', primaryColor: '#000000', secondaryColor: '#ffffff' }
+                },
+            ],
+            leagueInfo: {
+                leagueId: cupId, // Using same field for cups
+                round: 0, // Not used for cups
+            },
+            createdAt: new Date().toISOString(),
+        };
+
+        await matchRef.set(matchData);
+
+        // Update bracket with matchId
+        const updatedBracket = [...cup.bracket];
+        updatedBracket[bracketMatchIndex] = {
+            ...bracketMatch,
+            matchId: matchRef.id
+        };
+
+        await getAdminDb().collection('cups').doc(cupId).update({
+            bracket: updatedBracket
+        });
+
+        return { success: true, matchId: matchRef.id };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+
+/**
  * Advance winner in cup bracket and create next match if both teams are ready
  * This should be called after a cup match is finalized
  */
@@ -1829,7 +2002,7 @@ export async function advanceCupWinnerAction(
             return { success: false, error: 'Partido no encontrado en el bracket.' };
         }
 
-        // Get winner team data
+        // Get winner team data from teams collection
         const winnerTeamDoc = await getAdminDb().collection('teams').doc(winnerId).get();
         if (!winnerTeamDoc.exists) {
             return { success: false, error: 'Equipo ganador no encontrado.' };
@@ -1879,6 +2052,54 @@ export async function advanceCupWinnerAction(
 
                     // If both teams are defined and match hasn't been created yet
                     if (nextBracketMatch && nextBracketMatch.team1Id && nextBracketMatch.team2Id && !nextBracketMatch.matchId) {
+                        // Fetch team data to populate players
+                        const nextTeam1Ref = getAdminDb().collection('teams').doc(nextBracketMatch.team1Id);
+                        const nextTeam2Ref = getAdminDb().collection('teams').doc(nextBracketMatch.team2Id);
+
+                        const [nextTeam1Snap, nextTeam2Snap] = await Promise.all([nextTeam1Ref.get(), nextTeam2Ref.get()]);
+
+                        const nextTeam1 = nextTeam1Snap.exists ? { id: nextTeam1Snap.id, ...nextTeam1Snap.data() } as GroupTeam : null;
+                        const nextTeam2 = nextTeam2Snap.exists ? { id: nextTeam2Snap.id, ...nextTeam2Snap.data() } as GroupTeam : null;
+
+                        // Collect player IDs
+                        const nextTeam1PlayerIds = nextTeam1?.members.map(m => m.playerId) || [];
+                        const nextTeam2PlayerIds = nextTeam2?.members.map(m => m.playerId) || [];
+                        const allNextPlayerIds = [...new Set([...nextTeam1PlayerIds, ...nextTeam2PlayerIds])];
+
+                        // Fetch player documents
+                        let nextPlayersMap = new Map<string, Player>();
+                        if (allNextPlayerIds.length > 0) {
+                            const nextPlayerRefs = allNextPlayerIds.map(id => getAdminDb().collection('players').doc(id));
+                            const nextPlayerDocs = await getAdminDb().getAll(...nextPlayerRefs);
+
+                            nextPlayerDocs.forEach(doc => {
+                                if (doc.exists) {
+                                    nextPlayersMap.set(doc.id, { id: doc.id, ...doc.data() } as Player);
+                                }
+                            });
+                        }
+
+                        // Map members to MatchPlayer format
+                        const mapPlayersForNextMatch = (members: GroupTeamMember[] | undefined, teamId: string) => {
+                            if (!members) return [];
+                            return members.map(m => {
+                                const player = nextPlayersMap.get(m.playerId);
+                                if (!player) return null;
+                                return {
+                                    uid: player.id,
+                                    displayName: player.name || 'Jugador',
+                                    photoUrl: player.photoUrl || '',
+                                    position: player.position || 'MED',
+                                    ovr: player.ovr || 50,
+                                    teamId: teamId
+                                };
+                            }).filter((p): p is NonNullable<typeof p> => p !== null);
+                        };
+
+                        const nextTeam1Players = mapPlayersForNextMatch(nextTeam1?.members, nextTeam1?.id || '');
+                        const nextTeam2Players = mapPlayersForNextMatch(nextTeam2?.members, nextTeam2?.id || '');
+                        const allNextPlayers = [...nextTeam1Players, ...nextTeam2Players];
+
                         // Create the next match
                         const nextMatchRef = getAdminDb().collection('matches').doc();
                         const nextMatchData: Partial<Match> = {
@@ -1892,9 +2113,24 @@ export async function advanceCupWinnerAction(
                             ownerUid: cup.ownerUid,
                             groupId: cup.groupId,
                             participantTeamIds: [nextBracketMatch.team1Id, nextBracketMatch.team2Id],
+                            players: allNextPlayers,
                             teams: [
-                                { name: nextBracketMatch.team1Name || '', players: [], totalOVR: 0, averageOVR: 0, jersey: nextBracketMatch.team1Jersey || { type: 'plain', primaryColor: '#000000', secondaryColor: '#ffffff' } },
-                                { name: nextBracketMatch.team2Name || '', players: [], totalOVR: 0, averageOVR: 0, jersey: nextBracketMatch.team2Jersey || { type: 'plain', primaryColor: '#000000', secondaryColor: '#ffffff' } },
+                                {
+                                    id: nextBracketMatch.team1Id,
+                                    name: nextBracketMatch.team1Name || '',
+                                    players: nextTeam1Players,
+                                    totalOVR: 0,
+                                    averageOVR: 0,
+                                    jersey: nextBracketMatch.team1Jersey || { type: 'plain', primaryColor: '#000000', secondaryColor: '#ffffff' }
+                                },
+                                {
+                                    id: nextBracketMatch.team2Id,
+                                    name: nextBracketMatch.team2Name || '',
+                                    players: nextTeam2Players,
+                                    totalOVR: 0,
+                                    averageOVR: 0,
+                                    jersey: nextBracketMatch.team2Jersey || { type: 'plain', primaryColor: '#000000', secondaryColor: '#ffffff' }
+                                },
                             ],
                             leagueInfo: {
                                 leagueId: cupId, // Using same field for cups

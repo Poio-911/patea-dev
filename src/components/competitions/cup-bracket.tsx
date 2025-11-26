@@ -119,17 +119,17 @@ function BracketMatchCard({ match, onClick, isHighlighted, isFinal }: BracketMat
         {/* Team 1 */}
         <div
           className={cn(
-            'flex items-center gap-2 p-2 rounded transition-colors',
+            'flex items-center gap-3 p-2.5 rounded transition-colors',
             team1IsWinner && 'bg-primary/10 border border-primary/20',
             !team1IsWinner && isCompleted && 'opacity-50'
           )}
         >
           {match.team1Jersey ? (
-            <div className="w-8 h-8 flex-shrink-0">
-              <JerseyPreview jersey={match.team1Jersey} />
+            <div className="w-10 h-10 flex-shrink-0">
+              <JerseyPreview jersey={match.team1Jersey} size="sm" />
             </div>
           ) : (
-            <div className="w-8 h-8 flex-shrink-0 rounded bg-muted/50 flex items-center justify-center">
+            <div className="w-10 h-10 flex-shrink-0 rounded bg-muted/50 flex items-center justify-center">
               <span className="text-xs text-muted-foreground">?</span>
             </div>
           )}
@@ -151,17 +151,17 @@ function BracketMatchCard({ match, onClick, isHighlighted, isFinal }: BracketMat
         {/* Team 2 */}
         <div
           className={cn(
-            'flex items-center gap-2 p-2 rounded transition-colors',
+            'flex items-center gap-3 p-2.5 rounded transition-colors',
             team2IsWinner && 'bg-primary/10 border border-primary/20',
             !team2IsWinner && isCompleted && 'opacity-50'
           )}
         >
           {match.team2Jersey ? (
-            <div className="w-8 h-8 flex-shrink-0">
-              <JerseyPreview jersey={match.team2Jersey} />
+            <div className="w-10 h-10 flex-shrink-0">
+              <JerseyPreview jersey={match.team2Jersey} size="sm" />
             </div>
           ) : (
-            <div className="w-8 h-8 flex-shrink-0 rounded bg-muted/50 flex items-center justify-center">
+            <div className="w-10 h-10 flex-shrink-0 rounded bg-muted/50 flex items-center justify-center">
               <span className="text-xs text-muted-foreground">?</span>
             </div>
           )}

@@ -12,6 +12,8 @@ import { Calendar, Clock, MapPin, UserPlus, LogOut, Loader2 } from 'lucide-react
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { getMatchTheme } from '@/lib/match-theme';
+import { cn } from '@/lib/utils';
 
 interface MatchInfoCardProps {
   match: Match;
@@ -23,7 +25,7 @@ interface MatchInfoCardProps {
   isUserInMatch: boolean;
   isMatchFull: boolean;
   isJoining: boolean;
-  onJoinOrLeave: () => void;
+  onJoinOrLeave?: () => void;
 }
 
 /**
@@ -42,8 +44,20 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
   isJoining,
   onJoinOrLeave,
 }: MatchInfoCardProps) {
+  const matchTheme = getMatchTheme(match.type);
+
   return (
-    <Card className="group relative overflow-hidden border-2 border-t-4 border-t-primary text-foreground dark:text-white rounded-xl shadow-md glass hover:shadow-lg transition-all duration-300">
+    <Card className={cn(
+      "group relative overflow-hidden border-2 rounded-xl shadow-md glass hover:shadow-lg transition-all duration-300 text-foreground dark:text-white",
+      // Type-specific top border
+      match.type === 'manual' && "border-t-4 border-t-blue-500",
+      match.type === 'collaborative' && "border-t-4 border-t-violet-500",
+      match.type === 'by_teams' && "border-t-4 border-t-emerald-500",
+      match.type === 'league' && "border-t-4 border-t-amber-500",
+      match.type === 'cup' && "border-t-4 border-t-red-500",
+      match.type === 'league_final' && "border-t-4 border-t-amber-400 shadow-2xl shadow-amber-500/50",
+      match.type === 'intergroup_friendly' && "border-t-4 border-t-teal-500"
+    )}>
       {/* Background video - visible en AMBOS temas */}
       <div className="absolute inset-0 -z-10 rounded-lg overflow-hidden">
         <video
@@ -57,11 +71,54 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
         >
           <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/30 to-black/50" />
-        <div className="absolute inset-0 gradient-primary opacity-40" />
+        <div className={cn(
+          "absolute inset-0",
+          // Type-specific gradient overlay
+          match.type === 'manual' && "bg-gradient-to-br from-blue-500/40 via-blue-400/30 to-black/50",
+          match.type === 'collaborative' && "bg-gradient-to-br from-violet-500/40 via-violet-400/30 to-black/50",
+          match.type === 'by_teams' && "bg-gradient-to-br from-emerald-500/40 via-emerald-400/30 to-black/50",
+          match.type === 'league' && "bg-gradient-to-br from-amber-500/50 via-orange-400/40 to-black/50",
+          match.type === 'cup' && "bg-gradient-to-br from-red-500/50 via-orange-500/40 to-black/50",
+          match.type === 'league_final' && "bg-gradient-to-br from-amber-400/60 via-orange-500/50 to-red-500/40",
+          match.type === 'intergroup_friendly' && "bg-gradient-to-br from-teal-500/40 via-teal-400/30 to-black/50"
+        )} />
       </div>
 
       <CardContent className="relative z-10 p-8 pt-8 space-y-6 bg-transparent text-white [text-shadow:0_2px_4px_rgb(0_0_0_/_0.6)] transition-all duration-300">
+        {/* Special header for league_final */}
+        {match.type === 'league_final' && (
+          <div className="-mx-8 -mt-8 mb-6 p-6 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600 text-center">
+            <h2 className="text-2xl font-black uppercase tracking-wider text-white animate-pulse">
+              ⚡ PARTIDO DEFINITORIO ⚡
+            </h2>
+            <p className="text-sm font-semibold text-white/90 mt-1">
+              El ganador se corona CAMPEÓN
+            </p>
+          </div>
+        )}
+
+        {/* League/Cup context */}
+        {(match.type === 'league' || match.type === 'cup') && match.leagueInfo && (
+          <div className="-mx-8 -mt-8 mb-6 p-4 bg-black/30 border-b border-white/20">
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-lg font-bold text-amber-400">
+                {match.type === 'league' ? '🏆 Liga' : '🏆 Copa'}
+              </span>
+              {match.type === 'league' && (
+                <span className="text-sm text-white/80">• Fecha {match.leagueInfo.round}</span>
+              )}
+              {match.type === 'cup' && (
+                <span className="text-sm text-white/80">
+                  • {match.leagueInfo.round === 1 ? 'FINAL' :
+                    match.leagueInfo.round === 2 ? 'SEMIFINAL' :
+                      match.leagueInfo.round === 3 ? 'CUARTOS' :
+                        `Ronda ${match.leagueInfo.round}`}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Fecha y organizador */}
         <div className="flex flex-col sm:flex-row gap-6 justify-between">
           <div className="space-y-4">

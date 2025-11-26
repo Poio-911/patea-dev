@@ -4,13 +4,13 @@ import { useParams, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
 import { doc, collection, query, where } from 'firebase/firestore';
-import type { Cup, GroupTeam } from '@/lib/types';
+import type { Cup, GroupTeam, BracketMatch } from '@/lib/types';
 import { Loader2, Trophy, Settings, Trash2, Play, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CupBracket } from '@/components/competitions/cup-bracket';
 import { useToast } from '@/hooks/use-toast';
-import { startCupAction, updateCupStatusAction, deleteCupAction } from '@/lib/actions/server-actions';
+import { startCupAction, updateCupStatusAction, deleteCupAction, createCupMatchAction } from '@/lib/actions/server-actions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,6 +61,14 @@ export default function CupDetailPage() {
   }, [firestore, cup?.teams]);
 
   const { data: teams } = useCollection<GroupTeam>(teamsQuery);
+
+  // Fetch organizer data
+  const organizerRef = useMemo(() => {
+    if (!firestore || !cup?.ownerUid) return null;
+    return doc(firestore, 'users', cup.ownerUid);
+  }, [firestore, cup?.ownerUid]);
+
+  const { data: organizer } = useDoc<any>(organizerRef);
 
   const isOwner = user?.uid === cup?.ownerUid;
   const isCompleted = cup?.status === 'completed';
@@ -117,6 +125,62 @@ export default function CupDetailPage() {
     }
   };
 
+  const handleMatchClick = async (match: BracketMatch) => {
+    if (!cup) return;
+
+    // If match is already completed, view details
+    if (match.winnerId) {
+      if (match.matchId) {
+        router.push(`/matches/${match.matchId}`);
+      }
+      return;
+    }
+
+    // If match is ready to play (has both teams)
+    if (match.team1Id && match.team2Id) {
+      // If we have a matchId, navigate to it
+      if (match.matchId) {
+        router.push(`/matches/${match.matchId}`);
+        return;
+      }
+
+      // If not, create it and navigate (only owner)
+      if (isOwner) {
+        // Show loading toast
+        const loadingToast = toast({
+          title: 'Preparando partido...',
+          description: 'Creando el encuentro en el sistema.',
+        });
+
+        try {
+          const result = await createCupMatchAction(cup.id, match.id);
+          if (result.success && result.matchId) {
+            loadingToast.dismiss();
+            router.push(`/matches/${result.matchId}`);
+          } else {
+            toast({
+              variant: 'destructive',
+              title: 'Error',
+              description: result.error || 'No se pudo crear el partido.',
+            });
+          }
+        } catch (error) {
+          console.error(error);
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Ocurrió un error al intentar acceder al partido.',
+          });
+        }
+      } else {
+        toast({
+          title: 'Partido pendiente',
+          description: 'El organizador debe iniciar este partido.',
+        });
+      }
+    }
+  };
+
   if (cupLoading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -157,6 +221,24 @@ export default function CupDetailPage() {
                   <span className="text-sm text-muted-foreground">{cup.teams.length} equipos</span>
                   <span className="text-muted-foreground">·</span>
                   <span className="text-sm text-muted-foreground">Eliminación Directa</span>
+                  {organizer && (
+                    <>
+                      <span className="text-muted-foreground">·</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm text-muted-foreground">Organizado por</span>
+                        <div className="flex items-center gap-1">
+                          {organizer.photoUrl ? (
+                            <img src={organizer.photoUrl} alt={organizer.displayName} className="w-5 h-5 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
+                              <span className="text-[10px] font-bold">{organizer.displayName?.charAt(0) || '?'}</span>
+                            </div>
+                          )}
+                          <span className="text-sm font-medium">{organizer.displayName || 'Usuario'}</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
                 {cup.currentRound && cup.status === 'in_progress' && (
                   <div className="flex items-center gap-2 mt-2">
@@ -202,7 +284,7 @@ export default function CupDetailPage() {
 
           <TabsContent value="bracket" className="mt-6">
             {cup.bracket && cup.bracket.length > 0 ? (
-              <CupBracket bracket={cup.bracket} />
+              <CupBracket bracket={cup.bracket} onMatchClick={handleMatchClick} />
             ) : (
               <div className="text-center py-16 border-2 border-dashed rounded-xl">
                 <Trophy className="mx-auto h-12 w-12 text-muted-foreground mb-4" />

@@ -27,6 +27,7 @@ interface MatchManagementActionsProps {
   isDeleting: boolean;
   onFinish: () => void;
   onDelete: () => void;
+  isCompetitionMatch?: boolean;
 }
 
 /**
@@ -41,6 +42,7 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
   isDeleting,
   onFinish,
   onDelete,
+  isCompetitionMatch = false,
 }: MatchManagementActionsProps) {
   return (
     <div className="space-y-4">
@@ -63,15 +65,15 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
           </Button>
         )}
 
-        {match.status === 'completed' && (
-           <Button asChild size="sm" className="min-h-[48px] w-full sm:w-auto">
-             <Link href={`/matches/${match.id}/evaluate`}>
-               <FileSignature className="mr-2 h-4 w-4" />
-               Supervisar Evaluaciones
-             </Link>
-           </Button>
+        {!isCompetitionMatch && match.status === 'completed' && (
+          <Button asChild size="sm" className="min-h-[48px] w-full sm:w-auto">
+            <Link href={`/matches/${match.id}/evaluate`}>
+              <FileSignature className="mr-2 h-4 w-4" />
+              Supervisar Evaluaciones
+            </Link>
+          </Button>
         )}
-        
+
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
