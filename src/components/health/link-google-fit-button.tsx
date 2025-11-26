@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Activity, Loader2, CheckCircle2, AlertCircle, Unlink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { generateGoogleFitAuthUrlAction, disconnectGoogleFitAction } from '@/lib/actions/server-actions';
+import { generateGoogleFitAuthUrlAction, disconnectGoogleFitAction } from '@/lib/actions/google-fit-actions';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';

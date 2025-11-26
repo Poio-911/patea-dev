@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { processGoogleFitCallbackAction } from '@/lib/actions/server-actions';
+import { processGoogleFitCallbackAction } from '@/lib/actions/google-fit-actions';
 
 /**
  * Google Fit OAuth2 Callback Handler
