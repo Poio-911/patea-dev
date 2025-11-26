@@ -1978,20 +1978,25 @@ export async function advanceCupWinnerAction(
     winnerId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
+        console.log('[advanceCupWinnerAction] Starting', { cupId, matchId, winnerId });
+
         // Get cup data
         const cupDoc = await getAdminDb().collection('cups').doc(cupId).get();
         if (!cupDoc.exists) {
+            console.log('[advanceCupWinnerAction] Cup not found');
             return { success: false, error: 'Copa no encontrada.' };
         }
         const cup = { id: cupDoc.id, ...cupDoc.data() } as Cup;
 
         if (!cup.bracket) {
+            console.log('[advanceCupWinnerAction] Bracket not generated');
             return { success: false, error: 'Bracket no generado.' };
         }
 
         // Get match data
         const matchDoc = await getAdminDb().collection('matches').doc(matchId).get();
         if (!matchDoc.exists) {
+            console.log('[advanceCupWinnerAction] Match not found');
             return { success: false, error: 'Partido no encontrado.' };
         }
         const match = { id: matchDoc.id, ...matchDoc.data() } as Match;
@@ -1999,15 +2004,23 @@ export async function advanceCupWinnerAction(
         // Find the bracket match
         const bracketMatch = cup.bracket.find(bm => bm.matchId === matchId);
         if (!bracketMatch) {
+            console.log('[advanceCupWinnerAction] Match not found in bracket', {
+                matchId,
+                bracketMatchIds: cup.bracket.map(bm => bm.matchId)
+            });
             return { success: false, error: 'Partido no encontrado en el bracket.' };
         }
+
+        console.log('[advanceCupWinnerAction] Bracket match found', { bracketMatch });
 
         // Get winner team data from teams collection
         const winnerTeamDoc = await getAdminDb().collection('teams').doc(winnerId).get();
         if (!winnerTeamDoc.exists) {
+            console.log('[advanceCupWinnerAction] Winner team not found', { winnerId });
             return { success: false, error: 'Equipo ganador no encontrado.' };
         }
         const winnerTeam = { id: winnerTeamDoc.id, ...winnerTeamDoc.data() } as GroupTeam;
+        console.log('[advanceCupWinnerAction] Winner team found', { winnerTeamId: winnerTeam.id, winnerTeamName: winnerTeam.name });
 
         // Advance winner in bracket
         const updatedBracket = advanceWinner(

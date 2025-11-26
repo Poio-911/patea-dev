@@ -56,8 +56,19 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
         setIsSubmitting(true);
 
         try {
+            console.log('[CupMatchView] Starting match finalization', {
+                matchId: match.id,
+                cupId,
+                score1,
+                score2,
+                participantTeamIds: match.participantTeamIds,
+                team1Id: team1.id,
+                team2Id: team2.id,
+            });
+
             // Update match score
             const scoreResult = await updateMatchFinalScoreAction(match.id, score1, score2, userId);
+            console.log('[CupMatchView] Score update result:', scoreResult);
 
             if (!scoreResult.success) {
                 throw new Error(scoreResult.error || 'Error al actualizar el resultado');
@@ -68,6 +79,8 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
                 ? (match.participantTeamIds?.[0] || team1.id)
                 : (match.participantTeamIds?.[1] || team2.id);
 
+            console.log('[CupMatchView] Winner determined:', { winnerId, score1, score2 });
+
             // ✅ FIX: Ensure winnerId is a valid string before proceeding
             if (!winnerId) {
                 throw new Error('No se pudo determinar el ID del equipo ganador.');
@@ -75,6 +88,7 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
 
             // Advance winner in bracket
             const advanceResult = await advanceCupWinnerAction(cupId, match.id, winnerId);
+            console.log('[CupMatchView] Advance result:', advanceResult);
 
             if (!advanceResult.success) {
                 throw new Error(advanceResult.error || 'Error al avanzar el ganador');
@@ -88,6 +102,7 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
             // Redirect to cup page
             router.push(`/competitions/cups/${cupId}`);
         } catch (error: any) {
+            console.error('[CupMatchView] Error finalizing match:', error);
             toast({
                 variant: 'destructive',
                 title: 'Error',

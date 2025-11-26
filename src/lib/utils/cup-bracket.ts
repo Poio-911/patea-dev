@@ -113,9 +113,9 @@ export function generateBracket(
 
       // Calculate which match the winner advances to
       if (roundIndex < rounds.length - 1) {
-        // Winner advances to match number: floor((current match number + 1) / 2) in next round
-        bracketMatch.nextMatchNumber = Math.floor((matchNum + 1) / 2) + (matchNum % 2 === 0 ? 0 : 0.5);
-        bracketMatch.nextMatchNumber = Math.ceil(bracketMatch.nextMatchNumber);
+        // Winner advances to match number: ceil((current match number + 1) / 2) in next round
+        // Example: matches 1 & 2 → match 1, matches 3 & 4 → match 2, etc.
+        bracketMatch.nextMatchNumber = Math.ceil((matchNum + 1) / 2);
       }
 
       bracket.push(bracketMatch);
@@ -166,7 +166,7 @@ export function advanceWinner(
   }
 
   const nextMatchNumber = completedMatch.nextMatchNumber;
-  if (!nextMatchNumber) {
+  if (nextMatchNumber === undefined || nextMatchNumber === null) {
     throw new Error(`No next match defined for ${completedMatchId}`);
   }
 
