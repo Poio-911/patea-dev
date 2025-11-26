@@ -55,7 +55,7 @@ export type DayOfWeek = 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes' 
 export type TimeOfDay = 'mañana' | 'tarde' | 'noche';
 
 export type Availability = {
-    [key in DayOfWeek]?: TimeOfDay[];
+  [key in DayOfWeek]?: TimeOfDay[];
 };
 
 export type AvailablePlayer = {
@@ -77,11 +77,11 @@ export type MatchType = 'manual' | 'collaborative' | 'by_teams' | 'intergroup_fr
 export type MatchSize = 10 | 14 | 22;
 
 export type MatchLocation = {
-    name: string;
-    address: string;
-    lat: number;
-    lng: number;
-    placeId: string;
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  placeId: string;
 }
 
 export type MatchGoalScorer = {
@@ -183,7 +183,7 @@ export type GroupTeam = {
   members: GroupTeamMember[];
   createdBy: string;
   createdAt: string;
-  isChallengeable?: boolean; 
+  isChallengeable?: boolean;
 } & DocumentData;
 
 
@@ -197,91 +197,91 @@ export type Group = {
 
 
 export type NotificationType =
-    | 'match_invite'
-    | 'new_joiner'
-    | 'evaluation_pending'
-    | 'match_update'
-    | 'challenge_received'
-    | 'challenge_accepted'
-    | 'challenge_rejected'
-    | 'league_application'
-    | 'new_follower'
-    | 'match_invitation'
-    | 'match_reminder'
-    | 'ovr_milestone'
-    | 'achievement_unlocked';
+  | 'match_invite'
+  | 'new_joiner'
+  | 'evaluation_pending'
+  | 'match_update'
+  | 'challenge_received'
+  | 'challenge_accepted'
+  | 'challenge_rejected'
+  | 'league_application'
+  | 'new_follower'
+  | 'match_invitation'
+  | 'match_reminder'
+  | 'ovr_milestone'
+  | 'achievement_unlocked';
 
 export type Notification = {
-    id: string;
-    type: NotificationType;
-    title: string;
-    message: string;
-    link: string;
-    isRead: boolean;
-    createdAt: string;
-    // Optional metadata for additional context
-    metadata?: {
-        fromUserId?: string;
-        fromUserName?: string;
-        fromUserPhoto?: string;
-        matchId?: string;
-        achievementId?: string;
-        playerId?: string;
-    };
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  link: string;
+  isRead: boolean;
+  createdAt: string;
+  // Optional metadata for additional context
+  metadata?: {
+    fromUserId?: string;
+    fromUserName?: string;
+    fromUserPhoto?: string;
+    matchId?: string;
+    achievementId?: string;
+    playerId?: string;
+  };
 } & DocumentData;
 
 export type TeamAvailabilityPost = {
-    id: string;
-    teamId: string;
-    teamName: string;
-    jersey: Jersey;
-    date: string; 
-    time: string; 
-    location: MatchLocation;
-    description?: string;
-    createdBy: string; 
-    createdAt: string; 
-    status?: 'active' | 'matched' | 'expired';
-    matchedWithTeamId?: string; 
-    matchId?: string; 
+  id: string;
+  teamId: string;
+  teamName: string;
+  jersey: Jersey;
+  date: string;
+  time: string;
+  location: MatchLocation;
+  description?: string;
+  createdBy: string;
+  createdAt: string;
+  status?: 'active' | 'matched' | 'expired';
+  matchedWithTeamId?: string;
+  matchId?: string;
 } & DocumentData;
 
 export type Invitation = {
-    id: string;
-    type: 'player_to_match' | 'team_challenge';
-    status: 'pending' | 'accepted' | 'declined';
-    createdBy: string; 
-    createdAt: string;
-    matchId?: string;
-    matchTitle?: string;
-    matchDate?: string;
-    playerId?: string;
-    fromTeamId?: string;
-    fromTeamName?: string;
-    fromTeamJersey?: Jersey;
-    toTeamId?: string;
-    toTeamName?: string;
-    toTeamJersey?: Jersey;
-    postId?: string;
+  id: string;
+  type: 'player_to_match' | 'team_challenge';
+  status: 'pending' | 'accepted' | 'declined';
+  createdBy: string;
+  createdAt: string;
+  matchId?: string;
+  matchTitle?: string;
+  matchDate?: string;
+  playerId?: string;
+  fromTeamId?: string;
+  fromTeamName?: string;
+  fromTeamJersey?: Jersey;
+  toTeamId?: string;
+  toTeamName?: string;
+  toTeamJersey?: Jersey;
+  postId?: string;
 } & DocumentData;
 
-    
+
 export type FcmToken = {
-    id: string;
-    token: string;
-    createdAt: string;
+  id: string;
+  token: string;
+  createdAt: string;
 } & DocumentData;
 
 export type Evaluation = {
-    id: string;
-    assignmentId: string; 
-    playerId: string; 
-    evaluatorId: string; 
-    matchId: string; 
-    rating?: number; 
-    goals: number; 
-    performanceTags?: PerformanceTag[]; 
-    evaluatedAt: string;
+  id: string;
+  assignmentId: string;
+  playerId: string;
+  evaluatorId: string;
+  matchId: string;
+  rating?: number;
+  goals: number;
+  performanceTags?: PerformanceTag[];
+  evaluatedAt: string;
 } & DocumentData;
 
 
@@ -295,12 +295,12 @@ export type SelfEvaluation = {
 } & DocumentData;
 
 export type EvaluationAssignment = {
-    id: string;
-    matchId: string;
-    evaluatorId: string; 
-    subjectId: string; 
-    status: 'pending' | 'completed';
-    evaluationId?: string; 
+  id: string;
+  matchId: string;
+  evaluatorId: string;
+  subjectId: string;
+  status: 'pending' | 'completed';
+  evaluationId?: string;
 } & DocumentData;
 
 export type PlayerEvaluationFormData = {
@@ -315,18 +315,18 @@ export type PlayerEvaluationFormData = {
 };
 
 export type EvaluationSubmission = {
-    id: string;
-    evaluatorId: string;
-    matchId: string;
-    match?: Partial<Match>;
-    submittedAt: string;
-    submission: {
-        evaluatorGoals: number;
+  id: string;
+  evaluatorId: string;
+  matchId: string;
+  match?: Partial<Match>;
+  submittedAt: string;
+  submission: {
+    evaluatorGoals: number;
     evaluatorAssists?: number;
-        evaluations: PlayerEvaluationFormData[];
-    }
+    evaluations: PlayerEvaluationFormData[];
+  }
 } & DocumentData;
-    
+
 export type UserProfile = {
   uid: string;
   email: string | null;
@@ -337,11 +337,11 @@ export type UserProfile = {
 };
 
 export type AppHelpInput = {
-    userMessage: string;
-    conversationHistory?: {
-        role: 'user' | 'agent';
-        content: string;
-    }[];
+  userMessage: string;
+  conversationHistory?: {
+    role: 'user' | 'agent';
+    content: string;
+  }[];
 };
 
 export type ChatMessage = {
@@ -350,7 +350,7 @@ export type ChatMessage = {
   senderId: string;
   senderName: string;
   senderPhotoUrl: string;
-  createdAt: any; 
+  createdAt: any;
 } & DocumentData;
 
 const KeyEventSchema = z.object({
@@ -477,6 +477,9 @@ export type LeaguePlayerStats = {
 // Cup rounds enum
 export type CupRound = 'round_of_32' | 'round_of_16' | 'round_of_8' | 'semifinals' | 'final';
 
+// Cup seeding type
+export type CupSeedingType = 'random' | 'ovr_based';
+
 // Bracket match for cup knockout structure
 export type BracketMatch = {
   id: string;
@@ -491,6 +494,7 @@ export type BracketMatch = {
   winnerId?: string;
   matchId?: string; // Reference to actual Match document when played
   nextMatchNumber?: number; // Which match the winner advances to
+  finalScore?: { team1: number; team2: number }; // Score of the match
 };
 
 export type Cup = {
@@ -510,6 +514,7 @@ export type Cup = {
   // Bracket structure
   bracket?: BracketMatch[]; // Generated when cup starts
   currentRound?: CupRound; // Track which round is active
+  seedingType?: CupSeedingType; // How teams were seeded in bracket
   // Champion tracking
   championTeamId?: string;
   championTeamName?: string;
@@ -519,15 +524,15 @@ export type Cup = {
 } & DocumentData;
 
 export type CompetitionApplication = {
-    id: string;
-    competitionId: string;
-    competitionType: CompetitionFormat;
-    teamId: string;
-    teamName: string;
-    teamJersey: Jersey;
-    status: 'pending' | 'approved' | 'rejected';
-    submittedAt: string;
-    submittedBy: string; // userId of team owner
+  id: string;
+  competitionId: string;
+  competitionType: CompetitionFormat;
+  teamId: string;
+  teamName: string;
+  teamJersey: Jersey;
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: string;
+  submittedBy: string; // userId of team owner
 } & DocumentData;
 
 // ============================================================================
@@ -537,82 +542,82 @@ export type CompetitionApplication = {
 export type HealthProvider = 'google_fit' | 'apple_health';
 
 export type HealthConnection = {
-    id: string;
-    provider: HealthProvider;
-    userId: string;
-    accessToken: string; // Should be encrypted in production
-    refreshToken: string; // Should be encrypted in production
-    expiresAt: string; // ISO timestamp when access token expires
-    scopes: string[]; // OAuth scopes granted
-    connectedAt: string; // ISO timestamp when first connected
-    lastSyncAt?: string; // ISO timestamp of last successful sync
-    isActive: boolean; // Whether connection is still valid
+  id: string;
+  provider: HealthProvider;
+  userId: string;
+  accessToken: string; // Should be encrypted in production
+  refreshToken: string; // Should be encrypted in production
+  expiresAt: string; // ISO timestamp when access token expires
+  scopes: string[]; // OAuth scopes granted
+  connectedAt: string; // ISO timestamp when first connected
+  lastSyncAt?: string; // ISO timestamp of last successful sync
+  isActive: boolean; // Whether connection is still valid
 } & DocumentData;
 
 export type PlayerPerformance = {
-    id: string;
-    playerId: string;
-    matchId: string;
-    userId: string; // uid of the user who owns this performance data
-    // Physical metrics
-    distance?: number; // kilometers
-    avgHeartRate?: number; // bpm
-    maxHeartRate?: number; // bpm
-    steps?: number;
-    calories?: number; // kcal
-    duration?: number; // minutes
-    // Source and timing
-    source: 'google_fit' | 'apple_health' | 'manual';
-    activityStartTime: string; // ISO timestamp
-    activityEndTime: string; // ISO timestamp
-    linkedAt: string; // ISO timestamp when linked to match
-    // Impact on player attributes
-    impactOnAttributes?: {
-        pac?: number;
-        phy?: number;
-    };
-    // Raw data for debugging/auditing
-    rawData?: any;
+  id: string;
+  playerId: string;
+  matchId: string;
+  userId: string; // uid of the user who owns this performance data
+  // Physical metrics
+  distance?: number; // kilometers
+  avgHeartRate?: number; // bpm
+  maxHeartRate?: number; // bpm
+  steps?: number;
+  calories?: number; // kcal
+  duration?: number; // minutes
+  // Source and timing
+  source: 'google_fit' | 'apple_health' | 'manual';
+  activityStartTime: string; // ISO timestamp
+  activityEndTime: string; // ISO timestamp
+  linkedAt: string; // ISO timestamp when linked to match
+  // Impact on player attributes
+  impactOnAttributes?: {
+    pac?: number;
+    phy?: number;
+  };
+  // Raw data for debugging/auditing
+  rawData?: any;
 } & DocumentData;
 
 // OAuth2 configuration
 export type GoogleFitAuthUrl = {
-    authUrl: string;
-    state: string; // CSRF token
+  authUrl: string;
+  state: string; // CSRF token
 };
 
 // Activity session from Google Fit
 export type GoogleFitSession = {
-    id: string;
-    name: string;
-    description?: string;
-    startTime: string;
-    endTime: string;
-    activityType: string; // 'running', 'soccer', 'walking', etc.
-    duration: number; // milliseconds
-    metrics?: {
-        distance?: number;
-        steps?: number;
-        calories?: number;
-        avgHeartRate?: number;
-        maxHeartRate?: number;
-    };
+  id: string;
+  name: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+  activityType: string; // 'running', 'soccer', 'walking', etc.
+  duration: number; // milliseconds
+  metrics?: {
+    distance?: number;
+    steps?: number;
+    calories?: number;
+    avgHeartRate?: number;
+    maxHeartRate?: number;
+  };
 };
 
 // Flattened activity data from Google Fit (for UI usage)
 export type GoogleFitActivity = {
-    id: string;
-    name: string;
-    description?: string;
-    startTime: string;
-    endTime: string;
-    activityType: string;
-    duration: number; // milliseconds
-    distance?: number; // meters
-    steps?: number;
-    calories?: number; // kcal
-    avgHeartRate?: number; // bpm
-    maxHeartRate?: number; // bpm
+  id: string;
+  name: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+  activityType: string;
+  duration: number; // milliseconds
+  distance?: number; // meters
+  steps?: number;
+  calories?: number; // kcal
+  avgHeartRate?: number; // bpm
+  maxHeartRate?: number; // bpm
 };
 
 // ============================================
@@ -621,22 +626,22 @@ export type GoogleFitActivity = {
 
 // Follow relationship between users/players
 export type Follow = {
-    id: string;
-    followerId: string; // UID of user who is following
-    followingId: string; // UID of user being followed
-    createdAt: string; // ISO timestamp
+  id: string;
+  followerId: string; // UID of user who is following
+  followingId: string; // UID of user being followed
+  createdAt: string; // ISO timestamp
 } & DocumentData;
 
 // Activity types for the social feed
 export type ActivityType =
-    | 'match_played'
-    | 'match_organized'
-    | 'ovr_increased'
-    | 'ovr_decreased'
-    | 'goal_scored'
-    | 'achievement_unlocked'
-    | 'player_created'
-    | 'new_follower';
+  | 'match_played'
+  | 'match_organized'
+  | 'ovr_increased'
+  | 'ovr_decreased'
+  | 'goal_scored'
+  | 'achievement_unlocked'
+  | 'player_created'
+  | 'new_follower';
 
 // Social activity for the feed
 export type SocialActivity = {

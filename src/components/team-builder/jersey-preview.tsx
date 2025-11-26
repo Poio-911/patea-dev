@@ -7,11 +7,12 @@ import { cn } from '@/lib/utils';
 
 interface JerseyPreviewProps {
   jersey?: Jersey;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
 
 const SIZE_CLASSES = {
+  xs: 'h-6 w-6',
   sm: 'h-12 w-12',
   md: 'h-20 w-20',
   lg: 'h-32 w-32',
@@ -38,7 +39,7 @@ export function JerseyPreview({ jersey: jerseyProp, size = 'md', className }: Je
       try {
         const template = getJerseyTemplate(jersey.type);
         if (!template) {
-            throw new Error(`Template not found for type: ${jersey.type}`);
+          throw new Error(`Template not found for type: ${jersey.type}`);
         }
 
         // Fetch the SVG content from the public folder

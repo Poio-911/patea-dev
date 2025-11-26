@@ -5,12 +5,11 @@ import { useState, useMemo } from 'react';
 import { GroupTeam, Player } from '@/lib/types';
 import { CreateTeamDialog } from '../create-team-dialog';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2, Users, ChevronRight } from 'lucide-react';
+import { PlusCircle, Loader2, Users, ChevronRight, UsersRound } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, query, where } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { TeamsIcon } from '../icons/teams-icon';
 import { JerseyPreview } from './jersey-preview';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
@@ -73,7 +72,7 @@ export function TeamList({ groupId, players, currentUserId, compact = false }: T
           </div>
         ) : (
           <Alert className="text-center py-6">
-            <TeamsIcon className="mx-auto h-6 w-6 mb-2" />
+            <UsersRound className="mx-auto h-6 w-6 mb-2" />
             <AlertTitle className="text-sm">No hay equipos</AlertTitle>
             <AlertDescription className="text-xs">
               Creá el primer equipo del grupo.
@@ -96,7 +95,7 @@ export function TeamList({ groupId, players, currentUserId, compact = false }: T
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div className="flex items-center gap-3">
-          <TeamsIcon className="h-8 w-8 text-primary" />
+          <UsersRound className="h-8 w-8 text-primary" />
           <div>
             <h2 className="text-2xl font-bold">Equipos del Grupo</h2>
             <p className="text-sm text-muted-foreground">
@@ -140,7 +139,7 @@ export function TeamList({ groupId, players, currentUserId, compact = false }: T
         </div>
       ) : (
         <Alert className="text-center py-10">
-          <TeamsIcon className="mx-auto h-8 w-8 mb-2" />
+          <UsersRound className="mx-auto h-8 w-8 mb-2" />
           <AlertTitle>No hay equipos creados</AlertTitle>
           <AlertDescription>
             Creá el primer equipo del grupo. Podrás usarlos para armar partidos y llevar estadísticas.

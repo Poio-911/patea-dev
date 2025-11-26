@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Globe, Check, HelpCircle, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Globe, Check, HelpCircle, ChevronRight, UsersRound } from 'lucide-react';
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -42,7 +42,6 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { JerseyPreview } from './team-builder/jersey-preview';
-import { TeamsIcon } from '@/components/icons/teams-icon';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { Badge } from './ui/badge';
@@ -682,7 +681,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                     </Label>
                                     <Label className="flex items-center gap-3 border rounded-md p-3 cursor-pointer hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary-foreground/50">
                                         <RadioGroupItem value="by_teams" />
-                                        <div className="flex items-center gap-2 font-bold"><TeamsIcon className="h-4 w-4" /><span>Por Equipos</span></div>
+                                        <div className="flex items-center gap-2 font-bold"><UsersRound className="h-4 w-4" /><span>Por Equipos</span></div>
                                     </Label>
                                 </RadioGroup>
                             )}

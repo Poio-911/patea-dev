@@ -86,14 +86,76 @@ export default function MatchesPage() {
         const amistosos = allMatches.filter(m =>
             m.type === 'manual' || m.type === 'collaborative' || m.type === 'by_teams' || m.type === 'intergroup_friendly'
         );
-        const ligas = allMatches.filter(m =>
+
+        // Group league matches by league and apply focused view (current + next round only)
+        const allLeagueMatches = allMatches.filter(m =>
             m.type === 'league' || m.type === 'league_final'
         );
+
+        // Group by league
+        const matchesByLeague = allLeagueMatches.reduce((acc, match) => {
+            const leagueId = match.leagueInfo?.leagueId || 'unknown';
+            if (!acc[leagueId]) {
+                acc[leagueId] = [];
+            }
+            acc[leagueId].push(match);
+            return acc;
+        }, {} as Record<string, Match[]>);
+
+        // For each league, filter to show only current + next round
+        const focusedLeagueMatches: Match[] = [];
+        Object.values(matchesByLeague).forEach(leagueMatches => {
+            // Group by round
+            const matchesByRound = leagueMatches.reduce((acc, match) => {
+                const round = match.leagueInfo?.round || 0;
+                if (!acc[round]) acc[round] = [];
+                acc[round].push(match);
+                return acc;
+            }, {} as Record<number, Match[]>);
+
+            const rounds = Object.keys(matchesByRound).map(Number).sort((a, b) => a - b);
+
+            if (rounds.length <= 2) {
+                // Show all if 2 or fewer rounds
+                focusedLeagueMatches.push(...leagueMatches);
+            } else {
+                // Find current round (last round where all matches are completed)
+                const currentRound = rounds.find(round => {
+                    const roundMatches = matchesByRound[round];
+                    const allCompleted = roundMatches.every(m =>
+                        m.status === 'completed' || m.status === 'evaluated'
+                    );
+                    const nextRound = rounds[rounds.indexOf(round) + 1];
+                    if (!nextRound) return false; // This is the last round
+
+                    const nextRoundMatches = matchesByRound[nextRound];
+                    const anyNextStarted = nextRoundMatches.some(m =>
+                        m.status !== 'upcoming'
+                    );
+
+                    return allCompleted && anyNextStarted;
+                }) || rounds[0]; // Default to first round if none completed
+
+                const currentIndex = rounds.indexOf(currentRound);
+                const nextRound = rounds[currentIndex + 1];
+
+                if (nextRound) {
+                    // Show current + next
+                    focusedLeagueMatches.push(...matchesByRound[currentRound]);
+                    focusedLeagueMatches.push(...matchesByRound[nextRound]);
+                } else {
+                    // Last round - show last 2 rounds
+                    const roundsToShow = rounds.slice(-2);
+                    roundsToShow.forEach(r => focusedLeagueMatches.push(...matchesByRound[r]));
+                }
+            }
+        });
+
         const copas = allMatches.filter(m =>
             m.type === 'cup'
         );
 
-        return { amistosos, ligas, copas };
+        return { amistosos, ligas: focusedLeagueMatches, copas };
     }, [allMatches]);
 
     // Get matches for active category

@@ -27,12 +27,11 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User, MessageCircle, FileSignature, MoreVertical, Users, UserCheck, Shuffle } from 'lucide-react';
+import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User, MessageCircle, FileSignature, MoreVertical, Users, UserCheck, Shuffle, UsersRound } from 'lucide-react';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import Link from 'next/link';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { MatchChatSheet } from './match-chat-sheet';
-import { TeamsIcon } from '@/components/icons/teams-icon';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -171,7 +170,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     <Badge className={cn("text-xs", matchTheme.badge, matchTheme.badgeText, matchTheme.animate && "animate-pulse")}>
                         {matchTheme.icon === 'UserCheck' && <UserCheck className="mr-1.5 h-3 w-3" />}
                         {matchTheme.icon === 'Users' && <Users className="mr-1.5 h-3 w-3" />}
-                        {matchTheme.icon === 'TeamsIcon' && <TeamsIcon className="mr-1.5 h-3 w-3" />}
+                        {matchTheme.icon === 'UsersRound' && <UsersRound className="mr-1.5 h-3 w-3" />}
                         {matchTheme.icon === 'Trophy' && <Trophy className="mr-1.5 h-3 w-3" />}
                         {matchTheme.icon === 'Handshake' && <Handshake className="mr-1.5 h-3 w-3" />}
                         {matchTheme.label}
@@ -282,7 +281,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     </div>
                 )}
 
-                {match.type === 'by_teams' && match.teams && match.teams.length === 2 ? (
+                {(match.type === 'by_teams' || match.type === 'league' || match.type === 'cup' || match.type === 'league_final') && match.teams && match.teams.length === 2 ? (
                     <div className="flex items-center justify-around gap-2 text-center">
                         <div className="flex flex-col items-center gap-2">
                             <JerseyPreview jersey={match.teams[0].jersey} size="sm" />
@@ -314,7 +313,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     {match.teams && match.teams.length > 0 && (
                         <MatchTeamsDialog match={match}>
                             <Button variant="secondary" className="w-full">
-                                <TeamsIcon className="mr-2 h-4 w-4" />
+                                <UsersRound className="mr-2 h-4 w-4" />
                                 Equipos
                             </Button>
                         </MatchTeamsDialog>

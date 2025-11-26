@@ -10,13 +10,12 @@ import { PageHeader } from '@/components/page-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ShieldQuestion, Calendar, Edit, Eye, FileClock, Users, MapPin } from 'lucide-react';
+import { Loader2, ShieldQuestion, Calendar, Edit, Eye, FileClock, Users, MapPin, UsersRound } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Progress } from '@/components/ui/progress';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 import { MatchTeamsDialog } from '@/components/match-teams-dialog';
-import { TeamsIcon } from '@/components/icons/teams-icon';
 import { ViewSubmissionDialog } from '@/components/view-submission-dialog';
 import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
 
@@ -236,7 +235,7 @@ export default function EvaluationsPage() {
                                 {item.match.teams && item.match.teams.length > 0 && (
                                     <MatchTeamsDialog match={item.match}>
                                         <Button variant="secondary" className="w-full">
-                                            <TeamsIcon className="mr-2 h-4 w-4" />
+                                            <UsersRound className="mr-2 h-4 w-4" />
                                             Ver Equipos
                                         </Button>
                                     </MatchTeamsDialog>

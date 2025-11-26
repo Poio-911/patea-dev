@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { Match } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-import { Calendar, MapPin, Edit, ExternalLink } from 'lucide-react';
+import { Calendar, MapPin, Edit, ExternalLink, ChevronsDown, ChevronsUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { getCurrentRound } from '@/lib/utils/league-standings';
 
 type LeagueFixtureProps = {
   matches: Match[];
@@ -21,6 +22,8 @@ type LeagueFixtureProps = {
 };
 
 export function LeagueFixture({ matches, currentRound, isOwner, leagueId, onEditMatch }: LeagueFixtureProps) {
+  const [showAllRounds, setShowAllRounds] = useState(false);
+
   // Group matches by round
   const matchesByRound = useMemo(() => {
     if (!matches) return {};
@@ -35,6 +38,33 @@ export function LeagueFixture({ matches, currentRound, isOwner, leagueId, onEdit
   }, [matches]);
 
   const sortedRounds = Object.keys(matchesByRound).map(Number).sort((a, b) => a - b);
+
+  // Determine rounds to display based on toggle state
+  const roundsToDisplay = useMemo(() => {
+    if (showAllRounds || sortedRounds.length <= 2) {
+      return sortedRounds; // Show all if toggled or if 2 or fewer rounds
+    }
+
+    // Find current round using the utility
+    const calculatedCurrentRound = getCurrentRound(Object.values(matchesByRound).flat());
+
+    if (calculatedCurrentRound === null) {
+      // No rounds completed yet - show first 2 rounds
+      return sortedRounds.slice(0, 2);
+    }
+
+    // Determine next round
+    const currentIndex = sortedRounds.indexOf(calculatedCurrentRound);
+    const nextRound = sortedRounds[currentIndex + 1];
+
+    if (nextRound) {
+      // Current + next exist
+      return [calculatedCurrentRound, nextRound];
+    } else {
+      // Last round - show last 2 rounds
+      return sortedRounds.slice(-2);
+    }
+  }, [matchesByRound, sortedRounds, showAllRounds]);
 
   if (sortedRounds.length === 0) {
     return (
@@ -53,7 +83,31 @@ export function LeagueFixture({ matches, currentRound, isOwner, leagueId, onEdit
 
   return (
     <div className="space-y-6">
-      {sortedRounds.map((round) => {
+      {/* Toggle button for showing all rounds */}
+      {sortedRounds.length > 2 && (
+        <div className="flex justify-center mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAllRounds(!showAllRounds)}
+            className="gap-2"
+          >
+            {showAllRounds ? (
+              <>
+                <ChevronsUp className="h-4 w-4" />
+                Ver menos
+              </>
+            ) : (
+              <>
+                <ChevronsDown className="h-4 w-4" />
+                Ver todas las fechas ({sortedRounds.length})
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {roundsToDisplay.map((round) => {
         const roundMatches = matchesByRound[round];
         const isRoundLocked = round > currentRound;
         const isCurrentRound = round === currentRound;
@@ -65,7 +119,7 @@ export function LeagueFixture({ matches, currentRound, isOwner, leagueId, onEdit
                 <CardTitle className="flex items-center gap-3">
                   Fecha {round}
                   {isCurrentRound && (
-                    <Badge variant="default" className="ml-2">
+                    <Badge variant="secondary" className="text-xs ml-2">
                       En Curso
                     </Badge>
                   )}

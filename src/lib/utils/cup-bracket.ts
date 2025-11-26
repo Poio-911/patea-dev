@@ -1,4 +1,4 @@
-import type { BracketMatch, CupRound, GroupTeam, Jersey } from '@/lib/types';
+import type { BracketMatch, CupRound, CupSeedingType, GroupTeam, Jersey } from '@/lib/types';
 
 /**
  * Get the appropriate cup round based on number of teams
@@ -49,11 +49,42 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 /**
+ * Seed teams by OVR using standard bracket seeding
+ * Strongest teams placed to meet only in later rounds
+ * Example: [1,8,4,5,2,7,3,6] for 8 teams
+ */
+function seedByOVR<T extends { ovr?: number }>(teams: T[]): T[] {
+  const sorted = [...teams].sort((a, b) => (b.ovr || 0) - (a.ovr || 0));
+  const n = teams.length;
+
+  if (n === 2) return sorted;
+
+  // Generate standard bracket seeding pattern recursively
+  function generateSeeds(depth: number): number[] {
+    if (depth === 0) return [0];
+    const prevSeeds = generateSeeds(depth - 1);
+    const maxSeed = Math.pow(2, depth);
+    const newSeeds: number[] = [];
+    for (const seed of prevSeeds) {
+      newSeeds.push(seed);
+      newSeeds.push(maxSeed - 1 - seed);
+    }
+    return newSeeds;
+  }
+
+  const rounds = Math.log2(n);
+  const seedIndices = generateSeeds(rounds);
+  return seedIndices.map(i => sorted[i]);
+}
+
+/**
  * Generate initial bracket for cup tournament
- * Teams are randomly distributed in the bracket
+ * @param teams - Array of teams to seed
+ * @param seedingType - 'random' for shuffle or 'ovr_based' for seeded bracket
  */
 export function generateBracket(
-  teams: GroupTeam[]
+  teams: GroupTeam[],
+  seedingType: CupSeedingType = 'random'
 ): BracketMatch[] {
   const numTeams = teams.length;
   const initialRound = getInitialRound(numTeams);
@@ -62,8 +93,10 @@ export function generateBracket(
     throw new Error(`Invalid number of teams: ${numTeams}. Must be 2, 4, 8, 16, or 32.`);
   }
 
-  // Shuffle teams randomly
-  const shuffledTeams = shuffleArray(teams);
+  // Seed teams based on seeding type
+  const seededTeams = seedingType === 'ovr_based'
+    ? seedByOVR(teams)
+    : shuffleArray(teams);
 
   // Calculate total matches needed for entire tournament
   // For single elimination: (n-1) matches total, where n = number of teams
@@ -97,8 +130,8 @@ export function generateBracket(
 
       // First round: assign teams directly
       if (roundIndex === 0) {
-        const team1 = shuffledTeams[teamIndex];
-        const team2 = shuffledTeams[teamIndex + 1];
+        const team1 = seededTeams[teamIndex];
+        const team2 = seededTeams[teamIndex + 1];
 
         bracketMatch.team1Id = team1.id;
         bracketMatch.team1Name = team1.name;

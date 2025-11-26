@@ -17,12 +17,12 @@ import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '..
 import { type GenerateMatchChronicleOutput, type GenerateMatchChronicleInput, MatchLocation } from '../../lib/types';
 import { generateMatchChronicleFlow } from '../../ai/flows/generate-match-chronicle';
 import { generateDuoImage } from '../../ai/flows/generate-duo-image';
-import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, GroupTeamMember, TeamAvailabilityPost, Match, GenerateDuoImageInput, League, LeagueFormat, CompetitionStatus, Cup, CupFormat, BracketMatch, CompetitionApplication, CompetitionFormat, HealthConnection, PlayerPerformance, GoogleFitAuthUrl, GoogleFitSession, SocialActivity, Follow, NotificationType } from '../types';
+import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, GroupTeamMember, TeamAvailabilityPost, Match, GenerateDuoImageInput, League, LeagueFormat, CompetitionStatus, Cup, CupFormat, CupSeedingType, BracketMatch, CompetitionApplication, CompetitionFormat, HealthConnection, PlayerPerformance, GoogleFitAuthUrl, GoogleFitSession, SocialActivity, Follow, NotificationType } from '../types';
 import { GOOGLE_FIT_CONFIG, calculateAttributeImpact } from '../config/google-fit';
 import { logger } from '../logger';
 import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse, type ErrorResponse } from '../errors';
 import { addDays, format } from 'date-fns';
-import { generateBracket, advanceWinner, isTournamentComplete, getChampion, getRunnerUp, getNextRound } from '../../lib/utils/cup-bracket';
+import { generateBracket, advanceWinner, isTournamentComplete, getChampion, getRunnerUp, getNextRound, getCurrentRound } from '../../lib/utils/cup-bracket';
 import { publishMatchPlayedActivity } from './social-actions';
 
 // --- Server Actions ---
@@ -1224,7 +1224,8 @@ export async function createCupAction(
  * Start cup and generate bracket
  */
 export async function startCupAction(
-    cupId: string
+    cupId: string,
+    seedingType: CupSeedingType = 'random'
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const cupDoc = await getAdminDb().collection('cups').doc(cupId).get();
@@ -1249,14 +1250,45 @@ export async function startCupAction(
             ...doc.data(),
         })) as GroupTeam[];
 
+        // Calculate team OVR if using OVR-based seeding
+        let teamsWithOVR = teams;
+        if (seedingType === 'ovr_based') {
+            teamsWithOVR = await Promise.all(
+                teams.map(async (team) => {
+                    const playerIds = team.members.map(m => m.playerId);
+                    const allPlayers: Player[] = [];
+
+                    // Fetch in batches of 10 (Firestore limit)
+                    for (let i = 0; i < playerIds.length; i += 10) {
+                        const batch = playerIds.slice(i, i + 10);
+                        const playersSnapshot = await getAdminDb()
+                            .collection('players')
+                            .where('__name__', 'in', batch)
+                            .get();
+                        allPlayers.push(
+                            ...playersSnapshot.docs.map(doc =>
+                                ({ id: doc.id, ...doc.data() } as Player)
+                            )
+                        );
+                    }
+
+                    const totalOVR = allPlayers.reduce((sum, p) => sum + p.ovr, 0);
+                    const averageOVR = allPlayers.length > 0 ? totalOVR / allPlayers.length : 0;
+
+                    return { ...team, ovr: averageOVR };
+                })
+            );
+        }
+
         // Generate bracket
-        const bracket = generateBracket(teams);
+        const bracket = generateBracket(teamsWithOVR, seedingType);
 
         // Update cup with bracket
         await getAdminDb().collection('cups').doc(cupId).update({
             status: 'in_progress',
             bracket,
             currentRound: bracket[0]?.round || 'final',
+            seedingType,
         });
 
         return { success: true };
@@ -2037,6 +2069,14 @@ export async function advanceCupWinnerAction(
         const updateData: Partial<Cup> = {
             bracket: updatedBracket,
         };
+
+        // Update current round if tournament is still in progress
+        if (!isComplete) {
+            const currentActiveRound = getCurrentRound(updatedBracket);
+            if (currentActiveRound && currentActiveRound !== cup.currentRound) {
+                updateData.currentRound = currentActiveRound;
+            }
+        }
 
         if (isComplete) {
             const champion = getChampion(updatedBracket);

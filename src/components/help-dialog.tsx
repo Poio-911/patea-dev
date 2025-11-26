@@ -13,13 +13,12 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
-import { Users, HelpCircle } from 'lucide-react';
+import { Users, HelpCircle, UsersRound } from 'lucide-react';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { MatchIcon } from '@/components/icons/match-icon';
 import { EvaluationIcon } from '@/components/icons/evaluation-icon';
 import { FindMatchIcon } from '@/components/icons/find-match-icon';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './ui/carousel';
-import { TeamsIcon } from '@/components/icons/teams-icon';
 
 interface HelpDialogProps {
   forceOpen?: boolean;
@@ -35,7 +34,7 @@ const tutorialContent = [
         content: "Todo arranca acá. Un 'grupo' es tu cuadro. Podés crear el tuyo o sumarte a uno existente con un código. Tu 'grupo activo' es donde pasa toda la movida.",
     },
     {
-        icon: TeamsIcon,
+        icon: UsersRound,
         title: "Paso 2: Creá Equipos y Planteles",
         content: "En 'Grupos', podés crear equipos persistentes con su propia camiseta y plantel. En 'Jugadores', agregá perfiles para quienes no usan la app. ¡Las cartas de cada integrante evolucionan con el tiempo!",
     },

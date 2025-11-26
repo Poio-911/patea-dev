@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
 import { doc, collection, query, where } from 'firebase/firestore';
-import type { Cup, GroupTeam, BracketMatch } from '@/lib/types';
+import type { Cup, GroupTeam, BracketMatch, CupSeedingType } from '@/lib/types';
 import { Loader2, Trophy, Settings, Trash2, Play, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -42,6 +42,7 @@ export default function CupDetailPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [seedingType, setSeedingType] = useState<CupSeedingType>('random');
 
   // Fetch cup data
   const cupRef = useMemo(() => {
@@ -78,11 +79,11 @@ export default function CupDetailPage() {
 
     setIsStarting(true);
     try {
-      const result = await startCupAction(cup.id);
+      const result = await startCupAction(cup.id, seedingType);
       if (result.success) {
         toast({
           title: 'Copa iniciada',
-          description: 'El bracket ha sido generado y la copa está lista.',
+          description: `El bracket ha sido generado con sorteo ${seedingType === 'random' ? 'aleatorio' : 'por OVR'}.`,
         });
         setShowStartDialog(false);
       } else {
@@ -202,66 +203,69 @@ export default function CupDetailPage() {
       <div className="flex flex-col gap-6">
         {/* Header */}
         <div className="flex flex-col gap-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-4">
+          <div className="flex flex-col md:flex-row items-start justify-between gap-4 md:gap-8">
+            <div className="flex flex-col md:flex-row items-start gap-4 flex-1">
               {cup.logoUrl && (
-                <div className="w-20 h-20 rounded-lg overflow-hidden border shrink-0 bg-muted/30">
+                <div className="w-20 h-20 md:w-24 md:h-24 rounded-lg overflow-hidden border shrink-0 bg-muted/30 mx-auto md:mx-0">
                   <img src={cup.logoUrl} alt={cup.name} className="w-full h-full object-contain" />
                 </div>
               )}
-              <div className="flex-1">
-                <h1 className="text-3xl font-bold">{cup.name}</h1>
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge variant={cup.status === 'draft' ? 'secondary' : cup.status === 'completed' ? 'outline' : 'default'}>
+              <div className="flex-1 space-y-3">
+                <div className="flex items-start justify-between gap-4">
+                  <h1 className="text-2xl md:text-3xl font-bold leading-tight">{cup.name}</h1>
+                  {isOwner && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      {cup.status === 'draft' && (
+                        <Button onClick={() => setShowStartDialog(true)} size="sm" className="h-8">
+                          <Play className="mr-2 h-3 w-3" />
+                          Iniciar
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" onClick={() => setShowDeleteDialog(true)} className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                  <Badge variant={cup.status === 'draft' ? 'secondary' : cup.status === 'completed' ? 'outline' : 'default'} className="whitespace-nowrap">
                     {cup.status === 'draft' && 'Borrador'}
                     {cup.status === 'in_progress' && 'En Curso'}
                     {cup.status === 'completed' && 'Finalizada'}
                   </Badge>
-                  <span className="text-muted-foreground">·</span>
-                  <span className="text-sm text-muted-foreground">{cup.teams.length} equipos</span>
-                  <span className="text-muted-foreground">·</span>
-                  <span className="text-sm text-muted-foreground">Eliminación Directa</span>
-                  {organizer && (
-                    <>
-                      <span className="text-muted-foreground">·</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm text-muted-foreground">Organizado por</span>
-                        <div className="flex items-center gap-1">
-                          {organizer.photoUrl ? (
-                            <img src={organizer.photoUrl} alt={organizer.displayName} className="w-5 h-5 rounded-full object-cover" />
-                          ) : (
-                            <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
-                              <span className="text-[10px] font-bold">{organizer.displayName?.charAt(0) || '?'}</span>
-                            </div>
-                          )}
-                          <span className="text-sm font-medium">{organizer.displayName || 'Usuario'}</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
+                  <span>·</span>
+                  <span className="whitespace-nowrap">{cup.teams.length} equipos</span>
+                  <span>·</span>
+                  <span className="whitespace-nowrap">Eliminación Directa</span>
                 </div>
+
+                {organizer && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="text-sm text-muted-foreground">Organizado por</span>
+                    <div className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded-full">
+                      {organizer.photoUrl ? (
+                        <img src={organizer.photoUrl} alt={organizer.displayName} className="w-4 h-4 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full bg-muted flex items-center justify-center">
+                          <span className="text-[9px] font-bold">{organizer.displayName?.charAt(0) || '?'}</span>
+                        </div>
+                      )}
+                      <span className="text-sm font-medium truncate max-w-[120px]">{organizer.displayName || 'Usuario'}</span>
+                    </div>
+                  </div>
+                )}
+
                 {cup.currentRound && cup.status === 'in_progress' && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <Trophy className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">{getRoundName(cup.currentRound)}</span>
+                  <div className="flex items-center gap-2 mt-2 bg-primary/5 py-1 px-3 rounded-full w-fit">
+                    <Trophy className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-sm font-medium text-primary">{getRoundName(cup.currentRound)}</span>
                   </div>
                 )}
               </div>
             </div>
 
-            {isOwner && (
-              <div className="flex items-center gap-2">
-                {cup.status === 'draft' && (
-                  <Button onClick={() => setShowStartDialog(true)}>
-                    <Play className="mr-2 h-4 w-4" />
-                    Iniciar Copa
-                  </Button>
-                )}
-                <Button variant="destructive" size="icon" onClick={() => setShowDeleteDialog(true)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+
           </div>
         </div>
 
@@ -270,8 +274,8 @@ export default function CupDetailPage() {
           <ChampionCelebration
             championName={cup.championTeamName}
             championJersey={teams?.find(t => t.id === cup.championTeamId)?.jersey}
-            runnerUpName="Subcampeón"
-            runnerUpJersey={undefined}
+            runnerUpName={cup.runnerUpTeamName || 'Subcampeón'}
+            runnerUpJersey={teams?.find(t => t.id === cup.runnerUpTeamId)?.jersey}
           />
         )}
 
@@ -284,7 +288,7 @@ export default function CupDetailPage() {
 
           <TabsContent value="bracket" className="mt-6">
             {cup.bracket && cup.bracket.length > 0 ? (
-              <CupBracket bracket={cup.bracket} onMatchClick={handleMatchClick} />
+              <CupBracket bracket={cup.bracket} onMatchClick={handleMatchClick} currentRound={cup.currentRound} />
             ) : (
               <div className="text-center py-16 border-2 border-dashed rounded-xl">
                 <Trophy className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
@@ -329,11 +333,50 @@ export default function CupDetailPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Iniciar la copa?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se generará el bracket de eliminación directa con sorteo aleatorio.
-              Los {cup.teams.length} equipos serán distribuidos en el bracket.
+              Se generará el bracket de eliminación directa para los {cup.teams.length} equipos.
               Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          <div className="space-y-3 py-4">
+            <label className="text-sm font-medium">Tipo de sorteo:</label>
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-accent transition-colors">
+                <input
+                  type="radio"
+                  name="seedingType"
+                  value="random"
+                  checked={seedingType === 'random'}
+                  onChange={(e) => setSeedingType(e.target.value as CupSeedingType)}
+                  className="h-4 w-4"
+                />
+                <div className="flex-1">
+                  <div className="font-medium">Sorteo Aleatorio</div>
+                  <div className="text-xs text-muted-foreground">
+                    Los equipos se distribuyen al azar
+                  </div>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-accent transition-colors">
+                <input
+                  type="radio"
+                  name="seedingType"
+                  value="ovr_based"
+                  checked={seedingType === 'ovr_based'}
+                  onChange={(e) => setSeedingType(e.target.value as CupSeedingType)}
+                  className="h-4 w-4"
+                />
+                <div className="flex-1">
+                  <div className="font-medium">Sorteo por OVR</div>
+                  <div className="text-xs text-muted-foreground">
+                    Los equipos más fuertes se enfrentan en rondas finales
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isStarting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleStartCup} disabled={isStarting}>

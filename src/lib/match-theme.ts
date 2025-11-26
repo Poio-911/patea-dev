@@ -48,15 +48,15 @@ const matchThemes: Record<MatchType, MatchTheme> = {
         badge: 'bg-emerald-100 dark:bg-emerald-900/50',
         badgeText: 'text-emerald-800 dark:text-emerald-300',
         border: 'border-emerald-300 dark:border-emerald-700',
-        icon: 'TeamsIcon',
+        icon: 'UsersRound',
         label: 'Por Equipos',
         priority: 'casual',
     },
 
     league: {
         gradient: 'from-amber-500/30 via-orange-400/20 to-transparent',
-        badge: 'bg-gradient-to-r from-amber-500 to-orange-500',
-        badgeText: 'text-white font-bold',
+        badge: 'border-2 border-amber-600 bg-amber-50 dark:bg-amber-950/30',
+        badgeText: 'text-amber-700 dark:text-amber-400 font-semibold',
         border: 'border-amber-400 dark:border-amber-500',
         glow: 'shadow-lg shadow-amber-500/50',
         icon: 'Trophy',
@@ -66,8 +66,8 @@ const matchThemes: Record<MatchType, MatchTheme> = {
 
     cup: {
         gradient: 'from-red-500/30 via-orange-500/20 to-transparent',
-        badge: 'bg-gradient-to-r from-red-500 to-orange-500',
-        badgeText: 'text-white font-bold',
+        badge: 'border-2 border-red-600 bg-red-50 dark:bg-red-950/30',
+        badgeText: 'text-red-700 dark:text-red-400 font-semibold',
         border: 'border-red-400 dark:border-red-500',
         glow: 'shadow-lg shadow-red-500/50',
         icon: 'Trophy',
