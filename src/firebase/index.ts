@@ -15,7 +15,7 @@ export function initializeFirebase() {
   const auth = getAuth(app);
   const firestore = getFirestore(app);
   let messaging: Messaging | null = null;
-  
+
   // ✅ FIX: Only initialize messaging on the client-side where 'window' is available.
   if (typeof window !== 'undefined') {
     try {
@@ -28,7 +28,12 @@ export function initializeFirebase() {
   return { firebaseApp: app, auth, firestore, messaging };
 }
 
+// Initialize and export instances for direct use
+const { auth, firestore: db } = initializeFirebase();
+
 export {
+  auth,
+  db,
   FirebaseProvider,
   FirebaseClientProvider,
   useCollection,

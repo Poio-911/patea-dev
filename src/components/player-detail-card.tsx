@@ -8,7 +8,7 @@ import type { Player } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
 import { Button } from './ui/button';
-import { Sparkles, Loader2, Scissors, Share2 } from 'lucide-react';
+import { Sparkles, Loader2, Scissors, Share2, ShoppingCart } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/lib/logger';
@@ -18,6 +18,7 @@ import { ImageCropperDialog } from './image-cropper-dialog';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from './ui/dialog';
 import { FollowButton } from './social/follow-button';
 import { ShareButton } from './social/share-button';
+import { CreditPackagesDialog } from './payments/credit-packages-dialog';
 
 type PlayerDetailCardProps = {
   player: Player;
@@ -44,6 +45,7 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile }
   const { user } = useUser();
   const { toast } = useToast();
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [showCreditPackages, setShowCreditPackages] = useState(false);
 
   const playerName = player.name || 'Jugador';
   
@@ -139,39 +141,66 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile }
           )}
 
           {isCurrentUserProfile && (
-            <div className="grid grid-cols-2 gap-2 w-full my-4">
-              <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="default" size="sm" disabled={isGeneratingAI || (player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0)}>
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4" />
-                        <span>Generar IA</span>
-                        <Badge className="bg-primary-foreground/20 text-primary-foreground">{player.cardGenerationCredits || 0}</Badge>
-                      </div>
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>¿Confirmar generación de imagen?</AlertDialogTitle>
-                      <AlertDialogDescription>Esto usará 1 de tus {player.cardGenerationCredits} créditos mensuales. Esta acción no se puede deshacer.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleGenerateAIPhoto} disabled={isGeneratingAI}>
-                        {isGeneratingAI ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                        Confirmar y Usar Crédito
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-              </AlertDialog>
-              <ImageCropperDialog player={player} onSaveComplete={onPhotoUpdate}>
-                <Button variant="secondary" size="sm" disabled={isGeneratingAI}>
-                  <Scissors className="mr-2 h-4 w-4" />
-                  Cambiar Foto
-                </Button>
-              </ImageCropperDialog>
+            <div className="flex flex-col gap-2 w-full my-4">
+              <div className="grid grid-cols-2 gap-2 w-full">
+                {player.cardGenerationCredits && player.cardGenerationCredits > 0 ? (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="default" size="sm" disabled={isGeneratingAI}>
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-4 w-4" />
+                          <span>Generar IA</span>
+                          <Badge className="bg-primary-foreground/20 text-primary-foreground">{player.cardGenerationCredits || 0}</Badge>
+                        </div>
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Confirmar generación de imagen?</AlertDialogTitle>
+                        <AlertDialogDescription>Esto usará 1 de tus {player.cardGenerationCredits} créditos. Esta acción no se puede deshacer.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleGenerateAIPhoto} disabled={isGeneratingAI}>
+                          {isGeneratingAI ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                          Confirmar y Usar Crédito
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                ) : (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => setShowCreditPackages(true)}
+                    className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-white"
+                  >
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Comprar Créditos
+                  </Button>
+                )}
+                <ImageCropperDialog player={player} onSaveComplete={onPhotoUpdate}>
+                  <Button variant="secondary" size="sm" disabled={isGeneratingAI}>
+                    <Scissors className="mr-2 h-4 w-4" />
+                    Cambiar Foto
+                  </Button>
+                </ImageCropperDialog>
+              </div>
+
+              {/* Mensaje cuando no hay créditos */}
+              {player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0 && (
+                <p className="text-xs text-center text-muted-foreground">
+                  Sin créditos. Compra un paquete para generar fotos con IA.
+                </p>
+              )}
             </div>
           )}
+
+          {/* Dialog de paquetes de créditos */}
+          <CreditPackagesDialog
+            open={showCreditPackages}
+            onOpenChange={setShowCreditPackages}
+          />
 
           <AttributesGrid player={player} />
         </div>

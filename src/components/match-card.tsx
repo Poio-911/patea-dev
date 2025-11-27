@@ -27,7 +27,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, User, MessageCircle, FileSignature, MoreVertical, Users, UserCheck, Shuffle, UsersRound } from 'lucide-react';
+import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, User, MessageCircle, FileSignature, MoreVertical, Users, UserCheck, Shuffle, UsersRound } from 'lucide-react';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import Link from 'next/link';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
@@ -45,6 +45,7 @@ import { useMatchPermissions } from '@/hooks/use-match-permissions';
 import { getMatchTheme, getMatchTypeLabel } from '@/lib/match-theme';
 import { Trophy, Handshake } from 'lucide-react';
 import { CountdownTimer } from './ui/countdown-timer';
+import { MatchWeatherForecast } from './matches/match-weather-forecast';
 
 
 type MatchCardProps = {
@@ -57,10 +58,6 @@ const statusConfig: Record<Match['status'], { label: string; className: string; 
     active: { label: 'Activo', className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300', neonClass: 'text-shadow-[0_0_10px_hsl(var(--accent))]', gradientClass: 'from-green-500/20' },
     completed: { label: 'Finalizado', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', neonClass: 'text-shadow-[0_0_8px_hsl(var(--muted-foreground))]', gradientClass: 'from-gray-500/20' },
     evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300', neonClass: 'text-shadow-[0_0_10px_hsl(var(--chart-2))]', gradientClass: 'from-purple-500/20' },
-};
-
-const weatherIcons: Record<string, React.ElementType> = {
-    Sun, Cloud, Cloudy, CloudRain, Wind, Zap,
 };
 
 export function MatchCard({ match, allPlayers }: MatchCardProps) {
@@ -117,8 +114,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
 
     const currentStatus = statusConfig[match.status] || statusConfig.completed;
-
-    const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
 
     const JoinLeaveButton = () => {
         if (match.type === 'collaborative' && match.status === 'upcoming') {
@@ -214,10 +209,9 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     </div>
                 </div>
 
-                {WeatherIcon && match.weather && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground border-t pt-3 mt-3">
-                        <WeatherIcon className="h-4 w-4 text-blue-400" />
-                        <span>{match.weather.description} ({match.weather.temperature}°C)</span>
+                {match.weather && (
+                    <div className="border-t pt-3 mt-3">
+                        <MatchWeatherForecast match={match} compact />
                     </div>
                 )}
 

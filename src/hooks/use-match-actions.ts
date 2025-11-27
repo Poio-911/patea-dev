@@ -6,6 +6,11 @@ import { useToast } from '@/hooks/use-toast';
 import { generateTeamsAction } from '@/lib/actions/server-actions';
 import { logger } from '@/lib/logger';
 import { celebrationConfetti, miniConfetti } from '@/lib/animations';
+import {
+  notifyPlayerAddedToMatchAction,
+  notifyTeamsShuffledAction,
+  notifyEvaluationAvailableAction
+} from '@/lib/actions/notification-actions';
 
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
@@ -133,6 +138,19 @@ export function useMatchActions({
         description: `El partido "${freshMatch.title}" ha sido marcado como finalizado.`
       });
 
+      // Send push notification to players about evaluation availability
+      if (finalTeams && finalTeams.length > 0) {
+        const matchPlayers = allGroupPlayers.filter(p => freshMatch.playerUids.includes(p.id));
+        const realPlayerUids = matchPlayers.filter(isRealUser).map(p => p.id);
+
+        if (realPlayerUids.length > 0) {
+          notifyEvaluationAvailableAction({
+            playerIds: realPlayerUids,
+            matchTitle: freshMatch.title,
+          }).catch(err => logger.error('Failed to send evaluation notification', err));
+        }
+      }
+
     } catch (error: any) {
       logger.error("Error finishing match", error, { matchId: match.id });
       toast({
@@ -210,6 +228,16 @@ export function useMatchActions({
         toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${match.title}".` });
       }
       await batch.commit();
+
+      // Send push notification to new player (after commit)
+      if (!isUserInMatch) {
+        notifyPlayerAddedToMatchAction({
+          playerId: userId,
+          matchTitle: match.title,
+          matchDate: match.date,
+          matchLocation: match.location.name,
+        }).catch(err => logger.error('Failed to send join notification', err));
+      }
     } catch (error) {
       console.error("Error joining/leaving match: ", error);
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo completar la operación.' });
@@ -248,6 +276,12 @@ export function useMatchActions({
 
       celebrationConfetti();
       toast({ title: "¡Equipos Sorteados!", description: "La IA ha generado nuevas formaciones." });
+
+      // Send push notification to all players about team change
+      notifyTeamsShuffledAction({
+        playerIds: match.playerUids,
+        matchTitle: match.title,
+      }).catch(err => logger.error('Failed to send team shuffle notification', err));
 
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message || "No se pudieron volver a sortear los equipos." });

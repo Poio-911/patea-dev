@@ -44,7 +44,9 @@ export type Player = {
   ownerUid: string; // The UID of the user who created this player
   groupId: string | null;
   cardGenerationCredits?: number;
-  lastCreditReset?: string; // ISO 8601 string
+  lastCreditReset?: string; // ISO 8601 string - reset mensual gratis
+  totalCreditsPurchased?: number; // Total histórico de créditos comprados
+  lastPurchaseDate?: string; // ISO 8601 string - fecha de última compra
   cropPosition?: { x: number; y: number };
   cropZoom?: number;
 } & DocumentData;
@@ -122,6 +124,14 @@ export type Match = {
     description: string;
     icon: string;
     temperature: number;
+    // Forecast expandido (opcional)
+    humidity?: number; // 0-100
+    windSpeed?: number; // km/h
+    precipitation?: number; // 0-100 probability
+    uvIndex?: number; // 0-11+
+    feelsLike?: number; // °C
+    conditions?: string;
+    recommendation?: string;
   };
   chronicle?: string; // AI-generated match summary
   startTimestamp?: string;
@@ -135,6 +145,24 @@ export type Match = {
   };
   goalScorers?: MatchGoalScorer[]; // Individual goal scorers
   cards?: MatchCard[]; // Yellow and red cards
+  // Confirmación de asistencia (opcional)
+  requiresConfirmation?: boolean; // Si es true, mostrar confirmación
+  confirmationDeadline?: string; // ISO 8601 - deadline opcional
+  confirmedCount?: number; // Cache de confirmados
+  declinedCount?: number; // Cache de declinados
+  maybeCount?: number; // Cache de "tal vez"
+  // Cancha predefinida (opcional)
+  venueId?: string; // Si está presente, usar info de la cancha en lugar de location custom
+  // Costos y split
+  cost?: {
+    total: number;
+    currency: string;
+    splitBetweenPlayers?: boolean; // Si es true, dividir entre confirmados
+    perPlayerAmount?: number; // Calculado automáticamente si split es true
+  };
+  // Lista de espera/suplentes
+  waitlist?: string[]; // UserIds en lista de espera
+  maxPlayers?: number; // Límite de jugadores confirmados (después van a waitlist)
 } & DocumentData;
 
 export type Team = {
@@ -187,14 +215,55 @@ export type GroupTeam = {
 } & DocumentData;
 
 
+export type GroupMember = {
+  userId: string;
+  role: 'admin' | 'moderator' | 'member';
+  joinedAt: string;
+  addedBy?: string; // userId who added this member
+} & DocumentData;
+
 export type Group = {
   id: string;
   name: string;
   ownerUid: string;
   inviteCode: string;
-  members: string[];
+  members: string[]; // DEPRECATED: Array simple de IDs (mantener por compatibilidad)
+  memberRoles?: GroupMember[]; // NUEVO: Array con roles y metadata
+  description?: string;
+  createdAt?: string;
 } & DocumentData;
 
+// --- CANCHAS / VENUES ---
+
+export type VenueSurface = 'grass' | 'artificial' | 'indoor' | 'clay' | 'concrete';
+
+export type Venue = {
+  id: string;
+  groupId: string; // Pertenece a un grupo específico
+  name: string;
+  address: string;
+  location: {
+    lat: number;
+    lng: number;
+  };
+  pricePerHour: number;
+  currency: string; // 'ARS', 'USD', etc.
+  surface?: VenueSurface;
+  capacity?: number; // Cantidad máxima de jugadores
+  fieldSize?: string; // '5v5', '7v7', '11v11', etc.
+  hasLighting?: boolean;
+  hasParking?: boolean;
+  hasChangingRooms?: boolean;
+  hasShowers?: boolean;
+  contactPhone?: string;
+  contactEmail?: string;
+  website?: string;
+  notes?: string;
+  photos?: string[]; // URLs de fotos
+  createdBy: string;
+  createdAt: string;
+  updatedAt?: string;
+} & DocumentData;
 
 export type NotificationType =
   | 'match_invite'
@@ -334,6 +403,13 @@ export type UserProfile = {
   photoURL: string | null;
   groups?: string[];
   activeGroupId?: string | null;
+  fcmTokens?: string[]; // Firebase Cloud Messaging tokens for push notifications
+  notificationPreferences?: {
+    matchInvites?: boolean;
+    matchReminders?: boolean;
+    teamChanges?: boolean;
+    matchUpdates?: boolean;
+  };
 };
 
 export type AppHelpInput = {
@@ -667,3 +743,67 @@ export type SocialActivity = {
 } & DocumentData;
 
 // Note: Notification types are now unified with the main notification system above (lines 199-231)
+
+// ============================================
+// MATCH INVITATIONS & CONFIRMATIONS
+// ============================================
+
+// Respuesta de invitación a partido
+export type MatchInvitationResponse = 'pending' | 'confirmed' | 'declined' | 'maybe';
+
+// Invitación individual a un partido
+export type MatchInvitation = {
+  id: string; // userId
+  matchId: string;
+  userId: string;
+  response: MatchInvitationResponse;
+  respondedAt?: string; // ISO 8601
+  notifiedAt: string; // ISO 8601
+} & DocumentData;
+
+// Propuesta de fecha para partido (votación)
+export type MatchDateProposal = {
+  id: string;
+  matchId: string;
+  proposedBy: string; // userId
+  date: string; // ISO 8601 date
+  time: string; // HH:mm
+  votes: string[]; // Array de userIds que votaron
+  createdAt: string; // ISO 8601
+} & DocumentData;
+
+// ============================================
+// MONETIZATION & PAYMENTS
+// ============================================
+
+// Paquetes de créditos disponibles para compra
+export type CreditPackage = {
+  id: string;
+  credits: number;
+  price: number;           // En pesos argentinos
+  title: string;
+  description?: string;
+  popular?: boolean;       // Destacar en UI
+  discountPercentage?: number; // e.g., 20 means 20% discount
+} & DocumentData;
+
+// Transacción de compra de créditos
+export type CreditTransaction = {
+  id: string;
+  userId: string;
+  packageId: string;
+  credits: number;
+  amount: number;          // Total pagado en pesos
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  paymentMethod: 'mercadopago';
+  mpPreferenceId?: string;  // Mercado Pago preference ID
+  mpPaymentId?: string;     // Mercado Pago payment ID
+  createdAt: string;
+  completedAt?: string;
+  // Metadata para auditoría
+  metadata?: {
+    userEmail?: string;
+    userName?: string;
+    packageTitle?: string;
+  };
+} & DocumentData;

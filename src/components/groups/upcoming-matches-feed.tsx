@@ -8,6 +8,7 @@ import { Calendar, MapPin, Newspaper } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '../ui/button';
 import { JerseyPreview } from '../team-builder/jersey-preview';
+import { MatchWeatherForecast } from '../matches/match-weather-forecast';
 
 interface UpcomingMatchesFeedProps {
     matches: Match[];
@@ -41,6 +42,11 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
                                     <MapPin className="h-3 w-3" />
                                     <span className="truncate">{match.location.name}</span>
                                 </div>
+                                {match.weather && (
+                                    <div className="mt-2 border-t pt-2">
+                                        <MatchWeatherForecast match={match} compact />
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </Link>
@@ -76,6 +82,11 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
                                                 <MapPin className="h-3 w-3" />
                                                 <span>{match.location.name}</span>
                                             </div>
+                                            {match.weather && (
+                                                <div className="mt-2 border-t pt-2">
+                                                    <MatchWeatherForecast match={match} compact />
+                                                </div>
+                                            )}
                                         </CardContent>
                                     </Card>
                                 </Link>
@@ -97,6 +108,11 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
                                         </div>
                                     </div>
                                     <p className="text-center text-xs text-muted-foreground mt-2">{format(new Date(match.date), "E, d MMM, HH:mm'hs'", { locale: es })}</p>
+                                    {match.weather && (
+                                        <div className="mt-2 border-t pt-2">
+                                            <MatchWeatherForecast match={match} compact />
+                                        </div>
+                                    )}
                                 </Card>
                             </Link>
                         );
@@ -126,6 +142,11 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
                                     <MapPin className="h-3 w-3" />
                                     <span>{match.location.name}</span>
                                 </div>
+                                {match.weather && (
+                                    <div className="mt-2 border-t pt-2">
+                                        <MatchWeatherForecast match={match} compact />
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </Link>

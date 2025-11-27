@@ -32,6 +32,7 @@ import { PlayerStatsCard } from '@/components/dashboard/player-stats-card';
 import { OVRProgressionChart } from '@/components/dashboard/ovr-progression-chart';
 import { SocialFeed } from '@/components/social/social-feed';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
+import { NotificationPermissionPrompt } from '@/components/notifications/notification-permission-prompt';
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
     upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
@@ -245,6 +246,10 @@ function DashboardContent() {
         title="¡Bienvenid@ a tu Vestuario!"
         description="Este es tu panel de control. Acá vas a ver un resumen de todo: tu próximo partido, los cracks de tu grupo, y una opción clave: la 'Visibilidad Pública', que te permite ser encontrado por otros organizadores."
       />
+
+      {/* Notification Permission Banner */}
+      <NotificationPermissionPrompt variant="banner" />
+
       <div className="flex items-center gap-3">
         <MateIcon className="h-8 w-8 text-primary" />
         <PageHeader

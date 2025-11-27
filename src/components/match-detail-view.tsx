@@ -22,6 +22,7 @@ import { AvailablePlayersSection } from './available-players-section';
 import { ImportActivityDialog } from './health/import-activity-dialog';
 import { PhysicalMetricsCard } from './health/physical-metrics-card';
 import { CupMatchView } from './cup/CupMatchView';
+import { MatchWeatherForecast } from './matches/match-weather-forecast';
 import { logger } from '@/lib/logger';
 
 interface MatchDetailViewProps {
@@ -192,6 +193,9 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 isOwner={permissions.isOwner}
               />
             )}
+
+            {/* Pronóstico del clima expandido */}
+            {match.weather && <MatchWeatherForecast match={match} />}
 
             {match.status === 'evaluated' && <MatchChronicleCard match={match} />}
 

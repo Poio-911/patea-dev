@@ -42,7 +42,21 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isOwner(request.resource.data.ownerUid);
       // Solo el dueño del grupo puede actualizarlo o borrarlo.
+      // NOTA: La gestión de roles (memberRoles) se maneja en Server Actions.
+      // Los permisos granulares (admin, moderator, member) se verifican allí.
+      // Roles disponibles:
+      //   - admin: Control total del grupo
+      //   - moderator: Gestiona partidos y contenido
+      //   - member: Acceso básico de lectura
       allow update, delete: if isOwner(get(/databases/$(database)/documents/groups/$(groupId)).data.ownerUid);
+    }
+
+    // Colección de Canchas (Venues)
+    match /venues/{venueId} {
+      // Cualquier usuario autenticado puede leer canchas
+      allow read: if isAuthenticated();
+      // La creación/edición/eliminación se maneja en Server Actions con permisos de grupo
+      allow write: if false;
     }
     
     // Colección de Equipos Persistentes
@@ -62,17 +76,36 @@ service cloud.firestore {
 
     // Colección de Partidos
     match /matches/{matchId} {
-      // ✅ REGLA ABIERTA: Cualquier usuario autenticado puede leer/escribir. 
+      // ✅ REGLA ABIERTA: Cualquier usuario autenticado puede leer/escribir.
       // La lógica de negocio y permisos se maneja en las Server Actions.
       // Esto simplifica enormemente las reglas y evita errores de permisos en el cliente.
       allow read, write: if isAuthenticated();
 
-      // Subcolecciones de partido
+      // Subcolecciones de partido (invitations, dateProposals, etc.)
+      // - invitations: Respuestas de jugadores (confirmed/declined/maybe/pending)
+      // - dateProposals: Propuestas de fechas alternativas con votación
       match /{subcollection}/{docId} {
         allow read, write: if isAuthenticated();
       }
     }
-    
+
+    // --- MONETIZACIÓN ---
+
+    // Paquetes de créditos (solo lectura para usuarios)
+    match /creditPackages/{packageId} {
+      allow read: if true;  // Públicos para mostrar en la tienda
+      allow write: if false; // Solo admin/server puede crear/modificar
+    }
+
+    // Transacciones de compra (privadas, solo server-side)
+    match /creditTransactions/{transactionId} {
+      // Solo el usuario dueño puede leer su propia transacción
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.userId;
+      // Solo server-side puede crear/actualizar
+      allow write: if false;
+    }
+
     // Regla de comodín final, un poco más restrictiva.
     match /{document=**} {
       allow read, write: if isAuthenticated();

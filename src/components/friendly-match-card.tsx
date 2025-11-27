@@ -9,6 +9,7 @@ import { Calendar, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
+import { MatchWeatherForecast } from './matches/match-weather-forecast';
 
 interface FriendlyMatchCardProps {
     match: Match;
@@ -58,6 +59,11 @@ export function FriendlyMatchCard({ match }: FriendlyMatchCardProps) {
                         <p className="font-medium text-foreground">{match.location.name}</p>
                     </div>
                 </div>
+                {match.weather && (
+                    <div className="border-t pt-3">
+                        <MatchWeatherForecast match={match} compact />
+                    </div>
+                )}
             </CardContent>
 
             <CardFooter className="flex gap-2 border-t p-2">

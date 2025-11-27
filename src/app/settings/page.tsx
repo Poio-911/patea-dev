@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { LinkGoogleFitButton } from '@/components/health/link-google-fit-button';
 import { User, Settings as SettingsIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { NotificationSettings } from '@/components/notifications/notification-permission-prompt';
 
 export default function SettingsPage() {
   const { user, loading } = useUser();
@@ -93,11 +94,22 @@ export default function SettingsPage() {
         <LinkGoogleFitButton />
       </div>
 
+      {/* Notifications Section */}
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold mb-1">Notificaciones</h2>
+          <p className="text-sm text-muted-foreground">
+            Gestioná cómo querés recibir notificaciones sobre partidos y eventos
+          </p>
+        </div>
+        <NotificationSettings />
+      </div>
+
       {/* Future Sections Placeholder */}
       <Card className="border-dashed">
         <CardContent className="pt-6">
           <p className="text-center text-sm text-muted-foreground">
-            Próximamente: Más opciones de configuración
+            Más opciones de configuración próximamente
           </p>
         </CardContent>
       </Card>
