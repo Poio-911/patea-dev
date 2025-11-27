@@ -20,16 +20,27 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
       },
-       {
+      {
         protocol: 'https',
         hostname: 'storage.googleapis.com',
       },
     ],
   },
+
+  // Skip trailing slash redirect to avoid generating error pages
+  skipTrailingSlashRedirect: true,
+
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',
     },
+    // Disable ISR memory cache to prevent static generation
+    isrMemoryCacheSize: 0,
+  },
+
+  // Disable static optimization completely
+  generateBuildId: async () => {
+    return 'build-' + Date.now();
   },
 
   // Webpack config to ensure clean paths
@@ -38,6 +49,16 @@ const nextConfig = {
     if (!isServer) {
       config.devtool = false;
     }
+
+    // Exclude genkit from client bundle
+    if (!isServer) {
+      config.resolve = config.resolve || {};
+      config.resolve.alias = config.resolve.alias || {};
+      config.resolve.alias['genkit'] = false;
+      config.resolve.alias['@genkit-ai/core'] = false;
+      config.resolve.alias['@opentelemetry/instrumentation'] = false;
+    }
+
     return config;
   },
 };
