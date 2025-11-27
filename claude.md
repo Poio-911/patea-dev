@@ -1,5 +1,38 @@
 # Estructura del Proyecto - Pateá
 
+## 📚 Documentación Completa
+
+**IMPORTANTE: Antes de editar cualquier sección, SIEMPRE lee la documentación correspondiente.**
+
+La documentación completa está en `/docs/`:
+
+### Master
+- `/docs/README.md` - Índice maestro con overview completo de la app
+
+### AI Flows (12 flows)
+- `/docs/ai-flows/README.md` - Índice de todos los flujos de IA
+- `/docs/ai-flows/*.md` - Documentación detallada de cada flujo
+  - Schemas de input/output
+  - Ejemplos de uso
+  - Integración en la app
+
+### Secciones Funcionales (8 secciones)
+- `/docs/sections/01-dashboard.md` - Dashboard y vista principal
+- `/docs/sections/02-players.md` - Sistema de jugadores (CRÍTICO - 400+ líneas)
+- `/docs/sections/03-matches.md` - Gestión de partidos
+- `/docs/sections/04-competitions.md` - Ligas y copas
+- `/docs/sections/05-groups-teams.md` - Grupos y equipos
+- `/docs/sections/06-health-fitness.md` - Google Fit integration
+- `/docs/sections/07-social.md` - Feed social
+- `/docs/sections/08-auth-settings.md` - Auth y configuración
+
+**Workflow recomendado:**
+1. Lee `/docs/sections/[seccion].md` antes de editar componentes de esa sección
+2. Lee `/docs/ai-flows/[flow].md` antes de modificar flujos de IA
+3. Consulta `/docs/README.md` para entender el contexto general
+
+---
+
 ## 📁 Estructura General
 
 ```
@@ -143,3 +176,5 @@ groups/
 2. **Crop automático**: Después de generar con IA, se resetea a `{ x: 50, y: 50 }` y `zoom: 1`
 3. **Real-time**: Usar `useDoc` para sincronización automática (no actualizar estado manualmente)
 4. **Créditos**: Generación IA consume `cardGenerationCredits`
+5. **DOCUMENTACIÓN**: Siempre consultar `/docs/` antes de editar secciones importantes
+
