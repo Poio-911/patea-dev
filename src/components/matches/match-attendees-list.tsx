@@ -102,7 +102,7 @@ export function MatchAttendeesList({
 
             // Recargar información de jugadores
             const updatedPlayerPromises = updatedInvitations.map(async (invitation) => {
-              const playerDoc = await db.collection('players').doc(invitation.userId).get();
+              const playerDoc = await getDoc(doc(db, 'players', invitation.userId));
               const playerData = playerDoc.data();
 
               return {
