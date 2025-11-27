@@ -1,11 +1,13 @@
 'use server';
 
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
-import { db } from '@/firebase/admin-init';
+import { getAdminDb } from '@/firebase/admin-init';
 import { auth } from '@/firebase/index';
 import { nanoid } from 'nanoid';
 import type { CreditPackage, CreditTransaction } from '@/lib/types';
 import { FieldValue } from 'firebase-admin/firestore';
+
+const db = getAdminDb();
 
 // Inicializar Mercado Pago
 const client = new MercadoPagoConfig({

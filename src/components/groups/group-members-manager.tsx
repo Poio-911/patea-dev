@@ -209,7 +209,7 @@ export function GroupMembersManager({ groupId, ownerId }: GroupMembersManagerPro
                       <div className="flex items-center gap-2">
                         <p className="font-semibold">{member.name}</p>
                         {isOwner && (
-                          <Crown className="w-4 h-4 text-amber-500" title="Creador del grupo" />
+                          <Crown className="w-4 h-4 text-amber-500" aria-label="Creador del grupo" />
                         )}
                         {isCurrentUser && (
                           <span className="text-xs text-muted-foreground">(Tú)</span>
