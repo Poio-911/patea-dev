@@ -173,11 +173,10 @@ export async function proposeMatchDateAction(
     const proposalData: MatchDateProposal = {
       id: '', // Se asignará por Firestore
       matchId,
-      proposedDate,
-      proposedTime,
+      date: proposedDate,
+      time: proposedTime,
       proposedBy: userId,
       votes: [userId], // El propositor vota automáticamente por su propuesta
-      votesCount: 1,
       createdAt: new Date().toISOString(),
     };
 

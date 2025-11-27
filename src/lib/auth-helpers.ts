@@ -12,6 +12,7 @@ import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 import { getApps } from 'firebase-admin/app';
 import { ErrorCodes, createError, formatErrorResponse, type ErrorResponse } from './errors';
+import { cookies } from 'next/headers';
 
 // Función lazy para obtener instancias admin solo cuando se necesitan
 function getAdminInstances() {
@@ -24,6 +25,35 @@ function getAdminInstances() {
     adminAuth: getAdminAuth(adminApp),
     adminDb: getAdminFirestore(adminApp),
   };
+}
+
+/**
+ * Obtiene la sesión del servidor desde cookies
+ * Verifica el token de Firebase Auth y retorna la información del usuario
+ */
+export async function getServerSession(): Promise<{ user: { uid: string; email?: string } } | null> {
+  try {
+    const cookieStore = await cookies();
+    const authToken = cookieStore.get('authToken')?.value;
+
+    if (!authToken) {
+      return null;
+    }
+
+    const { adminAuth } = getAdminInstances();
+    const decodedToken = await adminAuth.verifyIdToken(authToken);
+
+    return {
+      user: {
+        uid: decodedToken.uid,
+        email: decodedToken.email,
+      },
+    };
+  } catch (error) {
+    // Si falla la verificación del token, retornar null
+    console.warn('Failed to verify auth token:', error);
+    return null;
+  }
 }
 
 // ──────────────────────────────────────────────────────────────
