@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { CheckCircle2, XCircle, HelpCircle, Clock, Users } from 'lucide-react';
 import { getMatchInvitationsAction } from '@/lib/actions/match-invitation-actions';
-import { collection, doc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import type { MatchInvitation, MatchInvitationResponse } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -76,7 +76,7 @@ export function MatchAttendeesList({
 
         // Cargar información de los jugadores desde Firestore
         const playerPromises = invitations.map(async (invitation) => {
-          const playerDoc = await db.collection('players').doc(invitation.userId).get();
+          const playerDoc = await getDoc(doc(db, 'players', invitation.userId));
           const playerData = playerDoc.data();
 
           return {
