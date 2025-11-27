@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { DollarSign, Users, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { getMatchInvitationsAction } from '@/lib/actions/match-invitation-actions';
 import { db } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import type { Match, MatchInvitation } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -59,7 +60,7 @@ export function MatchCostSplit({ match }: MatchCostSplitProps) {
       const playersData: PlayerPaymentInfo[] = [];
 
       for (const invitation of confirmedInvitations) {
-        const playerDoc = await db.collection('players').doc(invitation.userId).get();
+        const playerDoc = await getDoc(doc(db, 'players', invitation.userId));
         const playerData = playerDoc.data();
 
         playersData.push({

@@ -385,3 +385,115 @@ Type error: Property 'collection' does not exist on type 'Firestore'.
 [debug] [2025-11-27T19:55:06.077Z] Error: ENOENT: no such file or directory, open 'C:\pateá\.next\export-marker.json'
 [error] 
 [error] Error: An unexpected error has occurred.
+[debug] [2025-11-27T19:55:31.293Z] ----------------------------------------------------------------------
+[debug] [2025-11-27T19:55:31.295Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\User\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only hosting
+[debug] [2025-11-27T19:55:31.296Z] CLI Version:   14.17.0
+[debug] [2025-11-27T19:55:31.296Z] Platform:      win32
+[debug] [2025-11-27T19:55:31.296Z] Node Version:  v22.19.0
+[debug] [2025-11-27T19:55:31.296Z] Time:          Thu Nov 27 2025 16:55:31 GMT-0300 (hora estándar de Uruguay)
+[debug] [2025-11-27T19:55:31.296Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-11-27T19:55:31.456Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-11-27T19:55:31.456Z] > authorizing via signed-in user (santiago.lopez.toma@gmail.com)
+[debug] [2025-11-27T19:55:31.456Z] [iam] checking project mil-disculpis for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2025-11-27T19:55:31.457Z] Checked if tokens are valid: true, expires at: 1764276568054
+[debug] [2025-11-27T19:55:31.458Z] Checked if tokens are valid: true, expires at: 1764276568054
+[debug] [2025-11-27T19:55:31.459Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/mil-disculpis:testIamPermissions [none]
+[debug] [2025-11-27T19:55:31.459Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/mil-disculpis:testIamPermissions x-goog-quota-user=projects/mil-disculpis
+[debug] [2025-11-27T19:55:31.459Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/mil-disculpis:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-11-27T19:55:32.391Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/mil-disculpis:testIamPermissions 200
+[debug] [2025-11-27T19:55:32.391Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/mil-disculpis:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-11-27T19:55:32.392Z] Checked if tokens are valid: true, expires at: 1764276568054
+[debug] [2025-11-27T19:55:32.392Z] Checked if tokens are valid: true, expires at: 1764276568054
+[debug] [2025-11-27T19:55:32.392Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/mil-disculpis [none]
+[debug] [2025-11-27T19:55:32.761Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/mil-disculpis 200
+[debug] [2025-11-27T19:55:32.761Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/mil-disculpis {"projectId":"mil-disculpis","projectNumber":"5614567933","displayName":"futbol-App","name":"projects/mil-disculpis","resources":{"hostingSite":"mil-disculpis","realtimeDatabaseInstance":"mil-disculpis-default-rtdb"},"state":"ACTIVE","etag":"1_38df11e5-6456-41cb-b0bb-520bb4c03b3c"}
+[debug] [2025-11-27T19:55:35.319Z] defaultcredentials: writing to file C:\Users\User\AppData\Roaming\firebase\santiago_lopez.toma_gmail.com_application_default_credentials.json
+[debug] [2025-11-27T19:55:35.322Z] Checked if tokens are valid: true, expires at: 1764276568054
+[debug] [2025-11-27T19:55:35.323Z] Checked if tokens are valid: true, expires at: 1764276568054
+[debug] [2025-11-27T19:55:35.323Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/mil-disculpis/sites pageToken=&pageSize=10
+[debug] [2025-11-27T19:55:36.432Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/mil-disculpis/sites 200
+[debug] [2025-11-27T19:55:36.432Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/mil-disculpis/sites {"sites":[{"name":"projects/mil-disculpis/sites/mil-disculpis","defaultUrl":"https://mil-disculpis.web.app","appId":"1:5614567933:web:0dce7bf37b8325c0861994","type":"DEFAULT_SITE"}]}
+[debug] [2025-11-27T19:55:36.432Z] Checked if tokens are valid: true, expires at: 1764276568054
+[debug] [2025-11-27T19:55:36.432Z] Checked if tokens are valid: true, expires at: 1764276568054
+[debug] [2025-11-27T19:55:36.432Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:5614567933:web:0dce7bf37b8325c0861994/config [none]
+[debug] [2025-11-27T19:55:37.351Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:5614567933:web:0dce7bf37b8325c0861994/config 200
+[debug] [2025-11-27T19:55:37.351Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:5614567933:web:0dce7bf37b8325c0861994/config {"projectId":"mil-disculpis","appId":"1:5614567933:web:0dce7bf37b8325c0861994","databaseURL":"https://mil-disculpis-default-rtdb.firebaseio.com","storageBucket":"mil-disculpis.firebasestorage.app","apiKey":"AIzaSyAes7EVn8hQswS8XgvDMJfN6U4IT_ZL_WY","authDomain":"mil-disculpis.firebaseapp.com","messagingSenderId":"5614567933","measurementId":"G-EMLP4TKXKR","projectNumber":"5614567933","version":"2"}
+[info] 
+   Thank you for trying our early preview of Next.js support on Firebase Hosting.
+   During the preview, support is best-effort and breaking changes can be expected. Proceed with caution.
+
+   Documentation: https://firebase.google.com/docs/hosting/frameworks/nextjs
+   File a bug: https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
+   Submit a feature request: https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+
+   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+
+[debug] [2025-11-27T19:55:42.911Z] Checked if tokens are valid: true, expires at: 1764276568054
+[debug] [2025-11-27T19:55:42.911Z] Checked if tokens are valid: true, expires at: 1764276568054
+[debug] [2025-11-27T19:55:42.911Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/mil-disculpis/sites/mil-disculpis [none]
+[debug] [2025-11-27T19:55:43.916Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/mil-disculpis/sites/mil-disculpis 200
+[debug] [2025-11-27T19:55:43.916Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/mil-disculpis/sites/mil-disculpis {"name":"projects/mil-disculpis/sites/mil-disculpis","defaultUrl":"https://mil-disculpis.web.app","appId":"1:5614567933:web:0dce7bf37b8325c0861994","type":"DEFAULT_SITE"}
+[info]  ⚠ Invalid next.config.mjs options detected: 
+
+[info]  ⚠     Unrecognized key(s) in object: 'isrMemoryCacheSize' at "experimental"
+ ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+
+[info]   ▲ Next.js 14.2.5
+
+[info]   - Environments: .env.local
+
+
+[info]    Creating an optimized production build ...
+
+[info]  ✓ (pwa) Compiling for server...
+
+[info]  ✓ (pwa) Compiling for server...
+
+[info]  ✓ (pwa) Compiling for client (static)...
+
+[info]  ○ (pwa) Service worker: C:\Pateá\public\sw.js
+ ○ (pwa)   URL: /sw.js
+ ○ (pwa)   Scope: /
+
+[info]  ⚠ Compiled with warnings
+
+
+[info] ./node_modules/require-in-the-middle/index.js
+Critical dependency: require function is used in a way in which dependencies cannot be statically extracted
+
+Import trace for requested module:
+./node_modules/require-in-the-middle/index.js
+./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+./node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+./node_modules/@opentelemetry/instrumentation/build/esm/index.js
+./node_modules/@opentelemetry/sdk-node/build/src/sdk.js
+./node_modules/@opentelemetry/sdk-node/build/src/index.js
+./node_modules/@genkit-ai/core/lib/tracing/node-telemetry-provider.js
+./node_modules/@genkit-ai/core/lib/node.js
+./node_modules/genkit/lib/common.js
+./node_modules/genkit/lib/index.mjs
+./src/ai/flows/generate-balanced-teams.ts
+./src/lib/actions/server-actions.ts
+
+
+[info]    Linting and checking validity of types ...
+
+[info] Failed to compile.
+
+
+[info] ./src/components/matches/match-cost-split.tsx:62:36
+Type error: Property 'collection' does not exist on type 'Firestore'.
+
+  60 |
+  61 |       for (const invitation of confirmedInvitations) {
+> 62 |         const playerDoc = await db.collection('players').doc(invitation.userId).get();
+     |                                    ^
+  63 |         const playerData = playerDoc.data();
+  64 |
+  65 |         playersData.push({
+
+[debug] [2025-11-27T19:56:16.040Z] Error: ENOENT: no such file or directory, open 'C:\pateá\.next\export-marker.json'
+[error] 
+[error] Error: An unexpected error has occurred.
