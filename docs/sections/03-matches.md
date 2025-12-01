@@ -214,8 +214,181 @@ finalizeEvaluationsAction(matchId)  // Actualiza OVRs
 - Lazy load de evaluaciones
 - Cache de weather forecast
 
+## Features Adicionales
+
+### Match Chat System
+
+Sistema de chat en tiempo real integrado en cada partido para coordinación y comunicación entre participantes.
+
+**Componentes:**
+- **`match-chat-view.tsx`**: Vista completa del chat con historial de mensajes
+- **`match-chat-sheet.tsx`**: Bottom sheet para chat rápido desde match details
+
+**Características:**
+- Chat en tiempo real con Firestore realtime listeners
+- Notificaciones de nuevos mensajes
+- Historial completo del partido
+- Markdown support para formateo
+- Menciones con @ para notificar jugadores
+- Solo visible para participantes del partido
+
+**Data Model:**
+```typescript
+// /matches/{matchId}/messages/{messageId}
+{
+  id: string;
+  userId: string;
+  userName: string;
+  userPhoto: string;
+  message: string;
+  timestamp: Timestamp;
+  mentions?: string[];  // Array de userIds mencionados
+}
+```
+
+**Uso:**
+- Coordinar horarios
+- Compartir ubicación exacta
+- Confirmar asistencia
+- Post-partido comentarios
+
+### Match Cost Split
+
+Calculadora integrada para dividir costos del partido (alquiler de cancha, pelotas, etc.) equitativamente entre participantes.
+
+**Componente:**
+- **`match-cost-split.tsx`**: Calculadora con UI interactiva
+
+**Características:**
+- Input de costo total del partido
+- División automática entre jugadores confirmados
+- Opción de excluir organizador del pago
+- Cálculo con redondeo inteligente
+- Compartir resultado por WhatsApp
+- Historial de costos por partido
+
+**Cálculo:**
+```typescript
+const costPerPlayer = Math.ceil(totalCost / confirmedPlayers);
+// Redondeo hacia arriba para evitar fracciones
+```
+
+**Data Model:**
+```typescript
+// Dentro de Match document
+{
+  cost?: {
+    total: number;
+    perPlayer: number;
+    paidBy: string[];  // Array de userIds que pagaron
+    organiz erPays: boolean;
+  }
+}
+```
+
+**Integración:**
+- Botón "Dividir Costos" en match details
+- Visible solo después de confirmar jugadores
+- Organizador puede marcar quién pagó
+
+### Match Date Voting
+
+Sistema de votación para encontrar la mejor fecha/hora cuando no todos pueden en el horario propuesto.
+
+**Componente:**
+- **`match-date-voting.tsx`**: UI de votación con múltiples opciones de fecha
+
+**Características:**
+- Organizador propone 3-5 opciones de fecha/hora
+- Participantes votan sus disponibilidades
+- Visualización de votos en tiempo real
+- Auto-selección de fecha con más votos
+- Notificaciones cuando se define fecha final
+
+**Data Model:**
+```typescript
+// Dentro de Match document
+{
+  dateVoting?: {
+    options: Array<{
+      date: string;
+      time: string;
+      votes: string[];  // Array de userIds
+    }>;
+    status: 'open' | 'closed';
+    finalDate?: string;
+  }
+}
+```
+
+**Flujo:**
+1. Organizador crea partido sin fecha definitiva
+2. Propone opciones de fecha
+3. Participantes votan
+4. Cuando se alcanza quórum (>50%) o deadline, se cierra votación
+5. Fecha ganadora se establece como oficial
+6. Notificación a todos los participantes
+
+**Server Actions:**
+```typescript
+createDateVotingAction(matchId, options)
+voteForDateAction(matchId, optionIndex, userId)
+finalizeDateVotingAction(matchId)
+```
+
+### Match Invitations (RSVP System)
+
+Sistema de invitaciones con confirmación de asistencia para partidos colaborativos.
+
+**Archivo de Actions:**
+- **`lib/actions/match-invitation-actions.ts`**: `respondToMatchInvitationAction`
+
+**Características:**
+- Invitaciones push notification
+- Estados: Pending, Accepted, Declined, Maybe
+- Deadline para confirmar
+- Auto-recordatorio 24h antes
+- Penalización por no-shows repetidos
+
+**Data Model:**
+```typescript
+// /matches/{matchId}/invitations/{invitationId}
+{
+  id: string;
+  userId: string;
+  status: 'pending' | 'accepted' | 'declined' | 'maybe';
+  invitedAt: Timestamp;
+  respondedAt?: Timestamp;
+  notificationSent: boolean;
+}
+```
+
+**Flujo:**
+1. Organizador crea partido colaborativo
+2. Sistema envía invitaciones a miembros del grupo
+3. Notificación push + in-app
+4. Usuarios responden RSVP
+5. Match se actualiza con jugadores confirmados
+6. Recordatorio automático si pending
+
+**Server Actions:**
+```typescript
+sendMatchInvitationsAction(matchId, userIds)
+respondToMatchInvitationAction(matchId, userId, response)
+sendInvitationRemindersAction(matchId)
+```
+
+**Integración:**
+- Visible en match details
+- Contador de confirmados/pendientes/declinados
+- Lista de invitados con status
+- Organizador puede re-enviar invitaciones
+
 ## Próximas Mejoras
 - [ ] Live score tracking
 - [ ] Video highlights upload
 - [ ] Statistics dashboard
 - [ ] League/Cup integration
+- [ ] Payment integration para cost split
+- [ ] Video chat durante partido
+- [ ] Live commentary feed

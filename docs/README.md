@@ -7,10 +7,13 @@
 La aplicación integra múltiples funcionalidades:
 - Gestión de jugadores con sistema de atributos y evaluaciones
 - Organización de partidos (amistosos, ligas, copas)
-- Equipos/grupos colaborativos
+- Equipos/grupos colaborativos con sistema de desafíos
 - 12 flujos de IA para asistencia inteligente
 - Integración con Google Fit para tracking de rendimiento
-- Red social deportiva
+- Red social deportiva con feed y seguimientos
+- Sistema de venues con ratings y Google Maps
+- Pagos y créditos para generación de imágenes AI
+- Progressive Web App instalable con soporte offline
 
 ## Tecnologías Principales
 
@@ -35,6 +38,10 @@ La aplicación integra múltiples funcionalidades:
 6. **[Salud y Fitness](./sections/06-health-fitness.md)** - Integración con Google Fit
 7. **[Social](./sections/07-social.md)** - Feed de actividad y seguimientos
 8. **[Auth y Configuración](./sections/08-auth-settings.md)** - Autenticación y ajustes
+9. **[Team Challenges](./sections/09-team-challenges.md)** - Sistema de desafíos entre equipos
+10. **[Venues](./sections/10-venues.md)** - Gestión de lugares y canchas
+11. **[Payments & Credits](./sections/11-payments-credits.md)** - Sistema de pagos y créditos
+12. **[PWA](./sections/12-pwa.md)** - Progressive Web App features
 
 ### 🤖 Flujos de IA
 
@@ -130,10 +137,14 @@ src/
 
 Los server actions están organizados en:
 
-- **`server-actions.ts`**: Actions generales (jugadores, partidos, grupos, etc.)
+- **`server-actions.ts`**: Actions generales (jugadores, partidos, grupos, team challenges, etc.)
 - **`google-fit-actions.ts`**: Actions específicas de Google Fit
 - **`social-actions.ts`**: Actions de funcionalidad social
 - **`image-generation.ts`**: Generación de imágenes con IA
+- **`venue-actions.ts`**: Gestión de lugares y canchas
+- **`payment-actions.ts`**: Procesamiento de pagos y créditos
+- **`match-invitation-actions.ts`**: Sistema de invitaciones RSVP
+- **`notification-actions.ts`**: Push notifications y alertas
 
 ## Características Destacadas
 
@@ -166,7 +177,31 @@ Los server actions están organizados en:
 - DT virtual para consejos personalizados
 - Análisis automático de progresión
 - Generación de imágenes personalizadas
-- 
+
+### ⚔️ Team Challenges
+- Sistema de desafíos entre equipos persistentes
+- Publicaciones de disponibilidad para encontrar rivales
+- Aceptación/rechazo de challenges
+- Creación automática de partidos competitivos
+
+### 📍 Gestión de Venues
+- Base de datos de canchas y lugares
+- Ratings y reviews del grupo
+- Integración con Google Maps
+- Tracking de costos por venue
+
+### 💳 Sistema de Créditos
+- 3 créditos gratuitos mensuales por jugador
+- Paquetes de créditos con MercadoPago
+- Generación de imágenes AI con créditos
+- Créditos comprados sin expiración
+
+### 📱 Progressive Web App
+- Instalable en dispositivos móviles y desktop
+- Funcionalidad offline
+- Push notifications
+- Experiencia similar a app nativa
+
 ## Variables de Entorno Necesarias
 
 ```env
@@ -205,6 +240,8 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
 - `/matches/[id]` - Detalles del partido
 - `/competitions/leagues/[id]` - Vista de liga
 - `/competitions/cups/[id]` - Vista de copa
+- `/competitions/challenges` - Feed de team challenges
+- `/competitions/my-teams` - Gestión de mis equipos
 - `/groups/[id]` - Vista de grupo
 - `/social` - Feed social
 

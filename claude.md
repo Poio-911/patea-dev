@@ -1,180 +1,228 @@
-# Estructura del Proyecto - Pateá
+# CLAUDE.md
 
-## 📚 Documentación Completa
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**IMPORTANTE: Antes de editar cualquier sección, SIEMPRE lee la documentación correspondiente.**
+## Project Overview
 
-La documentación completa está en `/docs/`:
+**Pateá** is a Next.js 14 application for managing amateur football groups. It combines Firebase backend services with Google Gemini AI to provide intelligent player management, match organization, and performance analytics.
 
-### Master
-- `/docs/README.md` - Índice maestro con overview completo de la app
+**Tech Stack:**
+- Next.js 14 (App Router) + React 18
+- Firebase (Firestore, Auth, Storage, App Hosting)
+- Google Gemini AI via Genkit framework
+- TypeScript, Tailwind CSS, shadcn/ui
+- Google Fit API, Google Maps API
 
-### AI Flows (12 flows)
-- `/docs/ai-flows/README.md` - Índice de todos los flujos de IA
-- `/docs/ai-flows/*.md` - Documentación detallada de cada flujo
-  - Schemas de input/output
-  - Ejemplos de uso
-  - Integración en la app
+## Development Commands
 
-### Secciones Funcionales (8 secciones)
-- `/docs/sections/01-dashboard.md` - Dashboard y vista principal
-- `/docs/sections/02-players.md` - Sistema de jugadores (CRÍTICO - 400+ líneas)
-- `/docs/sections/03-matches.md` - Gestión de partidos
-- `/docs/sections/04-competitions.md` - Ligas y copas
-- `/docs/sections/05-groups-teams.md` - Grupos y equipos
-- `/docs/sections/06-health-fitness.md` - Google Fit integration
-- `/docs/sections/07-social.md` - Feed social
-- `/docs/sections/08-auth-settings.md` - Auth y configuración
+```bash
+# Development
+npm run dev                    # Start Next.js dev server on port 3000
+npm run genkit:dev            # Start Genkit dev server (AI flows)
+npm run genkit:watch          # Start Genkit dev server with watch mode
 
-**Workflow recomendado:**
-1. Lee `/docs/sections/[seccion].md` antes de editar componentes de esa sección
-2. Lee `/docs/ai-flows/[flow].md` antes de modificar flujos de IA
-3. Consulta `/docs/README.md` para entender el contexto general
+# Build & Deploy
+npm run build                 # Build for production
+npm run typecheck             # Run TypeScript type checking
+npm run lint                  # Run ESLint
 
----
+# Testing
+npm test                      # Run Playwright tests
+npm test:ui                   # Run tests with Playwright UI
+npm test:headed               # Run tests in headed mode
+npm test:debug                # Debug tests
 
-## 📁 Estructura General
-
-```
-src/
-├── app/                    # Next.js App Router
-│   ├── players/[id]/      # Perfil de jugadores
-│   ├── matches/           # Partidos
-│   └── groups/            # Grupos
-├── components/            # Componentes React
-├── lib/                   # Utilidades y acciones
-│   ├── actions/          # Server Actions
-│   └── types.ts          # Tipos TypeScript
-├── ai/                    # Integraciones IA (Genkit)
-│   └── flows/            # Flujos de IA
-├── firebase/              # Configuración Firebase
-└── hooks/                 # React Hooks personalizados
+# Database Scripts
+npm run migrate:cups          # Migrate cup bracket structure
+npm run init:packages         # Initialize credit packages
 ```
 
-## 🔧 Funciones Principales
+## Critical Architecture Patterns
 
-### Autenticación (`lib/auth-actions.ts`, `lib/auth-helpers.ts`)
-- Login/registro con Google
-- Actualización de perfiles
-- Gestión de sesiones
+### 1. Real-Time Data Synchronization
 
-### Server Actions (`lib/actions/`)
-- **`image-generation.ts`**: Generación de imágenes con IA
-  - `generatePlayerCardImageAction()`: Genera foto profesional del jugador
+**Always use `useDoc` hook for real-time Firestore data:**
 
-### Datos (`lib/data.ts`)
-- Templates de camisetas
-- Configuración de posiciones
-- Etiquetas de rendimiento
-
-## 🤖 Funciones IA (Genkit)
-
-### Configuración (`ai/genkit.ts`)
-- Firebase Genkit con Gemini
-- Plugins: Google AI, Cloud Storage, Vertex AI
-
-### Flujos IA (`ai/flows/`)
-
-**Jugadores:**
-- `generate-player-card-image.ts`: Foto profesional con IA
-- `suggest-player-improvements.ts`: Sugerencias de mejora
-- `analyze-player-progression.ts`: Análisis de progresión
-- `find-best-fit-player.ts`: Encuentra jugador ideal para equipo
-
-**Partidos:**
-- `generate-balanced-teams.ts`: Crea equipos balanceados
-- `get-match-day-forecast.ts`: Pronóstico del partido
-- `generate-match-chronicle.ts`: Crónica post-partido
-
-**Grupos:**
-- `generate-group-summary.ts`: Resumen del grupo
-- `detect-player-patterns.ts`: Detecta patrones de jugadores
-
-**Otros:**
-- `coach-conversation.ts`: Chat con entrenador virtual
-- `get-app-help.ts`: Asistencia en la app
-- `generate-duo-image.ts`: Imagen de dupla de jugadores
-
-## 🎨 Componentes UI
-
-### Jugadores
-- **`player-detail-card.tsx`**: Tarjeta detallada del perfil
-  - Botón "Generar Foto IA" (usa créditos)
-  - Botón "Cambiar Foto" (crop)
-  - Muestra OVR, posición, atributos
-- **`player-card.tsx`**: Tarjeta compacta
-- **`player-profile-view.tsx`**: Vista completa del perfil
-- **`player-styles.tsx`**: Componentes reutilizables
-  - `PlayerPhoto`: Imagen circular con crop
-  - `PlayerOvr`: Badge de overall
-  - `AttributesGrid`: Grid de atributos
-
-### Imagen
-- **`image-cropper-dialog.tsx`**: Dialog para recortar fotos
-  - Usa `react-image-crop`
-  - Guarda en Firebase Storage
-  - Actualiza Firestore con `cropPosition` y `cropZoom`
-
-## 🔄 Flujos de Datos Importantes
-
-### Actualización de Foto del Jugador
-
-**Con IA:**
-1. Usuario → Click "Generar Foto IA"
-2. `generatePlayerCardImageAction()` (server)
-3. Descarga foto actual → IA genera nueva → Sube a Storage
-4. Actualiza Firestore: `photoUrl`, `cropPosition`, `cropZoom`
-5. `useDoc` detecta cambio → Actualiza UI automáticamente
-
-**Con Crop Manual:**
-1. Usuario → Click "Cambiar Foto" → Selecciona/recorta
-2. `ImageCropperDialog` → Recorta imagen → Sube a Storage
-3. Actualiza Firestore: `photoUrl`, `cropPosition`, `cropZoom`
-4. `useDoc` detecta cambio → Actualiza UI
-
-### Sistema de Sincronización Tiempo Real
-
-- **Hook:** `firebase/firestore/use-doc.tsx`
-- Usa `onSnapshot` de Firestore
-- Actualiza automáticamente cuando cambia el documento
-- Usado en perfiles de jugadores, partidos, grupos
-
-## 🗄️ Estructura Firestore
-
-```
-users/
-  {uid}/
-    - photoURL
-    - displayName
-    - email
-
-players/
-  {playerId}/
-    - name, position, ovr
-    - photoUrl
-    - cropPosition: { x, y }
-    - cropZoom
-    - cardGenerationCredits
-    - attributes: { pace, shooting, ... }
-
-availablePlayers/
-  {playerId}/
-    - photoUrl (sincronizado con players)
-
-matches/
-  {matchId}/
-    - date, location, teams
-
-groups/
-  {groupId}/
-    - name, members, stats
+```typescript
+// src/firebase/firestore/use-doc.tsx
+const { data, loading, error } = useDoc<Player>(playerRef);
 ```
 
-## 🎯 Puntos Clave
+- Uses `onSnapshot` for automatic updates
+- Do NOT manually update state after Firestore writes
+- The hook will automatically detect changes and re-render
+- Handles permission errors via `errorEmitter`
 
-1. **Imágenes sincronizadas**: `users.photoURL` = `players.photoUrl` = `availablePlayers.photoUrl`
-2. **Crop automático**: Después de generar con IA, se resetea a `{ x: 50, y: 50 }` y `zoom: 1`
-3. **Real-time**: Usar `useDoc` para sincronización automática (no actualizar estado manualmente)
-4. **Créditos**: Generación IA consume `cardGenerationCredits`
-5. **DOCUMENTACIÓN**: Siempre consultar `/docs/` antes de editar secciones importantes
+### 2. Server Actions Architecture
 
+All server-side mutations are organized in `src/lib/actions/`:
+
+- **`server-actions.ts`**: Core actions (players, matches, groups, team challenges)
+- **`image-generation.ts`**: AI image generation (uses credits)
+- **`social-actions.ts`**: Follow system, activity feed
+- **`google-fit-actions.ts`**: Health data integration
+- **`notification-actions.ts`**: Push notifications
+- **`payment-actions.ts`**: Mercadopago integration, credit purchases
+- **`venue-actions.ts`**: Venue/location management, ratings
+- **`match-invitation-actions.ts`**: RSVP system for matches
+
+**Important:** Server actions must be marked with `'use server'` directive.
+
+### 3. Image Handling Flow
+
+**Player photos are synchronized across three collections:**
+- `users/{uid}` → `photoURL`
+- `players/{id}` → `photoUrl`
+- `availablePlayers/{uid}` → `photoUrl`
+
+**Image crop data is stored in Firestore:**
+- `cropPosition: { x: number, y: number }` (percentage 0-100)
+- `cropZoom: number` (scale factor)
+
+**Two ways to update photos:**
+1. **AI Generation**: `generatePlayerCardImageAction()` - consumes credits, auto-resets crop
+2. **Manual Crop**: `ImageCropperDialog` component - user-controlled cropping
+
+### 4. AI Flows (Genkit)
+
+All AI flows are in `src/ai/flows/`. **Critical constraint:**
+
+- Genkit is configured for **production mode only** (`GENKIT_ENV=prod`)
+- Genkit cannot run client-side - webpack excludes it from client bundle
+- Flows must be called from server actions only
+- Never import `ai` object in client components
+
+**12 Available flows:**
+- Player analysis: `suggest-player-improvements`, `analyze-player-progression`, `detect-player-patterns`
+- Match support: `generate-balanced-teams`, `get-match-day-forecast`, `generate-match-chronicle`
+- Image generation: `generate-player-card-image`, `generate-duo-image`
+- Assistance: `coach-conversation`, `get-app-help`, `find-best-fit-player`, `generate-group-summary`
+
+### 5. Firebase Configuration
+
+**Client SDK:** `src/firebase/index.ts` exports initialized `auth`, `db`, `storage`
+
+**Admin SDK:** `src/firebase/admin-init.ts` - uses service account key
+
+**Environment variables pattern:**
+- `NEXT_PUBLIC_*` for client-side Firebase config
+- Plain vars for server-side (Admin SDK, API keys)
+
+### 6. TypeScript Types System
+
+**Central types file:** `src/lib/types.ts`
+
+**Key type patterns:**
+- `Player`: Full player document with stats and attributes
+- `DetailedTeamPlayer`: Extends Player with team number and status
+- `Match`: Has discriminated union for `type` and `size`
+- `MatchStatus`: Lifecycle states (`upcoming` → `active` → `completed` → `evaluated`)
+
+## Firestore Data Model
+
+```
+users/{uid}
+  - photoURL, displayName, email
+  - players/ (subcollection)
+  - groups/ (subcollection)
+
+players/{playerId}
+  - name, position, ovr
+  - pac, sho, pas, dri, def, phy (attributes)
+  - photoUrl, cropPosition, cropZoom
+  - cardGenerationCredits (monthly free + purchased)
+  - ownerUid, groupId
+  - stats: { matchesPlayed, goals, assists, averageRating }
+
+matches/{matchId}
+  - type, status, date, location
+  - teamA, teamB (arrays of player IDs)
+  - playerPerformance/ (subcollection - evaluations)
+
+groups/{groupId}
+  - name, members, settings
+  - players/ (subcollection)
+  - matches/ (subcollection)
+
+leagues/{leagueId}
+cups/{cupId}
+socialActivities/{activityId}
+follows/{followId}
+notifications/{notificationId}
+```
+
+## Key Workflows
+
+### Player Photo Update (AI)
+
+1. User clicks "Generar Foto IA" button
+2. `generatePlayerCardImageAction(playerId)` server action
+3. Downloads current photo → sends to Gemini → generates new image
+4. Uploads to Firebase Storage → updates Firestore
+5. Updates: `photoUrl`, resets `cropPosition: {x:50, y:50}`, `cropZoom: 1`
+6. Consumes 1 credit from `cardGenerationCredits`
+7. `useDoc` hook automatically updates UI
+
+### Match Evaluation Flow
+
+1. Match status: `upcoming` → `active` (when started)
+2. Record goals, cards during match
+3. Complete match → status: `completed`
+4. Evaluate players (rating 1-10, tags) → writes to `playerPerformance/`
+5. Calculate attribute changes → update player OVR
+6. Status: `evaluated` → creates `socialActivities` entry
+7. Update player stats (goals, assists, matches played)
+
+### Real-Time Updates Pattern
+
+```typescript
+// CORRECT - Auto-updates via useDoc
+const playerRef = doc(db, 'players', playerId);
+const { data: player } = useDoc<Player>(playerRef);
+
+// After mutation:
+await updateDoc(playerRef, { ovr: newOvr });
+// UI updates automatically - DO NOT set state manually
+```
+
+## Documentation Structure
+
+**Always consult `/docs/` before editing major features:**
+
+- `/docs/README.md` - Master index
+- `/docs/sections/*.md` - 8 functional sections (players, matches, competitions, etc.)
+- `/docs/ai-flows/*.md` - 12 AI flow specifications with schemas
+
+**Most critical:** `/docs/sections/02-players.md` (400+ lines covering player system)
+
+## Deployment
+
+- **Hosting:** Firebase App Hosting (standalone output mode)
+- **Region:** us-central1
+- **PWA:** Enabled in production (disabled in dev)
+
+Firebase config in `firebase.json` includes Firestore rules/indexes and storage rules.
+
+## Common Pitfalls
+
+1. **Don't manually update state after Firestore writes** - trust `useDoc`
+2. **Never import Genkit in client components** - causes build errors
+3. **Synchronize photos across 3 locations** - users, players, availablePlayers
+4. **Server actions need `'use server'`** - or they'll be treated as client code
+5. **Credit system**: Free monthly credits reset, purchased credits don't expire
+6. **Match type affects evaluation logic** - league matches have different OVR impact
+7. **Team challenges**: Post status must update when challenge accepted/rejected
+8. **Venue ratings**: Only users who played match at venue can rate it
+9. **Payment webhooks**: Always verify MercadoPago signature for security
+10. **PWA updates**: Service Worker needs skipWaiting for immediate updates
+
+## Path Aliases
+
+- `@/*` maps to `src/*`
+- Example: `import { Player } from '@/lib/types'`
+
+## Git Status Notes
+
+- Branch: `dev-app-Ai` (current development branch)
+- Typically PR to main branch (no main branch configured yet)
+- Modified files: `package.json`, `public/sw.js` (PWA service worker)
