@@ -127,12 +127,13 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
                             </CardHeader>
                             <CardContent className="pt-0 p-2">
                                 <div className="grid grid-cols-2 gap-3">
-                                    {teamMembersWithDetails.map((player) => (
+                                    {teamMembersWithDetails.map((player, index) => (
                                         <TeamRosterPlayer
                                             key={player.id}
                                             player={player}
                                             match={match}
                                             isOwner={isOwner}
+                                            index={index}
                                         />
                                     ))}
                                 </div>

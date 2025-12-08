@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { useUser } from '@/firebase';
-import type { Player } from '@/lib/types';
+import type { Player, Jersey } from '@/lib/types';
 import { PlayerDetailCard } from '@/components/player-detail-card';
 import { LineChart, BrainCircuit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,9 +14,10 @@ import { PlayerRecentActivity } from './player-recent-activity';
 type PlayerProfileViewProps = {
   playerId: string;
   player: Player;
+  jersey?: Jersey;
 };
 
-export default function PlayerProfileView({ playerId, player }: PlayerProfileViewProps) {
+export default function PlayerProfileView({ playerId, player, jersey }: PlayerProfileViewProps) {
   const { user } = useUser();
   const isCurrentUserProfile = user?.uid === playerId;
 
@@ -28,10 +29,11 @@ export default function PlayerProfileView({ playerId, player }: PlayerProfileVie
 
   return (
     <div className="flex flex-col gap-8">
-      <PlayerDetailCard 
-        player={player} 
+      <PlayerDetailCard
+        player={player}
         onPhotoUpdate={handlePhotoUpdate}
-        isCurrentUserProfile={isCurrentUserProfile} 
+        isCurrentUserProfile={isCurrentUserProfile}
+        jersey={jersey}
       />
       
       {isCurrentUserProfile && (

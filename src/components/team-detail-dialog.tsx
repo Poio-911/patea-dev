@@ -75,8 +75,8 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
                         Plantel ({teamPlayersWithDetails.length})
                     </h3>
                     <div className="space-y-1">
-                        {teamPlayersWithDetails.map((player) => (
-                            <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={() => {}} />
+                        {teamPlayersWithDetails.map((player, index) => (
+                            <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={() => {}} index={index} />
                         ))}
                     </div>
                 </div>

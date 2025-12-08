@@ -97,9 +97,9 @@ export default function PlayersPage() {
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {sortedPlayers && sortedPlayers.map((player) => (
-          <PlayerCard key={player.id} player={player} />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {sortedPlayers && sortedPlayers.map((player, index) => (
+          <PlayerCard key={player.id} player={player} index={index} />
         ))}
       </div>
     </div>

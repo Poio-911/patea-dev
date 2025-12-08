@@ -506,4 +506,314 @@
   .badge-pos {
     @apply text-xs font-bold px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground;
   }
+
+  /* ========================================
+     HOLOGRAPHIC CARD SYSTEM - FIFA/Chromos Style
+     ======================================== */
+
+  /* Rainbow spectrum colors for holographic effects */
+  :root {
+    --holo-color-1: #ff3d00;  /* Red-Orange */
+    --holo-color-2: #ff9100;  /* Orange */
+    --holo-color-3: #ffea00;  /* Yellow */
+    --holo-color-4: #00e676;  /* Green */
+    --holo-color-5: #00b0ff;  /* Cyan */
+    --holo-color-6: #d500f9;  /* Purple */
+    --holo-color-7: #ff1744;  /* Pink */
+  }
+
+  .game {
+    /* Brighter for dark theme */
+    --holo-color-1: #ff5722;
+    --holo-color-2: #ffc107;
+    --holo-color-3: #ffeb3b;
+    --holo-color-4: #4caf50;
+    --holo-color-5: #00bcd4;
+    --holo-color-6: #e91e63;
+    --holo-color-7: #ff4081;
+  }
+
+  /* Holographic rainbow gradient animation */
+  @keyframes holo-rainbow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Diagonal sweep animation */
+  @keyframes holo-rotate {
+    0% {
+      background-position: -200% center;
+      opacity: 0.3;
+    }
+    50% {
+      background-position: 200% center;
+      opacity: 0.8;
+    }
+    100% {
+      background-position: -200% center;
+      opacity: 0.3;
+    }
+  }
+
+  /* Main holographic effect class */
+  .holo-effect {
+    position: relative;
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+
+  /* Rainbow prism layer */
+  .holo-effect::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      var(--holo-color-1) 0%,
+      var(--holo-color-2) 15%,
+      var(--holo-color-3) 30%,
+      var(--holo-color-4) 45%,
+      var(--holo-color-5) 60%,
+      var(--holo-color-6) 75%,
+      var(--holo-color-7) 90%,
+      var(--holo-color-1) 100%
+    );
+    background-size: 300% 300%;
+    opacity: 0;
+    mix-blend-mode: color-dodge;
+    transition: opacity 0.5s ease;
+    animation: holo-rainbow 8s ease-in-out infinite;
+  }
+
+  .holo-effect:hover::before {
+    opacity: 0.4;
+  }
+
+  .holo-effect-elite::before {
+    opacity: 0.25;
+  }
+
+  .holo-effect-elite:hover::before {
+    opacity: 0.5;
+  }
+
+  /* Diagonal sweep layer */
+  .holo-effect::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background: linear-gradient(
+      110deg,
+      transparent 20%,
+      rgba(0, 0, 0, 0.1) 50%,
+      transparent 80%
+    );
+    background-size: 200% 100%;
+    opacity: 0;
+    animation: holo-rotate 6s linear infinite;
+  }
+
+  .holo-effect:hover::after {
+    opacity: 0.6;
+  }
+
+  .game .holo-effect::after {
+    background: linear-gradient(
+      110deg,
+      transparent 20%,
+      rgba(170, 254, 72, 0.4) 50%,
+      transparent 80%
+    );
+  }
+
+  .game .holo-effect:hover::after {
+    opacity: 1;
+  }
+
+  /* ========================================
+     GLOWING BORDERS BY RARITY TIER
+     ======================================== */
+
+  /* Bronze (OVR < 65) */
+  .border-glow-bronze {
+    border: 2px solid rgba(205, 127, 50, 0.6);
+    box-shadow:
+      0 0 10px rgba(205, 127, 50, 0.4),
+      inset 0 0 15px rgba(205, 127, 50, 0.1);
+    animation: glow-pulse-bronze 3s ease-in-out infinite;
+  }
+
+  @keyframes glow-pulse-bronze {
+    0%, 100% {
+      box-shadow:
+        0 0 10px rgba(205, 127, 50, 0.4),
+        inset 0 0 15px rgba(205, 127, 50, 0.1);
+    }
+    50% {
+      box-shadow:
+        0 0 20px rgba(205, 127, 50, 0.6),
+        inset 0 0 20px rgba(205, 127, 50, 0.2);
+    }
+  }
+
+  /* Silver (OVR 65-75) */
+  .border-glow-silver {
+    border: 2px solid rgba(192, 192, 192, 0.7);
+    box-shadow:
+      0 0 15px rgba(192, 192, 192, 0.5),
+      inset 0 0 20px rgba(192, 192, 192, 0.15);
+    animation: glow-pulse-silver 2.5s ease-in-out infinite;
+  }
+
+  @keyframes glow-pulse-silver {
+    0%, 100% {
+      box-shadow:
+        0 0 15px rgba(192, 192, 192, 0.5),
+        inset 0 0 20px rgba(192, 192, 192, 0.15);
+    }
+    50% {
+      box-shadow:
+        0 0 25px rgba(192, 192, 192, 0.7),
+        inset 0 0 25px rgba(192, 192, 192, 0.25);
+    }
+  }
+
+  /* Gold (OVR 76-85) */
+  .border-glow-gold {
+    border: 2px solid hsl(43, 96%, 56%);
+    box-shadow:
+      0 0 20px hsla(43, 96%, 56%, 0.6),
+      inset 0 0 25px hsla(43, 96%, 56%, 0.2);
+    animation: glow-pulse-gold 2s ease-in-out infinite;
+  }
+
+  @keyframes glow-pulse-gold {
+    0%, 100% {
+      box-shadow:
+        0 0 20px hsla(43, 96%, 56%, 0.6),
+        inset 0 0 25px hsla(43, 96%, 56%, 0.2);
+    }
+    50% {
+      box-shadow:
+        0 0 30px hsla(43, 96%, 56%, 0.8),
+        inset 0 0 30px hsla(43, 96%, 56%, 0.3);
+    }
+  }
+
+  /* Elite (OVR 86+) - Multi-color rotating */
+  .border-glow-elite {
+    border: 3px solid transparent;
+    background:
+      linear-gradient(var(--card), var(--card)) padding-box,
+      linear-gradient(
+        135deg,
+        #ff00ff 0%,
+        #00ffff 25%,
+        #ffff00 50%,
+        #ff00ff 75%,
+        #00ffff 100%
+      ) border-box;
+    background-size: 200% 200%;
+    box-shadow:
+      0 0 30px rgba(255, 0, 255, 0.5),
+      0 0 40px rgba(0, 255, 255, 0.3),
+      inset 0 0 30px rgba(255, 255, 0, 0.15);
+    animation: glow-rotate-elite 4s linear infinite, glow-pulse-elite 2s ease-in-out infinite;
+  }
+
+  @keyframes glow-rotate-elite {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+
+  @keyframes glow-pulse-elite {
+    0%, 100% {
+      box-shadow:
+        0 0 30px rgba(255, 0, 255, 0.5),
+        0 0 40px rgba(0, 255, 255, 0.3),
+        inset 0 0 30px rgba(255, 255, 0, 0.15);
+    }
+    50% {
+      box-shadow:
+        0 0 40px rgba(255, 0, 255, 0.7),
+        0 0 50px rgba(0, 255, 255, 0.5),
+        inset 0 0 40px rgba(255, 255, 0, 0.25);
+    }
+  }
+
+  /* ========================================
+     MOBILE OPTIMIZATIONS
+     ======================================== */
+
+  @media (max-width: 768px) {
+    /* Static holographic effect on mobile (no animation) */
+    .holo-effect::before {
+      animation: none;
+      opacity: 0.15;
+    }
+
+    .holo-effect:active::before {
+      opacity: 0.3;
+    }
+
+    /* Disable diagonal sweep on mobile */
+    .holo-effect::after {
+      display: none;
+    }
+
+    /* Simpler border glow on mobile (no pulse animation) */
+    .border-glow-bronze,
+    .border-glow-silver,
+    .border-glow-gold {
+      animation: none;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .border-glow-bronze {
+      border-color: rgba(205, 127, 50, 0.6);
+    }
+
+    .border-glow-silver {
+      border-color: rgba(192, 192, 192, 0.7);
+    }
+
+    .border-glow-gold {
+      border-color: hsl(43, 96%, 56%);
+    }
+
+    .border-glow-elite {
+      animation: glow-rotate-elite 4s linear infinite;
+      /* Keep rotating gradient but remove pulse */
+    }
+  }
+
+  /* ========================================
+     ACCESSIBILITY
+     ======================================== */
+
+  @media (prefers-reduced-motion: reduce) {
+    .holo-effect::before,
+    .holo-effect::after,
+    .border-glow-bronze,
+    .border-glow-silver,
+    .border-glow-gold,
+    .border-glow-elite {
+      animation: none !important;
+    }
+
+    .holo-effect::before {
+      opacity: 0.2;
+    }
+
+    .holo-effect::after {
+      display: none;
+    }
+  }
 }

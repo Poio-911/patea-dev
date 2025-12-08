@@ -410,11 +410,7 @@ export default function EvaluateMatchPage() {
                     }
                 }
 
-                // Publish match_played activities - MOVED TO server-actions.ts (updateMatchFinalScoreAction)
-                // const publishPromises = [];
-                // for (const userId of uniqueUsers) {
-                //     publishPromises.push(publishMatchPlayedActivity(userId, match.id, match.title));
-                // }
+                // Publish match_played activities (handled by server-actions.ts)
                 const publishPromises = [];
 
                 // Publish OVR change activities

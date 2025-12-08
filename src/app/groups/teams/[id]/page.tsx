@@ -178,8 +178,8 @@ export default function TeamDetailPage() {
             <div className="space-y-4">
                 <h2 className="text-xl font-bold flex items-center gap-2"><ShieldCheck className="h-6 w-6 text-primary" /> Titulares ({titulares.length})</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {titulares.map((player: DetailedTeamPlayer) => (
-                        <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={handlePlayerUpdate} />
+                    {titulares.map((player: DetailedTeamPlayer, index: number) => (
+                        <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={handlePlayerUpdate} index={index} />
                     ))}
                 </div>
                 {titulares.length === 0 && (
@@ -197,8 +197,8 @@ export default function TeamDetailPage() {
             <div className="space-y-4">
                 <h2 className="text-xl font-bold flex items-center gap-2"><UserCheck className="h-6 w-6 text-muted-foreground" /> Suplentes ({suplentes.length})</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {suplentes.map((player: DetailedTeamPlayer) => (
-                        <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={handlePlayerUpdate} />
+                    {suplentes.map((player: DetailedTeamPlayer, index: number) => (
+                        <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={handlePlayerUpdate} index={index} />
                     ))}
                 </div>
                 {suplentes.length === 0 && <p className="text-sm text-muted-foreground">No hay jugadores suplentes definidos.</p>}

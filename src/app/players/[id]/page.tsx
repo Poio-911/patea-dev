@@ -3,7 +3,7 @@
 import { useParams } from 'next/navigation';
 import PlayerProfileView from '@/components/player-profile-view';
 import { useDoc, useFirestore, useUser } from '@/firebase';
-import type { Player } from '@/lib/types';
+import type { Player, GroupTeam } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { useMemo } from 'react';
 import Link from 'next/link';
@@ -35,6 +35,22 @@ export default function PlayerDetailPage() {
   
   const { data: followDocs } = useCollection<any>(followsQuery);
   const isFollowing = (followDocs || []).length > 0;
+
+  // Query para encontrar el equipo del jugador (si tiene)
+  const teamsQuery = useMemo(() => {
+    if (!firestore || !playerId) return null;
+    return query(collection(firestore, 'teams'));
+  }, [firestore, playerId]);
+
+  const { data: allTeams } = useCollection<GroupTeam>(teamsQuery);
+
+  // Encontrar el primer equipo donde este jugador es miembro
+  const playerTeam = useMemo(() => {
+    if (!allTeams || !playerId) return null;
+    return allTeams.find(team =>
+      team.members?.some(member => member.playerId === playerId)
+    );
+  }, [allTeams, playerId]);
 
   if (playerLoading) {
     return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -98,7 +114,7 @@ export default function PlayerDetailPage() {
             </Button>
           )}
         </div>
-        <PlayerProfileView playerId={playerId} player={player} />
+        <PlayerProfileView playerId={playerId} player={player} jersey={playerTeam?.jersey} />
       </div>
     </div>
   );

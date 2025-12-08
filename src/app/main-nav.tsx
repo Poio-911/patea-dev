@@ -26,6 +26,7 @@ import {
 import type { Player, AvailablePlayer } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
+import { PlayerPositionBadge } from '@/components/player-styles';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { MatchIcon } from '@/components/icons/match-icon';
 import { EvaluationIcon } from '@/components/icons/evaluation-icon';
@@ -42,11 +43,12 @@ import { useTheme } from 'next-themes';
 const baseNavItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
   { href: '/groups', label: 'Grupos', icon: Users2 },
-  { href: '/players', label: 'Jugadores', icon: SoccerPlayerIcon },
-  { href: '/evaluations', label: 'Evaluaciones', icon: EvaluationIcon },
+  { href: '/players', label: 'Jugadores', icon: User },
+  { href: '/evaluations', label: 'Evaluaciones', icon: ClipboardCheck },
 ];
 
 export function MainNav({ children }: { children: React.ReactNode }) {
+  // ... (keep existing hooks)
   const pathname = usePathname();
   const { user, loading: userLoading } = useUser();
   const auth = useAuth();
@@ -56,8 +58,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const { setTheme } = useTheme();
   const [matchesMenuOpen, setMatchesMenuOpen] = React.useState(false);
   const matchesMenuRef = React.useRef<HTMLDivElement | null>(null);
+  // Remove EvaluationsIcon alias if no longer needed or update it
   const EvaluationsIcon = baseNavItems[3].icon;
 
+  // ... (keep existing effects and logic)
   const { requestPermission } = useFcm();
 
   const playerRef = React.useMemo(() => {
@@ -182,12 +186,23 @@ export function MainNav({ children }: { children: React.ReactNode }) {
           </div>
 
           {player && (
-            <div className="hidden md:flex items-center gap-3">
-              <div className="text-right">
-                <p className="font-bold text-sm truncate max-w-[100px] sm:max-w-none">{player.name}</p>
-                <p className="text-xs text-muted-foreground">{player.position}</p>
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="text-right hidden xs:block">
+                <p className="font-bold text-sm truncate max-w-[80px] sm:max-w-none">{player.name}</p>
+                <div className="flex justify-end">
+                  <PlayerPositionBadge position={player.position} size="sm" showIcon={false} className="h-5 px-1.5 text-[10px]" />
+                </div>
               </div>
-              <div className="flex items-center justify-center h-10 w-10 text-xl font-bold rounded-full bg-primary/10 border-2 border-primary/20 text-primary">
+              {/* Mobile only: Name and Position stacked differently if needed, or just show OVR and rely on dropdown for details? 
+                  User said: "SACASTE EL NOMBRE EL OVR Y LA POSICON EN EL HEADER DEBE VERSE SIEMPRE"
+                  So we must show them. On very small screens space is tight.
+              */}
+              <div className="flex flex-col items-end xs:hidden">
+                <span className="text-[10px] font-bold truncate max-w-[60px]">{player.name}</span>
+                <PlayerPositionBadge position={player.position} size="sm" showIcon={false} className="h-4 px-1 py-0 text-[9px]" />
+              </div>
+
+              <div className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 text-sm md:text-xl font-bold rounded-full bg-primary/10 border-2 border-primary/20 text-primary">
                 {player.ovr}
               </div>
             </div>
@@ -246,8 +261,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent>
                     <DropdownMenuItem onClick={() => setTheme("light")}>Claro</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTheme("dark")}>Oscuro</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTheme("system")}>Sistema</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("game")}>Game</DropdownMenuItem>
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
@@ -275,7 +289,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
       <nav className="fixed bottom-4 left-4 right-4 z-30 h-16 rounded-xl border bg-background/70 backdrop-blur-lg shadow-lg md:hidden">
         <div className="relative mx-auto h-full max-w-lg">
           <div className="grid h-full w-full grid-cols-5 font-medium">
-            {baseNavItems.slice(0, 3).map((item) => {
+            {baseNavItems.slice(0, 2).map((item) => {
               const isActive = pathname.startsWith(item.href);
               return (
                 <Link
@@ -291,20 +305,26 @@ export function MainNav({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => setMatchesMenuOpen(o => !o)}
-              className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary', (pathname.startsWith('/matches') || pathname.startsWith('/competitions')) && 'text-primary font-semibold')}
+              className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary', (pathname.startsWith('/matches') || pathname.startsWith('/competitions') || pathname.startsWith('/find-match')) && 'text-primary font-semibold')}
               aria-haspopup="true"
               aria-expanded={matchesMenuOpen}
             >
-              <Trophy className={cn('h-5 w-5 transition-all duration-200', (pathname.startsWith('/matches') || pathname.startsWith('/competitions')) && 'scale-110')} />
+              <Trophy className={cn('h-5 w-5 transition-all duration-200', (pathname.startsWith('/matches') || pathname.startsWith('/competitions') || pathname.startsWith('/find-match')) && 'scale-110')} />
               <span className="text-[10px] leading-none">Partidos</span>
             </button>
-            <Link
-              href={baseNavItems[3].href}
-              className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary', pathname.startsWith(baseNavItems[3].href) && 'text-primary font-semibold')}
-            >
-              <EvaluationsIcon className={cn('h-5 w-5 transition-all duration-200', pathname.startsWith(baseNavItems[3].href) && 'scale-110')} />
-              <span className="text-[10px] leading-none">{baseNavItems[3].label}</span>
-            </Link>
+            {baseNavItems.slice(2, 4).map((item) => {
+              const isActive = pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary', isActive && 'text-primary font-semibold')}
+                >
+                  <item.icon className={cn('h-5 w-5 transition-all duration-200', isActive && 'scale-110')} />
+                  <span className="text-[10px] leading-none">{item.label}</span>
+                </Link>
+              );
+            })}
           </div>
           {matchesMenuOpen && (
             <div
@@ -323,6 +343,13 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               >
                 <Trophy className="h-4 w-4" />
                 <span>Partidos</span>
+              </Link>
+              <Link
+                href="/find-match"
+                className={cn('flex items-center gap-2 rounded-md px-2 py-2 text-sm transition hover:bg-accent', pathname.startsWith('/find-match') && 'bg-accent/70 font-medium')}
+              >
+                <Search className="h-4 w-4" />
+                <span>Buscar</span>
               </Link>
               <Link
                 href="/competitions"

@@ -49,6 +49,8 @@ export type Player = {
   lastPurchaseDate?: string; // ISO 8601 string - fecha de última compra
   cropPosition?: { x: number; y: number };
   cropZoom?: number;
+  jersey?: Jersey; // Jersey del equipo al que pertenece (para watermark en cards)
+  teamId?: string; // ID del equipo persistente al que pertenece
 } & DocumentData;
 
 export type DetailedTeamPlayer = Player & { number: number; status: 'titular' | 'suplente' };

@@ -34,8 +34,6 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
-    // Disable ISR memory cache to prevent static generation
-    isrMemoryCacheSize: 0,
   },
 
   // Disable static optimization completely

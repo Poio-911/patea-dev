@@ -7,6 +7,13 @@ import type { Player, AttributeKey, PlayerPosition } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { DelIcon, MedIcon, DefIcon, PorIcon } from './icons/positions';
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
 export const positionConfig: Record<PlayerPosition, { name: string; Icon: React.ElementType, badgeClasses: string, textColor: string }> = {
   POR: { name: 'Portero', Icon: PorIcon, badgeClasses: 'bg-orange-100 text-orange-800 game:bg-transparent game:text-orange-400 dark:bg-orange-900/40 dark:text-orange-300', textColor: 'text-orange-600 game:text-orange-400' },
   DEF: { name: 'Defensa', Icon: DefIcon, badgeClasses: 'bg-green-100 text-green-800 game:bg-transparent game:text-green-400 dark:bg-green-900/40 dark:text-green-300', textColor: 'text-green-600 game:text-green-400' },
@@ -15,6 +22,56 @@ export const positionConfig: Record<PlayerPosition, { name: string; Icon: React.
 };
 
 export const getPositionBadgeClasses = (position: PlayerPosition) => positionConfig[position].badgeClasses;
+
+export type PlayerPositionBadgeProps = {
+  position: PlayerPosition;
+  className?: string;
+  showIcon?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+};
+
+export function PlayerPositionBadge({ position, className, showIcon = true, size = 'md' }: PlayerPositionBadgeProps) {
+  const config = positionConfig[position];
+  const Icon = config.Icon;
+
+  const sizeClasses = {
+    sm: 'text-[10px] px-1.5 py-0.5 h-5',
+    md: 'text-xs px-2.5 py-1 h-7',
+    lg: 'text-sm px-3 py-1.5 h-8'
+  };
+
+  const iconSizes = {
+    sm: 'w-3 h-3',
+    md: 'w-3.5 h-3.5',
+    lg: 'w-4 h-4'
+  };
+
+  return (
+    <TooltipProvider>
+      <Tooltip delayDuration={300}>
+        <TooltipTrigger asChild>
+          <span className="inline-flex cursor-default">
+            <Badge
+              variant="secondary"
+              className={cn(
+                'font-headline font-bold uppercase flex items-center gap-1.5 border-0 hover:brightness-95 transition-all',
+                config.badgeClasses,
+                sizeClasses[size],
+                className
+              )}
+            >
+              {showIcon && <Icon className={cn(iconSizes[size])} />}
+              {position}
+            </Badge>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="font-headline font-bold">
+          <p>{config.name}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 export type PlayerOvrProps = { value: number; size?: 'compact' | 'standard'; highlight?: boolean };
 export function PlayerOvr({ value, size = 'standard', highlight }: PlayerOvrProps) {
@@ -45,7 +102,7 @@ export function AttributesGrid({ player, className }: AttributesGridProps) {
   return (
     <div className={cn('grid grid-cols-2 gap-1', className)}>
       {stats.map(s => (
-        <div key={s.key} className={cn('flex items-center justify-between rounded-md px-2 py-1 text-xs border', s.key === primary.key ? 'bg-primary/5 border-primary/30' : 'border-transparent bg-muted/30')}> 
+        <div key={s.key} className={cn('flex items-center justify-between rounded-md px-2 py-1 text-xs border', s.key === primary.key ? 'bg-primary/5 border-primary/30' : 'border-transparent bg-muted/30')}>
           <span className="text-muted-foreground">{attributeLabels[s.key]}</span>
           <span className="font-bold">{s.value}</span>
         </div>

@@ -202,7 +202,7 @@ export default function FindMatchPage() {
             <CardContent className="p-2 flex-grow overflow-hidden"><ScrollArea className="h-full">
               {filtersApplied && (
                 <div className="space-y-2 p-1">
-                  {itemsToDisplay.length > 0 ? itemsToDisplay.map((item: Match | AvailablePlayer) => (
+                  {itemsToDisplay.length > 0 ? itemsToDisplay.map((item: Match | AvailablePlayer, index: number) => (
                     <div id={`card-${(item as Match).id || (item as AvailablePlayer).uid}`} key={(item as Match).id || (item as AvailablePlayer).uid}>
                       {activeTab === 'matches' ? (
                           <Card className={cn("cursor-pointer", activeMarker === item.id ? "border-primary" : "")} onMouseEnter={() => setActiveMarker(item.id)} onMouseLeave={() => setActiveMarker(null)}>
@@ -210,7 +210,7 @@ export default function FindMatchPage() {
                           </Card>
                       ) : (
                           <div className="w-full" onMouseEnter={() => setActiveMarker((item as AvailablePlayer).uid)} onMouseLeave={() => setActiveMarker(null)}>
-                            <PlayerCard player={item as any} />
+                            <PlayerCard player={item as any} index={index} />
                           </div>
                       )}
                     </div>

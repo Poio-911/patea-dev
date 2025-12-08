@@ -17,6 +17,7 @@ import type { Match, Player, Jersey } from '@/lib/types';
 import { Star, Scale, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { JerseyPreview } from './team-builder/jersey-preview';
+import { PlayerPositionBadge, PlayerOvr } from '@/components/player-styles';
 
 
 type MatchTeamsDialogProps = {
@@ -24,17 +25,12 @@ type MatchTeamsDialogProps = {
   children: React.ReactNode;
 };
 
-const positionBadgeStyles: Record<Player['position'], string> = {
-  POR: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
-  DEF: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-  MED: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
-  DEL: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
-};
+
 
 
 export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
   const teams = match.teams || [];
-  
+
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -47,36 +43,37 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
             {teams.map((team, index) => (
               <Card key={team.name}>
                 <CardHeader>
-                    <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-3">
-                            {team.jersey && <JerseyPreview jersey={team.jersey} size="sm" />}
-                            <div>
-                                <UiCardTitle className="text-lg">{team.name}</UiCardTitle>
-                                <Badge variant="secondary" className="mt-1">OVR Promedio: {team.averageOVR.toFixed(1)}</Badge>
-                            </div>
-                        </div>
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-3">
+                      {team.jersey && <JerseyPreview jersey={team.jersey} size="sm" />}
+                      <div>
+                        <UiCardTitle className="text-lg">{team.name}</UiCardTitle>
+                        <Badge variant="secondary" className="mt-1">OVR Promedio: {team.averageOVR.toFixed(1)}</Badge>
+                      </div>
                     </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-2">
-                        {team.players.map((player) => {
-                            const matchPlayer = match.players.find(p => p.uid === player.uid);
-                            return (
-                                <div key={player.uid} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                                    <div className="flex items-center gap-3">
-                                        <Avatar className="h-9 w-9">
-                                            <AvatarImage src={matchPlayer?.photoUrl} alt={player.displayName} data-ai-hint="player portrait" />
-                                            <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <p className="font-medium">{player.displayName}</p>
-                                    </div>
-                                    <Badge variant="outline" className={cn("text-sm", positionBadgeStyles[player.position as keyof typeof positionBadgeStyles])}>
-                                        {player.ovr} <span className="ml-1 opacity-75">{player.position}</span>
-                                    </Badge>
-                                </div>
-                            );
-                        })}
-                    </div>
+                  <div className="space-y-2">
+                    {team.players.map((player) => {
+                      const matchPlayer = match.players.find(p => p.uid === player.uid);
+                      return (
+                        <div key={player.uid} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9">
+                              <AvatarImage src={matchPlayer?.photoUrl} alt={player.displayName} data-ai-hint="player portrait" />
+                              <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <p className="font-medium">{player.displayName}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <PlayerOvr value={player.ovr} size="compact" />
+                            <PlayerPositionBadge position={player.position as any} size="sm" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </CardContent>
               </Card>
             ))}

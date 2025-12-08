@@ -117,6 +117,38 @@ All AI flows are in `src/ai/flows/`. **Critical constraint:**
 - `DetailedTeamPlayer`: Extends Player with team number and status
 - `Match`: Has discriminated union for `type` and `size`
 - `MatchStatus`: Lifecycle states (`upcoming` → `active` → `completed` → `evaluated`)
+- `Jersey`: Team jersey configuration with colors and patterns
+
+### 7. UI Animation System
+
+**Card animations are rarity-based:**
+
+```typescript
+// src/lib/animation-utils.ts
+getAnimationByRarity(ovr: number): CardAnimationType
+```
+
+- **Elite (OVR ≥ 86)**: 3D flip animation
+- **Gold (OVR ≥ 76)**: 2D rotate animation
+- **Silver (OVR ≥ 65)**: Zoom animation
+- **Bronze (< 65)**: Slide animation
+
+**Usage pattern:**
+```typescript
+import { AnimatedCardWrapper } from '@/components/animated-card-wrapper';
+import { getAnimationByRarity, getStaggerDelay } from '@/lib/animation-utils';
+
+<AnimatedCardWrapper
+  animation={getAnimationByRarity(player.ovr)}
+  delay={getStaggerDelay(index, 3)}
+>
+  {children}
+</AnimatedCardWrapper>
+```
+
+- Uses `framer-motion` with `useInView` hook for scroll-triggered animations
+- Stagger delays create cascading effect in grids
+- All animations use spring physics for natural feel
 
 ## Firestore Data Model
 
@@ -195,6 +227,26 @@ await updateDoc(playerRef, { ovr: newOvr });
 
 **Most critical:** `/docs/sections/02-players.md` (400+ lines covering player system)
 
+## Next.js Configuration
+
+**Key settings in `next.config.mjs`:**
+
+- **Output mode**: `standalone` (for Firebase App Hosting)
+- **Server Actions**: 10mb body size limit for image uploads
+- **Webpack exclusions**: Genkit packages excluded from client bundle to prevent build errors
+- **PWA**: Configured via `@ducanh2912/next-pwa`, disabled in development
+- **Image domains**: Allows Google user photos and Firebase Storage
+- **Source maps**: Disabled in production for security
+
+**Critical webpack rule:**
+```javascript
+// Genkit MUST be excluded from client bundle
+if (!isServer) {
+  config.resolve.alias['genkit'] = false;
+  config.resolve.alias['@genkit-ai/core'] = false;
+}
+```
+
 ## Deployment
 
 - **Hosting:** Firebase App Hosting (standalone output mode)
@@ -205,8 +257,8 @@ Firebase config in `firebase.json` includes Firestore rules/indexes and storage 
 
 ## Common Pitfalls
 
-1. **Don't manually update state after Firestore writes** - trust `useDoc`
-2. **Never import Genkit in client components** - causes build errors
+1. **Don't manually update state after Firestore writes** - trust `useDoc` hook for automatic updates
+2. **Never import Genkit in client components** - causes build errors (webpack excludes it)
 3. **Synchronize photos across 3 locations** - users, players, availablePlayers
 4. **Server actions need `'use server'`** - or they'll be treated as client code
 5. **Credit system**: Free monthly credits reset, purchased credits don't expire
@@ -215,14 +267,32 @@ Firebase config in `firebase.json` includes Firestore rules/indexes and storage 
 8. **Venue ratings**: Only users who played match at venue can rate it
 9. **Payment webhooks**: Always verify MercadoPago signature for security
 10. **PWA updates**: Service Worker needs skipWaiting for immediate updates
+11. **Animation performance**: Use `AnimatedCardWrapper` with proper stagger delays to avoid jank
+12. **Jersey watermarks**: Always check if jersey exists before rendering watermark component
 
 ## Path Aliases
 
 - `@/*` maps to `src/*`
 - Example: `import { Player } from '@/lib/types'`
 
-## Git Status Notes
+## Component Architecture Patterns
 
-- Branch: `dev-app-Ai` (current development branch)
-- Typically PR to main branch (no main branch configured yet)
-- Modified files: `package.json`, `public/sw.js` (PWA service worker)
+### Jersey System
+- `JerseyWatermark`: Decorative jersey background overlay with configurable opacity and position
+- `JerseyPreview`: Renders actual jersey design from configuration
+- Used in team cards, match details, and profile views
+
+### Player Card System
+- Player cards use OVR-based styling (see `src/components/player-styles.tsx`)
+- Card rarity determines border colors, gradients, and animations
+- `getPlayerRarityStyle()` centralizes visual styling by OVR tier
+
+### Client Providers
+- `ClientProviders` component in `components/client-providers.tsx` wraps app with necessary context
+- Includes theme provider, toast notifications, and Firebase auth state
+
+### Navigation Structure
+- Main navigation is in `src/app/main-nav.tsx` (horizontal top navigation bar)
+- Navigation was recently refactored from desktop sidebar to horizontal layout
+- Mobile navigation uses responsive menu drawer
+- Navigation items are route-aware and highlight active pages

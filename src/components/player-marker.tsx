@@ -6,24 +6,19 @@ import type { AvailablePlayer } from '@/lib/types';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { PlayerMarkerIcon } from '@/components/icons/player-marker-icon';
+import { PlayerPositionBadge } from '@/components/player-styles';
 
 interface PlayerMarkerProps {
-  player: AvailablePlayer;
-  activeMarker: string | null;
-  handleMarkerClick: (playerId: string) => void;
+    player: AvailablePlayer;
+    activeMarker: string | null;
+    handleMarkerClick: (playerId: string) => void;
 }
 
-const positionBadgeStyles: Record<AvailablePlayer['position'], string> = {
-  DEL: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
-  MED: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-  DEF: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
-  POR: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
-};
 
 // Componente del marcador personalizado
 const CustomMarker = ({ onClick }: { onClick: () => void }) => (
-    <button 
-        onClick={onClick} 
+    <button
+        onClick={onClick}
         className="relative flex items-center justify-center"
         style={{ width: '32px', height: '32px' }}
     >
@@ -34,7 +29,7 @@ const CustomMarker = ({ onClick }: { onClick: () => void }) => (
 // Componente del popup
 const PlayerPopup = ({ player }: { player: AvailablePlayer }) => {
     const playerName = player.displayName || (player as any).name;
-    
+
     return (
         <div className="relative">
             {/* El popup principal */}
@@ -44,22 +39,17 @@ const PlayerPopup = ({ player }: { player: AvailablePlayer }) => {
                 </div>
                 <div className="p-2">
                     <div className="flex items-center justify-start gap-2">
-                        <Badge 
-                            variant="default" 
+                        <Badge
+                            variant="default"
                             className={cn("text-sm font-bold", player.ovr > 80 ? "bg-green-500/80" : "bg-primary")}
                         >
                             {player.ovr}
                         </Badge>
-                        <Badge 
-                            variant="outline" 
-                            className={cn("text-sm font-semibold", positionBadgeStyles[player.position])}
-                        >
-                            {player.position}
-                        </Badge>
+                        <PlayerPositionBadge position={player.position} size="sm" />
                     </div>
                 </div>
             </div>
-            
+
             {/* Flecha que apunta hacia abajo */}
             <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
                 <div className="w-4 h-4 bg-background border-r border-b border-gray-200 dark:border-gray-700 transform rotate-45 shadow-sm"></div>
@@ -69,56 +59,56 @@ const PlayerPopup = ({ player }: { player: AvailablePlayer }) => {
 };
 
 export function PlayerMarker({ player, activeMarker, handleMarkerClick }: PlayerMarkerProps) {
-  const isUserLocationMarker = player.uid === 'user-location';
-  const isActive = activeMarker === player.uid;
+    const isUserLocationMarker = player.uid === 'user-location';
+    const isActive = activeMarker === player.uid;
 
-  if (!player.location || typeof player.location.lat !== 'number' || typeof player.location.lng !== 'number') {
-    return null;
-  }
-  
-  // Marcador especial para la ubicación del usuario
-  if (isUserLocationMarker) {
-      return (
-        <OverlayView
-            position={player.location}
-            mapPaneName={OverlayView.FLOAT_PANE}
-            getPixelPositionOffset={(width, height) => ({
-                x: -(width / 2),
-                y: -(height / 2),
-            })}
-        >
-            <div className="h-4 w-4 rounded-full bg-blue-500 border-2 border-white shadow-md" />
-        </OverlayView>
-      )
-  }
+    if (!player.location || typeof player.location.lat !== 'number' || typeof player.location.lng !== 'number') {
+        return null;
+    }
 
-  return (
-    <>
-        {/* Marcador del jugador */}
-        <OverlayView
-            position={player.location}
-            mapPaneName={OverlayView.MARKER_LAYER}
-            getPixelPositionOffset={() => ({
-                x: -16, // Centrar horizontalmente (32px / 2)
-                y: -32, // Posicionar en la base del marcador
-            })}
-        >
-            <CustomMarker onClick={() => handleMarkerClick(player.uid)} />
-        </OverlayView>
-
-        {/* Popup de información */}
-        {isActive && (
+    // Marcador especial para la ubicación del usuario
+    if (isUserLocationMarker) {
+        return (
             <OverlayView
                 position={player.location}
                 mapPaneName={OverlayView.FLOAT_PANE}
-                getPixelPositionOffset={() => ({
-                    x: -96, // Centrar el popup (192px / 2)
-                    y: -110, // Posicionar arriba del marcador con margen
+                getPixelPositionOffset={(width, height) => ({
+                    x: -(width / 2),
+                    y: -(height / 2),
                 })}
             >
-                <PlayerPopup player={player} />
+                <div className="h-4 w-4 rounded-full bg-blue-500 border-2 border-white shadow-md" />
             </OverlayView>
-        )}
-    </>
-  );
+        )
+    }
+
+    return (
+        <>
+            {/* Marcador del jugador */}
+            <OverlayView
+                position={player.location}
+                mapPaneName={OverlayView.MARKER_LAYER}
+                getPixelPositionOffset={() => ({
+                    x: -16, // Centrar horizontalmente (32px / 2)
+                    y: -32, // Posicionar en la base del marcador
+                })}
+            >
+                <CustomMarker onClick={() => handleMarkerClick(player.uid)} />
+            </OverlayView>
+
+            {/* Popup de información */}
+            {isActive && (
+                <OverlayView
+                    position={player.location}
+                    mapPaneName={OverlayView.FLOAT_PANE}
+                    getPixelPositionOffset={() => ({
+                        x: -96, // Centrar el popup (192px / 2)
+                        y: -110, // Posicionar arriba del marcador con margen
+                    })}
+                >
+                    <PlayerPopup player={player} />
+                </OverlayView>
+            )}
+        </>
+    );
 }
