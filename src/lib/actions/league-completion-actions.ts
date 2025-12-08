@@ -32,17 +32,28 @@ export async function checkAndCompleteLeague(leagueId: string): Promise<{
       return { success: false, message: 'La liga no está en curso' };
     }
 
-    // Get all league matches
-    const matchesSnapshot = await getAdminDb()
-      .collection('matches')
-      .where('leagueInfo.leagueId', '==', leagueId)
-      .where('type', '==', 'league')
-      .get();
+    // ✅ OPTIMIZATION: Fetch matches and teams in parallel (independent queries)
+    const [matchesSnapshot, teamsSnapshot] = await Promise.all([
+      getAdminDb()
+        .collection('matches')
+        .where('leagueInfo.leagueId', '==', leagueId)
+        .where('type', '==', 'league')
+        .get(),
+      getAdminDb()
+        .collection('teams')
+        .where('__name__', 'in', league.teams)
+        .get(),
+    ]);
 
     const matches = matchesSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
     })) as Match[];
+
+    const teams = teamsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as GroupTeam[];
 
     // Check if all matches are completed
     const allCompleted = matches.every(m =>
@@ -55,17 +66,6 @@ export async function checkAndCompleteLeague(leagueId: string): Promise<{
         message: 'Todavía hay partidos pendientes',
       };
     }
-
-    // Get teams data
-    const teamsSnapshot = await getAdminDb()
-      .collection('teams')
-      .where('__name__', 'in', league.teams)
-      .get();
-
-    const teams = teamsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as GroupTeam[];
 
     // Calculate final standings
     const standings = calculateLeagueStandings(matches, teams);
@@ -86,10 +86,22 @@ export async function checkAndCompleteLeague(leagueId: string): Promise<{
         teams
       );
 
-      // Update league with tiebreaker status
-      await getAdminDb().collection('leagues').doc(leagueId).update({
-        requiresTiebreaker: true,
-        finalMatchId: finalMatch.id,
+      // ✅ FIX: Use transaction to update league with tiebreaker status
+      const db = getAdminDb();
+      const leagueRef = db.collection('leagues').doc(leagueId);
+
+      await db.runTransaction(async (transaction) => {
+        const leagueSnap = await transaction.get(leagueRef);
+
+        // Verify status is still in_progress
+        if (!leagueSnap.exists || leagueSnap.data()?.status !== 'in_progress') {
+          throw new Error('La liga ya fue completada o el estado cambió');
+        }
+
+        transaction.update(leagueRef, {
+          requiresTiebreaker: true,
+          finalMatchId: finalMatch.id,
+        });
       });
 
       return {
@@ -100,15 +112,28 @@ export async function checkAndCompleteLeague(leagueId: string): Promise<{
       };
     }
 
-    // No tiebreaker needed, declare champion
-    await getAdminDb().collection('leagues').doc(leagueId).update({
-      status: 'completed',
-      championTeamId: championResult.championId,
-      championTeamName: championResult.championName,
-      runnerUpTeamId: championResult.runnerUpId,
-      runnerUpTeamName: championResult.runnerUpName,
-      completedAt: new Date().toISOString(),
-      requiresTiebreaker: false,
+    // ✅ FIX: Use transaction to prevent race conditions when declaring champion
+    const db = getAdminDb();
+    const leagueRef = db.collection('leagues').doc(leagueId);
+
+    await db.runTransaction(async (transaction) => {
+      const leagueSnap = await transaction.get(leagueRef);
+
+      // Double-check status hasn't changed
+      if (!leagueSnap.exists || leagueSnap.data()?.status !== 'in_progress') {
+        throw new Error('La liga ya fue completada o el estado cambió');
+      }
+
+      // Update with champion atomically
+      transaction.update(leagueRef, {
+        status: 'completed',
+        championTeamId: championResult.championId,
+        championTeamName: championResult.championName,
+        runnerUpTeamId: championResult.runnerUpId,
+        runnerUpTeamName: championResult.runnerUpName,
+        completedAt: new Date().toISOString(),
+        requiresTiebreaker: false,
+      });
     });
 
     return {
@@ -298,14 +323,32 @@ export async function resolveTiebreakerFinal(
     const runnerUpId = team1Score > team2Score ? match.teams[1].id! : match.teams[0].id!;
     const runnerUpName = team1Score > team2Score ? match.teams[1].name : match.teams[0].name;
 
-    // Update league with champion
-    await getAdminDb().collection('leagues').doc(leagueId).update({
-      status: 'completed',
-      championTeamId: championId,
-      championTeamName: championName,
-      runnerUpTeamId: runnerUpId,
-      runnerUpTeamName: runnerUpName,
-      completedAt: new Date().toISOString(),
+    // ✅ FIX: Use transaction to update league with champion (prevents race conditions)
+    const db = getAdminDb();
+    const leagueRef = db.collection('leagues').doc(leagueId);
+
+    await db.runTransaction(async (transaction) => {
+      const leagueSnap = await transaction.get(leagueRef);
+
+      // Verify league exists and is still in tiebreaker state
+      if (!leagueSnap.exists) {
+        throw new Error('Liga no encontrada');
+      }
+
+      const leagueData = leagueSnap.data();
+      if (leagueData?.status === 'completed') {
+        throw new Error('La liga ya fue completada');
+      }
+
+      // Update with champion atomically
+      transaction.update(leagueRef, {
+        status: 'completed',
+        championTeamId: championId,
+        championTeamName: championName,
+        runnerUpTeamId: runnerUpId,
+        runnerUpTeamName: runnerUpName,
+        completedAt: new Date().toISOString(),
+      });
     });
 
     return {

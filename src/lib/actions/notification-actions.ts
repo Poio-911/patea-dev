@@ -1,19 +1,21 @@
 'use server';
 
-import { db } from '@/firebase';
-import { doc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
+import { getAdminDb } from '@/firebase/admin-init';
+import { FieldValue } from 'firebase-admin/firestore';
 import { logger } from '@/lib/logger';
+
+const db = getAdminDb();
 
 /**
  * Save FCM token for a user
  */
 export async function saveFCMTokenAction(userId: string, token: string) {
   try {
-    const userRef = doc(db, 'users', userId);
+    const userRef = db.collection('users').doc(userId);
 
     // Add token to the user's fcmTokens array (arrayUnion prevents duplicates)
-    await updateDoc(userRef, {
-      fcmTokens: arrayUnion(token),
+    await userRef.update({
+      fcmTokens: FieldValue.arrayUnion(token),
     });
 
     logger.info('FCM token saved successfully', { userId });
@@ -29,10 +31,10 @@ export async function saveFCMTokenAction(userId: string, token: string) {
  */
 export async function removeFCMTokenAction(userId: string, token: string) {
   try {
-    const userRef = doc(db, 'users', userId);
+    const userRef = db.collection('users').doc(userId);
 
-    await updateDoc(userRef, {
-      fcmTokens: arrayRemove(token),
+    await userRef.update({
+      fcmTokens: FieldValue.arrayRemove(token),
     });
 
     logger.info('FCM token removed successfully', { userId });
@@ -56,9 +58,9 @@ export async function updateNotificationPreferencesAction(
   }
 ) {
   try {
-    const userRef = doc(db, 'users', userId);
+    const userRef = db.collection('users').doc(userId);
 
-    await updateDoc(userRef, {
+    await userRef.update({
       notificationPreferences: preferences,
     });
 
@@ -88,12 +90,12 @@ export async function sendNotificationToUsersAction(params: {
     const tokens: string[] = [];
 
     for (const userId of userIds) {
-      const userRef = doc(db, 'users', userId);
-      const userSnap = await getDoc(userRef);
+      const userRef = db.collection('users').doc(userId);
+      const userSnap = await userRef.get();
 
-      if (userSnap.exists()) {
+      if (userSnap.exists) {
         const userData = userSnap.data();
-        const userTokens = userData.fcmTokens || [];
+        const userTokens = userData?.fcmTokens || [];
         tokens.push(...userTokens);
       }
     }

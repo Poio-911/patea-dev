@@ -63,25 +63,38 @@ export async function followUserAction(followerId: string, followingId: string) 
       return { success: false, error: 'No puedes seguirte a ti mismo.' };
     }
 
-    // Check existing follow
-    const existing = await getAdminDb()
-      .collection('follows')
-      .where('followerId', '==', followerId)
-      .where('followingId', '==', followingId)
-      .limit(1)
-      .get();
-    if (!existing.empty) {
+    // ✅ FIX: Use transaction to prevent duplicate follows (race condition)
+    const db = getAdminDb();
+    const followsRef = db.collection('follows');
+
+    // Create a deterministic document ID for idempotency
+    const followDocId = `${followerId}_${followingId}`;
+    const followDocRef = followsRef.doc(followDocId);
+
+    const result = await db.runTransaction(async (transaction) => {
+      // Check if follow already exists atomically
+      const existingFollow = await transaction.get(followDocRef);
+
+      if (existingFollow.exists) {
+        return { alreadyExists: true };
+      }
+
+      // Create follow document atomically
+      const followData: Omit<Follow, 'id'> = {
+        followerId,
+        followingId,
+        createdAt: new Date().toISOString(),
+      };
+      transaction.set(followDocRef, followData);
+
+      return { created: true };
+    });
+
+    if (result.alreadyExists) {
       return { success: false, error: 'Ya sigues a este usuario.' };
     }
 
-    const followData: Omit<Follow, 'id'> = {
-      followerId,
-      followingId,
-      createdAt: new Date().toISOString(),
-    };
-    const docRef = await getAdminDb().collection('follows').add(followData);
-
-    // Publish social activity (new follower)
+    // Publish social activity (new follower) - outside transaction is OK
     await publishActivityAction({
       type: 'new_follower',
       userId: followerId,
@@ -90,7 +103,7 @@ export async function followUserAction(followerId: string, followingId: string) 
     });
 
     // Optional: Notification to followed user
-    await getAdminDb().collection(`users/${followingId}/notifications`).add({
+    await db.collection(`users/${followingId}/notifications`).add({
       type: 'new_follower',
       title: 'Nuevo seguidor',
       message: `Un usuario ha comenzado a seguirte.`,
@@ -100,7 +113,7 @@ export async function followUserAction(followerId: string, followingId: string) 
       metadata: { fromUserId: followerId },
     });
 
-    return { success: true, followId: docRef.id };
+    return { success: true, followId: followDocId };
   } catch (error) {
     const err = handleServerActionError(error, { followerId, followingId });
     return { success: false, error: err.error };
@@ -110,28 +123,39 @@ export async function followUserAction(followerId: string, followingId: string) 
 // Unfollow
 export async function unfollowUserAction(followerId: string, followingId: string) {
   try {
-    const existing = await getAdminDb()
-      .collection('follows')
-      .where('followerId', '==', followerId)
-      .where('followingId', '==', followingId)
-      .limit(1)
-      .get();
-    if (existing.empty) {
+    // ✅ FIX: Use deterministic document ID (same as followUserAction)
+    const db = getAdminDb();
+    const followDocId = `${followerId}_${followingId}`;
+    const followDocRef = db.collection('follows').doc(followDocId);
+
+    // Use transaction to ensure atomicity
+    const result = await db.runTransaction(async (transaction) => {
+      const followDoc = await transaction.get(followDocRef);
+
+      if (!followDoc.exists) {
+        return { notFound: true };
+      }
+
+      // Delete the follow relationship atomically
+      transaction.delete(followDocRef);
+
+      return { deleted: true };
+    });
+
+    if (result.notFound) {
       return { success: false, error: 'No sigues a este usuario.' };
     }
-    
-    // Delete the follow relationship
-    await existing.docs[0].ref.delete();
-    
+
     // Clean up: Remove unfollowed user's activities from follower's feed
+    // This happens outside the transaction and can fail gracefully
     try {
-      const followerFeedSnapshot = await getAdminDb()
+      const followerFeedSnapshot = await db
         .collection(`users/${followerId}/feeds`)
         .where('userId', '==', followingId)
         .get();
-      
+
       if (!followerFeedSnapshot.empty) {
-        const batch = getAdminDb().batch();
+        const batch = db.batch();
         followerFeedSnapshot.docs.forEach(doc => {
           batch.delete(doc.ref);
         });
@@ -141,7 +165,7 @@ export async function unfollowUserAction(followerId: string, followingId: string
       console.warn('Failed to cleanup unfollowed user activities from feed:', cleanupError);
       // Don't fail the unfollow operation if cleanup fails
     }
-    
+
     return { success: true };
   } catch (error) {
     const err = handleServerActionError(error, { followerId, followingId });

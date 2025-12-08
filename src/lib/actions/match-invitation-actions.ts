@@ -56,69 +56,79 @@ export async function respondToMatchInvitationAction(
       return { success: false, error: 'No estás invitado a este partido' };
     }
 
-    // Obtener invitación previa para calcular diferencia en contadores
     const invitationRef = matchRef.collection('invitations').doc(userId);
-    const invitationDoc = await invitationRef.get();
-    const previousResponse = invitationDoc.exists
-      ? (invitationDoc.data()?.response as MatchInvitationResponse)
-      : 'pending';
 
-    // Preparar actualización de invitación
-    const invitationData: MatchInvitation = {
-      id: userId,
-      matchId,
-      userId,
-      response,
-      respondedAt: new Date().toISOString(),
-      notifiedAt: invitationDoc.data()?.notifiedAt || new Date().toISOString(),
-    };
-
-    // Calcular cambios en contadores
-    const counterUpdates: Record<string, any> = {};
-
-    // Decrementar contador anterior (si no era pending)
-    if (previousResponse === 'confirmed') {
-      counterUpdates.confirmedCount = FieldValue.increment(-1);
-    } else if (previousResponse === 'declined') {
-      counterUpdates.declinedCount = FieldValue.increment(-1);
-    } else if (previousResponse === 'maybe') {
-      counterUpdates.maybeCount = FieldValue.increment(-1);
-    }
-
-    // Incrementar contador nuevo
-    if (response === 'confirmed') {
-      counterUpdates.confirmedCount = FieldValue.increment(1);
-    } else if (response === 'declined') {
-      counterUpdates.declinedCount = FieldValue.increment(1);
-    } else if (response === 'maybe') {
-      counterUpdates.maybeCount = FieldValue.increment(1);
-    }
-
-    // Manejar waitlist si el partido tiene límite de jugadores
-    const maxPlayers = matchData?.maxPlayers;
-    const currentConfirmed = matchData?.confirmedCount || 0;
-    const waitlist = matchData?.waitlist || [];
-
-    if (maxPlayers && response === 'confirmed') {
-      // Si confirma y ya está lleno, agregar a waitlist
-      if (currentConfirmed >= maxPlayers && !waitlist.includes(userId)) {
-        counterUpdates.waitlist = FieldValue.arrayUnion(userId);
-        // No incrementar confirmedCount si va a waitlist
-        delete counterUpdates.confirmedCount;
-      }
-    }
-
-    // Si estaba en waitlist y ahora declina o cambia, removerlo
-    if (waitlist.includes(userId) && response !== 'confirmed') {
-      counterUpdates.waitlist = FieldValue.arrayRemove(userId);
-    }
-
-    // Ejecutar transacción
+    // Execute ALL logic inside transaction to prevent race conditions
     await db.runTransaction(async (transaction) => {
-      // Actualizar invitación
+      // Read current state atomically
+      const matchSnap = await transaction.get(matchRef);
+      const invitationSnap = await transaction.get(invitationRef);
+
+      if (!matchSnap.exists) {
+        throw new Error('Partido no encontrado');
+      }
+
+      const matchData = matchSnap.data();
+      const previousResponse = invitationSnap.exists
+        ? (invitationSnap.data()?.response as MatchInvitationResponse)
+        : 'pending';
+
+      // Calculate counter changes based on atomic data
+      const counterUpdates: Record<string, any> = {};
+
+      // Decrement previous counter (if not pending)
+      if (previousResponse === 'confirmed') {
+        counterUpdates.confirmedCount = FieldValue.increment(-1);
+      } else if (previousResponse === 'declined') {
+        counterUpdates.declinedCount = FieldValue.increment(-1);
+      } else if (previousResponse === 'maybe') {
+        counterUpdates.maybeCount = FieldValue.increment(-1);
+      }
+
+      // Increment new counter
+      if (response === 'confirmed') {
+        counterUpdates.confirmedCount = FieldValue.increment(1);
+      } else if (response === 'declined') {
+        counterUpdates.declinedCount = FieldValue.increment(1);
+      } else if (response === 'maybe') {
+        counterUpdates.maybeCount = FieldValue.increment(1);
+      }
+
+      // Handle waitlist logic with ATOMIC data
+      const maxPlayers = matchData?.maxPlayers;
+      const currentConfirmed = matchData?.confirmedCount || 0;
+      const waitlist = matchData?.waitlist || [];
+
+      if (maxPlayers && response === 'confirmed') {
+        // Check if match is full based on ATOMIC confirmed count
+        if (currentConfirmed >= maxPlayers && !waitlist.includes(userId)) {
+          // Match is full, add to waitlist instead
+          counterUpdates.waitlist = FieldValue.arrayUnion(userId);
+          // Don't increment confirmedCount if going to waitlist
+          delete counterUpdates.confirmedCount;
+
+          console.log(`[Waitlist] User ${userId} added to waitlist. Current confirmed: ${currentConfirmed}/${maxPlayers}`);
+        }
+      }
+
+      // Remove from waitlist if declining or changing response
+      if (waitlist.includes(userId) && response !== 'confirmed') {
+        counterUpdates.waitlist = FieldValue.arrayRemove(userId);
+      }
+
+      // Prepare invitation update
+      const invitationData: MatchInvitation = {
+        id: userId,
+        matchId,
+        userId,
+        response,
+        respondedAt: new Date().toISOString(),
+        notifiedAt: invitationSnap.data()?.notifiedAt || new Date().toISOString(),
+      };
+
+      // Atomic updates
       transaction.set(invitationRef, invitationData);
 
-      // Actualizar contadores en el partido
       if (Object.keys(counterUpdates).length > 0) {
         transaction.update(matchRef, counterUpdates);
       }

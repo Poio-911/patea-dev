@@ -2,10 +2,11 @@
 
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 import { getAdminDb } from '@/firebase/admin-init';
-import { auth } from '@/firebase/index';
+import { requireAuth } from '@/lib/auth/get-server-session';
 import { nanoid } from 'nanoid';
 import type { CreditPackage, CreditTransaction } from '@/lib/types';
 import { FieldValue } from 'firebase-admin/firestore';
+import { sanitizeText, validatePrice, validateCreditAmount } from '@/lib/validation';
 
 const db = getAdminDb();
 
@@ -24,17 +25,31 @@ const payment = new Payment(client);
  */
 export async function createCreditPurchaseAction(packageId: string) {
   try {
-    // 1. Validar usuario autenticado
-    const user = auth.currentUser;
-    if (!user) {
+    // ✅ VALIDATION: Validate packageId input
+    if (!packageId || typeof packageId !== 'string' || packageId.trim().length === 0) {
       return {
         success: false,
-        error: 'Usuario no autenticado',
+        error: 'ID de paquete inválido',
       };
     }
 
+    const sanitizedPackageId = sanitizeText(packageId);
+    if (sanitizedPackageId !== packageId || sanitizedPackageId.length > 64) {
+      return {
+        success: false,
+        error: 'ID de paquete inválido',
+      };
+    }
+
+    // 1. Validar usuario autenticado
+    const userId = await requireAuth();
+
+    // Obtener datos del usuario para email y displayName
+    const userDoc = await db.collection('users').doc(userId).get();
+    const userData = userDoc.data();
+
     // 2. Obtener paquete de Firestore
-    const packageDoc = await db.collection('creditPackages').doc(packageId).get();
+    const packageDoc = await db.collection('creditPackages').doc(sanitizedPackageId).get();
 
     if (!packageDoc.exists) {
       return {
@@ -44,6 +59,23 @@ export async function createCreditPurchaseAction(packageId: string) {
     }
 
     const pkg = packageDoc.data() as CreditPackage;
+
+    // ✅ VALIDATION: Validate package data
+    const priceValidation = validatePrice(pkg.price);
+    if (!priceValidation.isValid) {
+      return {
+        success: false,
+        error: `Precio inválido: ${priceValidation.error}`,
+      };
+    }
+
+    const creditsValidation = validateCreditAmount(pkg.credits);
+    if (!creditsValidation.isValid) {
+      return {
+        success: false,
+        error: `Cantidad de créditos inválida: ${creditsValidation.error}`,
+      };
+    }
 
     // 3. Crear transaction ID único
     const transactionId = `tx_${nanoid(12)}`;
@@ -61,8 +93,8 @@ export async function createCreditPurchaseAction(packageId: string) {
         },
       ],
       payer: {
-        name: user.displayName || 'Usuario',
-        email: user.email || 'usuario@patea.app',
+        name: userData?.displayName || 'Usuario',
+        email: userData?.email || 'usuario@patea.app',
       },
       back_urls: {
         success: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001'}/payments/success?transaction_id=${transactionId}`,
@@ -75,7 +107,7 @@ export async function createCreditPurchaseAction(packageId: string) {
       statement_descriptor: 'Pateá - Créditos IA',
       metadata: {
         transaction_id: transactionId,
-        user_id: user.uid,
+        user_id: userId,
         package_id: packageId,
       },
     };
@@ -91,7 +123,7 @@ export async function createCreditPurchaseAction(packageId: string) {
 
     // 5. Crear registro de transacción en Firestore
     const transaction: Omit<CreditTransaction, 'id'> = {
-      userId: user.uid,
+      userId: userId,
       packageId: pkg.id,
       credits: pkg.credits,
       amount: pkg.price,
@@ -100,8 +132,8 @@ export async function createCreditPurchaseAction(packageId: string) {
       mpPreferenceId: mpPreference.id,
       createdAt: new Date().toISOString(),
       metadata: {
-        userEmail: user.email || undefined,
-        userName: user.displayName || undefined,
+        userEmail: userData?.email || undefined,
+        userName: userData?.displayName || undefined,
         packageTitle: pkg.title,
       },
     };
@@ -131,13 +163,7 @@ export async function createCreditPurchaseAction(packageId: string) {
 export async function checkPaymentStatusAction(transactionId: string) {
   try {
     // 1. Validar usuario autenticado
-    const user = auth.currentUser;
-    if (!user) {
-      return {
-        success: false,
-        error: 'Usuario no autenticado',
-      };
-    }
+    const userId = await requireAuth();
 
     // 2. Obtener transacción de Firestore
     const transactionDoc = await db
@@ -155,7 +181,7 @@ export async function checkPaymentStatusAction(transactionId: string) {
     const transaction = transactionDoc.data() as CreditTransaction;
 
     // 3. Validar que la transacción pertenece al usuario
-    if (transaction.userId !== user.uid) {
+    if (transaction.userId !== userId) {
       return {
         success: false,
         error: 'No autorizado',
@@ -209,14 +235,6 @@ export async function handleMercadoPagoWebhook(data: any) {
 
     // Obtener transacción de Firestore
     const transactionRef = db.collection('creditTransactions').doc(transactionId);
-    const transactionDoc = await transactionRef.get();
-
-    if (!transactionDoc.exists) {
-      console.error('❌ Transacción no encontrada:', transactionId);
-      return { success: false, error: 'Transacción no encontrada' };
-    }
-
-    const transaction = transactionDoc.data() as CreditTransaction;
 
     // Actualizar estado según el pago
     let newStatus: CreditTransaction['status'] = 'pending';
@@ -233,48 +251,65 @@ export async function handleMercadoPagoWebhook(data: any) {
         newStatus = 'pending';
     }
 
-    // Si el pago fue aprobado, acreditar créditos
-    if (newStatus === 'approved' && transaction.status !== 'approved') {
-      console.log('✅ Pago aprobado, acreditando créditos...');
+    // Use transaction for idempotency - ensures credits are only applied once
+    const result = await db.runTransaction(async (transaction) => {
+      const transactionDoc = await transaction.get(transactionRef);
 
-      // Actualizar transacción
-      await transactionRef.update({
-        status: newStatus,
-        mpPaymentId: paymentId.toString(),
-        completedAt: new Date().toISOString(),
-      });
+      if (!transactionDoc.exists) {
+        throw new Error('Transacción no encontrada');
+      }
 
-      // Actualizar créditos del player
-      const playerRef = db.collection('players').doc(transaction.userId);
-      await playerRef.update({
-        cardGenerationCredits: FieldValue.increment(transaction.credits),
-        totalCreditsPurchased: FieldValue.increment(transaction.credits),
-        lastPurchaseDate: new Date().toISOString(),
-      });
+      const txnData = transactionDoc.data() as CreditTransaction;
 
-      console.log(`✅ ${transaction.credits} créditos acreditados al usuario ${transaction.userId}`);
+      // IDEMPOTENCY CHECK - if already processed, return early
+      if (txnData.status === 'approved') {
+        console.log(`⚠️  [Idempotency] Payment ${paymentId} already processed for transaction ${transactionId}`);
+        return { alreadyProcessed: true };
+      }
 
-      // TODO: Opcional - Crear social activity
-      // await db.collection('socialActivities').add({
-      //   type: 'credits_purchased',
-      //   userId: transaction.userId,
-      //   timestamp: FieldValue.serverTimestamp(),
-      //   metadata: {
-      //     credits: transaction.credits,
-      //     amount: transaction.amount,
-      //   },
-      // });
+      // If payment is approved and hasn't been processed yet
+      if (newStatus === 'approved') {
+        console.log('✅ Pago aprobado, acreditando créditos...');
 
-      return { success: true, message: 'Créditos acreditados exitosamente' };
-    } else if (newStatus !== transaction.status) {
-      // Solo actualizar estado si cambió
-      await transactionRef.update({
-        status: newStatus,
-        mpPaymentId: paymentId.toString(),
-        completedAt: newStatus === 'rejected' ? new Date().toISOString() : undefined,
-      });
+        const playerRef = db.collection('players').doc(txnData.userId);
 
-      console.log(`📝 Estado de transacción actualizado a: ${newStatus}`);
+        // Atomic updates to both transaction and player
+        transaction.update(transactionRef, {
+          status: newStatus,
+          mpPaymentId: paymentId.toString(),
+          completedAt: new Date().toISOString(),
+        });
+
+        transaction.update(playerRef, {
+          cardGenerationCredits: FieldValue.increment(txnData.credits),
+          totalCreditsPurchased: FieldValue.increment(txnData.credits),
+          lastPurchaseDate: new Date().toISOString(),
+        });
+
+        console.log(`✅ ${txnData.credits} créditos acreditados al usuario ${txnData.userId}`);
+        return { creditsApplied: true, credits: txnData.credits };
+
+      } else if (newStatus !== txnData.status) {
+        // Update status if it changed (pending -> rejected, etc)
+        transaction.update(transactionRef, {
+          status: newStatus,
+          mpPaymentId: paymentId.toString(),
+          completedAt: newStatus === 'rejected' ? new Date().toISOString() : undefined,
+        });
+
+        console.log(`📝 Estado de transacción actualizado a: ${newStatus}`);
+        return { statusUpdated: true, newStatus };
+      }
+
+      return { noChanges: true };
+    });
+
+    if (result.alreadyProcessed) {
+      return { success: true, message: 'Webhook ya fue procesado anteriormente (idempotent)' };
+    }
+
+    if (result.creditsApplied) {
+      return { success: true, message: `Créditos acreditados exitosamente: ${result.credits}` };
     }
 
     return { success: true, message: 'Webhook procesado correctamente' };
@@ -291,19 +326,12 @@ export async function handleMercadoPagoWebhook(data: any) {
 export async function getUserTransactionsAction() {
   try {
     // 1. Validar usuario autenticado
-    const user = auth.currentUser;
-    if (!user) {
-      return {
-        success: false,
-        error: 'Usuario no autenticado',
-        transactions: [],
-      };
-    }
+    const userId = await requireAuth();
 
     // 2. Obtener transacciones del usuario
     const transactionsSnapshot = await db
       .collection('creditTransactions')
-      .where('userId', '==', user.uid)
+      .where('userId', '==', userId)
       .orderBy('createdAt', 'desc')
       .limit(50)
       .get();

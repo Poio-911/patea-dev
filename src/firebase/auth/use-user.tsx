@@ -7,6 +7,7 @@ import { doc, setDoc, getDoc, serverTimestamp, onSnapshot, FieldValue, updateDoc
 import { useFirestore } from '@/firebase';
 import type { UserProfile, Player } from '@/lib/types';
 import { logger } from '@/lib/logger';
+import { CREDITS } from '@/lib/constants';
 
 const UserContext = createContext<{ user: UserProfile | null; loading: boolean }>({
   user: null,
@@ -64,13 +65,35 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                         updates.groupId = userData.activeGroupId;
                     }
 
-                    const now = new Date();
-                    const lastReset = playerData.lastCreditReset ? new Date(playerData.lastCreditReset) : null;
+                    // CLIENT-SIDE FALLBACK: Reset monthly credits if Cloud Function missed it
+                    // This only runs if the scheduled Cloud Function failed to reset
+                    const checkCreditResetFallback = () => {
+                        const now = new Date();
+                        const currentMonth = `${now.getFullYear()}-${now.getMonth() + 1}`;
 
-                    if (!lastReset || (lastReset.getMonth() !== now.getMonth() || lastReset.getFullYear() !== now.getFullYear())) {
-                        updates.cardGenerationCredits = 3;
-                        updates.lastCreditReset = now.toISOString();
-                    }
+                        // Check localStorage to avoid redundant checks on every auth change
+                        const lastChecked = localStorage.getItem('creditResetCheck');
+                        if (lastChecked === currentMonth) {
+                            return; // Already verified this month
+                        }
+
+                        const lastReset = playerData.lastCreditReset ? new Date(playerData.lastCreditReset) : null;
+                        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+                        // Reset if:
+                        // 1. Never reset before (lastReset is null)
+                        // 2. Last reset was before current month started
+                        if (!lastReset || lastReset < currentMonthStart) {
+                            logger.info('[Credit Reset Fallback] Resetting credits for user', { userId: firebaseUser.uid });
+                            updates.cardGenerationCredits = CREDITS.MONTHLY_FREE;
+                            updates.lastCreditReset = now.toISOString();
+                        }
+
+                        // Mark this month as checked to avoid redundant checks
+                        localStorage.setItem('creditResetCheck', currentMonth);
+                    };
+
+                    checkCreditResetFallback();
 
                     if (Object.keys(updates).length > 0) {
                         logger.info('Syncing player data', { userId: firebaseUser.uid, updates });

@@ -44,43 +44,30 @@ export async function updatePlayerStatsFromMatch(matchId: string): Promise<{
     }
 
     // Process stats updates for each player
+    // ✅ FIX: Use FieldValue.increment() for atomic updates (prevents race conditions)
     const batch = getAdminDb().batch();
 
     for (const playerId of playerIds) {
       const playerRef = getAdminDb().collection('players').doc(playerId);
-      const playerDoc = await playerRef.get();
 
-      if (!playerDoc.exists) {
-        console.warn(`Player ${playerId} not found, skipping stats update`);
-        continue;
-      }
-
-      const player = { id: playerDoc.id, ...playerDoc.data() } as Player;
-
-      // Calculate stats changes
+      // Calculate stats changes for this player
       const goalsScored = match.goalScorers?.filter(g => g.playerId === playerId).length || 0;
       const yellowCardsReceived = match.cards?.filter(c => c.playerId === playerId && c.cardType === 'yellow').length || 0;
       const redCardsReceived = match.cards?.filter(c => c.playerId === playerId && c.cardType === 'red').length || 0;
 
-      // Update player stats
-      const currentStats = player.stats || {
-        matchesPlayed: 0,
-        goals: 0,
-        assists: 0,
-        averageRating: 0,
-        yellowCards: 0,
-        redCards: 0,
-      };
-
+      // Use atomic increment operations - no need to read current values
+      // This prevents race conditions when multiple matches complete simultaneously
       batch.update(playerRef, {
-        'stats.matchesPlayed': (currentStats.matchesPlayed || 0) + 1,
-        'stats.goals': (currentStats.goals || 0) + goalsScored,
-        'stats.yellowCards': (currentStats.yellowCards || 0) + yellowCardsReceived,
-        'stats.redCards': (currentStats.redCards || 0) + redCardsReceived,
+        'stats.matchesPlayed': FieldValue.increment(1),
+        'stats.goals': FieldValue.increment(goalsScored),
+        'stats.yellowCards': FieldValue.increment(yellowCardsReceived),
+        'stats.redCards': FieldValue.increment(redCardsReceived),
       });
+
+      console.log(`[Player Stats] Updating player ${playerId}: +1 match, +${goalsScored} goals, +${yellowCardsReceived} yellow, +${redCardsReceived} red`);
     }
 
-    // Commit all updates
+    // Commit all updates atomically
     await batch.commit();
 
     return {

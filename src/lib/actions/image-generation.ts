@@ -6,11 +6,25 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { generatePlayerCardImage } from '../../ai/flows/generate-player-card-image';
 import type { Player } from '../../lib/types';
 import { logger } from '../../lib/logger';
+import { sanitizeText } from '../../lib/validation';
 
 export async function generatePlayerCardImageAction(userId: string) {
-  const playerRef = getAdminDb().doc(`players/${userId}`);
+  // ✅ VALIDATION: Validate userId
+  if (!userId || typeof userId !== 'string' || userId.trim().length === 0) {
+    return { error: 'ID de usuario inválido' };
+  }
+
+  // Sanitize userId to prevent injection
+  const sanitizedUserId = sanitizeText(userId);
+  if (sanitizedUserId !== userId || sanitizedUserId.length > 128) {
+    return { error: 'ID de usuario inválido' };
+  }
+
+  const db = getAdminDb();
+  const playerRef = db.doc(`players/${sanitizedUserId}`);
 
   try {
+    // First read to validate before expensive AI operation
     const playerSnap = await playerRef.get();
 
     if (!playerSnap.exists) {
@@ -18,16 +32,12 @@ export async function generatePlayerCardImageAction(userId: string) {
     }
 
     const player = playerSnap.data() as Player;
-    const credits = player.cardGenerationCredits;
 
-    if (credits !== undefined && credits <= 0) {
-      return { error: 'No te quedan créditos para generar imágenes este mes.' };
-    }
-
+    // Validate photo before AI generation
     if (!player.photoUrl) {
       return { error: 'Primero debes subir una foto de perfil.' };
     }
-    
+
     if (player.photoUrl.includes('picsum.photos')) {
       return { error: 'La generación de imágenes no funciona con fotos de marcador de posición. Por favor, sube una foto tuya real.' };
     }
@@ -69,24 +79,53 @@ export async function generatePlayerCardImageAction(userId: string) {
       expires: '03-01-2500', // Far future expiration
     });
 
-    // Update Firestore and Auth in a batch
-    const batch = getAdminDb().batch();
-    const userRef = getAdminDb().doc(`users/${userId}`);
-    batch.update(userRef, { photoURL: newPhotoURL });
-    batch.update(playerRef, {
-      photoUrl: newPhotoURL,
-      cardGenerationCredits: FieldValue.increment(-1),
-      cropPosition: { x: 50, y: 50 }, // Reset crop to center the new image
-      cropZoom: 1, // Reset zoom
+    // Use transaction instead of batch to ensure atomicity and credit validation
+    await db.runTransaction(async (transaction) => {
+      // Re-read player within transaction to verify credits atomically
+      const playerSnap = await transaction.get(playerRef);
+
+      if (!playerSnap.exists) {
+        throw new Error('Jugador no encontrado');
+      }
+
+      const playerData = playerSnap.data() as Player;
+      const credits = playerData.cardGenerationCredits;
+
+      // Atomic credit check - ensures no race condition
+      if (credits !== undefined && credits <= 0) {
+        throw new Error('No te quedan créditos para generar imágenes este mes.');
+      }
+
+      // Prepare updates for all 3 locations with consistent crop data
+      const photoUpdates = {
+        photoUrl: newPhotoURL,
+        cropPosition: { x: 50, y: 50 }, // Reset crop to center the new image
+        cropZoom: 1, // Reset zoom
+      };
+
+      const userRef = db.doc(`users/${userId}`);
+      const availablePlayerRef = db.doc(`availablePlayers/${userId}`);
+
+      // Check if availablePlayer exists
+      const availablePlayerSnap = await transaction.get(availablePlayerRef);
+
+      // Update all 3 locations atomically
+      transaction.update(userRef, {
+        photoURL: newPhotoURL,
+        cropPosition: { x: 50, y: 50 },
+        cropZoom: 1,
+      });
+
+      transaction.update(playerRef, {
+        ...photoUpdates,
+        cardGenerationCredits: FieldValue.increment(-1), // Decrement credits atomically
+      });
+
+      // Only update availablePlayers if document exists
+      if (availablePlayerSnap.exists) {
+        transaction.update(availablePlayerRef, photoUpdates);
+      }
     });
-
-    const availablePlayerRef = getAdminDb().doc(`availablePlayers/${userId}`);
-    const availablePlayerSnap = await availablePlayerRef.get();
-    if (availablePlayerSnap.exists) {
-      batch.update(availablePlayerRef, { photoUrl: newPhotoURL });
-    }
-
-    await batch.commit();
 
     // Force update auth user profile for immediate UI change on client
     await getAdminAuth().updateUser(userId, { photoURL: newPhotoURL });
