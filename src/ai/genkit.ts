@@ -15,10 +15,18 @@ process.env['GENKIT_URL'] = '';
 process.env['GENKIT_HOST'] = '';
 process.env['GENKIT_PORT'] = '';
 
+// Validate required API key
+const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY;
+if (!apiKey) {
+  throw new Error(
+    'Google Gemini API key is missing. Please set either GOOGLE_GENAI_API_KEY or GEMINI_API_KEY environment variable.'
+  );
+}
+
 export const ai = genkit({
   plugins: [
     googleAI({
-      apiKey: process.env.GOOGLE_GENAI_API_KEY || "AIzaSyDDN2IFxzPbAHJRpnLUbQ6lnCFs3Ua4O-k",
+      apiKey,
     }),
   ],
 });
