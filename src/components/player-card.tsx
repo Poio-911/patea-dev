@@ -3,25 +3,23 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
-import type { Player, AttributeKey, PlayerPosition } from '@/lib/types';
+import type { Player, AttributeKey, PlayerPosition, Jersey } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { PlayerOvr, getPositionBadgeClasses, AttributesGrid, PlayerPhoto, positionConfig } from '@/components/player-styles';
+import { PlayerOvr, AttributesGrid, PlayerPhoto, positionConfig, PlayerPositionBadge } from '@/components/player-styles';
 import { Skeleton } from './ui/skeleton';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import { Eye, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AnimatedCardWrapper } from '@/components/animated-card-wrapper';
+import { getAnimationByRarity, getStaggerDelay } from '@/lib/animation-utils';
+import { JerseyWatermark } from '@/components/jersey-watermark';
+import { getOvrLevel } from '@/lib/player-utils';
 
 
 type PlayerCardProps = {
     player: Player & { displayName?: string };
-};
-
-const getOvrLevel = (ovr: number) => {
-    if (ovr >= 86) return 'elite';
-    if (ovr >= 76) return 'gold';
-    if (ovr >= 65) return 'silver';
-    return 'bronze';
+    index?: number;
+    jersey?: Jersey;
 };
 
 const auraClasses: Record<string, string> = {
@@ -32,7 +30,7 @@ const auraClasses: Record<string, string> = {
 };
 
 
-export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardProps) {
+export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, jersey }: PlayerCardProps) {
     const [showDetailsButton, setShowDetailsButton] = useState(false);
 
     if (!player) {
@@ -49,6 +47,15 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
     const PositionIcon = positionConfig[player.position].Icon;
     const ovrLevel = getOvrLevel(player.ovr);
     const selectedAuraClass = auraClasses[ovrLevel];
+    const animationType = getAnimationByRarity(player.ovr);
+    const staggerDelay = getStaggerDelay(index, 3);
+
+    const borderGlowClasses: Record<string, string> = {
+        bronze: 'border-glow-bronze',
+        silver: 'border-glow-silver',
+        gold: 'border-glow-gold',
+        elite: 'border-glow-elite',
+    };
 
     const handleCardClick = () => {
         setShowDetailsButton(true);
@@ -60,11 +67,16 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
     };
 
     return (
-        <div className="h-full w-full">
+        <AnimatedCardWrapper animation={animationType} delay={staggerDelay} className="h-full w-full">
             <Card
                 className={cn(
                     "player-card relative h-full flex flex-col overflow-hidden rounded-2xl shadow-lg",
                     "game:bg-card game:border-border bg-card",
+                    // NEW: Holographic effect (only on dark theme)
+                    "game:holo-effect",
+                    ovrLevel === 'elite' && "game:holo-effect-elite",
+                    // NEW: Glowing border by tier (only on dark theme)
+                    "game:" + borderGlowClasses[ovrLevel],
                     // Hover effects for desktop
                     "transition-all duration-300 ease-out",
                     "md:hover:shadow-2xl md:hover:scale-[1.02] md:hover:-translate-y-1",
@@ -79,10 +91,15 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
             >
                 <div className={cn("absolute inset-0 z-0", selectedAuraClass)} />
 
+                {/* NEW: Jersey watermark (only on dark theme) */}
+                <div className="hidden game:block">
+                    <JerseyWatermark jersey={jersey || player.jersey} position="bottom-right" opacity={0.06} />
+                </div>
+
                 {/* "Ver detalles" button - shows on click/tap and on hover */}
                 <div
                     className={cn(
-                        "absolute inset-x-0 bottom-0 z-20 p-3 bg-gradient-to-t from-black/80 via-black/60 to-transparent",
+                        "absolute inset-x-0 bottom-0 z-20 p-3 bg-gradient-to-t from-background/95 via-background/80 to-transparent",
                         "transition-all duration-300 ease-out",
                         showDetailsButton ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100"
                     )}
@@ -116,7 +133,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                     </div>
                     <div className="relative z-10 flex flex-col h-full justify-between">
                         <div className="flex items-start justify-between mb-2">
-                            <Badge className={cn('font-headline uppercase font-bold', getPositionBadgeClasses(player.position))}>{player.position}</Badge>
+                            <PlayerPositionBadge position={player.position} />
                             <PlayerOvr value={player.ovr} />
                         </div>
                         <div className="flex flex-col items-center gap-2 mb-2">
@@ -140,6 +157,6 @@ export const PlayerCard = React.memo(function PlayerCard({ player }: PlayerCardP
                     </div>
                 </CardContent>
             </Card>
-        </div>
+        </AnimatedCardWrapper>
     );
 });
