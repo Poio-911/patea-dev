@@ -1,0 +1,464 @@
+# PlayerCard Component - React vs Jetpack Compose
+
+## Comparación Lado a Lado
+
+### React/TypeScript (Original)
+
+```typescript
+// src/components/player-card.tsx
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { Card, CardContent } from '@/components/ui/card';
+import type { Player } from '@/lib/types';
+import { PlayerOvr, AttributesGrid, PlayerPhoto, PlayerPositionBadge } from '@/components/player-styles';
+
+type PlayerCardProps = {
+    player: Player & { displayName?: string };
+    index?: number;
+    jersey?: Jersey;
+};
+
+export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, jersey }: PlayerCardProps) {
+    const [showDetailsButton, setShowDetailsButton] = useState(false);
+
+    if (!player) {
+        return <Skeleton className="h-full w-full aspect-[2/3]" />;
+    }
+
+    const playerName = player.name || player.displayName || 'Jugador';
+    const ovrLevel = getOvrLevel(player.ovr);
+
+    return (
+        <AnimatedCardWrapper animation={animationType} delay={staggerDelay}>
+            <Card
+                className={cn(
+                    "player-card relative h-full flex flex-col overflow-hidden rounded-2xl shadow-lg",
+                    "game:bg-card game:border-border bg-card",
+                    "game:holo-effect",
+                    ovrLevel === 'elite' && "game:holo-effect-elite",
+                    "transition-all duration-300 ease-out",
+                    "md:hover:shadow-2xl md:hover:scale-[1.02]",
+                    "cursor-pointer"
+                )}
+                onClick={() => setShowDetailsButton(true)}
+            >
+                {/* Aura effect */}
+                <div className={cn("absolute inset-0 z-0", selectedAuraClass)} />
+
+                {/* Jersey watermark */}
+                <div className="hidden game:block">
+                    <JerseyWatermark jersey={jersey || player.jersey} />
+                </div>
+
+                {/* Details button */}
+                <div className={cn(
+                    "absolute inset-x-0 bottom-0 z-20 p-3",
+                    showDetailsButton ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
+                )}>
+                    <Link href={`/players/${player.id}`}>
+                        <Button className="w-full">
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver detalles
+                        </Button>
+                    </Link>
+                </div>
+
+                <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center">
+                    <div className="flex items-start justify-between mb-2">
+                        <PlayerPositionBadge position={player.position} />
+                        <PlayerOvr value={player.ovr} />
+                    </div>
+                    <div className="flex flex-col items-center gap-2 mb-2">
+                        <PlayerPhoto player={player} />
+                        <h3 className="w-full truncate text-center text-sm font-semibold">
+                            {playerName}
+                        </h3>
+                    </div>
+                    <AttributesGrid player={player} />
+                </CardContent>
+            </Card>
+        </AnimatedCardWrapper>
+    );
+});
+```
+
+---
+
+### Jetpack Compose/Kotlin (Android)
+
+```kotlin
+// ui/components/PlayerCard.kt
+package com.patea.android.ui.components
+
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.RemoveRedEye
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.patea.android.data.model.Player
+import com.patea.android.data.model.OvrLevel
+import com.patea.android.ui.theme.*
+
+@Composable
+fun PlayerCard(
+    player: Player,
+    index: Int = 0,
+    onClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // State for showing details button
+    var showDetailsButton by remember { mutableStateOf(false) }
+    
+    // Animation for card entrance
+    val scale by animateFloatAsState(
+        targetValue = if (showDetailsButton) 1.02f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
+    
+    // Stagger animation delay based on index
+    val delay = (index % 3) * 100
+    var visible by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(delay.toLong())
+        visible = true
+    }
+    
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn() + slideInVertically { it / 2 }
+    ) {
+        Card(
+            modifier = modifier
+                .fillMaxWidth()
+                .aspectRatio(2f / 3f)
+                .scale(scale)
+                .shadow(
+                    elevation = if (showDetailsButton) 16.dp else 8.dp,
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .clickable {
+                    showDetailsButton = !showDetailsButton
+                },
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                // Aura effect background
+                AuraEffect(ovrLevel = player.getOvrLevel())
+                
+                // Jersey watermark (if applicable)
+                player.jersey?.let { jersey ->
+                    JerseyWatermark(
+                        jersey = jersey,
+                        modifier = Modifier.align(Alignment.BottomEnd)
+                    )
+                }
+                
+                // Main content
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Top row: Position badge and OVR
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        PlayerPositionBadge(position = player.position)
+                        PlayerOvr(value = player.ovr, level = player.getOvrLevel())
+                    }
+                    
+                    // Center: Photo and name
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        PlayerPhoto(
+                            photoUrl = player.photoUrl,
+                            size = 80.dp
+                        )
+                        
+                        Text(
+                            text = player.getDisplayName(),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    
+                    // Bottom: Attributes grid
+                    AttributesGrid(player = player)
+                }
+                
+                // Details button (animated)
+                AnimatedVisibility(
+                    visible = showDetailsButton,
+                    enter = slideInVertically { it } + fadeIn(),
+                    exit = slideOutVertically { it } + fadeOut(),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+                                    )
+                                )
+                            )
+                            .padding(12.dp)
+                    ) {
+                        Button(
+                            onClick = { onClick(player.id) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.RemoveRedEye,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Ver detalles")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Aura effect based on OVR level
+ */
+@Composable
+private fun AuraEffect(ovrLevel: OvrLevel) {
+    val color = when (ovrLevel) {
+        OvrLevel.ELITE -> Color(0xFFFF6B6B)
+        OvrLevel.GOLD -> Color(0xFFFFD700)
+        OvrLevel.SILVER -> Color(0xFFC0C0C0)
+        OvrLevel.BRONZE -> Color(0xFFCD7F32)
+    }
+    
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(
+                        color.copy(alpha = 0.1f),
+                        Color.Transparent
+                    )
+                )
+            )
+    )
+}
+
+/**
+ * Player position badge
+ */
+@Composable
+private fun PlayerPositionBadge(position: PlayerPosition) {
+    val (backgroundColor, textColor) = when (position) {
+        PlayerPosition.POR -> Color(0xFFFFEB3B) to Color.Black
+        PlayerPosition.DEF -> Color(0xFF4CAF50) to Color.White
+        PlayerPosition.MED -> Color(0xFF2196F3) to Color.White
+        PlayerPosition.DEL -> Color(0xFFF44336) to Color.White
+    }
+    
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = backgroundColor
+    ) {
+        Text(
+            text = position.name,
+            style = MaterialTheme.typography.labelSmall,
+            color = textColor,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
+    }
+}
+
+/**
+ * Player OVR badge
+ */
+@Composable
+private fun PlayerOvr(value: Int, level: OvrLevel) {
+    val backgroundColor = when (level) {
+        OvrLevel.ELITE -> Color(0xFFFF6B6B)
+        OvrLevel.GOLD -> Color(0xFFFFD700)
+        OvrLevel.SILVER -> Color(0xFFC0C0C0)
+        OvrLevel.BRONZE -> Color(0xFFCD7F32)
+    }
+    
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = backgroundColor
+    ) {
+        Text(
+            text = value.toString(),
+            style = MaterialTheme.typography.titleMedium,
+            color = Color.White,
+            fontWeight = FontWeight.ExtraBold,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+        )
+    }
+}
+
+/**
+ * Player photo with circular clip
+ */
+@Composable
+private fun PlayerPhoto(photoUrl: String?, size: Dp) {
+    AsyncImage(
+        model = photoUrl ?: "https://via.placeholder.com/150",
+        contentDescription = "Player photo",
+        modifier = Modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+    )
+}
+
+/**
+ * Attributes grid (PAC, SHO, PAS, DRI, DEF, PHY)
+ */
+@Composable
+private fun AttributesGrid(player: Player) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            AttributeItem("PAC", player.pac)
+            AttributeItem("SHO", player.sho)
+            AttributeItem("PAS", player.pas)
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            AttributeItem("DRI", player.dri)
+            AttributeItem("DEF", player.def)
+            AttributeItem("PHY", player.phy)
+        }
+    }
+}
+
+@Composable
+private fun AttributeItem(label: String, value: Int) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value.toString(),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+```
+
+---
+
+## Diferencias Clave
+
+### 1. **Estado y Eventos**
+- **React**: `useState` hook para estado local
+- **Compose**: `remember { mutableStateOf() }` para estado composable
+
+### 2. **Navegación**
+- **React**: `Link` component de Next.js
+- **Compose**: Callback `onClick` que maneja navegación en ViewModel
+
+### 3. **Animaciones**
+- **React**: CSS transitions y Framer Motion
+- **Compose**: `AnimatedVisibility`, `animateFloatAsState`, `spring()`
+
+### 4. **Imágenes**
+- **React**: Next.js [Image](file:///c:/Pate%C3%A1/src/lib/types.ts#476-477) component
+- **Compose**: Coil `AsyncImage` con caché automático
+
+### 5. **Estilos**
+- **React**: Tailwind CSS classes
+- **Compose**: Modifier chain con Material Design 3 theming
+
+### 6. **Condicionales**
+- **React**: Ternarios y `&&` operator
+- **Compose**: `if/else` en composables, `AnimatedVisibility`
+
+---
+
+## Ventajas de Jetpack Compose
+
+✅ **Type-safe**: Todo está tipado en Kotlin  
+✅ **Menos código**: No necesita clases separadas para estilos  
+✅ **Performance**: Recomposición inteligente solo de lo que cambió  
+✅ **Animaciones**: API declarativa más simple  
+✅ **Preview**: Vista previa en Android Studio sin ejecutar app  
+
+---
+
+## Uso en Pantalla
+
+### React
+```typescript
+<PlayerCard 
+    player={player} 
+    index={index} 
+    jersey={team.jersey} 
+/>
+```
+
+### Compose
+```kotlin
+PlayerCard(
+    player = player,
+    index = index,
+    onClick = { playerId ->
+        navController.navigate("players/$playerId")
+    }
+)
+```

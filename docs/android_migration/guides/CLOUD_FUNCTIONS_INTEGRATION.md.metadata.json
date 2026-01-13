@@ -1,0 +1,5 @@
+{
+  "artifactType": "ARTIFACT_TYPE_OTHER",
+  "summary": "Cloud Functions integration examples showing how to call Genkit AI flows from Android using Firebase Functions SDK, including team generation, player suggestions, and match chronicle with proper error handling and type-safe responses.",
+  "updatedAt": "2025-12-08T20:01:14.434898800Z"
+}

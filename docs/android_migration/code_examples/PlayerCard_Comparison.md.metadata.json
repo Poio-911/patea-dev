@@ -1,0 +1,5 @@
+{
+  "artifactType": "ARTIFACT_TYPE_OTHER",
+  "summary": "Complete side-by-side comparison of PlayerCard component migrated from React/TypeScript to Jetpack Compose/Kotlin, showing equivalent implementation with Material Design 3, animations, and click handling.",
+  "updatedAt": "2025-12-08T19:57:56.118790100Z"
+}
