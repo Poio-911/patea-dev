@@ -1,10 +1,6 @@
 
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
-import { config } from 'dotenv';
-
-// Cargar variables de entorno desde .env
-config({ path: './.env' });
 
 // Deshabilitar completamente el servidor de reflexión de Genkit y la conexión al emulador
 // Usamos notación de corchetes para evitar que Next.js reemplace las variables en tiempo de compilación
@@ -15,11 +11,11 @@ process.env['GENKIT_URL'] = '';
 process.env['GENKIT_HOST'] = '';
 process.env['GENKIT_PORT'] = '';
 
-// Validate required API key
+// Validate required API key (Next.js loads .env.local for server automatically)
 const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY;
 if (!apiKey) {
   throw new Error(
-    'Google Gemini API key is missing. Please set either GOOGLE_GENAI_API_KEY or GEMINI_API_KEY environment variable.'
+    'Falta la API key de Google Gemini. Configurá GOOGLE_GENAI_API_KEY o GEMINI_API_KEY en .env.local (no se expone al cliente).'
   );
 }
 

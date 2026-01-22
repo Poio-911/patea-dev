@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo } from 'react';
-import { OverlayView } from '@react-google-maps/api';
 import type { AvailablePlayer } from '@/lib/types';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
@@ -68,46 +67,17 @@ export function PlayerMarker({ player, activeMarker, handleMarkerClick }: Player
 
     // Marcador especial para la ubicación del usuario
     if (isUserLocationMarker) {
-        return (
-            <OverlayView
-                position={player.location}
-                mapPaneName={OverlayView.FLOAT_PANE}
-                getPixelPositionOffset={(width, height) => ({
-                    x: -(width / 2),
-                    y: -(height / 2),
-                })}
-            >
-                <div className="h-4 w-4 rounded-full bg-blue-500 border-2 border-white shadow-md" />
-            </OverlayView>
-        )
+        return null;
     }
 
     return (
         <>
             {/* Marcador del jugador */}
-            <OverlayView
-                position={player.location}
-                mapPaneName={OverlayView.MARKER_LAYER}
-                getPixelPositionOffset={() => ({
-                    x: -16, // Centrar horizontalmente (32px / 2)
-                    y: -32, // Posicionar en la base del marcador
-                })}
-            >
-                <CustomMarker onClick={() => handleMarkerClick(player.uid)} />
-            </OverlayView>
+            {/* Map integration removed; future OSM/Leaflet markers go here */}
 
             {/* Popup de información */}
             {isActive && (
-                <OverlayView
-                    position={player.location}
-                    mapPaneName={OverlayView.FLOAT_PANE}
-                    getPixelPositionOffset={() => ({
-                        x: -96, // Centrar el popup (192px / 2)
-                        y: -110, // Posicionar arriba del marcador con margen
-                    })}
-                >
-                    <PlayerPopup player={player} />
-                </OverlayView>
+                <div className="sr-only"><PlayerPopup player={player} /></div>
             )}
         </>
     );

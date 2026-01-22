@@ -1,6 +1,2 @@
-
-import { Libraries } from '@react-google-maps/api';
-
-// UPDATED: Now specifies the 'places' library to use the modern Places API
-// and avoid deprecation warnings.
-export const libraries: Libraries = ['places'];
+// Google Maps removed; keep a stub to avoid import errors
+export const libraries: string[] = [];

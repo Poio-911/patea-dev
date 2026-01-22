@@ -8,8 +8,7 @@ import { saveFCMTokenAction, removeFCMTokenAction } from '@/lib/actions/notifica
 import { logger } from '@/lib/logger';
 
 // VAPID key from Firebase Console > Project Settings > Cloud Messaging
-const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY ||
-  'BKW3qYRW72BtPqyI1oC3IEzafEAx4CXg7ooux7-v3zzn9Hxsgxnk4k1hnIZ9Jb_tEWJn3CU5ncRF4gP3OlwMfKA';
+const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 
 export type NotificationPermissionStatus = 'default' | 'granted' | 'denied' | 'unsupported';
 
@@ -70,6 +69,13 @@ export function useNotifications() {
 
       if (permission !== 'granted') {
         setError('Permiso de notificaciones denegado');
+        setIsLoading(false);
+        return false;
+      }
+
+      // Validate VAPID key before requesting token
+      if (!VAPID_KEY) {
+        setError('Falta configurar la clave VAPID (NEXT_PUBLIC_FIREBASE_VAPID_KEY)');
         setIsLoading(false);
         return false;
       }

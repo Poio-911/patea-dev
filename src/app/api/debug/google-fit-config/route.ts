@@ -5,6 +5,9 @@ import { NextResponse } from 'next/server';
  * DELETE THIS FILE after debugging
  */
 export async function GET() {
+  if (process.env.NODE_ENV !== 'development') {
+    return NextResponse.json({ error: 'Not Found' }, { status: 404 });
+  }
   return NextResponse.json({
     hasClientId: !!process.env.GOOGLE_FIT_CLIENT_ID,
     hasClientSecret: !!process.env.GOOGLE_FIT_CLIENT_SECRET,

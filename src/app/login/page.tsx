@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { createSessionCookie } from '@/lib/auth-actions';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -48,8 +49,28 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     if (!auth) return;
     try {
-        const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-        // Let the useUser hook handle the redirect via onAuthStateChanged
+                const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+                // Create server-side session cookie so API routes see auth
+                try {
+                    const idToken = await userCredential.user.getIdToken(true);
+                    const res = await createSessionCookie(idToken);
+                    if (!res?.success) {
+                        // Non-blocking: show toast but allow client session
+                        toast({
+                            variant: 'destructive',
+                            title: 'Error creando sesión',
+                            description: 'Reintenta iniciar sesión si persiste.',
+                        });
+                    }
+                } catch (e) {
+                    // Non-blocking failure
+                    toast({
+                        variant: 'destructive',
+                        title: 'Error creando sesión',
+                        description: 'Reintenta iniciar sesión si persiste.',
+                    });
+                }
+                // Let the useUser hook handle the redirect via onAuthStateChanged
     } catch (error: any) {
         toast({
             variant: 'destructive',

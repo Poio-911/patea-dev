@@ -2,16 +2,13 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
+// Google Maps disabled to avoid billing errors
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { Match, AvailablePlayer } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Loader2, MapPin, Search, SlidersHorizontal, Users, Calendar } from 'lucide-react';
-import { MatchMarker } from '@/components/match-marker';
-import { PlayerMarker } from '@/components/player-marker';
-import { libraries } from '@/lib/google-maps';
-import { mapStyles } from '@/lib/map-styles';
+// Map-related components removed for now
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -73,11 +70,7 @@ export default function FindMatchPage() {
   const [playerPositionFilter, setPlayerPositionFilter] = useState('all');
   const [playerOvrFilter, setPlayerOvrFilter] = useState([40, 99]);
 
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-    libraries,
-  });
+  const mapsEnabled = false;
 
   // Data fetching
   const publicMatchesQuery = useMemo(() => firestore ? query(collection(firestore, 'matches'), where('isPublic', '==', true), where('status', '==', 'upcoming')) : null, [firestore]);
@@ -152,7 +145,7 @@ export default function FindMatchPage() {
 
   const itemsToDisplay = activeTab === 'matches' ? filteredMatches : filteredPlayers;
   
-  if (userLoading || !isLoaded) {
+  if (userLoading) {
     return <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   }
 
@@ -222,11 +215,18 @@ export default function FindMatchPage() {
         </div>
         
         <div className="h-[400px] lg:h-full w-full rounded-lg overflow-hidden lg:col-span-2">
-          <GoogleMap mapContainerStyle={containerStyle} center={userLocation || defaultCenter} zoom={13} options={{ styles: mapStyles, disableDefaultUI: true, zoomControl: true }}>
-            {userLocation && <PlayerMarker player={{uid: 'user-location', location: userLocation} as AvailablePlayer} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} />}
-            {filtersApplied && activeTab === 'matches' && filteredMatches.map((match) => <MatchMarker key={match.id} match={match} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} />)}
-            {filtersApplied && activeTab === 'players' && filteredPlayers.map((player) => <PlayerMarker key={player.uid} player={player} activeMarker={activeMarker} handleMarkerClick={handleMarkerClick} />)}
-          </GoogleMap>
+          {mapsEnabled ? (
+            <div className="flex h-full w-full items-center justify-center rounded-lg bg-muted">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </div>
+          ) : (
+            <Alert>
+              <AlertTitle>Mapa deshabilitado</AlertTitle>
+              <AlertDescription>
+                Por ahora el mapa interactivo está desactivado para evitar errores de facturación de Google. Igual podés buscar y ver resultados en la lista.
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
       </div>
     </div>

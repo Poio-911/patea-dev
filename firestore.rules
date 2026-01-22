@@ -22,6 +22,30 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       // Solo el dueño del perfil puede modificarlo.
       allow write: if isOwner(userId);
+
+      // Subcolección de tokens FCM por usuario
+      match /fcmTokens/{tokenId} {
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId);
+      }
+
+      // Subcolección de notificaciones por usuario
+      match /notifications/{notificationId} {
+        // Solo el dueño puede leer sus notificaciones
+        allow read: if isOwner(userId);
+        // Permitir crear notificaciones por terceros autenticados si incluyen metadata.fromUserId
+        // y coincide con el usuario autenticado. El dueño puede actualizar/eliminar.
+        allow write: if (
+          // El dueño siempre puede escribir en sus notificaciones (marcar leídas, borrar)
+          isOwner(userId)
+          || (
+            // Creación por otro usuario: documento no existe aún y metadata.fromUserId coincide
+            !exists(/databases/$(database)/documents/users/$(userId)/notifications/$(notificationId))
+            && isAuthenticated()
+            && request.resource.data.metadata.fromUserId == request.auth.uid
+          )
+        );
+      }
     }
     
     // Colección de Jugadores
@@ -57,6 +81,13 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       // La creación/edición/eliminación se maneja en Server Actions con permisos de grupo
       allow write: if false;
+    }
+
+    // Colección de Jugadores Disponibles (para fichajes)
+    match /availablePlayers/{playerId} {
+      allow read: if isAuthenticated();
+      // Solo el propio usuario puede publicar/editar su disponibilidad
+      allow write: if isOwner(playerId);
     }
     
     // Colección de Equipos Persistentes
@@ -106,9 +137,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Regla de comodín final, un poco más restrictiva.
+    // Regla de comodín final: solo lectura para autenticados.
+    // Escriben solo las colecciones con reglas explícitas.
     match /{document=**} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow write: if false;
     }
   }
 }

@@ -1,158 +1,20 @@
 'use server';
 
-import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 import { getAdminDb } from '@/firebase/admin-init';
 import { requireAuth } from '@/lib/auth/get-server-session';
-import { nanoid } from 'nanoid';
-import type { CreditPackage, CreditTransaction } from '@/lib/types';
-import { FieldValue } from 'firebase-admin/firestore';
-import { sanitizeText, validatePrice, validateCreditAmount } from '@/lib/validation';
+import type { CreditTransaction } from '@/lib/types';
 
 const db = getAdminDb();
-
-// Inicializar Mercado Pago
-const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || '',
-});
-
-const preference = new Preference(client);
-const payment = new Payment(client);
 
 /**
  * Crear preferencia de pago en Mercado Pago
  * @param packageId - ID del paquete de créditos a comprar
  * @returns URL de pago de Mercado Pago y transaction ID
  */
-export async function createCreditPurchaseAction(packageId: string) {
-  try {
-    // ✅ VALIDATION: Validate packageId input
-    if (!packageId || typeof packageId !== 'string' || packageId.trim().length === 0) {
-      return {
-        success: false,
-        error: 'ID de paquete inválido',
-      };
-    }
-
-    const sanitizedPackageId = sanitizeText(packageId);
-    if (sanitizedPackageId !== packageId || sanitizedPackageId.length > 64) {
-      return {
-        success: false,
-        error: 'ID de paquete inválido',
-      };
-    }
-
-    // 1. Validar usuario autenticado
-    const userId = await requireAuth();
-
-    // Obtener datos del usuario para email y displayName
-    const userDoc = await db.collection('users').doc(userId).get();
-    const userData = userDoc.data();
-
-    // 2. Obtener paquete de Firestore
-    const packageDoc = await db.collection('creditPackages').doc(sanitizedPackageId).get();
-
-    if (!packageDoc.exists) {
-      return {
-        success: false,
-        error: 'Paquete no encontrado',
-      };
-    }
-
-    const pkg = packageDoc.data() as CreditPackage;
-
-    // ✅ VALIDATION: Validate package data
-    const priceValidation = validatePrice(pkg.price);
-    if (!priceValidation.isValid) {
-      return {
-        success: false,
-        error: `Precio inválido: ${priceValidation.error}`,
-      };
-    }
-
-    const creditsValidation = validateCreditAmount(pkg.credits);
-    if (!creditsValidation.isValid) {
-      return {
-        success: false,
-        error: `Cantidad de créditos inválida: ${creditsValidation.error}`,
-      };
-    }
-
-    // 3. Crear transaction ID único
-    const transactionId = `tx_${nanoid(12)}`;
-
-    // 4. Crear preferencia en Mercado Pago
-    const preferenceData = {
-      items: [
-        {
-          id: pkg.id,
-          title: pkg.title,
-          description: pkg.description || `${pkg.credits} créditos de IA para Pateá`,
-          quantity: 1,
-          currency_id: 'ARS',
-          unit_price: pkg.price,
-        },
-      ],
-      payer: {
-        name: userData?.displayName || 'Usuario',
-        email: userData?.email || 'usuario@patea.app',
-      },
-      back_urls: {
-        success: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001'}/payments/success?transaction_id=${transactionId}`,
-        failure: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001'}/payments/failure?transaction_id=${transactionId}`,
-        pending: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001'}/payments/pending?transaction_id=${transactionId}`,
-      },
-      auto_return: 'approved' as const,
-      notification_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001'}/api/webhooks/mercadopago`,
-      external_reference: transactionId,
-      statement_descriptor: 'Pateá - Créditos IA',
-      metadata: {
-        transaction_id: transactionId,
-        user_id: userId,
-        package_id: packageId,
-      },
-    };
-
-    const mpPreference = await preference.create({ body: preferenceData });
-
-    if (!mpPreference.id || !mpPreference.init_point) {
-      return {
-        success: false,
-        error: 'Error al crear preferencia de pago',
-      };
-    }
-
-    // 5. Crear registro de transacción en Firestore
-    const transaction: Omit<CreditTransaction, 'id'> = {
-      userId: userId,
-      packageId: pkg.id,
-      credits: pkg.credits,
-      amount: pkg.price,
-      status: 'pending',
-      paymentMethod: 'mercadopago',
-      mpPreferenceId: mpPreference.id,
-      createdAt: new Date().toISOString(),
-      metadata: {
-        userEmail: userData?.email || undefined,
-        userName: userData?.displayName || undefined,
-        packageTitle: pkg.title,
-      },
-    };
-
-    await db.collection('creditTransactions').doc(transactionId).set(transaction);
-
-    // 6. Retornar URL de pago
-    return {
-      success: true,
-      initPoint: mpPreference.init_point,
-      transactionId,
-    };
-  } catch (error) {
-    console.error('Error en createCreditPurchaseAction:', error);
-    return {
-      success: false,
-      error: 'Error al procesar la solicitud de pago',
-    };
-  }
+export async function createCreditPurchaseAction(
+  _packageId: string
+): Promise<{ success: boolean; error?: string; initPoint?: string; transactionId?: string }> {
+  return { success: false, error: 'Mercado Pago deshabilitado' };
 }
 
 /**
@@ -160,163 +22,18 @@ export async function createCreditPurchaseAction(packageId: string) {
  * @param transactionId - ID de la transacción
  * @returns Estado actual de la transacción
  */
-export async function checkPaymentStatusAction(transactionId: string) {
-  try {
-    // 1. Validar usuario autenticado
-    const userId = await requireAuth();
-
-    // 2. Obtener transacción de Firestore
-    const transactionDoc = await db
-      .collection('creditTransactions')
-      .doc(transactionId)
-      .get();
-
-    if (!transactionDoc.exists) {
-      return {
-        success: false,
-        error: 'Transacción no encontrada',
-      };
-    }
-
-    const transaction = transactionDoc.data() as CreditTransaction;
-
-    // 3. Validar que la transacción pertenece al usuario
-    if (transaction.userId !== userId) {
-      return {
-        success: false,
-        error: 'No autorizado',
-      };
-    }
-
-    // 4. Retornar estado
-    return {
-      success: true,
-      status: transaction.status,
-      credits: transaction.credits,
-      amount: transaction.amount,
-      completedAt: transaction.completedAt,
-    };
-  } catch (error) {
-    console.error('Error en checkPaymentStatusAction:', error);
-    return {
-      success: false,
-      error: 'Error al verificar el estado del pago',
-    };
-  }
+export async function checkPaymentStatusAction(
+  _transactionId: string
+): Promise<{ success: boolean; error?: string; status?: string; credits?: number; amount?: number }> {
+  return { success: false, error: 'Mercado Pago deshabilitado' };
 }
 
 /**
  * Webhook de Mercado Pago (llamado por MP tras pago)
  * IMPORTANTE: Esta función debe ser llamada desde /api/webhooks/mercadopago
  */
-export async function handleMercadoPagoWebhook(data: any) {
-  try {
-    console.log('📥 Webhook recibido de Mercado Pago:', JSON.stringify(data, null, 2));
-
-    // Validar que es una notificación de pago
-    if (data.type !== 'payment') {
-      console.log('⚠️  Tipo de notificación no soportado:', data.type);
-      return { success: true, message: 'Tipo de notificación ignorado' };
-    }
-
-    // Obtener detalles del pago de MP
-    const paymentId = data.data.id;
-    const paymentInfo = await payment.get({ id: paymentId });
-
-    console.log('💳 Información del pago:', JSON.stringify(paymentInfo, null, 2));
-
-    // Obtener transaction ID del external_reference
-    const transactionId = paymentInfo.external_reference;
-
-    if (!transactionId) {
-      console.error('❌ No se encontró transaction ID en external_reference');
-      return { success: false, error: 'Transaction ID no encontrado' };
-    }
-
-    // Obtener transacción de Firestore
-    const transactionRef = db.collection('creditTransactions').doc(transactionId);
-
-    // Actualizar estado según el pago
-    let newStatus: CreditTransaction['status'] = 'pending';
-
-    switch (paymentInfo.status) {
-      case 'approved':
-        newStatus = 'approved';
-        break;
-      case 'rejected':
-      case 'cancelled':
-        newStatus = 'rejected';
-        break;
-      default:
-        newStatus = 'pending';
-    }
-
-    // Use transaction for idempotency - ensures credits are only applied once
-    const result = await db.runTransaction(async (transaction) => {
-      const transactionDoc = await transaction.get(transactionRef);
-
-      if (!transactionDoc.exists) {
-        throw new Error('Transacción no encontrada');
-      }
-
-      const txnData = transactionDoc.data() as CreditTransaction;
-
-      // IDEMPOTENCY CHECK - if already processed, return early
-      if (txnData.status === 'approved') {
-        console.log(`⚠️  [Idempotency] Payment ${paymentId} already processed for transaction ${transactionId}`);
-        return { alreadyProcessed: true };
-      }
-
-      // If payment is approved and hasn't been processed yet
-      if (newStatus === 'approved') {
-        console.log('✅ Pago aprobado, acreditando créditos...');
-
-        const playerRef = db.collection('players').doc(txnData.userId);
-
-        // Atomic updates to both transaction and player
-        transaction.update(transactionRef, {
-          status: newStatus,
-          mpPaymentId: paymentId.toString(),
-          completedAt: new Date().toISOString(),
-        });
-
-        transaction.update(playerRef, {
-          cardGenerationCredits: FieldValue.increment(txnData.credits),
-          totalCreditsPurchased: FieldValue.increment(txnData.credits),
-          lastPurchaseDate: new Date().toISOString(),
-        });
-
-        console.log(`✅ ${txnData.credits} créditos acreditados al usuario ${txnData.userId}`);
-        return { creditsApplied: true, credits: txnData.credits };
-
-      } else if (newStatus !== txnData.status) {
-        // Update status if it changed (pending -> rejected, etc)
-        transaction.update(transactionRef, {
-          status: newStatus,
-          mpPaymentId: paymentId.toString(),
-          completedAt: newStatus === 'rejected' ? new Date().toISOString() : undefined,
-        });
-
-        console.log(`📝 Estado de transacción actualizado a: ${newStatus}`);
-        return { statusUpdated: true, newStatus };
-      }
-
-      return { noChanges: true };
-    });
-
-    if (result.alreadyProcessed) {
-      return { success: true, message: 'Webhook ya fue procesado anteriormente (idempotent)' };
-    }
-
-    if (result.creditsApplied) {
-      return { success: true, message: `Créditos acreditados exitosamente: ${result.credits}` };
-    }
-
-    return { success: true, message: 'Webhook procesado correctamente' };
-  } catch (error) {
-    console.error('❌ Error en handleMercadoPagoWebhook:', error);
-    return { success: false, error: 'Error al procesar webhook' };
-  }
+export async function handleMercadoPagoWebhook(_data: any) {
+  return { success: false, error: 'Mercado Pago deshabilitado' };
 }
 
 /**

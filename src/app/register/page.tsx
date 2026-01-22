@@ -8,6 +8,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useAuth } from '@/firebase';
+import { createSessionCookie } from '@/lib/auth-actions';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -74,6 +75,25 @@ export default function RegisterPage() {
             // Step 1: Create user in Auth
             const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
             const newUser = userCredential.user;
+
+            // Create server-side session cookie so API routes see auth
+            try {
+                const idToken = await newUser.getIdToken(true);
+                const res = await createSessionCookie(idToken);
+                if (!res?.success) {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Error creando sesión',
+                        description: 'Reintenta registrarte si persiste.',
+                    });
+                }
+            } catch (e) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error creando sesión',
+                    description: 'Reintenta registrarte si persiste.',
+                });
+            }
 
             // Step 2: Update Auth profile with display name and final photoURL
             await updateProfile(newUser, {

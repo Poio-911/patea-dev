@@ -25,7 +25,7 @@ import { Calendar } from './ui/calendar';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
+// Removed Google Places; using OSM endpoints instead
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { createTeamAvailabilityPostAction } from '@/lib/actions/server-actions';
 import { celebrationConfetti } from '@/lib/animations';
@@ -60,82 +60,101 @@ const LocationInput = ({ onSelectLocation, value: initialValue }: {
   onSelectLocation: (location: MatchLocation) => void;
   value?: MatchLocation;
 }) => {
-    const {
-        ready,
-        value,
-        suggestions: { status, data },
-        setValue,
-        clearSuggestions,
-    } = usePlacesAutocomplete({
-        requestOptions: {
-            componentRestrictions: { country: 'UY' }
-         },
-        debounce: 300,
-    });
+  const [value, setValue] = useState(initialValue?.address || '');
+  const [osmSuggestions, setOsmSuggestions] = useState<Array<{ label: string; lat: number; lng: number; placeId: string }>>([]);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
-    const handleSelect = async (suggestion: google.maps.places.AutocompletePrediction) => {
-        setValue(suggestion.description, false);
-        clearSuggestions();
-
-        try {
-            const results = await getGeocode({ placeId: suggestion.place_id });
-            const { lat, lng } = getLatLng(results[0]);
-
-            const placeName = suggestion.structured_formatting.main_text;
-
-            onSelectLocation({
-                name: placeName,
-                address: suggestion.description,
-                lat,
-                lng,
-                placeId: suggestion.place_id
-            });
-        } catch (error) {
-            console.error("Error getting geocode: ", error);
-        }
+  useEffect(() => {
+    let active = true;
+    const fetchOsm = async () => {
+      try {
+        if (!value || value.length < 3) { setOsmSuggestions([]); return; }
+        const res = await fetch(`/api/geocode/suggest?q=${encodeURIComponent(value)}`);
+        const json = await res.json();
+        if (active && json?.success) setOsmSuggestions(json.suggestions || []);
+      } catch {
+        if (active) setOsmSuggestions([]);
+      }
     };
+    fetchOsm();
+    setIsOpen(!!value && value.length > 2);
+    return () => { active = false; };
+  }, [value]);
 
-    return (
-        <Popover open={status === 'OK' && value.length > 2}>
-            <PopoverTrigger asChild>
-                <div className="relative">
-                    <Input
-                        value={initialValue?.address || value}
-                        onChange={(e) => setValue(e.target.value)}
-                        disabled={!ready}
-                        placeholder="Buscá la dirección de la cancha..."
-                        autoComplete="off"
-                    />
-                </div>
-            </PopoverTrigger>
-            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                <Command>
-                    <CommandList>
-                        <CommandEmpty>No se encontraron resultados.</CommandEmpty>
-                        <CommandGroup>
-                            {data.map((suggestion) => (
-                                <CommandItem
-                                    key={suggestion.place_id}
-                                    onSelect={() => handleSelect(suggestion)}
-                                    className="flex items-center gap-2"
-                                >
-                                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                                    <div className="flex-1">
-                                        <div className="font-medium">
-                                            {suggestion.structured_formatting.main_text}
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">
-                                            {suggestion.structured_formatting.secondary_text}
-                                        </div>
-                                    </div>
-                                </CommandItem>
-                            ))}
-                        </CommandGroup>
-                    </CommandList>
-                </Command>
-            </PopoverContent>
-        </Popover>
-    );
+  const tryGeocode = async (addr: string) => {
+    if (!addr || addr.length < 5) { setGeoError('Ingresá una dirección válida.'); return; }
+    setGeoLoading(true);
+    setGeoError(null);
+    try {
+      const resp = await fetch('/api/geocode', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ address: addr })
+      });
+      const json = await resp.json();
+      if (!json?.success) throw new Error(json?.error || 'No se pudo geocodificar');
+      onSelectLocation({ name: json.name || addr, address: addr, lat: json.lat, lng: json.lng, placeId: json.placeId || `manual:${json.lat},${json.lng}` });
+      setIsOpen(false);
+      setOsmSuggestions([]);
+    } catch (e: any) {
+      setGeoError(e?.message || 'Error de geocodificación');
+    } finally {
+      setGeoLoading(false);
+    }
+  };
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <div className="relative">
+          <Input
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={async (e) => {
+              if (e.key === 'Enter' && value && value.length >= 5) {
+                e.preventDefault();
+                await tryGeocode(value);
+              }
+            }}
+            placeholder="Buscá la dirección de la cancha..."
+            autoComplete="off"
+          />
+          <div className="mt-2 flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">Tip: Elegí una sugerencia o usá la dirección escrita.</p>
+            <Button type="button" variant="outline" size="sm" onClick={() => tryGeocode(value)} disabled={geoLoading || !value || value.length < 5}>Usar dirección</Button>
+          </div>
+          {geoError && <p className="text-xs text-destructive mt-1">{geoError}</p>}
+        </div>
+      </PopoverTrigger>
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <Command>
+          <CommandList>
+            <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+            <CommandGroup>
+              {osmSuggestions.map((s) => (
+                <CommandItem
+                  key={s.placeId}
+                  onSelect={() => {
+                    onSelectLocation({ name: s.label, address: s.label, lat: s.lat, lng: s.lng, placeId: s.placeId });
+                    setValue(s.label);
+                    setIsOpen(false);
+                    setOsmSuggestions([]);
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex-1">
+                    <div className="font-medium">{s.label}</div>
+                    <div className="text-xs text-muted-foreground">Coordenadas: {s.lat}, {s.lng}</div>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
 };
 
 export function TeamAvailabilityDialog({ team, userId, trigger, onSuccess }: TeamAvailabilityDialogProps) {

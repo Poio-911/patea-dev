@@ -19,7 +19,9 @@ export async function createSessionCookie(idToken: string) {
         value: sessionCookie,
         maxAge: expiresIn,
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        sameSite: 'lax' as const,
       };
       cookies().set(options);
       return { success: true };

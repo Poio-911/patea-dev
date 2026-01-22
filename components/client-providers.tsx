@@ -9,8 +9,6 @@ import type { Firestore } from 'firebase/firestore';
 import { UserProvider } from '@/firebase/auth/use-user';
 import { MainNav } from '@/app/main-nav';
 import { ThemeProvider } from 'next-themes';
-import { useJsApiLoader } from '@react-google-maps/api';
-import { libraries } from '@/lib/google-maps';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 
 type FirebaseClientProviderProps = {
@@ -24,20 +22,10 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
     firestore: Firestore;
   } | null>(null);
 
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-    libraries,
-  });
-
   useEffect(() => {
     const instances = initializeFirebase();
     setFirebaseInstances(instances);
   }, []);
-
-  if (loadError) {
-    console.error("Google Maps API failed to load: ", loadError);
-  }
 
   // Wait for Firebase to initialize before rendering anything
   if (!firebaseInstances) {
@@ -69,13 +57,7 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
         firestore={firebaseInstances.firestore}
       >
         <UserProvider>
-          {!isLoaded ? (
-            <div className="flex h-screen w-full items-center justify-center bg-background">
-              <SoccerPlayerIcon className="h-16 w-16 color-cycle-animation" />
-            </div>
-          ) : (
-            <MainNav>{children}</MainNav>
-          )}
+          <MainNav>{children}</MainNav>
         </UserProvider>
       </FirebaseProvider>
     </ThemeProvider>

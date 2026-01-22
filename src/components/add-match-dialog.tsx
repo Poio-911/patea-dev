@@ -37,7 +37,7 @@ import { generateTeamsAction, getWeatherForecastAction, createActivityAction } f
 import { Progress } from './ui/progress';
 import { GetMatchDayForecastOutput } from '@/ai/flows/get-match-day-forecast';
 import { Switch } from './ui/switch';
-import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
+// Removed Google Places autocomplete; using OSM endpoints instead
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -100,67 +100,98 @@ const positionColors: Record<Player['position'], string> = {
 };
 
 const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: MatchLocation) => void }) => {
-    const {
-        ready,
-        value,
-        suggestions: { status, data },
-        setValue,
-        clearSuggestions,
-    } = usePlacesAutocomplete({
-        requestOptions: { 
-            componentRestrictions: { country: 'UY' } // Restringir a Uruguay
-         },
-        debounce: 300,
-    });
+    const [value, setValue] = useState('');
+    const [manualName, setManualName] = useState('');
+    const [osmSuggestions, setOsmSuggestions] = useState<Array<{ label: string; lat: number; lng: number; placeId: string }>>([]);
+    const [geoLoading, setGeoLoading] = useState(false);
+    const [geoError, setGeoError] = useState<string | null>(null);
+    const [isOpen, setIsOpen] = useState(false);
 
-    const handleSelect = async (suggestion: google.maps.places.AutocompletePrediction) => {
-        setValue(suggestion.description, false);
-        clearSuggestions();
+    useEffect(() => {
+        let active = true;
+        const fetchOsm = async () => {
+            try {
+                if (!value || value.length < 3) { setOsmSuggestions([]); return; }
+                const res = await fetch(`/api/geocode/suggest?q=${encodeURIComponent(value)}`);
+                const json = await res.json();
+                if (active && json?.success) setOsmSuggestions(json.suggestions || []);
+            } catch {
+                if (active) setOsmSuggestions([]);
+            }
+        };
+        fetchOsm();
+        setIsOpen(!!value && value.length > 2);
+        return () => { active = false; };
+    }, [value]);
 
+    const tryGeocode = async (addr: string) => {
+        if (!addr || addr.length < 5) { setGeoError('Ingresá una dirección válida.'); return; }
+        setGeoLoading(true);
+        setGeoError(null);
         try {
-            const results = await getGeocode({ placeId: suggestion.place_id });
-            const { lat, lng } = getLatLng(results[0]);
-            
-            const placeName = suggestion.structured_formatting.main_text;
-
-            onSelectLocation({ 
-                name: placeName,
-                address: suggestion.description, 
-                lat, 
-                lng,
-                placeId: suggestion.place_id
+            const resp = await fetch('/api/geocode', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ address: addr })
             });
-        } catch (error) {
-            console.error("Error getting geocode: ", error);
+            const json = await resp.json();
+            if (!json?.success) throw new Error(json?.error || 'No se pudo geocodificar');
+            onSelectLocation({
+                name: manualName || json.name || 'Cancha',
+                address: addr,
+                lat: json.lat,
+                lng: json.lng,
+                placeId: json.placeId || `manual:${json.lat},${json.lng}`,
+            });
+            setIsOpen(false);
+            setOsmSuggestions([]);
+        } catch (e: any) {
+            setGeoError(e?.message || 'Error de geocodificación');
+        } finally {
+            setGeoLoading(false);
         }
     };
-    
+
     return (
-        <Popover open={status === 'OK' && value.length > 2}>
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
-                <div className="relative">
-                    <Input
-                        value={value}
-                        onChange={(e) => setValue(e.target.value)}
-                        disabled={!ready}
-                        placeholder="Buscá la dirección de la cancha..."
-                        autoComplete="off"
-                    />
+                <div className="space-y-2">
+                    <Input value={manualName} onChange={e => setManualName(e.target.value)} placeholder="Nombre del lugar (opcional)" />
+                    <div className="relative">
+                        <Input
+                            value={value}
+                            onChange={(e) => setValue(e.target.value)}
+                            onKeyDown={async (e) => {
+                                if (e.key === 'Enter' && value && value.length >= 5) {
+                                    e.preventDefault();
+                                    await tryGeocode(value);
+                                }
+                            }}
+                            placeholder="Buscá la dirección de la cancha..."
+                            autoComplete="off"
+                        />
+                        <div className="mt-2 flex items-center justify-between">
+                            <p className="text-xs text-muted-foreground">Tip: Elegí una sugerencia o usá la dirección escrita.</p>
+                            <Button type="button" variant="outline" size="sm" onClick={() => tryGeocode(value)} disabled={geoLoading || !value || value.length < 5}>Usar dirección</Button>
+                        </div>
+                        {geoError && <p className="text-xs text-destructive mt-1">{geoError}</p>}
+                    </div>
                 </div>
             </PopoverTrigger>
-            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
                 <Command>
                     <CommandList>
-                        {status === 'OK' && (
-                             <CommandGroup>
-                                {data.map((suggestion) => (
-                                    <CommandItem key={suggestion.place_id} value={suggestion.description} onSelect={() => handleSelect(suggestion)}>
-                                        {suggestion.description}
-                                    </CommandItem>
-                                ))}
-                            </CommandGroup>
-                        )}
-                        {status === 'ZERO_RESULTS' && <CommandEmpty>No se encontraron resultados.</CommandEmpty>}
+                        <CommandGroup>
+                            {osmSuggestions.map(s => (
+                                <CommandItem key={s.placeId} value={s.label} onSelect={() => {
+                                    onSelectLocation({ name: s.label, address: s.label, lat: s.lat, lng: s.lng, placeId: s.placeId });
+                                    setValue(s.label);
+                                    setIsOpen(false);
+                                    setOsmSuggestions([]);
+                                }}>
+                                    {s.label}
+                                </CommandItem>
+                            ))}
+                            {osmSuggestions.length === 0 && <CommandEmpty>No se encontraron resultados.</CommandEmpty>}
+                        </CommandGroup>
                     </CommandList>
                 </Command>
             </PopoverContent>
@@ -372,9 +403,19 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     const allTeamMembers = selectedTeamsData.flatMap(t => t.members);
     const allPlayerIds = [...new Set(allTeamMembers.map(m => m.playerId))];
     
-    const playersQuery = query(collection(firestore, 'players'), where('__name__', 'in', allPlayerIds));
-    const playersSnap = await getDocs(playersQuery);
-    const playersMap = new Map(playersSnap.docs.map(d => [d.id, {id: d.id, ...d.data()} as Player]));
+        // Firestore 'in' operator accepts max 10 values; chunk requests safely
+        const chunkSize = 10;
+        const chunks: string[][] = [];
+        for (let i = 0; i < allPlayerIds.length; i += chunkSize) {
+            chunks.push(allPlayerIds.slice(i, i + chunkSize));
+        }
+        const snapshots = await Promise.all(
+            chunks.map(ids => getDocs(query(collection(firestore, 'players'), where('__name__', 'in', ids))))
+        );
+        const playersMap = new Map<string, Player>();
+        snapshots.forEach(snap => {
+            snap.docs.forEach(d => playersMap.set(d.id, { id: d.id, ...d.data() } as Player));
+        });
 
     const finalTeams: Team[] = selectedTeamsData.map(teamData => {
         const teamPlayers = teamData.members.map(member => {
@@ -419,31 +460,31 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       newMatchData.weather = weather;
     }
 
-    const matchDoc = await addDoc(collection(firestore, 'matches'), newMatchData);
-
-    // Create social activity
-    const currentPlayer = allPlayers.find(p => p.id === user.uid);
-    if (currentPlayer) {
-      await createActivityAction({
-        type: 'match_organized',
-        userId: user.uid,
-        playerId: currentPlayer.id,
-        playerName: currentPlayer.name,
-        playerPhotoUrl: currentPlayer.photoUrl,
-        timestamp: new Date().toISOString(),
-        metadata: {
-          matchId: matchDoc.id,
-          matchTitle: data.title,
-        },
-      });
-    }
+        // Use server API for creation
+        const resp = await fetch('/api/matches/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title: data.title,
+                date: new Date(`${data.date.toDateString()} ${data.time}`).toISOString(),
+                time: data.time,
+                location: data.location,
+                type: 'by_teams',
+                matchSize: finalTeams[0].players.length + finalTeams[1].players.length,
+                isPublic: false,
+                weather,
+                selectedTeams: data.selectedTeams,
+            }),
+        });
+        const json = await resp.json();
+        if (!json?.success) throw new Error(json?.error || 'No se pudo crear el partido');
   };
 
 
   const createManualMatch = async (data: MatchFormData) => {
     if (!firestore || !user?.uid || !user.activeGroupId) throw new Error("User not authenticated");
     
-    const batch = writeBatch(firestore);
+    // Delegate to server API
 
     const selectedPlayersData = allPlayers.filter(p => data.players.includes(p.id));
     
@@ -459,41 +500,23 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         finalTeams = teamGenerationResult.teams;
     }
 
-    const newMatchRef = doc(collection(firestore, 'matches'));
-    const newMatch: any = {
-      ...data,
-      date: data.date.toISOString(),
-      isPublic: false,
-      matchSize: selectedMatchSize,
-      status: 'upcoming' as const,
-      ownerUid: user.uid,
-      groupId: user.activeGroupId,
-      players: selectedPlayersData.map(p => ({ uid: p.id, displayName: p.name, ovr: p.ovr, position: p.position, photoUrl: p.photoUrl || '' })),
-      playerUids: selectedPlayersData.map(p => p.id),
-      teams: finalTeams,
-    };
-
-    if (weather) {
-      newMatch.weather = weather;
-    }
-
-    batch.set(newMatchRef, newMatch);
-
-    selectedPlayersData.forEach(player => {
-        if (player.id === user.uid) return; 
-        const notificationRef = doc(collection(firestore, `users/${player.id}/notifications`));
-        const notification: Omit<Notification, 'id'> = {
-            type: 'match_invite',
-            title: '¡Te convocaron!',
-            message: `${user.displayName} te sumó al partido "${data.title}".`,
-            link: `/matches`,
-            isRead: false,
-            createdAt: new Date().toISOString(),
-        };
-        batch.set(notificationRef, notification);
-    });
-
-    await batch.commit();
+        const resp = await fetch('/api/matches/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title: data.title,
+                date: data.date.toISOString(),
+                time: data.time,
+                location: data.location,
+                type: 'manual',
+                matchSize: selectedMatchSize,
+                isPublic: false,
+                weather,
+                players: selectedPlayersData.map(p => p.id),
+            }),
+        });
+        const json = await resp.json();
+        if (!json?.success) throw new Error(json?.error || 'No se pudo crear el partido');
   }
 
   const createCollaborativeMatch = async (data: MatchFormData) => {
@@ -515,24 +538,22 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       newMatch.weather = weather;
     }
 
-    const matchDoc = await addDoc(collection(firestore!, 'matches'), newMatch);
-
-    // Create social activity
-    const currentPlayer = allPlayers.find(p => p.id === user.uid);
-    if (currentPlayer) {
-      await createActivityAction({
-        type: 'match_organized',
-        userId: user.uid,
-        playerId: currentPlayer.id,
-        playerName: currentPlayer.name,
-        playerPhotoUrl: currentPlayer.photoUrl,
-        timestamp: new Date().toISOString(),
-        metadata: {
-          matchId: matchDoc.id,
-          matchTitle: data.title,
-        },
-      });
-    }
+        const resp = await fetch('/api/matches/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title: data.title,
+                date: data.date.toISOString(),
+                time: data.time,
+                location: data.location,
+                type: 'collaborative',
+                matchSize: selectedMatchSize,
+                isPublic: data.isPublic,
+                weather,
+            }),
+        });
+        const json = await resp.json();
+        if (!json?.success) throw new Error(json?.error || 'No se pudo crear el partido');
   }
 
   const WeatherIcon = weather ? weatherIcons[weather.icon] : null;

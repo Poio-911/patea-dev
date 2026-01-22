@@ -124,6 +124,12 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const handleLogout = async () => {
     if (auth) {
       await auth.signOut();
+      try {
+        const { clearSessionCookie } = await import('@/lib/auth-actions');
+        await clearSessionCookie();
+      } catch (e) {
+        // Non-blocking if cookie clear fails
+      }
       router.push('/');
     }
   };

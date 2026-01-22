@@ -23,6 +23,7 @@ import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, 
 import { addDays, format } from 'date-fns';
 import { generateBracket, advanceWinner, isTournamentComplete, getChampion, getRunnerUp, getNextRound, getCurrentRound } from '../../lib/utils/cup-bracket';
 import { publishMatchPlayedActivity } from './social-actions';
+import { CREDITS } from '../constants';
 
 // --- Server Actions ---
 
@@ -202,6 +203,51 @@ export async function coachConversationAction(
     } catch (error: any) {
         logger.error('Error in coach conversation', error, { playerId });
         return { error: error.message || 'Error al generar la respuesta del entrenador.' };
+    }
+}
+
+/**
+ * Ensure monthly credit reset for a player.
+ * If `lastCreditReset` is missing or older than the first day of the current month,
+ * set `cardGenerationCredits` to CREDITS.MONTHLY_FREE and update `lastCreditReset` with a server timestamp.
+ */
+export async function ensureMonthlyCreditResetAction(playerId: string): Promise<{ success: boolean; updated: boolean; error?: string }>{
+    try {
+        const db = getAdminDb();
+        const playerRef = db.doc(`players/${playerId}`);
+        const snap = await playerRef.get();
+        if (!snap.exists) {
+            return { success: false, updated: false, error: 'Player not found' };
+        }
+        const data = snap.data() as Player;
+
+        const now = new Date();
+        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        let lastResetDate: Date | null = null;
+        const lastReset: any = (data as any).lastCreditReset;
+        if (lastReset) {
+            // Handle Firestore Timestamp or string ISO
+            if (typeof lastReset?.toDate === 'function') {
+                lastResetDate = lastReset.toDate();
+            } else if (typeof lastReset === 'string') {
+                lastResetDate = new Date(lastReset);
+            }
+        }
+
+        const needsReset = !lastResetDate || lastResetDate < currentMonthStart;
+        if (!needsReset) {
+            return { success: true, updated: false };
+        }
+
+        await playerRef.update({
+            cardGenerationCredits: CREDITS.MONTHLY_FREE,
+            lastCreditReset: FieldValue.serverTimestamp(),
+        });
+
+        return { success: true, updated: true };
+    } catch (error: any) {
+        return { success: false, updated: false, error: error?.message || 'Unknown error' };
     }
 }
 
