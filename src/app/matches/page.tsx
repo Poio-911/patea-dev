@@ -1,24 +1,22 @@
-
 'use client';
-import { PageHeader } from '@/components/page-header';
-import { Button } from '@/components/ui/button';
-import { Users2, Calendar, Loader2, Info, Trophy, Bell } from 'lucide-react';
+
+import { Users2, Calendar, Loader2, Info, Trophy } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
-import { useMemo, useState } from 'react';
+import { collection, query, where, orderBy, doc, writeBatch } from 'firebase/firestore';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { AddMatchDialog } from '@/components/add-match-dialog';
 import type { Match, Player } from '@/lib/types';
-import { InvitationsSheet } from '@/components/invitations-sheet';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 import { motion } from 'framer-motion';
 import { MatchCard } from '@/components/match-card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MatchesCalendar } from '@/components/matches-calendar';
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-
+import { SportsBroadcastHeader } from '@/components/matches/sports-broadcast-header';
+import { CategoryPillNav, type MatchCategory } from '@/components/matches/category-pill-nav';
+import { QuickTimeFilter, type TimeFilter } from '@/components/matches/quick-time-filter';
+import { HeroMatchCard } from '@/components/matches/hero-match-card';
+import { PendingFinalizationDialog } from '@/components/matches/pending-finalization-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 const listVariants = {
     hidden: { opacity: 0 },
@@ -38,7 +36,11 @@ const itemVariants = {
 export default function MatchesPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
-    const [activeCategory, setActiveCategory] = useState<'amistosos' | 'ligas' | 'copas'>('amistosos');
+    const { toast } = useToast();
+    const [activeCategory, setActiveCategory] = useState<MatchCategory>('amistosos');
+    const [timeFilter, setTimeFilter] = useState<TimeFilter>('upcoming');
+    const [showPendingDialog, setShowPendingDialog] = useState(false);
+    const hasCheckedPending = useRef(false);
 
     const playersQuery = useMemo(() => {
         if (!firestore || !user?.activeGroupId) return null;
@@ -76,10 +78,68 @@ export default function MatchesPage() {
         (groupMatches || []).forEach(match => allMatchesMap.set(match.id, match));
         (joinedPublicMatches || []).forEach(match => allMatchesMap.set(match.id, match));
 
-        // Return ALL matches, no filtering
         return Array.from(allMatchesMap.values())
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [groupMatches, joinedPublicMatches]);
+
+    // Detect past matches that need finalization (owned by current user)
+    // Excludes league, cup, and league_final matches (those are managed by competitions)
+    const pendingFinalizationMatches = useMemo(() => {
+        if (!user?.uid) return [];
+        const now = new Date();
+        // Start of today to compare dates
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        // Types that should NOT be auto-finalized (managed by competitions)
+        const competitionTypes = ['league', 'cup', 'league_final'];
+
+        return allMatches.filter(match =>
+            match.ownerUid === user.uid &&
+            match.status === 'upcoming' &&
+            new Date(match.date) < today &&
+            !competitionTypes.includes(match.type)
+        );
+    }, [allMatches, user?.uid]);
+
+    // Show pending finalization dialog once when there are pending matches
+    useEffect(() => {
+        if (pendingFinalizationMatches.length > 0 && !hasCheckedPending.current) {
+            hasCheckedPending.current = true;
+            setShowPendingDialog(true);
+        }
+    }, [pendingFinalizationMatches.length]);
+
+    // Handler to finalize all pending matches using Firestore directly
+    const handleFinalizeAllPending = async () => {
+        if (!firestore || pendingFinalizationMatches.length === 0) return;
+
+        try {
+            const batch = writeBatch(firestore);
+            const now = new Date().toISOString();
+
+            for (const match of pendingFinalizationMatches) {
+                const matchRef = doc(firestore, 'matches', match.id);
+                batch.update(matchRef, {
+                    status: 'completed',
+                    finalizedAt: now,
+                });
+            }
+
+            await batch.commit();
+
+            toast({
+                title: 'Partidos finalizados',
+                description: `Se finalizaron ${pendingFinalizationMatches.length} partido${pendingFinalizationMatches.length !== 1 ? 's' : ''} correctamente.`,
+            });
+        } catch (error) {
+            console.error('Error finalizing matches:', error);
+            toast({
+                title: 'Error',
+                description: 'No se pudieron finalizar los partidos.',
+                variant: 'destructive',
+            });
+        }
+    };
 
     // Categorize matches
     const categorizedMatches = useMemo(() => {
@@ -116,17 +176,15 @@ export default function MatchesPage() {
             const rounds = Object.keys(matchesByRound).map(Number).sort((a, b) => a - b);
 
             if (rounds.length <= 2) {
-                // Show all if 2 or fewer rounds
                 focusedLeagueMatches.push(...leagueMatches);
             } else {
-                // Find current round (last round where all matches are completed)
                 const currentRound = rounds.find(round => {
                     const roundMatches = matchesByRound[round];
                     const allCompleted = roundMatches.every(m =>
                         m.status === 'completed' || m.status === 'evaluated'
                     );
                     const nextRound = rounds[rounds.indexOf(round) + 1];
-                    if (!nextRound) return false; // This is the last round
+                    if (!nextRound) return false;
 
                     const nextRoundMatches = matchesByRound[nextRound];
                     const anyNextStarted = nextRoundMatches.some(m =>
@@ -134,17 +192,15 @@ export default function MatchesPage() {
                     );
 
                     return allCompleted && anyNextStarted;
-                }) || rounds[0]; // Default to first round if none completed
+                }) || rounds[0];
 
                 const currentIndex = rounds.indexOf(currentRound);
                 const nextRound = rounds[currentIndex + 1];
 
                 if (nextRound) {
-                    // Show current + next
                     focusedLeagueMatches.push(...matchesByRound[currentRound]);
                     focusedLeagueMatches.push(...matchesByRound[nextRound]);
                 } else {
-                    // Last round - show last 2 rounds
                     const roundsToShow = rounds.slice(-2);
                     roundsToShow.forEach(r => focusedLeagueMatches.push(...matchesByRound[r]));
                 }
@@ -159,27 +215,88 @@ export default function MatchesPage() {
     }, [allMatches]);
 
     // Get matches for active category
-    const matches = categorizedMatches[activeCategory];
+    const categoryMatches = categorizedMatches[activeCategory];
 
-    const { upcomingMatches, pastMatches } = useMemo(() => {
-        const upcoming: Match[] = [];
-        const past: Match[] = [];
+    // Filter by time
+    const filteredMatches = useMemo(() => {
         const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const tomorrow = new Date(today.getTime() + 86400000);
+        const weekEnd = new Date(today.getTime() + 7 * 86400000);
 
-        matches.forEach(match => {
-            const matchDate = new Date(match.date);
-            if (matchDate >= now || match.status === 'upcoming' || match.status === 'active') {
-                upcoming.push(match);
-            } else {
-                past.push(match);
+        switch (timeFilter) {
+            case 'today':
+                return categoryMatches.filter(m => {
+                    const d = new Date(m.date);
+                    const matchDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                    return matchDay.getTime() === today.getTime();
+                });
+            case 'tomorrow':
+                return categoryMatches.filter(m => {
+                    const d = new Date(m.date);
+                    const matchDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                    return matchDay.getTime() === tomorrow.getTime();
+                });
+            case 'this_week':
+                return categoryMatches.filter(m => {
+                    const d = new Date(m.date);
+                    return d >= today && d < weekEnd;
+                });
+            case 'history':
+                return categoryMatches.filter(m => new Date(m.date) < now && m.status !== 'upcoming' && m.status !== 'active');
+            default: // 'upcoming'
+                return categoryMatches.filter(m => new Date(m.date) >= now || m.status === 'upcoming' || m.status === 'active');
+        }
+    }, [categoryMatches, timeFilter]);
+
+    // Sort filtered matches
+    const sortedFilteredMatches = useMemo(() => {
+        return [...filteredMatches].sort((a, b) => {
+            if (timeFilter === 'history') {
+                return new Date(b.date).getTime() - new Date(a.date).getTime();
             }
+            return new Date(a.date).getTime() - new Date(b.date).getTime();
         });
+    }, [filteredMatches, timeFilter]);
 
-        // Sort upcoming matches by date ascending
-        upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // Featured match (next upcoming match)
+    const featuredMatch = useMemo(() => {
+        if (timeFilter === 'history') return null;
 
-        return { upcomingMatches: upcoming, pastMatches: past };
-    }, [matches]);
+        const now = new Date();
+        const upcomingMatches = categoryMatches
+            .filter(m => new Date(m.date) >= now || m.status === 'upcoming' || m.status === 'active')
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        return upcomingMatches[0] || null;
+    }, [categoryMatches, timeFilter]);
+
+    // Calculate counts for time filters
+    const timeCounts = useMemo(() => {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const tomorrow = new Date(today.getTime() + 86400000);
+        const weekEnd = new Date(today.getTime() + 7 * 86400000);
+
+        return {
+            today: categoryMatches.filter(m => {
+                const d = new Date(m.date);
+                const matchDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                return matchDay.getTime() === today.getTime();
+            }).length,
+            tomorrow: categoryMatches.filter(m => {
+                const d = new Date(m.date);
+                const matchDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                return matchDay.getTime() === tomorrow.getTime();
+            }).length,
+            this_week: categoryMatches.filter(m => {
+                const d = new Date(m.date);
+                return d >= today && d < weekEnd;
+            }).length,
+            upcoming: categoryMatches.filter(m => new Date(m.date) >= now || m.status === 'upcoming' || m.status === 'active').length,
+            history: categoryMatches.filter(m => new Date(m.date) < now && m.status !== 'upcoming' && m.status !== 'active').length,
+        };
+    }, [categoryMatches]);
 
     const loading = userLoading || playersLoading || groupMatchesLoading || joinedPublicMatchesLoading;
 
@@ -187,6 +304,18 @@ export default function MatchesPage() {
         if (!allGroupPlayers) return [];
         return [...allGroupPlayers].sort((a, b) => b.ovr - a.ovr);
     }, [allGroupPlayers]);
+
+    const categories = useMemo(() => [
+        { id: 'amistosos' as const, label: 'Amistosos', count: categorizedMatches.amistosos.length },
+        { id: 'ligas' as const, label: 'Ligas', count: categorizedMatches.ligas.length },
+        { id: 'copas' as const, label: 'Copas', count: categorizedMatches.copas.length },
+    ], [categorizedMatches]);
+
+    // Matches to display in the grid (exclude featured match)
+    const gridMatches = useMemo(() => {
+        if (!featuredMatch) return sortedFilteredMatches;
+        return sortedFilteredMatches.filter(m => m.id !== featuredMatch.id);
+    }, [sortedFilteredMatches, featuredMatch]);
 
     if (loading) {
         return (
@@ -198,21 +327,26 @@ export default function MatchesPage() {
     }
 
     return (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-6">
             <FirstTimeInfoDialog
                 featureKey="hasSeenMatchesInfo"
                 title="Sección de Partidos"
                 description="Acá podés crear nuevos partidos y ver todos los partidos de tu grupo, tanto los próximos como el historial. Usá el icono del calendario para una vista mensual."
             />
-            <PageHeader
-                title="Partidos"
-                description="Programa, visualiza y gestiona todos tus partidos."
-            >
-                <div className="flex flex-wrap items-center gap-2">
-                    <AddMatchDialog allPlayers={sortedPlayers} disabled={!user?.activeGroupId} />
-                    <InvitationsSheet />
-                </div>
-            </PageHeader>
+
+            {/* Pending Finalization Dialog */}
+            <PendingFinalizationDialog
+                matches={pendingFinalizationMatches}
+                open={showPendingDialog}
+                onOpenChange={setShowPendingDialog}
+                onFinalizeAll={handleFinalizeAllPending}
+            />
+
+            {/* Sports Broadcast Header */}
+            <SportsBroadcastHeader
+                allPlayers={sortedPlayers}
+                disabled={!user?.activeGroupId}
+            />
 
             {!user?.activeGroupId && (
                 <Alert>
@@ -228,87 +362,68 @@ export default function MatchesPage() {
             )}
 
             {user?.activeGroupId && (
-                <Tabs value={activeCategory} onValueChange={(value) => setActiveCategory(value as any)}>
-                    <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="amistosos" className="gap-1.5">
-                            <Users2 className="h-4 w-4" />
-                            <span className="hidden sm:inline">Amistosos</span>
-                            <Badge variant="secondary" className="ml-1">{categorizedMatches.amistosos.length}</Badge>
-                        </TabsTrigger>
-                        <TabsTrigger value="ligas" className="gap-1.5">
-                            <Trophy className="h-4 w-4" />
-                            <span className="hidden sm:inline">Ligas</span>
-                            <Badge variant="secondary" className="ml-1">{categorizedMatches.ligas.length}</Badge>
-                        </TabsTrigger>
-                        <TabsTrigger value="copas" className="gap-1.5">
-                            <Trophy className="h-4 w-4" />
-                            <span className="hidden sm:inline">Copas</span>
-                            <Badge variant="secondary" className="ml-1">{categorizedMatches.copas.length}</Badge>
-                        </TabsTrigger>
-                    </TabsList>
+                <div className="space-y-6">
+                    {/* Hero Match Card - Featured next match */}
+                    {featuredMatch && timeFilter !== 'history' && (
+                        <HeroMatchCard
+                            match={featuredMatch}
+                            allPlayers={sortedPlayers}
+                        />
+                    )}
 
-                    {/* Content for each category */}
-                    {(['amistosos', 'ligas', 'copas'] as const).map(category => (
-                        <TabsContent key={category} value={category} className="mt-6">
-                            <Tabs defaultValue="upcoming">
-                                <TabsList className="grid w-full grid-cols-2">
-                                    <TabsTrigger value="upcoming">Próximos ({upcomingMatches.length})</TabsTrigger>
-                                    <TabsTrigger value="history">Historial ({pastMatches.length})</TabsTrigger>
-                                </TabsList>
-                                <TabsContent value="upcoming" className="mt-6">
-                                    {upcomingMatches.length > 0 ? (
-                                        <motion.div
-                                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                                            variants={listVariants}
-                                            initial="hidden"
-                                            animate="visible"
-                                        >
-                                            {upcomingMatches.map(match => (
-                                                <motion.div key={match.id} variants={itemVariants}>
-                                                    <MatchCard match={match} allPlayers={sortedPlayers} />
-                                                </motion.div>
-                                            ))}
-                                        </motion.div>
-                                    ) : (
-                                        <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl">
-                                            <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
-                                            <h2 className="text-xl font-semibold mb-2">No hay partidos programados</h2>
-                                            <p className="text-muted-foreground mb-6 max-w-md">
-                                                {category === 'amistosos' && '¡Es hora de organizar el próximo encuentro!'}
-                                                {category === 'ligas' && 'No participas en ninguna liga actualmente. Ve a Competiciones para unirte.'}
-                                                {category === 'copas' && 'No hay copas en curso. Ve a Competiciones para crear una.'}
-                                            </p>
-                                        </div>
-                                    )}
-                                </TabsContent>
-                                <TabsContent value="history" className="mt-6">
-                                    {pastMatches.length > 0 ? (
-                                        <motion.div
-                                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                                            variants={listVariants}
-                                            initial="hidden"
-                                            animate="visible"
-                                        >
-                                            {pastMatches.map(match => (
-                                                <motion.div key={match.id} variants={itemVariants}>
-                                                    <MatchCard match={match} allPlayers={sortedPlayers} />
-                                                </motion.div>
-                                            ))}
-                                        </motion.div>
-                                    ) : (
-                                        <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl">
-                                            <Info className="h-16 w-16 text-muted-foreground mb-4" />
-                                            <h2 className="text-xl font-semibold mb-2">Sin Historial</h2>
-                                            <p className="text-muted-foreground mb-6 max-w-md">
-                                                Cuando los partidos finalicen, aparecerán acá.
-                                            </p>
-                                        </div>
-                                    )}
-                                </TabsContent>
-                            </Tabs>
-                        </TabsContent>
-                    ))}
-                </Tabs>
+                    {/* Category Pills Navigation */}
+                    <CategoryPillNav
+                        categories={categories}
+                        activeCategory={activeCategory}
+                        onCategoryChange={setActiveCategory}
+                    />
+
+                    {/* Quick Time Filters */}
+                    <QuickTimeFilter
+                        activeFilter={timeFilter}
+                        onFilterChange={setTimeFilter}
+                        counts={timeCounts}
+                    />
+
+                    {/* Match Cards Grid */}
+                    {gridMatches.length > 0 ? (
+                        <motion.div
+                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                            variants={listVariants}
+                            initial="hidden"
+                            animate="visible"
+                            key={`${activeCategory}-${timeFilter}`}
+                        >
+                            {gridMatches.map(match => (
+                                <motion.div key={match.id} variants={itemVariants}>
+                                    <MatchCard match={match} allPlayers={sortedPlayers} />
+                                </motion.div>
+                            ))}
+                        </motion.div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl">
+                            {timeFilter === 'history' ? (
+                                <>
+                                    <Info className="h-16 w-16 text-muted-foreground mb-4" />
+                                    <h2 className="text-xl font-semibold mb-2">Sin Historial</h2>
+                                    <p className="text-muted-foreground mb-6 max-w-md">
+                                        Cuando los partidos finalicen, aparecerán acá.
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
+                                    <h2 className="text-xl font-semibold mb-2">No hay partidos</h2>
+                                    <p className="text-muted-foreground mb-6 max-w-md">
+                                        {activeCategory === 'amistosos' && '¡Es hora de organizar el próximo encuentro!'}
+                                        {activeCategory === 'ligas' && 'No participas en ninguna liga actualmente. Ve a Competiciones para unirte.'}
+                                        {activeCategory === 'copas' && 'No hay copas en curso. Ve a Competiciones para crear una.'}
+                                    </p>
+                                </>
+                            )}
+                        </div>
+                    )}
+                </div>
             )}
         </div>
     );
