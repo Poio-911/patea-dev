@@ -301,13 +301,13 @@ function ProposalCard({
       className={cn(
         'relative p-4 rounded-lg border transition-all',
         hasReachedMajority
-          ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
+          ? 'bg-muted/50 dark:bg-muted/30 border-primary'
           : 'bg-card hover:bg-muted/50'
       )}
     >
       {hasReachedMajority && (
         <div className="absolute top-2 right-2">
-          <Badge className="bg-green-500 flex items-center gap-1">
+          <Badge className="bg-primary flex items-center gap-1">
             <Trophy className="w-3 h-3" />
             Mayoría
           </Badge>
@@ -346,7 +346,7 @@ function ProposalCard({
           <div
             className={cn(
               'h-2 rounded-full transition-all',
-              hasReachedMajority ? 'bg-green-500' : 'bg-primary'
+              hasReachedMajority ? 'bg-primary' : 'bg-primary'
             )}
             style={{ width: `${(proposal.votesCount / totalPlayers) * 100}%` }}
           />

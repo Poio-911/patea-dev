@@ -336,13 +336,13 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
                   {duoImage && (
                     <div className="mt-6 relative z-10">
                       <div className="text-center mb-4">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/10 border border-green-500/30">
-                          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                          <span className="text-sm font-semibold text-green-600 dark:text-green-400">🏆 Chromo Generado</span>
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border">
+                          <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                          <span className="text-sm font-semibold text-foreground">🏆 Chromo Generado</span>
                         </div>
                       </div>
                       <div className="relative group/image">
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-amber-500/20 rounded-xl opacity-0 group-hover/image:opacity-100 transition-opacity duration-500"></div>
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-foreground/10 rounded-xl opacity-0 group-hover/image:opacity-100 transition-opacity duration-500"></div>
                         <img 
                           src={duoImage} 
                           alt="Chromo generado" 

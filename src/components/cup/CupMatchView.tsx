@@ -9,10 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Trophy, Loader2, ArrowLeft } from 'lucide-react';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-import { updateMatchFinalScoreAction, advanceCupWinnerAction } from '@/lib/actions/server-actions';
+import { updateMatchFinalScoreAction, advanceCupWinnerAction, logMatchEventAction, updateLiveStateAction } from '@/lib/actions/server-actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { LiveMatchDashboard } from '@/components/match/live-match-dashboard';
+import { MatchTimeline } from '@/components/match/match-timeline';
+import { LiveStats } from '@/components/match/live-stats';
 
 interface CupMatchViewProps {
     match: Match;
@@ -133,7 +136,7 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
 
             {/* Score Card */}
             {userId === match.ownerUid && (
-                <Card className="border-amber-500/20 bg-amber-500/5">
+                <Card className="border-border bg-card/70">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Trophy className="h-5 w-5 text-amber-500" />
@@ -171,7 +174,7 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
                             <Button
                                 onClick={handleFinalize}
                                 disabled={isSubmitting}
-                                className="w-full bg-amber-600 hover:bg-amber-700 text-white h-12"
+                                className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground h-12"
                                 size="lg"
                             >
                                 {isSubmitting ? (
@@ -195,6 +198,42 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
                         )}
                     </CardContent>
                 </Card>
+            )}
+
+            {/* Live Match Dashboard - Show for cup matches */}
+            {(match.status === 'upcoming' || match.status === 'active') && userId === match.ownerUid && (
+                <div className="space-y-6">
+                    <LiveMatchDashboard
+                        match={match}
+                        isAdmin={userId === match.ownerUid}
+                        onEventLogged={async (event) => {
+                            const result = await logMatchEventAction(match.id, event, userId);
+                            if (!result.success) {
+                                toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo registrar el evento.' });
+                            } else {
+                                toast({ title: 'Evento registrado', description: `${event.type} - ${event.playerName}` });
+                            }
+                        }}
+                        onMatchStatusChange={async (status, minute) => {
+                            const result = await updateLiveStateAction(match.id, status, minute ?? match.currentMinute || 0, userId);
+                            if (!result.success) {
+                                toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo actualizar el estado.' });
+                            } else {
+                                toast({ title: 'Estado del partido actualizado', description: `Nuevo estado: ${status}` });
+                            }
+                        }}
+                    />
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <MatchTimeline 
+                            events={match.events || []} 
+                            currentMinute={match.currentMinute || 0}
+                        />
+                        <LiveStats 
+                            match={match} 
+                        />
+                    </div>
+                </div>
             )}
 
             {/* Teams Display */}

@@ -120,7 +120,7 @@ export function UserGroupsList() {
                 <CardTitle className="flex items-center gap-3">
                   <span>{group.name}</span>
                   {isOwner && (
-                    <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+                    <Badge variant="secondary" className="bg-card text-foreground border-border">
                       <Crown className="h-3 w-3 mr-1" />
                       Dueño
                     </Badge>
@@ -176,7 +176,7 @@ export function UserGroupsList() {
             </CardHeader>
             <CardFooter className="mt-auto bg-muted/50 p-3">
               {isActive ? (
-                <Badge className="w-full justify-center text-base py-1.5 bg-green-600 hover:bg-green-700">
+                <Badge className="w-full justify-center text-base py-1.5 bg-primary text-primary-foreground hover:bg-primary/90">
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Activo
                 </Badge>

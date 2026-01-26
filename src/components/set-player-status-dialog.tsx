@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -45,11 +45,31 @@ export function SetPlayerStatusDialog({ player, team, onPlayerUpdate, children }
     },
   });
 
+  const existingNumbers = useMemo(() => {
+    return (team.members || [])
+      .filter((m) => m.playerId !== player.id && typeof m.number === 'number')
+      .map((m) => m.number);
+  }, [team.members, player.id]);
+
+  const nextAvailableNumber = useMemo(() => {
+    for (let n = 1; n <= 99; n++) {
+      if (!existingNumbers.includes(n)) return n;
+    }
+    return 0;
+  }, [existingNumbers]);
+
   const onSubmit = async (data: PlayerStatusFormData) => {
     if (!firestore) return;
     setIsSubmitting(true);
 
     try {
+      // Prevent duplicate dorsals within the team
+      if (existingNumbers.includes(data.number)) {
+        form.setError('number', { type: 'manual', message: `El dorsal ${data.number} ya está en uso.` });
+        toast({ variant: 'destructive', title: 'Dorsal ocupado', description: `El número ${data.number} ya lo tiene otro jugador.` });
+        setIsSubmitting(false);
+        return;
+      }
       const teamRef = doc(firestore, 'teams', team.id);
       const updatedMembers = team.members.map((member: GroupTeamMember) => {
         if (member.playerId === player.id) {
@@ -91,7 +111,19 @@ export function SetPlayerStatusDialog({ player, team, onPlayerUpdate, children }
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="dorsal">Dorsal</Label>
-            <Input id="dorsal" type="number" {...form.register('number')} />
+            <Input id="dorsal" type="number" min={1} max={99} {...form.register('number', { valueAsNumber: true })} />
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Próximo disponible:</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="xs"
+                onClick={() => form.setValue('number', nextAvailableNumber, { shouldValidate: true })}
+                disabled={nextAvailableNumber === 0}
+              >
+                {nextAvailableNumber || 'N/A'}
+              </Button>
+            </div>
             {form.formState.errors.number && (
               <p className="text-xs text-destructive">{form.formState.errors.number.message}</p>
             )}

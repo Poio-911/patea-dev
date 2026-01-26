@@ -10,6 +10,45 @@ interface CountdownTimerProps {
     showIcon?: boolean;
 }
 
+function parseTargetDate(targetDate: Date | string): number {
+    if (targetDate instanceof Date) {
+        return targetDate.getTime();
+    }
+
+    // Try parsing directly first
+    let parsed = new Date(targetDate);
+    if (!isNaN(parsed.getTime())) {
+        return parsed.getTime();
+    }
+
+    // Try adding seconds if it looks like "YYYY-MM-DDTHH:MM"
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(targetDate)) {
+        parsed = new Date(`${targetDate}:00`);
+        if (!isNaN(parsed.getTime())) {
+            return parsed.getTime();
+        }
+    }
+
+    // Try parsing as separate date and time parts
+    const isoMatch = targetDate.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
+    if (isoMatch) {
+        const [, year, month, day, hour, minute, second = '0'] = isoMatch;
+        parsed = new Date(
+            parseInt(year),
+            parseInt(month) - 1,
+            parseInt(day),
+            parseInt(hour),
+            parseInt(minute),
+            parseInt(second)
+        );
+        if (!isNaN(parsed.getTime())) {
+            return parsed.getTime();
+        }
+    }
+
+    return NaN;
+}
+
 export function CountdownTimer({ targetDate, className, showIcon = true }: CountdownTimerProps) {
     const [timeLeft, setTimeLeft] = useState('');
     const [isUrgent, setIsUrgent] = useState(false);
@@ -17,12 +56,11 @@ export function CountdownTimer({ targetDate, className, showIcon = true }: Count
     useEffect(() => {
         const updateTimer = () => {
             const now = new Date().getTime();
+            const targetTime = parseTargetDate(targetDate);
 
-            let targetTime: number;
-            if (typeof targetDate === 'string') {
-                targetTime = new Date(targetDate).getTime();
-            } else {
-                targetTime = targetDate.getTime();
+            if (isNaN(targetTime)) {
+                setTimeLeft('');
+                return;
             }
 
             const difference = targetTime - now;

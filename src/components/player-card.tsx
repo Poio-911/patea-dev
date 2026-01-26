@@ -133,8 +133,8 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, je
                     </div>
                     <div className="relative z-10 flex flex-col h-full justify-between">
                         <div className="flex items-start justify-between mb-2">
-                            <PlayerPositionBadge position={player.position} />
-                            <PlayerOvr value={player.ovr} />
+                            <PlayerPositionBadge position={player.position} showIcon={false} neutral />
+                            <PlayerOvr value={player.ovr} context="card" />
                         </div>
                         <div className="flex flex-col items-center gap-2 mb-2">
                             <Dialog>

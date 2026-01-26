@@ -54,48 +54,33 @@ export function PlayerStatsCard({ player }: PlayerStatsCardProps) {
       title: 'Partidos Jugados',
       value: stats.totalMatches,
       icon: Calendar,
-      color: 'text-blue-600 game:text-blue-400',
-      bgColor: 'bg-blue-100 game:bg-blue-900/30',
-      valueColor: 'text-blue-700 game:text-blue-300',
+      color: 'text-foreground',
+      bgColor: 'bg-card/80 border border-border',
+      valueColor: 'text-foreground',
     },
     {
       title: 'Goles',
       value: stats.totalGoals,
       icon: Target,
-      color: 'text-green-600 game:text-green-400',
-      bgColor: 'bg-green-100 game:bg-green-900/30',
-      valueColor: 'text-green-700 game:text-green-300',
+      color: 'text-foreground',
+      bgColor: 'bg-card/80 border border-border',
+      valueColor: 'text-foreground',
     },
     {
       title: 'Goles por Partido',
       value: stats.avgGoalsPerMatch,
       icon: Trophy,
-      color: 'text-orange-600 game:text-orange-400',
-      bgColor: 'bg-orange-100 game:bg-orange-900/30',
-      valueColor: 'text-orange-700 game:text-orange-300',
+      color: 'text-foreground',
+      bgColor: 'bg-card/80 border border-border',
+      valueColor: 'text-foreground',
     },
     {
       title: 'Tendencia OVR',
       value: stats.ovrTrend > 0 ? `+${stats.ovrTrend}` : stats.ovrTrend || '0',
       icon: TrendingUp,
-      color:
-        stats.ovrTrend > 0
-          ? 'text-emerald-600 game:text-emerald-400'
-          : stats.ovrTrend < 0
-          ? 'text-red-600 game:text-red-400'
-          : 'text-gray-600 game:text-gray-400',
-      bgColor:
-        stats.ovrTrend > 0
-          ? 'bg-emerald-100 game:bg-emerald-900/30'
-          : stats.ovrTrend < 0
-          ? 'bg-red-100 game:bg-red-900/30'
-          : 'bg-gray-100 game:bg-gray-900/30',
-      valueColor:
-        stats.ovrTrend > 0
-          ? 'text-emerald-700 game:text-emerald-300'
-          : stats.ovrTrend < 0
-          ? 'text-red-700 game:text-red-300'
-          : 'text-gray-700 game:text-gray-300',
+      color: 'text-foreground',
+      bgColor: 'bg-card/80 border border-border',
+      valueColor: 'text-foreground',
     },
   ];
 
@@ -114,7 +99,7 @@ export function PlayerStatsCard({ player }: PlayerStatsCardProps) {
               transition={{ delay: index * 0.1, duration: 0.3 }}
               className={`flex items-center gap-3 p-4 rounded-lg ${stat.bgColor}`}
             >
-              <div className={`p-2 rounded-full bg-background/50 ${stat.color}`}>
+              <div className={`p-2 rounded-full bg-background/40 ${stat.color}`}>
                 <stat.icon className="h-5 w-5" />
               </div>
               <div>

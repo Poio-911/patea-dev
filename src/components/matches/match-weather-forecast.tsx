@@ -35,18 +35,18 @@ const iconMap: Record<string, any> = {
 };
 
 const getUVLevel = (uvIndex: number) => {
-  if (uvIndex <= 2) return { label: 'Bajo', color: 'text-green-600' };
-  if (uvIndex <= 5) return { label: 'Moderado', color: 'text-yellow-600' };
-  if (uvIndex <= 7) return { label: 'Alto', color: 'text-orange-600' };
-  if (uvIndex <= 10) return { label: 'Muy Alto', color: 'text-red-600' };
-  return { label: 'Extremo', color: 'text-purple-600' };
+  if (uvIndex <= 2) return { label: 'Bajo' };
+  if (uvIndex <= 5) return { label: 'Moderado' };
+  if (uvIndex <= 7) return { label: 'Alto' };
+  if (uvIndex <= 10) return { label: 'Muy Alto' };
+  return { label: 'Extremo' };
 };
 
 const getPrecipitationLevel = (precipitation: number) => {
-  if (precipitation < 20) return { label: 'Baja', color: 'text-green-600' };
-  if (precipitation < 50) return { label: 'Media', color: 'text-yellow-600' };
-  if (precipitation < 70) return { label: 'Alta', color: 'text-orange-600' };
-  return { label: 'Muy Alta', color: 'text-red-600' };
+  if (precipitation < 20) return { label: 'Baja' };
+  if (precipitation < 50) return { label: 'Media' };
+  if (precipitation < 70) return { label: 'Alta' };
+  return { label: 'Muy Alta' };
 };
 
 export function MatchWeatherForecast({ match, compact = false }: MatchWeatherForecastProps) {
@@ -100,13 +100,13 @@ export function MatchWeatherForecast({ match, compact = false }: MatchWeatherFor
 
       <CardContent className="space-y-4">
         {/* Temperatura principal */}
-        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-card rounded-lg border border-border">
           <div>
             <p className="text-sm text-muted-foreground">Temperatura</p>
             <p className="text-4xl font-bold">{temperature}°C</p>
             <p className="text-sm text-muted-foreground mt-1">{description}</p>
           </div>
-          <WeatherIcon className="w-16 h-16 text-blue-600 dark:text-blue-400" />
+          <WeatherIcon className="w-16 h-16 text-foreground" />
         </div>
 
         {/* Sensación térmica */}
@@ -132,7 +132,7 @@ export function MatchWeatherForecast({ match, compact = false }: MatchWeatherFor
           {humidity !== undefined && (
             <div className="p-3 bg-muted/30 rounded-lg">
               <div className="flex items-center gap-2 mb-1">
-                <Droplets className="w-4 h-4 text-blue-500" />
+                <Droplets className="w-4 h-4 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">Humedad</span>
               </div>
               <p className="text-lg font-semibold">{humidity}%</p>
@@ -152,12 +152,12 @@ export function MatchWeatherForecast({ match, compact = false }: MatchWeatherFor
           {precipitation !== undefined && (
             <div className="p-3 bg-muted/30 rounded-lg">
               <div className="flex items-center gap-2 mb-1">
-                <CloudRain className="w-4 h-4 text-blue-600" />
+                <CloudRain className="w-4 h-4 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">Precipitación</span>
               </div>
               <p className="text-lg font-semibold">{precipitation}%</p>
               {precipLevel && (
-                <Badge variant="outline" className={cn('text-xs mt-1', precipLevel.color)}>
+                <Badge variant="outline" className={cn('text-xs mt-1 text-foreground border-border')}>
                   {precipLevel.label}
                 </Badge>
               )}
@@ -167,12 +167,12 @@ export function MatchWeatherForecast({ match, compact = false }: MatchWeatherFor
           {uvIndex !== undefined && (
             <div className="p-3 bg-muted/30 rounded-lg">
               <div className="flex items-center gap-2 mb-1">
-                <Sun className="w-4 h-4 text-yellow-500" />
+                <Sun className="w-4 h-4 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">Índice UV</span>
               </div>
               <p className="text-lg font-semibold">{uvIndex}</p>
               {uvLevel && (
-                <Badge variant="outline" className={cn('text-xs mt-1', uvLevel.color)}>
+                <Badge variant="outline" className={cn('text-xs mt-1 text-foreground border-border')}>
                   {uvLevel.label}
                 </Badge>
               )}
@@ -195,8 +195,8 @@ export function MatchWeatherForecast({ match, compact = false }: MatchWeatherFor
 
         {/* Alertas */}
         {precipitation !== undefined && precipitation > 70 && (
-          <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+          <div className="p-3 bg-muted border border-border rounded-lg">
+            <div className="flex items-center gap-2 text-foreground">
               <AlertTriangle className="w-4 h-4" />
               <span className="text-sm font-medium">
                 Alta probabilidad de lluvia - Considerá reprogramar el partido

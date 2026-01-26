@@ -29,6 +29,7 @@ import { doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { PlayerPositionBadge } from '@/components/player-styles';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
+import { Logo } from '@/components/logo';
 import { MatchIcon } from '@/components/icons/match-icon';
 import { EvaluationIcon } from '@/components/icons/evaluation-icon';
 import { NotificationBell } from '@/components/notification-bell';
@@ -155,36 +156,35 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative h-screen w-full">
       {/* Desktop & Mobile Header */}
-      <header className="fixed top-0 left-0 right-0 z-20 flex h-16 shrink-0 items-center justify-between border-b bg-background/70 px-4 backdrop-blur-lg sm:px-6">
+      <header className="fixed top-0 left-0 right-0 z-20 flex h-16 shrink-0 items-center justify-between border-b bg-card/80 px-4 backdrop-blur-lg shadow-sm sm:px-6">
         {/* Left: Logo + Desktop Menu */}
         <div className="flex items-center gap-6">
-          {/* Logo */}
+          {/* Logo (theme-aware) */}
           <Link href="/dashboard" className="flex items-center gap-2">
-            <SoccerPlayerIcon className="h-8 w-8 text-primary" />
-            <span className="hidden sm:block text-xl font-bold font-headline">Pateá</span>
+            <Logo />
           </Link>
 
           {/* Desktop Horizontal Menu */}
           <nav className="hidden md:flex items-center gap-1">
-            <Link href="/dashboard" className={cn("px-3 py-2 text-sm font-medium rounded-md transition hover:bg-accent", pathname.startsWith('/dashboard') && 'bg-accent text-accent-foreground')}>
+            <Link href="/dashboard" className={cn("px-3 py-2 text-sm font-medium rounded-md transition hover:bg-secondary", pathname.startsWith('/dashboard') && 'bg-secondary text-secondary-foreground')}>
               Panel
             </Link>
-            <Link href="/groups" className={cn("px-3 py-2 text-sm font-medium rounded-md transition hover:bg-accent", pathname.startsWith('/groups') && 'bg-accent text-accent-foreground')}>
+            <Link href="/groups" className={cn("px-3 py-2 text-sm font-medium rounded-md transition hover:bg-secondary", pathname.startsWith('/groups') && 'bg-secondary text-secondary-foreground')}>
               Grupos
             </Link>
-            <Link href="/players" className={cn("px-3 py-2 text-sm font-medium rounded-md transition hover:bg-accent", pathname.startsWith('/players') && 'bg-accent text-accent-foreground')}>
+            <Link href="/players" className={cn("px-3 py-2 text-sm font-medium rounded-md transition hover:bg-secondary", pathname.startsWith('/players') && 'bg-secondary text-secondary-foreground')}>
               Jugadores
             </Link>
-            <Link href="/matches" className={cn("px-3 py-2 text-sm font-medium rounded-md transition hover:bg-accent", pathname.startsWith('/matches') && !pathname.startsWith('/find-match') && 'bg-accent text-accent-foreground')}>
+            <Link href="/matches" className={cn("px-3 py-2 text-sm font-medium rounded-md transition hover:bg-secondary", pathname.startsWith('/matches') && !pathname.startsWith('/find-match') && 'bg-secondary text-secondary-foreground')}>
               Partidos
             </Link>
-            <Link href="/competitions" className={cn("px-3 py-2 text-sm font-medium rounded-md transition hover:bg-accent", pathname.startsWith('/competitions') && 'bg-accent text-accent-foreground')}>
+            <Link href="/competitions" className={cn("px-3 py-2 text-sm font-medium rounded-md transition hover:bg-secondary", pathname.startsWith('/competitions') && 'bg-secondary text-secondary-foreground')}>
               Competiciones
             </Link>
-            <Link href="/find-match" className={cn("px-3 py-2 text-sm font-medium rounded-md transition hover:bg-accent", pathname.startsWith('/find-match') && 'bg-accent text-accent-foreground')}>
+            <Link href="/find-match" className={cn("px-3 py-2 text-sm font-medium rounded-md transition hover:bg-secondary", pathname.startsWith('/find-match') && 'bg-secondary text-secondary-foreground')}>
               Buscar
             </Link>
-            <Link href="/evaluations" className={cn("px-3 py-2 text-sm font-medium rounded-md transition hover:bg-accent", pathname.startsWith('/evaluations') && 'bg-accent text-accent-foreground')}>
+            <Link href="/evaluations" className={cn("px-3 py-2 text-sm font-medium rounded-md transition hover:bg-secondary", pathname.startsWith('/evaluations') && 'bg-secondary text-secondary-foreground')}>
               Evaluaciones
             </Link>
           </nav>
@@ -276,6 +276,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                   <DropdownMenuSubContent>
                     <DropdownMenuItem onClick={() => setTheme("light")}>Claro</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setTheme("game")}>Game</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("nike")}>Nike</DropdownMenuItem>
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
@@ -300,7 +301,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
         </div>
       </main>
 
-      <nav className="fixed bottom-4 left-4 right-4 z-30 h-16 rounded-xl border bg-background/70 backdrop-blur-lg shadow-lg md:hidden">
+      <nav className="fixed bottom-4 left-4 right-4 z-30 h-16 rounded-xl border bg-card/80 backdrop-blur-lg shadow-lg md:hidden">
         <div className="relative mx-auto h-full max-w-lg">
           <div className="grid h-full w-full grid-cols-5 font-medium">
             {baseNavItems.slice(0, 2).map((item) => {
@@ -310,7 +311,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary', isActive && 'text-primary font-semibold')}
+                  className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-foreground', isActive && 'text-foreground font-semibold')}
                 >
                   <Icon className={cn('h-5 w-5 transition-all duration-200', isActive && 'scale-110')} />
                   <span className="text-[10px] leading-none">{item.label}</span>
@@ -321,7 +322,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => setMatchesMenuOpen(o => !o)}
-                className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary', (pathname.startsWith('/matches') || pathname.startsWith('/competitions') || pathname.startsWith('/find-match')) && 'text-primary font-semibold')}
+                className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-foreground', (pathname.startsWith('/matches') || pathname.startsWith('/competitions') || pathname.startsWith('/find-match')) && 'text-foreground font-semibold')}
                 aria-haspopup="true"
                 aria-expanded={matchesMenuOpen}
               >
@@ -356,14 +357,14 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                         className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50"
                       >
                         <div className="flex flex-col gap-2 p-3 rounded-2xl bg-background/95 backdrop-blur-xl border border-border/50 shadow-2xl min-w-[180px]">
-                          {/* Partidos - Blue theme */}
+                          {/* Partidos - Themed via tokens (primary) */}
                           <Link
                             href="/matches"
                             className={cn(
                               'flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer hover:scale-[1.02] active:scale-[0.98]',
                               pathname.startsWith('/matches') && !pathname.startsWith('/find-match')
-                                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
-                                : 'bg-gradient-to-r from-blue-50 to-blue-100/50 hover:from-blue-100 hover:to-blue-200 hover:shadow-md text-blue-900'
+                                ? 'bg-secondary text-secondary-foreground shadow-lg shadow-secondary/30'
+                                : 'bg-gradient-to-r from-secondary/20 to-secondary/10 hover:from-secondary/25 hover:to-secondary/15 hover:shadow-md text-foreground'
                             )}
                             onClick={() => setMatchesMenuOpen(false)}
                           >
@@ -371,34 +372,34 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                               'flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200',
                               pathname.startsWith('/matches') && !pathname.startsWith('/find-match')
                                 ? 'bg-white/20'
-                                : 'bg-blue-500/15'
+                                : 'bg-secondary/20'
                             )}>
                               <Trophy className={cn(
                                 'h-5 w-5',
                                 pathname.startsWith('/matches') && !pathname.startsWith('/find-match')
-                                  ? 'text-white'
-                                  : 'text-blue-600'
+                                  ? 'text-secondary-foreground'
+                                  : 'text-foreground'
                               )} />
                             </div>
                             <div className="flex flex-col">
                               <span className="text-sm font-semibold">Partidos</span>
                               <span className={cn(
                                 'text-[10px]',
-                                pathname.startsWith('/matches') && !pathname.startsWith('/find-match')
-                                  ? 'text-white/70'
-                                  : 'text-blue-600/70'
+                                  pathname.startsWith('/matches') && !pathname.startsWith('/find-match')
+                                    ? 'text-secondary-foreground/70'
+                                    : 'text-muted-foreground'
                               )}>Tus partidos</span>
                             </div>
                           </Link>
 
-                          {/* Buscar - Amber theme */}
+                          {/* Buscar - Themed via tokens (accent) */}
                           <Link
                             href="/find-match"
                             className={cn(
                               'flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer hover:scale-[1.02] active:scale-[0.98]',
                               pathname.startsWith('/find-match')
-                                ? 'bg-amber-500 text-amber-950 shadow-lg shadow-amber-500/30'
-                                : 'bg-gradient-to-r from-amber-50 to-yellow-100/50 hover:from-amber-100 hover:to-yellow-200 hover:shadow-md text-amber-900'
+                                ? 'bg-secondary text-secondary-foreground shadow-lg shadow-secondary/30'
+                                : 'bg-gradient-to-r from-secondary/20 to-secondary/10 hover:from-secondary/25 hover:to-secondary/15 hover:shadow-md text-foreground'
                             )}
                             onClick={() => setMatchesMenuOpen(false)}
                           >
@@ -406,34 +407,34 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                               'flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200',
                               pathname.startsWith('/find-match')
                                 ? 'bg-white/20'
-                                : 'bg-amber-500/15'
+                                : 'bg-secondary/20'
                             )}>
                               <Search className={cn(
                                 'h-5 w-5',
                                 pathname.startsWith('/find-match')
-                                  ? 'text-amber-950'
-                                  : 'text-amber-600'
+                                  ? 'text-secondary-foreground'
+                                  : 'text-foreground'
                               )} />
                             </div>
                             <div className="flex flex-col">
                               <span className="text-sm font-semibold">Buscar</span>
                               <span className={cn(
                                 'text-[10px]',
-                                pathname.startsWith('/find-match')
-                                  ? 'text-amber-950/70'
-                                  : 'text-amber-600/70'
+                                  pathname.startsWith('/find-match')
+                                    ? 'text-secondary-foreground/70'
+                                    : 'text-muted-foreground'
                               )}>Encontrar partido</span>
                             </div>
                           </Link>
 
-                          {/* Competiciones - Green theme */}
+                          {/* Competiciones - Themed via tokens (primary) */}
                           <Link
                             href="/competitions"
                             className={cn(
                               'flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer hover:scale-[1.02] active:scale-[0.98]',
                               pathname.startsWith('/competitions')
-                                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
-                                : 'bg-gradient-to-r from-emerald-50 to-green-100/50 hover:from-emerald-100 hover:to-green-200 hover:shadow-md text-emerald-900'
+                                ? 'bg-secondary text-secondary-foreground shadow-lg shadow-secondary/30'
+                                : 'bg-gradient-to-r from-secondary/20 to-secondary/10 hover:from-secondary/25 hover:to-secondary/15 hover:shadow-md text-foreground'
                             )}
                             onClick={() => setMatchesMenuOpen(false)}
                           >
@@ -441,22 +442,22 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                               'flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200',
                               pathname.startsWith('/competitions')
                                 ? 'bg-white/20'
-                                : 'bg-emerald-500/15'
+                                : 'bg-secondary/20'
                             )}>
                               <Trophy className={cn(
                                 'h-5 w-5',
                                 pathname.startsWith('/competitions')
-                                  ? 'text-white'
-                                  : 'text-emerald-600'
+                                  ? 'text-secondary-foreground'
+                                  : 'text-foreground'
                               )} />
                             </div>
                             <div className="flex flex-col">
                               <span className="text-sm font-semibold">Competiciones</span>
                               <span className={cn(
                                 'text-[10px]',
-                                pathname.startsWith('/competitions')
-                                  ? 'text-white/70'
-                                  : 'text-emerald-600/70'
+                                  pathname.startsWith('/competitions')
+                                    ? 'text-secondary-foreground/70'
+                                    : 'text-muted-foreground'
                               )}>Torneos y ligas</span>
                             </div>
                           </Link>
@@ -475,7 +476,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-primary', isActive && 'text-primary font-semibold')}
+                  className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-foreground', isActive && 'text-foreground font-semibold')}
                 >
                   <Icon className={cn('h-5 w-5 transition-all duration-200', isActive && 'scale-110')} />
                   <span className="text-[10px] leading-none">{item.label}</span>

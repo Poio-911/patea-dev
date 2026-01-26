@@ -1,67 +1,129 @@
 'use server';
 
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { googleAI } from '@genkit-ai/google-genai';
 
 const GetMatchDayForecastInputSchema = z.object({
   location: z.string(),
   date: z.string(),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
 });
 export type GetMatchDayForecastInput = z.infer<typeof GetMatchDayForecastInputSchema>;
 
 const GetMatchDayForecastOutputSchema = z.object({
-  description: z.string().describe("Una descripción muy corta del clima, de 2 a 3 palabras máximo (ej: 'Parcialmente Nublado', 'Sol y Nubes', 'Lluvias Aisladas')."),
+  description: z.string(),
   icon: z.enum(['Sun', 'Cloud', 'Cloudy', 'CloudRain', 'CloudSnow', 'Wind', 'Zap']),
-  temperature: z.number().describe('Temperatura en grados Celsius'),
-  humidity: z.number().describe('Humedad en porcentaje (0-100)'),
-  windSpeed: z.number().describe('Velocidad del viento en km/h'),
-  precipitation: z.number().describe('Probabilidad de precipitación en porcentaje (0-100)'),
-  uvIndex: z.number().describe('Índice UV (0-11+)'),
-  feelsLike: z.number().describe('Sensación térmica en grados Celsius'),
-  conditions: z.string().describe('Descripción detallada de las condiciones (1-2 líneas)'),
-  recommendation: z.string().describe('Recomendación breve para jugar (ej: "Ideal para jugar", "Hidrátate bien", "Lleva impermeable")'),
+  temperature: z.number(),
+  humidity: z.number(),
+  windSpeed: z.number(),
+  precipitation: z.number(),
+  uvIndex: z.number(),
+  feelsLike: z.number(),
+  conditions: z.string(),
+  recommendation: z.string(),
 });
 export type GetMatchDayForecastOutput = z.infer<typeof GetMatchDayForecastOutputSchema>;
 
-const forecastPrompt = ai.definePrompt({
-  name: 'matchDayForecast',
-  input: { schema: GetMatchDayForecastInputSchema },
-  output: { schema: GetMatchDayForecastOutputSchema },
-  prompt: `
-    Eres un asistente meteorológico especializado para una app de fútbol amateur.
-    Proporciona un pronóstico detallado del clima en ESPAÑOL para la fecha y ubicación especificadas.
+// Mapeo de códigos WMO a iconos
+const wmoToIcon: Record<number, GetMatchDayForecastOutput['icon']> = {
+  0: 'Sun', 1: 'Sun', 2: 'Cloud', 3: 'Cloudy',
+  45: 'Cloudy', 48: 'Cloudy',
+  51: 'CloudRain', 53: 'CloudRain', 55: 'CloudRain',
+  61: 'CloudRain', 63: 'CloudRain', 65: 'CloudRain',
+  71: 'CloudSnow', 73: 'CloudSnow', 75: 'CloudSnow',
+  80: 'CloudRain', 81: 'CloudRain', 82: 'CloudRain',
+  85: 'CloudSnow', 86: 'CloudSnow',
+  95: 'Zap', 96: 'Zap', 99: 'Zap',
+};
 
-    Lugar: {{{location}}}
-    Fecha y Hora: {{{date}}}
+const wmoToDescription: Record<number, string> = {
+  0: 'Despejado',
+  1: 'Mayormente despejado',
+  2: 'Parcialmente nublado',
+  3: 'Nublado',
+  45: 'Niebla',
+  48: 'Niebla helada',
+  51: 'Llovizna leve',
+  53: 'Llovizna',
+  55: 'Llovizna intensa',
+  61: 'Lluvia leve',
+  63: 'Lluvia moderada',
+  65: 'Lluvia intensa',
+  71: 'Nieve leve',
+  73: 'Nieve moderada',
+  75: 'Nieve intensa',
+  80: 'Chubascos leves',
+  81: 'Chubascos',
+  82: 'Chubascos intensos',
+  85: 'Nevada leve',
+  86: 'Nevada intensa',
+  95: 'Tormenta',
+  96: 'Tormenta con granizo',
+  99: 'Tormenta severa',
+};
 
-    Genera un pronóstico realista basado en patrones climáticos típicos de la región.
+function getRecommendation(temp: number, precip: number, wind: number): string {
+  if (precip > 70) return 'Alta probabilidad de lluvia. Considerá reprogramar.';
+  if (precip > 40) return 'Posible lluvia. Llevá ropa impermeable.';
+  if (temp > 30) return 'Mucho calor. Hidratate bien y descansá seguido.';
+  if (temp < 10) return 'Hace frío. Abrigate bien para el calentamiento.';
+  if (wind > 30) return 'Viento fuerte. El balón puede comportarse raro.';
+  return 'Condiciones ideales para jugar.';
+}
 
-    Instrucciones para cada campo:
-    - description: 2-3 palabras máximo (ej: "Parcialmente Nublado", "Sol y Nubes")
-    - icon: Elige el ícono más apropiado según las condiciones
-    - temperature: Temperatura en °C (realista para la ubicación y estación)
-    - humidity: Humedad relativa en % (0-100)
-    - windSpeed: Velocidad del viento en km/h
-    - precipitation: Probabilidad de lluvia en % (0-100)
-    - uvIndex: Índice UV (0-11+, típicamente 3-8 en días normales)
-    - feelsLike: Sensación térmica considerando viento y humedad
-    - conditions: Descripción detallada en 1-2 líneas
-    - recommendation: Consejo breve específico para jugar fútbol
+export async function getMatchDayForecast(
+  input: GetMatchDayForecastInput
+): Promise<GetMatchDayForecastOutput> {
+  const { lat, lng, date } = input;
 
-    Responde estrictamente en JSON siguiendo el schema.
-  `,
-});
-
-export const getMatchDayForecast = ai.defineFlow(
-  {
-    name: 'getMatchDayForecastFlow',
-    inputSchema: GetMatchDayForecastInputSchema,
-    outputSchema: GetMatchDayForecastOutputSchema,
-  },
-  async (input) => {
-    const { output } = await forecastPrompt(input, { model: 'googleai/gemini-2.5-flash'});
-    if (!output) throw new Error('No se obtuvo respuesta válida del modelo.');
-    return output;
+  if (!lat || !lng) {
+    throw new Error('Se requieren coordenadas para obtener el clima');
   }
-);
+
+  const matchDate = new Date(date);
+  const dateStr = matchDate.toISOString().split('T')[0];
+  const hour = matchDate.getHours();
+
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,weather_code,wind_speed_10m,uv_index&timezone=auto&start_date=${dateStr}&end_date=${dateStr}`;
+
+  const response = await fetch(url, {
+    cache: 'no-store',
+    headers: { 'Cache-Control': 'max-age=3600' }
+  });
+  if (!response.ok) {
+    throw new Error('Error al obtener datos del clima');
+  }
+
+  const data = await response.json();
+  const hourly = data.hourly;
+
+  if (!hourly || !hourly.time || hourly.time.length === 0) {
+    throw new Error('No hay datos de clima disponibles para esta fecha');
+  }
+
+  const idx = Math.min(hour, hourly.time.length - 1);
+
+  const weatherCode = hourly.weather_code?.[idx] ?? 0;
+  const temp = Math.round(hourly.temperature_2m?.[idx] ?? 20);
+  const humidity = Math.round(hourly.relative_humidity_2m?.[idx] ?? 50);
+  const feelsLike = Math.round(hourly.apparent_temperature?.[idx] ?? temp);
+  const precipitation = Math.round(hourly.precipitation_probability?.[idx] ?? 0);
+  const windSpeed = Math.round(hourly.wind_speed_10m?.[idx] ?? 0);
+  const uvIndex = Math.round(hourly.uv_index?.[idx] ?? 0);
+
+  const description = wmoToDescription[weatherCode] ?? 'Parcialmente nublado';
+  const icon = wmoToIcon[weatherCode] ?? 'Cloud';
+
+  return {
+    description,
+    icon,
+    temperature: temp,
+    humidity,
+    windSpeed,
+    precipitation,
+    uvIndex,
+    feelsLike,
+    conditions: `${description}. Temperatura ${temp}°C, sensación térmica ${feelsLike}°C.`,
+    recommendation: getRecommendation(temp, precipitation, windSpeed),
+  };
+}

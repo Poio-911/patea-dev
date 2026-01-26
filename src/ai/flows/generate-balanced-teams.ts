@@ -11,6 +11,20 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
+import type { Jersey } from '@/lib/types';
+
+const DEFAULT_JERSEYS: Record<string, Jersey> = {
+  'Con chaleco': {
+    type: 'plain',
+    primaryColor: '#F97316', // Naranja (color típico de chaleco)
+    secondaryColor: '#EA580C',
+  },
+  'Sin chaleco': {
+    type: 'plain',
+    primaryColor: '#1E3A8A', // Azul oscuro
+    secondaryColor: '#1E40AF',
+  },
+};
 
 const GenerateBalancedTeamsInputSchema = z.object({
   players: z
@@ -114,6 +128,10 @@ const generateBalancedTeamsFlow = ai.defineFlow(
 
     output.teams[0].name = shuffledNames[0];
     output.teams[1].name = shuffledNames[1];
+
+    // Asignar jerseys por defecto según el nombre del equipo
+    (output.teams[0] as any).jersey = DEFAULT_JERSEYS[output.teams[0].name];
+    (output.teams[1] as any).jersey = DEFAULT_JERSEYS[output.teams[1].name];
 
     return output;
   }

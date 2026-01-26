@@ -35,11 +35,11 @@ export function PhysicalMetricsCard({ performance, compact = false }: PhysicalMe
 
   if (compact) {
     return (
-      <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-900/10 dark:border-blue-800">
+      <Card className="border-border bg-card/60">
         <CardContent className="pt-4 pb-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3 flex-1">
-              <Activity className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+              <Activity className="h-5 w-5 text-foreground mt-0.5" />
               <div className="space-y-2 flex-1">
                 <div className="flex items-center gap-2">
                   <p className="font-semibold text-sm">Métricas Físicas</p>
@@ -78,15 +78,15 @@ export function PhysicalMetricsCard({ performance, compact = false }: PhysicalMe
 
                 {performance.impactOnAttributes && (
                   <div className="flex items-center gap-2 pt-1">
-                    <TrendingUp className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                    <TrendingUp className="h-3.5 w-3.5 text-foreground" />
                     <div className="flex items-center gap-2 text-xs">
                       {performance.impactOnAttributes.pac && (
-                        <span className="text-green-600 dark:text-green-400 font-medium">
+                        <span className="text-foreground font-medium">
                           PAC +{performance.impactOnAttributes.pac.toFixed(1)}
                         </span>
                       )}
                       {performance.impactOnAttributes.phy && (
-                        <span className="text-green-600 dark:text-green-400 font-medium">
+                        <span className="text-foreground font-medium">
                           PHY +{performance.impactOnAttributes.phy.toFixed(1)}
                         </span>
                       )}
@@ -102,11 +102,11 @@ export function PhysicalMetricsCard({ performance, compact = false }: PhysicalMe
   }
 
   return (
-    <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-900/10 dark:border-blue-800">
+    <Card className="border-border bg-card/60">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <Activity className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <Activity className="h-5 w-5 text-foreground" />
             <div>
               <CardTitle className="text-base">Métricas Físicas</CardTitle>
               <CardDescription>
@@ -114,7 +114,7 @@ export function PhysicalMetricsCard({ performance, compact = false }: PhysicalMe
               </CardDescription>
             </div>
           </div>
-          <Badge variant="outline" className="border-blue-500 text-blue-600 dark:text-blue-400">
+          <Badge variant="outline" className="border-border text-foreground">
             <SourceIcon className="h-3 w-3 mr-1" />
             {sourceLabel}
           </Badge>
@@ -192,30 +192,30 @@ export function PhysicalMetricsCard({ performance, compact = false }: PhysicalMe
 
         {/* Attribute Impact */}
         {performance.impactOnAttributes && (
-          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg space-y-2">
+          <div className="bg-card p-4 rounded-lg space-y-2 border border-border">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <p className="text-sm font-medium text-green-900 dark:text-green-100">
+              <TrendingUp className="h-4 w-4 text-foreground" />
+              <p className="text-sm font-medium text-foreground">
                 Bonus de Atributos Aplicados
               </p>
             </div>
             <div className="flex items-center gap-4 text-sm">
               {performance.impactOnAttributes.pac && (
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="border-green-500 text-green-600 dark:text-green-400">
+                  <Badge variant="outline" className="border-border text-foreground">
                     PAC
                   </Badge>
-                  <span className="font-bold text-green-600 dark:text-green-400">
+                  <span className="font-bold text-foreground">
                     +{performance.impactOnAttributes.pac.toFixed(1)}
                   </span>
                 </div>
               )}
               {performance.impactOnAttributes.phy && (
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="border-green-500 text-green-600 dark:text-green-400">
+                  <Badge variant="outline" className="border-border text-foreground">
                     PHY
                   </Badge>
-                  <span className="font-bold text-green-600 dark:text-green-400">
+                  <span className="font-bold text-foreground">
                     +{performance.impactOnAttributes.phy.toFixed(1)}
                   </span>
                 </div>

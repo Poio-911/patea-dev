@@ -25,23 +25,23 @@ const responseConfig = {
   confirmed: {
     label: 'Confirmado',
     icon: CheckCircle2,
-    color: 'bg-green-500 hover:bg-green-600',
-    textColor: 'text-green-600',
-    bgColor: 'bg-green-50 dark:bg-green-900/20',
+    color: 'bg-primary hover:bg-primary/90',
+    textColor: 'text-foreground',
+    bgColor: 'bg-card/80 border border-border',
   },
   declined: {
     label: 'No voy',
     icon: XCircle,
-    color: 'bg-red-500 hover:bg-red-600',
+    color: 'bg-secondary hover:bg-secondary/80',
     textColor: 'text-red-600',
-    bgColor: 'bg-red-50 dark:bg-red-900/20',
+    bgColor: 'bg-card/80 border border-border',
   },
   maybe: {
     label: 'Tal vez',
     icon: HelpCircle,
-    color: 'bg-amber-500 hover:bg-amber-600',
-    textColor: 'text-amber-600',
-    bgColor: 'bg-amber-50 dark:bg-amber-900/20',
+    color: 'bg-secondary hover:bg-secondary/80',
+    textColor: 'text-foreground',
+    bgColor: 'bg-card/80 border border-border',
   },
   pending: {
     label: 'Sin responder',
@@ -134,8 +134,8 @@ export function MatchInvitationCard({
             {matchDate} - {matchTime}
           </p>
           <p>{matchLocation}</p>
-          {confirmationDeadline && !isPastDeadline && (
-            <p className="text-xs text-amber-600 dark:text-amber-400">
+            {confirmationDeadline && !isPastDeadline && (
+            <p className="text-xs text-muted-foreground">
               Confirmar antes del {new Date(confirmationDeadline).toLocaleDateString('es-AR', {
                 day: 'numeric',
                 month: 'short',
@@ -179,7 +179,7 @@ export function MatchInvitationCard({
               onClick={() => handleResponseChange('maybe')}
               disabled={isUpdating || isPastDeadline}
               className={cn(
-                response === 'maybe' && 'bg-amber-500 hover:bg-amber-600'
+                response === 'maybe' && 'bg-secondary hover:bg-secondary/80'
               )}
             >
               {isUpdating && response === 'maybe' ? (
@@ -196,7 +196,7 @@ export function MatchInvitationCard({
               onClick={() => handleResponseChange('declined')}
               disabled={isUpdating || isPastDeadline}
               className={cn(
-                response === 'declined' && 'bg-red-500 hover:bg-red-600'
+                response === 'declined' && 'bg-secondary hover:bg-secondary/80'
               )}
             >
               {isUpdating && response === 'declined' ? (

@@ -108,7 +108,7 @@ export default function FeedPage() {
       )}
       
       {!isLoading && activitiesError && (
-        <div className="text-center py-8 text-sm text-red-500">
+        <div className="text-center py-8 text-sm text-destructive">
           Error al cargar actividades: {activitiesError.message}
           <div className="mt-2 text-xs text-neutral-500">Prueba el botón "Seed test" o revisa índices en Firestore.</div>
         </div>
@@ -128,8 +128,8 @@ export default function FeedPage() {
               {seeding ? 'Sembrando...' : 'Sembrar actividades de prueba'}
             </button>
           </div>
-          {seedError && <p className="mt-2 text-xs text-red-500">{seedError}</p>}
-          {seedSuccess && <p className="mt-2 text-xs text-emerald-600">{seedSuccess}</p>}
+          {seedError && <p className="mt-2 text-xs text-destructive">{seedError}</p>}
+          {seedSuccess && <p className="mt-2 text-xs text-foreground">{seedSuccess}</p>}
         </div>
       )}
 

@@ -69,7 +69,7 @@ export function LeagueStandingsTable({ standings, highlightTeamId }: LeagueStand
                     key={standing.teamId}
                     className={`
                       ${isHighlighted ? 'bg-muted/50' : ''}
-                      ${isFirst ? 'border-l-4 border-l-green-500' : ''}
+                      ${isFirst ? 'border-l-4 border-l-foreground/50' : ''}
                       hover:bg-muted/50 transition-colors
                     `}
                   >
@@ -82,13 +82,13 @@ export function LeagueStandingsTable({ standings, highlightTeamId }: LeagueStand
                     <TableCell className="text-center text-muted-foreground">
                       {standing.matchesPlayed}
                     </TableCell>
-                    <TableCell className="text-center text-green-600">
+                    <TableCell className="text-center text-foreground">
                       {standing.wins}
                     </TableCell>
-                    <TableCell className="text-center text-yellow-600">
+                    <TableCell className="text-center text-muted-foreground">
                       {standing.draws}
                     </TableCell>
-                    <TableCell className="text-center text-red-600">
+                    <TableCell className="text-center text-foreground">
                       {standing.losses}
                     </TableCell>
                     <TableCell className="text-center">
@@ -97,12 +97,7 @@ export function LeagueStandingsTable({ standings, highlightTeamId }: LeagueStand
                     <TableCell className="text-center">
                       {standing.goalsAgainst}
                     </TableCell>
-                    <TableCell className={`text-center font-medium ${standing.goalDifference > 0
-                      ? 'text-green-600'
-                      : standing.goalDifference < 0
-                        ? 'text-red-600'
-                        : 'text-muted-foreground'
-                      }`}>
+                    <TableCell className={`text-center font-medium ${standing.goalDifference !== 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
                       {standing.goalDifference > 0 ? '+' : ''}{standing.goalDifference}
                     </TableCell>
                     <TableCell className="text-center font-bold text-lg">

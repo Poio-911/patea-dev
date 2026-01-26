@@ -85,10 +85,10 @@ export const CompetitionMatchControls = ({ match, onSuccess }: CompetitionMatchC
     };
 
     return (
-        <Card className="border-amber-500/20 bg-amber-500/5">
+        <Card className="border-border bg-card/70">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                    <Trophy className="h-5 w-5 text-amber-500" />
+                    <Trophy className="h-5 w-5 text-foreground" />
                     Resultado del Partido
                 </CardTitle>
             </CardHeader>
@@ -120,7 +120,7 @@ export const CompetitionMatchControls = ({ match, onSuccess }: CompetitionMatchC
                 <Button
                     onClick={handleSaveScore}
                     disabled={isSubmitting}
-                    className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                    className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground"
                 >
                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                     {match.status === 'completed' ? 'Actualizar Resultado' : 'Finalizar Partido'}

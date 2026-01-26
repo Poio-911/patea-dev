@@ -119,7 +119,7 @@ export function MatchesCalendar({ matches, allPlayers }: MatchesCalendarProps) {
                     "hover:border-primary/50 hover:bg-accent",
                     isCurrentMonth ? "bg-background" : "bg-muted/30 text-muted-foreground",
                     isSelected && "border-primary bg-primary/10",
-                    isTodayDate && "border-blue-500 bg-blue-50 dark:bg-blue-950",
+                    isTodayDate && "border-foreground/30 bg-card/60",
                     !isCurrentMonth && "opacity-50"
                   )}
                 >
@@ -132,8 +132,8 @@ export function MatchesCalendar({ matches, allPlayers }: MatchesCalendarProps) {
                           className={cn(
                             "h-1.5 w-1.5 rounded-full",
                             dayMatches[0].status === 'upcoming' || dayMatches[0].status === 'active'
-                              ? "bg-green-500"
-                              : "bg-gray-400"
+                              ? "bg-primary"
+                              : "bg-muted"
                           )}
                         />
                       ))}

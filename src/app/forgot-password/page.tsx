@@ -69,8 +69,8 @@ export default function ForgotPasswordPage() {
         </CardHeader>
         <CardContent>
           {emailSent ? (
-            <Alert variant="default" className="border-green-500 text-green-700">
-              <CardTitle className="text-lg text-green-700">¡Correo Enviado!</CardTitle>
+            <Alert variant="default" className="border-border text-foreground">
+              <CardTitle className="text-lg text-foreground">¡Correo Enviado!</CardTitle>
               <AlertDescription className="mt-2">
                 Si la dirección de correo electrónico está registrada, recibirás un email en breve.
                 <br /><br />

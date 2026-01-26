@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from 'next';
 import { Toaster } from '@/components/ui/toaster';
 import { ClientProviders } from '@/components/client-providers';
 import { cn } from '@/lib/utils';
+import { GlobalLiveAdminWidget } from '@/components/match/global-live-admin-widget';
 
 // Force dynamic rendering for all pages (Firebase requires client-side context)
 export const dynamic = 'force-dynamic';
@@ -44,6 +45,8 @@ export default function RootLayout({
       >
         <ClientProviders>
           {children}
+          {/* Persistent admin live timer widget */}
+          <GlobalLiveAdminWidget />
         </ClientProviders>
         <Toaster />
       </body>

@@ -6,23 +6,24 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Light theme: increase surface contrast */
+    --background: 210 20% 99%;
+    --foreground: 222.2 84% 5%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222.2 84% 5%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222.2 84% 5%;
 
     --primary: 217 91% 60%;
     /* AZUL como primario */
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
+    --secondary: 210 32% 96%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 210 40% 96.1%;
+    --muted: 210 24% 96.5%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
     --accent: 43 96% 56%;
@@ -32,12 +33,18 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --border: 214.3 25% 88%;
+    --input: 214.3 25% 88%;
     --ring: 217 91% 60%;
     /* Ring ahora azul */
 
     --radius: 0.5rem;
+
+    /* WhatsApp Chat Colors */
+    --whatsapp-green: 142 70% 49%;
+    --whatsapp-blue-check: 199 89% 62%;
+    --whatsapp-outgoing: 142 70% 45%;
+    --whatsapp-incoming: 0 0% 100%;
 
     /* Colores para gráficos */
     --chart-1: 340 82% 61%;
@@ -104,6 +111,76 @@
     /* Cyan */
     --chart-5: 35 95% 60%;
     /* Orange Neon */
+
+    /* WhatsApp Chat Colors (Dark) */
+    --whatsapp-green: 142 70% 40%;
+    --whatsapp-blue-check: 199 89% 62%;
+    --whatsapp-outgoing: 142 50% 25%;
+    --whatsapp-incoming: 220 20% 18%;
+  }
+  
+  /* Nike Theme: bold black/white with authentic Nike brand colors */
+  .nike {
+    /* Grayscale palette inspired by Nike US */
+    --background: 0 0% 7%;
+    /* Near black */
+    --foreground: 0 0% 98%;
+    /* Off-white text */
+
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 96%;
+
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 96%;
+
+    --primary: 0 0% 70%;
+    /* Neutral light gray for emphasis */
+    --primary-foreground: 0 0% 8%;
+
+    --secondary: 0 0% 16%;
+    --secondary-foreground: 0 0% 92%;
+
+    --muted: 0 0% 28%;
+    --muted-foreground: 0 0% 70%;
+
+    --accent: 0 0% 96%;
+    /* Near white accent */
+    --accent-foreground: 0 0% 8%;
+
+    /* Keep red only for destructive affordances */
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 24%;
+    --input: 0 0% 14%;
+    --ring: 0 0% 70%;
+
+    /* Charts: grayscale ramps */
+    --chart-1: 0 0% 90%;
+    --chart-2: 0 0% 70%;
+    --chart-3: 0 0% 50%;
+    --chart-4: 0 0% 35%;
+    --chart-5: 0 0% 20%;
+
+    /* Position accent colors */
+    --pos-del: 0 85% 60%;
+    /* Striker - red */
+    --pos-med: 270 85% 60%;
+    /* Midfielder - purple */
+    --pos-def: 210 85% 60%;
+    /* Defender - blue */
+    --pos-por: 30 90% 60%;
+    /* Goalkeeper - orange */
+
+    /* OVR level accent colors */
+    --ovr-elite: 280 85% 65%;
+    /* Electric Purple */
+    --ovr-gold: 43 96% 56%;
+    /* Gold */
+    --ovr-silver: 220 15% 75%;
+    /* Silver */
+    --ovr-bronze: 30 60% 50%;
+    /* Bronze */
   }
 }
 
@@ -118,16 +195,15 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 
-    /* Super Subtle Animated Gradient Background for light theme */
+    /* Subtle Animated Gradient Background for light theme (slightly stronger) */
     background: linear-gradient(-45deg,
-        hsla(217, 91%, 60%, 0.03),
-        /* Primary azul muy suave */
-        hsla(43, 96%, 56%, 0.02),
-        /* Accent amarillo casi invisible */
-        hsla(0, 0%, 100%, 0),
-        /* Transparente */
-        hsla(210, 40%, 99%, 1)
-        /* Blanco casi puro */
+        hsla(217, 91%, 60%, 0.06),
+        /* Primary azul suave */
+        hsla(43, 96%, 56%, 0.05),
+        /* Acento ámbar tenue */
+        hsla(210, 24%, 99%, 1),
+        /* Off white */
+        hsla(210, 20%, 98%, 1)
       );
     background-size: 400% 400%;
     animation: gradientBG 20s ease-in-out infinite;
@@ -135,6 +211,78 @@
 
   .game body {
     background: #041c47;
+  }
+  .nike body {
+    background: #000;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  .nike body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      45deg,
+      rgba(0, 0, 0, 0.75),
+      rgba(24, 24, 24, 0.6),
+      rgba(0, 0, 0, 0.85)
+    );
+    z-index: -2;
+    opacity: 0.55; /* tuned overlay for readability */
+  }
+
+  .nike .video-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -3;
+    opacity: 0.32;
+    filter: brightness(0.30) contrast(1.1);
+  }
+
+  /* Image background support for Nike theme */
+  .nike .image-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -3;
+    opacity: 0.30;
+    filter: brightness(0.35) contrast(1.05);
+  }
+
+  /* Enhance content visibility in Nike theme */
+  .nike [data-radix-popper-content-wrapper] {
+    backdrop-filter: blur(10px);
+  }
+
+  .nike .bg-card {
+    background: rgba(23, 23, 23, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(56, 56, 56, 0.6);
+  }
+
+  .nike .bg-background {
+    background: rgba(12, 12, 12, 0.92);
+    backdrop-filter: blur(8px);
+  }
+
+  .nike .bg-popover {
+    background: rgba(18, 18, 18, 0.96);
+    backdrop-filter: blur(12px);
+  }
+
+  .nike .border {
+    border-color: rgba(56, 56, 56, 0.4);
   }
 
   @keyframes gradientBG {
@@ -815,5 +963,469 @@
     .holo-effect::after {
       display: none;
     }
+  }
+
+  /* ========================================
+     SPORTS BROADCAST STYLES
+     ======================================== */
+
+  /* Tipografía Deportiva */
+  .sports-title {
+    @apply font-bold uppercase tracking-tight;
+  }
+
+  /* Dot pulsante para EN VIVO */
+  @keyframes live-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.2); }
+  }
+
+  .live-dot {
+    @apply h-2 w-2 rounded-full bg-primary;
+    animation: live-pulse 1.5s ease-in-out infinite;
+  }
+
+  /* Ocultar scrollbar pero permitir scroll */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hover para cards deportivos */
+  .sports-card-hover {
+    @apply transition-all duration-300;
+  }
+  .sports-card-hover:hover {
+    @apply -translate-y-1 shadow-xl;
+  }
+
+  /* Glow effect for active pills */
+  @keyframes pill-glow {
+    0%, 100% { box-shadow: 0 0 10px hsl(var(--primary) / 0.4); }
+    50% { box-shadow: 0 0 20px hsl(var(--primary) / 0.6); }
+  }
+
+  .pill-active-glow {
+    animation: pill-glow 2s ease-in-out infinite;
+  }
+
+  /* Badge glow animation */
+  @keyframes badge-glow {
+    0%, 100% { box-shadow: 0 0 8px currentColor; }
+    50% { box-shadow: 0 0 16px currentColor; }
+  }
+
+  .badge-glow {
+    animation: badge-glow 2s ease-in-out infinite;
+  }
+
+  /* ========================================
+     FIFA WORLD CUP 2026 COMPETITION STYLES
+     ======================================== */
+
+  /* === FIFA CUP (Dorado/Trofeo) === */
+  .fifa-cup-card {
+    background: linear-gradient(135deg,
+      rgba(255, 215, 0, 0.08) 0%,
+      rgba(245, 158, 11, 0.04) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .fifa-cup-card:hover {
+    border-color: rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.2),
+                0 4px 12px rgba(255, 215, 0, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .game .fifa-cup-card {
+    background: linear-gradient(135deg,
+      rgba(255, 215, 0, 0.12) 0%,
+      rgba(245, 158, 11, 0.06) 100%);
+    border-color: rgba(255, 215, 0, 0.4);
+  }
+
+  .game .fifa-cup-card:hover {
+    border-color: rgba(255, 215, 0, 0.6);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.3),
+                0 4px 16px rgba(255, 215, 0, 0.15);
+  }
+
+  .fifa-cup-badge {
+    background: linear-gradient(135deg, #FFD700, #F59E0B);
+    color: #1a1a1a;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .fifa-cup-icon {
+    color: #FFD700;
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5));
+    transition: filter 0.3s ease;
+  }
+
+  @keyframes trophy-shine {
+    0% { filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.3)); }
+    50% { filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.6)); }
+    100% { filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.3)); }
+  }
+
+  .fifa-cup-icon-animated:hover {
+    animation: trophy-shine 1.5s ease-in-out infinite;
+  }
+
+  /* === FIFA LEAGUE (Azul/Champions) === */
+  .fifa-league-card {
+    background: linear-gradient(135deg,
+      rgba(30, 58, 138, 0.1) 0%,
+      rgba(59, 130, 246, 0.05) 100%);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .fifa-league-card:hover {
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2),
+                0 4px 12px rgba(59, 130, 246, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .game .fifa-league-card {
+    background: linear-gradient(135deg,
+      rgba(30, 58, 138, 0.15) 0%,
+      rgba(59, 130, 246, 0.08) 100%);
+    border-color: rgba(59, 130, 246, 0.4);
+  }
+
+  .game .fifa-league-card:hover {
+    border-color: rgba(59, 130, 246, 0.6);
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.3),
+                0 4px 16px rgba(59, 130, 246, 0.15);
+  }
+
+  .fifa-league-badge {
+    background: linear-gradient(135deg, #1E3A8A, #3B82F6);
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .fifa-league-icon {
+    color: #3B82F6;
+    filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
+    transition: filter 0.3s ease;
+  }
+
+  @keyframes league-bars {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(1.1); }
+  }
+
+  .fifa-league-icon-animated:hover {
+    animation: league-bars 1s ease-in-out infinite;
+  }
+
+  /* === FIFA FRIENDLY (Verde/Cancha) === */
+  .fifa-friendly-card {
+    background: linear-gradient(135deg,
+      rgba(16, 185, 129, 0.08) 0%,
+      rgba(52, 211, 153, 0.04) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .fifa-friendly-card:hover {
+    border-color: rgba(16, 185, 129, 0.5);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.2),
+                0 4px 12px rgba(16, 185, 129, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .game .fifa-friendly-card {
+    background: linear-gradient(135deg,
+      rgba(16, 185, 129, 0.12) 0%,
+      rgba(52, 211, 153, 0.06) 100%);
+    border-color: rgba(16, 185, 129, 0.4);
+  }
+
+  .game .fifa-friendly-card:hover {
+    border-color: rgba(16, 185, 129, 0.6);
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.3),
+                0 4px 16px rgba(16, 185, 129, 0.15);
+  }
+
+  .fifa-friendly-badge {
+    background: linear-gradient(135deg, #059669, #10B981);
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .fifa-friendly-icon {
+    color: #10B981;
+    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.5));
+    transition: all 0.3s ease;
+  }
+
+  @keyframes swords-clash {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-5deg); }
+    75% { transform: rotate(5deg); }
+  }
+
+  .fifa-friendly-icon-animated:hover {
+    animation: swords-clash 0.5s ease-in-out infinite;
+  }
+
+  /* === FIFA SECTION BANNERS === */
+  .fifa-banner-pattern {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 255, 255, 0.03) 10px,
+      rgba(255, 255, 255, 0.03) 20px
+    );
+  }
+
+  .game .fifa-banner-pattern {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 255, 255, 0.05) 10px,
+      rgba(255, 255, 255, 0.05) 20px
+    );
+  }
+
+  .fifa-banner-cup {
+    background: linear-gradient(135deg,
+      rgba(255, 215, 0, 0.1) 0%,
+      rgba(245, 158, 11, 0.05) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+  }
+
+  .fifa-banner-league {
+    background: linear-gradient(135deg,
+      rgba(30, 58, 138, 0.1) 0%,
+      rgba(59, 130, 246, 0.05) 100%);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+  }
+
+  .fifa-banner-friendly {
+    background: linear-gradient(135deg,
+      rgba(16, 185, 129, 0.1) 0%,
+      rgba(52, 211, 153, 0.05) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+
+  /* === FIFA STAGGERED ANIMATIONS === */
+  @keyframes fifa-card-enter {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .fifa-card-animate {
+    animation: fifa-card-enter 0.4s ease-out forwards;
+  }
+
+  .fifa-card-animate:nth-child(1) { animation-delay: 0ms; }
+  .fifa-card-animate:nth-child(2) { animation-delay: 100ms; }
+  .fifa-card-animate:nth-child(3) { animation-delay: 200ms; }
+  .fifa-card-animate:nth-child(4) { animation-delay: 300ms; }
+  .fifa-card-animate:nth-child(5) { animation-delay: 400ms; }
+  .fifa-card-animate:nth-child(6) { animation-delay: 500ms; }
+
+  /* === MOBILE OPTIMIZATIONS === */
+  @media (max-width: 768px) {
+    .fifa-cup-card:hover,
+    .fifa-league-card:hover,
+    .fifa-friendly-card:hover {
+      transform: none;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .fifa-cup-icon-animated:hover,
+    .fifa-league-icon-animated:hover,
+    .fifa-friendly-icon-animated:hover {
+      animation: none;
+    }
+
+    .fifa-banner-pattern {
+      display: none;
+    }
+  }
+
+  /* === ACCESSIBILITY === */
+  @media (prefers-reduced-motion: reduce) {
+    .fifa-cup-card,
+    .fifa-league-card,
+    .fifa-friendly-card {
+      transition: none;
+    }
+
+    .fifa-cup-card:hover,
+    .fifa-league-card:hover,
+    .fifa-friendly-card:hover {
+      transform: none;
+    }
+
+    .fifa-cup-icon-animated:hover,
+    .fifa-league-icon-animated:hover,
+    .fifa-friendly-icon-animated:hover {
+      animation: none;
+    }
+
+    .fifa-card-animate {
+      animation: none;
+      opacity: 1;
+    }
+  }
+
+  /* ========================================
+     WHATSAPP-STYLE CHAT BUBBLES
+     ======================================== */
+
+  /* Chat container with WhatsApp-like background */
+  .chat-container {
+    background-color: hsl(var(--muted) / 0.3);
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  .game .chat-container {
+    background-color: hsl(var(--background) / 0.5);
+  }
+
+  /* Outgoing message bubble (own messages) */
+  .chat-bubble-outgoing {
+    @apply relative bg-[hsl(var(--whatsapp-outgoing))] text-white rounded-lg rounded-br-none;
+    max-width: 85%;
+  }
+
+  /* Incoming message bubble (others' messages) */
+  .chat-bubble-incoming {
+    @apply relative bg-card text-card-foreground rounded-lg rounded-bl-none border border-border/50;
+    max-width: 85%;
+  }
+
+  .game .chat-bubble-incoming {
+    @apply bg-[hsl(var(--whatsapp-incoming))];
+  }
+
+  /* Message tail SVG positioning */
+  .chat-tail-outgoing {
+    @apply absolute -right-2 bottom-0 text-[hsl(var(--whatsapp-outgoing))];
+  }
+
+  .chat-tail-incoming {
+    @apply absolute -left-2 bottom-0 text-card;
+  }
+
+  .game .chat-tail-incoming {
+    @apply text-[hsl(var(--whatsapp-incoming))];
+  }
+
+  /* Message status checks */
+  .chat-status-sending {
+    @apply text-muted-foreground/70;
+  }
+
+  .chat-status-sent {
+    @apply text-muted-foreground/70;
+  }
+
+  .chat-status-delivered {
+    @apply text-muted-foreground/70;
+  }
+
+  .chat-status-read {
+    @apply text-[hsl(var(--whatsapp-blue-check))];
+  }
+
+  /* Reactions container */
+  .chat-reactions {
+    @apply absolute -bottom-3 left-2 flex gap-0.5 bg-card rounded-full px-1.5 py-0.5 shadow-md border border-border/50;
+  }
+
+  /* Reply preview styling */
+  .chat-reply-preview {
+    @apply border-l-4 border-[hsl(var(--whatsapp-green))] bg-muted/50 rounded-r-md px-3 py-2 mb-1;
+  }
+
+  .chat-bubble-outgoing .chat-reply-preview {
+    @apply border-white/50 bg-white/10;
+  }
+
+  /* Swipe to reply animation */
+  @keyframes swipe-reply {
+    0% { transform: translateX(0); }
+    50% { transform: translateX(20px); }
+    100% { transform: translateX(0); }
+  }
+
+  .chat-swipe-reply {
+    animation: swipe-reply 0.3s ease-out;
+  }
+
+  /* Reaction picker popup */
+  .chat-reaction-picker {
+    @apply absolute bottom-full left-0 mb-2 flex gap-1 bg-card rounded-full px-2 py-1.5 shadow-xl border border-border;
+    animation: reaction-picker-enter 0.2s ease-out;
+  }
+
+  @keyframes reaction-picker-enter {
+    0% {
+      opacity: 0;
+      transform: scale(0.8) translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .chat-reaction-picker button {
+    @apply text-xl hover:scale-125 transition-transform p-1;
+  }
+
+  /* Message timestamp styling */
+  .chat-timestamp {
+    @apply text-[10px] opacity-70 mt-1;
+  }
+
+  .chat-bubble-outgoing .chat-timestamp {
+    @apply text-white/70;
+  }
+
+  /* Input area styling */
+  .chat-input-container {
+    @apply flex items-end gap-2 p-3 bg-card border-t border-border;
+  }
+
+  .chat-input {
+    @apply flex-1 rounded-3xl border-border bg-muted/50 px-4 py-2 text-sm resize-none;
+    min-height: 40px;
+    max-height: 120px;
+  }
+
+  .chat-send-button {
+    @apply rounded-full w-10 h-10 bg-[hsl(var(--whatsapp-green))] text-white hover:bg-[hsl(var(--whatsapp-green))]/90 flex items-center justify-center transition-all;
+  }
+
+  .chat-send-button:disabled {
+    @apply bg-muted text-muted-foreground;
   }
 }

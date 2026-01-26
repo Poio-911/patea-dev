@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Trophy, Target, ArrowRight, Crown } from 'lucide-react';
 import { getRoundName, isTournamentComplete } from '@/lib/utils/cup-bracket';
+import { cn } from '@/lib/utils';
 
 type CupCardProps = {
   cup: Cup;
@@ -25,22 +26,34 @@ export function CupCard({ cup }: CupCardProps) {
   const isCompleted = cup.status === 'completed' && cup.championTeamId;
 
   return (
-    <Link href={`/competitions/cups/${cup.id}`} className="block group">
-      <Card className="hover:bg-muted/50 transition-all hover:shadow-md h-full">
+    <Link href={`/competitions/cups/${cup.id}`} className="block group fifa-card-animate">
+      <Card className={cn(
+        "fifa-cup-card h-full",
+        "hover:bg-transparent"
+      )}>
         <CardHeader className="pb-3">
           <div className="flex items-start gap-3">
-            {cup.logoUrl && (
-              <div className="w-12 h-12 rounded-lg overflow-hidden border shrink-0 bg-muted/30">
+            {/* Trophy Icon or Logo */}
+            <div className={cn(
+              "w-12 h-12 rounded-lg overflow-hidden shrink-0 flex items-center justify-center",
+              cup.logoUrl ? "border bg-muted/30" : "bg-gradient-to-br from-yellow-500/20 to-amber-500/10 border border-yellow-500/30"
+            )}>
+              {cup.logoUrl ? (
                 <img src={cup.logoUrl} alt={cup.name} className="w-full h-full object-contain" />
-              </div>
-            )}
+              ) : (
+                <Trophy className="h-6 w-6 fifa-cup-icon fifa-cup-icon-animated" />
+              )}
+            </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
-                <CardTitle className="text-lg group-hover:text-primary transition-colors">
+                <CardTitle className="text-lg group-hover:text-yellow-600 dark:group-hover:text-yellow-500 transition-colors">
                   {cup.name}
                 </CardTitle>
-                <Badge variant={status.variant} className="shrink-0">
-                  {status.label}
+                <Badge className={cn(
+                  "shrink-0",
+                  cup.status === 'in_progress' && "fifa-cup-badge"
+                )} variant={cup.status !== 'in_progress' ? status.variant : undefined}>
+                  {cup.status === 'in_progress' ? 'COPA' : status.label}
                 </Badge>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -55,11 +68,11 @@ export function CupCard({ cup }: CupCardProps) {
         <CardContent className="space-y-4 pb-4">
           {/* Current Round */}
           {cup.status === 'in_progress' && cup.currentRound && (
-            <div className="flex items-center gap-3 p-3 rounded-md bg-muted/30 border">
-              <Target className="h-4 w-4 text-primary shrink-0" />
+            <div className="flex items-center gap-3 p-3 rounded-md bg-gradient-to-r from-yellow-500/10 to-amber-500/5 border border-yellow-500/20">
+              <Target className="h-4 w-4 fifa-cup-icon shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-muted-foreground">Ronda Actual</p>
-                <p className="text-sm font-semibold">{getRoundName(cup.currentRound)}</p>
+                <p className="text-sm font-semibold text-yellow-700 dark:text-yellow-500">{getRoundName(cup.currentRound)}</p>
               </div>
             </div>
           )}
@@ -97,7 +110,7 @@ export function CupCard({ cup }: CupCardProps) {
         </CardContent>
 
         <CardFooter className="pt-0">
-          <Button variant="link" className="p-0 h-auto group-hover:gap-3 transition-all">
+          <Button variant="link" className="p-0 h-auto group-hover:gap-3 transition-all text-yellow-700 dark:text-yellow-500 hover:text-yellow-600">
             Ver Copa <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </CardFooter>

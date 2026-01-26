@@ -9,31 +9,31 @@ import { UserPlus, Star, Trophy, ArrowUp, ArrowDown, Goal, Users, CheckCircle } 
 // Map activity type to icon and styling
 const typeConfig: Record<string, { icon: JSX.Element; verb: (a: SocialActivity) => string; className?: string }> = {
   new_follower: {
-    icon: <UserPlus className="h-4 w-4 text-sky-500" />,
+    icon: <UserPlus className="h-4 w-4 text-foreground" />, 
     verb: () => 'empezó a seguir a alguien',
   },
   match_played: {
-    icon: <Users className="h-4 w-4 text-indigo-500" />,
+    icon: <Users className="h-4 w-4 text-foreground" />, 
     verb: a => `jugó un partido: ${a.metadata?.matchTitle || ''}`,
   },
   match_organized: {
-    icon: <Users className="h-4 w-4 text-purple-500" />,
+    icon: <Users className="h-4 w-4 text-foreground" />, 
     verb: a => `organizó el partido: ${a.metadata?.matchTitle || ''}`,
   },
   goal_scored: {
-    icon: <Goal className="h-4 w-4 text-green-600" />,
+    icon: <Goal className="h-4 w-4 text-foreground" />, 
     verb: a => `marcó ${a.metadata?.goals} gol(es)`,
   },
   ovr_increased: {
-    icon: <ArrowUp className="h-4 w-4 text-emerald-500" />,
+    icon: <ArrowUp className="h-4 w-4 text-foreground" />, 
     verb: a => `subió su OVR a ${a.metadata?.newOvr} (+${a.metadata?.ovrChange})`,
   },
   ovr_decreased: {
-    icon: <ArrowDown className="h-4 w-4 text-rose-500" />,
+    icon: <ArrowDown className="h-4 w-4 text-foreground" />, 
     verb: a => `bajó su OVR a ${a.metadata?.newOvr} (${a.metadata?.ovrChange})`,
   },
   achievement_unlocked: {
-    icon: <Trophy className="h-4 w-4 text-yellow-500" />,
+    icon: <Trophy className="h-4 w-4 text-foreground" />, 
     verb: a => `desbloqueó logro: ${a.metadata?.achievementName}`,
   },
   player_created: {

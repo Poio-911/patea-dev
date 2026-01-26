@@ -167,13 +167,13 @@ export function LinkGoogleFitButton() {
             </div>
           </div>
           {isConnected && !isExpired && (
-            <Badge variant="outline" className="border-green-500 text-green-600">
+            <Badge variant="outline" className="border-foreground text-foreground">
               <CheckCircle2 className="mr-1 h-3 w-3" />
               Conectado
             </Badge>
           )}
           {isExpired && (
-            <Badge variant="outline" className="border-yellow-500 text-yellow-600">
+            <Badge variant="outline" className="border-foreground text-foreground">
               <AlertCircle className="mr-1 h-3 w-3" />
               Expirado
             </Badge>
@@ -200,7 +200,7 @@ export function LinkGoogleFitButton() {
 
         {/* Connection details */}
         {isConnected && !isExpired && connection && (
-          <div className="text-xs text-muted-foreground space-y-1 bg-green-50 dark:bg-green-900/20 p-3 rounded-md">
+          <div className="text-xs text-muted-foreground space-y-1 bg-muted/50 dark:bg-muted/30 p-3 rounded-md">
             <p><strong>Conectado desde:</strong> {format(new Date(connection.connectedAt), "d 'de' MMMM 'de' yyyy", { locale: es })}</p>
             {connection.lastSyncAt && (
               <p><strong>Última sincronización:</strong> {format(new Date(connection.lastSyncAt), "d 'de' MMMM, HH:mm'hs'", { locale: es })}</p>

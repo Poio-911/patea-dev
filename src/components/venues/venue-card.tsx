@@ -39,11 +39,11 @@ type VenueCardProps = {
 };
 
 const surfaceConfig: Record<VenueSurface, { label: string; color: string }> = {
-  grass: { label: 'Césped', color: 'bg-green-500' },
-  artificial: { label: 'Sintético', color: 'bg-blue-500' },
-  indoor: { label: 'Indoor', color: 'bg-purple-500' },
-  clay: { label: 'Tierra', color: 'bg-orange-500' },
-  concrete: { label: 'Cemento', color: 'bg-gray-500' },
+  grass: { label: 'Césped', color: 'bg-primary' },
+  artificial: { label: 'Sintético', color: 'bg-muted' },
+  indoor: { label: 'Indoor', color: 'bg-card' },
+  clay: { label: 'Tierra', color: 'bg-muted' },
+  concrete: { label: 'Cemento', color: 'bg-muted' },
 };
 
 export function VenueCard({
@@ -107,7 +107,7 @@ export function VenueCard({
                 {onDelete && (
                   <DropdownMenuItem
                     onClick={onDelete}
-                    className="text-red-600 dark:text-red-400"
+                    className="text-destructive"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Eliminar
@@ -121,9 +121,9 @@ export function VenueCard({
 
       <CardContent className="space-y-3">
         {/* Precio */}
-        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
           <div className="flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-green-600" />
+            <DollarSign className="w-4 h-4 text-foreground" />
             <span className="font-semibold">
               {venue.currency} ${venue.pricePerHour}
             </span>

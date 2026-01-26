@@ -62,7 +62,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
               <Separator className="my-2" />
               <div className="space-y-1">
                 {changeEntries.map(([key, value]) => (
-                  <div key={key} className={`flex justify-between items-center text-xs ${(value as number) > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                    <div key={key} className={`flex justify-between items-center text-xs text-foreground`}>
                     <span>{attributeDescriptions[key as AttributeKey]?.name || key}</span>
                     <span className="font-semibold">{(value as number) > 0 ? '+' : ''}{value as number}</span>
                   </div>
@@ -220,10 +220,10 @@ export function PlayerProgressionView({ playerId }: PlayerProgressionViewProps) 
         <div className="space-y-6">
             {milestones && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">OVR Máximo</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><Medal className="h-6 w-6 text-yellow-500"/><span className="text-3xl font-bold">{milestones.maxOvr}</span></div></CardContent></Card>
-                    <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Goles Totales</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><Goal className="h-6 w-6 text-blue-500"/><span className="text-3xl font-bold">{milestones.totalGoals}</span></div></CardContent></Card>
-                    <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Mayor Subida</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><ChevronsUp className="h-6 w-6 text-green-500"/><span className="text-3xl font-bold">+{milestones.biggestJump?.change || 0}</span></div></CardContent></Card>
-                    <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Mejor Racha</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><TrendingUp className="h-6 w-6 text-indigo-500"/><span className="text-3xl font-bold">{milestones.longestPositiveStreak}</span><span className="text-sm text-muted-foreground">partidos</span></div></CardContent></Card>
+                    <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">OVR Máximo</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><Medal className="h-6 w-6 text-foreground"/><span className="text-3xl font-bold">{milestones.maxOvr}</span></div></CardContent></Card>
+                    <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Goles Totales</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><Goal className="h-6 w-6 text-foreground"/><span className="text-3xl font-bold">{milestones.totalGoals}</span></div></CardContent></Card>
+                    <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Mayor Subida</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><ChevronsUp className="h-6 w-6 text-foreground"/><span className="text-3xl font-bold">+{milestones.biggestJump?.change || 0}</span></div></CardContent></Card>
+                    <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Mejor Racha</CardTitle></CardHeader><CardContent><div className="flex items-baseline gap-2"><TrendingUp className="h-6 w-6 text-foreground"/><span className="text-3xl font-bold">{milestones.longestPositiveStreak}</span><span className="text-sm text-muted-foreground">partidos</span></div></CardContent></Card>
                 </div>
             )}
             <Card>
@@ -250,7 +250,7 @@ export function PlayerProgressionView({ playerId }: PlayerProgressionViewProps) 
                             <YAxis domain={['dataMin - 5', 'dataMax + 5']} />
                             <Tooltip content={<CustomTooltip />} />
                             <Legend />
-                            <Line type="monotone" dataKey="OVR" name="OVR" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 5 }} activeDot={{ r: 8 }} />
+                            <Line type="monotone" dataKey="OVR" name="OVR" stroke="hsl(var(--chart-3))" strokeWidth={3} dot={{ r: 5 }} activeDot={{ r: 8 }} />
                             <AnimatePresence>
                                 {visibleAttributes.map(attr => (
                                     <motion.foreignObject key={attr} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -295,13 +295,13 @@ export function PlayerProgressionView({ playerId }: PlayerProgressionViewProps) 
                             <Separator />
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-3">
-                                    <h4 className="font-semibold flex items-center gap-2 text-green-600"><TrendingUp className="h-5 w-5"/>Tendencias Positivas</h4>
+                                    <h4 className="font-semibold flex items-center gap-2"><TrendingUp className="h-5 w-5"/>Tendencias Positivas</h4>
                                     <ul className="list-disc list-inside space-y-2 text-sm text-foreground/90">
                                         {analysis.positiveTrends.map((trend, i) => <li key={i}>{trend}</li>)}
                                     </ul>
                                 </div>
                                 <div className="space-y-3">
-                                     <h4 className="font-semibold flex items-center gap-2 text-red-600"><TrendingDown className="h-5 w-5"/>Áreas a Mejorar</h4>
+                                     <h4 className="font-semibold flex items-center gap-2"><TrendingDown className="h-5 w-5"/>Áreas a Mejorar</h4>
                                     <ul className="list-disc list-inside space-y-2 text-sm text-foreground/90">
                                         {analysis.areasForImprovement.map((area, i) => <li key={i}>{area}</li>)}
                                     </ul>

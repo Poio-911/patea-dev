@@ -103,6 +103,101 @@ export type MatchCard = {
   cardType: CardType;
 };
 
+// Enhanced event tracking types
+export type MatchEventType = 
+  | 'goal' 
+  | 'card' 
+  | 'substitution' 
+  | 'foul' 
+  | 'corner' 
+  | 'throw_in' 
+  | 'offside' 
+  | 'penalty' 
+  | 'free_kick' 
+  | 'save'
+  | 'kick_off'
+  | 'half_time'
+  | 'full_time';
+
+export type GoalType = 'regular' | 'penalty' | 'free_kick' | 'header' | 'own_goal' | 'volley';
+export type BodyPart = 'left_foot' | 'right_foot' | 'head' | 'chest' | 'other';
+export type CardReason = 'foul' | 'unsporting_behavior' | 'dissent' | 'persistent_fouling' | 'delaying_game' | 'other';
+export type SubstitutionReason = 'tactical' | 'injury' | 'tired' | 'poor_performance' | 'disciplinary';
+
+export type MatchEvent = {
+  id: string;
+  type: MatchEventType;
+  minute: number;
+  playerId: string;
+  playerName: string;
+  teamId: string;
+  description?: string;
+  // Goal-specific data
+  assistId?: string;
+  assistName?: string;
+  goalType?: GoalType;
+  bodyPart?: BodyPart;
+  // Card-specific data
+  cardType?: CardType;
+  cardReason?: CardReason;
+  // Substitution-specific data
+  playerOutId?: string;
+  playerOutName?: string;
+  playerInId?: string;
+  playerInName?: string;
+  substitutionReason?: SubstitutionReason;
+  // General metadata
+  timestamp: string; // ISO timestamp when event was recorded
+  recordedBy?: string; // userId who recorded the event
+};
+
+export type MatchTimelineEvent = {
+  id: string;
+  minute: number;
+  type: 'event' | 'period';
+  eventId?: string; // Reference to MatchEvent if type is 'event'
+  periodType?: 'kick_off' | 'half_time' | 'second_half' | 'full_time' | 'extra_time';
+  description: string;
+  timestamp: string;
+};
+
+export type MatchStatistics = {
+  possession: { team1: number; team2: number }; // Percentage
+  shots: {
+    team1: { total: number; onTarget: number; offTarget: number; blocked: number };
+    team2: { total: number; onTarget: number; offTarget: number; blocked: number };
+  };
+  passes: {
+    team1: { total: number; completed: number; accuracy: number };
+    team2: { total: number; completed: number; accuracy: number };
+  };
+  fouls: { team1: number; team2: number };
+  corners: { team1: number; team2: number };
+  offsides: { team1: number; team2: number };
+  yellowCards: { team1: number; team2: number };
+  redCards: { team1: number; team2: number };
+  saves: { team1: number; team2: number };
+};
+
+export type LiveMatchStatus = 
+  | 'not_started' 
+  | 'first_half' 
+  | 'half_time' 
+  | 'second_half' 
+  | 'extra_time_first' 
+  | 'extra_time_break' 
+  | 'extra_time_second' 
+  | 'penalty_shootout' 
+  | 'finished';
+
+export type MatchPeriod = {
+  type: 'first_half' | 'second_half' | 'extra_time_first' | 'extra_time_second';
+  startTime: string; // ISO timestamp
+  endTime?: string; // ISO timestamp
+  duration: number; // minutes
+  addedTime?: number; // injury time in minutes
+};
+
 export type TeamFormation = {
   [key: string]: { x: number, y: number } // player.uid -> {x, y} percentage coordinates
 };
@@ -145,8 +240,29 @@ export type Match = {
     leagueId: string;
     round: number;
   };
-  goalScorers?: MatchGoalScorer[]; // Individual goal scorers
-  cards?: MatchCard[]; // Yellow and red cards
+  goalScorers?: MatchGoalScorer[]; // Individual goal scorers (DEPRECATED - use events)
+  cards?: MatchCard[]; // Yellow and red cards (DEPRECATED - use events)
+  // Enhanced event tracking
+  events?: MatchEvent[]; // Live match events
+  timeline?: MatchTimelineEvent[]; // Match timeline
+  statistics?: MatchStatistics; // Match statistics
+  liveStatus?: LiveMatchStatus; // Current match status
+  currentMinute?: number; // Current match minute
+  periodStartTs?: any; // Firestore server timestamp when current period started
+  timerPaused?: boolean; // If true, do not advance client clock
+  periods?: MatchPeriod[]; // Match periods (halves, extra time)
+  referee?: {
+    name: string;
+    id?: string;
+  };
+  attendance?: number;
+  // Live streaming (optional)
+  stream?: {
+    provider: 'youtube' | 'twitch' | 'kick' | 'custom';
+    id?: string; // e.g., YouTube Live videoId
+    url?: string; // fallback embed URL for custom
+    active?: boolean;
+  };
   // Confirmación de asistencia (opcional)
   requiresConfirmation?: boolean; // Si es true, mostrar confirmación
   confirmationDeadline?: string; // ISO 8601 - deadline opcional
@@ -422,6 +538,15 @@ export type AppHelpInput = {
   }[];
 };
 
+export type MessageReaction = {
+  emoji: string;
+  userId: string;
+  userName: string;
+  createdAt: any;
+};
+
+export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read';
+
 export type ChatMessage = {
   id: string;
   text: string;
@@ -429,6 +554,17 @@ export type ChatMessage = {
   senderName: string;
   senderPhotoUrl: string;
   createdAt: any;
+  // WhatsApp-style fields
+  status?: MessageStatus;
+  readBy?: string[];
+  deliveredTo?: string[];
+  reactions?: MessageReaction[];
+  replyTo?: {
+    messageId: string;
+    text: string;
+    senderName: string;
+    senderId: string;
+  } | null;
 } & DocumentData;
 
 const KeyEventSchema = z.object({

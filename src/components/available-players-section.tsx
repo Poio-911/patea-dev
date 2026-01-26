@@ -11,7 +11,9 @@ import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
+import { PlayerPositionBadge } from '@/components/player-styles';
 import { InvitePlayerDialog } from './invite-player-dialog';
+import { PlayerSelectItem } from '@/components/player-select-item';
 import { FindBestFitDialog } from './find-best-fit-dialog';
 import { Sparkles, Search, Send, Users, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -64,14 +66,14 @@ export function AvailablePlayersSection({ match, isOwner }: AvailablePlayersSect
   if (!isOwner) return null;
 
   return (
-    <Card className="border-amber-500/50 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-950/20">
+    <Card className="border-border bg-gradient-to-br from-card/60 to-transparent">
       <CardHeader>
-        <Alert className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
-          <Users className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          <AlertTitle className="text-amber-900 dark:text-amber-100">
+        <Alert className="border-border bg-card">
+          <Users className="h-5 w-5 text-foreground" />
+          <AlertTitle className="text-foreground">
             Partido Incompleto
           </AlertTitle>
-          <AlertDescription className="text-amber-800 dark:text-amber-200">
+          <AlertDescription className="text-muted-foreground">
             Faltan <strong>{spotsLeft}</strong> jugador{spotsLeft !== 1 ? 'es' : ''} para completar el partido.
           </AlertDescription>
         </Alert>
@@ -85,7 +87,7 @@ export function AvailablePlayersSection({ match, isOwner }: AvailablePlayersSect
               Búsqueda Manual
             </TabsTrigger>
             <TabsTrigger value="ai" className="gap-2">
-              <Sparkles className="h-4 w-4 text-amber-500" />
+              <Sparkles className="h-4 w-4" />
               Asistente IA
             </TabsTrigger>
           </TabsList>
@@ -129,25 +131,21 @@ export function AvailablePlayersSection({ match, isOwner }: AvailablePlayersSect
             ) : filteredPlayers.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
                 {filteredPlayers.map(player => (
-                  <Card key={player.uid} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3 mb-3">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={player.photoUrl} alt={player.displayName} />
-                          <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold truncate">{player.displayName}</h4>
-                          <div className="flex gap-2 mt-1">
-                            <Badge variant="secondary" className="text-xs">
-                              {player.ovr}
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">
-                              {player.position}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
+                  <PlayerSelectItem
+                    key={player.uid}
+                    variant="card"
+                    player={{
+                      id: player.uid,
+                      name: player.displayName,
+                      photoUrl: player.photoUrl || '',
+                      position: player.position,
+                      ovr: player.ovr,
+                      uid: player.uid,
+                      displayName: player.displayName,
+                    }}
+                    showPosition
+                    showOvr
+                    rightActions={(
                       <InvitePlayerDialog
                         playerToInvite={player}
                         userMatches={[match]}
@@ -158,8 +156,8 @@ export function AvailablePlayersSection({ match, isOwner }: AvailablePlayersSect
                           Invitar
                         </Button>
                       </InvitePlayerDialog>
-                    </CardContent>
-                  </Card>
+                    )}
+                  />
                 ))}
               </div>
             ) : (
@@ -176,7 +174,7 @@ export function AvailablePlayersSection({ match, isOwner }: AvailablePlayersSect
 
           <TabsContent value="ai" className="space-y-4">
             <div className="flex flex-col items-center justify-center py-12 gap-6 text-center border-2 border-dashed rounded-lg">
-              <Sparkles className="h-16 w-16 text-amber-500" />
+              <Sparkles className="h-16 w-16" />
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold">Asistente de Fichajes con IA</h3>
                 <p className="text-sm text-muted-foreground max-w-md">

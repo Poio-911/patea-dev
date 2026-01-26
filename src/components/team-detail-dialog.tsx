@@ -3,6 +3,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useUser } from '@/firebase';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,8 @@ interface TeamDetailDialogProps {
 }
 
 export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetailDialogProps) {
+  const { user } = useUser();
+  const isOwner = user?.uid === (team as any).createdBy;
   
   const teamPlayersWithDetails = useMemo(() => {
     // Defensive coding: Check for `team.members` and fallback to `team.playerIds` (old structure)
@@ -76,7 +79,7 @@ export function TeamDetailDialog({ team, allGroupPlayers, children }: TeamDetail
                     </h3>
                     <div className="space-y-1">
                         {teamPlayersWithDetails.map((player, index) => (
-                            <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={() => {}} index={index} />
+                          <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={() => {}} index={index} canEdit={isOwner} />
                         ))}
                     </div>
                 </div>

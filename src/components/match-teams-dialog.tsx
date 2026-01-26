@@ -68,7 +68,7 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
                           </div>
                           <div className="flex items-center gap-2">
                             <PlayerOvr value={player.ovr} size="compact" />
-                            <PlayerPositionBadge position={player.position as any} size="sm" />
+                            <PlayerPositionBadge position={player.position as any} size="sm" showIcon={false} />
                           </div>
                         </div>
                       );

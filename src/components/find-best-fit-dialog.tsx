@@ -20,6 +20,7 @@ import { findBestFitPlayerAction } from '@/lib/actions/server-actions';
 import { Card, CardContent } from './ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Badge } from './ui/badge';
+import { PlayerPositionBadge } from '@/components/player-styles';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import { ScrollArea } from './ui/scroll-area';
 
@@ -104,7 +105,7 @@ export function FindBestFitDialog({
     }}>
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full sm:w-auto" disabled={!selectedMatchId}>
-            <Sparkles className="mr-2 h-4 w-4 text-amber-500" />
+          <Sparkles className="mr-2 h-4 w-4" />
             Asistente de Fichajes
         </Button>
       </DialogTrigger>
@@ -120,8 +121,8 @@ export function FindBestFitDialog({
             <ScrollArea className="h-full max-h-96">
                 <div className="space-y-4 pr-4">
                     {isPending && (
-                        <div className="flex flex-col items-center justify-center h-40 gap-4 text-center border-2 border-dashed rounded-lg">
-                            <Sparkles className="h-10 w-10 text-amber-500 animate-pulse" />
+                      <div className="flex flex-col items-center justify-center h-40 gap-4 text-center border-2 border-dashed rounded-lg">
+                        <Sparkles className="h-10 w-10 animate-pulse" />
                             <p className="font-semibold">Revisando la lista de jugadores libres...</p>
                             <p className="text-sm text-muted-foreground">Encontrando a los mejores jugadores para tu partido.</p>
                         </div>
@@ -137,9 +138,9 @@ export function FindBestFitDialog({
                                     </Avatar>
                                     <div className="flex-1">
                                         <h3 className="font-bold text-lg">{player.displayName}</h3>
-                                        <div className='flex gap-2 mt-1'>
-                                            <Badge>{player.ovr}</Badge>
-                                            <Badge variant="outline">{player.position}</Badge>
+                                        <div className='flex gap-2 mt-1 items-center'>
+                                          <Badge>{player.ovr}</Badge>
+                                          <PlayerPositionBadge position={player.position} showIcon={false} size="sm" />
                                         </div>
                                     </div>
                                     <InvitePlayerDialog 

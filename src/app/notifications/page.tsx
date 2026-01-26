@@ -36,17 +36,7 @@ const IconWrapper = ({ type, className, ...props }: { type: Notification['type']
     const Icon = notificationIcons[type] || Info;
     return (
         <Avatar {...props} className={cn('h-9 w-9', className)}>
-            <AvatarFallback className={cn(
-                "bg-transparent",
-                type === 'match_invite' && 'bg-blue-500/10 text-blue-500',
-                type === 'new_joiner' && 'bg-green-500/10 text-green-500',
-                type === 'evaluation_pending' && 'bg-yellow-500/10 text-yellow-500',
-                type === 'match_update' && 'bg-purple-500/10 text-purple-500',
-                type === 'challenge_received' && 'bg-orange-500/10 text-orange-500',
-                type === 'challenge_accepted' && 'bg-emerald-500/10 text-emerald-500',
-                type === 'challenge_rejected' && 'bg-red-500/10 text-red-500',
-                type === 'league_application' && 'bg-indigo-500/10 text-indigo-500',
-            )}>
+            <AvatarFallback className="bg-card text-foreground border border-border">
                 <Icon className="h-5 w-5" />
             </AvatarFallback>
         </Avatar>

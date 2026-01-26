@@ -168,8 +168,8 @@ export function getRoleDescription(role: GroupRole): string {
  */
 export function getRoleColor(role: GroupRole): string {
   const colors: Record<GroupRole, string> = {
-    admin: 'bg-red-500 text-white',
-    moderator: 'bg-blue-500 text-white',
+    admin: 'bg-destructive text-destructive-foreground',
+    moderator: 'bg-card text-foreground border',
     member: 'bg-muted text-muted-foreground',
   };
 

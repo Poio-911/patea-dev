@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { MoreVertical } from 'lucide-react';
 import { PlayerOvr, PlayerPhoto, positionConfig, PlayerPositionBadge } from '@/components/player-styles';
 import { Button } from '@/components/ui/button';
+import { useUser } from '@/firebase';
 import { SetPlayerStatusDialog } from '@/components/set-player-status-dialog';
 import { AnimatedCardWrapper } from '@/components/animated-card-wrapper';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
@@ -18,12 +19,14 @@ interface GroupTeamRosterPlayerProps {
     team: GroupTeam;
     onPlayerUpdate?: () => void;
     index?: number;
+    canEdit?: boolean;
 }
 
-export const GroupTeamRosterPlayer = ({ player, team, onPlayerUpdate, index = 0 }: GroupTeamRosterPlayerProps) => {
-    const { Icon, textColor } = positionConfig[player.position];
+export const GroupTeamRosterPlayer = ({ player, team, onPlayerUpdate, index = 0, canEdit = false }: GroupTeamRosterPlayerProps) => {
+    const { textColor } = positionConfig[player.position];
     const ovrLevel = getOvrLevel(player.ovr);
     const staggerDelay = index * 0.03;
+    const { user } = useUser();
 
     return (
         <AnimatedCardWrapper animation="slide" delay={staggerDelay}>
@@ -38,13 +41,15 @@ export const GroupTeamRosterPlayer = ({ player, team, onPlayerUpdate, index = 0 
                 ovrLevel === 'silver' && "game:hover:border-gray-400/50 game:hover:shadow-lg game:hover:shadow-gray-400/30",
                 ovrLevel === 'bronze' && "game:hover:border-amber-700/50 game:hover:shadow-lg game:hover:shadow-amber-700/30",
             )}>
-            <div className="absolute top-1 right-1">
-                <SetPlayerStatusDialog player={player} team={team} onPlayerUpdate={onPlayerUpdate}>
-                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                        <MoreVertical className="h-4 w-4" />
-                    </Button>
-                </SetPlayerStatusDialog>
-            </div>
+            {canEdit && (
+              <div className="absolute top-1 right-1">
+                  <SetPlayerStatusDialog player={player} team={team} onPlayerUpdate={onPlayerUpdate}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                          <MoreVertical className="h-4 w-4" />
+                      </Button>
+                  </SetPlayerStatusDialog>
+              </div>
+            )}
 
             {/* NEW: Tiny jersey indicator (only on dark theme) */}
             {team.jersey && (
@@ -61,12 +66,11 @@ export const GroupTeamRosterPlayer = ({ player, team, onPlayerUpdate, index = 0 
             </div>
             <div className="flex flex-col items-center">
                 <div className="flex items-center gap-2">
-                    <Icon className={cn("h-5 w-5 rounded-full border-2 p-0.5", textColor)} />
                     <p className="font-bold truncate w-24 text-base">{player.name}</p>
                 </div>
                 <div className="flex items-center justify-center gap-2 mt-1">
                     <PlayerOvr value={player.ovr} size="compact" />
-                    <PlayerPositionBadge position={player.position} size="sm" />
+                    <PlayerPositionBadge position={player.position} size="sm" showIcon={false} />
                 </div>
             </div>
         </Card>

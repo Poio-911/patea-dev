@@ -33,10 +33,10 @@ export const OVR_THRESHOLDS = OVR_SYSTEM.THRESHOLDS;
 export function getOvrColorClass(ovr: number): string {
   const level = getOvrLevel(ovr);
   const colorMap: Record<OvrLevel, string> = {
-    elite: 'text-purple-400',
-    gold: 'text-yellow-400',
-    silver: 'text-gray-400',
-    bronze: 'text-orange-400',
+    elite: 'text-[hsl(var(--ovr-elite))]',
+    gold: 'text-[hsl(var(--ovr-gold))]',
+    silver: 'text-[hsl(var(--ovr-silver))]',
+    bronze: 'text-[hsl(var(--ovr-bronze))]',
   };
   return colorMap[level];
 }
@@ -47,10 +47,10 @@ export function getOvrColorClass(ovr: number): string {
 export function getOvrBorderClass(ovr: number): string {
   const level = getOvrLevel(ovr);
   const borderMap: Record<OvrLevel, string> = {
-    elite: 'border-purple-500',
-    gold: 'border-yellow-500',
-    silver: 'border-gray-500',
-    bronze: 'border-orange-500',
+    elite: 'border-[hsl(var(--ovr-elite))]',
+    gold: 'border-[hsl(var(--ovr-gold))]',
+    silver: 'border-[hsl(var(--ovr-silver))]',
+    bronze: 'border-[hsl(var(--ovr-bronze))]',
   };
   return borderMap[level];
 }

@@ -54,10 +54,30 @@ type MatchCardProps = {
 };
 
 const statusConfig: Record<Match['status'], { label: string; className: string; neonClass: string; gradientClass: string }> = {
-    upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300', neonClass: 'text-shadow-[0_0_10px_hsl(var(--primary))]', gradientClass: 'from-blue-500/20' },
-    active: { label: 'Activo', className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300', neonClass: 'text-shadow-[0_0_10px_hsl(var(--accent))]', gradientClass: 'from-green-500/20' },
-    completed: { label: 'Finalizado', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', neonClass: 'text-shadow-[0_0_8px_hsl(var(--muted-foreground))]', gradientClass: 'from-gray-500/20' },
-    evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300', neonClass: 'text-shadow-[0_0_10px_hsl(var(--chart-2))]', gradientClass: 'from-purple-500/20' },
+    upcoming: {
+        label: 'Próximo',
+        className: 'bg-primary/10 text-foreground border border-primary/30 rounded-full backdrop-blur-sm',
+        neonClass: 'text-shadow-[0_0_6px_hsl(var(--primary))]',
+        gradientClass: 'from-blue-500/20'
+    },
+    active: {
+        label: 'Activo',
+        className: 'bg-foreground/10 text-foreground border border-foreground/30 rounded-full backdrop-blur-sm',
+        neonClass: 'text-shadow-[0_0_6px_hsl(var(--foreground))]',
+        gradientClass: 'from-gray-500/20'
+    },
+    completed: {
+        label: 'Finalizado',
+        className: 'bg-muted/40 text-muted-foreground border border-muted/50 rounded-full backdrop-blur-sm',
+        neonClass: 'text-shadow-[0_0_4px_hsl(var(--muted-foreground))]',
+        gradientClass: 'from-gray-500/20'
+    },
+    evaluated: {
+        label: 'Evaluado',
+        className: 'bg-card/60 text-foreground border border-border rounded-full backdrop-blur-sm',
+        neonClass: 'text-shadow-[0_0_6px_hsl(var(--chart-2))]',
+        gradientClass: 'from-purple-500/20'
+    },
 };
 
 export function MatchCard({ match, allPlayers }: MatchCardProps) {
@@ -132,27 +152,9 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
     return (
         <Card className={cn(
-            "flex flex-col overflow-hidden shadow-lg transition-shadow duration-300 hover:shadow-primary/20",
-            // Type-specific borders
-            match.type === 'manual' && "border-2 border-blue-300 dark:border-blue-700",
-            match.type === 'collaborative' && "border-2 border-violet-300 dark:border-violet-700",
-            match.type === 'by_teams' && "border-2 border-emerald-300 dark:border-emerald-700",
-            match.type === 'league' && "border-2 border-amber-400 dark:border-amber-500 shadow-lg shadow-amber-500/50",
-            match.type === 'cup' && "border-2 border-red-400 dark:border-red-500 shadow-lg shadow-red-500/50",
-            match.type === 'league_final' && "border-2 border-amber-400 dark:border-amber-300 shadow-2xl shadow-amber-500",
-            match.type === 'intergroup_friendly' && "border-2 border-teal-300 dark:border-teal-700"
+            "flex flex-col overflow-hidden shadow-lg transition-shadow duration-300 hover:shadow-primary/20 border"
         )}>
-            <CardHeader className={cn(
-                'relative p-4',
-                // Type-specific gradients
-                match.type === 'manual' && "bg-gradient-to-br from-blue-500/20 via-blue-400/10 to-transparent",
-                match.type === 'collaborative' && "bg-gradient-to-br from-violet-500/20 via-violet-400/10 to-transparent",
-                match.type === 'by_teams' && "bg-gradient-to-br from-emerald-500/20 via-emerald-400/10 to-transparent",
-                match.type === 'league' && "bg-gradient-to-br from-amber-500/30 via-orange-400/20 to-transparent",
-                match.type === 'cup' && "bg-gradient-to-br from-red-500/30 via-orange-500/20 to-transparent",
-                match.type === 'league_final' && "bg-gradient-to-br from-amber-400/50 via-orange-500/30 to-red-500/20",
-                match.type === 'intergroup_friendly' && "bg-gradient-to-br from-teal-500/20 via-teal-400/10 to-transparent"
-            )}>
+            <CardHeader className={cn('relative p-4 bg-gradient-to-br', matchTheme.gradient)}>
                 <div className="flex items-start justify-between gap-4">
                     <CardTitle className={cn("text-xl font-bold", currentStatus.neonClass)}>
                         {match.title}
@@ -170,7 +172,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                         {matchTheme.icon === 'Handshake' && <Handshake className="mr-1.5 h-3 w-3" />}
                         {matchTheme.label}
                     </Badge>
-                    <Badge variant="outline" className={cn("whitespace-nowrap uppercase text-xs z-10", currentStatus.className)}>
+                    <Badge className={cn("whitespace-nowrap uppercase text-xs z-10 px-2.5 py-0.5", currentStatus.className)}>
                         {currentStatus.label}
                     </Badge>
                 </div>
@@ -229,8 +231,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                             <div className="h-2 bg-muted rounded-full overflow-hidden">
                                 <div
                                     className={cn(
-                                        "h-full transition-all duration-300",
-                                        (match.players?.length || 0) >= match.matchSize ? "bg-green-500" : "bg-violet-500"
+                                        "h-full transition-all duration-300 bg-primary"
                                     )}
                                     style={{ width: `${((match.players?.length || 0) / match.matchSize) * 100}%` }}
                                 />
@@ -238,7 +239,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                         </div>
                         {/* Urgency badge */}
                         {match.status === 'upcoming' && match.matchSize - (match.players?.length || 0) <= 3 && match.matchSize - (match.players?.length || 0) > 0 && (
-                            <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300 text-xs">
+                            <Badge className="bg-card border text-foreground text-xs">
                                 ¡Últimos {match.matchSize - (match.players?.length || 0)} lugares!
                             </Badge>
                         )}
@@ -249,8 +250,8 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 {(match.type === 'league' || match.type === 'cup' || match.type === 'league_final') && match.leagueInfo && (
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 text-xs">
-                            <Trophy className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                            <span className="font-semibold text-amber-900 dark:text-amber-100">
+                            <Trophy className="h-3.5 w-3.5 text-foreground" />
+                            <span className="font-semibold text-foreground">
                                 {match.type === 'league' ? 'Liga' : match.type === 'cup' ? 'Copa' : 'Competición'}
                             </span>
                         </div>
@@ -268,8 +269,8 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                             </p>
                         )}
                         {match.type === 'league_final' && (
-                            <Badge className="bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600 text-white text-xs font-bold animate-pulse">
-                                ⚡ PARTIDO DEFINITORIO ⚡
+                            <Badge className="bg-card border text-foreground text-xs font-bold">
+                                ⚡ DEFINITORIO ⚡
                             </Badge>
                         )}
                     </div>

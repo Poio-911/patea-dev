@@ -1,76 +1,27 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Match, ChatMessage } from '@/lib/types';
-import { useFirestore, useUser, useCollection } from '@/firebase';
-import { collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useFirestore, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useChatMessages } from '@/hooks/use-chat-messages';
+import { useChatReactions } from '@/hooks/use-chat-reactions';
+import { useChatReply } from '@/hooks/use-chat-reply';
+import { useChatReadReceipts } from '@/hooks/use-chat-read-receipts';
 import { cn } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Send, MessageCircle } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from './ui/scroll-area';
-
+import { MessageCircle } from 'lucide-react';
+import {
+  ChatMessageBubble,
+  ChatInput,
+  ChatEmptyState,
+  ChatLoadingState,
+} from '@/components/chat';
 
 interface MatchChatViewProps {
   match: Match;
-}
-
-const chatSchema = z.object({
-  message: z.string().min(1, 'El mensaje no puede estar vacío.'),
-});
-type ChatFormData = z.infer<typeof chatSchema>;
-
-function ChatMessageItem({ message, isCurrentUser }: { message: ChatMessage; isCurrentUser: boolean }) {
-  const createdAtDate = useMemo(() => {
-    if (!message.createdAt) {
-      return new Date();
-    }
-    if (typeof message.createdAt.toDate === 'function') {
-      return message.createdAt.toDate();
-    }
-    return new Date(message.createdAt);
-  }, [message.createdAt]);
-
-  return (
-    <div className={cn('flex items-end gap-2 text-sm', isCurrentUser && 'justify-end')}>
-      {!isCurrentUser && (
-        <Avatar className="h-8 w-8">
-          <AvatarImage src={message.senderPhotoUrl} alt={message.senderName} />
-          <AvatarFallback>{message.senderName.charAt(0)}</AvatarFallback>
-        </Avatar>
-      )}
-      <div
-        className={cn(
-          'max-w-xs rounded-lg p-3 lg:max-w-md',
-          isCurrentUser
-            ? 'rounded-br-none bg-primary text-primary-foreground'
-            : 'rounded-bl-none bg-muted'
-        )}
-      >
-        {!isCurrentUser && <p className="font-semibold mb-1 text-xs">{message.senderName}</p>}
-        <p className="break-words">{message.text}</p>
-        <p className="mt-1 text-xs opacity-70">
-          {formatDistanceToNow(createdAtDate, { addSuffix: true, locale: es })}
-        </p>
-      </div>
-       {isCurrentUser && (
-        <Avatar className="h-8 w-8">
-          <AvatarImage src={message.senderPhotoUrl} alt={message.senderName} />
-          <AvatarFallback>{message.senderName.charAt(0)}</AvatarFallback>
-        </Avatar>
-      )}
-    </div>
-  );
 }
 
 export function MatchChatView({ match }: MatchChatViewProps) {
@@ -81,70 +32,82 @@ export function MatchChatView({ match }: MatchChatViewProps) {
   const { user } = useUser();
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-
   const lastSeenKey = `lastSeenMsg_${match.id}`;
 
-  const messagesQuery = useMemo(() => {
-    if (!firestore || !match.id) return null;
-    return query(collection(firestore, `matches/${match.id}/messages`), orderBy('createdAt', 'asc'));
-  }, [firestore, match.id]);
+  const collectionPath = `matches/${match.id}/messages`;
 
-  const { data: messages, loading: messagesLoading } = useCollection<ChatMessage>(messagesQuery);
-  
+  const { messages, loading: messagesLoading, sendMessage } = useChatMessages({
+    collectionPath,
+    enabled: isOpen,
+  });
+
+  const { toggleReaction } = useChatReactions({ collectionPath });
+
+  const {
+    replyTo,
+    startReply,
+    cancelReply,
+    clearReply,
+    registerMessageRef,
+    scrollToMessage,
+  } = useChatReply();
+
+  const { observeMessage } = useChatReadReceipts({
+    collectionPath,
+    userId: user?.uid || '',
+    messages,
+    enabled: isOpen && !!user,
+  });
+
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
-        if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-        }
+      if (scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+      }
     }, 100);
   }, []);
 
   useEffect(() => {
-      scrollToBottom();
-      
-      if (messages && messages.length > 0) {
-        const lastSeenTimestamp = parseInt(localStorage.getItem(lastSeenKey) || '0', 10);
-        const newMessages = messages.filter(msg => {
-            const msgTimestamp = msg.createdAt?.toDate ? msg.createdAt.toDate().getTime() : 0;
-            return msgTimestamp > lastSeenTimestamp;
-        });
-        setUnreadCount(newMessages.length);
-      }
+    scrollToBottom();
+
+    if (messages && messages.length > 0) {
+      const lastSeenTimestamp = parseInt(localStorage.getItem(lastSeenKey) || '0', 10);
+      const newMessages = messages.filter((msg) => {
+        const msgTimestamp = msg.createdAt?.toDate ? msg.createdAt.toDate().getTime() : 0;
+        return msgTimestamp > lastSeenTimestamp;
+      });
+      setUnreadCount(newMessages.length);
+    }
   }, [messages, lastSeenKey, scrollToBottom]);
 
   const handleFocus = () => {
     if (messages && messages.length > 0) {
-        const lastMessageTimestamp = messages[messages.length - 1].createdAt?.toDate ? messages[messages.length - 1].createdAt.toDate().getTime() : Date.now();
-        localStorage.setItem(lastSeenKey, lastMessageTimestamp.toString());
-        setUnreadCount(0);
+      const lastMessageTimestamp = messages[messages.length - 1].createdAt?.toDate
+        ? messages[messages.length - 1].createdAt.toDate().getTime()
+        : Date.now();
+      localStorage.setItem(lastSeenKey, lastMessageTimestamp.toString());
+      setUnreadCount(0);
     }
-  }
+  };
 
-  // Marcar como leído cuando se abre el chat
   useEffect(() => {
     if (isOpen) {
       handleFocus();
     }
   }, [isOpen]);
 
-
-  const form = useForm<ChatFormData>({
-    resolver: zodResolver(chatSchema),
-    defaultValues: { message: '' },
-  });
-
-  const onSubmit = async (data: ChatFormData) => {
-    if (!firestore || !user) return;
+  const handleSendMessage = async (text: string) => {
+    if (!user) return;
     setIsSending(true);
     try {
-      await addDoc(collection(firestore, `matches/${match.id}/messages`), {
-        text: data.message,
+      await sendMessage({
+        text,
         senderId: user.uid,
-        senderName: user.displayName,
-        senderPhotoUrl: user.photoURL,
-        createdAt: serverTimestamp(),
+        senderName: user.displayName || 'Usuario',
+        senderPhotoUrl: user.photoURL || '',
+        replyTo: replyTo,
       });
-      form.reset();
+      clearReply();
       scrollToBottom();
     } catch (error) {
       console.error('Error sending message:', error);
@@ -154,32 +117,63 @@ export function MatchChatView({ match }: MatchChatViewProps) {
     }
   };
 
+  const handleReact = async (messageId: string, emoji: string) => {
+    if (!user) return;
+    try {
+      await toggleReaction({
+        messageId,
+        emoji,
+        userId: user.uid,
+        userName: user.displayName || 'Usuario',
+      });
+    } catch (error) {
+      console.error('Error toggling reaction:', error);
+    }
+  };
+
+  const handleReply = (message: ChatMessage) => {
+    startReply(message);
+  };
+
   const renderContent = () => {
     if (messagesLoading) {
-      return (
-        <div className="flex justify-center items-center h-full">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      );
+      return <ChatLoadingState />;
     }
     if (!messages || messages.length === 0) {
-        return (
-            <div className="flex justify-center items-center h-full text-center">
-              <p className="text-sm text-muted-foreground">Aún no hay mensajes. <br/> ¡Sé el primero en saludar!</p>
-            </div>
-        );
+      return <ChatEmptyState description="¡Sé el primero en saludar!" />;
     }
-    return messages.map((msg) => (
-      <ChatMessageItem key={msg.id} message={msg} isCurrentUser={msg.senderId === user?.uid} />
-    ));
+    return (
+      <div className="space-y-3">
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            ref={(el) => {
+              registerMessageRef(msg.id, el);
+              if (el && msg.senderId !== user?.uid) {
+                observeMessage(el, msg.id, msg.senderId);
+              }
+            }}
+            className="transition-colors duration-500"
+          >
+            <ChatMessageBubble
+              message={msg}
+              isCurrentUser={msg.senderId === user?.uid}
+              onReply={handleReply}
+              onReact={handleReact}
+              onScrollToMessage={scrollToMessage}
+            />
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
     <>
-      {/* Botón flotante circular */}
+      {/* Floating circular button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-20 right-6 w-14 h-14 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg flex items-center justify-center z-[100] transition-transform hover:scale-110"
+        className="fixed bottom-20 right-6 w-14 h-14 rounded-full bg-[hsl(var(--whatsapp-green))] hover:bg-[hsl(var(--whatsapp-green))]/90 text-white shadow-lg flex items-center justify-center z-[100] transition-transform hover:scale-110"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         aria-label="Abrir chat del partido"
@@ -196,7 +190,7 @@ export function MatchChatView({ match }: MatchChatViewProps) {
         )}
       </motion.button>
 
-      {/* Panel del chat */}
+      {/* Chat panel */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -206,44 +200,44 @@ export function MatchChatView({ match }: MatchChatViewProps) {
             transition={{ duration: 0.2 }}
             className="fixed bottom-20 right-6 w-96 max-w-[calc(100vw-3rem)] z-[100] mb-4"
           >
-            <Card className="bg-card/95 backdrop-blur-md border-2 shadow-2xl">
-              <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
+            <Card className="bg-card/95 backdrop-blur-md border-2 shadow-2xl overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between p-4 border-b bg-[hsl(var(--whatsapp-green))] text-white">
                 <div className="flex items-center gap-2">
                   <MessageCircle className="h-5 w-5" />
-                  <CardTitle className="text-lg font-semibold">Chat del Partido</CardTitle>
+                  <CardTitle className="text-lg font-semibold text-white">Chat del Partido</CardTitle>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsOpen(false)}
-                  className="h-8 w-8"
+                  className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
                 >
                   ×
                 </Button>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="flex-1 flex flex-col overflow-hidden" onFocus={handleFocus} tabIndex={0}>
-                  <ScrollArea className="p-4 h-[400px]" ref={scrollAreaRef}>
-                    <div className="space-y-4">
-                      {renderContent()}
-                    </div>
-                  </ScrollArea>
+                <div
+                  className="flex-1 flex flex-col overflow-hidden chat-container"
+                  onFocus={handleFocus}
+                  tabIndex={0}
+                >
+                  <div
+                    className="p-4 h-[400px] overflow-y-auto"
+                    ref={scrollAreaRef}
+                  >
+                    {renderContent()}
+                  </div>
                 </div>
-                <CardFooter className="p-4 border-t">
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="flex w-full items-center space-x-2">
-                    <Input
-                      {...form.register('message')}
-                      placeholder="Escribe un mensaje..."
-                      autoComplete="off"
-                      disabled={isSending}
-                      onFocus={handleFocus}
-                    />
-                    <Button type="submit" size="icon" disabled={isSending}>
-                      {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    </Button>
-                  </form>
-                </CardFooter>
               </CardContent>
+              <CardFooter className="p-0">
+                <ChatInput
+                  onSend={handleSendMessage}
+                  isSending={isSending}
+                  replyTo={replyTo}
+                  onCancelReply={cancelReply}
+                  placeholder="Escribe un mensaje..."
+                />
+              </CardFooter>
             </Card>
           </motion.div>
         )}

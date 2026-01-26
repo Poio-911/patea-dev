@@ -64,19 +64,19 @@ export function SocialFeed({ limit = 20, showHeader = true }: SocialFeedProps) {
   const getActivityIcon = (type: SocialActivity['type']) => {
     switch (type) {
       case 'match_played':
-        return <Trophy className="h-5 w-5 text-blue-500" />;
+        return <Trophy className="h-5 w-5 text-foreground" />;
       case 'match_organized':
         return <Trophy className="h-5 w-5 text-primary" />;
       case 'ovr_increased':
-        return <TrendingUp className="h-5 w-5 text-green-500" />;
+        return <TrendingUp className="h-5 w-5 text-foreground" />;
       case 'ovr_decreased':
-        return <TrendingDown className="h-5 w-5 text-red-500" />;
+        return <TrendingDown className="h-5 w-5 text-foreground" />;
       case 'goal_scored':
-        return <Target className="h-5 w-5 text-orange-500" />;
+        return <Target className="h-5 w-5 text-foreground" />;
       case 'achievement_unlocked':
-        return <Award className="h-5 w-5 text-yellow-500" />;
+        return <Award className="h-5 w-5 text-foreground" />;
       case 'player_created':
-        return <UserPlus className="h-5 w-5 text-purple-500" />;
+        return <UserPlus className="h-5 w-5 text-foreground" />;
       case 'new_follower':
         return <Users className="h-5 w-5 text-pink-500" />;
       default:
@@ -112,7 +112,7 @@ export function SocialFeed({ limit = 20, showHeader = true }: SocialFeedProps) {
           <span>
             <strong>{playerName}</strong> mejoró su OVR{' '}
             {metadata?.oldOvr && metadata?.newOvr && (
-              <Badge variant="outline" className="ml-1 border-green-500 text-green-600">
+              <Badge variant="outline" className="ml-1 border-foreground text-foreground">
                 {metadata.oldOvr} → {metadata.newOvr}
               </Badge>
             )}
@@ -123,7 +123,7 @@ export function SocialFeed({ limit = 20, showHeader = true }: SocialFeedProps) {
           <span>
             <strong>{playerName}</strong> bajó su OVR{' '}
             {metadata?.oldOvr && metadata?.newOvr && (
-              <Badge variant="outline" className="ml-1 border-red-500 text-red-600">
+              <Badge variant="outline" className="ml-1 border-foreground text-foreground">
                 {metadata.oldOvr} → {metadata.newOvr}
               </Badge>
             )}

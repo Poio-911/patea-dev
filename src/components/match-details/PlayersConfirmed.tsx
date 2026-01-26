@@ -4,6 +4,7 @@
 import type { Match } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { PlayerPositionBadge } from '@/components/player-styles';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
@@ -11,12 +12,7 @@ interface PlayersConfirmedProps {
   match: Match;
 }
 
-const positionBadgeStyles: Record<string, string> = {
-  DEL: 'bg-chart-1 text-white',
-  MED: 'bg-chart-2 text-white',
-  DEF: 'bg-chart-3 text-white',
-  POR: 'bg-chart-4 text-white',
-};
+// Use shared PlayerPositionBadge for consistent position styling across the app
 
 export const PlayersConfirmed = ({ match }: PlayersConfirmedProps) => {
     return (
@@ -35,7 +31,7 @@ export const PlayersConfirmed = ({ match }: PlayersConfirmedProps) => {
                             <div>
                                 <p className="font-bold text-sm truncate w-24">{player.displayName}</p>
                                 <div className="flex items-center justify-center gap-1.5 mt-1">
-                                    <Badge className={cn("text-xs", positionBadgeStyles[player.position])}>{player.position}</Badge>
+                                    <PlayerPositionBadge position={player.position} showIcon={false} size="sm" />
                                     <Badge variant="secondary">{player.ovr}</Badge>
                                 </div>
                             </div>

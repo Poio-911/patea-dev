@@ -29,20 +29,20 @@ const responseConfig = {
   confirmed: {
     label: 'Confirmado',
     icon: CheckCircle2,
-    color: 'text-green-600 dark:text-green-400',
-    bgColor: 'bg-green-50 dark:bg-green-900/20',
+    color: 'text-foreground',
+    bgColor: 'bg-card/80 border border-border',
   },
   declined: {
     label: 'No va',
     icon: XCircle,
-    color: 'text-red-600 dark:text-red-400',
-    bgColor: 'bg-red-50 dark:bg-red-900/20',
+    color: 'text-muted-foreground',
+    bgColor: 'bg-card/80 border border-border',
   },
   maybe: {
     label: 'Tal vez',
     icon: HelpCircle,
-    color: 'text-amber-600 dark:text-amber-400',
-    bgColor: 'bg-amber-50 dark:bg-amber-900/20',
+    color: 'text-muted-foreground',
+    bgColor: 'bg-card/80 border border-border',
   },
   pending: {
     label: 'Sin responder',
@@ -169,7 +169,7 @@ export function MatchAttendeesList({
         {confirmed.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <CheckCircle2 className="w-4 h-4 text-green-600" />
+              <CheckCircle2 className="w-4 h-4 text-foreground" />
               <h4 className="font-semibold text-sm">Confirmados ({confirmed.length})</h4>
             </div>
             <div className="space-y-2">
@@ -186,7 +186,7 @@ export function MatchAttendeesList({
             {confirmed.length > 0 && <Separator />}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <HelpCircle className="w-4 h-4 text-amber-600" />
+                <HelpCircle className="w-4 h-4 text-muted-foreground" />
                 <h4 className="font-semibold text-sm">Tal vez ({maybe.length})</h4>
               </div>
               <div className="space-y-2">
@@ -222,7 +222,7 @@ export function MatchAttendeesList({
             {(confirmed.length > 0 || maybe.length > 0 || pending.length > 0) && <Separator />}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <XCircle className="w-4 h-4 text-red-600" />
+                <XCircle className="w-4 h-4 text-muted-foreground" />
                 <h4 className="font-semibold text-sm">No van ({declined.length})</h4>
               </div>
               <div className="space-y-2">

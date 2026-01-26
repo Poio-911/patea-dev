@@ -3,7 +3,7 @@
 
 import { PageHeader } from '@/components/page-header';
 import { useUser, useFirestore, useCollection } from '@/firebase';
-import { Loader2, Users, Bell, Search, Swords, Trophy, History } from 'lucide-react';
+import { Loader2, Users, Bell, Search, Swords, Trophy, History, BarChart3, Globe } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { InvitationsSheet } from '@/components/invitations-sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,6 +20,7 @@ import { CreateCupDialog } from '@/components/competitions/create-cup-dialog';
 import { LeagueCard } from '@/components/leagues/LeagueCard';
 import { CupCard } from '@/components/competitions/cup-card';
 import { PublicCompetitionsBrowser } from '@/components/competitions/public-competitions-browser';
+import { SectionBanner } from '@/components/competitions/section-banner';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -143,17 +144,37 @@ export default function CompetitionsPage() {
 
         <Tabs defaultValue="friendly" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="friendly">Amistosos</TabsTrigger>
-            <TabsTrigger value="leagues">Ligas</TabsTrigger>
-            <TabsTrigger value="cups">Copas</TabsTrigger>
-            <TabsTrigger value="public">Públicas</TabsTrigger>
+            <TabsTrigger value="friendly" className="gap-2">
+              <Swords className="h-4 w-4 hidden sm:inline fifa-friendly-icon" />
+              Amistosos
+            </TabsTrigger>
+            <TabsTrigger value="leagues" className="gap-2">
+              <BarChart3 className="h-4 w-4 hidden sm:inline fifa-league-icon" />
+              Ligas
+            </TabsTrigger>
+            <TabsTrigger value="cups" className="gap-2">
+              <Trophy className="h-4 w-4 hidden sm:inline fifa-cup-icon" />
+              Copas
+            </TabsTrigger>
+            <TabsTrigger value="public" className="gap-2">
+              <Globe className="h-4 w-4 hidden sm:inline" />
+              Públicas
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="friendly" className="mt-6 space-y-8">
+            <SectionBanner
+              type="friendly"
+              title="Amistosos"
+              subtitle="Desafiá a otros equipos y coordiná partidos amistosos"
+            />
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold">Desafíos Pendientes</h2>
-                <Button variant="link" size="sm" asChild>
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <Swords className="h-5 w-5 fifa-friendly-icon" />
+                  Desafíos Pendientes
+                </h2>
+                <Button variant="link" size="sm" asChild className="text-emerald-600 hover:text-emerald-700">
                   <Link href="/competitions/challenges">Ver Todos</Link>
                 </Button>
               </div>
@@ -195,13 +216,22 @@ export default function CompetitionsPage() {
           </TabsContent>
 
           <TabsContent value="leagues" className="mt-6 space-y-6">
-            <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Ligas</h2>
-                <Button onClick={() => setCreateLeagueOpen(true)}>Crear Liga</Button>
+            <SectionBanner
+              type="league"
+              title="Ligas"
+              subtitle="Competí en formato todos contra todos con tabla de posiciones"
+              action={<Button onClick={() => setCreateLeagueOpen(true)} className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600">Crear Liga</Button>}
+            />
+            <div className="flex items-center justify-between md:hidden">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 fifa-league-icon" />
+                  Ligas
+                </h2>
+                <Button onClick={() => setCreateLeagueOpen(true)} size="sm">Crear Liga</Button>
             </div>
 
             {leaguesLoading ? (
-                 <div className="text-center p-4"><Loader2 className="h-6 w-6 animate-spin"/></div>
+                 <div className="text-center p-8"><Loader2 className="h-8 w-8 animate-spin fifa-league-icon"/></div>
             ) : leagues && leagues.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {leagues.map(league => (
@@ -209,21 +239,32 @@ export default function CompetitionsPage() {
                     ))}
                 </div>
             ) : (
-                <Alert>
-                    <AlertDescription>
+                <div className="fifa-league-card rounded-xl p-8 text-center">
+                    <BarChart3 className="h-12 w-12 mx-auto mb-4 fifa-league-icon opacity-50" />
+                    <h3 className="font-semibold text-lg mb-2">Sin ligas todavía</h3>
+                    <p className="text-muted-foreground text-sm">
                         Aún no hay ligas creadas en este grupo. ¡Sé el primero en organizar una!
-                    </AlertDescription>
-                </Alert>
+                    </p>
+                </div>
             )}
           </TabsContent>
           <TabsContent value="cups" className="mt-6 space-y-6">
-            <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Copas</h2>
-                <Button onClick={() => setCreateCupOpen(true)}>Crear Copa</Button>
+            <SectionBanner
+              type="cup"
+              title="Copas"
+              subtitle="Competí en formato eliminación directa hasta coronarte campeón"
+              action={<Button onClick={() => setCreateCupOpen(true)} className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-black font-semibold">Crear Copa</Button>}
+            />
+            <div className="flex items-center justify-between md:hidden">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <Trophy className="h-5 w-5 fifa-cup-icon" />
+                  Copas
+                </h2>
+                <Button onClick={() => setCreateCupOpen(true)} size="sm">Crear Copa</Button>
             </div>
 
             {cupsLoading ? (
-                 <div className="text-center p-4"><Loader2 className="h-6 w-6 animate-spin"/></div>
+                 <div className="text-center p-8"><Loader2 className="h-8 w-8 animate-spin fifa-cup-icon"/></div>
             ) : cups && cups.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {cups.map(cup => (
@@ -231,11 +272,13 @@ export default function CompetitionsPage() {
                     ))}
                 </div>
             ) : (
-                <Alert>
-                    <AlertDescription>
+                <div className="fifa-cup-card rounded-xl p-8 text-center">
+                    <Trophy className="h-12 w-12 mx-auto mb-4 fifa-cup-icon opacity-50" />
+                    <h3 className="font-semibold text-lg mb-2">Sin copas todavía</h3>
+                    <p className="text-muted-foreground text-sm">
                         Aún no hay copas creadas en este grupo. ¡Sé el primero en organizar una!
-                    </AlertDescription>
-                </Alert>
+                    </p>
+                </div>
             )}
           </TabsContent>
 

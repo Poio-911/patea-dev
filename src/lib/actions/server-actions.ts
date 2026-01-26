@@ -1714,6 +1714,138 @@ export async function updateMatchFinalScoreAction(
 }
 
 // ============================================================================
+// LIVE MATCH ACTIONS: Events logging, player stats, live state
+// ============================================================================
+import type { MatchEvent, LiveMatchStatus } from '../types';
+
+/**
+ * Increment player stats atomically based on event type.
+ */
+export async function updatePlayerEventStatsAction(
+    playerId: string,
+    stats: { goals?: number; assists?: number; yellowCards?: number; redCards?: number }
+): Promise<{ success: boolean; error?: string }>{
+    try {
+        const db = getAdminDb();
+        const playerRef = db.doc(`players/${playerId}`);
+        const updates: Record<string, FieldValue> = {};
+
+        if (stats.goals) updates['stats.goals'] = FieldValue.increment(stats.goals);
+        if (stats.assists) updates['stats.assists'] = FieldValue.increment(stats.assists);
+        if (stats.yellowCards) updates['stats.yellowCards'] = FieldValue.increment(stats.yellowCards);
+        if (stats.redCards) updates['stats.redCards'] = FieldValue.increment(stats.redCards);
+
+        await playerRef.update(updates);
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Log a match event to the match document and update aggregates.
+ * Uses arrayUnion to append events for compatibility with existing components.
+ */
+export async function logMatchEventAction(
+    matchId: string,
+    event: MatchEvent,
+    userId: string
+): Promise<{ success: boolean; error?: string }>{
+    try {
+        const db = getAdminDb();
+        const matchRef = db.doc(`matches/${matchId}`);
+        const snap = await matchRef.get();
+        if (!snap.exists) {
+            return { success: false, error: 'Partido no encontrado.' };
+        }
+        const match = { id: snap.id, ...snap.data() } as Match;
+
+        // Only owner/admin can log events
+        if (match.ownerUid !== userId) {
+            return { success: false, error: 'No autorizado para registrar eventos.' };
+        }
+
+        const updates: Record<string, any> = {
+            events: FieldValue.arrayUnion(event as any),
+        };
+
+        // Update score if regular goal (own_goal counts for opposite team)
+        if (event.type === 'goal') {
+            const team1Id = match.participantTeamIds?.[0] || match.teams?.[0]?.id;
+            const team2Id = match.participantTeamIds?.[1] || match.teams?.[1]?.id;
+
+            const isOwnGoal = (event as any).goalType === 'own_goal';
+            const forTeam1 = event.teamId === team1Id;
+            const targetPath = isOwnGoal
+                ? (forTeam1 ? 'finalScore.team2' : 'finalScore.team1')
+                : (forTeam1 ? 'finalScore.team1' : 'finalScore.team2');
+            updates[targetPath] = FieldValue.increment(1);
+
+            // Player stats: goal + optional assist
+            await updatePlayerEventStatsAction(event.playerId, { goals: 1 });
+            if ((event as any).assistId) {
+                await updatePlayerEventStatsAction((event as any).assistId, { assists: 1 });
+            }
+        }
+
+        if (event.type === 'card') {
+            const field = (event as any).cardType === 'yellow' ? 'yellowCards' : 'redCards';
+            await updatePlayerEventStatsAction(event.playerId, { [field]: 1 } as any);
+        }
+
+        await matchRef.update(updates);
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Update live match status and current minute; set periodStartTs on half starts.
+ */
+export async function updateLiveStateAction(
+    matchId: string,
+    newStatus: LiveMatchStatus,
+    currentMinute: number,
+    userId: string
+): Promise<{ success: boolean; error?: string }>{
+    try {
+        const db = getAdminDb();
+        const matchRef = db.doc(`matches/${matchId}`);
+        const snap = await matchRef.get();
+        if (!snap.exists) {
+            return { success: false, error: 'Partido no encontrado.' };
+        }
+        const match = { id: snap.id, ...snap.data() } as Match;
+
+        if (match.ownerUid !== userId) {
+            return { success: false, error: 'No autorizado para actualizar estado.' };
+        }
+
+        const updates: Record<string, any> = {
+            liveStatus: newStatus,
+            currentMinute,
+        };
+
+        if (newStatus === 'first_half' || newStatus === 'second_half') {
+            updates['periodStartTs'] = FieldValue.serverTimestamp();
+            updates['timerPaused'] = false;
+        }
+        if (newStatus === 'half_time' || newStatus === 'finished') {
+            updates['timerPaused'] = true;
+        }
+
+        await matchRef.update(updates);
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+// ============================================================================
 // LEAGUE STANDINGS
 // ============================================================================
 

@@ -10,15 +10,25 @@ import { getAdminAuth } from '@/firebase/admin-init';
  */
 export async function getServerSession() {
   try {
-    const sessionCookie = cookies().get('session')?.value;
+    const allCookies = cookies();
+    const sessionCookie = allCookies.get('session')?.value;
+
+    console.log('[getServerSession] Debug info:', {
+      hasSessionCookie: !!sessionCookie,
+      cookieNames: Array.from(allCookies.getAll().map(c => c.name)),
+      sessionCookieLength: sessionCookie?.length || 0
+    });
 
     if (!sessionCookie) {
+      console.log('[getServerSession] No session cookie found');
       return null;
     }
 
     const adminAuth = getAdminAuth();
     const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
 
+    console.log('[getServerSession] Session verified for user:', decodedClaims.uid);
+    
     return {
       user: {
         uid: decodedClaims.uid,
@@ -40,7 +50,8 @@ export async function requireAuth() {
   const session = await getServerSession();
 
   if (!session?.user?.uid) {
-    throw new Error('Authentication required. User is not logged in.');
+    console.error('[requireAuth] Authentication failed - no valid session found');
+    throw new Error('Authentication required. User is not logged in. Please log in again and ensure cookies are enabled.');
   }
 
   return session.user.uid;

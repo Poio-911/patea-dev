@@ -205,19 +205,23 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 {userPerformance ? (
                   <PhysicalMetricsCard performance={userPerformance} />
                 ) : (
-                  <div className="flex flex-col gap-4 p-6 border rounded-lg bg-muted/30">
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-semibold">Métricas Físicas</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Vinculá tus datos de actividad física para obtener pequeños bonus en tus atributos PAC y PHY.
-                        Es completamente opcional y no afecta tu evaluación principal.
-                      </p>
+                  <div>
+                    <div className="rounded-lg border bg-card shadow p-0">
+                      <div className="p-6 pb-0">
+                        <h3 className="text-lg font-semibold">Métricas Físicas</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Vinculá tus datos de actividad física para obtener pequeños bonus en tus atributos PAC y PHY.
+                          Es completamente opcional y no afecta tu evaluación principal.
+                        </p>
+                      </div>
+                      <div className="p-6">
+                        <ImportActivityDialog
+                          matchId={matchId}
+                          playerId={userPlayer.id}
+                          matchDate={new Date(match.date)}
+                        />
+                      </div>
                     </div>
-                    <ImportActivityDialog
-                      matchId={matchId}
-                      playerId={userPlayer.id}
-                      matchDate={new Date(match.date)}
-                    />
                   </div>
                 )}
               </div>

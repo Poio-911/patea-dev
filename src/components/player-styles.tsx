@@ -14,11 +14,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-export const positionConfig: Record<PlayerPosition, { name: string; Icon: React.ElementType, badgeClasses: string, textColor: string }> = {
-  POR: { name: 'Portero', Icon: PorIcon, badgeClasses: 'bg-orange-100 text-orange-800 game:bg-transparent game:text-orange-400 dark:bg-orange-900/40 dark:text-orange-300', textColor: 'text-orange-600 game:text-orange-400' },
-  DEF: { name: 'Defensa', Icon: DefIcon, badgeClasses: 'bg-green-100 text-green-800 game:bg-transparent game:text-green-400 dark:bg-green-900/40 dark:text-green-300', textColor: 'text-green-600 game:text-green-400' },
-  MED: { name: 'Medio', Icon: MedIcon, badgeClasses: 'bg-blue-100 text-blue-800 game:bg-transparent game:text-blue-400 dark:bg-blue-900/40 dark:text-blue-300', textColor: 'text-blue-600 game:text-blue-400' },
-  DEL: { name: 'Delantero', Icon: DelIcon, badgeClasses: 'bg-red-100 text-red-800 game:bg-transparent game:text-red-400 dark:bg-red-900/40 dark:text-red-300', textColor: 'text-red-600 game:text-red-400' },
+export const positionConfig: Record<PlayerPosition, { name: string; Icon: React.ElementType, badgeClasses: string }> = {
+  POR: { name: 'Portero', Icon: PorIcon, badgeClasses: 'bg-card/70 text-foreground border border-border' },
+  DEF: { name: 'Defensa', Icon: DefIcon, badgeClasses: 'bg-card/70 text-foreground border border-border' },
+  MED: { name: 'Medio', Icon: MedIcon, badgeClasses: 'bg-card/70 text-foreground border border-border' },
+  DEL: { name: 'Delantero', Icon: DelIcon, badgeClasses: 'bg-card/70 text-foreground border border-border' },
 };
 
 export const getPositionBadgeClasses = (position: PlayerPosition) => positionConfig[position].badgeClasses;
@@ -28,9 +28,10 @@ export type PlayerPositionBadgeProps = {
   className?: string;
   showIcon?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  neutral?: boolean; // when true, keep grayscale tokens (for player-cards)
 };
 
-export function PlayerPositionBadge({ position, className, showIcon = true, size = 'md' }: PlayerPositionBadgeProps) {
+export function PlayerPositionBadge({ position, className, showIcon = false, size = 'md', neutral = false }: PlayerPositionBadgeProps) {
   const config = positionConfig[position];
   const Icon = config.Icon;
 
@@ -46,6 +47,14 @@ export function PlayerPositionBadge({ position, className, showIcon = true, size
     lg: 'w-4 h-4'
   };
 
+  // Colored classes using Nike position tokens
+  const coloredClasses: Record<PlayerPosition, string> = {
+    DEL: 'bg-[hsl(var(--pos-del)/0.15)] text-[hsl(var(--pos-del))] border border-[hsl(var(--pos-del))]',
+    MED: 'bg-[hsl(var(--pos-med)/0.15)] text-[hsl(var(--pos-med))] border border-[hsl(var(--pos-med))]',
+    DEF: 'bg-[hsl(var(--pos-def)/0.15)] text-[hsl(var(--pos-def))] border border-[hsl(var(--pos-def))]',
+    POR: 'bg-[hsl(var(--pos-por)/0.15)] text-[hsl(var(--pos-por))] border border-[hsl(var(--pos-por))]',
+  };
+
   return (
     <TooltipProvider>
       <Tooltip delayDuration={300}>
@@ -55,7 +64,7 @@ export function PlayerPositionBadge({ position, className, showIcon = true, size
               variant="secondary"
               className={cn(
                 'font-headline font-bold uppercase flex items-center gap-1.5 border-0 hover:brightness-95 transition-all',
-                config.badgeClasses,
+                neutral ? config.badgeClasses : coloredClasses[position],
                 sizeClasses[size],
                 className
               )}
@@ -73,16 +82,49 @@ export function PlayerPositionBadge({ position, className, showIcon = true, size
   );
 }
 
-export type PlayerOvrProps = { value: number; size?: 'compact' | 'standard'; highlight?: boolean };
-export function PlayerOvr({ value, size = 'standard', highlight }: PlayerOvrProps) {
+import { getOvrLevel } from '@/lib/player-utils';
+
+export type PlayerOvrProps = { value: number; size?: 'compact' | 'standard'; highlight?: boolean; neutral?: boolean; context?: 'default' | 'card' };
+export function PlayerOvr({ value, size = 'standard', highlight, neutral = false, context = 'default' }: PlayerOvrProps) {
   const base = 'font-headline font-bold tabular-nums';
+  const level = getOvrLevel(value);
+  const levelText: Record<string, string> = {
+    elite: 'text-[hsl(var(--ovr-elite))]',
+    gold: 'text-[hsl(var(--ovr-gold))]',
+    silver: 'text-[hsl(var(--ovr-silver))]',
+    bronze: 'text-[hsl(var(--ovr-bronze))]',
+  };
+  const levelBadge: Record<string, string> = {
+    elite: 'border-[hsl(var(--ovr-elite))] text-[hsl(var(--ovr-elite))] bg-[hsl(var(--ovr-elite)/0.12)]',
+    gold: 'border-[hsl(var(--ovr-gold))] text-[hsl(var(--ovr-gold))] bg-[hsl(var(--ovr-gold)/0.12)]',
+    silver: 'border-[hsl(var(--ovr-silver))] text-[hsl(var(--ovr-silver))] bg-[hsl(var(--ovr-silver)/0.12)]',
+    bronze: 'border-[hsl(var(--ovr-bronze))] text-[hsl(var(--ovr-bronze))] bg-[hsl(var(--ovr-bronze)/0.12)]',
+  };
   if (size === 'compact') {
     return (
-      <Badge variant="secondary" className={cn('text-xs px-2 py-0.5 font-bold', highlight && 'ring-2 ring-primary/40')}>{value}</Badge>
+      <Badge
+        variant="secondary"
+        className={cn(
+          'text-xs px-2 py-0.5 font-bold',
+          highlight && 'ring-2 ring-primary/40',
+          neutral ? undefined : levelBadge[level]
+        )}
+      >
+        {value}
+      </Badge>
     );
   }
   return (
-    <span className={cn(base, 'text-4xl leading-none', highlight && 'text-primary')}>{value}</span>
+    <span
+      className={cn(
+        base,
+        'text-4xl leading-none',
+        highlight && 'text-primary',
+        neutral ? undefined : (context === 'card' ? levelText[level] : levelText[level])
+      )}
+    >
+      {value}
+    </span>
   );
 }
 

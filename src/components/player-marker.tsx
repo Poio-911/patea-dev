@@ -44,7 +44,7 @@ const PlayerPopup = ({ player }: { player: AvailablePlayer }) => {
                         >
                             {player.ovr}
                         </Badge>
-                        <PlayerPositionBadge position={player.position} size="sm" />
+                        <PlayerPositionBadge position={player.position} size="sm" showIcon={false} />
                     </div>
                 </div>
             </div>

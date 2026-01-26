@@ -2,6 +2,7 @@
 
 import { useTheme } from 'next-themes';
 import { GameModeBackground } from '@/components/game-mode-background';
+import { NikeBackground } from '@/components/nike-background';
 import { useEffect, useState } from 'react';
 
 export function ThemeBackground() {
@@ -14,5 +15,7 @@ export function ThemeBackground() {
 
   if (!mounted) return null;
 
-  return theme === 'game' ? <GameModeBackground /> : null;
+  if (theme === 'game') return <GameModeBackground />;
+  if (theme === 'nike') return <NikeBackground />;
+  return null;
 }

@@ -1,15 +1,12 @@
-
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { Match, ChatMessage } from '@/lib/types';
-import { useFirestore, useUser, useCollection } from '@/firebase';
-import { collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { cn } from '@/lib/utils';
+import { useChatMessages } from '@/hooks/use-chat-messages';
+import { useChatReactions } from '@/hooks/use-chat-reactions';
+import { useChatReply } from '@/hooks/use-chat-reply';
 import {
   Sheet,
   SheetContent,
@@ -19,65 +16,18 @@ import {
   SheetTrigger,
   SheetFooter,
 } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Send, Bot } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Loader2, Bot } from 'lucide-react';
+import {
+  ChatMessageBubble,
+  ChatInput,
+  ChatEmptyState,
+  ChatLoadingState,
+} from '@/components/chat';
 
 interface MatchChatSheetProps {
   match: Match;
   children: React.ReactNode;
-}
-
-const chatSchema = z.object({
-  message: z.string().min(1, 'El mensaje no puede estar vacío.'),
-});
-type ChatFormData = z.infer<typeof chatSchema>;
-
-function ChatMessageItem({ message, isCurrentUser }: { message: ChatMessage; isCurrentUser: boolean }) {
-  const createdAtDate = useMemo(() => {
-    if (!message.createdAt) {
-      return new Date();
-    }
-    // Firestore Timestamps need to be converted to JS Date objects
-    if (typeof message.createdAt.toDate === 'function') {
-      return message.createdAt.toDate();
-    }
-    return new Date(message.createdAt);
-  }, [message.createdAt]);
-
-  return (
-    <div className={cn('flex items-end gap-2', isCurrentUser && 'justify-end')}>
-      {!isCurrentUser && (
-        <Avatar className="h-8 w-8">
-          <AvatarImage src={message.senderPhotoUrl} alt={message.senderName} />
-          <AvatarFallback>{message.senderName.charAt(0)}</AvatarFallback>
-        </Avatar>
-      )}
-      <div
-        className={cn(
-          'max-w-xs rounded-lg p-3 text-sm lg:max-w-md',
-          isCurrentUser
-            ? 'rounded-br-none bg-primary text-primary-foreground'
-            : 'rounded-bl-none bg-muted'
-        )}
-      >
-        {!isCurrentUser && <p className="font-semibold mb-1 text-xs">{message.senderName}</p>}
-        <p className="break-words">{message.text}</p>
-        <p className="mt-1 text-xs opacity-70">
-          {formatDistanceToNow(createdAtDate, { addSuffix: true, locale: es })}
-        </p>
-      </div>
-       {isCurrentUser && (
-        <Avatar className="h-8 w-8">
-          <AvatarImage src={message.senderPhotoUrl} alt={message.senderName} />
-          <AvatarFallback>{message.senderName.charAt(0)}</AvatarFallback>
-        </Avatar>
-      )}
-    </div>
-  );
 }
 
 export function MatchChatSheet({ match, children }: MatchChatSheetProps) {
@@ -86,54 +36,78 @@ export function MatchChatSheet({ match, children }: MatchChatSheetProps) {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiWelcomeMessage, setAiWelcomeMessage] = useState<string | null>(null);
 
-  const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const isPublicJoiner = user?.groups && !user.groups.includes(match.groupId) && match.isPublic;
 
-  const messagesQuery = useMemo(() => {
-    if (!firestore || !match.id || !open) return null;
-    return query(collection(firestore, `matches/${match.id}/messages`), orderBy('createdAt', 'asc'));
-  }, [firestore, match.id, open]);
+  const collectionPath = `matches/${match.id}/messages`;
 
-  const { data: messages, loading: messagesLoading } = useCollection<ChatMessage>(messagesQuery);
-
-  const form = useForm<ChatFormData>({
-    resolver: zodResolver(chatSchema),
-    defaultValues: { message: '' },
+  const { messages, loading: messagesLoading, sendMessage } = useChatMessages({
+    collectionPath,
+    enabled: open,
   });
+
+  const { toggleReaction } = useChatReactions({ collectionPath });
+
+  const {
+    replyTo,
+    startReply,
+    cancelReply,
+    clearReply,
+    registerMessageRef,
+    scrollToMessage,
+  } = useChatReply();
 
   const handleOpenChange = async (newOpenState: boolean) => {
     setOpen(newOpenState);
     if (newOpenState && isPublicJoiner && !aiWelcomeMessage && user?.displayName) {
-        setIsAiLoading(true);
-        // This is a placeholder for a more complex AI logic if needed in the future
-        setTimeout(() => {
-             setAiWelcomeMessage(`¡Bienvenido al partido ${match.title}, ${user.displayName}! Por favor, coordina con el organizador cualquier detalle sobre costos o reglas.`);
-             setIsAiLoading(false);
-        }, 1000);
+      setIsAiLoading(true);
+      setTimeout(() => {
+        setAiWelcomeMessage(
+          `¡Bienvenido al partido ${match.title}, ${user.displayName}! Por favor, coordina con el organizador cualquier detalle sobre costos o reglas.`
+        );
+        setIsAiLoading(false);
+      }, 1000);
     }
-  }
+  };
 
-  const onSubmit = async (data: ChatFormData) => {
-    if (!firestore || !user) return;
+  const handleSendMessage = async (text: string) => {
+    if (!user) return;
     setIsSending(true);
     try {
-      await addDoc(collection(firestore, `matches/${match.id}/messages`), {
-        text: data.message,
+      await sendMessage({
+        text,
         senderId: user.uid,
-        senderName: user.displayName,
-        senderPhotoUrl: user.photoURL,
-        createdAt: serverTimestamp(),
+        senderName: user.displayName || 'Usuario',
+        senderPhotoUrl: user.photoURL || '',
+        replyTo: replyTo,
       });
-      form.reset();
+      clearReply();
     } catch (error) {
       console.error('Error sending message:', error);
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo enviar el mensaje.' });
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handleReact = async (messageId: string, emoji: string) => {
+    if (!user) return;
+    try {
+      await toggleReaction({
+        messageId,
+        emoji,
+        userId: user.uid,
+        userName: user.displayName || 'Usuario',
+      });
+    } catch (error) {
+      console.error('Error toggling reaction:', error);
+    }
+  };
+
+  const handleReply = (message: ChatMessage) => {
+    startReply(message);
   };
 
   useEffect(() => {
@@ -144,80 +118,90 @@ export function MatchChatSheet({ match, children }: MatchChatSheetProps) {
 
   const renderContent = () => {
     const hasExistingMessages = messages && messages.length > 0;
-    
+
     if (isPublicJoiner && !hasExistingMessages) {
-        if(isAiLoading) {
-            return (
-                <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
-                    <Bot className="h-10 w-10 text-primary" />
-                    <p className="font-semibold">Generando bienvenida personalizada...</p>
-                    <p className="text-sm text-muted-foreground">Un asistente de IA está preparando información útil para ti.</p>
-                </div>
-            )
-        }
-        if (aiWelcomeMessage) {
-             return (
-                <div className="flex items-end gap-2">
-                    <Avatar className="h-8 w-8">
-                        <AvatarFallback><Bot size={20}/></AvatarFallback>
-                    </Avatar>
-                    <div className="max-w-xs rounded-lg p-3 text-sm lg:max-w-md rounded-bl-none bg-blue-100 dark:bg-blue-900/50">
-                        <p className="font-semibold mb-1 text-xs text-blue-800 dark:text-blue-300">Asistente del Partido</p>
-                        <p className="break-words">{aiWelcomeMessage}</p>
-                    </div>
-                </div>
-            )
-        }
+      if (isAiLoading) {
+        return (
+          <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
+            <Bot className="h-10 w-10 text-[hsl(var(--whatsapp-green))]" />
+            <p className="font-semibold">Generando bienvenida personalizada...</p>
+            <p className="text-sm text-muted-foreground">
+              Un asistente de IA está preparando información útil para ti.
+            </p>
+          </div>
+        );
+      }
+      if (aiWelcomeMessage) {
+        return (
+          <div className="flex items-end gap-2">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="bg-[hsl(var(--whatsapp-green))] text-white">
+                <Bot size={20} />
+              </AvatarFallback>
+            </Avatar>
+            <div className="max-w-xs rounded-lg p-3 text-sm lg:max-w-md rounded-bl-none bg-card border border-border/50">
+              <p className="font-semibold mb-1 text-xs text-[hsl(var(--whatsapp-green))]">
+                Asistente del Partido
+              </p>
+              <p className="break-words">{aiWelcomeMessage}</p>
+            </div>
+          </div>
+        );
+      }
     }
 
     if (messagesLoading) {
-      return (
-        <div className="flex justify-center items-center h-full">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      );
+      return <ChatLoadingState />;
     }
 
     if (!hasExistingMessages && (!isPublicJoiner || !aiWelcomeMessage)) {
-      return (
-        <div className="flex justify-center items-center h-full text-center">
-          <p className="text-sm text-muted-foreground">Aún no hay mensajes. <br/> ¡Sé el primero en saludar!</p>
-        </div>
-      );
+      return <ChatEmptyState description="¡Sé el primero en saludar!" />;
     }
 
     if (!messages) {
-        return null;
+      return null;
     }
 
-    return messages.map((msg) => (
-      <ChatMessageItem key={msg.id} message={msg} isCurrentUser={msg.senderId === user?.uid} />
-    ));
+    return (
+      <div className="space-y-3">
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            ref={(el) => registerMessageRef(msg.id, el)}
+            className="transition-colors duration-500"
+          >
+            <ChatMessageBubble
+              message={msg}
+              isCurrentUser={msg.senderId === user?.uid}
+              onReply={handleReply}
+              onReact={handleReact}
+              onScrollToMessage={scrollToMessage}
+            />
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent className="flex flex-col">
-        <SheetHeader>
-          <SheetTitle>Chat del Partido</SheetTitle>
-          <SheetDescription>{match.title}</SheetDescription>
+        <SheetHeader className="bg-[hsl(var(--whatsapp-green))] text-white -mx-6 -mt-6 px-6 py-4">
+          <SheetTitle className="text-white">Chat del Partido</SheetTitle>
+          <SheetDescription className="text-white/80">{match.title}</SheetDescription>
         </SheetHeader>
-        <div ref={scrollAreaRef} className="flex-1 overflow-y-auto space-y-4 p-4 -mx-6">
+        <div ref={scrollAreaRef} className="flex-1 overflow-y-auto space-y-4 p-4 -mx-6 chat-container">
           {renderContent()}
         </div>
-        <SheetFooter>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex w-full items-center space-x-2">
-            <Input
-              {...form.register('message')}
-              placeholder="Escribe un mensaje..."
-              autoComplete="off"
-              disabled={isSending}
-            />
-            <Button type="submit" size="icon" disabled={isSending}>
-              {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
-          </form>
+        <SheetFooter className="-mx-6 -mb-6">
+          <ChatInput
+            onSend={handleSendMessage}
+            isSending={isSending}
+            replyTo={replyTo}
+            onCancelReply={cancelReply}
+            placeholder="Escribe un mensaje..."
+          />
         </SheetFooter>
       </SheetContent>
     </Sheet>

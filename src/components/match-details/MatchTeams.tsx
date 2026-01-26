@@ -2,18 +2,15 @@
 'use client';
 
 import type { Match, Player, PlayerPosition } from '@/lib/types';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-import { cn } from '@/lib/utils';
 import { Shuffle, Loader2, Pencil } from 'lucide-react';
 import { useMemo } from 'react';
 import { EditableTeamsDialog } from '../editable-teams-dialog';
 import { TeamRosterPlayer } from '../team-roster-player';
-import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
 
 
 interface MatchTeamsProps {
@@ -26,16 +23,6 @@ interface MatchTeamsProps {
 // ... (styles remain same)
 
 export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeamsProps) => {
-    const firestore = useFirestore();
-    const teamPlayerIds = useMemo(() => match.teams?.flatMap(t => t.players.map(p => p.uid)) || [], [match.teams]);
-
-    const playersQuery = useMemo(() => {
-        if (!firestore || teamPlayerIds.length === 0) return null;
-        return query(collection(firestore, 'players'), where('__name__', 'in', teamPlayerIds));
-    }, [firestore, teamPlayerIds]);
-
-    const { data: teamPlayersData } = useCollection<Player>(playersQuery);
-
     const whatsAppTeamsText = useMemo(() => {
         if (!match || !match.teams || match.teams.length < 2) return '';
         let message = `*Equipos para el partido "${match.title}"*:\n\n`;
@@ -78,9 +65,9 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        className="w-full sm:w-auto bg-gradient-to-r from-amber-500/10 to-orange-500/5 border-amber-500/30 hover:from-amber-500/20 hover:to-orange-500/10 transition-all duration-300"
+                                        className="w-full sm:w-auto bg-card border hover:bg-card/80 transition-all duration-300"
                                     >
-                                        <Pencil className="mr-2 h-4 w-4 text-amber-500" />
+                                        <Pencil className="mr-2 h-4 w-4 text-foreground" />
                                         Editar Equipos
                                     </Button>
                                 </EditableTeamsDialog>
@@ -90,10 +77,10 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
                             size="sm"
                             variant="outline"
                             asChild
-                            className="w-full sm:w-auto bg-gradient-to-r from-green-500/10 to-emerald-500/5 border-green-500/30 hover:from-green-500/20 hover:to-emerald-500/10 transition-all duration-300"
+                            className="w-full sm:w-auto bg-card border hover:bg-card/80 transition-all duration-300"
                         >
                             <a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer">
-                                <WhatsAppIcon className="mr-2 h-4 w-4 text-green-500" />Compartir
+                                <WhatsAppIcon className="mr-2 h-4 w-4 text-foreground" />Compartir
                             </a>
                         </Button>
                     </div>
@@ -101,12 +88,20 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {(match.teams || []).map((team) => {
-                    const teamMembersWithDetails: Player[] = team.players
+                    const teamMembersWithDetails: any[] = team.players
                         .map(p => {
-                            const details = teamPlayersData?.find(pd => pd.id === p.uid);
-                            return details || null;
+                            const matchPlayer = match.players.find(mp => mp.uid === p.uid);
+                            return {
+                                id: p.uid,
+                                name: p.displayName,
+                                position: p.position as PlayerPosition,
+                                ovr: p.ovr,
+                                photoUrl: matchPlayer?.photoUrl || '',
+                                ownerUid: p.uid,
+                                groupId: match.groupId || '',
+                                status: 'active' as const,
+                            };
                         })
-                        .filter((p): p is Player => p !== null)
                         .sort((a, b) => b.ovr - a.ovr);
 
                     return (

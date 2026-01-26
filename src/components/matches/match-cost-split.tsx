@@ -172,7 +172,7 @@ export function MatchCostSplit({ match }: MatchCostSplitProps) {
           </div>
           <div className="w-full bg-muted rounded-full h-2">
             <div
-              className="bg-green-500 h-2 rounded-full transition-all"
+              className="bg-primary h-2 rounded-full transition-all"
               style={{
                 width: `${players.length > 0 ? (totalPaid / players.length) * 100 : 0}%`,
               }}
@@ -194,7 +194,7 @@ export function MatchCostSplit({ match }: MatchCostSplitProps) {
                 className={cn(
                   'flex items-center justify-between p-3 rounded-lg border',
                   player.hasPaid
-                    ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800'
+                    ? 'bg-muted/50 dark:bg-muted/30 border-primary'
                     : 'bg-card'
                 )}
               >
@@ -214,7 +214,7 @@ export function MatchCostSplit({ match }: MatchCostSplitProps) {
                 </div>
 
                 {player.hasPaid ? (
-                  <Badge className="bg-green-500 flex items-center gap-1">
+                  <Badge className="bg-primary flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3" />
                     Pagado
                   </Badge>

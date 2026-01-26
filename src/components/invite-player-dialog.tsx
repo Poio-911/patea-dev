@@ -32,6 +32,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Input } from './ui/input';
 import { Checkbox } from './ui/checkbox';
+import { PlayerSelectItem } from '@/components/player-select-item';
 
 
 type InvitePlayerDialogProps = {
@@ -185,22 +186,22 @@ export function InvitePlayerDialog({
               <ScrollArea className="h-64">
                 <div className="space-y-2 pr-4">
                   {availableGroupPlayers.map(p => (
-                    <div key={p.id} className="flex items-center space-x-3 rounded-md border p-3">
-                      <Checkbox
-                        id={`player-checkbox-${p.id}`}
-                        checked={selectedGroupPlayers.includes(p.id)}
-                        onCheckedChange={checked => {
-                          setSelectedGroupPlayers(prev =>
-                            checked ? [...prev, p.id] : prev.filter(id => id !== p.id)
-                          );
-                        }}
-                      />
-                      <Avatar className="h-9 w-9">
-                        <AvatarImage src={p.photoUrl} alt={p.name} />
-                        <AvatarFallback>{p.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <Label htmlFor={`player-checkbox-${p.id}`} className="flex-1 cursor-pointer font-medium">{p.name}</Label>
-                    </div>
+                    <PlayerSelectItem
+                      key={p.id}
+                      variant="row"
+                      selectionControl="checkbox"
+                      player={{ id: p.id, name: p.name, photoUrl: p.photoUrl || '', position: p.position, ovr: p.ovr }}
+                      selected={selectedGroupPlayers.includes(p.id)}
+                      onToggle={() => {
+                        setSelectedGroupPlayers(prev =>
+                          prev.includes(p.id) ? prev.filter(id => id !== p.id) : [...prev, p.id]
+                        );
+                      }}
+                      showPosition
+                      showOvr
+                      density="sm"
+                      className="border"
+                    />
                   ))}
                   {availableGroupPlayers.length === 0 && (
                     <p className="text-center text-sm text-muted-foreground p-4">No hay jugadores disponibles o que coincidan con tu búsqueda.</p>

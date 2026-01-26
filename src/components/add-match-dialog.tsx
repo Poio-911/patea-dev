@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Globe, Check, HelpCircle, ChevronRight, UsersRound } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Globe, Check, HelpCircle, ChevronRight, UsersRound, MapPin } from 'lucide-react';
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -31,9 +31,10 @@ import { Calendar } from './ui/calendar';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { Checkbox } from './ui/checkbox';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { PlayerSelectItem } from './player-select-item';
 import { generateTeamsAction, getWeatherForecastAction, createActivityAction } from '@/lib/actions/server-actions';
+import { getGroupVenuesAction } from '@/lib/actions/venue-actions';
+import type { Venue } from '@/lib/types';
 import { Progress } from './ui/progress';
 import { GetMatchDayForecastOutput } from '@/ai/flows/get-match-day-forecast';
 import { Switch } from './ui/switch';
@@ -44,7 +45,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { JerseyPreview } from './team-builder/jersey-preview';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import { Badge } from './ui/badge';
+// Removed local position badge in favor of shared PlayerPositionBadge via PlayerSelectItem
 
 const matchLocationSchema = z.object({
   name: z.string(),
@@ -92,20 +93,22 @@ const weatherIcons: Record<string, React.ElementType> = {
     Sun, Cloud, Cloudy, CloudRain, Wind, Zap
 }
 
-const positionColors: Record<Player['position'], string> = {
-  DEL: 'text-chart-1',
-  MED: 'text-chart-2',
-  DEF: 'text-chart-3',
-  POR: 'text-chart-4',
-};
+// Deprecated per UI homogenization: use PlayerPositionBadge via PlayerSelectItem
 
-const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: MatchLocation) => void }) => {
+interface LocationInputProps {
+    onSelectLocation: (location: MatchLocation) => void;
+    groupVenues?: Venue[];
+    venuesLoading?: boolean;
+}
+
+const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = false }: LocationInputProps) => {
     const [value, setValue] = useState('');
     const [manualName, setManualName] = useState('');
     const [osmSuggestions, setOsmSuggestions] = useState<Array<{ label: string; lat: number; lng: number; placeId: string }>>([]);
     const [geoLoading, setGeoLoading] = useState(false);
     const [geoError, setGeoError] = useState<string | null>(null);
     const [isOpen, setIsOpen] = useState(false);
+    const [showSearch, setShowSearch] = useState(false);
 
     useEffect(() => {
         let active = true;
@@ -123,6 +126,16 @@ const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: Matc
         setIsOpen(!!value && value.length > 2);
         return () => { active = false; };
     }, [value]);
+
+    const handleVenueSelect = (venue: Venue) => {
+        onSelectLocation({
+            name: venue.name,
+            address: venue.address,
+            lat: venue.location.lat,
+            lng: venue.location.lng,
+            placeId: `venue:${venue.id}`,
+        });
+    };
 
     const tryGeocode = async (addr: string) => {
         if (!addr || addr.length < 5) { setGeoError('Ingresá una dirección válida.'); return; }
@@ -151,51 +164,109 @@ const LocationInput = ({ onSelectLocation }: { onSelectLocation: (location: Matc
     };
 
     return (
-        <Popover open={isOpen} onOpenChange={setIsOpen}>
-            <PopoverTrigger asChild>
+        <div className="space-y-3">
+            {/* Canchas del grupo */}
+            {groupVenues.length > 0 && !showSearch && (
                 <div className="space-y-2">
-                    <Input value={manualName} onChange={e => setManualName(e.target.value)} placeholder="Nombre del lugar (opcional)" />
-                    <div className="relative">
-                        <Input
-                            value={value}
-                            onChange={(e) => setValue(e.target.value)}
-                            onKeyDown={async (e) => {
-                                if (e.key === 'Enter' && value && value.length >= 5) {
-                                    e.preventDefault();
-                                    await tryGeocode(value);
-                                }
-                            }}
-                            placeholder="Buscá la dirección de la cancha..."
-                            autoComplete="off"
-                        />
-                        <div className="mt-2 flex items-center justify-between">
-                            <p className="text-xs text-muted-foreground">Tip: Elegí una sugerencia o usá la dirección escrita.</p>
-                            <Button type="button" variant="outline" size="sm" onClick={() => tryGeocode(value)} disabled={geoLoading || !value || value.length < 5}>Usar dirección</Button>
+                    <Label className="text-sm text-muted-foreground">Canchas del Grupo</Label>
+                    {venuesLoading ? (
+                        <div className="flex items-center justify-center p-4">
+                            <Loader2 className="h-4 w-4 animate-spin" />
                         </div>
-                        {geoError && <p className="text-xs text-destructive mt-1">{geoError}</p>}
-                    </div>
-                </div>
-            </PopoverTrigger>
-            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
-                <Command>
-                    <CommandList>
-                        <CommandGroup>
-                            {osmSuggestions.map(s => (
-                                <CommandItem key={s.placeId} value={s.label} onSelect={() => {
-                                    onSelectLocation({ name: s.label, address: s.label, lat: s.lat, lng: s.lng, placeId: s.placeId });
-                                    setValue(s.label);
-                                    setIsOpen(false);
-                                    setOsmSuggestions([]);
-                                }}>
-                                    {s.label}
-                                </CommandItem>
+                    ) : (
+                        <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto">
+                            {groupVenues.map(venue => (
+                                <Button
+                                    key={venue.id}
+                                    type="button"
+                                    variant="outline"
+                                    className="justify-start h-auto py-2 px-3"
+                                    onClick={() => handleVenueSelect(venue)}
+                                >
+                                    <MapPin className="h-4 w-4 mr-2 text-primary shrink-0" />
+                                    <div className="text-left overflow-hidden">
+                                        <p className="font-medium truncate">{venue.name}</p>
+                                        <p className="text-xs text-muted-foreground truncate">{venue.address}</p>
+                                    </div>
+                                </Button>
                             ))}
-                            {osmSuggestions.length === 0 && <CommandEmpty>No se encontraron resultados.</CommandEmpty>}
-                        </CommandGroup>
-                    </CommandList>
-                </Command>
-            </PopoverContent>
-        </Popover>
+                        </div>
+                    )}
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowSearch(true)}
+                        className="w-full"
+                    >
+                        <Search className="h-4 w-4 mr-2" />
+                        Buscar otra ubicación
+                    </Button>
+                </div>
+            )}
+
+            {/* Búsqueda OSM (se muestra si no hay venues o si el usuario quiere buscar) */}
+            {(showSearch || groupVenues.length === 0) && (
+                <div className="space-y-2">
+                    {groupVenues.length > 0 && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowSearch(false)}
+                        >
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            Volver a canchas del grupo
+                        </Button>
+                    )}
+                    <Popover open={isOpen} onOpenChange={setIsOpen}>
+                        <PopoverTrigger asChild>
+                            <div className="space-y-2">
+                                <Input value={manualName} onChange={e => setManualName(e.target.value)} placeholder="Nombre del lugar (opcional)" />
+                                <div className="relative">
+                                    <Input
+                                        value={value}
+                                        onChange={(e) => setValue(e.target.value)}
+                                        onKeyDown={async (e) => {
+                                            if (e.key === 'Enter' && value && value.length >= 5) {
+                                                e.preventDefault();
+                                                await tryGeocode(value);
+                                            }
+                                        }}
+                                        placeholder="Buscá la dirección de la cancha..."
+                                        autoComplete="off"
+                                    />
+                                    <div className="mt-2 flex items-center justify-between">
+                                        <p className="text-xs text-muted-foreground">Tip: Elegí una sugerencia o usá la dirección escrita.</p>
+                                        <Button type="button" variant="outline" size="sm" onClick={() => tryGeocode(value)} disabled={geoLoading || !value || value.length < 5}>Usar dirección</Button>
+                                    </div>
+                                    {geoError && <p className="text-xs text-destructive mt-1">{geoError}</p>}
+                                </div>
+                            </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                            <Command>
+                                <CommandList>
+                                    <CommandGroup>
+                                        {osmSuggestions.map(s => (
+                                            <CommandItem key={s.placeId} value={s.label} onSelect={() => {
+                                                onSelectLocation({ name: s.label, address: s.label, lat: s.lat, lng: s.lng, placeId: s.placeId });
+                                                setValue(s.label);
+                                                setIsOpen(false);
+                                                setOsmSuggestions([]);
+                                            }}>
+                                                {s.label}
+                                            </CommandItem>
+                                        ))}
+                                        {osmSuggestions.length === 0 && <CommandEmpty>No se encontraron resultados.</CommandEmpty>}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
+                </div>
+            )}
+        </div>
     );
 };
 
@@ -204,8 +275,11 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [positionFilter, setPositionFilter] = useState<'all' | 'DEL' | 'MED' | 'DEF' | 'POR'>('all');
   const [weather, setWeather] = useState<GetMatchDayForecastOutput | null>(null);
   const [isFetchingWeather, setIsFetchingWeather] = useState(false);
+  const [groupVenues, setGroupVenues] = useState<Venue[]>([]);
+  const [venuesLoading, setVenuesLoading] = useState(false);
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -259,10 +333,30 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         });
         setStep(1);
         setSearchTerm('');
+        setPositionFilter('all');
         setWeather(null);
       }, 200);
     }
   }, [open, form]);
+
+  // Load group venues when dialog opens
+  useEffect(() => {
+    const loadVenues = async () => {
+      if (!open || !user?.activeGroupId) return;
+      setVenuesLoading(true);
+      try {
+        const result = await getGroupVenuesAction(user.activeGroupId);
+        if (result.success && result.venues) {
+          setGroupVenues(result.venues);
+        }
+      } catch (e) {
+        console.error('Error loading venues:', e);
+      } finally {
+        setVenuesLoading(false);
+      }
+    };
+    loadVenues();
+  }, [open, user?.activeGroupId]);
 
   useEffect(() => {
     const fetchWeather = async () => {
@@ -278,6 +372,8 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 const forecast = await getWeatherForecastAction({
                     location: watchedLocation.address,
                     date: matchDateTime.toISOString(),
+                    lat: watchedLocation.lat,
+                    lng: watchedLocation.lng,
                 });
                 if('description' in forecast) {
                     setWeather(forecast);
@@ -340,8 +436,12 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
 
   const filteredPlayers = useMemo(() => {
     if (!allPlayers) return [];
-    return allPlayers.filter(player => player.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  }, [allPlayers, searchTerm]);
+    return allPlayers.filter(player => {
+      const matchesName = player.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesPosition = positionFilter === 'all' || player.position === positionFilter;
+      return matchesName && matchesPosition;
+    });
+  }, [allPlayers, searchTerm, positionFilter]);
 
   const goToNextStep = async () => {
     let fieldsToValidate: (keyof MatchFormData)[];
@@ -464,6 +564,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         const resp = await fetch('/api/matches/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include', // Ensure cookies are sent
             body: JSON.stringify({
                 title: data.title,
                 date: new Date(`${data.date.toDateString()} ${data.time}`).toISOString(),
@@ -503,6 +604,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         const resp = await fetch('/api/matches/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({
                 title: data.title,
                 date: data.date.toISOString(),
@@ -541,6 +643,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         const resp = await fetch('/api/matches/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({
                 title: data.title,
                 date: data.date.toISOString(),
@@ -591,7 +694,11 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                     
                     <div>
                         <Label>Ubicación</Label>
-                        <LocationInput onSelectLocation={(location) => setValue('location', location, { shouldValidate: true })} />
+                        <LocationInput
+                          onSelectLocation={(location) => setValue('location', location, { shouldValidate: true })}
+                          groupVenues={groupVenues}
+                          venuesLoading={venuesLoading}
+                        />
                         {formState.errors.location && <p className="text-xs text-destructive mt-1">{formState.errors.location.address?.message}</p>}
                     </div>
 
@@ -734,34 +841,85 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                 <Label>Jugadores ({selectedPlayersCount} / {selectedMatchSize})</Label>
                                 <Progress value={(selectedPlayersCount / selectedMatchSize) * 100} />
                             </div>
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Buscar jugador por nombre..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-10"
-                                />
+
+                            {/* Búsqueda y Filtros */}
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Buscar jugador..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="pl-10"
+                                    />
+                                </div>
+
+                                {/* Filtro por posición */}
+                                <ToggleGroup
+                                    type="single"
+                                    value={positionFilter}
+                                    onValueChange={(v) => setPositionFilter((v || 'all') as typeof positionFilter)}
+                                    className="justify-start"
+                                >
+                                    <ToggleGroupItem value="all" size="sm">Todos</ToggleGroupItem>
+                                    <ToggleGroupItem value="DEL" size="sm" className="text-chart-1">DEL</ToggleGroupItem>
+                                    <ToggleGroupItem value="MED" size="sm" className="text-chart-2">MED</ToggleGroupItem>
+                                    <ToggleGroupItem value="DEF" size="sm" className="text-chart-3">DEF</ToggleGroupItem>
+                                    <ToggleGroupItem value="POR" size="sm" className="text-chart-4">POR</ToggleGroupItem>
+                                </ToggleGroup>
                             </div>
+
+                            {/* Selección rápida */}
+                            <div className="flex flex-wrap gap-2 items-center">
+                                <span className="text-sm text-muted-foreground">Selección rápida:</span>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        const needed = selectedMatchSize - selectedPlayersCount;
+                                        if (needed <= 0) return;
+                                        const currentSelected = form.getValues('players');
+                                        const available = allPlayers
+                                            .filter(p => !currentSelected.includes(p.id))
+                                            .sort((a, b) => b.ovr - a.ovr)
+                                            .slice(0, needed);
+                                        const newSelection = [...currentSelected, ...available.map(p => p.id)];
+                                        setValue('players', newSelection, { shouldValidate: true });
+                                    }}
+                                    disabled={selectedPlayersCount >= selectedMatchSize}
+                                >
+                                    Completar con mejores
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setValue('players', [], { shouldValidate: true })}
+                                    disabled={selectedPlayersCount === 0}
+                                >
+                                    Limpiar selección
+                                </Button>
+                            </div>
+
                             {allPlayers.length > 0 ? (
                                 <div className="max-h-[350px] md:max-h-full overflow-y-auto space-y-2 border p-2 rounded-md">
-                                    {filteredPlayers.map(player => (
-                                        <div key={player.id} className="flex items-center space-x-3 rounded-md border p-3 hover:bg-accent/50 has-[:checked]:bg-accent">
-                                            <Checkbox
-                                                id={`player-${player.id}`}
-                                                onCheckedChange={(checked) => handlePlayerSelect(player.id, !!checked)}
-                                                checked={form.getValues('players').includes(player.id)}
+                                    {filteredPlayers.map(player => {
+                                        const isSelected = form.getValues('players').includes(player.id);
+                                        return (
+                                            <PlayerSelectItem
+                                                key={player.id}
+                                                player={player}
+                                                selected={isSelected}
+                                                onToggle={() => handlePlayerSelect(player.id, !isSelected)}
+                                                variant="row"
+                                                selectionControl="checkbox"
+                                                showPosition
+                                                showOvr
+                                                density="sm"
                                             />
-                                            <Avatar className="h-9 w-9">
-                                                <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
-                                                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <Label htmlFor={`player-${player.id}`} className="flex-1 cursor-pointer flex items-center gap-2">
-                                                <span className="font-semibold">{player.name}</span>
-                                                <Badge variant="outline" className={cn("text-xs", positionColors[player.position])}>{player.position}</Badge>
-                                            </Label>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                     {filteredPlayers.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No se encontraron jugadores.</p>}
                                 </div>
                             ) : (

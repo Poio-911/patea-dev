@@ -20,6 +20,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { checkAndCompleteLeague, resolveTiebreakerFinal } from '@/lib/actions/league-completion-actions';
 import { updatePlayerStatsFromMatch } from '@/lib/actions/player-stats-actions';
+import { LiveMatchDashboard } from '@/components/match/live-match-dashboard';
+import { logMatchEventAction, updateLiveStateAction } from '@/lib/actions/server-actions';
+import { MatchTimeline } from '@/components/match/match-timeline';
+import { LiveStats } from '@/components/match/live-stats';
 
 type TeamPlayer = {
   id: string;
@@ -406,6 +410,42 @@ export default function LeagueMatchManagePage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Live Match Dashboard - Show for league matches */}
+      {(match.status === 'upcoming' || match.status === 'active') && isOwner && (
+        <div className="space-y-6">
+          <LiveMatchDashboard
+            match={match}
+            isAdmin={isOwner}
+            onEventLogged={async (event) => {
+              const result = await logMatchEventAction(match.id, event, user?.uid || '');
+              if (!result.success) {
+                toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo registrar el evento.' });
+              } else {
+                toast({ title: 'Evento registrado', description: `${event.type} - ${event.playerName}` });
+              }
+            }}
+            onMatchStatusChange={async (status, minute) => {
+              const result = await updateLiveStateAction(match.id, status, minute ?? match.currentMinute || 0, user?.uid || '');
+              if (!result.success) {
+                toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo actualizar el estado.' });
+              } else {
+                toast({ title: 'Estado del partido actualizado', description: `Nuevo estado: ${status}` });
+              }
+            }}
+          />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <MatchTimeline 
+              events={match.events || []} 
+              currentMinute={match.currentMinute || 0}
+            />
+            <LiveStats 
+              match={match} 
+            />
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Schedule Section */}

@@ -24,63 +24,63 @@ export interface MatchTheme {
 
 const matchThemes: Record<MatchType, MatchTheme> = {
     manual: {
-        gradient: 'from-blue-500/20 via-blue-400/10 to-transparent',
-        badge: 'bg-blue-100 dark:bg-blue-900/50',
-        badgeText: 'text-blue-800 dark:text-blue-300',
-        border: 'border-blue-300 dark:border-blue-700',
+        gradient: 'from-muted/20 via-muted/10 to-transparent',
+        badge: 'bg-card/70 border border-border',
+        badgeText: 'text-foreground',
+        border: 'border-border',
         icon: 'UserCheck',
         label: 'Manual',
         priority: 'casual',
     },
 
     collaborative: {
-        gradient: 'from-violet-500/20 via-violet-400/10 to-transparent',
-        badge: 'bg-violet-100 dark:bg-violet-900/50',
-        badgeText: 'text-violet-800 dark:text-violet-300',
-        border: 'border-violet-300 dark:border-violet-700',
+        gradient: 'from-muted/20 via-muted/10 to-transparent',
+        badge: 'bg-card/70 border border-border',
+        badgeText: 'text-foreground',
+        border: 'border-border',
         icon: 'Users',
         label: 'Colaborativo',
         priority: 'casual',
     },
 
     by_teams: {
-        gradient: 'from-emerald-500/20 via-emerald-400/10 to-transparent',
-        badge: 'bg-emerald-100 dark:bg-emerald-900/50',
-        badgeText: 'text-emerald-800 dark:text-emerald-300',
-        border: 'border-emerald-300 dark:border-emerald-700',
+        gradient: 'from-muted/20 via-muted/10 to-transparent',
+        badge: 'bg-card/70 border border-border',
+        badgeText: 'text-foreground',
+        border: 'border-border',
         icon: 'UsersRound',
         label: 'Por Equipos',
         priority: 'casual',
     },
 
     league: {
-        gradient: 'from-amber-500/30 via-orange-400/20 to-transparent',
-        badge: 'border-2 border-amber-600 bg-amber-50 dark:bg-amber-950/30',
-        badgeText: 'text-amber-700 dark:text-amber-400 font-semibold',
-        border: 'border-amber-400 dark:border-amber-500',
-        glow: 'shadow-lg shadow-amber-500/50',
+        gradient: 'from-muted/25 via-muted/10 to-transparent',
+        badge: 'bg-card/70 border border-border',
+        badgeText: 'text-foreground',
+        border: 'border-border',
+        glow: 'shadow-lg shadow-foreground/10',
         icon: 'Trophy',
         label: 'Liga',
         priority: 'competitive',
     },
 
     cup: {
-        gradient: 'from-red-500/30 via-orange-500/20 to-transparent',
-        badge: 'border-2 border-red-600 bg-red-50 dark:bg-red-950/30',
-        badgeText: 'text-red-700 dark:text-red-400 font-semibold',
-        border: 'border-red-400 dark:border-red-500',
-        glow: 'shadow-lg shadow-red-500/50',
+        gradient: 'from-muted/25 via-muted/10 to-transparent',
+        badge: 'bg-card/70 border border-border',
+        badgeText: 'text-foreground',
+        border: 'border-border',
+        glow: 'shadow-lg shadow-foreground/10',
         icon: 'Trophy',
         label: 'Copa',
         priority: 'competitive',
     },
 
     league_final: {
-        gradient: 'from-amber-400/50 via-orange-500/30 to-red-500/20',
-        badge: 'bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600',
-        badgeText: 'text-white font-black uppercase',
-        border: 'border-amber-400 dark:border-amber-300',
-        glow: 'shadow-2xl shadow-amber-500',
+        gradient: 'from-muted/30 via-muted/15 to-transparent',
+        badge: 'bg-card/80 border border-border',
+        badgeText: 'text-foreground font-semibold uppercase',
+        border: 'border-border',
+        glow: 'shadow-2xl shadow-foreground/15',
         icon: 'Trophy',
         label: '⚡ FINAL DECISIVA ⚡',
         animate: true,
@@ -88,10 +88,10 @@ const matchThemes: Record<MatchType, MatchTheme> = {
     },
 
     intergroup_friendly: {
-        gradient: 'from-teal-500/20 via-teal-400/10 to-transparent',
-        badge: 'bg-teal-100 dark:bg-teal-900/50',
-        badgeText: 'text-teal-800 dark:text-teal-300',
-        border: 'border-teal-300 dark:border-teal-700',
+        gradient: 'from-muted/20 via-muted/10 to-transparent',
+        badge: 'bg-card/70 border border-border',
+        badgeText: 'text-foreground',
+        border: 'border-border',
         icon: 'Handshake',
         label: 'Inter-grupos',
         priority: 'social',
@@ -110,15 +110,14 @@ export function getMatchTheme(type: MatchType): MatchTheme {
  */
 export function getMatchCategoryColor(type: MatchType): string {
     const theme = matchThemes[type];
-
     switch (theme.priority) {
         case 'competitive':
-            return 'text-amber-600 dark:text-amber-400';
+            return 'text-foreground';
         case 'social':
-            return 'text-teal-600 dark:text-teal-400';
+            return 'text-muted-foreground';
         case 'casual':
         default:
-            return 'text-blue-600 dark:text-blue-400';
+            return 'text-muted-foreground';
     }
 }
 

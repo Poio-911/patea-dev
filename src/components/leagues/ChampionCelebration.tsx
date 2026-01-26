@@ -20,35 +20,35 @@ export function ChampionCelebration({
   runnerUpJersey,
 }: ChampionCelebrationProps) {
   return (
-    <div className="relative overflow-hidden rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-500/10 via-background to-amber-500/5 shadow-xl">
+    <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-muted/10 via-background to-muted/5 shadow-xl">
       {/* Decorative Background Elements */}
-      <div className="absolute top-0 right-0 -mt-16 -mr-16 h-64 w-64 rounded-full bg-amber-500/10 blur-3xl" />
-      <div className="absolute bottom-0 left-0 -mb-16 -ml-16 h-64 w-64 rounded-full bg-amber-500/10 blur-3xl" />
+      <div className="absolute top-0 right-0 -mt-16 -mr-16 h-64 w-64 rounded-full bg-muted/10 blur-3xl" />
+      <div className="absolute bottom-0 left-0 -mb-16 -ml-16 h-64 w-64 rounded-full bg-muted/10 blur-3xl" />
 
       <div className="relative pt-16 p-8 md:p-12 flex flex-col items-center text-center">
 
         {/* Champion Section */}
         <div className="mb-8 relative">
           <div className="absolute -top-12 left-1/2 -translate-x-1/2 animate-pulse">
-            <Crown className="h-12 w-12 text-amber-500 fill-amber-500/20" />
+            <Crown className="h-12 w-12 text-foreground fill-foreground/20" />
           </div>
 
           <div className="relative z-10 transform transition-transform hover:scale-105 duration-500">
             {championJersey ? (
-              <div className="drop-shadow-[0_0_25px_rgba(245,158,11,0.4)]">
+              <div className="drop-shadow-[0_0_25px_rgba(255,255,255,0.15)]">
                 <JerseyPreview jersey={championJersey} size="xl" />
               </div>
             ) : (
-              <div className="h-48 w-48 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center border-4 border-amber-500/30">
-                <Trophy className="h-24 w-24 text-amber-500" />
+              <div className="h-48 w-48 rounded-full bg-card/80 flex items-center justify-center border-4 border-border">
+                <Trophy className="h-24 w-24 text-foreground" />
               </div>
             )}
 
             {/* Winner Badge */}
-            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-6 py-1.5 rounded-full font-bold text-sm shadow-lg border border-yellow-400/50 whitespace-nowrap flex items-center gap-2">
-              <Star className="h-3.5 w-3.5 fill-current" />
+            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-card text-foreground px-6 py-1.5 rounded-full font-bold text-sm shadow-lg border border-border whitespace-nowrap flex items-center gap-2">
+              <Star className="h-3.5 w-3.5" />
               CAMPEÓN
-              <Star className="h-3.5 w-3.5 fill-current" />
+              <Star className="h-3.5 w-3.5" />
             </div>
           </div>
         </div>

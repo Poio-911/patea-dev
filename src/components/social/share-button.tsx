@@ -142,17 +142,17 @@ export function ShareButton({
         <DropdownMenuSeparator />
 
         <DropdownMenuItem onClick={handleWhatsAppShare}>
-          <MessageCircle className="mr-2 h-4 w-4 text-green-600" />
+          <MessageCircle className="mr-2 h-4 w-4 text-foreground" />
           WhatsApp
         </DropdownMenuItem>
 
         <DropdownMenuItem onClick={handleTwitterShare}>
-          <Twitter className="mr-2 h-4 w-4 text-blue-400" />
+          <Twitter className="mr-2 h-4 w-4 text-foreground" />
           Twitter
         </DropdownMenuItem>
 
         <DropdownMenuItem onClick={handleFacebookShare}>
-          <Facebook className="mr-2 h-4 w-4 text-blue-600" />
+          <Facebook className="mr-2 h-4 w-4 text-foreground" />
           Facebook
         </DropdownMenuItem>
 

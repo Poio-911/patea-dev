@@ -30,6 +30,15 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
     setFirebaseInstances(instances);
   }, []);
 
+  // In development, ensure any previously registered service workers are unregistered
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        regs.forEach(r => r.unregister());
+      }).catch(() => {});
+    }
+  }, []);
+
   // No Google Maps loading; avoid related errors entirely.
 
   // Wait for Firebase to initialize before rendering anything
@@ -37,7 +46,7 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
     return (
       <ThemeProvider
         attribute="class"
-        themes={['light', 'game']}
+        themes={['light', 'game', 'nike']}
         defaultTheme="light"
         enableSystem={false}
         disableTransitionOnChange
@@ -54,7 +63,7 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
   return (
     <ThemeProvider
       attribute="class"
-      themes={['light', 'game']}
+      themes={['light', 'game', 'nike']}
       defaultTheme="light"
       enableSystem={false}
       disableTransitionOnChange

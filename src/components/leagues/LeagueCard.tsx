@@ -9,10 +9,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-import { Trophy, Calendar, ArrowRight } from 'lucide-react';
+import { Trophy, Calendar, ArrowRight, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getLeagueProgress, getNextMatchForTeam } from '@/lib/utils/league-standings';
+import { cn } from '@/lib/utils';
 
 type LeagueCardProps = {
   league: League;
@@ -42,22 +43,34 @@ export function LeagueCard({ league, matches = [], standings = [] }: LeagueCardP
   }, [matches]);
 
   return (
-    <Link href={`/competitions/leagues/${league.id}`} className="block group">
-      <Card className="hover:bg-muted/50 transition-all hover:shadow-md h-full">
+    <Link href={`/competitions/leagues/${league.id}`} className="block group fifa-card-animate">
+      <Card className={cn(
+        "fifa-league-card h-full",
+        "hover:bg-transparent"
+      )}>
         <CardHeader className="pb-3">
           <div className="flex items-start gap-3">
-            {league.logoUrl && (
-              <div className="w-12 h-12 rounded-lg overflow-hidden border shrink-0 bg-muted/30">
+            {/* League Icon or Logo */}
+            <div className={cn(
+              "w-12 h-12 rounded-lg overflow-hidden shrink-0 flex items-center justify-center",
+              league.logoUrl ? "border bg-muted/30" : "bg-card border"
+            )}>
+              {league.logoUrl ? (
                 <img src={league.logoUrl} alt={league.name} className="w-full h-full object-contain" />
-              </div>
-            )}
+              ) : (
+                <BarChart3 className="h-6 w-6 fifa-league-icon fifa-league-icon-animated" />
+              )}
+            </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
-                <CardTitle className="text-lg group-hover:text-primary transition-colors">
+                <CardTitle className="text-lg group-hover:text-foreground transition-colors">
                   {league.name}
                 </CardTitle>
-                <Badge variant={status.variant} className="shrink-0">
-                  {status.label}
+                <Badge className={cn(
+                  "shrink-0",
+                  league.status === 'in_progress' && "fifa-league-badge"
+                )} variant={league.status !== 'in_progress' ? status.variant : undefined}>
+                  {league.status === 'in_progress' ? 'LIGA' : status.label}
                 </Badge>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -83,12 +96,12 @@ export function LeagueCard({ league, matches = [], standings = [] }: LeagueCardP
 
           {/* Leader */}
           {leader && league.status !== 'draft' && (
-            <div className="flex items-center gap-3 p-3 rounded-md bg-muted/30 border">
-              <Trophy className="h-4 w-4 text-yellow-600 shrink-0" />
+            <div className="flex items-center gap-3 p-3 rounded-md bg-card border">
+              <Trophy className="h-4 w-4 text-foreground shrink-0" />
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <JerseyPreview jersey={leader.teamJersey} size="sm" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{leader.teamName}</p>
+                  <p className="text-sm font-semibold truncate text-foreground">{leader.teamName}</p>
                   <p className="text-xs text-muted-foreground">{leader.points} pts</p>
                 </div>
               </div>

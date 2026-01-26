@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { celebrationConfetti } from '@/lib/animations';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
+import { PlayerPositionBadge } from '@/components/player-styles';
 import { Card } from './ui/card';
 
 
@@ -98,7 +99,10 @@ const MemberManager = ({ groupPlayers }: { groupPlayers: Player[] }) => {
                                 </Avatar>
                                 <div className="text-center">
                                     <p className="font-semibold text-sm truncate">{player.name}</p>
-                                    <p className="text-xs text-muted-foreground">{player.position} / OVR {player.ovr}</p>
+                                    <div className="text-xs text-muted-foreground flex items-center justify-center gap-2">
+                                      <PlayerPositionBadge position={player.position} showIcon={false} size="sm" />
+                                      <span>OVR {player.ovr}</span>
+                                    </div>
                                 </div>
                             </div>
                         </Card>

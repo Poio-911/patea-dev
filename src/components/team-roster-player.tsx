@@ -21,7 +21,7 @@ interface TeamRosterPlayerProps {
 }
 
 export const TeamRosterPlayer = ({ player, match, isOwner = false, index = 0 }: TeamRosterPlayerProps) => {
-    const { Icon, textColor } = positionConfig[player.position];
+    const { textColor } = positionConfig[player.position];
     const ovrLevel = getOvrLevel(player.ovr);
     const staggerDelay = index * 0.03;
 
@@ -76,12 +76,11 @@ export const TeamRosterPlayer = ({ player, match, isOwner = false, index = 0 }: 
             </div>
             <div className="flex flex-col items-center">
                 <div className="flex items-center gap-2">
-                    <Icon className={cn("h-5 w-5 rounded-full border-2 p-0.5", textColor)} />
                     <p className="font-bold truncate w-24 text-base">{player.name}</p>
                 </div>
                 <div className="flex items-center justify-center gap-2 mt-1">
                     <PlayerOvr value={player.ovr} size="compact" />
-                    <PlayerPositionBadge position={player.position} size="sm" />
+                    <PlayerPositionBadge position={player.position} size="sm" showIcon={false} />
                 </div>
             </div>
         </Card>

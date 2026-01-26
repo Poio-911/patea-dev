@@ -44,22 +44,7 @@ const IconWrapper = ({ type, className, ...props }: { type: Notification['type']
     const Icon = notificationIcons[type] || Info;
     return (
         <Avatar {...props} className={cn(className)}>
-            <AvatarFallback className={cn(
-                "bg-transparent text-foreground",
-                type === 'match_invite' && 'bg-blue-500/20 text-blue-500',
-                type === 'new_joiner' && 'bg-green-500/20 text-green-500',
-                type === 'evaluation_pending' && 'bg-yellow-500/20 text-yellow-500',
-                type === 'match_update' && 'bg-purple-500/20 text-purple-500',
-                type === 'challenge_received' && 'bg-orange-500/10 text-orange-500',
-                type === 'challenge_accepted' && 'bg-emerald-500/10 text-emerald-500',
-                type === 'challenge_rejected' && 'bg-red-500/10 text-red-500',
-                type === 'league_application' && 'bg-indigo-500/10 text-indigo-500',
-                type === 'new_follower' && 'bg-pink-500/20 text-pink-500',
-                type === 'match_invitation' && 'bg-blue-500/20 text-blue-500',
-                type === 'match_reminder' && 'bg-amber-500/20 text-amber-500',
-                type === 'ovr_milestone' && 'bg-green-500/20 text-green-500',
-                type === 'achievement_unlocked' && 'bg-yellow-500/20 text-yellow-500',
-            )}>
+            <AvatarFallback className="bg-card/70 text-foreground border border-border">
                 <Icon className="h-4 w-4" />
             </AvatarFallback>
         </Avatar>
@@ -107,7 +92,7 @@ export function NotificationBell({ isPopoverContent = false }: NotificationBellP
             ) : notifications && notifications.length > 0 ? (
                 <div className="divide-y">
                     {notifications.map(notification => (
-                        <Link key={notification.id} href={notification.link} className="block hover:bg-accent/50" onClick={() => setIsOpen(false)}>
+                        <Link key={notification.id} href={notification.link} className="block hover:bg-muted/30" onClick={() => setIsOpen(false)}>
                             <div className={cn("flex items-start gap-3 p-4", !notification.isRead && "bg-primary/10")}>
                                 <div className="mt-1">
                                     <IconWrapper type={notification.type} className="h-8 w-8" />
@@ -148,10 +133,7 @@ export function NotificationBell({ isPopoverContent = false }: NotificationBellP
                  <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full">
                     <Bell className="h-5 w-5" />
                     {unreadCount > 0 && (
-                        <span className="absolute top-1.5 right-1.5 flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                        </span>
+                        <span className="absolute top-1.5 right-1.5 inline-flex rounded-full h-3 w-3 bg-primary"></span>
                     )}
                     <span className="sr-only">Ver notificaciones</span>
                 </Button>

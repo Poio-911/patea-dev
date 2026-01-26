@@ -21,6 +21,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import type { Match, Team } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { PlayerPositionBadge } from '@/components/player-styles';
 
 interface SwapPlayerDialogProps {
   match: Match;
@@ -140,7 +141,11 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
                     </Avatar>
                     <div className="flex-1">
                       <p className="font-semibold">{player.displayName}</p>
-                      <p className="text-xs text-muted-foreground">OVR: {player.ovr} - {match.teams?.find(t => t.players.some(p => p.uid === player.uid))?.name}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <PlayerPositionBadge position={player.position} showIcon={false} size="sm" />
+                        <span>OVR {player.ovr}</span>
+                        <span>— {match.teams?.find(t => t.players.some(p => p.uid === player.uid))?.name}</span>
+                      </div>
                     </div>
                   </div>
                 );

@@ -22,6 +22,10 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { getUserRoleInGroupAction } from '@/lib/actions/group-role-actions';
+import type { GroupRole } from '@/lib/group-permissions';
+import { hasPermission } from '@/lib/group-permissions';
+import { ManageRosterDialog } from '@/components/manage-roster-dialog';
 
 export default function TeamDetailPage() {
     const { id: teamId } = useParams();
@@ -30,6 +34,7 @@ export default function TeamDetailPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [isUpdating, setIsUpdating] = useState(false);
+    const [currentUserRole, setCurrentUserRole] = useState<GroupRole | null>(null);
 
     const teamRef = useMemo(() => {
         if (!firestore || !teamId) return null;
@@ -74,6 +79,23 @@ export default function TeamDetailPage() {
 
     const loading = teamLoading || playersLoading || matchesLoading;
     const isOwner = user?.uid === team?.createdBy;
+
+    useEffect(() => {
+        const fetchRole = async () => {
+            if (!team?.groupId || !user?.uid) return;
+            try {
+                const result = await getUserRoleInGroupAction(team.groupId);
+                if (result.success && result.role) {
+                    setCurrentUserRole(result.role);
+                }
+            } catch (e) {
+                console.error('Error fetching user role in group:', e);
+            }
+        };
+        fetchRole();
+    }, [team?.groupId, user?.uid]);
+
+    const canEditTeam = isOwner || (currentUserRole ? hasPermission(currentUserRole, 'teams.edit') : false);
 
     const { titulares, suplentes } = useMemo(() => {
         if (loading || !team || !groupPlayers || !team.members) return { titulares: [], suplentes: [] };
@@ -169,68 +191,108 @@ export default function TeamDetailPage() {
                 </Card>
             )}
 
-            <Separator />
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Globe className="h-5 w-5 text-primary" />
+                        Próximos Partidos
+                    </CardTitle>
+                    <CardDescription>Agenda y desafíos del equipo</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <UpcomingMatchesFeed matches={upcomingMatches} teamName={team.name} />
+                </CardContent>
+            </Card>
 
-            <UpcomingMatchesFeed matches={upcomingMatches} teamName={team.name} />
-
-            {upcomingMatches.length > 0 && <Separator />}
-
-            <div className="space-y-4">
-                <h2 className="text-xl font-bold flex items-center gap-2"><ShieldCheck className="h-6 w-6 text-primary" /> Titulares ({titulares.length})</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {titulares.map((player: DetailedTeamPlayer, index: number) => (
-                        <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={handlePlayerUpdate} index={index} />
-                    ))}
-                </div>
-                {titulares.length === 0 && (
-                    <Alert variant="default">
-                        <AlertTitle>Sin Titulares Definidos</AlertTitle>
-                        <AlertDescription>
-                            Aún no has asignado jugadores al equipo titular. Puedes hacerlo desde el menú de cada jugador.
-                        </AlertDescription>
-                    </Alert>
-                )}
-            </div>
-
-            <Separator />
-
-            <div className="space-y-4">
-                <h2 className="text-xl font-bold flex items-center gap-2"><UserCheck className="h-6 w-6 text-muted-foreground" /> Suplentes ({suplentes.length})</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {suplentes.map((player: DetailedTeamPlayer, index: number) => (
-                        <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={handlePlayerUpdate} index={index} />
-                    ))}
-                </div>
-                {suplentes.length === 0 && <p className="text-sm text-muted-foreground">No hay jugadores suplentes definidos.</p>}
-            </div>
-
-            <Separator />
-
-            <div className="space-y-4">
-                <h2 className="text-xl font-bold flex items-center gap-2"><History className="h-6 w-6 text-muted-foreground" /> Historial de Partidos</h2>
-                {pastMatches.length > 0 ? (
-                    <div className="space-y-3">
-                        {pastMatches.map(match => (
-                            <Card key={match.id}>
-                                <CardHeader className="flex flex-row items-center justify-between p-4">
-                                    <div>
-                                        <CardTitle className="text-base">{match.title}</CardTitle>
-                                        <CardDescription>{format(new Date(match.date), "dd MMM yyyy", { locale: es })}</CardDescription>
-                                    </div>
-                                    <Badge variant="outline">Finalizado</Badge>
-                                </CardHeader>
-                            </Card>
-                        ))}
+            <Card>
+                <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="flex items-center gap-2">
+                                <ShieldCheck className="h-5 w-5 text-primary" />
+                                Titulares ({titulares.length})
+                            </CardTitle>
+                            <CardDescription>Jugadores confirmados en el once inicial</CardDescription>
+                        </div>
+                        {canEditTeam && (
+                            <ManageRosterDialog team={team} players={[...titulares, ...suplentes]} allGroupPlayers={groupPlayers || []}>
+                                <Button variant="secondary">Gestionar Plantel</Button>
+                            </ManageRosterDialog>
+                        )}
                     </div>
-                ) : (
-                    <Alert variant="default">
-                        <AlertTitle>Sin Historial</AlertTitle>
-                        <AlertDescription>
-                            Este equipo todavía no ha jugado ningún partido.
-                        </AlertDescription>
-                    </Alert>
-                )}
-            </div>
+                </CardHeader>
+                <CardContent>
+                    {titulares.length > 0 ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                            {titulares.map((player: DetailedTeamPlayer, index: number) => (
+                                <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={handlePlayerUpdate} index={index} canEdit={canEditTeam} />
+                            ))}
+                        </div>
+                    ) : (
+                        <Alert variant="default">
+                            <AlertTitle>Sin Titulares Definidos</AlertTitle>
+                            <AlertDescription>
+                                Aún no asignaste jugadores al equipo titular.
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <UserCheck className="h-5 w-5 text-muted-foreground" />
+                        Suplentes ({suplentes.length})
+                    </CardTitle>
+                    <CardDescription>Alternativas disponibles para el partido</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {suplentes.length > 0 ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                            {suplentes.map((player: DetailedTeamPlayer, index: number) => (
+                                <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={handlePlayerUpdate} index={index} canEdit={canEditTeam} />
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">No hay jugadores suplentes definidos.</p>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <History className="h-5 w-5 text-muted-foreground" />
+                        Historial de Partidos
+                    </CardTitle>
+                    <CardDescription>Resultados previos del equipo</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {pastMatches.length > 0 ? (
+                        <div className="space-y-3">
+                            {pastMatches.map(match => (
+                                <Card key={match.id}>
+                                    <CardHeader className="flex flex-row items-center justify-between p-4">
+                                        <div>
+                                            <CardTitle className="text-base">{match.title}</CardTitle>
+                                            <CardDescription>{format(new Date(match.date), "dd MMM yyyy", { locale: es })}</CardDescription>
+                                        </div>
+                                        <Badge variant="outline">Finalizado</Badge>
+                                    </CardHeader>
+                                </Card>
+                            ))}
+                        </div>
+                    ) : (
+                        <Alert variant="default">
+                            <AlertTitle>Sin Historial</AlertTitle>
+                            <AlertDescription>
+                                Este equipo todavía no ha jugado ningún partido.
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                </CardContent>
+            </Card>
 
         </div>
     );

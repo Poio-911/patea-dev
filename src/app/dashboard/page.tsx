@@ -6,13 +6,15 @@ import { useCollection, useDoc, useFirestore, useUser } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, Users2, Calendar, User, Eye, Loader2, LocateFixed, AlertCircle, UserRound, CheckCircle, Search } from 'lucide-react';
+import { Star, Users2, Calendar, User, Eye, Loader2, LocateFixed, AlertCircle, UserRound, CheckCircle, Search, PlayCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { collection, query, where, orderBy, limit, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import type { Player, Match, AvailablePlayer } from '@/lib/types';
+import { MatchVisualizer } from '@/components/match/match-visualizer';
+import { useMatchPresence } from '@/hooks/useMatchPresence';
 import { NextMatchCard } from '@/components/next-match-card';
 import { Badge } from '@/components/ui/badge';
 import { format, isToday, parseISO } from 'date-fns';
@@ -29,16 +31,17 @@ import { logger } from '@/lib/logger';
 import { motion } from 'framer-motion';
 import { FindMatchIcon } from '@/components/icons/find-match-icon';
 import { PlayerStatsCard } from '@/components/dashboard/player-stats-card';
+import { PlayerPositionBadge } from '@/components/player-styles';
 import { OVRProgressionChart } from '@/components/dashboard/ovr-progression-chart';
 import { SocialFeed } from '@/components/social/social-feed';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { NotificationPermissionPrompt } from '@/components/notifications/notification-permission-prompt';
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
-    upcoming: { label: 'Próximo', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' },
-    active: { label: 'Activo', className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
-    completed: { label: 'Finalizado', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' },
-    evaluated: { label: 'Evaluado', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' },
+  upcoming: { label: 'Próximo', className: 'bg-primary/10 text-foreground border border-primary/30 rounded-full backdrop-blur-sm' },
+  active: { label: 'Activo', className: 'bg-foreground/10 text-foreground border border-foreground/30 rounded-full backdrop-blur-sm' },
+  completed: { label: 'Finalizado', className: 'bg-muted/40 text-muted-foreground border border-muted/50 rounded-full backdrop-blur-sm' },
+  evaluated: { label: 'Evaluado', className: 'bg-card/60 text-foreground border border-border rounded-full backdrop-blur-sm' },
 };
 
 const pageVariants = {
@@ -119,6 +122,20 @@ function DashboardContent() {
 
   const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(groupMatchesQuery);
   const { data: joinedMatches, loading: joinedMatchesLoading } = useCollection<Match>(joinedMatchesQuery);
+
+  // Live matches in group (first/second half or half_time)
+  // Live matches: combine three queries to avoid composite index requirements
+  const liveQ1 = useMemo(() => firestore && user?.activeGroupId ? query(collection(firestore, 'matches'), where('groupId','==', user.activeGroupId), where('liveStatus','==','first_half')) : null, [firestore, user?.activeGroupId]);
+  const liveQ2 = useMemo(() => firestore && user?.activeGroupId ? query(collection(firestore, 'matches'), where('groupId','==', user.activeGroupId), where('liveStatus','==','second_half')) : null, [firestore, user?.activeGroupId]);
+  const liveQ3 = useMemo(() => firestore && user?.activeGroupId ? query(collection(firestore, 'matches'), where('groupId','==', user.activeGroupId), where('liveStatus','==','half_time')) : null, [firestore, user?.activeGroupId]);
+  const { data: live1, loading: l1 } = useCollection<Match>(liveQ1);
+  const { data: live2, loading: l2 } = useCollection<Match>(liveQ2);
+  const { data: live3, loading: l3 } = useCollection<Match>(liveQ3);
+  const liveLoading = l1 || l2 || l3;
+  const liveMatches = useMemo(() => [ ...(live1||[]), ...(live2||[]), ...(live3||[]) ], [live1, live2, live3]);
+
+  const [showVisualizer, setShowVisualizer] = useState(false);
+  const [selectedLive, setSelectedLive] = useState<Match | null>(null);
 
   const loading = top5PlayersLoading || allPlayersLoading || groupMatchesLoading || joinedMatchesLoading || playerLoading || availablePlayerLoading;
   
@@ -281,6 +298,30 @@ function DashboardContent() {
             </motion.div>
           )}
 
+          {/* Live Matches Widget */}
+          <motion.div variants={cardVariants}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PlayCircle className="h-5 w-5 text-primary" />
+                  Partidos en Vivo
+                </CardTitle>
+                <CardDescription>Partidos de tu grupo que están en curso.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {liveLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Cargando…</div>
+                ) : liveMatches.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No hay partidos en vivo ahora.</p>
+                ) : (
+                  liveMatches.map((m) => (
+                    <LiveMatchRow key={m.id} match={m} onOpen={() => { setSelectedLive(m); setShowVisualizer(true); }} />
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+
           {player && (
             <motion.div variants={cardVariants}>
               <PlayerStatsCard player={player} />
@@ -380,7 +421,9 @@ function DashboardContent() {
                                 <p className="font-semibold truncate">{player.name}</p>
                                 {isManualPlayer && <Badge variant="outline" className="text-xs">Manual</Badge>}
                             </div>
-                            <p className="text-sm text-muted-foreground">{player.position}</p>
+                            <div className="flex items-center gap-2">
+                              <PlayerPositionBadge position={player.position} showIcon={false} size="sm" />
+                            </div>
                           </div>
                           <motion.div
                             className="text-lg font-bold text-primary"
@@ -453,7 +496,39 @@ function DashboardContent() {
             </motion.div>
         </motion.div>
       </div>
+
+      {/* Visualizador modal desde dashboard */}
+      {selectedLive && (
+        <MatchVisualizer
+          match={selectedLive}
+          isOpen={showVisualizer}
+          onClose={() => setShowVisualizer(false)}
+          isAdmin={false}
+          onEventLogged={undefined}
+          currentMinute={selectedLive.currentMinute || 0}
+          currentSecond={0}
+        />
+      )}
     </motion.div>
+  );
+}
+
+function LiveMatchRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
+  const { count } = useMatchPresence({ matchId: match.id, track: false, staleMs: 5 * 60 * 1000 });
+  return (
+    <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
+      <div>
+        <p className="font-semibold">{match.title}</p>
+        <p className="text-xs text-muted-foreground">{match.teams?.[0]?.name} vs {match.teams?.[1]?.name}</p>
+      </div>
+      <div className="flex items-center gap-3">
+        <Badge variant="outline" className="text-xs">{match.liveStatus === 'half_time' ? 'Entretiempo' : 'En juego'}</Badge>
+        <Button size="sm" onClick={onOpen}>Ver</Button>
+        {count > 0 && (
+          <div className="text-xs text-muted-foreground flex items-center gap-1"><Eye className="h-3.5 w-3.5" />{count}</div>
+        )}
+      </div>
+    </div>
   );
 }
 
