@@ -126,10 +126,10 @@ export function EventLogger({
 
   // Prefer match team players if available; else fallback to group team members
   const teamPlayersFromMatch = useMemo(() => {
-    return match.teams.flatMap(team => 
+    return match.teams.flatMap((team, idx) =>
       (team.players || []).map(player => ({
         ...player,
-        teamId: team.id || '',
+        teamId: team.id || `team${idx + 1}`,
         teamName: team.name,
         number: (player as any).number,
         status: (player as any).status,
@@ -142,11 +142,10 @@ export function EventLogger({
   // Teams for UI selection
   const teamsForUI = useMemo(() => {
     if (match.teams && match.teams.length > 0) {
-      return match.teams.map(t => ({ id: t.id || '', name: t.name }))
-        .filter(t => t.id);
+      return match.teams.map((t, idx) => ({ id: t.id || `team${idx + 1}`, name: t.name }));
     }
     if (groupTeams && groupTeams.length > 0) {
-      return groupTeams.map((t: any) => ({ id: t.id, name: t.name }));
+      return groupTeams.map((t: any, idx: number) => ({ id: t.id || `team${idx + 1}`, name: t.name }));
     }
     return [] as Array<{ id: string; name: string }>;
   }, [match.teams, groupTeams]);

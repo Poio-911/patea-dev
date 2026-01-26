@@ -80,8 +80,8 @@ export function MatchVisualizer({ match, isOpen, onClose, isAdmin = false, onEve
 
   // Live score derived from events if available
   const goalEvents = (dataMatch.events || []).filter((e) => e.type === 'goal');
-  const t1Id = team1?.id || '';
-  const t2Id = team2?.id || '';
+  const t1Id = team1?.id || 'team1';
+  const t2Id = team2?.id || 'team2';
   const scoreFromEventsKnown = t1Id && t2Id && goalEvents.some(e => e.teamId === t1Id || e.teamId === t2Id);
   const team1GoalsLive = scoreFromEventsKnown ? goalEvents.filter(e => e.teamId === t1Id).length : undefined;
   const team2GoalsLive = scoreFromEventsKnown ? goalEvents.filter(e => e.teamId === t2Id).length : undefined;
