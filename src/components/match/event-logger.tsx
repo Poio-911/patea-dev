@@ -141,11 +141,12 @@ export function EventLogger({
 
   // Teams for UI selection
   const teamsForUI = useMemo(() => {
+    // Prefer group teams when available to keep IDs consistent with fallbackPlayers
+    if (groupTeams && groupTeams.length > 0) {
+      return groupTeams.map((t: any) => ({ id: t.id, name: t.name }));
+    }
     if (match.teams && match.teams.length > 0) {
       return match.teams.map((t, idx) => ({ id: t.id || `team${idx + 1}`, name: t.name }));
-    }
-    if (groupTeams && groupTeams.length > 0) {
-      return groupTeams.map((t: any, idx: number) => ({ id: t.id || `team${idx + 1}`, name: t.name }));
     }
     return [] as Array<{ id: string; name: string }>;
   }, [match.teams, groupTeams]);

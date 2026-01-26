@@ -1796,8 +1796,8 @@ export async function logMatchEventAction(
 
         // Update score if regular goal (own_goal counts for opposite team)
         if (event.type === 'goal') {
-            const team1Id = match.participantTeamIds?.[0] || match.teams?.[0]?.id;
-            const team2Id = match.participantTeamIds?.[1] || match.teams?.[1]?.id;
+            const team1Id = match.participantTeamIds?.[0] || match.teams?.[0]?.id || 'team1';
+            const team2Id = match.participantTeamIds?.[1] || match.teams?.[1]?.id || 'team2';
 
             const isOwnGoal = (event as any).goalType === 'own_goal';
             const forTeam1 = event.teamId === team1Id;
