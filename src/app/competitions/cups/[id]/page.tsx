@@ -288,7 +288,7 @@ export default function CupDetailPage() {
 
           <TabsContent value="bracket" className="mt-6">
             {cup.bracket && cup.bracket.length > 0 ? (
-              <CupBracket bracket={cup.bracket} onMatchClick={handleMatchClick} currentRound={cup.currentRound} />
+              <CupBracket bracket={cup.bracket} onMatchClick={handleMatchClick} currentRound={cup.currentRound} canCreate={isOwner} />
             ) : (
               <div className="text-center py-16 border-2 border-dashed rounded-xl">
                 <Trophy className="mx-auto h-12 w-12 text-muted-foreground mb-4" />

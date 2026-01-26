@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -43,6 +43,8 @@ import type {
   CardReason,
   SubstitutionReason 
 } from '@/lib/types';
+import { useFirestore, useCollection } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
 
 type EventLoggerProps = {
   isOpen: boolean;
@@ -61,6 +63,7 @@ export function EventLogger({
   currentMinute,
   onEventLogged
 }: EventLoggerProps) {
+  const firestore = useFirestore();
   const [selectedPlayer, setSelectedPlayer] = useState('');
   const [selectedPlayerName, setSelectedPlayerName] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('');
@@ -76,25 +79,90 @@ export function EventLogger({
   // Card-specific fields
   const [cardType, setCardType] = useState<CardType>('yellow');
   const [cardReason, setCardReason] = useState<CardReason>('foul');
-  
   // Substitution-specific fields
   const [playerOut, setPlayerOut] = useState('');
   const [playerOutName, setPlayerOutName] = useState('');
   const [playerIn, setPlayerIn] = useState('');
-  const [playerInName, setPlayerInName] = useState('');
-  const [substitutionReason, setSubstitutionReason] = useState<SubstitutionReason>('tactical');
   
   const [openPlayerSelect, setOpenPlayerSelect] = useState(false);
   const [openAssistSelect, setOpenAssistSelect] = useState(false);
+  
+  // Team roster fallback for league/cup: load group teams and players
+  const teamIds = useMemo(() => match.participantTeamIds?.filter(Boolean) || [], [match.participantTeamIds]);
+  const teamsQuery = useMemo(() => {
+    if (!firestore || teamIds.length === 0) return null;
+    return query(collection(firestore, 'teams'), where('__name__', 'in', teamIds.slice(0, 10)));
+  }, [firestore, teamIds]);
+  const { data: groupTeams } = useCollection<any>(teamsQuery);
 
-  // Get all players from both teams
-  const allPlayers = match.teams.flatMap(team => 
-    team.players.map(player => ({
-      ...player,
-      teamId: team.id || '',
-      teamName: team.name
-    }))
-  );
+  const playersQuery = useMemo(() => {
+    if (!firestore || !match.groupId) return null;
+    return query(collection(firestore, 'players'), where('groupId', '==', match.groupId));
+  }, [firestore, match.groupId]);
+  const { data: allGroupPlayers } = useCollection<any>(playersQuery);
+
+  const fallbackPlayers = useMemo(() => {
+    if (!groupTeams || !allGroupPlayers) return [] as Array<any>;
+    const playersById = new Map(allGroupPlayers.map((p: any) => [p.id, p]));
+    const items: Array<any> = [];
+    for (const team of groupTeams) {
+      for (const member of (team.members || [])) {
+        const p = playersById.get(member.playerId);
+        if (!p) continue;
+        items.push({
+          uid: p.id, // use player document id for stats updates
+          displayName: p.name,
+          position: p.position,
+          ovr: p.ovr,
+          teamId: team.id || '',
+          teamName: team.name || 'Equipo',
+          number: member.number,
+          status: member.status,
+        });
+      }
+    }
+    return items;
+  }, [groupTeams, allGroupPlayers]);
+
+  // Prefer match team players if available; else fallback to group team members
+  const teamPlayersFromMatch = useMemo(() => {
+    return match.teams.flatMap(team => 
+      (team.players || []).map(player => ({
+        ...player,
+        teamId: team.id || '',
+        teamName: team.name,
+        number: (player as any).number,
+        status: (player as any).status,
+      }))
+    );
+  }, [match.teams]);
+
+  const allPlayers = teamPlayersFromMatch.length > 0 ? teamPlayersFromMatch : fallbackPlayers;
+
+  // Teams for UI selection
+  const teamsForUI = useMemo(() => {
+    if (match.teams && match.teams.length > 0) {
+      return match.teams.map(t => ({ id: t.id || '', name: t.name }))
+        .filter(t => t.id);
+    }
+    if (groupTeams && groupTeams.length > 0) {
+      return groupTeams.map((t: any) => ({ id: t.id, name: t.name }));
+    }
+    return [] as Array<{ id: string; name: string }>;
+  }, [match.teams, groupTeams]);
+
+  // Filter by selected team and sort by status/number/name
+  const rosterSorted = (players: any[]) => {
+    const rank = (s?: string) => s === 'titular' ? 0 : 1;
+    return players.slice().sort((a, b) => {
+      const r1 = rank(a.status) - rank(b.status);
+      if (r1 !== 0) return r1;
+      if (a.number != null && b.number != null) return a.number - b.number;
+      return (a.displayName || '').localeCompare(b.displayName || '');
+    });
+  };
+  const filteredPlayers = useMemo(() => rosterSorted(allPlayers.filter(p => !selectedTeam || p.teamId === selectedTeam)), [allPlayers, selectedTeam]);
+  const filteredAssistPlayers = useMemo(() => rosterSorted(allPlayers.filter(p => p.teamId === selectedTeam && p.uid !== selectedPlayer)), [allPlayers, selectedTeam, selectedPlayer]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,7 +234,6 @@ export function EventLogger({
       case 'goal': return 'Registrar Gol';
       case 'card': return 'Registrar Tarjeta';
       case 'substitution': return 'Registrar Cambio';
-      case 'foul': return 'Registrar Falta';
       default: return 'Registrar Evento';
     }
   };
@@ -206,7 +273,24 @@ export function EventLogger({
             />
           </div>
 
-          {/* Player Selection */}
+          {/* Team Selection (required for goals/cards/fouls) */}
+          {eventType !== 'substitution' && (
+            <div className="space-y-2">
+              <Label>Equipo</Label>
+              <Select value={selectedTeam} onValueChange={(v) => { setSelectedTeam(v); setSelectedPlayer(''); setSelectedPlayerName(''); }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar equipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teamsForUI.map(t => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Player Selection (filtered by team) */}
           {eventType !== 'substitution' && (
             <div className="space-y-2">
               <Label>Jugador</Label>
@@ -217,8 +301,9 @@ export function EventLogger({
                     role="combobox"
                     aria-expanded={openPlayerSelect}
                     className="w-full justify-between"
+                    disabled={!selectedTeam}
                   >
-                    {selectedPlayerName || "Seleccionar jugador..."}
+                    {selectedPlayerName || (selectedTeam ? "Seleccionar jugador..." : "Primero seleccioná el equipo")}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -227,13 +312,12 @@ export function EventLogger({
                     <CommandInput placeholder="Buscar jugador..." />
                     <CommandEmpty>No se encontró ningún jugador.</CommandEmpty>
                     <CommandGroup>
-                      {allPlayers.map((player) => (
+                      {filteredPlayers.map((player) => (
                         <CommandItem
                           key={player.uid}
                           onSelect={() => {
                             setSelectedPlayer(player.uid);
                             setSelectedPlayerName(player.displayName);
-                            setSelectedTeam(player.teamId);
                             setOpenPlayerSelect(false);
                           }}
                         >
@@ -245,9 +329,12 @@ export function EventLogger({
                           />
                           <div className="flex items-center gap-2">
                             <span>{player.displayName}</span>
-                            <Badge variant="secondary" className="text-xs">
-                              {player.teamName}
-                            </Badge>
+                            {player.number != null && (
+                              <Badge variant="outline" className="text-xs">#{player.number}</Badge>
+                            )}
+                            {player.status && (
+                              <Badge variant="secondary" className="text-xs">{player.status}</Badge>
+                            )}
                             <Badge variant="outline" className="text-xs">
                               {player.position}
                             </Badge>
@@ -273,6 +360,7 @@ export function EventLogger({
                       role="combobox"
                       aria-expanded={openAssistSelect}
                       className="w-full justify-between"
+                      disabled={!selectedTeam}
                     >
                       {assistPlayerName || "Sin asistencia..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -292,31 +380,32 @@ export function EventLogger({
                         >
                           <span>Sin asistencia</span>
                         </CommandItem>
-                        {allPlayers
-                          .filter(p => p.uid !== selectedPlayer)
-                          .map((player) => (
-                            <CommandItem
-                              key={player.uid}
-                              onSelect={() => {
-                                setAssistPlayer(player.uid);
-                                setAssistPlayerName(player.displayName);
-                                setOpenAssistSelect(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  assistPlayer === player.uid ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              <div className="flex items-center gap-2">
-                                <span>{player.displayName}</span>
-                                <Badge variant="secondary" className="text-xs">
-                                  {player.teamName}
-                                </Badge>
-                              </div>
-                            </CommandItem>
-                          ))}
+                        {filteredAssistPlayers.map((player) => (
+                          <CommandItem
+                            key={player.uid}
+                            onSelect={() => {
+                              setAssistPlayer(player.uid);
+                              setAssistPlayerName(player.displayName);
+                              setOpenAssistSelect(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                assistPlayer === player.uid ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex items-center gap-2">
+                              <span>{player.displayName}</span>
+                              {player.number != null && (
+                                <Badge variant="outline" className="text-xs">#{player.number}</Badge>
+                              )}
+                              {player.status && (
+                                <Badge variant="secondary" className="text-xs">{player.status}</Badge>
+                              )}
+                            </div>
+                          </CommandItem>
+                        ))}
                       </CommandGroup>
                     </Command>
                   </PopoverContent>

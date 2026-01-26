@@ -32,8 +32,18 @@ export function GlobalLiveAdminWidget() {
   const { user } = useUser();
   const pathname = usePathname();
 
-  const q1 = useMemo(() => firestore && user?.uid ? query(collection(firestore, 'matches'), where('ownerUid','==', user.uid), where('liveStatus','==','first_half')) : null, [firestore, user?.uid]);
-  const q2 = useMemo(() => firestore && user?.uid ? query(collection(firestore, 'matches'), where('ownerUid','==', user.uid), where('liveStatus','==','second_half')) : null, [firestore, user?.uid]);
+  const q1 = useMemo(() => firestore && user?.uid ? query(
+    collection(firestore, 'matches'),
+    where('ownerUid','==', user.uid),
+    where('status','==','active'),
+    where('liveStatus','==','first_half')
+  ) : null, [firestore, user?.uid]);
+  const q2 = useMemo(() => firestore && user?.uid ? query(
+    collection(firestore, 'matches'),
+    where('ownerUid','==', user.uid),
+    where('status','==','active'),
+    where('liveStatus','==','second_half')
+  ) : null, [firestore, user?.uid]);
   const { data: m1 } = useCollection<Match>(q1);
   const { data: m2 } = useCollection<Match>(q2);
   const match = (m1 && m1[0]) || (m2 && m2[0]) || null;

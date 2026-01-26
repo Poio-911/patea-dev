@@ -13,9 +13,10 @@ interface CupBracketProps {
   onMatchClick?: (match: BracketMatch) => void;
   highlightedMatchId?: string;
   currentRound?: CupRound;
+  canCreate?: boolean; // whether current user can create/retry match
 }
 
-export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentRound }: CupBracketProps) {
+export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentRound, canCreate }: CupBracketProps) {
   if (!bracket || bracket.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
@@ -173,6 +174,7 @@ export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentR
                 onClick={onMatchClick}
                 isHighlighted={highlightedMatchId === match.id}
                 isFinal={match.round === 'final'}
+                canCreate={!!canCreate}
               />
             </div>
           );
@@ -212,9 +214,10 @@ interface BracketMatchCardProps {
   onClick?: (match: BracketMatch) => void;
   isHighlighted?: boolean;
   isFinal?: boolean;
+  canCreate?: boolean;
 }
 
-function BracketMatchCard({ match, onClick, isHighlighted, isFinal }: BracketMatchCardProps) {
+function BracketMatchCard({ match, onClick, isHighlighted, isFinal, canCreate }: BracketMatchCardProps) {
   const hasTeams = match.team1Id && match.team2Id;
   const isCompleted = !!match.winnerId;
   const team1IsWinner = match.winnerId === match.team1Id;
@@ -308,6 +311,21 @@ function BracketMatchCard({ match, onClick, isHighlighted, isFinal }: BracketMat
           isPlaceholder={!match.team2Id}
         />
       </div>
+
+      {/* Create/Retry affordance */}
+      {hasTeams && !match.matchId && (
+        <div className="absolute bottom-2 right-2">
+          {canCreate ? (
+            <div className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/30 shadow-sm group-hover:bg-primary/15">
+              Crear/Reintentar
+            </div>
+          ) : (
+            <div className="text-[10px] px-2 py-1 rounded-full bg-muted/40 text-muted-foreground border border-muted/50">
+              Pendiente
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

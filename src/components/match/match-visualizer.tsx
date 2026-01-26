@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -87,6 +88,28 @@ export function MatchVisualizer({ match, isOpen, onClose, isAdmin = false, onEve
   const team1ScoreDisplay = typeof team1GoalsLive === 'number' ? team1GoalsLive : team1ScoreFinal;
   const team2ScoreDisplay = typeof team2GoalsLive === 'number' ? team2GoalsLive : team2ScoreFinal;
 
+  // Goal animation state
+  const [showGoalAnim, setShowGoalAnim] = useState(false);
+  const [goalAnimColor, setGoalAnimColor] = useState<string>('#ffffff');
+  const [goalSide, setGoalSide] = useState<'team1' | 'team2' | null>(null);
+  const lastGoalIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const latestGoal = goalEvents
+      .slice()
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+      .at(-1);
+    if (!latestGoal) return;
+    if (lastGoalIdRef.current === latestGoal.id) return;
+    lastGoalIdRef.current = latestGoal.id;
+    const isTeam1 = latestGoal.teamId === t1Id;
+    const color = isTeam1 ? team1Primary : team2Primary;
+    setGoalAnimColor(color || '#ffffff');
+    setGoalSide(isTeam1 ? 'team1' : 'team2');
+    setShowGoalAnim(true);
+    const t = setTimeout(() => setShowGoalAnim(false), 1800);
+    return () => clearTimeout(t);
+  }, [goalEvents.length, t1Id, team1Primary, team2Primary]);
+
   const enterFullscreenLandscape = async () => {
     try {
       const el = containerRef.current || document.documentElement;
@@ -140,6 +163,18 @@ export function MatchVisualizer({ match, isOpen, onClose, isAdmin = false, onEve
             <Button variant="ghost" onClick={enterFullscreenLandscape} className="text-white hover:bg-white/10">
               <Maximize2 className="h-6 w-6" />
             </Button>
+            {broadcastMode && isAdmin && (
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" className="bg-white/10 border-white/20 text-white"
+                  onClick={() => { setSelectedEventType('goal'); setShowEventLogger(true); }}>
+                  Gol
+                </Button>
+                <Button variant="secondary" className="bg-white/10 border-white/20 text-white"
+                  onClick={() => { setSelectedEventType('card'); setShowEventLogger(true); }}>
+                  Tarjeta
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Optional Live Video */}
@@ -188,6 +223,11 @@ export function MatchVisualizer({ match, isOpen, onClose, isAdmin = false, onEve
               score2={team2ScoreDisplay}
               minute={liveMinute}
               second={liveSecond}
+              redCards1={(dataMatch.events || []).filter(e => e.type === 'card' && e.cardType === 'red' && e.teamId === t1Id).length}
+              redCards2={(dataMatch.events || []).filter(e => e.type === 'card' && e.cardType === 'red' && e.teamId === t2Id).length}
+              showGoalAnim={showGoalAnim}
+              goalSide={goalSide || undefined}
+              goalColor={goalAnimColor}
             />
           )}
 
@@ -199,6 +239,8 @@ export function MatchVisualizer({ match, isOpen, onClose, isAdmin = false, onEve
               </div>
             </div>
           )}
+
+          {/* Goal animation handled inside ScoreBug, anchored under scoring team */}
 
           {/* Scoreboard (hidden in broadcast mode) */}
           {!broadcastMode && (
@@ -254,8 +296,8 @@ export function MatchVisualizer({ match, isOpen, onClose, isAdmin = false, onEve
                   setSelectedEventType(null);
                 }}
                 eventType={selectedEventType}
-                match={match}
-                currentMinute={currentMinute}
+                match={dataMatch}
+                currentMinute={liveMinute}
                 onEventLogged={(ev) => {
                   onEventLogged?.(ev);
                 }}
@@ -283,6 +325,11 @@ function ScoreBug({
   score2,
   minute,
   second,
+  redCards1,
+  redCards2,
+  showGoalAnim,
+  goalSide,
+  goalColor,
 }: {
   team1Name?: string;
   team2Name?: string;
@@ -292,15 +339,27 @@ function ScoreBug({
   score2: number;
   minute: number;
   second: number;
+  redCards1: number;
+  redCards2: number;
+  showGoalAnim?: boolean;
+  goalSide?: 'team1' | 'team2';
+  goalColor?: string;
 }) {
   const t1 = (team1Name && team1Name.length > 0) ? team1Name : 'Equipo 1';
   const t2 = (team2Name && team2Name.length > 0) ? team2Name : 'Equipo 2';
   return (
     <div className="absolute top-3 left-3 z-20">
-      <div className="flex items-center h-11 rounded-md bg-black/75 shadow-md px-3 backdrop-blur supports-[backdrop-filter]:bg-black/60">
+      <div className="relative flex items-center h-11 rounded-md bg-black/75 shadow-md px-3 backdrop-blur supports-[backdrop-filter]:bg-black/60">
         <div className="flex items-center gap-2 pr-3 border-r border-white/10">
           <span className="inline-block w-5 h-5 rounded-full" style={{ backgroundColor: team1Color }} />
           <span className="text-sm font-semibold tracking-wide text-white max-w-[160px] truncate">{t1}</span>
+          {redCards1 > 0 && (
+            <div className="ml-2 flex items-center gap-1">
+              {Array.from({ length: redCards1 }).map((_, i) => (
+                <span key={i} className="inline-block w-2.5 h-2.5 bg-red-600" />
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-1 mx-3">
           <span className="text-3xl leading-none font-black text-white">{score1}</span>
@@ -310,10 +369,36 @@ function ScoreBug({
         <div className="flex items-center gap-2 pl-3 border-l border-white/10">
           <span className="inline-block w-5 h-5 rounded-full" style={{ backgroundColor: team2Color }} />
           <span className="text-sm font-semibold tracking-wide text-white max-w-[160px] truncate">{t2}</span>
+          {redCards2 > 0 && (
+            <div className="ml-2 flex items-center gap-1">
+              {Array.from({ length: redCards2 }).map((_, i) => (
+                <span key={i} className="inline-block w-2.5 h-2.5 bg-red-600" />
+              ))}
+            </div>
+          )}
         </div>
         <div className="ml-3 flex items-center gap-1 font-mono text-sm text-white bg-white/10 border border-white/10 rounded px-2 py-0.5">
           <Clock className="h-3.5 w-3.5" /> {minute}:{String(second).padStart(2, '0')}
         </div>
+
+        {/* Goal animation under scoring team: small drop, hold, then rise */}
+        <AnimatePresence>
+          {showGoalAnim && goalSide && (
+            <motion.div
+              initial={{ y: -10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -10, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className={goalSide === 'team1' ? 'absolute -bottom-6 left-2' : 'absolute -bottom-6 right-2'}
+            >
+              <div className="px-2 py-0.5 rounded-md">
+                <div className="text-white text-lg font-extrabold tracking-wide" style={{ color: '#fff' }}>
+                  GOOOL
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

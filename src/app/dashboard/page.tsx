@@ -125,9 +125,24 @@ function DashboardContent() {
 
   // Live matches in group (first/second half or half_time)
   // Live matches: combine three queries to avoid composite index requirements
-  const liveQ1 = useMemo(() => firestore && user?.activeGroupId ? query(collection(firestore, 'matches'), where('groupId','==', user.activeGroupId), where('liveStatus','==','first_half')) : null, [firestore, user?.activeGroupId]);
-  const liveQ2 = useMemo(() => firestore && user?.activeGroupId ? query(collection(firestore, 'matches'), where('groupId','==', user.activeGroupId), where('liveStatus','==','second_half')) : null, [firestore, user?.activeGroupId]);
-  const liveQ3 = useMemo(() => firestore && user?.activeGroupId ? query(collection(firestore, 'matches'), where('groupId','==', user.activeGroupId), where('liveStatus','==','half_time')) : null, [firestore, user?.activeGroupId]);
+  const liveQ1 = useMemo(() => firestore && user?.activeGroupId ? query(
+    collection(firestore, 'matches'),
+    where('groupId','==', user.activeGroupId),
+    where('status','==','active'),
+    where('liveStatus','==','first_half')
+  ) : null, [firestore, user?.activeGroupId]);
+  const liveQ2 = useMemo(() => firestore && user?.activeGroupId ? query(
+    collection(firestore, 'matches'),
+    where('groupId','==', user.activeGroupId),
+    where('status','==','active'),
+    where('liveStatus','==','second_half')
+  ) : null, [firestore, user?.activeGroupId]);
+  const liveQ3 = useMemo(() => firestore && user?.activeGroupId ? query(
+    collection(firestore, 'matches'),
+    where('groupId','==', user.activeGroupId),
+    where('status','==','active'),
+    where('liveStatus','==','half_time')
+  ) : null, [firestore, user?.activeGroupId]);
   const { data: live1, loading: l1 } = useCollection<Match>(liveQ1);
   const { data: live2, loading: l2 } = useCollection<Match>(liveQ2);
   const { data: live3, loading: l3 } = useCollection<Match>(liveQ3);

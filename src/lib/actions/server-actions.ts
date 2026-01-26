@@ -1654,6 +1654,9 @@ export async function updateMatchFinalScoreAction(
                 { ...match.teams[0], finalScore: team1Score },
                 { ...match.teams[1], finalScore: team2Score },
             ],
+            // Ensure live widgets hide after finalization
+            liveStatus: 'finished',
+            timerPaused: true,
         };
 
         // Auto-complete match if not yet finalized
@@ -1663,6 +1666,27 @@ export async function updateMatchFinalScoreAction(
         }
 
         await matchRef.update(updateData as any);
+
+        // If this is a cup match, auto-advance the winner in the bracket
+        try {
+            const refreshed = await matchRef.get();
+            const updatedMatch = { id: refreshed.id, ...refreshed.data() } as Match;
+
+            const isCup = updatedMatch.type === 'cup';
+            const cupId = updatedMatch.leagueInfo?.leagueId;
+            const isDraw = team1Score === team2Score;
+
+            if (isCup && cupId && !isDraw) {
+                const team1Id = updatedMatch.participantTeamIds?.[0] || updatedMatch.teams?.[0]?.id;
+                const team2Id = updatedMatch.participantTeamIds?.[1] || updatedMatch.teams?.[1]?.id;
+                const winnerId = team1Score > team2Score ? team1Id : team2Id;
+                if (winnerId) {
+                    await advanceCupWinnerAction(cupId, updatedMatch.id, winnerId);
+                }
+            }
+        } catch (advErr) {
+            console.error('[updateMatchFinalScoreAction] Bracket advancement error (non-fatal):', advErr);
+        }
 
         // Publish match_played activity for all participants
         try {
@@ -1832,9 +1856,18 @@ export async function updateLiveStateAction(
         if (newStatus === 'first_half' || newStatus === 'second_half') {
             updates['periodStartTs'] = FieldValue.serverTimestamp();
             updates['timerPaused'] = false;
+            // Ensure dashboards treat match as live/active
+            updates['status'] = 'active';
         }
         if (newStatus === 'half_time' || newStatus === 'finished') {
             updates['timerPaused'] = true;
+            if (newStatus === 'half_time') {
+                updates['status'] = 'active';
+            }
+            if (newStatus === 'finished') {
+                // Mark completed so it disappears from live lists
+                updates['status'] = 'completed';
+            }
         }
 
         await matchRef.update(updates);

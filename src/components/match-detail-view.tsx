@@ -22,6 +22,11 @@ import { AvailablePlayersSection } from './available-players-section';
 import { ImportActivityDialog } from './health/import-activity-dialog';
 import { PhysicalMetricsCard } from './health/physical-metrics-card';
 import { CupMatchView } from './cup/CupMatchView';
+import { LiveMatchDashboard } from '@/components/match/live-match-dashboard';
+import { MatchTimeline } from '@/components/match/match-timeline';
+import { LiveStats } from '@/components/match/live-stats';
+import { logMatchEventAction, updateLiveStateAction } from '@/lib/actions/server-actions';
+import { useToast } from '@/hooks/use-toast';
 import { MatchWeatherForecast } from './matches/match-weather-forecast';
 import { logger } from '@/lib/logger';
 
@@ -42,6 +47,7 @@ const weatherIcons: Record<string, React.ElementType> = {
 export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
   const firestore = useFirestore();
   const { user } = useUser();
+  const { toast } = useToast();
   const [ownerProfile, setOwnerProfile] = useState<UserProfile | null>(null);
 
   const matchRef = useMemo(() => firestore ? doc(firestore, 'matches', matchId) : null, [firestore, matchId]);
@@ -184,6 +190,41 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
               />
             ) : (
               <PlayersConfirmed match={match} />
+            )}
+
+            {/* Live Broadcast Controls for League Matches (parity with cup) */}
+            {(['league', 'league_final'].includes(match.type)) && (match.status === 'upcoming' || match.status === 'active') && permissions.isOwner && (
+              <div className="space-y-6">
+                <LiveMatchDashboard
+                  match={match}
+                  isAdmin={permissions.isOwner}
+                  onEventLogged={async (event) => {
+                    const result = await logMatchEventAction(match.id, event, user?.uid || '');
+                    if (!result.success) {
+                      toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo registrar el evento.' });
+                    } else {
+                      toast({ title: 'Evento registrado', description: `${event.type} - ${event.playerName}` });
+                    }
+                  }}
+                  onMatchStatusChange={async (status, minute) => {
+                    const result = await updateLiveStateAction(match.id, status, minute ?? match.currentMinute || 0, user?.uid || '');
+                    if (!result.success) {
+                      toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo actualizar el estado.' });
+                    } else {
+                      toast({ title: 'Estado del partido actualizado', description: `Nuevo estado: ${status}` });
+                    }
+                  }}
+                />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <MatchTimeline 
+                    events={match.events || []} 
+                    currentMinute={match.currentMinute || 0}
+                  />
+                  <LiveStats 
+                    match={match} 
+                  />
+                </div>
+              </div>
             )}
 
             {/* Show player search section if match is incomplete AND not competition */}
