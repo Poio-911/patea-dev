@@ -23,34 +23,44 @@ function initializeAdminApp(): App {
 
     console.log('[Firebase Admin] Initializing...');
     const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    if (!rawServiceAccount) {
-        throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.');
+    const storageBucketEnv = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+    const firebaseConfigEnv = process.env.FIREBASE_CONFIG ? JSON.parse(process.env.FIREBASE_CONFIG) : undefined as any;
+
+    const resolvedProjectId = firebaseConfigEnv?.projectId || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'mil-disculpis';
+    const resolvedStorageBucket = storageBucketEnv || firebaseConfigEnv?.storageBucket;
+
+    if (!resolvedStorageBucket) {
+        throw new Error("Storage bucket not configured. Set NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET or ensure FIREBASE_CONFIG.storageBucket is present.");
     }
 
     try {
-        const serviceAccountJson = JSON.parse(rawServiceAccount);
-        console.log('[Firebase Admin] Service account parsed. Project ID:', serviceAccountJson.project_id);
+        if (rawServiceAccount) {
+            const serviceAccountJson = JSON.parse(rawServiceAccount);
+            console.log('[Firebase Admin] Service account parsed. Project ID:', serviceAccountJson.project_id);
+            console.log('[Firebase Admin] Storage bucket:', resolvedStorageBucket);
 
-        const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-        if (!storageBucket) {
-            throw new Error("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET environment variable is not set.");
+            const app = initializeApp({
+                credential: cert(serviceAccountJson as ServiceAccount),
+                projectId: resolvedProjectId,
+                storageBucket: resolvedStorageBucket,
+            });
+            console.log('[Firebase Admin] Initialized successfully (explicit credentials)');
+            return app;
         }
 
-        console.log('[Firebase Admin] Storage bucket:', storageBucket);
-
+        // Fallback: initialize using default application credentials (Cloud Functions/Hosting runtime)
+        console.log('[Firebase Admin] No service account provided. Initializing with default credentials.');
         const app = initializeApp({
-            credential: cert(serviceAccountJson as ServiceAccount),
-            projectId: 'mil-disculpis', // Explicitly set to force production connection
-            storageBucket: storageBucket,
+            projectId: resolvedProjectId,
+            storageBucket: resolvedStorageBucket,
         });
-
-        console.log('[Firebase Admin] Initialized successfully');
+        console.log('[Firebase Admin] Initialized successfully (default credentials)');
         return app;
 
     } catch (e: any) {
         console.error('[Firebase Admin] Initialization failed:', e);
-        logger.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY. Make sure it's a valid JSON string.", e);
-        throw new Error("Could not initialize Firebase Admin SDK.");
+        logger.error('Failed to initialize Firebase Admin SDK.', e);
+        throw new Error('Could not initialize Firebase Admin SDK.');
     }
 }
 

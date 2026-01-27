@@ -89,9 +89,11 @@ exports.resetMonthlyCredits = (0, scheduler_1.onSchedule)({
         const batches = [];
         let currentBatch = db.batch();
         let operationCount = 0;
+        // FREE monthly credits (3 credits per month)
+        const MONTHLY_FREE_CREDITS = 3;
         for (const playerRef of playersToReset) {
             currentBatch.update(playerRef, {
-                cardGenerationCredits: 3, // FREE monthly credits
+                cardGenerationCredits: MONTHLY_FREE_CREDITS,
                 lastCreditReset: admin.firestore.FieldValue.serverTimestamp(),
             });
             operationCount++;
