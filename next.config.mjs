@@ -36,6 +36,17 @@ const nextConfig = {
     },
   },
 
+  // Mark OpenTelemetry and Genkit packages as server-external to avoid bundling issues
+  serverExternalPackages: [
+    'genkit',
+    '@genkit-ai/core',
+    '@genkit-ai/google-genai',
+    '@opentelemetry/api',
+    '@opentelemetry/sdk-node',
+    '@opentelemetry/instrumentation',
+    'require-in-the-middle',
+  ],
+
   // Disable static optimization completely
   generateBuildId: async () => {
     return 'build-' + Date.now();
@@ -48,14 +59,25 @@ const nextConfig = {
       config.devtool = false;
     }
 
-    // Exclude genkit from client bundle
+    // Exclude genkit and OpenTelemetry from client bundle
     if (!isServer) {
       config.resolve = config.resolve || {};
       config.resolve.alias = config.resolve.alias || {};
       config.resolve.alias['genkit'] = false;
       config.resolve.alias['@genkit-ai/core'] = false;
+      config.resolve.alias['@genkit-ai/google-genai'] = false;
+      config.resolve.alias['@opentelemetry/api'] = false;
+      config.resolve.alias['@opentelemetry/sdk-node'] = false;
       config.resolve.alias['@opentelemetry/instrumentation'] = false;
+      config.resolve.alias['require-in-the-middle'] = false;
     }
+
+    // Ignore critical dependency warnings from OpenTelemetry
+    config.ignoreWarnings = [
+      ...(config.ignoreWarnings || []),
+      { module: /require-in-the-middle/ },
+      { module: /@opentelemetry/ },
+    ];
 
     return config;
   },
