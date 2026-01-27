@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 export default function SocialPage() {
   return (
-    <div className="container max-w-2xl py-8">
+    <div className="max-w-2xl mx-auto">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Feed Social</h1>
         <p className="text-muted-foreground">

@@ -14,7 +14,7 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="container max-w-4xl py-8 space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         <div className="space-y-2">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-4 w-96" />
@@ -27,7 +27,7 @@ export default function SettingsPage() {
 
   if (!user) {
     return (
-      <div className="container max-w-4xl py-8">
+      <div className="max-w-4xl mx-auto">
         <Card>
           <CardContent className="pt-6">
             <p className="text-center text-muted-foreground">
@@ -40,7 +40,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="container max-w-4xl py-8 space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">

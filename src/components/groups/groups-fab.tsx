@@ -33,7 +33,7 @@ export function GroupsFab() {
 
   return (
     <>
-      <div className="fixed bottom-24 right-4 z-40 md:bottom-6 md:right-6 flex flex-col items-end gap-3">
+      <div className="fixed bottom-24 right-4 z-40 md:bottom-6 md:right-6 flex flex-col items-end gap-3 pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]">
         <AnimatePresence>
           {isOpen && (
             <motion.div

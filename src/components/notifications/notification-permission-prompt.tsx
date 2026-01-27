@@ -52,7 +52,7 @@ export function NotificationPermissionPrompt({
           className
         )}
       >
-        <div className="container mx-auto px-4 py-3">
+        <div className="max-w-5xl mx-auto py-3">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Bell className="h-5 w-5 text-primary" />
