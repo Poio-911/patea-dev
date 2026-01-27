@@ -83,6 +83,8 @@ export function EventLogger({
   const [playerOut, setPlayerOut] = useState('');
   const [playerOutName, setPlayerOutName] = useState('');
   const [playerIn, setPlayerIn] = useState('');
+  const [playerInName, setPlayerInName] = useState('');
+  const [substitutionReason, setSubstitutionReason] = useState<SubstitutionReason>('tactical');
   
   const [openPlayerSelect, setOpenPlayerSelect] = useState(false);
   const [openAssistSelect, setOpenAssistSelect] = useState(false);

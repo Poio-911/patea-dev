@@ -142,7 +142,7 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
                     <div className="flex-1">
                       <p className="font-semibold">{player.displayName}</p>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <PlayerPositionBadge position={player.position} showIcon={false} size="sm" />
+                        <PlayerPositionBadge position={player.position as import('@/lib/types').PlayerPosition} showIcon={false} size="sm" />
                         <span>OVR {player.ovr}</span>
                         <span>— {match.teams?.find(t => t.players.some(p => p.uid === player.uid))?.name}</span>
                       </div>

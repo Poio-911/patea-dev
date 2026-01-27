@@ -21,7 +21,6 @@ interface TeamRosterPlayerProps {
 }
 
 export const TeamRosterPlayer = ({ player, match, isOwner = false, index = 0 }: TeamRosterPlayerProps) => {
-    const { textColor } = positionConfig[player.position];
     const ovrLevel = getOvrLevel(player.ovr);
     const staggerDelay = index * 0.03;
 

@@ -117,7 +117,7 @@ export function SetPlayerStatusDialog({ player, team, onPlayerUpdate, children }
               <Button
                 type="button"
                 variant="outline"
-                size="xs"
+                size="sm"
                 onClick={() => form.setValue('number', nextAvailableNumber, { shouldValidate: true })}
                 disabled={nextAvailableNumber === 0}
               >

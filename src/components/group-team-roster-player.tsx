@@ -23,7 +23,6 @@ interface GroupTeamRosterPlayerProps {
 }
 
 export const GroupTeamRosterPlayer = ({ player, team, onPlayerUpdate, index = 0, canEdit = false }: GroupTeamRosterPlayerProps) => {
-    const { textColor } = positionConfig[player.position];
     const ovrLevel = getOvrLevel(player.ovr);
     const staggerDelay = index * 0.03;
     const { user } = useUser();

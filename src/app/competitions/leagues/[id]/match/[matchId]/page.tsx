@@ -426,7 +426,7 @@ export default function LeagueMatchManagePage() {
               }
             }}
             onMatchStatusChange={async (status, minute) => {
-              const result = await updateLiveStateAction(match.id, status, minute ?? match.currentMinute || 0, user?.uid || '');
+              const result = await updateLiveStateAction(match.id, status, minute ?? (match.currentMinute ?? 0), user?.uid || '');
               if (!result.success) {
                 toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo actualizar el estado.' });
               } else {
