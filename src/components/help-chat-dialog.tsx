@@ -113,7 +113,7 @@ export function HelpChatDialog() {
       {/* Floating help button */}
       <div
         className={cn(
-          'fixed bottom-4 right-4 z-40 transition-all',
+          'fixed bottom-4 right-4 z-40 transition-all pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]',
           isOpen ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100 scale-100'
         )}
       >
@@ -132,7 +132,7 @@ export function HelpChatDialog() {
       {/* Chat dialog */}
       <div
         className={cn(
-          'fixed bottom-4 right-4 z-50 w-80 h-[28rem] flex flex-col bg-card/95 backdrop-blur-lg rounded-xl shadow-2xl border border-border overflow-hidden transition-all',
+          'fixed bottom-4 right-4 z-50 w-80 h-[28rem] flex flex-col bg-card/95 backdrop-blur-lg rounded-xl shadow-2xl border border-border overflow-hidden transition-all pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]',
           isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'
         )}
       >
