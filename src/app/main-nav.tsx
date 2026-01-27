@@ -136,7 +136,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const pressTimerRef = React.useRef<number | null>(null);
   const pressStartRef = React.useRef<number>(0);
   const longPressMs = 550;
-  const { toast } = useToast();
   const startPress = () => { pressStartRef.current = Date.now(); };
   const endPress = () => {
     if (!pressStartRef.current) return;
