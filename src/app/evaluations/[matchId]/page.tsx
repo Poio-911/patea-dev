@@ -31,6 +31,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { PerformanceTag, performanceTagsDb } from '@/lib/performance-tags'
 import { cn } from '@/lib/utils'
 import type { Player, EvaluationAssignment, PlayerEvaluationFormData } from '@/lib/types'
+import { BackButton } from '@/components/navigation/back-button'
 
 // --- Zod Validation (CORREGIDO Y REFORZADO) ---
 const pointsEvaluationSchema = z.object({
@@ -264,7 +265,8 @@ export default function PerformEvaluationPage() {
 
   if (submissionIsPending) {
     return (
-        <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-8">
+        <BackButton href="/matches" label="Volver a Partidos" />
             <PageHeader title="Evaluar Partido" description="Tus evaluaciones ya fueron enviadas." />
             <Alert variant="default" className="border-blue-500 text-blue-700">
                 <FileClock className="h-4 w-4" />
@@ -283,6 +285,7 @@ export default function PerformEvaluationPage() {
   if (fields.length === 0) {
     return (
       <div className="flex flex-col gap-8">
+        <BackButton href="/matches" label="Volver a Partidos" />
         <PageHeader title="Evaluar Partido" description="Ya no tienes evaluaciones pendientes para este partido." />
         <Alert>
           <ShieldCheck className="h-4 w-4" />
@@ -300,6 +303,7 @@ export default function PerformEvaluationPage() {
 
   return (
     <div className="flex flex-col gap-8">
+      <BackButton href="/matches" label="Volver a Partidos" />
       <PageHeader title="Evaluar Partido" description="Evalúa el rendimiento de tus compañeros de equipo asignados." />
 
       <Form {...form}>

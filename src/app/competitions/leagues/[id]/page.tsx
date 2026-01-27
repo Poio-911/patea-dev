@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BackButton } from '@/components/navigation/back-button';
 
 type LeagueTab = 'standings' | 'fixture' | 'teams' | 'scorers' | 'applications';
 
@@ -192,6 +193,7 @@ export default function LeagueDetailPage() {
   if (!league) {
     return (
       <div className="text-center p-8">
+        <BackButton href="/competitions" label="Volver a Competiciones" />
         <h2 className="text-xl font-bold">Liga no encontrada</h2>
         <Button asChild variant="outline" className="mt-4">
           <Link href="/competitions">Volver a Competiciones</Link>
@@ -202,6 +204,7 @@ export default function LeagueDetailPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/competitions" label="Volver a Competiciones" />
       <LeagueHeader
         league={league}
         activeTab={activeTab}

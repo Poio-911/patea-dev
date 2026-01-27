@@ -19,6 +19,7 @@ import confetti from 'canvas-confetti';
 import { logger } from '@/lib/logger';
 import { publishMatchPlayedActivity, publishOvrChangeActivity } from '@/lib/actions/social-actions';
 import { updateLeagueStandingsAction, advanceCupWinnerAction } from '@/lib/actions/server-actions';
+import { BackButton } from '@/components/navigation/back-button';
 
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
@@ -481,18 +482,23 @@ export default function EvaluateMatchPage() {
     }
 
     if (!match || !user) {
-        return <div>Datos no encontrados.</div>;
+        return (
+            <div className="p-4">
+                <BackButton href="/matches" label="Volver a Partidos" />
+                <div>Datos no encontrados.</div>
+            </div>
+        );
     }
 
     if (user.uid !== match.ownerUid) {
         return (
             <div className="flex flex-col gap-4 items-center justify-center text-center p-8">
+                <BackButton href="/matches" label="Volver a Partidos" />
                 <PageHeader title={`Evaluación de: ${match.title}`} />
                 <Alert variant="destructive">
                     <AlertTitle>Acceso Denegado</AlertTitle>
                     <AlertDescription>Solo el organizador del partido puede ver esta página.</AlertDescription>
                 </Alert>
-                <Button onClick={() => router.push('/matches')}>Volver a Partidos</Button>
             </div>
         )
     }
@@ -500,19 +506,20 @@ export default function EvaluateMatchPage() {
     if (match.status === 'evaluated') {
         return (
             <div className="flex flex-col gap-4 items-center justify-center text-center p-8">
+                <BackButton href="/matches" label="Volver a Partidos" />
                 <PageHeader title={`Evaluación de: ${match.title}`} />
                 <Alert>
                     <Check className="h-4 w-4" />
                     <AlertTitle>Evaluación Completa</AlertTitle>
                     <AlertDescription>Este partido ya ha sido evaluado y los OVRs de los jugadores han sido actualizados.</AlertDescription>
                 </Alert>
-                <Button onClick={() => router.push('/matches')}>Volver a Partidos</Button>
             </div>
         )
     }
 
     return (
         <div className="flex flex-col gap-8">
+            <BackButton href="/matches" label="Volver a Partidos" />
             <PageHeader
                 title={`Panel de Evaluación: ${match.title}`}
                 description={`Supervisa el progreso de las evaluaciones de los jugadores.`}

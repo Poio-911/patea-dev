@@ -27,6 +27,7 @@ import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getRoundName, isTournamentComplete } from '@/lib/utils/cup-bracket';
 import { ChampionCelebration } from '@/components/leagues/ChampionCelebration';
+import { BackButton } from '@/components/navigation/back-button';
 
 type CupTab = 'bracket' | 'teams';
 
@@ -193,15 +194,19 @@ export default function CupDetailPage() {
 
   if (!cup) {
     return (
-      <Alert>
-        <AlertDescription>Copa no encontrada.</AlertDescription>
-      </Alert>
+      <div className="p-4">
+        <BackButton href="/competitions" label="Volver a Competiciones" />
+        <Alert>
+          <AlertDescription>Copa no encontrada.</AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
   return (
     <>
       <div className="flex flex-col gap-6">
+        <BackButton href="/competitions" label="Volver a Competiciones" />
         {/* Header */}
         <div className="flex flex-col gap-4">
           <div className="flex flex-col md:flex-row items-start justify-between gap-4 md:gap-8">
