@@ -1062,7 +1062,16 @@ export async function createLeagueAction(
         let teams = teamsData.map(snap => ({ id: snap.id, ...snap.data() } as GroupTeam));
 
         if (teams.length % 2 !== 0) {
-            teams.push({ id: 'bye', name: 'Descansa', jersey: { type: 'plain', primaryColor: '#ffffff', secondaryColor: '#000000' } } as GroupTeam);
+            teams.push({
+                id: 'bye',
+                name: 'Descansa',
+                jersey: { type: 'plain', primaryColor: '#ffffff', secondaryColor: '#000000' },
+                groupId,
+                members: [],
+                createdBy: ownerUid,
+                createdAt: new Date().toISOString(),
+                isChallengeable: false,
+            } as GroupTeam);
         }
 
         const numRounds = teams.length - 1;
@@ -1095,7 +1104,16 @@ export async function createLeagueAction(
             if (phase === 1) {
                 teams = teamsData.map(snap => ({ id: snap.id, ...snap.data() } as GroupTeam));
                 if (teams.length % 2 !== 0) {
-                    teams.push({ id: 'bye', name: 'Descansa', jersey: { type: 'plain', primaryColor: '#ffffff', secondaryColor: '#000000' } } as GroupTeam);
+                    teams.push({
+                        id: 'bye',
+                        name: 'Descansa',
+                        jersey: { type: 'plain', primaryColor: '#ffffff', secondaryColor: '#000000' },
+                        groupId,
+                        members: [],
+                        createdBy: ownerUid,
+                        createdAt: new Date().toISOString(),
+                        isChallengeable: false,
+                    } as GroupTeam);
                 }
             }
 
