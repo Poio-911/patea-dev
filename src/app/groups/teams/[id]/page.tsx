@@ -28,7 +28,8 @@ import { hasPermission } from '@/lib/group-permissions';
 import { ManageRosterDialog } from '@/components/manage-roster-dialog';
 
 export default function TeamDetailPage() {
-    const { id: teamId } = useParams();
+    const params = useParams<{ id: string }>();
+    const teamId = params?.id;
     const firestore = useFirestore();
     const { user } = useUser();
     const router = useRouter();

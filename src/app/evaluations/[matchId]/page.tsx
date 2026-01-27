@@ -125,7 +125,8 @@ const TagCheckbox = ({
 
 // --- MAIN COMPONENT ---
 export default function PerformEvaluationPage() {
-  const { matchId } = useParams();
+  const params = useParams<{ matchId: string }>();
+  const matchId = params?.matchId;
   const firestore = useFirestore()
   const { user } = useUser()
   const router = useRouter()

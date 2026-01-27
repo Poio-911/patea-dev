@@ -13,7 +13,8 @@ import { Separator } from '@/components/ui/separator';
 import { PlayerProgressionView } from '@/components/player-progression-view';
 
 export default function ProgressionPage() {
-  const { id: playerId } = useParams();
+  const params = useParams<{ id: string }>();
+  const playerId = params?.id;
   const { user } = useUser();
   const firestore = useFirestore();
 

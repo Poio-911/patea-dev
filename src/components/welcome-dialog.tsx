@@ -7,9 +7,9 @@ import { HelpDialog } from './help-dialog';
 
 export function WelcomeDialog() {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() ?? '';
   const searchParams = useSearchParams();
-  const isNewUser = searchParams.get('new_user') === 'true';
+  const isNewUser = searchParams?.get('new_user') === 'true';
   const [showWelcome, setShowWelcome] = useState(isNewUser);
 
   useEffect(() => {

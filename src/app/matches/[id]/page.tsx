@@ -7,7 +7,8 @@ import { Loader2 } from 'lucide-react';
 import { Suspense } from 'react';
 
 export default function MatchDetailPage() {
-  const { id } = useParams();
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
 
   if (!id || typeof id !== 'string') {
     return <div className="text-center p-8">ID de partido no válido.</div>;

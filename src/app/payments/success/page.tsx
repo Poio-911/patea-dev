@@ -10,7 +10,7 @@ import confetti from 'canvas-confetti';
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const transactionId = searchParams.get('transaction_id');
+  const transactionId = searchParams?.get('transaction_id');
 
   const [status, setStatus] = useState<'checking' | 'approved' | 'rejected' | 'pending' | 'error'>('checking');
   const [credits, setCredits] = useState<number>(0);

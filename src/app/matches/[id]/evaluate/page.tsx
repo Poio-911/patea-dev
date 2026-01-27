@@ -89,7 +89,8 @@ const calculateAttributeChanges = (currentAttrs: Player, tags: PerformanceTag[] 
 };
 
 export default function EvaluateMatchPage() {
-    const { id: matchId } = useParams();
+    const params = useParams<{ id: string }>();
+    const matchId = params?.id;
     const firestore = useFirestore();
     const { user } = useUser();
     const router = useRouter();

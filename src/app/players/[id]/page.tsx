@@ -16,7 +16,8 @@ import { collection, query, where } from 'firebase/firestore';
 import { useCollection } from '@/firebase';
 
 export default function PlayerDetailPage() {
-  const { id: playerId } = useParams();
+  const params = useParams<{ id: string }>();
+  const playerId = params?.id;
   const firestore = useFirestore();
 
   const playerRef = useMemo(() => {

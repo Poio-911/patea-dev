@@ -31,7 +31,8 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export default function ChallengeTeamPage() {
-    const { postId } = useParams();
+    const params = useParams<{ postId: string }>();
+    const postId = params?.postId;
     const { user } = useUser();
     const firestore = useFirestore();
     const router = useRouter();

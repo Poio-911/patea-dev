@@ -30,7 +30,7 @@ function useClock(baseMinute: number, periodStartMs: number | null, running: boo
 export function GlobalLiveAdminWidget() {
   const firestore = useFirestore();
   const { user } = useUser();
-  const pathname = usePathname();
+  const pathname = usePathname() ?? '';
 
   const q1 = useMemo(() => firestore && user?.uid ? query(
     collection(firestore, 'matches'),

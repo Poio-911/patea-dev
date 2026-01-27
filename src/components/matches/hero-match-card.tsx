@@ -229,7 +229,7 @@ export function HeroMatchCard({ match, allPlayers, className, variant = 'default
 
         {/* Action button */}
         <div className="flex justify-center">
-          <Button asChild size={variant === 'compact' ? 'md' : 'lg'} className="font-bold">
+          <Button asChild size={variant === 'compact' ? 'default' : 'lg'} className="font-bold">
             <Link href={`/matches/${match.id}`}>
               <Eye className="mr-2 h-5 w-5" />
               Ver Detalles

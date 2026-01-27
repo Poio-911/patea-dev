@@ -32,7 +32,9 @@ type TeamPlayer = {
 };
 
 export default function LeagueMatchManagePage() {
-  const { id: leagueId, matchId } = useParams();
+  const params = useParams<{ id: string; matchId: string }>();
+  const leagueId = params?.id;
+  const matchId = params?.matchId;
   const router = useRouter();
   const firestore = useFirestore();
   const { user } = useUser();

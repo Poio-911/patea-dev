@@ -14,7 +14,8 @@ import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 
 export default function AnalysisPage() {
-  const { id: playerId } = useParams();
+  const params = useParams<{ id: string }>();
+  const playerId = params?.id;
   const { user } = useUser();
   const firestore = useFirestore();
 

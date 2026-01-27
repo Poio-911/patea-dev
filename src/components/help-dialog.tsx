@@ -97,7 +97,7 @@ const HelpContent = ({ onConfirm }: { onConfirm?: () => void }) => (
 export function HelpDialog({ forceOpen = false, onExplicitClose, children, isPopoverContent = false }: HelpDialogProps) {
   const [isOpen, setIsOpen] = useState(forceOpen);
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() ?? '';
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {

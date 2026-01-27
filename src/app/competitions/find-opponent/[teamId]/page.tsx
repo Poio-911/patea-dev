@@ -19,7 +19,8 @@ import { sendTeamChallengeAction } from '@/lib/actions/server-actions';
 import { celebrationConfetti } from '@/lib/animations';
 
 export default function FindOpponentForTeamPage() {
-    const { teamId } = useParams();
+    const params = useParams<{ teamId: string }>();
+    const teamId = params?.teamId;
     const firestore = useFirestore();
     const { user } = useUser();
     const [searchTerm, setSearchTerm] = useState('');

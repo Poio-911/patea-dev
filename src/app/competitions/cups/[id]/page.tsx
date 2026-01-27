@@ -31,7 +31,8 @@ import { ChampionCelebration } from '@/components/leagues/ChampionCelebration';
 type CupTab = 'bracket' | 'teams';
 
 export default function CupDetailPage() {
-  const { id: cupId } = useParams();
+  const params = useParams<{ id: string }>();
+  const cupId = params?.id;
   const router = useRouter();
   const firestore = useFirestore();
   const { user } = useUser();

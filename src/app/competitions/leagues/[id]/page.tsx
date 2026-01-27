@@ -35,7 +35,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 type LeagueTab = 'standings' | 'fixture' | 'teams' | 'scorers' | 'applications';
 
 export default function LeagueDetailPage() {
-  const { id: leagueId } = useParams();
+  const params = useParams<{ id: string }>();
+  const leagueId = params?.id;
   const router = useRouter();
   const firestore = useFirestore();
   const { user } = useUser();

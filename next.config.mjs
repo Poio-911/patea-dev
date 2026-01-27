@@ -34,18 +34,17 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
+    // Mark OpenTelemetry and Genkit packages as server-external to avoid bundling issues
+    serverComponentsExternalPackages: [
+      'genkit',
+      '@genkit-ai/core',
+      '@genkit-ai/google-genai',
+      '@opentelemetry/api',
+      '@opentelemetry/sdk-node',
+      '@opentelemetry/instrumentation',
+      'require-in-the-middle',
+    ],
   },
-
-  // Mark OpenTelemetry and Genkit packages as server-external to avoid bundling issues
-  serverExternalPackages: [
-    'genkit',
-    '@genkit-ai/core',
-    '@genkit-ai/google-genai',
-    '@opentelemetry/api',
-    '@opentelemetry/sdk-node',
-    '@opentelemetry/instrumentation',
-    'require-in-the-middle',
-  ],
 
   // Disable static optimization completely
   generateBuildId: async () => {
