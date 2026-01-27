@@ -2,7 +2,7 @@
 'use client';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { } from '@/components/ui/card';
 import { PlayerCard } from '@/components/player-card';
 import { AddPlayerDialog } from '@/components/add-player-dialog';
 import { collection, query, where } from 'firebase/firestore';
@@ -99,19 +99,15 @@ export default function PlayersPage() {
       )}
 
       {sortedPlayers && sortedPlayers.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Jugadores del grupo</CardTitle>
-            <CardDescription>Ordenados por OVR, de mayor a menor</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {sortedPlayers.map((player, index) => (
-                <PlayerCard key={player.id} player={player} index={index} />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <>
+          <h2 className="text-xl font-bold">Jugadores del grupo</h2>
+          <p className="text-sm text-muted-foreground">Ordenados por OVR, de mayor a menor</p>
+          <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {sortedPlayers.map((player, index) => (
+              <PlayerCard key={player.id} player={player} index={index} />
+            ))}
+          </section>
+        </>
       )}
     </div>
   );
