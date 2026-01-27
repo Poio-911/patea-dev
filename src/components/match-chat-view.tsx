@@ -173,7 +173,7 @@ export function MatchChatView({ match }: MatchChatViewProps) {
       {/* Floating circular button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-20 right-6 w-14 h-14 rounded-full bg-[hsl(var(--whatsapp-green))] hover:bg-[hsl(var(--whatsapp-green))]/90 text-white shadow-lg flex items-center justify-center z-[100] transition-transform hover:scale-110"
+        className="fixed bottom-20 right-6 w-14 h-14 rounded-full bg-[hsl(var(--whatsapp-green))] hover:bg-[hsl(var(--whatsapp-green))]/90 text-white shadow-lg flex items-center justify-center z-[100] transition-transform hover:scale-110 pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         aria-label="Abrir chat del partido"
@@ -198,7 +198,7 @@ export function MatchChatView({ match }: MatchChatViewProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-20 right-6 w-96 max-w-[calc(100vw-3rem)] z-[100] mb-4"
+            className="fixed bottom-20 right-6 w-96 max-w-[calc(100vw-3rem)] z-[100] mb-4 pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]"
           >
             <Card className="bg-card/95 backdrop-blur-md border-2 shadow-2xl overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between p-4 border-b bg-[hsl(var(--whatsapp-green))] text-white">
