@@ -14,22 +14,25 @@
  */
 
 import { getAdminDb } from "../src/firebase/admin-init";
-import type { BracketMatch, Cup, GroupTeam, Match } from "../src/lib/types";
+import type { BracketMatch, Cup, GroupTeam, Match, Jersey } from "../src/lib/types";
 import { generateBracket, getCurrentRound, getRoundName } from "../src/lib/utils/cup-bracket";
 import { createCupMatchAction, updateMatchFinalScoreAction } from "../src/lib/actions/server-actions";
 
-async function createTeam(name: string, jersey: any, groupId: string): Promise<GroupTeam> {
+async function createTeam(name: string, jersey: Jersey, groupId: string, createdBy: string): Promise<GroupTeam> {
   const teamRef = getAdminDb().collection("teams").doc();
-  const team: Partial<GroupTeam> = {
+  const createdAt = new Date().toISOString();
+  const team: GroupTeam = {
     id: teamRef.id,
     name,
     jersey,
     groupId,
     members: [],
-    createdAt: new Date().toISOString(),
-  } as any;
+    createdBy,
+    createdAt,
+    isChallengeable: true,
+  } as GroupTeam;
   await teamRef.set(team);
-  return { id: teamRef.id, name, jersey, members: [] } as GroupTeam;
+  return team;
 }
 
 async function main() {
@@ -43,10 +46,10 @@ async function main() {
   const groupId = groupRef.id;
 
   // Create 4 teams
-  const teamA = await createTeam("Equipo A", { type: "plain", primaryColor: "#1463F3", secondaryColor: "#FFFFFF" }, groupId);
-  const teamB = await createTeam("Equipo B", { type: "plain", primaryColor: "#F36C21", secondaryColor: "#FFFFFF" }, groupId);
-  const teamC = await createTeam("Equipo C", { type: "plain", primaryColor: "#00B894", secondaryColor: "#FFFFFF" }, groupId);
-  const teamD = await createTeam("Equipo D", { type: "plain", primaryColor: "#D63031", secondaryColor: "#FFFFFF" }, groupId);
+  const teamA = await createTeam("Equipo A", { type: "plain", primaryColor: "#1463F3", secondaryColor: "#FFFFFF" }, groupId, ownerUid);
+  const teamB = await createTeam("Equipo B", { type: "plain", primaryColor: "#F36C21", secondaryColor: "#FFFFFF" }, groupId, ownerUid);
+  const teamC = await createTeam("Equipo C", { type: "plain", primaryColor: "#00B894", secondaryColor: "#FFFFFF" }, groupId, ownerUid);
+  const teamD = await createTeam("Equipo D", { type: "plain", primaryColor: "#D63031", secondaryColor: "#FFFFFF" }, groupId, ownerUid);
 
   const teams: (GroupTeam & { ovr?: number })[] = [
     { ...teamA, ovr: 80 },
