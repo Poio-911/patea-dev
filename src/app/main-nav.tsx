@@ -67,6 +67,16 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const { setTheme } = useTheme();
   const [matchesMenuOpen, setMatchesMenuOpen] = React.useState(false);
   const matchesMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const [menuStyle, setMenuStyle] = React.useState<'sheet' | 'bar'>(() => {
+    if (typeof window === 'undefined') return 'sheet';
+    const saved = window.localStorage.getItem('matchesMenuStyle');
+    return (saved === 'bar' || saved === 'sheet') ? saved : 'sheet';
+  });
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('matchesMenuStyle', menuStyle);
+    }
+  }, [menuStyle]);
   // Remove EvaluationsIcon alias if no longer needed or update it
   const EvaluationsIcon = baseNavItems[3].icon;
 
@@ -121,6 +131,25 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [matchesMenuOpen]);
+
+  // Long-press to toggle submenu style (dev-friendly prototype switch)
+  const pressTimerRef = React.useRef<number | null>(null);
+  const pressStartRef = React.useRef<number>(0);
+  const longPressMs = 550;
+  const { toast } = useToast();
+  const startPress = () => { pressStartRef.current = Date.now(); };
+  const endPress = () => {
+    if (!pressStartRef.current) return;
+    const elapsed = Date.now() - pressStartRef.current;
+    pressStartRef.current = 0;
+    if (elapsed >= longPressMs) {
+      setMenuStyle(prev => {
+        const next = prev === 'sheet' ? 'bar' : 'sheet';
+        toast({ title: 'Estilo de menú cambiado', description: next === 'sheet' ? 'Bottom Sheet' : 'Barra Compacta' });
+        return next;
+      });
+    }
+  };
 
   const handleLogout = async () => {
     if (auth) {
@@ -322,6 +351,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => setMatchesMenuOpen(o => !o)}
+                onMouseDown={startPress}
+                onMouseUp={endPress}
+                onTouchStart={startPress}
+                onTouchEnd={endPress}
                 className={cn('group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-foreground', (pathname.startsWith('/matches') || pathname.startsWith('/competitions') || pathname.startsWith('/find-match')) && 'text-foreground font-semibold')}
                 aria-haspopup="true"
                 aria-expanded={matchesMenuOpen}
@@ -347,120 +380,68 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                       document.body
                     )}
 
-                    {/* Premium menu with vibrant colors - also portalled for proper z-index */}
-                    {createPortal(
+                    {/* Prototypes: render either Bottom Sheet or Compact Bar */}
+                    {menuStyle === 'sheet' && createPortal(
                       <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
                         transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                        className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-[70]"
-                        ref={matchesMenuRef}
+                        className="fixed inset-x-0 bottom-0 z-[70]"
                       >
-                        <div className="flex flex-col gap-2 p-3 rounded-2xl bg-background/95 backdrop-blur-xl border border-border/50 shadow-2xl min-w-[180px]">
-                          {/* Partidos - Themed via tokens (primary) */}
-                          <Link
-                            href="/matches"
-                            className={cn(
-                              'flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer hover:scale-[1.02] active:scale-[0.98]',
-                              pathname.startsWith('/matches') && !pathname.startsWith('/find-match')
-                                ? 'bg-secondary text-secondary-foreground shadow-lg shadow-secondary/30'
-                                : 'bg-gradient-to-r from-secondary/20 to-secondary/10 hover:from-secondary/25 hover:to-secondary/15 hover:shadow-md text-foreground'
-                            )}
-                            onClick={() => setMatchesMenuOpen(false)}
-                          >
-                            <div className={cn(
-                              'flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200',
-                              pathname.startsWith('/matches') && !pathname.startsWith('/find-match')
-                                ? 'bg-white/20'
-                                : 'bg-secondary/20'
-                            )}>
-                              <Calendar className={cn(
-                                'h-5 w-5',
-                                pathname.startsWith('/matches') && !pathname.startsWith('/find-match')
-                                  ? 'text-secondary-foreground'
-                                  : 'text-foreground'
-                              )} />
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-sm font-semibold">Partidos</span>
-                              <span className={cn(
-                                'text-[10px]',
-                                  pathname.startsWith('/matches') && !pathname.startsWith('/find-match')
-                                    ? 'text-secondary-foreground/70'
-                                    : 'text-muted-foreground'
-                              )}>Tus partidos</span>
-                            </div>
-                          </Link>
+                        <div ref={matchesMenuRef} className="rounded-t-2xl bg-background/95 backdrop-blur-xl border-t border-border shadow-[0_-8px_24px_rgba(0,0,0,0.2)] pt-2 pb-[calc(env(safe-area-inset-bottom)+12px)]">
+                          <div className="mx-auto h-1.5 w-10 rounded-full bg-muted mb-2" />
+                          <div className="px-4 pb-2 space-y-2">
+                            <Link href="/matches" onClick={() => setMatchesMenuOpen(false)} className={cn('flex items-center gap-3 p-3 rounded-xl transition hover:bg-secondary/30', pathname.startsWith('/matches') && !pathname.startsWith('/find-match') && 'bg-secondary text-secondary-foreground')}>
+                              <div className="w-9 h-9 grid place-items-center rounded-lg bg-secondary/30">
+                                <Calendar className="h-5 w-5" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-semibold">Partidos</span>
+                                <span className="text-[11px] text-muted-foreground">Tus partidos</span>
+                              </div>
+                            </Link>
+                            <Link href="/find-match" onClick={() => setMatchesMenuOpen(false)} className={cn('flex items-center gap-3 p-3 rounded-xl transition hover:bg-secondary/30', pathname.startsWith('/find-match') && 'bg-secondary text-secondary-foreground')}>
+                              <div className="w-9 h-9 grid place-items-center rounded-lg bg-secondary/30">
+                                <Search className="h-5 w-5" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-semibold">Buscar</span>
+                                <span className="text-[11px] text-muted-foreground">Encontrar partido</span>
+                              </div>
+                            </Link>
+                            <Link href="/competitions" onClick={() => setMatchesMenuOpen(false)} className={cn('flex items-center gap-3 p-3 rounded-xl transition hover:bg-secondary/30', pathname.startsWith('/competitions') && 'bg-secondary text-secondary-foreground')}>
+                              <div className="w-9 h-9 grid place-items-center rounded-lg bg-secondary/30">
+                                <Trophy className="h-5 w-5" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-semibold">Competiciones</span>
+                                <span className="text-[11px] text-muted-foreground">Torneos y ligas</span>
+                              </div>
+                            </Link>
+                          </div>
+                        </div>
+                      </motion.div>,
+                      document.body
+                    )}
 
-                          {/* Buscar - Themed via tokens (accent) */}
-                          <Link
-                            href="/find-match"
-                            className={cn(
-                              'flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer hover:scale-[1.02] active:scale-[0.98]',
-                              pathname.startsWith('/find-match')
-                                ? 'bg-secondary text-secondary-foreground shadow-lg shadow-secondary/30'
-                                : 'bg-gradient-to-r from-secondary/20 to-secondary/10 hover:from-secondary/25 hover:to-secondary/15 hover:shadow-md text-foreground'
-                            )}
-                            onClick={() => setMatchesMenuOpen(false)}
-                          >
-                            <div className={cn(
-                              'flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200',
-                              pathname.startsWith('/find-match')
-                                ? 'bg-white/20'
-                                : 'bg-secondary/20'
-                            )}>
-                              <Search className={cn(
-                                'h-5 w-5',
-                                pathname.startsWith('/find-match')
-                                  ? 'text-secondary-foreground'
-                                  : 'text-foreground'
-                              )} />
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-sm font-semibold">Buscar</span>
-                              <span className={cn(
-                                'text-[10px]',
-                                  pathname.startsWith('/find-match')
-                                    ? 'text-secondary-foreground/70'
-                                    : 'text-muted-foreground'
-                              )}>Encontrar partido</span>
-                            </div>
+                    {menuStyle === 'bar' && createPortal(
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                        className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom)+8px)] left-1/2 -translate-x-1/2 z-[70]"
+                      >
+                        <div ref={matchesMenuRef} className="flex items-center gap-2 px-2 py-2 rounded-2xl bg-background/95 backdrop-blur-xl border border-border shadow-2xl">
+                          <Link href="/matches" onClick={() => setMatchesMenuOpen(false)} className={cn('inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm transition', pathname.startsWith('/matches') && !pathname.startsWith('/find-match') ? 'bg-secondary text-secondary-foreground' : 'hover:bg-secondary/30') }>
+                            <Calendar className="h-4 w-4" /> <span>Partidos</span>
                           </Link>
-
-                          {/* Competiciones - Themed via tokens (primary) */}
-                          <Link
-                            href="/competitions"
-                            className={cn(
-                              'flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer hover:scale-[1.02] active:scale-[0.98]',
-                              pathname.startsWith('/competitions')
-                                ? 'bg-secondary text-secondary-foreground shadow-lg shadow-secondary/30'
-                                : 'bg-gradient-to-r from-secondary/20 to-secondary/10 hover:from-secondary/25 hover:to-secondary/15 hover:shadow-md text-foreground'
-                            )}
-                            onClick={() => setMatchesMenuOpen(false)}
-                          >
-                            <div className={cn(
-                              'flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200',
-                              pathname.startsWith('/competitions')
-                                ? 'bg-white/20'
-                                : 'bg-secondary/20'
-                            )}>
-                              <Trophy className={cn(
-                                'h-5 w-5',
-                                pathname.startsWith('/competitions')
-                                  ? 'text-secondary-foreground'
-                                  : 'text-foreground'
-                              )} />
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-sm font-semibold">Competiciones</span>
-                              <span className={cn(
-                                'text-[10px]',
-                                  pathname.startsWith('/competitions')
-                                    ? 'text-secondary-foreground/70'
-                                    : 'text-muted-foreground'
-                              )}>Torneos y ligas</span>
-                            </div>
+                          <Link href="/find-match" onClick={() => setMatchesMenuOpen(false)} className={cn('inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm transition', pathname.startsWith('/find-match') ? 'bg-secondary text-secondary-foreground' : 'hover:bg-secondary/30') }>
+                            <Search className="h-4 w-4" /> <span>Buscar</span>
+                          </Link>
+                          <Link href="/competitions" onClick={() => setMatchesMenuOpen(false)} className={cn('inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm transition', pathname.startsWith('/competitions') ? 'bg-secondary text-secondary-foreground' : 'hover:bg-secondary/30') }>
+                            <Trophy className="h-4 w-4" /> <span>Competiciones</span>
                           </Link>
                         </div>
                       </motion.div>,

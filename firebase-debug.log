@@ -1,0 +1,84 @@
+[debug] [2026-01-27T15:33:23.212Z] ----------------------------------------------------------------------
+[debug] [2026-01-27T15:33:23.214Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\poio9\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only hosting
+[debug] [2026-01-27T15:33:23.214Z] CLI Version:   15.4.0
+[debug] [2026-01-27T15:33:23.214Z] Platform:      win32
+[debug] [2026-01-27T15:33:23.214Z] Node Version:  v24.12.0
+[debug] [2026-01-27T15:33:23.214Z] Time:          Tue Jan 27 2026 12:33:23 GMT-0300 (hora estándar de Uruguay)
+[debug] [2026-01-27T15:33:23.214Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-01-27T15:33:24.417Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-27T15:33:24.417Z] > authorizing via signed-in user (santiago.lopez.toma@gmail.com)
+[debug] [2026-01-27T15:33:24.417Z] [iam] checking project mil-disculpis for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-01-27T15:33:24.418Z] Checked if tokens are valid: true, expires at: 1769531017964
+[debug] [2026-01-27T15:33:24.418Z] Checked if tokens are valid: true, expires at: 1769531017964
+[debug] [2026-01-27T15:33:24.419Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/mil-disculpis:testIamPermissions [none]
+[debug] [2026-01-27T15:33:24.419Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/mil-disculpis:testIamPermissions x-goog-quota-user=projects/mil-disculpis
+[debug] [2026-01-27T15:33:24.419Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/mil-disculpis:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-01-27T15:33:25.386Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/mil-disculpis:testIamPermissions 200
+[debug] [2026-01-27T15:33:25.386Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/mil-disculpis:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-01-27T15:33:25.386Z] Checked if tokens are valid: true, expires at: 1769531017964
+[debug] [2026-01-27T15:33:25.387Z] Checked if tokens are valid: true, expires at: 1769531017964
+[debug] [2026-01-27T15:33:25.387Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/mil-disculpis [none]
+[debug] [2026-01-27T15:33:26.000Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/mil-disculpis 200
+[debug] [2026-01-27T15:33:26.000Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/mil-disculpis {"projectId":"mil-disculpis","projectNumber":"5614567933","displayName":"futbol-App","name":"projects/mil-disculpis","resources":{"hostingSite":"mil-disculpis","realtimeDatabaseInstance":"mil-disculpis-default-rtdb"},"state":"ACTIVE","etag":"1_e5144d4b-271f-449c-a67d-372b5ff62141"}
+[debug] [2026-01-27T15:33:29.013Z] defaultcredentials: writing to file C:\Users\poio9\AppData\Roaming\firebase\santiago_lopez.toma_gmail.com_application_default_credentials.json
+[debug] [2026-01-27T15:33:29.014Z] Checked if tokens are valid: true, expires at: 1769531017964
+[debug] [2026-01-27T15:33:29.014Z] Checked if tokens are valid: true, expires at: 1769531017964
+[debug] [2026-01-27T15:33:29.014Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/mil-disculpis/sites pageToken=&pageSize=10
+[debug] [2026-01-27T15:33:31.224Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/mil-disculpis/sites 200
+[debug] [2026-01-27T15:33:31.224Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/mil-disculpis/sites {"sites":[{"name":"projects/mil-disculpis/sites/mil-disculpis","defaultUrl":"https://mil-disculpis.web.app","appId":"1:5614567933:web:0dce7bf37b8325c0861994","type":"DEFAULT_SITE"}]}
+[debug] [2026-01-27T15:33:31.224Z] Checked if tokens are valid: true, expires at: 1769531017964
+[debug] [2026-01-27T15:33:31.224Z] Checked if tokens are valid: true, expires at: 1769531017964
+[debug] [2026-01-27T15:33:31.224Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:5614567933:web:0dce7bf37b8325c0861994/config [none]
+[debug] [2026-01-27T15:33:32.561Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:5614567933:web:0dce7bf37b8325c0861994/config 200
+[debug] [2026-01-27T15:33:32.561Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:5614567933:web:0dce7bf37b8325c0861994/config {"projectId":"mil-disculpis","appId":"1:5614567933:web:0dce7bf37b8325c0861994","databaseURL":"https://mil-disculpis-default-rtdb.firebaseio.com","storageBucket":"mil-disculpis.firebasestorage.app","apiKey":"AIzaSyAes7EVn8hQswS8XgvDMJfN6U4IT_ZL_WY","authDomain":"mil-disculpis.firebaseapp.com","messagingSenderId":"5614567933","measurementId":"G-EMLP4TKXKR","projectNumber":"5614567933","version":"2"}
+[info] 
+   Thank you for trying our early preview of Next.js support on Firebase Hosting.
+   During the preview, support is best-effort and breaking changes can be expected. Proceed with caution.
+
+   Documentation: https://firebase.google.com/docs/hosting/frameworks/nextjs
+   File a bug: https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
+   Submit a feature request: https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+
+   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+
+[debug] [2026-01-27T15:33:37.670Z] Checked if tokens are valid: true, expires at: 1769531017964
+[debug] [2026-01-27T15:33:37.670Z] Checked if tokens are valid: true, expires at: 1769531017964
+[debug] [2026-01-27T15:33:37.671Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/mil-disculpis/sites/mil-disculpis [none]
+[debug] [2026-01-27T15:33:38.764Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/mil-disculpis/sites/mil-disculpis 200
+[debug] [2026-01-27T15:33:38.764Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/mil-disculpis/sites/mil-disculpis {"name":"projects/mil-disculpis/sites/mil-disculpis","defaultUrl":"https://mil-disculpis.web.app","appId":"1:5614567933:web:0dce7bf37b8325c0861994","type":"DEFAULT_SITE"}
+[info] [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+
+[info]   ▲ Next.js 14.2.5
+
+[info]   - Environments: .env.local
+
+
+[info]    Creating an optimized production build ...
+
+[info]  ✓ (pwa) Compiling for server...
+
+[info]  ✓ (pwa) Compiling for server...
+
+[info]  ✓ (pwa) Compiling for client (static)...
+
+[info]  ○ (pwa) Service worker: D:\Pateá\public\sw.js
+
+[info]  ○ (pwa)   URL: /sw.js
+ ○ (pwa)   Scope: /
+
+[info]  ✓ Compiled successfully
+
+[info]    Linting and checking validity of types ...
+
+[info] Failed to compile.
+
+
+[info] Type error: File 'D:/Pateá/.next/types/app/api/auth/google-fit/callback/route.ts' not found.
+  The file is in the program because:
+    Root file specified for compilation
+
+
+[debug] [2026-01-27T15:34:07.608Z] Error: ENOENT: no such file or directory, open 'D:\Pateá\.next\export-marker.json'
+[error] 
+[error] Error: An unexpected error has occurred.
