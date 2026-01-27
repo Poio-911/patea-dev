@@ -157,7 +157,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
           </Button>
         </div>
 
-        <PageHeader title={match.title} className="dark:text-white px-4 md:px-0" />
+        <PageHeader title={match.title} className="dark:text-white" />
 
         <MatchInfoCard
           match={match}
@@ -174,12 +174,12 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
 
         {/* Competition Controls */}
         {isCompetitionMatch && permissions.isOwner && (
-          <div className="px-4 md:px-0 mt-6">
+          <div className="mt-6">
             <CompetitionMatchControls match={match} />
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 md:px-0 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           <div className="lg:col-span-3 space-y-6">
             {match.teams && match.teams.length > 0 ? (
               <MatchTeams

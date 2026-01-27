@@ -117,7 +117,7 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
     };
 
     return (
-        <div className="container max-w-4xl mx-auto p-4 space-y-6">
+        <div className="max-w-4xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <Button asChild variant="outline">
