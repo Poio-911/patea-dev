@@ -13,7 +13,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { motion } from 'framer-motion';
 import { MatchCard } from '@/components/match-card';
 import { SportsBroadcastHeader } from '@/components/matches/sports-broadcast-header';
-import { CategoryPillNav, type MatchCategory } from '@/components/matches/category-pill-nav';
+// Removed category pill nav as we focus this page on amistosos
 import { QuickTimeFilter, type TimeFilter } from '@/components/matches/quick-time-filter';
 import { HeroMatchCard } from '@/components/matches/hero-match-card';
 import { PendingFinalizationDialog } from '@/components/matches/pending-finalization-dialog';
@@ -35,7 +35,7 @@ export default function MatchesPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
-    const [activeCategory, setActiveCategory] = useState<MatchCategory>('amistosos');
+    // This page now focuses only on amistosos (manual, collaborative, by_teams, intergroup_friendly)
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('upcoming');
     const [showPendingDialog, setShowPendingDialog] = useState(false);
     const hasCheckedPending = useRef(false);
@@ -102,51 +102,9 @@ export default function MatchesPage() {
         }
     };
 
-    const categorizedMatches = useMemo(() => {
-        const amistosos = allMatches.filter(m => m.type === 'manual' || m.type === 'collaborative' || m.type === 'by_teams' || m.type === 'intergroup_friendly');
-        const allLeagueMatches = allMatches.filter(m => m.type === 'league' || m.type === 'league_final');
-        const matchesByLeague = allLeagueMatches.reduce((acc, match) => {
-            const leagueId = match.leagueInfo?.leagueId || 'unknown';
-            if (!acc[leagueId]) acc[leagueId] = [];
-            acc[leagueId].push(match);
-            return acc;
-        }, {} as Record<string, Match[]>);
-        const focusedLeagueMatches: Match[] = [];
-        Object.values(matchesByLeague).forEach(leagueMatches => {
-            const matchesByRound = leagueMatches.reduce((acc, match) => {
-                const round = match.leagueInfo?.round || 0;
-                if (!acc[round]) acc[round] = [];
-                acc[round].push(match);
-                return acc;
-            }, {} as Record<number, Match[]>);
-            const rounds = Object.keys(matchesByRound).map(Number).sort((a, b) => a - b);
-            if (rounds.length <= 2) {
-                focusedLeagueMatches.push(...leagueMatches);
-            } else {
-                const currentRound = rounds.find(round => {
-                    const roundMatches = matchesByRound[round];
-                    const allCompleted = roundMatches.every(m => m.status === 'completed' || m.status === 'evaluated');
-                    const nextRound = rounds[rounds.indexOf(round) + 1];
-                    if (!nextRound) return false;
-                    const nextRoundMatches = matchesByRound[nextRound];
-                    const anyNextStarted = nextRoundMatches.some(m => m.status !== 'upcoming');
-                    return allCompleted && anyNextStarted;
-                }) || rounds[0];
-                const currentIndex = rounds.indexOf(currentRound);
-                const nextRound = rounds[currentIndex + 1];
-                if (nextRound) {
-                    focusedLeagueMatches.push(...matchesByRound[currentRound], ...matchesByRound[nextRound]);
-                } else {
-                    const roundsToShow = rounds.slice(-2);
-                    roundsToShow.forEach(r => focusedLeagueMatches.push(...matchesByRound[r]));
-                }
-            }
-        });
-        const copas = allMatches.filter(m => m.type === 'cup');
-        return { amistosos, ligas: focusedLeagueMatches, copas };
+    const amistososMatches = useMemo(() => {
+        return allMatches.filter(m => m.type === 'manual' || m.type === 'collaborative' || m.type === 'by_teams' || m.type === 'intergroup_friendly');
     }, [allMatches]);
-
-    const categoryMatches = categorizedMatches[activeCategory];
 
     const filteredMatches = useMemo(() => {
         const now = new Date();
@@ -155,28 +113,28 @@ export default function MatchesPage() {
         const weekEnd = new Date(today.getTime() + 7 * 86400000);
         switch (timeFilter) {
             case 'today':
-                return categoryMatches.filter(m => {
+                return amistososMatches.filter(m => {
                     const d = new Date(m.date);
                     const matchDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
                     return matchDay.getTime() === today.getTime();
                 });
             case 'tomorrow':
-                return categoryMatches.filter(m => {
+                return amistososMatches.filter(m => {
                     const d = new Date(m.date);
                     const matchDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
                     return matchDay.getTime() === tomorrow.getTime();
                 });
             case 'this_week':
-                return categoryMatches.filter(m => {
+                return amistososMatches.filter(m => {
                     const d = new Date(m.date);
                     return d >= today && d < weekEnd;
                 });
             case 'history':
-                return categoryMatches.filter(m => new Date(m.date) < now && m.status !== 'upcoming' && m.status !== 'active');
+                return amistososMatches.filter(m => new Date(m.date) < now && m.status !== 'upcoming' && m.status !== 'active');
             default:
-                return categoryMatches.filter(m => new Date(m.date) >= now || m.status === 'upcoming' || m.status === 'active');
+                return amistososMatches.filter(m => new Date(m.date) >= now || m.status === 'upcoming' || m.status === 'active');
         }
-    }, [categoryMatches, timeFilter]);
+    }, [amistososMatches, timeFilter]);
 
     const sortedFilteredMatches = useMemo(() => {
         return [...filteredMatches].sort((a, b) => {
@@ -188,11 +146,11 @@ export default function MatchesPage() {
     const featuredMatch = useMemo(() => {
         if (timeFilter === 'history') return null;
         const now = new Date();
-        const upcomingMatches = categoryMatches
+        const upcomingMatches = amistososMatches
             .filter(m => new Date(m.date) >= now || m.status === 'upcoming' || m.status === 'active')
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         return upcomingMatches[0] || null;
-    }, [categoryMatches, timeFilter]);
+    }, [amistososMatches, timeFilter]);
 
     const timeCounts = useMemo(() => {
         const now = new Date();
@@ -200,24 +158,24 @@ export default function MatchesPage() {
         const tomorrow = new Date(today.getTime() + 86400000);
         const weekEnd = new Date(today.getTime() + 7 * 86400000);
         return {
-            today: categoryMatches.filter(m => {
+            today: amistososMatches.filter(m => {
                 const d = new Date(m.date);
                 const matchDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
                 return matchDay.getTime() === today.getTime();
             }).length,
-            tomorrow: categoryMatches.filter(m => {
+            tomorrow: amistososMatches.filter(m => {
                 const d = new Date(m.date);
                 const matchDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
                 return matchDay.getTime() === tomorrow.getTime();
             }).length,
-            this_week: categoryMatches.filter(m => {
+            this_week: amistososMatches.filter(m => {
                 const d = new Date(m.date);
                 return d >= today && d < weekEnd;
             }).length,
-            upcoming: categoryMatches.filter(m => new Date(m.date) >= now || m.status === 'upcoming' || m.status === 'active').length,
-            history: categoryMatches.filter(m => new Date(m.date) < now && m.status !== 'upcoming' && m.status !== 'active').length,
+            upcoming: amistososMatches.filter(m => new Date(m.date) >= now || m.status === 'upcoming' || m.status === 'active').length,
+            history: amistososMatches.filter(m => new Date(m.date) < now && m.status !== 'upcoming' && m.status !== 'active').length,
         };
-    }, [categoryMatches]);
+    }, [amistososMatches]);
 
     const loading = userLoading || playersLoading || groupMatchesLoading || joinedPublicMatchesLoading;
 
@@ -225,12 +183,6 @@ export default function MatchesPage() {
         if (!allGroupPlayers) return [];
         return [...allGroupPlayers].sort((a, b) => b.ovr - a.ovr);
     }, [allGroupPlayers]);
-
-    const categories = useMemo(() => [
-        { id: 'amistosos' as const, label: 'Amistosos', count: categorizedMatches.amistosos.length },
-        { id: 'ligas' as const, label: 'Ligas', count: categorizedMatches.ligas.length },
-        { id: 'copas' as const, label: 'Copas', count: categorizedMatches.copas.length },
-    ], [categorizedMatches]);
 
     const gridMatches = useMemo(() => {
         if (!featuredMatch) return sortedFilteredMatches;
@@ -279,7 +231,7 @@ export default function MatchesPage() {
             {user?.activeGroupId && (
                 <div className="space-y-6">
                     {featuredMatch && timeFilter !== 'history' && (
-                        <HeroMatchCard match={featuredMatch} allPlayers={sortedPlayers} />
+                        <HeroMatchCard match={featuredMatch} allPlayers={sortedPlayers} variant="compact" />
                     )}
 
                     <Card>
@@ -288,10 +240,9 @@ export default function MatchesPage() {
                             <CardDescription>Filtrá por categoría y fecha</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            <CategoryPillNav categories={categories} activeCategory={activeCategory} onCategoryChange={setActiveCategory} />
                             <QuickTimeFilter activeFilter={timeFilter} onFilterChange={setTimeFilter} counts={timeCounts} />
                             {gridMatches.length > 0 ? (
-                                <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={listVariants} initial="hidden" animate="visible" key={`${activeCategory}-${timeFilter}`}>
+                                <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={listVariants} initial="hidden" animate="visible" key={`${timeFilter}`}>
                                     {gridMatches.map(match => (
                                         <motion.div key={match.id} variants={itemVariants}>
                                             <MatchCard match={match} allPlayers={sortedPlayers} />
@@ -310,11 +261,7 @@ export default function MatchesPage() {
                                         <>
                                             <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
                                             <h2 className="text-xl font-semibold mb-2">No hay partidos</h2>
-                                            <p className="text-muted-foreground mb-6 max-w-md">
-                                                {activeCategory === 'amistosos' && '¡Es hora de organizar el próximo encuentro!'}
-                                                {activeCategory === 'ligas' && 'No participas en ninguna liga actualmente. Ve a Competiciones para unirte.'}
-                                                {activeCategory === 'copas' && 'No hay copas en curso. Ve a Competiciones para crear una.'}
-                                            </p>
+                                            <p className="text-muted-foreground mb-6 max-w-md">¡Es hora de organizar el próximo encuentro!</p>
                                         </>
                                     )}
                                 </div>

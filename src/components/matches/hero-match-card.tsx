@@ -15,6 +15,7 @@ interface HeroMatchCardProps {
   match: Match;
   allPlayers: Player[];
   className?: string;
+  variant?: 'default' | 'compact';
 }
 
 interface CountdownValues {
@@ -146,7 +147,7 @@ function getMatchStatus(match: Match): 'live' | 'today' | 'upcoming' {
   return 'upcoming';
 }
 
-export function HeroMatchCard({ match, allPlayers, className }: HeroMatchCardProps) {
+export function HeroMatchCard({ match, allPlayers, className, variant = 'default' }: HeroMatchCardProps) {
   const matchStatus = getMatchStatus(match);
   const hasTeams = match.teams && match.teams.length === 2;
 
@@ -155,15 +156,15 @@ export function HeroMatchCard({ match, allPlayers, className }: HeroMatchCardPro
       className={cn(
         'relative overflow-hidden rounded-xl',
         'bg-card border border-border',
-        'p-6 md:p-8',
+        variant === 'compact' ? 'p-4 md:p-5' : 'p-6 md:p-8',
         'sports-card-hover',
         className
       )}
     >
-      <div className="space-y-6">
+      <div className={cn('space-y-6', variant === 'compact' && 'space-y-4')}>
         {/* Header with badge */}
         <div className="flex items-center justify-between">
-          <LiveStatusBadge status={matchStatus} size="md" className="badge-glow" />
+          <LiveStatusBadge status={matchStatus} size={variant === 'compact' ? 'sm' : 'md'} className="badge-glow" />
           <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
             Próximo partido
           </span>
@@ -174,40 +175,42 @@ export function HeroMatchCard({ match, allPlayers, className }: HeroMatchCardPro
           <div className="flex items-center justify-center gap-4 sm:gap-8">
             {/* Team 1 */}
             <div className="flex flex-col items-center gap-2 text-center">
-              <JerseyPreview jersey={match.teams[0].jersey} size="lg" />
-              <span className="text-sm sm:text-base font-bold truncate max-w-[100px] sm:max-w-[140px]">
+              <JerseyPreview jersey={match.teams[0].jersey} size={variant === 'compact' ? 'md' : 'lg'} />
+              <span className={cn('font-bold truncate max-w-[100px] sm:max-w-[140px]', variant === 'compact' ? 'text-xs sm:text-sm' : 'text-sm sm:text-base')}>
                 {match.teams[0].name}
               </span>
             </div>
 
             {/* VS */}
             <div className="flex flex-col items-center">
-              <span className="text-2xl sm:text-3xl font-bold text-muted-foreground">VS</span>
+              <span className={cn('font-bold text-muted-foreground', variant === 'compact' ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl')}>VS</span>
             </div>
 
             {/* Team 2 */}
             <div className="flex flex-col items-center gap-2 text-center">
-              <JerseyPreview jersey={match.teams[1].jersey} size="lg" />
-              <span className="text-sm sm:text-base font-bold truncate max-w-[100px] sm:max-w-[140px]">
+              <JerseyPreview jersey={match.teams[1].jersey} size={variant === 'compact' ? 'md' : 'lg'} />
+              <span className={cn('font-bold truncate max-w-[100px] sm:max-w-[140px]', variant === 'compact' ? 'text-xs sm:text-sm' : 'text-sm sm:text-base')}>
                 {match.teams[1].name}
               </span>
             </div>
           </div>
         ) : (
           <div className="text-center">
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+            <h2 className={cn('font-bold text-foreground', variant === 'compact' ? 'text-lg sm:text-xl md:text-2xl' : 'text-xl sm:text-2xl md:text-3xl')}>
               {match.title}
             </h2>
           </div>
         )}
 
         {/* Countdown */}
-        <div className="py-4">
-          <HeroCountdown matchDate={match.date} matchTime={match.time} />
+        <div className={cn('py-4', variant === 'compact' && 'py-2') }>
+          <div className={cn(variant === 'compact' && 'scale-[0.92] md:scale-100 origin-top') }>
+            <HeroCountdown matchDate={match.date} matchTime={match.time} />
+          </div>
         </div>
 
         {/* Match info */}
-        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-sm text-muted-foreground">
+        <div className={cn('flex flex-wrap items-center justify-center text-muted-foreground', variant === 'compact' ? 'gap-3 text-xs sm:text-sm' : 'gap-4 sm:gap-6 text-sm')}>
           <div className="flex items-center gap-1.5">
             <MapPin className="h-4 w-4" />
             <span className="truncate max-w-[150px]">{match.location.name || match.location.address}</span>
@@ -226,7 +229,7 @@ export function HeroMatchCard({ match, allPlayers, className }: HeroMatchCardPro
 
         {/* Action button */}
         <div className="flex justify-center">
-          <Button asChild size="lg" className="font-bold">
+          <Button asChild size={variant === 'compact' ? 'md' : 'lg'} className="font-bold">
             <Link href={`/matches/${match.id}`}>
               <Eye className="mr-2 h-5 w-5" />
               Ver Detalles

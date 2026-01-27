@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Trophy, ClipboardCheck, X, Search } from 'lucide-react';
+import { LayoutDashboard, LogOut, Users2, User, BellRing, Moon, Sun, Trophy, ClipboardCheck, X, Search, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
@@ -58,7 +58,7 @@ const matchesSubmenuItems = [
 
 export function MainNav({ children }: { children: React.ReactNode }) {
   // ... (keep existing hooks)
-  const pathname = usePathname();
+  const pathname = usePathname() ?? '';
   const { user, loading: userLoading } = useUser();
   const auth = useAuth();
   const firestore = useFirestore();
@@ -326,7 +326,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                 aria-haspopup="true"
                 aria-expanded={matchesMenuOpen}
               >
-                <Trophy className={cn('h-5 w-5 transition-all duration-200', (pathname.startsWith('/matches') || pathname.startsWith('/competitions') || pathname.startsWith('/find-match')) && 'scale-110')} />
+                <Calendar className={cn('h-5 w-5 transition-all duration-200', (pathname.startsWith('/matches') || pathname.startsWith('/competitions') || pathname.startsWith('/find-match')) && 'scale-110')} />
                 <span className="text-[10px] leading-none">Partidos</span>
               </button>
 
@@ -341,7 +341,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.15 }}
-                        className="fixed inset-0 z-40"
+                        className="fixed inset-0 z-[60]"
                         onClick={() => setMatchesMenuOpen(false)}
                       />,
                       document.body
@@ -354,7 +354,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                        className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-50"
+                        className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-[70]"
                       >
                         <div className="flex flex-col gap-2 p-3 rounded-2xl bg-background/95 backdrop-blur-xl border border-border/50 shadow-2xl min-w-[180px]">
                           {/* Partidos - Themed via tokens (primary) */}
@@ -374,7 +374,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
                                 ? 'bg-white/20'
                                 : 'bg-secondary/20'
                             )}>
-                              <Trophy className={cn(
+                              <Calendar className={cn(
                                 'h-5 w-5',
                                 pathname.startsWith('/matches') && !pathname.startsWith('/find-match')
                                   ? 'text-secondary-foreground'
