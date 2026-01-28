@@ -45,6 +45,7 @@
     --whatsapp-blue-check: 199 89% 62%;
     --whatsapp-outgoing: 142 70% 45%;
     --whatsapp-incoming: 0 0% 100%;
+    --whatsapp-foreground: 0 0% 100%;
 
     /* Colores para gráficos */
     --chart-1: 340 82% 61%;
@@ -61,6 +62,16 @@
     --warning-foreground: 222.2 47.4% 11.2%;
     --info: 217 91% 60%;
     --info-foreground: 210 40% 98%;
+
+    /* Position Colors (Light only) */
+    --pos-del: 0 85% 60%;
+    /* Delantero */
+    --pos-med: 270 85% 60%;
+    /* Medio */
+    --pos-def: 210 85% 60%;
+    /* Defensa */
+    --pos-por: 30 90% 60%;
+    /* Portero */
   }
 
   /* Game Mode (FC SPORT inspired) palette scoped by .game theme class on <html> */
@@ -117,6 +128,7 @@
     --whatsapp-blue-check: 199 89% 62%;
     --whatsapp-outgoing: 142 50% 25%;
     --whatsapp-incoming: 220 20% 18%;
+    --whatsapp-foreground: 0 0% 100%;
   }
   
   /* Nike Theme: bold black/white with authentic Nike brand colors */
@@ -181,6 +193,8 @@
     /* Silver */
     --ovr-bronze: 30 60% 50%;
     /* Bronze */
+    /* WhatsApp Foreground */
+    --whatsapp-foreground: 0 0% 98%;
   }
 }
 
@@ -301,6 +315,38 @@
 }
 
 @layer utilities {
+  /* Google Places Autocomplete dropdown: ensure it's clickable above dialogs and themed */
+  .pac-container {
+    z-index: 2147483647 !important; /* above Radix Dialog/Popovers */
+    background: hsl(var(--popover));
+    color: hsl(var(--popover-foreground));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: 0 10px 30px rgba(2, 6, 23, 0.12);
+    font-family: inherit;
+    overflow: hidden;
+  }
+
+  .pac-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-top: 1px solid hsl(var(--border));
+  }
+
+  .pac-item:hover,
+  .pac-item.pac-item-selected {
+    background: hsl(var(--muted));
+  }
+
+  .pac-item .pac-item-query {
+    color: hsl(var(--foreground));
+    font-weight: 600;
+  }
+
+  .pac-icon {
+    filter: grayscale(1);
+    opacity: 0.7;
+  }
 
   /* Animación de Brillo Holográfico */
   @keyframes shimmer {
@@ -1311,7 +1357,7 @@
 
   /* Outgoing message bubble (own messages) */
   .chat-bubble-outgoing {
-    @apply relative bg-[hsl(var(--whatsapp-outgoing))] text-white rounded-lg rounded-br-none;
+    @apply relative bg-[hsl(var(--whatsapp-outgoing))] text-[hsl(var(--whatsapp-foreground))] rounded-lg rounded-br-none;
     max-width: 85%;
   }
 
@@ -1366,7 +1412,7 @@
   }
 
   .chat-bubble-outgoing .chat-reply-preview {
-    @apply border-white/50 bg-white/10;
+    @apply border-[hsl(var(--whatsapp-foreground))]/50 bg-[hsl(var(--whatsapp-foreground))]/10;
   }
 
   /* Swipe to reply animation */
@@ -1407,7 +1453,7 @@
   }
 
   .chat-bubble-outgoing .chat-timestamp {
-    @apply text-white/70;
+    @apply text-[hsl(var(--whatsapp-foreground))]/70;
   }
 
   /* Input area styling */
@@ -1422,7 +1468,7 @@
   }
 
   .chat-send-button {
-    @apply rounded-full w-10 h-10 bg-[hsl(var(--whatsapp-green))] text-white hover:bg-[hsl(var(--whatsapp-green))]/90 flex items-center justify-center transition-all;
+    @apply rounded-full w-10 h-10 bg-[hsl(var(--whatsapp-green))] text-[hsl(var(--whatsapp-foreground))] hover:bg-[hsl(var(--whatsapp-green))]/90 flex items-center justify-center transition-all;
   }
 
   .chat-send-button:disabled {

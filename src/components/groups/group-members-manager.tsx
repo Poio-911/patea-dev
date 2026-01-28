@@ -326,7 +326,7 @@ export function GroupMembersManager({ groupId, ownerId }: GroupMembersManagerPro
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleRemoveMember}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive hover:bg-destructive/90"
             >
               {actionLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

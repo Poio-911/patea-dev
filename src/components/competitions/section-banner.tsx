@@ -15,19 +15,19 @@ const bannerConfig = {
     icon: Trophy,
     bannerClass: 'fifa-banner-cup',
     iconClass: 'fifa-cup-icon fifa-cup-icon-animated',
-    accentColor: 'text-yellow-600 dark:text-yellow-500',
+    accentColor: 'text-warning',
   },
   league: {
     icon: BarChart3,
     bannerClass: 'fifa-banner-league',
     iconClass: 'fifa-league-icon fifa-league-icon-animated',
-    accentColor: 'text-blue-600 dark:text-blue-400',
+    accentColor: 'text-primary',
   },
   friendly: {
     icon: Swords,
     bannerClass: 'fifa-banner-friendly',
     iconClass: 'fifa-friendly-icon fifa-friendly-icon-animated',
-    accentColor: 'text-emerald-600 dark:text-emerald-400',
+    accentColor: 'text-success',
   },
 };
 

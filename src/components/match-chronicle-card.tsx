@@ -326,7 +326,7 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
                         setSelectedPlayer2('none');
                         setDuoImage(null);
                       }}
-                      className="bg-gradient-to-r from-gray-600/80 to-gray-500/80 hover:from-gray-500 hover:to-gray-400 border-gray-400/50 text-white font-semibold shadow-lg shadow-gray-500/25 hover:shadow-gray-500/40 transition-all duration-300"
+                      className="bg-gradient-to-r from-foreground/80 to-foreground/70 hover:from-foreground/75 hover:to-foreground/65 border-foreground/50 text-foreground font-semibold shadow-lg shadow-foreground/25 hover:shadow-foreground/40 transition-all duration-300"
                       size="lg"
                     >
                       Cancelar
@@ -348,7 +348,7 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
                           alt="Chromo generado" 
                           className="w-full max-w-lg mx-auto rounded-xl shadow-2xl border-2 border-primary/20 group-hover/image:border-primary/40 transition-all duration-500 group-hover/image:scale-105" 
                         />
-                        <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover/image:opacity-100 transition-opacity duration-500"></div>
+                        <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-background/20 via-transparent to-transparent opacity-0 group-hover/image:opacity-100 transition-opacity duration-500"></div>
                       </div>
                     </div>
                   )}

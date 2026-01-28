@@ -117,7 +117,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
     isUserInMatch: permissions.isUserInMatch,
   });
 
-  const googleMapsUrl = match ? `https://www.google.com/maps/search/?api=1&query_place_id=${match.location.placeId}` : '';
+  const googleMapsUrl = match ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location.address)}&query_place_id=${match.location.placeId}` : '';
 
   const whatsAppShareText = useMemo(() => {
     if (!match || !match.players) return '';
@@ -147,17 +147,10 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
 
   return (
     <div className="relative isolate">
-      <div className="relative flex flex-col gap-8 md:p-6 text-foreground dark:text-white">
-        <div className="flex w-full items-center justify-between gap-4">
-          <Button asChild variant="outline" className="self-start dark:bg-background/20 dark:border-foreground/20 dark:hover:bg-background/40">
-            <Link href="/matches">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Volver a Partidos
-            </Link>
-          </Button>
-        </div>
+      <div className="relative flex flex-col gap-8 md:p-6 text-foreground">
+        {/* Back button rendered by page wrapper; avoid duplication here */}
 
-        <PageHeader title={match.title} className="dark:text-white" />
+        <PageHeader title={match.title} className="text-foreground" />
 
         <MatchInfoCard
           match={match}

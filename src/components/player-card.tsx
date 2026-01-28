@@ -124,7 +124,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, je
 
                 {/* Shimmer effect on hover (desktop only) */}
                 <div className="hidden md:block absolute inset-0 z-[1] opacity-0 hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-1000" />
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-foreground/10 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-1000" />
                 </div>
 
                 <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center">
@@ -133,7 +133,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, je
                     </div>
                     <div className="relative z-10 flex flex-col h-full justify-between">
                         <div className="flex items-start justify-between mb-2">
-                            <PlayerPositionBadge position={player.position} showIcon={false} neutral />
+                            <PlayerPositionBadge position={player.position} showIcon={false} />
                             <PlayerOvr value={player.ovr} context="card" />
                         </div>
                         <div className="flex flex-col items-center gap-2 mb-2">

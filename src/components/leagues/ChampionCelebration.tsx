@@ -73,7 +73,7 @@ export function ChampionCelebration({
                     <Medal className="h-6 w-6 text-muted-foreground" />
                   </div>
                 )}
-                <div className="absolute -bottom-1 -right-1 bg-muted-foreground text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center border-2 border-background">
+                <div className="absolute -bottom-1 -right-1 bg-muted-foreground text-foreground text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center border-2 border-background">
                   2
                 </div>
               </div>

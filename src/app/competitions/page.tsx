@@ -220,7 +220,7 @@ export default function CompetitionsPage() {
               type="league"
               title="Ligas"
               subtitle="Competí en formato todos contra todos con tabla de posiciones"
-              action={<Button onClick={() => setCreateLeagueOpen(true)} className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600">Crear Liga</Button>}
+              action={<Button onClick={() => setCreateLeagueOpen(true)} className="bg-gradient-to-r from-primary to-[hsl(var(--primary)/0.9)] hover:from-[hsl(var(--primary)/0.95)] hover:to-[hsl(var(--primary)/0.85)] text-primary-foreground">Crear Liga</Button>}
             />
             <div className="flex items-center justify-between md:hidden">
                 <h2 className="text-xl font-bold flex items-center gap-2">
@@ -253,7 +253,7 @@ export default function CompetitionsPage() {
               type="cup"
               title="Copas"
               subtitle="Competí en formato eliminación directa hasta coronarte campeón"
-              action={<Button onClick={() => setCreateCupOpen(true)} className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-black font-semibold">Crear Copa</Button>}
+              action={<Button onClick={() => setCreateCupOpen(true)} className="bg-gradient-to-r from-warning to-[hsl(var(--warning)/0.9)] hover:from-[hsl(var(--warning)/0.95)] hover:to-[hsl(var(--warning)/0.85)] text-foreground font-semibold">Crear Copa</Button>}
             />
             <div className="flex items-center justify-between md:hidden">
                 <h2 className="text-xl font-bold flex items-center gap-2">

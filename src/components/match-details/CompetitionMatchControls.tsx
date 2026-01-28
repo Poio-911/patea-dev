@@ -57,7 +57,7 @@ export const CompetitionMatchControls = ({ match, onSuccess }: CompetitionMatchC
                     toast({
                         title: 'Empate',
                         description: 'En copas no puede haber empate. Por favor define un ganador (penales, etc).',
-                        className: 'bg-amber-500 text-white border-none'
+                        className: 'bg-warning text-warning-foreground border-none'
                     });
                     setIsSubmitting(false);
                     // We don't advance winner on draw yet

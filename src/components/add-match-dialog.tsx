@@ -16,11 +16,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Globe, Check, HelpCircle, ChevronRight, UsersRound, MapPin } from 'lucide-react';
-import { useState, useTransition, useEffect, useMemo } from 'react';
+import { useState, useTransition, useEffect, useMemo, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser, useAuth } from '@/firebase';
 import { addDoc, collection, writeBatch, doc, getDocs, query, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Player, MatchLocation, Notification, Team, MatchType, GroupTeam } from '@/lib/types';
@@ -40,10 +40,12 @@ import { GetMatchDayForecastOutput } from '@/ai/flows/get-match-day-forecast';
 import { Switch } from './ui/switch';
 // Removed Google Places autocomplete; using OSM endpoints instead
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
+import { loadGooglePlaces } from '@/lib/google-maps';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { JerseyPreview } from './team-builder/jersey-preview';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
+import { createSessionCookie } from '@/lib/auth-actions';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 // Removed local position badge in favor of shared PlayerPositionBadge via PlayerSelectItem
 
@@ -102,15 +104,76 @@ interface LocationInputProps {
 }
 
 const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = false }: LocationInputProps) => {
-    const [value, setValue] = useState('');
-    const [manualName, setManualName] = useState('');
+        const [value, setValue] = useState('');
+        const [manualName, setManualName] = useState('');
     const [osmSuggestions, setOsmSuggestions] = useState<Array<{ label: string; lat: number; lng: number; placeId: string }>>([]);
+    const [googleSuggestions, setGoogleSuggestions] = useState<Array<{ description: string; placeId: string }>>([]);
     const [geoLoading, setGeoLoading] = useState(false);
     const [geoError, setGeoError] = useState<string | null>(null);
     const [isOpen, setIsOpen] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
+        const [useGoogleAutocomplete, setUseGoogleAutocomplete] = useState(false);
+        const [inputEl, setInputEl] = useState<HTMLInputElement | null>(null);
+        const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
+        const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
+
+        const trimAddress = (addr?: string) => {
+            if (!addr) return '';
+            const parts = addr.split(',').map(p => p.trim()).filter(Boolean);
+            return parts.slice(0, 2).join(', ');
+        };
+
+        useEffect(() => {
+                // Load Google Places and initialize services (no pac overlay UI)
+                const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string | undefined;
+                let cancelled = false;
+                if (!apiKey) return;
+                loadGooglePlaces(apiKey, 'es')
+                    .then((g) => {
+                        if (cancelled) return;
+                        try {
+                            if (!autocompleteServiceRef.current) {
+                                autocompleteServiceRef.current = new g.maps.places.AutocompleteService();
+                            }
+                            if (!placesServiceRef.current) {
+                                const dummy = document.createElement('div');
+                                placesServiceRef.current = new g.maps.places.PlacesService(dummy);
+                            }
+                            setUseGoogleAutocomplete(true);
+                        } catch {
+                            setUseGoogleAutocomplete(false);
+                        }
+                    })
+                    .catch(() => setUseGoogleAutocomplete(false));
+                return () => { cancelled = true; };
+        }, []);
+
+        // Fetch Google suggestions when active
+        useEffect(() => {
+            if (!useGoogleAutocomplete) return;
+            let active = true;
+            if (!value || value.length < 3) { setGoogleSuggestions([]); setIsOpen(false); return; }
+            const svc = autocompleteServiceRef.current;
+            if (!svc) return;
+            const req: any = { input: value, types: ['establishment','geocode'] };
+            svc.getPlacePredictions(req, (preds: any) => {
+                if (!active) return;
+                const arr = (preds || []).map((p: any) => {
+                    const main = p.structured_formatting?.main_text as string | undefined;
+                    const secondary = p.structured_formatting?.secondary_text as string | undefined;
+                    const secondaryTrimmed = secondary ? secondary.split(',').slice(0,2).map((s:any)=>String(s).trim()).join(', ') : undefined;
+                    const fallback = (p.description || '').split(',').slice(0,2).map((s:any)=>String(s).trim()).join(', ');
+                    const label = main ? `${main} – ${secondaryTrimmed || ''}`.trim().replace(/\s–\s$/, '') : fallback;
+                    return { description: label, placeId: p.place_id as string };
+                });
+                setGoogleSuggestions(arr);
+                setIsOpen(arr.length > 0);
+            });
+            return () => { active = false; };
+        }, [value, useGoogleAutocomplete]);
 
     useEffect(() => {
+        if (useGoogleAutocomplete) return; // skip OSM when Google is active
         let active = true;
         const fetchOsm = async () => {
             try {
@@ -125,7 +188,7 @@ const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = fal
         fetchOsm();
         setIsOpen(!!value && value.length > 2);
         return () => { active = false; };
-    }, [value]);
+    }, [value, useGoogleAutocomplete]);
 
     const handleVenueSelect = (venue: Venue) => {
         onSelectLocation({
@@ -205,7 +268,7 @@ const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = fal
                 </div>
             )}
 
-            {/* Búsqueda OSM (se muestra si no hay venues o si el usuario quiere buscar) */}
+            {/* Búsqueda de ubicación (Google u OSM según disponibilidad) */}
             {(showSearch || groupVenues.length === 0) && (
                 <div className="space-y-2">
                     {groupVenues.length > 0 && (
@@ -220,50 +283,87 @@ const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = fal
                         </Button>
                     )}
                     <Popover open={isOpen} onOpenChange={setIsOpen}>
-                        <PopoverTrigger asChild>
-                            <div className="space-y-2">
-                                <Input value={manualName} onChange={e => setManualName(e.target.value)} placeholder="Nombre del lugar (opcional)" />
-                                <div className="relative">
-                                    <Input
-                                        value={value}
-                                        onChange={(e) => setValue(e.target.value)}
-                                        onKeyDown={async (e) => {
-                                            if (e.key === 'Enter' && value && value.length >= 5) {
-                                                e.preventDefault();
-                                                await tryGeocode(value);
-                                            }
-                                        }}
-                                        placeholder="Buscá la dirección de la cancha..."
-                                        autoComplete="off"
-                                    />
-                                    <div className="mt-2 flex items-center justify-between">
-                                        <p className="text-xs text-muted-foreground">Tip: Elegí una sugerencia o usá la dirección escrita.</p>
-                                        <Button type="button" variant="outline" size="sm" onClick={() => tryGeocode(value)} disabled={geoLoading || !value || value.length < 5}>Usar dirección</Button>
+                            <PopoverTrigger asChild>
+                                <div className="space-y-2">
+                                    <Input value={manualName} onChange={e => setManualName(e.target.value)} placeholder="Nombre del lugar (opcional)" />
+                                    <div className="relative">
+                                        <Input
+                                            ref={setInputEl}
+                                            value={value}
+                                            onChange={(e) => setValue(e.target.value)}
+                                            onKeyDown={async (e) => {
+                                                if (!useGoogleAutocomplete && e.key === 'Enter' && value && value.length >= 5) {
+                                                    e.preventDefault();
+                                                    await tryGeocode(value);
+                                                }
+                                            }}
+                                            placeholder="Buscá la dirección de la cancha..."
+                                            autoComplete="off"
+                                        />
+                                        <div className="mt-2 flex items-center justify-between">
+                                            <p className="text-xs text-muted-foreground">{useGoogleAutocomplete ? 'Elegí una sugerencia de Google.' : 'Tip: Elegí una sugerencia o usá la dirección escrita.'}</p>
+                                            {!useGoogleAutocomplete && (
+                                                <Button type="button" variant="outline" size="sm" onClick={() => tryGeocode(value)} disabled={geoLoading || !value || value.length < 5}>Usar dirección</Button>
+                                            )}
+                                        </div>
+                                        {geoError && <p className="text-xs text-destructive mt-1">{geoError}</p>}
                                     </div>
-                                    {geoError && <p className="text-xs text-destructive mt-1">{geoError}</p>}
                                 </div>
-                            </div>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
-                            <Command>
-                                <CommandList>
-                                    <CommandGroup>
-                                        {osmSuggestions.map(s => (
-                                            <CommandItem key={s.placeId} value={s.label} onSelect={() => {
-                                                onSelectLocation({ name: s.label, address: s.label, lat: s.lat, lng: s.lng, placeId: s.placeId });
-                                                setValue(s.label);
-                                                setIsOpen(false);
-                                                setOsmSuggestions([]);
-                                            }}>
-                                                {s.label}
-                                            </CommandItem>
-                                        ))}
-                                        {osmSuggestions.length === 0 && <CommandEmpty>No se encontraron resultados.</CommandEmpty>}
-                                    </CommandGroup>
-                                </CommandList>
-                            </Command>
-                        </PopoverContent>
-                    </Popover>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-[2147483646]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                                <Command>
+                                    <CommandList>
+                                        <CommandGroup>
+                                            {useGoogleAutocomplete ? (
+                                                googleSuggestions.length > 0 ? (
+                                                    googleSuggestions.map(s => (
+                                                        <CommandItem key={s.placeId} value={s.description} onSelect={() => {
+                                                            const svc = placesServiceRef.current;
+                                                            const g = (window as any).google as typeof google | undefined;
+                                                            if (!svc || !g) return;
+                                                            svc.getDetails({ placeId: s.placeId, fields: ['place_id','name','formatted_address','geometry'] }, (place, status) => {
+                                                                if (!place || status !== g.maps.places.PlacesServiceStatus.OK || !place.geometry?.location || !place.place_id) return;
+                                                                const lat = place.geometry.location.lat();
+                                                                const lng = place.geometry.location.lng();
+                                                                onSelectLocation({
+                                                                    name: (manualName || place.name || 'Cancha'),
+                                                                    address: place.formatted_address || s.description,
+                                                                    lat,
+                                                                    lng,
+                                                                    placeId: place.place_id,
+                                                                });
+                                                                const display = place.name ? `${place.name} – ${trimAddress(place.formatted_address || s.description)}` : (trimAddress(place.formatted_address || s.description) || s.description);
+                                                                setValue(display);
+                                                                setIsOpen(false);
+                                                                setGoogleSuggestions([]);
+                                                            });
+                                                        }}>
+                                                            {s.description}
+                                                        </CommandItem>
+                                                    ))
+                                                ) : (
+                                                    <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+                                                )
+                                            ) : (
+                                                <>
+                                                    {osmSuggestions.map(s => (
+                                                        <CommandItem key={s.placeId} value={s.label} onSelect={() => {
+                                                            onSelectLocation({ name: s.label, address: s.label, lat: s.lat, lng: s.lng, placeId: s.placeId });
+                                                            setValue(s.label);
+                                                            setIsOpen(false);
+                                                            setOsmSuggestions([]);
+                                                        }}>
+                                                            {s.label}
+                                                        </CommandItem>
+                                                    ))}
+                                                    {osmSuggestions.length === 0 && <CommandEmpty>No se encontraron resultados.</CommandEmpty>}
+                                                </>
+                                            )}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
                 </div>
             )}
         </div>
@@ -281,6 +381,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
   const [groupVenues, setGroupVenues] = useState<Venue[]>([]);
   const [venuesLoading, setVenuesLoading] = useState(false);
   const { user } = useUser();
+    const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -338,6 +439,21 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
       }, 200);
     }
   }, [open, form]);
+
+    // Ensure server session cookie exists when opening the dialog
+    useEffect(() => {
+        const ensureSession = async () => {
+            try {
+                if (open && auth?.currentUser) {
+                    const idToken = await auth.currentUser.getIdToken(true);
+                    await createSessionCookie(idToken);
+                }
+            } catch (e) {
+                // Non-blocking: if it fails, API will return auth error and UI will show toast
+            }
+        };
+        ensureSession();
+    }, [open, auth]);
 
   // Load group venues when dialog opens
   useEffect(() => {
@@ -472,6 +588,13 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     
     startTransition(async () => {
         try {
+                        // Try to reassert server session before calling the API
+                        try {
+                            if (auth?.currentUser) {
+                                const idToken = await auth.currentUser.getIdToken(true);
+                                await createSessionCookie(idToken);
+                            }
+                        } catch {}
             if (data.type === 'manual') {
               await createManualMatch(data);
             } else if (data.type === 'by_teams') {

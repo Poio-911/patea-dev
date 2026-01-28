@@ -2961,3 +2961,62 @@ export async function markAllNotificationsAsReadAction(
         return { success: false, error: err.error };
     }
 }
+
+/**
+ * Update user preferences (view mode, filters, etc.)
+ */
+export async function updateUserPreferencesAction(
+    userId: string,
+    preferences: {
+        matchesViewMode?: 'grid' | 'compact';
+        matchFilters?: {
+            types?: string[];
+            statuses?: string[];
+            onlyMine?: boolean;
+        };
+    }
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        if (!userId) {
+            return { success: false, error: 'Usuario no especificado' };
+        }
+
+        const userRef = getAdminDb().collection('users').doc(userId);
+
+        // Merge preferences with existing ones
+        await userRef.set(
+            { preferences },
+            { merge: true }
+        );
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Get user preferences
+ */
+export async function getUserPreferencesAction(
+    userId: string
+): Promise<{ success: boolean; preferences?: { matchesViewMode?: 'grid' | 'compact'; matchFilters?: { types?: string[]; statuses?: string[]; onlyMine?: boolean } }; error?: string }> {
+    try {
+        if (!userId) {
+            return { success: false, error: 'Usuario no especificado' };
+        }
+
+        const userDoc = await getAdminDb().collection('users').doc(userId).get();
+
+        if (!userDoc.exists) {
+            return { success: true, preferences: {} };
+        }
+
+        const userData = userDoc.data();
+        return { success: true, preferences: userData?.preferences || {} };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}

@@ -514,6 +514,22 @@ export type EvaluationSubmission = {
   }
 } & DocumentData;
 
+// Filtros combinables para partidos
+export type MatchFilters = {
+  types?: MatchType[];        // [] = todos
+  statuses?: MatchStatus[];   // [] = todos
+  onlyMine?: boolean;         // false = todos
+};
+
+// Modo de vista para partidos
+export type MatchesViewMode = 'grid' | 'compact';
+
+// Preferencias de usuario
+export type UserPreferences = {
+  matchesViewMode?: MatchesViewMode;
+  matchFilters?: MatchFilters;
+};
+
 export type UserProfile = {
   uid: string;
   email: string | null;
@@ -528,6 +544,7 @@ export type UserProfile = {
     teamChanges?: boolean;
     matchUpdates?: boolean;
   };
+  preferences?: UserPreferences;
 };
 
 export type AppHelpInput = {

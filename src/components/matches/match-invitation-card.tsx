@@ -162,7 +162,7 @@ export function MatchInvitationCard({
               onClick={() => handleResponseChange('confirmed')}
               disabled={isUpdating || isPastDeadline}
               className={cn(
-                response === 'confirmed' && 'bg-green-500 hover:bg-green-600'
+                response === 'confirmed' && 'bg-success hover:bg-success/90'
               )}
             >
               {isUpdating && response === 'confirmed' ? (

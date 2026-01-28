@@ -58,25 +58,25 @@ const statusConfig: Record<Match['status'], { label: string; className: string; 
         label: 'Próximo',
         className: 'bg-primary/10 text-foreground border border-primary/30 rounded-full backdrop-blur-sm',
         neonClass: 'text-shadow-[0_0_6px_hsl(var(--primary))]',
-        gradientClass: 'from-blue-500/20'
+        gradientClass: 'from-primary/20'
     },
     active: {
         label: 'Activo',
         className: 'bg-foreground/10 text-foreground border border-foreground/30 rounded-full backdrop-blur-sm',
         neonClass: 'text-shadow-[0_0_6px_hsl(var(--foreground))]',
-        gradientClass: 'from-gray-500/20'
+        gradientClass: 'from-foreground/20'
     },
     completed: {
         label: 'Finalizado',
         className: 'bg-muted/40 text-muted-foreground border border-muted/50 rounded-full backdrop-blur-sm',
         neonClass: 'text-shadow-[0_0_4px_hsl(var(--muted-foreground))]',
-        gradientClass: 'from-gray-500/20'
+        gradientClass: 'from-muted-foreground/20'
     },
     evaluated: {
         label: 'Evaluado',
         className: 'bg-card/60 text-foreground border border-border rounded-full backdrop-blur-sm',
         neonClass: 'text-shadow-[0_0_6px_hsl(var(--chart-2))]',
-        gradientClass: 'from-purple-500/20'
+        gradientClass: 'from-info/20'
     },
 };
 

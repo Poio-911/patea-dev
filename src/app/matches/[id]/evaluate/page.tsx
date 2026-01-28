@@ -525,8 +525,8 @@ export default function EvaluateMatchPage() {
                 description={`Supervisa el progreso de las evaluaciones de los jugadores.`}
             />
             {isProcessingSubmissions && (
-                <Alert variant="default" className="border-blue-500">
-                    <FileClock className="h-4 w-4 text-blue-500" />
+                <Alert variant="default" className="border-info">
+                    <FileClock className="h-4 w-4 text-info" />
                     <AlertTitle>Procesando Evaluaciones</AlertTitle>
                     <AlertDescription>
                         Se están registrando {pendingSubmissionsCount} nuevos envíos de evaluaciones. La lista se actualizará en breve.

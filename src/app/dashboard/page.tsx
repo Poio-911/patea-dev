@@ -173,9 +173,20 @@ function DashboardContent() {
   const { nextMatch, recentMatches } = useMemo(() => {
     if (!matches) return { nextMatch: null, recentMatches: [] };
 
+    const getMatchTimestamp = (m: Match) => {
+      const d = new Date(m.date);
+      const cleanTime = (m.time || '').replace(' hs','').replace('hs','').trim();
+      const [hh, mm = '0'] = cleanTime.split(':');
+      const h = parseInt(hh || '0', 10);
+      const mins = parseInt(mm || '0', 10);
+      d.setHours(h || 0, mins || 0, 0, 0);
+      return d.getTime();
+    };
+
+    const nowTs = Date.now();
     const upcoming = matches
-      .filter(m => m.status === 'upcoming' && new Date(m.date) >= new Date())
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      .filter(m => (m.status === 'active') || (m.status === 'upcoming' && getMatchTimestamp(m) >= nowTs))
+      .sort((a, b) => getMatchTimestamp(a) - getMatchTimestamp(b));
 
     const recent = matches.filter(m => m.status !== 'upcoming').slice(0, 2);
 
@@ -377,7 +388,7 @@ function DashboardContent() {
               </CardHeader>
               <CardContent className="space-y-4">
                   {recentMatches && recentMatches.length > 0 ? recentMatches.map(match => {
-                       const statusInfo = statusConfig[match.status] || { label: 'Desconocido', className: 'bg-gray-100 text-gray-800' };
+                       const statusInfo = statusConfig[match.status] || { label: 'Desconocido', className: 'bg-muted text-foreground' };
                        return (
                           <Link key={match.id} href={`/matches/${match.id}`} className="block">
                               <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">

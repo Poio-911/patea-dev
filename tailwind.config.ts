@@ -27,6 +27,12 @@ export default {
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
+        pos: {
+          del: 'hsl(var(--pos-del))',
+          med: 'hsl(var(--pos-med))',
+          def: 'hsl(var(--pos-def))',
+          por: 'hsl(var(--pos-por))',
+        },
         card: {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',

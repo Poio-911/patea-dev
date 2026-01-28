@@ -141,7 +141,7 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
                     <div className="relative">
                       <PlayerPhoto player={player as any} size="profile" />
                       {isGeneratingAI && (
-                        <div className="absolute inset-0 bg-black/70 rounded-full flex flex-col items-center justify-center text-white">
+                        <div className="absolute inset-0 bg-background/70 rounded-full flex flex-col items-center justify-center text-foreground">
                           <Loader2 className="h-8 w-8 animate-spin" />
                           <span className="text-xs mt-2">Generando...</span>
                         </div>
@@ -207,7 +207,7 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
                     variant="default"
                     size="sm"
                     onClick={() => setShowCreditPackages(true)}
-                    className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-white"
+                    className="bg-gradient-to-r from-warning to-[hsl(var(--warning)/0.9)] hover:from-[hsl(var(--warning)/0.95)] hover:to-[hsl(var(--warning)/0.85)] text-warning-foreground"
                   >
                     <ShoppingCart className="mr-2 h-4 w-4" />
                     Comprar Créditos

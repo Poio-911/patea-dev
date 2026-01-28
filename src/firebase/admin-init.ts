@@ -27,7 +27,10 @@ function initializeAdminApp(): App {
     const firebaseConfigEnv = process.env.FIREBASE_CONFIG ? JSON.parse(process.env.FIREBASE_CONFIG) : undefined as any;
 
     const resolvedProjectId = firebaseConfigEnv?.projectId || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'mil-disculpis';
-    const resolvedStorageBucket = storageBucketEnv || firebaseConfigEnv?.storageBucket;
+    let resolvedStorageBucket = storageBucketEnv || firebaseConfigEnv?.storageBucket;
+    if (resolvedStorageBucket && resolvedStorageBucket.includes('firebasestorage.app')) {
+        resolvedStorageBucket = resolvedStorageBucket.replace('firebasestorage.app', 'appspot.com');
+    }
 
     if (!resolvedStorageBucket) {
         throw new Error("Storage bucket not configured. Set NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET or ensure FIREBASE_CONFIG.storageBucket is present.");

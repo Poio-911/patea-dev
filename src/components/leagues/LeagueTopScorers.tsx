@@ -193,7 +193,7 @@ export function LeagueTopScorers({ matches }: LeagueTopScorersProps) {
                   </TableCell>
                   <TableCell className="text-center">
                     {player.yellowCards > 0 ? (
-                      <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                      <Badge variant="outline" className="bg-warning text-warning-foreground border-warning">
                         {player.yellowCards}
                       </Badge>
                     ) : (
@@ -202,7 +202,7 @@ export function LeagueTopScorers({ matches }: LeagueTopScorersProps) {
                   </TableCell>
                   <TableCell className="text-center">
                     {player.redCards > 0 ? (
-                      <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">
+                      <Badge variant="outline" className="bg-destructive text-destructive-foreground border-destructive">
                         {player.redCards}
                       </Badge>
                     ) : (

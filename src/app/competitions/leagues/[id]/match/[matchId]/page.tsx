@@ -696,7 +696,7 @@ export default function LeagueMatchManagePage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="bg-yellow-400 hover:bg-yellow-500"
+                      className="bg-warning hover:bg-warning/90 text-warning-foreground"
                       onClick={() => {
                         const playerId = (document.getElementById('team1-card-player') as any)?.value;
                         if (playerId && team1Id) handleAddCard(team1Id, playerId, 'yellow');
@@ -707,7 +707,7 @@ export default function LeagueMatchManagePage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="bg-red-500 hover:bg-red-600 text-white"
+                      className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                       onClick={() => {
                         const playerId = (document.getElementById('team1-card-player') as any)?.value;
                         if (playerId && team1Id) handleAddCard(team1Id, playerId, 'red');
@@ -723,7 +723,7 @@ export default function LeagueMatchManagePage() {
                         <div className="flex items-center gap-2">
                           <Badge
                             variant="outline"
-                            className={card.cardType === 'yellow' ? 'bg-yellow-400' : 'bg-red-500 text-white'}
+                            className={card.cardType === 'yellow' ? 'bg-warning text-warning-foreground' : 'bg-destructive text-destructive-foreground'}
                           >
                             {card.cardType === 'yellow' ? '🟨' : '🟥'}
                           </Badge>
@@ -780,7 +780,7 @@ export default function LeagueMatchManagePage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="bg-yellow-400 hover:bg-yellow-500"
+                      className="bg-warning hover:bg-warning/90 text-warning-foreground"
                       onClick={() => {
                         const playerId = (document.getElementById('team2-card-player') as any)?.value;
                         if (playerId && team2Id) handleAddCard(team2Id, playerId, 'yellow');
@@ -791,7 +791,7 @@ export default function LeagueMatchManagePage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="bg-red-500 hover:bg-red-600 text-white"
+                      className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                       onClick={() => {
                         const playerId = (document.getElementById('team2-card-player') as any)?.value;
                         if (playerId && team2Id) handleAddCard(team2Id, playerId, 'red');
@@ -807,7 +807,7 @@ export default function LeagueMatchManagePage() {
                         <div className="flex items-center gap-2">
                           <Badge
                             variant="outline"
-                            className={card.cardType === 'yellow' ? 'bg-yellow-400' : 'bg-red-500 text-white'}
+                            className={card.cardType === 'yellow' ? 'bg-warning text-warning-foreground' : 'bg-destructive text-destructive-foreground'}
                           >
                             {card.cardType === 'yellow' ? '🟨' : '🟥'}
                           </Badge>
@@ -886,7 +886,7 @@ export default function LeagueMatchManagePage() {
                     <div key={index} className="flex items-center gap-2 p-2 border rounded">
                       <Badge
                         variant="outline"
-                        className={card.cardType === 'yellow' ? 'bg-yellow-400' : 'bg-red-500 text-white'}
+                        className={card.cardType === 'yellow' ? 'bg-warning text-warning-foreground' : 'bg-destructive text-destructive-foreground'}
                       >
                         {card.cardType === 'yellow' ? '🟨' : '🟥'}
                       </Badge>

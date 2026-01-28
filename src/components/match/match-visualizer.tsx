@@ -137,19 +137,19 @@ export function MatchVisualizer({ match, isOpen, onClose, isAdmin = false, onEve
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[100vw] max-h-[100vh] w-screen h-screen p-0 m-0 border-0 bg-black/95">
-        <div ref={containerRef} className="relative w-full h-full text-white">
+      <DialogContent className="max-w-[100vw] max-h-[100vh] w-screen h-screen p-0 m-0 border-0 bg-background">
+        <div ref={containerRef} className="relative w-full h-full text-foreground">
           {/* Header (hidden in broadcast mode) */}
           {!broadcastMode && (
             <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
-              <div className="hidden sm:flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-2 py-1">
+              <div className="hidden sm:flex items-center gap-2 bg-foreground/10 border border-foreground/20 rounded-full px-2 py-1">
                 {viewers.slice(0,3).map((v) => (
-                  <Avatar key={v.id} className="h-6 w-6 border border-white/20">
+                  <Avatar key={v.id} className="h-6 w-6 border border-foreground/20">
                     <AvatarImage src={v.photoURL || undefined} alt={v.displayName || 'viewer'} />
                     <AvatarFallback className="text-xs">{(v.displayName || 'V').slice(0,1)}</AvatarFallback>
                   </Avatar>
                 ))}
-                <div className="flex items-center gap-1 text-white/90 text-xs">
+                <div className="flex items-center gap-1 text-foreground/90 text-xs">
                   <Eye className="h-3.5 w-3.5" /> {count}
                 </div>
               </div>
@@ -157,19 +157,19 @@ export function MatchVisualizer({ match, isOpen, onClose, isAdmin = false, onEve
           )}
 
           <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-            <Button variant="ghost" onClick={onClose} className="text-white hover:bg-white/10">
+            <Button variant="ghost" onClick={onClose} className="text-foreground hover:bg-foreground/10">
               <X className="h-6 w-6" />
             </Button>
-            <Button variant="ghost" onClick={enterFullscreenLandscape} className="text-white hover:bg-white/10">
+            <Button variant="ghost" onClick={enterFullscreenLandscape} className="text-foreground hover:bg-foreground/10">
               <Maximize2 className="h-6 w-6" />
             </Button>
             {broadcastMode && isAdmin && (
               <div className="flex items-center gap-2">
-                <Button variant="secondary" className="bg-white/10 border-white/20 text-white"
+                <Button variant="secondary" className="bg-foreground/10 border-foreground/20 text-foreground"
                   onClick={() => { setSelectedEventType('goal'); setShowEventLogger(true); }}>
                   Gol
                 </Button>
-                <Button variant="secondary" className="bg-white/10 border-white/20 text-white"
+                <Button variant="secondary" className="bg-foreground/10 border-foreground/20 text-foreground"
                   onClick={() => { setSelectedEventType('card'); setShowEventLogger(true); }}>
                   Tarjeta
                 </Button>
@@ -206,7 +206,7 @@ export function MatchVisualizer({ match, isOpen, onClose, isAdmin = false, onEve
               src = url;
             }
             return src ? (
-              <div className="w-full aspect-video bg-black">
+              <div className="w-full aspect-video bg-background">
                 <iframe className="w-full h-full" src={src} allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowFullScreen />
               </div>
             ) : null;
@@ -234,7 +234,7 @@ export function MatchVisualizer({ match, isOpen, onClose, isAdmin = false, onEve
           {/* Viewer counter bottom-right */}
           {broadcastMode && (
             <div className="absolute bottom-3 right-3 z-20">
-              <div className="flex items-center gap-1 text-white/90 text-xs bg-black/60 backdrop-blur border border-white/20 rounded-full px-3 py-1">
+              <div className="flex items-center gap-1 text-foreground/90 text-xs bg-background/60 backdrop-blur border border-border rounded-full px-3 py-1">
                 <Eye className="h-3.5 w-3.5" /> {count}
               </div>
             </div>
@@ -257,7 +257,7 @@ export function MatchVisualizer({ match, isOpen, onClose, isAdmin = false, onEve
                 </div>
               </div>
               <div className="mt-6">
-                <Badge className="text-2xl px-5 py-2 bg-white/10 border-white/20">{liveMinute}:{String(liveSecond).padStart(2, '0')}</Badge>
+                <Badge className="text-2xl px-5 py-2 bg-foreground/10 border-foreground/20">{liveMinute}:{String(liveSecond).padStart(2, '0')}</Badge>
               </div>
             </div>
           )}
@@ -265,10 +265,10 @@ export function MatchVisualizer({ match, isOpen, onClose, isAdmin = false, onEve
           {/* Timeline + Controls */}
           <div className="h-[65%] overflow-auto p-6">
             {isAdmin && !broadcastMode && (
-              <div className="sticky top-0 -mx-6 px-6 py-3 z-40 bg-black/70 supports-[backdrop-filter]:bg-black/40 backdrop-blur border-b border-white/10">
+              <div className="sticky top-0 -mx-6 px-6 py-3 z-40 bg-background/70 supports-[backdrop-filter]:bg-background/40 backdrop-blur border-b border-border">
                 <div className="flex gap-2 overflow-x-auto">
                   {quickEventButtons.map(({ type, label, icon: Icon }) => (
-                    <Button key={type} variant="secondary" className="bg-white/10 border-white/20 text-white"
+                    <Button key={type} variant="secondary" className="bg-foreground/10 border-foreground/20 text-foreground"
                       onClick={() => {
                         setSelectedEventType(type);
                         setShowEventLogger(true);
@@ -348,36 +348,36 @@ function ScoreBug({
   const t1 = (team1Name && team1Name.length > 0) ? team1Name : 'Equipo 1';
   const t2 = (team2Name && team2Name.length > 0) ? team2Name : 'Equipo 2';
   return (
-    <div className="absolute top-3 left-3 z-20">
-      <div className="relative flex items-center h-11 rounded-md bg-black/75 shadow-md px-3 backdrop-blur supports-[backdrop-filter]:bg-black/60">
-        <div className="flex items-center gap-2 pr-3 border-r border-white/10">
+      <div className="absolute top-3 left-3 z-20">
+      <div className="relative flex items-center h-11 rounded-md bg-background/75 shadow-md px-3 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center gap-2 pr-3 border-r border-border">
           <span className="inline-block w-5 h-5 rounded-full" style={{ backgroundColor: team1Color }} />
-          <span className="text-sm font-semibold tracking-wide text-white max-w-[160px] truncate">{t1}</span>
+          <span className="text-sm font-semibold tracking-wide text-foreground max-w-[160px] truncate">{t1}</span>
           {redCards1 > 0 && (
             <div className="ml-2 flex items-center gap-1">
               {Array.from({ length: redCards1 }).map((_, i) => (
-                <span key={i} className="inline-block w-2.5 h-2.5 bg-red-600" />
+                <span key={i} className="inline-block w-2.5 h-2.5 bg-destructive" />
               ))}
             </div>
           )}
         </div>
         <div className="flex items-center gap-1 mx-3">
-          <span className="text-3xl leading-none font-black text-white">{score1}</span>
-          <span className="text-xl leading-none text-white/70">-</span>
-          <span className="text-3xl leading-none font-black text-white">{score2}</span>
+          <span className="text-3xl leading-none font-black text-foreground">{score1}</span>
+          <span className="text-xl leading-none text-foreground/70">-</span>
+          <span className="text-3xl leading-none font-black text-foreground">{score2}</span>
         </div>
-        <div className="flex items-center gap-2 pl-3 border-l border-white/10">
+        <div className="flex items-center gap-2 pl-3 border-l border-border">
           <span className="inline-block w-5 h-5 rounded-full" style={{ backgroundColor: team2Color }} />
-          <span className="text-sm font-semibold tracking-wide text-white max-w-[160px] truncate">{t2}</span>
+          <span className="text-sm font-semibold tracking-wide text-foreground max-w-[160px] truncate">{t2}</span>
           {redCards2 > 0 && (
             <div className="ml-2 flex items-center gap-1">
               {Array.from({ length: redCards2 }).map((_, i) => (
-                <span key={i} className="inline-block w-2.5 h-2.5 bg-red-600" />
+                <span key={i} className="inline-block w-2.5 h-2.5 bg-destructive" />
               ))}
             </div>
           )}
         </div>
-        <div className="ml-3 flex items-center gap-1 font-mono text-sm text-white bg-white/10 border border-white/10 rounded px-2 py-0.5">
+        <div className="ml-3 flex items-center gap-1 font-mono text-sm text-foreground bg-foreground/10 border border-foreground/10 rounded px-2 py-0.5">
           <Clock className="h-3.5 w-3.5" /> {minute}:{String(second).padStart(2, '0')}
         </div>
 
@@ -392,7 +392,7 @@ function ScoreBug({
               className={goalSide === 'team1' ? 'absolute -bottom-6 left-2' : 'absolute -bottom-6 right-2'}
             >
               <div className="px-2 py-0.5 rounded-md">
-                <div className="text-white text-lg font-extrabold tracking-wide" style={{ color: '#fff' }}>
+                <div className="text-foreground text-lg font-extrabold tracking-wide">
                   GOOOL
                 </div>
               </div>
@@ -409,12 +409,12 @@ function BroadcastTimelineToggle({ events }: { events: MatchEvent[] }) {
   return (
     <>
       <div className="absolute bottom-3 left-3 z-20">
-        <Button variant="ghost" size="sm" className="text-white hover:bg-white/10" onClick={() => setOpen((v) => !v)}>
+        <Button variant="ghost" size="sm" className="text-foreground hover:bg-foreground/10" onClick={() => setOpen((v) => !v)}>
           <Megaphone className="h-4 w-4 mr-2" /> Eventos
         </Button>
       </div>
       {open && (
-        <div className="absolute bottom-0 left-0 right-0 max-h-[40%] bg-black/80 backdrop-blur border-t border-white/10 p-4 overflow-auto">
+        <div className="absolute bottom-0 left-0 right-0 max-h-[40%] bg-background/80 backdrop-blur border-t border-border p-4 overflow-auto">
           <VisualizerTimeline events={events} />
         </div>
       )}

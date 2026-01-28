@@ -49,7 +49,7 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
                 </div>
                 {isOwner && match.status === 'upcoming' && (
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                        {onShuffle && (
+                        {onShuffle && match.type !== 'by_teams' && (
                             <>
                                 <Button
                                     onClick={onShuffle}

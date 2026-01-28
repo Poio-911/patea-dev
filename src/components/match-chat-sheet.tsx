@@ -135,7 +135,7 @@ export function MatchChatSheet({ match, children }: MatchChatSheetProps) {
         return (
           <div className="flex items-end gap-2">
             <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-[hsl(var(--whatsapp-green))] text-white">
+              <AvatarFallback className="bg-[hsl(var(--whatsapp-green))] text-[hsl(var(--whatsapp-foreground))]">
                 <Bot size={20} />
               </AvatarFallback>
             </Avatar>
@@ -187,9 +187,9 @@ export function MatchChatSheet({ match, children }: MatchChatSheetProps) {
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent className="flex flex-col">
-        <SheetHeader className="bg-[hsl(var(--whatsapp-green))] text-white -mx-6 -mt-6 px-6 py-4">
-          <SheetTitle className="text-white">Chat del Partido</SheetTitle>
-          <SheetDescription className="text-white/80">{match.title}</SheetDescription>
+        <SheetHeader className="bg-[hsl(var(--whatsapp-green))] text-[hsl(var(--whatsapp-foreground))] -mx-6 -mt-6 px-6 py-4">
+          <SheetTitle className="text-[hsl(var(--whatsapp-foreground))]">Chat del Partido</SheetTitle>
+          <SheetDescription className="text-[hsl(var(--whatsapp-foreground))]/80">{match.title}</SheetDescription>
         </SheetHeader>
         <div ref={scrollAreaRef} className="flex-1 overflow-y-auto space-y-4 p-4 -mx-6 chat-container">
           {renderContent()}

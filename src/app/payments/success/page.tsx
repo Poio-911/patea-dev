@@ -117,7 +117,7 @@ function PaymentSuccessContent() {
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center max-w-md">
           <div className="mb-6">
-            <div className="w-20 h-20 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto">
+            <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-12 h-12 text-green-600 dark:text-green-400" />
             </div>
           </div>
@@ -173,7 +173,7 @@ function PaymentSuccessContent() {
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center max-w-md">
           <div className="mb-6">
-            <div className="w-20 h-20 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto">
+            <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
               <XCircle className="w-12 h-12 text-red-600 dark:text-red-400" />
             </div>
           </div>

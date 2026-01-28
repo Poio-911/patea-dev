@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 
-export type TimeFilter = 'today' | 'tomorrow' | 'this_week' | 'upcoming' | 'history';
+export type TimeFilter = 'upcoming' | 'this_week' | 'history';
 
 interface QuickTimeFilterProps {
   activeFilter: TimeFilter;
@@ -12,10 +12,8 @@ interface QuickTimeFilterProps {
 }
 
 const filterConfig: Array<{ id: TimeFilter; label: string }> = [
-  { id: 'today', label: 'HOY' },
-  { id: 'tomorrow', label: 'MAÑANA' },
+  { id: 'upcoming', label: 'PRÓXIMOS' },
   { id: 'this_week', label: 'ESTA SEMANA' },
-  { id: 'upcoming', label: 'TODOS' },
   { id: 'history', label: 'HISTORIAL' },
 ];
 

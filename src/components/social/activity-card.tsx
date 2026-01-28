@@ -51,7 +51,7 @@ export const ActivityCard: FC<Props> = ({ activity }) => {
   const timeAgo = formatDistanceToNowStrict(dateObj, { locale: es });
   return (
     <div className={cn('flex gap-3 px-4 py-3 border-b border-neutral-200 dark:border-neutral-800')}>      
-      <Avatar className="h-10 w-10 shrink-0 ring-2 ring-white/50">
+      <Avatar className="h-10 w-10 shrink-0 ring-2 ring-foreground/50">
         {activity.playerPhotoUrl && (
           <AvatarImage src={activity.playerPhotoUrl} alt={activity.playerName} />
         )}

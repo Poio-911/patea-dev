@@ -23,7 +23,7 @@ function HelpMessageBubble({ message }: { message: Message }) {
     <div className={cn('flex items-end gap-2 group', isAgent ? 'justify-start' : 'justify-end')}>
       {isAgent && (
         <Avatar className="h-7 w-7 flex-shrink-0">
-          <AvatarFallback className="bg-[hsl(var(--whatsapp-green))] text-white">
+          <AvatarFallback className="bg-[hsl(var(--whatsapp-green))] text-[hsl(var(--whatsapp-foreground))]">
             <Bot className="h-4 w-4" />
           </AvatarFallback>
         </Avatar>
@@ -39,7 +39,7 @@ function HelpMessageBubble({ message }: { message: Message }) {
       >
         <p className="whitespace-pre-wrap">{message.content}</p>
         <div
-          className={cn('flex items-center justify-end chat-timestamp mt-1', !isAgent && 'text-white/70')}
+          className={cn('flex items-center justify-end chat-timestamp mt-1', !isAgent && 'text-[hsl(var(--whatsapp-foreground))]/70')}
         >
           <span>{formattedTime}</span>
         </div>
@@ -118,7 +118,7 @@ export function HelpChatDialog() {
         )}
       >
         <Button
-          className="rounded-full w-auto h-14 bg-[hsl(var(--whatsapp-green))] hover:bg-[hsl(var(--whatsapp-green))]/90 text-white shadow-lg transition-all px-4"
+          className="rounded-full w-auto h-14 bg-[hsl(var(--whatsapp-green))] hover:bg-[hsl(var(--whatsapp-green))]/90 text-[hsl(var(--whatsapp-foreground))] shadow-lg transition-all px-4"
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Open help chat"
         >
@@ -137,10 +137,10 @@ export function HelpChatDialog() {
         )}
       >
         {/* Header */}
-        <header className="p-3 flex justify-between items-center flex-shrink-0 bg-[hsl(var(--whatsapp-green))] text-white">
+        <header className="p-3 flex justify-between items-center flex-shrink-0 bg-[hsl(var(--whatsapp-green))] text-[hsl(var(--whatsapp-foreground))]">
           <div className="flex items-center gap-2">
             <Avatar className="h-7 w-7">
-              <AvatarFallback className="bg-white/20 text-white">
+              <AvatarFallback className="bg-[hsl(var(--whatsapp-foreground))]/20 text-[hsl(var(--whatsapp-foreground))]">
                 <Bot className="h-4 w-4" />
               </AvatarFallback>
             </Avatar>
@@ -149,7 +149,7 @@ export function HelpChatDialog() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-white hover:bg-white/20 hover:text-white"
+            className="h-7 w-7 text-[hsl(var(--whatsapp-foreground))] hover:bg-[hsl(var(--whatsapp-foreground))]/20 hover:text-[hsl(var(--whatsapp-foreground))]"
             onClick={() => setIsOpen(false)}
           >
             <X className="h-4 w-4" />
@@ -165,7 +165,7 @@ export function HelpChatDialog() {
             {isLoading && (
               <div className="flex items-end gap-2 justify-start">
                 <Avatar className="h-7 w-7">
-                  <AvatarFallback className="bg-[hsl(var(--whatsapp-green))] text-white">
+                  <AvatarFallback className="bg-[hsl(var(--whatsapp-green))] text-[hsl(var(--whatsapp-foreground))]">
                     <Bot className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>

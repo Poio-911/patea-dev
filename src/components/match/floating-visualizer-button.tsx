@@ -28,7 +28,7 @@ export function FloatingVisualizerButton({ visible, onClick, watchers = 0 }: Flo
         <span className="font-medium hidden xs:inline">Ver partido</span>
         <span className="sr-only">Abrir visualizador</span>
         {watchers > 0 && (
-          <span className="ml-1 inline-flex items-center text-xs bg-black/20 rounded-full px-2 py-0.5">
+          <span className="ml-1 inline-flex items-center text-xs bg-background/20 rounded-full px-2 py-0.5">
             <Eye className="h-3.5 w-3.5 mr-1" />
             {watchers}
           </span>

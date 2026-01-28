@@ -77,7 +77,7 @@ export function UpdateNotification() {
     <div className="fixed top-4 left-4 right-4 z-50 md:left-auto md:right-4 md:max-w-md">
       <Card className="p-4 shadow-lg border-primary/20 bg-card/95 backdrop-blur-sm">
         <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-success/10 flex items-center justify-center">
             <RefreshCw className="h-5 w-5 text-green-600 dark:text-green-400" />
           </div>
 

@@ -142,7 +142,7 @@ export function MatchWeatherForecast({ match, compact = false }: MatchWeatherFor
           {windSpeed !== undefined && (
             <div className="p-3 bg-muted/30 rounded-lg">
               <div className="flex items-center gap-2 mb-1">
-                <Wind className="w-4 h-4 text-gray-500" />
+                <Wind className="w-4 h-4 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">Viento</span>
               </div>
               <p className="text-lg font-semibold">{windSpeed} km/h</p>

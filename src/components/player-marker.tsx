@@ -21,7 +21,7 @@ const CustomMarker = ({ onClick }: { onClick: () => void }) => (
         className="relative flex items-center justify-center"
         style={{ width: '32px', height: '32px' }}
     >
-        <PlayerMarkerIcon className="h-8 w-8 text-amber-500 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]" />
+        <PlayerMarkerIcon className="h-8 w-8 text-warning drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]" />
     </button>
 );
 
@@ -40,7 +40,7 @@ const PlayerPopup = ({ player }: { player: AvailablePlayer }) => {
                     <div className="flex items-center justify-start gap-2">
                         <Badge
                             variant="default"
-                            className={cn("text-sm font-bold", player.ovr > 80 ? "bg-green-500/80" : "bg-primary")}
+                            className={cn("text-sm font-bold", player.ovr > 80 ? "bg-success/80" : "bg-primary")}
                         >
                             {player.ovr}
                         </Badge>
@@ -51,7 +51,7 @@ const PlayerPopup = ({ player }: { player: AvailablePlayer }) => {
 
             {/* Flecha que apunta hacia abajo */}
             <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
-                <div className="w-4 h-4 bg-background border-r border-b border-gray-200 dark:border-gray-700 transform rotate-45 shadow-sm"></div>
+                <div className="w-4 h-4 bg-background border-r border-b border-border transform rotate-45 shadow-sm"></div>
             </div>
         </div>
     );

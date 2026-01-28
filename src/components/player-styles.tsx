@@ -47,12 +47,12 @@ export function PlayerPositionBadge({ position, className, showIcon = false, siz
     lg: 'w-4 h-4'
   };
 
-  // Colored classes using Nike position tokens
+  // Colored classes using Tailwind tokens (`pos.*`) for all themes
   const coloredClasses: Record<PlayerPosition, string> = {
-    DEL: 'bg-[hsl(var(--pos-del)/0.15)] text-[hsl(var(--pos-del))] border border-[hsl(var(--pos-del))]',
-    MED: 'bg-[hsl(var(--pos-med)/0.15)] text-[hsl(var(--pos-med))] border border-[hsl(var(--pos-med))]',
-    DEF: 'bg-[hsl(var(--pos-def)/0.15)] text-[hsl(var(--pos-def))] border border-[hsl(var(--pos-def))]',
-    POR: 'bg-[hsl(var(--pos-por)/0.15)] text-[hsl(var(--pos-por))] border border-[hsl(var(--pos-por))]',
+    DEL: 'bg-pos-del/15 text-pos-del border border-pos-del',
+    MED: 'bg-pos-med/15 text-pos-med border border-pos-med',
+    DEF: 'bg-pos-def/15 text-pos-def border border-pos-def',
+    POR: 'bg-pos-por/15 text-pos-por border border-pos-por',
   };
 
   return (

@@ -141,7 +141,7 @@ export function ChatMessageBubble({
             isInBubble
             className={cn(
               'mb-2 -mx-1',
-              isCurrentUser && 'border-white/50 bg-white/10'
+              isCurrentUser && 'border-foreground/50 bg-foreground/10'
             )}
           />
         )}
@@ -159,7 +159,7 @@ export function ChatMessageBubble({
         {/* Timestamp and status */}
         <div className={cn(
           'flex items-center gap-1 justify-end chat-timestamp',
-          isCurrentUser && 'text-white/70'
+          isCurrentUser && 'text-foreground/70'
         )}>
           <span>{formattedTime}</span>
           {isCurrentUser && message.status && (

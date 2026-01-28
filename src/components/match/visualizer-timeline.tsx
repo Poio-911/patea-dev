@@ -30,7 +30,7 @@ export function VisualizerTimeline({ events }: VisualizerTimelineProps) {
 
   if (sortedEvents.length === 0) {
     return (
-      <div className="text-center py-12 text-white/70">
+      <div className="text-center py-12 text-foreground/70">
         <Clock className="h-10 w-10 mx-auto mb-3 opacity-60" />
         <p>No hay eventos registrados</p>
       </div>
@@ -42,13 +42,13 @@ export function VisualizerTimeline({ events }: VisualizerTimelineProps) {
       {sortedEvents.map((event) => {
         const Icon = getEventIcon(event.type);
         return (
-          <Card key={event.id} className="bg-white/8 border-white/15 text-white p-4 md:p-5 rounded-xl">
+          <Card key={event.id} className="bg-foreground/5 border-foreground/15 text-foreground p-4 md:p-5 rounded-xl">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-foreground/20 flex items-center justify-center">
                 <Icon className="h-5 w-5" />
               </div>
               <div className="flex items-center gap-2">
-                <Badge className="bg-white/15 border-white/20 text-white">{event.minute}'</Badge>
+                <Badge className="bg-foreground/10 border-foreground/20 text-foreground">{event.minute}'</Badge>
                 <span className="text-xs opacity-70">{new Date(event.timestamp).toLocaleTimeString()}</span>
               </div>
             </div>

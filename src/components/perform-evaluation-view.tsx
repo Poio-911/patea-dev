@@ -263,9 +263,9 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
     return (
         <div className="flex flex-col gap-8">
             <PageHeader title="Evaluar Partido" description="Tus evaluaciones ya fueron enviadas." />
-            <Alert variant="default" className="border-blue-500 text-blue-700">
-                <FileClock className="h-4 w-4" />
-                <AlertTitle className="text-blue-700">Evaluación en Proceso</AlertTitle>
+            <Alert variant="default" className="border-info text-info">
+              <FileClock className="h-4 w-4 text-info" />
+              <AlertTitle className="text-info">Evaluación en Proceso</AlertTitle>
                 <AlertDescription>
                     Tus evaluaciones para este partido ya fueron enviadas y están esperando ser procesadas por el organizador.
                     <Button asChild variant="link" className="p-0 h-auto ml-1">

@@ -46,10 +46,10 @@ type EditableTeamsDialogProps = {
 };
 
 const positionBadgeStyles: Record<Player['position'], string> = {
-  DEL: 'bg-[hsl(var(--pos-del)/0.12)] text-[hsl(var(--pos-del))] border border-[hsl(var(--pos-del))]',
-  MED: 'bg-[hsl(var(--pos-med)/0.12)] text-[hsl(var(--pos-med))] border border-[hsl(var(--pos-med))]',
-  DEF: 'bg-[hsl(var(--pos-def)/0.12)] text-[hsl(var(--pos-def))] border border-[hsl(var(--pos-def))]',
-  POR: 'bg-[hsl(var(--pos-por)/0.12)] text-[hsl(var(--pos-por))] border border-[hsl(var(--pos-por))]',
+  DEL: 'bg-pos-del/12 text-pos-del border border-pos-del',
+  MED: 'bg-pos-med/12 text-pos-med border border-pos-med',
+  DEF: 'bg-pos-def/12 text-pos-def border border-pos-def',
+  POR: 'bg-pos-por/12 text-pos-por border border-pos-por',
 };
 
 interface SortablePlayerProps {

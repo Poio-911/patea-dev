@@ -42,7 +42,7 @@ function CoachMessageBubble({ message }: { message: Message }) {
     <div className={cn('flex items-end gap-2 group', isCoach ? 'justify-start' : 'justify-end')}>
       {isCoach && (
         <Avatar className="h-8 w-8 flex-shrink-0">
-          <AvatarFallback className="bg-[hsl(var(--whatsapp-green))] text-white text-xs font-bold">
+          <AvatarFallback className="bg-[hsl(var(--whatsapp-green))] text-[hsl(var(--whatsapp-foreground))] text-xs font-bold">
             DT
           </AvatarFallback>
         </Avatar>
@@ -63,7 +63,7 @@ function CoachMessageBubble({ message }: { message: Message }) {
             variant="outline"
             className={cn(
               'mt-2 text-xs',
-              isCoach ? 'bg-background/50' : 'bg-white/20 text-white border-white/30'
+              isCoach ? 'bg-background/50' : 'bg-foreground/20 text-foreground border-foreground/30'
             )}
           >
             {moodLabels[message.mood]}
@@ -74,7 +74,7 @@ function CoachMessageBubble({ message }: { message: Message }) {
           <div
             className={cn(
               'mt-3 space-y-2 border-t pt-2',
-              isCoach ? 'border-border/50' : 'border-white/20'
+              isCoach ? 'border-border/50' : 'border-foreground/20'
             )}
           >
             <p className="text-xs font-semibold">Acciones sugeridas:</p>
@@ -92,7 +92,7 @@ function CoachMessageBubble({ message }: { message: Message }) {
         <div
           className={cn(
             'flex items-center justify-end chat-timestamp mt-1',
-            !isCoach && 'text-white/70'
+            !isCoach && 'text-foreground/70'
           )}
         >
           <span>{formattedTime}</span>
@@ -194,8 +194,8 @@ export function CoachChatView({ playerId, groupId }: Props) {
 
   return (
     <Card className="flex flex-col @container overflow-hidden">
-      <CardHeader className="bg-[hsl(var(--whatsapp-green))] text-white">
-        <CardTitle className="text-white">Charla con el DT</CardTitle>
+      <CardHeader className="bg-[hsl(var(--whatsapp-green))] text-[hsl(var(--whatsapp-foreground))]">
+        <CardTitle className="text-[hsl(var(--whatsapp-foreground))]">Charla con el DT</CardTitle>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col gap-0 overflow-hidden p-0">
         <div
@@ -210,7 +210,7 @@ export function CoachChatView({ playerId, groupId }: Props) {
             {isLoading && (
               <div className="flex items-end gap-2 justify-start">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-[hsl(var(--whatsapp-green))] text-white text-xs font-bold">
+                  <AvatarFallback className="bg-[hsl(var(--whatsapp-green))] text-[hsl(var(--whatsapp-foreground))] text-xs font-bold">
                     DT
                   </AvatarFallback>
                 </Avatar>

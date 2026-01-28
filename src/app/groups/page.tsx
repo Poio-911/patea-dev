@@ -153,7 +153,7 @@ export default function GroupsPage() {
                       <div className="w-full sm:w-auto">
                         <GroupSwitcher />
                       </div>
-                      <Button asChild className="bg-[#25D366] hover:bg-[#25D366]/90 text-white">
+                      <Button asChild className="bg-[#25D366] hover:bg-[#25D366]/90 text-[hsl(var(--whatsapp-foreground))]">
                         <a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer">
                           <WhatsAppIcon className="mr-2 h-4 w-4"/>
                           Compartir

@@ -173,7 +173,7 @@ export function MatchChatView({ match }: MatchChatViewProps) {
       {/* Floating circular button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-20 right-6 w-14 h-14 rounded-full bg-[hsl(var(--whatsapp-green))] hover:bg-[hsl(var(--whatsapp-green))]/90 text-white shadow-lg flex items-center justify-center z-[100] transition-transform hover:scale-110 pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]"
+        className="fixed bottom-20 right-6 w-14 h-14 rounded-full bg-[hsl(var(--whatsapp-green))] hover:bg-[hsl(var(--whatsapp-green))]/90 text-[hsl(var(--whatsapp-foreground))] shadow-lg flex items-center justify-center z-[100] transition-transform hover:scale-110 pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         aria-label="Abrir chat del partido"
@@ -183,7 +183,7 @@ export function MatchChatView({ match }: MatchChatViewProps) {
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-destructive text-white text-xs font-bold flex items-center justify-center"
+            className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center"
           >
             {unreadCount > 9 ? '9+' : unreadCount}
           </motion.div>
@@ -201,16 +201,16 @@ export function MatchChatView({ match }: MatchChatViewProps) {
             className="fixed bottom-20 right-6 w-96 max-w-[calc(100vw-3rem)] z-[100] mb-4 pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]"
           >
             <Card className="bg-card/95 backdrop-blur-md border-2 shadow-2xl overflow-hidden">
-              <CardHeader className="flex flex-row items-center justify-between p-4 border-b bg-[hsl(var(--whatsapp-green))] text-white">
+              <CardHeader className="flex flex-row items-center justify-between p-4 border-b bg-[hsl(var(--whatsapp-green))] text-[hsl(var(--whatsapp-foreground))]">
                 <div className="flex items-center gap-2">
                   <MessageCircle className="h-5 w-5" />
-                  <CardTitle className="text-lg font-semibold text-white">Chat del Partido</CardTitle>
+                  <CardTitle className="text-lg font-semibold text-[hsl(var(--whatsapp-foreground))]">Chat del Partido</CardTitle>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsOpen(false)}
-                  className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
+                  className="h-8 w-8 text-[hsl(var(--whatsapp-foreground))] hover:bg-[hsl(var(--whatsapp-foreground))]/20 hover:text-[hsl(var(--whatsapp-foreground))]"
                 >
                   ×
                 </Button>

@@ -117,7 +117,7 @@ export function CreditPackagesDialog({
                   relative p-6 rounded-lg border-2 transition-all hover:shadow-lg
                   ${
                     pkg.popular
-                      ? 'border-yellow-500 bg-yellow-50/50 dark:bg-yellow-950/20'
+                      ? 'border-warning bg-warning/10'
                       : 'border-border hover:border-primary/50'
                   }
                 `}
@@ -126,7 +126,7 @@ export function CreditPackagesDialog({
                 {pkg.popular && (
                   <Badge
                     variant="default"
-                    className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-500 hover:bg-yellow-600"
+                    className="absolute -top-3 left-1/2 -translate-x-1/2 bg-warning hover:bg-warning/90"
                   >
                     <Star className="w-3 h-3 mr-1" />
                     Más Popular

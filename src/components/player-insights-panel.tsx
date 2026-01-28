@@ -18,10 +18,10 @@ interface PlayerInsightsPanelProps {
 }
 
 const trajectoryInfoMap = {
-  improving: { label: 'En Ascenso', icon: TrendingUp, color: 'text-green-500' },
-  declining: { label: 'En Baja', icon: TrendingDown, color: 'text-red-500' },
-  stable: { label: 'Estable', icon: MoveHorizontal, color: 'text-yellow-500' },
-  volatile: { label: 'Volátil', icon: Shuffle, color: 'text-purple-500' },
+  improving: { label: 'En Ascenso', icon: TrendingUp, color: 'text-success' },
+  declining: { label: 'En Baja', icon: TrendingDown, color: 'text-destructive' },
+  stable: { label: 'Estable', icon: MoveHorizontal, color: 'text-warning' },
+  volatile: { label: 'Volátil', icon: Shuffle, color: 'text-info' },
 };
 
 const consistencyInfoMap = {
@@ -33,9 +33,9 @@ const consistencyInfoMap = {
 };
 
 const impactColors: Record<string, string> = {
-  positive: 'border-green-500',
-  negative: 'border-red-500',
-  neutral: 'border-yellow-500',
+  positive: 'border-success',
+  negative: 'border-destructive',
+  neutral: 'border-warning',
 };
 
 const patternIcons: Record<string, React.ElementType> = {
@@ -106,13 +106,13 @@ export function PlayerInsightsPanel({ playerId, playerName, groupId }: PlayerIns
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Target className="h-8 w-8 text-green-600" /><div><h4 className="text-sm font-semibold text-muted-foreground">Atributo Más Fuerte</h4><p className="text-lg font-bold">{insights.insights.strongestAttribute}</p></div></div></CardContent></Card>
-              <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><AlertCircle className="h-8 w-8 text-orange-600" /><div><h4 className="text-sm font-semibold text-muted-foreground">Área a Mejorar</h4><p className="text-lg font-bold">{insights.insights.weakestAttribute}</p></div></div></CardContent></Card>
+              <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Target className="h-8 w-8 text-success" /><div><h4 className="text-sm font-semibold text-muted-foreground">Atributo Más Fuerte</h4><p className="text-lg font-bold">{insights.insights.strongestAttribute}</p></div></div></CardContent></Card>
+              <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><AlertCircle className="h-8 w-8 text-warning" /><div><h4 className="text-sm font-semibold text-muted-foreground">Área a Mejorar</h4><p className="text-lg font-bold">{insights.insights.weakestAttribute}</p></div></div></CardContent></Card>
               {trajectoryInfo && <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><trajectoryInfo.icon className={cn("h-8 w-8", trajectoryInfo.color)} /><div><h4 className="text-sm font-semibold text-muted-foreground">Trayectoria</h4><p className="text-lg font-bold">{trajectoryInfo.label}</p></div></div></CardContent></Card>}
-              {consistencyInfo && <Card><CardContent className="pt-6"><div className="space-y-2"><div className="flex items-center gap-3"><Activity className="h-8 w-8 text-blue-600" /><div><h4 className="text-sm font-semibold text-muted-foreground">Consistencia</h4><p className="text-lg font-bold">{consistencyInfo.label}</p></div></div><Progress value={consistencyInfo.value} /></div></CardContent></Card>}
+              {consistencyInfo && <Card><CardContent className="pt-6"><div className="space-y-2"><div className="flex items-center gap-3"><Activity className="h-8 w-8 text-primary" /><div><h4 className="text-sm font-semibold text-muted-foreground">Consistencia</h4><p className="text-lg font-bold">{consistencyInfo.label}</p></div></div><Progress value={consistencyInfo.value} /></div></CardContent></Card>}
             </div>
 
-            <Card><CardContent className="pt-6"><div className="flex items-start gap-3"><Zap className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-1" /><div><h4 className="font-semibold mb-1">Estilo de Juego</h4><p className="text-sm text-muted-foreground">{insights.insights.playingStyle}</p></div></div></CardContent></Card>
+            <Card><CardContent className="pt-6"><div className="flex items-start gap-3"><Zap className="h-6 w-6 text-warning flex-shrink-0 mt-1" /><div><h4 className="font-semibold mb-1">Estilo de Juego</h4><p className="text-sm text-muted-foreground">{insights.insights.playingStyle}</p></div></div></CardContent></Card>
 
             <div className="space-y-3">
               <h4 className="font-semibold flex items-center gap-2"><TrendingUp className="h-5 w-5" />Patrones Detectados ({insights.patterns.length})</h4>
@@ -132,7 +132,7 @@ export function PlayerInsightsPanel({ playerId, playerName, groupId }: PlayerIns
             </div>
 
             {insights.standoutMoments && insights.standoutMoments.length > 0 && (
-              <div className="space-y-3"><h4 className="font-semibold flex items-center gap-2"><Trophy className="h-5 w-5 text-yellow-600" />Momentos Destacados</h4><div className="space-y-2">{insights.standoutMoments.map((moment, index) => (<Card key={index}><CardContent className="pt-4"><p className="text-xs text-muted-foreground mb-1">{moment.matchDate}</p><p className="text-sm">{moment.description}</p></CardContent></Card>))}</div></div>
+              <div className="space-y-3"><h4 className="font-semibold flex items-center gap-2"><Trophy className="h-5 w-5 text-warning" />Momentos Destacados</h4><div className="space-y-2">{insights.standoutMoments.map((moment, index) => (<Card key={index}><CardContent className="pt-4"><p className="text-xs text-muted-foreground mb-1">{moment.matchDate}</p><p className="text-sm">{moment.description}</p></CardContent></Card>))}</div></div>
             )}
           </>
         )}

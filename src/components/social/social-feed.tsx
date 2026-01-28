@@ -80,7 +80,7 @@ export function SocialFeed({ limit = 20, showHeader = true }: SocialFeedProps) {
       case 'new_follower':
         return <Users className="h-5 w-5 text-pink-500" />;
       default:
-        return <Activity className="h-5 w-5 text-gray-500" />;
+        return <Activity className="h-5 w-5 text-muted-foreground" />;
     }
   };
 

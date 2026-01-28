@@ -19,9 +19,9 @@ export function Logo({ className, showWordmark = true }: LogoProps) {
     // Nike swoosh logo rendered via React component (currentColor-driven)
     return (
       <div className={cn("flex items-center gap-3", className)}>
-        <NikeSwoosh className="h-8 w-auto text-white" />
+        <NikeSwoosh className="h-8 w-auto text-foreground" />
         {showWordmark && (
-          <span className="hidden sm:block text-2xl font-bold tracking-wide text-white/90">
+          <span className="hidden sm:block text-2xl font-bold tracking-wide text-foreground/90">
             NIKE FOOTBALL
           </span>
         )}

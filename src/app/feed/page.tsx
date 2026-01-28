@@ -94,7 +94,7 @@ export default function FeedPage() {
         <button
           onClick={handleSeed}
           disabled={seeding}
-          className="px-2 py-1 text-[11px] rounded border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-50"
+          className="px-2 py-1 text-[11px] rounded border border-border bg-card hover:bg-muted disabled:opacity-50"
         >
           {seeding ? 'Sembrando…' : 'Seed test'}
         </button>
@@ -123,7 +123,7 @@ export default function FeedPage() {
             <button
               onClick={handleSeed}
               disabled={seeding}
-              className="px-3 py-1.5 text-xs rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50"
+              className="px-3 py-1.5 text-xs rounded-md border border-border bg-card hover:bg-muted disabled:opacity-50"
             >
               {seeding ? 'Sembrando...' : 'Sembrar actividades de prueba'}
             </button>
@@ -138,7 +138,7 @@ export default function FeedPage() {
           <button
             onClick={handleSeed}
             disabled={seeding}
-            className="px-2 py-1 text-[11px] rounded border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-50"
+            className="px-2 py-1 text-[11px] rounded border border-border bg-card hover:bg-muted disabled:opacity-50"
           >
             {seeding ? 'Sembrando…' : 'Seed test'}
           </button>
@@ -147,12 +147,12 @@ export default function FeedPage() {
       
       {!isLoading && activities && activities.length > 0 && (
         <>
-          <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
+          <div className="rounded-lg border border-border bg-card overflow-hidden">
             {activities.map(a => <ActivityCard key={a.id} activity={a} />)}
           </div>
           
           {followingIds.length > 9 && (
-            <div className="text-xs text-neutral-500 text-center">
+            <div className="text-xs text-muted-foreground text-center">
               Mostrando actividad propia y de los primeros 9 seguidos (total: {followingIds.length}).
             </div>
           )}

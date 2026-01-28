@@ -30,15 +30,15 @@ type MatchEvaluationSummary = {
 };
 
 const getPerformanceFromRating = (rating: number): { level: PerformanceLevel; color: string } => {
-    if (rating >= 9) return { level: 'Excelente', color: 'text-green-400 border-green-400/50 bg-green-400/10' };
+    if (rating >= 9) return { level: 'Excelente', color: 'text-success border-success/50 bg-success/10' };
     if (rating >= 7) return { level: 'Bueno', color: 'text-emerald-400 border-emerald-400/50 bg-emerald-400/10' };
-    if (rating >= 5) return { level: 'Medio', color: 'text-yellow-400 border-yellow-400/50 bg-yellow-400/10' };
+    if (rating >= 5) return { level: 'Medio', color: 'text-warning border-warning/50 bg-warning/10' };
     if (rating >= 3) return { level: 'Regular', color: 'text-orange-400 border-orange-400/50 bg-orange-400/10' };
-    return { level: 'Bajo', color: 'text-red-400 border-red-400/50 bg-red-400/10' };
+    return { level: 'Bajo', color: 'text-destructive border-destructive/50 bg-destructive/10' };
 };
 
 const getPerformanceFromTags = (tags: PerformanceTag[]): { level: PerformanceLevel; color: string } => {
-    if (!tags || tags.length === 0) return { level: 'Medio', color: 'text-yellow-400 border-yellow-400/50 bg-yellow-400/10' };
+    if (!tags || tags.length === 0) return { level: 'Medio', color: 'text-warning border-warning/50 bg-warning/10' };
     const score = tags.reduce((acc, tag) => {
         if (!tag || typeof tag !== 'object' || !('impact' in tag)) return acc;
         if (tag.impact === 'positive') return acc + 1;
@@ -46,11 +46,11 @@ const getPerformanceFromTags = (tags: PerformanceTag[]): { level: PerformanceLev
         return acc;
     }, 0);
 
-    if (score >= 3) return { level: 'Excelente', color: 'text-green-400 border-green-400/50 bg-green-400/10' };
+    if (score >= 3) return { level: 'Excelente', color: 'text-success border-success/50 bg-success/10' };
     if (score > 0) return { level: 'Bueno', color: 'text-emerald-400 border-emerald-400/50 bg-emerald-400/10' };
-    if (score === 0) return { level: 'Medio', color: 'text-yellow-400 border-yellow-400/50 bg-yellow-400/10' };
+    if (score === 0) return { level: 'Medio', color: 'text-warning border-warning/50 bg-warning/10' };
     if (score < 0) return { level: 'Regular', color: 'text-orange-400 border-orange-400/50 bg-orange-400/10' };
-    return { level: 'Bajo', color: 'text-red-400 border-red-400/50 bg-red-400/10' };
+    return { level: 'Bajo', color: 'text-destructive border-destructive/50 bg-destructive/10' };
 };
 
 export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {

@@ -130,7 +130,7 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
             variant="outline"
             onClick={handleReject}
             disabled={isPending}
-            className="w-full border-red-500/30 text-red-600 hover:bg-red-500/10 hover:text-red-700"
+            className="w-full border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
           >
             {isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -144,7 +144,7 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
           <Button
             onClick={handleAccept}
             disabled={isPending}
-            className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white"
+            className="w-full bg-gradient-to-r from-success to-[hsl(var(--success)/0.9)] hover:from-[hsl(var(--success)/0.95)] hover:to-[hsl(var(--success)/0.85)] text-success-foreground"
           >
             {isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
