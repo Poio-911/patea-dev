@@ -331,10 +331,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
         </div>
       </main>
 
-      {/* Ajuste: z-index más alto, debug visual temporal, safe-area siempre presente */}
-      <nav className="fixed bottom-4 left-4 right-4 z-[70] h-16 rounded-xl border bg-card/80 backdrop-blur-lg shadow-lg md:hidden pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] border-2 border-primary/60">
+      {/* Mobile nav: positioned above safe-area to maintain full height for centered icons */}
+      <nav className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-4 right-4 z-[70] h-16 rounded-xl border bg-card/80 backdrop-blur-lg shadow-lg md:hidden">
         <div className="relative mx-auto h-full max-w-lg">
-          <div className="grid h-full w-full grid-cols-5 font-medium">
+          <div className="grid h-full w-full grid-cols-5 items-center font-medium">
             {baseNavItems.slice(0, 2).map((item) => {
               const isActive = pathname.startsWith(item.href);
               const Icon = item.icon;
