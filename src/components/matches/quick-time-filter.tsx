@@ -12,9 +12,9 @@ interface QuickTimeFilterProps {
 }
 
 const filterConfig: Array<{ id: TimeFilter; label: string }> = [
-  { id: 'upcoming', label: 'PRÓXIMOS' },
-  { id: 'this_week', label: 'ESTA SEMANA' },
-  { id: 'history', label: 'HISTORIAL' },
+  { id: 'upcoming', label: 'Próximos' },
+  { id: 'this_week', label: 'Semana' },
+  { id: 'history', label: 'Historial' },
 ];
 
 export function QuickTimeFilter({
@@ -41,7 +41,7 @@ export function QuickTimeFilter({
               aria-selected={isActive}
               onClick={() => onFilterChange(filter.id)}
               className={cn(
-                'relative px-3 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 whitespace-nowrap',
+                'relative px-3 py-2 text-sm font-semibold transition-all duration-200 whitespace-nowrap',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                 isActive
                   ? 'text-primary'

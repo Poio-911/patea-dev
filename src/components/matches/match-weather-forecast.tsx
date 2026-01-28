@@ -71,15 +71,15 @@ export function MatchWeatherForecast({ match, compact = false }: MatchWeatherFor
   const uvLevel = uvIndex !== undefined ? getUVLevel(uvIndex) : null;
   const precipLevel = precipitation !== undefined ? getPrecipitationLevel(precipitation) : null;
 
-  // Versión compacta (para cards de partido)
+  // Versión compacta (para cards de partido) - hereda color del padre para contraste
   if (compact) {
     return (
       <div className="flex items-center gap-2 text-sm">
-        <WeatherIcon className="w-4 h-4 text-muted-foreground" />
+        <WeatherIcon className="w-4 h-4 opacity-80" />
         <span className="font-medium">{temperature}°C</span>
-        <span className="text-muted-foreground">{description}</span>
+        <span className="opacity-80">{description}</span>
         {precipitation !== undefined && precipitation > 30 && (
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="outline" className="text-xs border-current/30 bg-current/10">
             <Droplets className="w-3 h-3 mr-1" />
             {precipitation}%
           </Badge>

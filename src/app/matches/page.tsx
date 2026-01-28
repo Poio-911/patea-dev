@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import type { Match, Player, MatchFilters as MatchFiltersType, MatchesViewMode } from '@/lib/types';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
-import { Card, CardContent } from '@/components/ui/card';
 import { PageHeader } from '@/components/page-header';
 import { motion } from 'framer-motion';
 import { MatchCard } from '@/components/match-card';
@@ -341,54 +340,52 @@ export default function MatchesPage() {
                         <NextMatchCard match={featuredMatch} variant="compact" />
                     )}
 
-                    {/* Main Matches Card */}
-                    <Card>
-                        <CardContent className="pt-6 space-y-6">
-                            <QuickTimeFilter activeFilter={timeFilter} onFilterChange={setTimeFilter} counts={timeCounts} />
+                    {/* Matches List */}
+                    <div className="space-y-6">
+                        <QuickTimeFilter activeFilter={timeFilter} onFilterChange={setTimeFilter} counts={timeCounts} />
 
-                            {/* Filters and View Mode Toggle */}
-                            <div className="flex items-center justify-between gap-4 flex-wrap">
-                                <MatchFilters filters={matchFilters} onFiltersChange={handleFiltersChange} />
-                                <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
-                            </div>
+                        {/* Filters and View Mode Toggle */}
+                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                            <MatchFilters filters={matchFilters} onFiltersChange={handleFiltersChange} />
+                            <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+                        </div>
 
-                            {gridMatches.length > 0 ? (
-                                viewMode === 'grid' ? (
-                                    <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={listVariants} initial="hidden" animate="visible" key={`grid-${timeFilter}`}>
-                                        {gridMatches.map(match => (
-                                            <motion.div key={match.id} variants={itemVariants}>
-                                                <MatchCard match={match} allPlayers={sortedPlayers} />
-                                            </motion.div>
-                                        ))}
-                                    </motion.div>
-                                ) : (
-                                    <motion.div className="flex flex-col gap-2" variants={listVariants} initial="hidden" animate="visible" key={`compact-${timeFilter}`}>
-                                        {gridMatches.map(match => (
-                                            <motion.div key={match.id} variants={itemVariants}>
-                                                <CompactMatchCard match={match} />
-                                            </motion.div>
-                                        ))}
-                                    </motion.div>
-                                )
+                        {gridMatches.length > 0 ? (
+                            viewMode === 'grid' ? (
+                                <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={listVariants} initial="hidden" animate="visible" key={`grid-${timeFilter}`}>
+                                    {gridMatches.map(match => (
+                                        <motion.div key={match.id} variants={itemVariants}>
+                                            <MatchCard match={match} allPlayers={sortedPlayers} />
+                                        </motion.div>
+                                    ))}
+                                </motion.div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl">
-                                    {timeFilter === 'history' ? (
-                                        <>
-                                            <Info className="h-16 w-16 text-muted-foreground mb-4" />
-                                            <h2 className="text-xl font-semibold mb-2">Sin Historial</h2>
-                                            <p className="text-muted-foreground mb-6 max-w-md">Cuando los partidos finalicen, aparecerán acá.</p>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
-                                            <h2 className="text-xl font-semibold mb-2">No hay partidos</h2>
-                                            <p className="text-muted-foreground mb-6 max-w-md">¡Es hora de organizar el próximo encuentro!</p>
-                                        </>
-                                    )}
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                                <motion.div className="flex flex-col gap-2" variants={listVariants} initial="hidden" animate="visible" key={`compact-${timeFilter}`}>
+                                    {gridMatches.map(match => (
+                                        <motion.div key={match.id} variants={itemVariants}>
+                                            <CompactMatchCard match={match} />
+                                        </motion.div>
+                                    ))}
+                                </motion.div>
+                            )
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl">
+                                {timeFilter === 'history' ? (
+                                    <>
+                                        <Info className="h-16 w-16 text-muted-foreground mb-4" />
+                                        <h2 className="text-xl font-semibold mb-2">Sin Historial</h2>
+                                        <p className="text-muted-foreground mb-6 max-w-md">Cuando los partidos finalicen, aparecerán acá.</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
+                                        <h2 className="text-xl font-semibold mb-2">No hay partidos</h2>
+                                        <p className="text-muted-foreground mb-6 max-w-md">¡Es hora de organizar el próximo encuentro!</p>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
         </div>
