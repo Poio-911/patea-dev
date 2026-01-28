@@ -7,6 +7,18 @@ export default {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  safelist: [
+    // Match type gradients
+    'from-primary/30', 'via-primary/20', 'from-primary/40',
+    'from-accent/30', 'via-accent/20',
+    'from-secondary/30', 'via-secondary/20',
+    'from-warning/35', 'via-warning/25', 'from-warning/50', 'via-destructive/50', 'to-warning/50',
+    'from-destructive/35', 'via-destructive/25',
+    'from-success/30', 'via-success/20',
+    // Match type borders
+    'border-primary/40', 'border-accent/40', 'border-secondary/40',
+    'border-warning/50', 'border-destructive/50', 'border-success/40',
+  ],
   theme: {
     container: {
       center: true,

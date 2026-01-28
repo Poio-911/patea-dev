@@ -6,6 +6,7 @@ import { Calendar, Clock, MapPin, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Match, MatchStatus } from '@/lib/types';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
+import { getMatchTheme } from '@/lib/match-theme';
 
 const typeLabels: Record<string, string> = {
   manual: 'Amistoso',
@@ -31,6 +32,7 @@ interface CompactMatchCardProps {
 
 export function CompactMatchCard({ match, className }: CompactMatchCardProps) {
   const typeLabel = typeLabels[match.type] || match.type;
+  const matchTheme = getMatchTheme(match.type);
   const dateObj = new Date(match.date);
   const fecha = dateObj.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' });
   const hora = (match.time || '').replace(' hs', '').replace('hs', '').trim();
@@ -47,8 +49,10 @@ export function CompactMatchCard({ match, className }: CompactMatchCardProps) {
     <Link href={`/matches/${match.id}`} className="block">
       <div
         className={cn(
-          'group relative flex items-center gap-3 p-3 bg-card rounded-lg border transition-all',
-          'hover:bg-accent/50 hover:border-primary/30',
+          'group relative flex items-center gap-3 p-3 rounded-lg border transition-all',
+          `bg-gradient-to-r ${matchTheme.gradient}`,
+          matchTheme.border,
+          'hover:brightness-95 dark:hover:brightness-110',
           className
         )}
       >
