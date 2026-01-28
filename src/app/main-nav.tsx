@@ -323,13 +323,16 @@ export function MainNav({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Content */}
-      <main className="h-screen overflow-y-auto pt-16">
-        <div className="p-4 md:p-6 pb-24">
+
+      {/* Ajuste: padding inferior para no empujar el menú, y safe-area siempre presente */}
+      <main className="h-screen overflow-y-auto pt-16 pb-[env(safe-area-inset-bottom)]">
+        <div className="p-4 md:p-6 pb-20">
           {children}
         </div>
       </main>
 
-      <nav className="fixed bottom-4 left-4 right-4 z-30 h-16 rounded-xl border bg-card/80 backdrop-blur-lg shadow-lg md:hidden pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]">
+      {/* Ajuste: z-index más alto, debug visual temporal, safe-area siempre presente */}
+      <nav className="fixed bottom-4 left-4 right-4 z-[70] h-16 rounded-xl border bg-card/80 backdrop-blur-lg shadow-lg md:hidden pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] border-2 border-primary/60">
         <div className="relative mx-auto h-full max-w-lg">
           <div className="grid h-full w-full grid-cols-5 font-medium">
             {baseNavItems.slice(0, 2).map((item) => {
