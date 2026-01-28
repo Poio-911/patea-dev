@@ -3,7 +3,7 @@
 
 import { getAdminDb, getAdminAuth, getAdminStorage } from '../../firebase/admin-init';
 import { FieldValue } from 'firebase-admin/firestore';
-import { generatePlayerCardImage } from '../../ai/flows/generate-player-card-image';
+// Note: generatePlayerCardImage is imported dynamically to avoid loading Genkit during build
 import type { Player } from '../../lib/types';
 import { logger } from '../../lib/logger';
 import { sanitizeText } from '../../lib/validation';
@@ -61,7 +61,8 @@ export async function generatePlayerCardImageAction(userId: string) {
     const [imageBuffer] = await file.download();
     const photoDataUri = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
 
-    // Call AI flow
+    // Call AI flow (dynamic import to avoid loading Genkit during build)
+    const { generatePlayerCardImage } = await import('../../ai/flows/generate-player-card-image');
     const generatedImageDataUri = await generatePlayerCardImage(photoDataUri);
 
     // Upload new image to storage

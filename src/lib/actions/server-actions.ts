@@ -7,16 +7,17 @@
 
 import { getAdminDb, getAdminStorage } from '../../firebase/admin-init';
 import { FieldValue } from 'firebase-admin/firestore';
-import { generateBalancedTeams, GenerateBalancedTeamsInput } from '../../ai/flows/generate-balanced-teams';
-import { suggestPlayerImprovements, SuggestPlayerImprovementsInput } from '../../ai/flows/suggest-player-improvements';
-import { getMatchDayForecast, GetMatchDayForecastInput } from '../../ai/flows/get-match-day-forecast';
-import { findBestFitPlayer, FindBestFitPlayerInput } from '../../ai/flows/find-best-fit-player';
-import { coachConversation, type CoachConversationInput } from '../../ai/flows/coach-conversation';
-import { detectPlayerPatterns, type DetectPlayerPatternsInput } from '../../ai/flows/detect-player-patterns';
-import { analyzePlayerProgression, type AnalyzePlayerProgressionInput } from '../../ai/flows/analyze-player-progression';
+// AI flow types (type-only imports don't execute code)
+import type { GenerateBalancedTeamsInput } from '../../ai/flows/generate-balanced-teams';
+import type { SuggestPlayerImprovementsInput } from '../../ai/flows/suggest-player-improvements';
+import type { GetMatchDayForecastInput } from '../../ai/flows/get-match-day-forecast';
+import type { FindBestFitPlayerInput } from '../../ai/flows/find-best-fit-player';
+import type { CoachConversationInput } from '../../ai/flows/coach-conversation';
+import type { DetectPlayerPatternsInput } from '../../ai/flows/detect-player-patterns';
+import type { AnalyzePlayerProgressionInput } from '../../ai/flows/analyze-player-progression';
 import { type GenerateMatchChronicleOutput, type GenerateMatchChronicleInput, MatchLocation } from '../../lib/types';
-import { generateMatchChronicleFlow } from '../../ai/flows/generate-match-chronicle';
-import { generateDuoImage } from '../../ai/flows/generate-duo-image';
+// Note: AI flow functions are imported dynamically within each action to avoid
+// loading Genkit during build when API key is not available
 import { Player, Evaluation, OvrHistory, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, GroupTeamMember, TeamAvailabilityPost, Match, GenerateDuoImageInput, League, LeagueFormat, CompetitionStatus, Cup, CupFormat, CupSeedingType, BracketMatch, CompetitionApplication, CompetitionFormat, HealthConnection, PlayerPerformance, GoogleFitAuthUrl, GoogleFitSession, SocialActivity, Follow, NotificationType } from '../types';
 import { logger } from '../logger';
 import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse, type ErrorResponse } from '../errors';
@@ -43,6 +44,7 @@ export async function generateTeamsAction(players: Player[]) {
     };
 
     try {
+        const { generateBalancedTeams } = await import('../../ai/flows/generate-balanced-teams');
         const result = await generateBalancedTeams(input);
         if ('error' in result) {
             throw new Error(String(result.error) || 'La IA no pudo generar los equipos.');
@@ -108,6 +110,7 @@ export async function getPlayerImprovementSuggestionsAction(playerId: string, gr
             })),
         };
 
+        const { suggestPlayerImprovements } = await import('../../ai/flows/suggest-player-improvements');
         const result = await suggestPlayerImprovements(input);
         return result;
 
@@ -119,6 +122,7 @@ export async function getPlayerImprovementSuggestionsAction(playerId: string, gr
 
 export async function getWeatherForecastAction(input: GetMatchDayForecastInput) {
     try {
+        const { getMatchDayForecast } = await import('../../ai/flows/get-match-day-forecast');
         const result = await getMatchDayForecast(input);
         return result;
     } catch (error) {
@@ -129,6 +133,7 @@ export async function getWeatherForecastAction(input: GetMatchDayForecastInput) 
 
 export async function findBestFitPlayerAction(input: Omit<FindBestFitPlayerInput, 'spotsToFill'>) {
     try {
+        const { findBestFitPlayer } = await import('../../ai/flows/find-best-fit-player');
         const result = await findBestFitPlayer(input);
         if (isErrorResponse(result)) {
             throw new Error(String(result.error));
@@ -198,6 +203,7 @@ export async function coachConversationAction(
             },
         };
 
+        const { coachConversation } = await import('../../ai/flows/coach-conversation');
         const result = await coachConversation(input);
         return result;
     } catch (error: any) {
@@ -320,6 +326,7 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
             ovrHistory: ovrHistory.length > 0 ? ovrHistory : undefined,
         };
 
+        const { detectPlayerPatterns } = await import('../../ai/flows/detect-player-patterns');
         const result = await detectPlayerPatterns(input);
         return result;
     } catch (error: any) {
@@ -358,6 +365,7 @@ export async function analyzePlayerProgressionAction(playerId: string, groupId: 
             recentEvaluations: recentEvaluationsForAI,
         };
 
+        const { analyzePlayerProgression } = await import('../../ai/flows/analyze-player-progression');
         return await analyzePlayerProgression(input);
     } catch (error: any) {
         logger.error('Error in analyzePlayerProgressionAction', error, { playerId });
@@ -526,6 +534,7 @@ export async function generateMatchChronicleAction(matchId: string): Promise<{ d
             }
         };
 
+        const { generateMatchChronicleFlow } = await import('../../ai/flows/generate-match-chronicle');
         const result = await generateMatchChronicleFlow(input);
 
         if (!result) {
@@ -666,6 +675,7 @@ export async function generateDuoImageAction(input: GenerateDuoImageInput) {
             player2DataUri = player2Result.dataUri;
         }
 
+        const { generateDuoImage } = await import('../../ai/flows/generate-duo-image');
         const imageUrl = await generateDuoImage(
             player1Result.dataUri,
             player2DataUri,

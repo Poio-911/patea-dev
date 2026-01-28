@@ -36,7 +36,7 @@ import { generateTeamsAction, getWeatherForecastAction, createActivityAction } f
 import { getGroupVenuesAction } from '@/lib/actions/venue-actions';
 import type { Venue } from '@/lib/types';
 import { Progress } from './ui/progress';
-import { GetMatchDayForecastOutput } from '@/ai/flows/get-match-day-forecast';
+import type { GetMatchDayForecastOutput } from '@/ai/flows/get-match-day-forecast';
 import { Switch } from './ui/switch';
 // Removed Google Places autocomplete; using OSM endpoints instead
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
