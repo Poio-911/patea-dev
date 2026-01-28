@@ -1,5 +1,5 @@
 
-import { genkit } from 'genkit';
+import { genkit, Genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 
 // Deshabilitar completamente el servidor de reflexión de Genkit y la conexión al emulador
@@ -11,18 +11,32 @@ process.env['GENKIT_URL'] = '';
 process.env['GENKIT_HOST'] = '';
 process.env['GENKIT_PORT'] = '';
 
-// Validate required API key (Next.js loads .env.local for server automatically)
-const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY;
-if (!apiKey) {
-  throw new Error(
-    'Falta la API key de Google Gemini. Configurá GOOGLE_GENAI_API_KEY o GEMINI_API_KEY en .env.local (no se expone al cliente).'
-  );
+// Lazy initialization - solo crear instancia cuando se use
+// Esto evita errores de build cuando la API key no está disponible
+let _ai: Genkit | null = null;
+
+export function getAI(): Genkit {
+  if (_ai) return _ai;
+
+  const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      'Falta la API key de Google Gemini. Configurá GOOGLE_GENAI_API_KEY o GEMINI_API_KEY en .env.local (no se expone al cliente).'
+    );
+  }
+
+  _ai = genkit({
+    plugins: [googleAI({ apiKey })],
+  });
+
+  return _ai;
 }
 
-export const ai = genkit({
-  plugins: [
-    googleAI({
-      apiKey,
-    }),
-  ],
+// Proxy para mantener compatibilidad con imports existentes de `ai`
+// El Proxy delega todas las operaciones a la instancia lazy de Genkit
+export const ai = new Proxy({} as Genkit, {
+  get(_, prop) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (getAI() as any)[prop];
+  },
 });
