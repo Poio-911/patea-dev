@@ -31,7 +31,7 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
   const handleAccept = () => {
     startTransition(async () => {
       const result = await acceptTeamChallengeAction(invitation.id, teamId, userId);
-      
+
       if (result && 'success' in result && result.success) {
         setIsExiting(true);
         celebrationConfetti();
@@ -85,7 +85,8 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
 
   return (
     <Card className={cn(
-      "fifa-friendly-card fifa-card-animate transition-all duration-300",
+      "fifa-friendly-card transition-all duration-200",
+      "border-emerald-500/40 hover:shadow-lg hover:-translate-y-0.5",
       isExiting ? 'opacity-0 scale-95 -translate-x-4' : 'opacity-100 scale-100 translate-x-0'
     )}>
       <CardHeader className="pb-3">
@@ -99,15 +100,15 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Challenging Team */}
-        <div className="rounded-lg border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 p-4">
+        <div className="rounded-lg border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 p-4">
           <p className="text-xs text-muted-foreground mb-3">Equipo desafiante:</p>
           <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="h-12 w-12 flex-shrink-0">
-                {invitation.fromTeamJersey && (
-                  <JerseyPreview jersey={invitation.fromTeamJersey} size="sm" />
-                )}
-              </div>
-              <h4 className="font-bold text-base truncate text-emerald-700 dark:text-emerald-400">{invitation.fromTeamName}</h4>
+            <div className="h-12 w-12 flex-shrink-0">
+              {invitation.fromTeamJersey && (
+                <JerseyPreview jersey={invitation.fromTeamJersey} size="sm" />
+              )}
+            </div>
+            <h4 className="font-bold text-base truncate text-emerald-700 dark:text-emerald-400">{invitation.fromTeamName}</h4>
           </div>
         </div>
 
@@ -115,12 +116,12 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
         <div className="rounded-lg border bg-muted/50 p-4">
           <p className="text-xs text-muted-foreground mb-3">Tu equipo:</p>
           <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="h-12 w-12 flex-shrink-0">
-                {invitation.toTeamJersey && (
-                  <JerseyPreview jersey={invitation.toTeamJersey} size="sm" />
-                )}
-              </div>
-              <h4 className="font-semibold truncate">{invitation.toTeamName}</h4>
+            <div className="h-12 w-12 flex-shrink-0">
+              {invitation.toTeamJersey && (
+                <JerseyPreview jersey={invitation.toTeamJersey} size="sm" />
+              )}
+            </div>
+            <h4 className="font-semibold truncate">{invitation.toTeamName}</h4>
           </div>
         </div>
 

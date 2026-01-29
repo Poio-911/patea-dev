@@ -254,9 +254,11 @@ export default function LeagueDetailPage() {
               {teams.map((team) => (
                 <Card key={team.id}>
                   <CardContent className="p-4 flex items-center gap-3">
-                    <JerseyPreview jersey={team.jersey} size="sm" />
-                    <div>
-                      <p className="font-semibold">{team.name}</p>
+                    <div className="flex-shrink-0">
+                      <JerseyPreview jersey={team.jersey} size="sm" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold truncate">{team.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {team.players?.length || 0} jugadores
                       </p>

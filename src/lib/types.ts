@@ -895,6 +895,7 @@ export type SocialActivity = {
     achievementName?: string;
     achievementIcon?: string;
   };
+  likes?: string[]; // userIds que dieron like
 } & DocumentData;
 
 // Note: Notification types are now unified with the main notification system above (lines 199-231)

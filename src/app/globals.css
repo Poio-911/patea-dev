@@ -130,7 +130,7 @@
     --whatsapp-incoming: 220 20% 18%;
     --whatsapp-foreground: 0 0% 100%;
   }
-  
+
   /* Nike Theme: bold black/white with authentic Nike brand colors */
   .nike {
     /* Grayscale palette inspired by Nike US */
@@ -217,8 +217,7 @@
         /* Acento ámbar tenue */
         hsla(210, 24%, 99%, 1),
         /* Off white */
-        hsla(210, 20%, 98%, 1)
-      );
+        hsla(210, 20%, 98%, 1));
     background-size: 400% 400%;
     animation: gradientBG 20s ease-in-out infinite;
   }
@@ -226,6 +225,7 @@
   .game body {
     background: #041c47;
   }
+
   .nike body {
     background: #000;
     position: relative;
@@ -239,14 +239,13 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(
-      45deg,
-      rgba(0, 0, 0, 0.75),
-      rgba(24, 24, 24, 0.6),
-      rgba(0, 0, 0, 0.85)
-    );
+    background: linear-gradient(45deg,
+        rgba(0, 0, 0, 0.75),
+        rgba(24, 24, 24, 0.6),
+        rgba(0, 0, 0, 0.85));
     z-index: -2;
-    opacity: 0.55; /* tuned overlay for readability */
+    opacity: 0.55;
+    /* tuned overlay for readability */
   }
 
   .nike .video-background {
@@ -312,12 +311,18 @@
       background-position: 0% 50%;
     }
   }
+
+  .md\:max-lg\:w-10 .logo-text {
+    display: none !important;
+  }
 }
 
 @layer utilities {
+
   /* Google Places Autocomplete dropdown: ensure it's clickable above dialogs and themed */
   .pac-container {
-    z-index: 2147483647 !important; /* above Radix Dialog/Popovers */
+    z-index: 2147483647 !important;
+    /* above Radix Dialog/Popovers */
     background: hsl(var(--popover));
     color: hsl(var(--popover-foreground));
     border: 1px solid hsl(var(--border));
@@ -445,21 +450,42 @@
     background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.3) 0%, transparent 70%);
   }
 
+  /* Liquid Mesh Gradient for Elite Cards - Light & Fantasy Style */
   .aura-elite {
-    background-image: radial-gradient(ellipse at top right,
-        hsla(270, 80%, 60%, 0.3) 0%,
-        hsla(217, 91%, 60%, 0.15) 30%,
-        hsla(43, 96%, 56%, 0.05) 60%,
-        transparent 80%);
+    background:
+      radial-gradient(at 0% 0%, hsla(280, 85%, 85%, 1) 0, transparent 50%),
+      radial-gradient(at 50% 0%, hsla(190, 85%, 85%, 1) 0, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(320, 85%, 85%, 1) 0, transparent 50%);
+    background-size: 200% 200%;
+    animation: aura-liquid 15s ease infinite alternate;
   }
 
   .game .aura-elite {
-    background-image: radial-gradient(ellipse at top right,
-        hsla(270, 80%, 60%, 0.35) 0%,
-        hsla(217, 91%, 60%, 0.2) 30%,
-        hsla(43, 96%, 56%, 0.1) 60%,
-        transparent 80%);
+    background:
+      radial-gradient(at 0% 0%, hsla(280, 90%, 80%, 1) 0, transparent 50%),
+      radial-gradient(at 50% 0%, hsla(190, 90%, 80%, 1) 0, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(320, 90%, 80%, 1) 0, transparent 50%);
+    background-size: 200% 200%;
+    animation: aura-liquid 15s ease infinite alternate;
   }
+
+  @keyframes aura-liquid {
+    0% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+
+
+
 
   .text-glow {
     text-shadow: 0 0 8px hsl(var(--primary) / 0.8), 0 0 20px hsl(var(--primary) / 0.5);
@@ -707,13 +733,20 @@
 
   /* Rainbow spectrum colors for holographic effects */
   :root {
-    --holo-color-1: #ff3d00;  /* Red-Orange */
-    --holo-color-2: #ff9100;  /* Orange */
-    --holo-color-3: #ffea00;  /* Yellow */
-    --holo-color-4: #00e676;  /* Green */
-    --holo-color-5: #00b0ff;  /* Cyan */
-    --holo-color-6: #d500f9;  /* Purple */
-    --holo-color-7: #ff1744;  /* Pink */
+    --holo-color-1: #ff3d00;
+    /* Red-Orange */
+    --holo-color-2: #ff9100;
+    /* Orange */
+    --holo-color-3: #ffea00;
+    /* Yellow */
+    --holo-color-4: #00e676;
+    /* Green */
+    --holo-color-5: #00b0ff;
+    /* Cyan */
+    --holo-color-6: #d500f9;
+    /* Purple */
+    --holo-color-7: #ff1744;
+    /* Pink */
   }
 
   .game {
@@ -729,9 +762,17 @@
 
   /* Holographic rainbow gradient animation */
   @keyframes holo-rainbow {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+    0% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+
+    100% {
+      background-position: 0% 50%;
+    }
   }
 
   /* Diagonal sweep animation */
@@ -740,10 +781,12 @@
       background-position: -200% center;
       opacity: 0.3;
     }
+
     50% {
       background-position: 200% center;
       opacity: 0.8;
     }
+
     100% {
       background-position: -200% center;
       opacity: 0.3;
@@ -765,17 +808,15 @@
     z-index: 1;
     pointer-events: none;
     border-radius: inherit;
-    background: linear-gradient(
-      135deg,
-      var(--holo-color-1) 0%,
-      var(--holo-color-2) 15%,
-      var(--holo-color-3) 30%,
-      var(--holo-color-4) 45%,
-      var(--holo-color-5) 60%,
-      var(--holo-color-6) 75%,
-      var(--holo-color-7) 90%,
-      var(--holo-color-1) 100%
-    );
+    background: linear-gradient(135deg,
+        var(--holo-color-1) 0%,
+        var(--holo-color-2) 15%,
+        var(--holo-color-3) 30%,
+        var(--holo-color-4) 45%,
+        var(--holo-color-5) 60%,
+        var(--holo-color-6) 75%,
+        var(--holo-color-7) 90%,
+        var(--holo-color-1) 100%);
     background-size: 300% 300%;
     opacity: 0;
     mix-blend-mode: color-dodge;
@@ -803,12 +844,10 @@
     z-index: 0;
     pointer-events: none;
     border-radius: inherit;
-    background: linear-gradient(
-      110deg,
-      transparent 20%,
-      rgba(0, 0, 0, 0.1) 50%,
-      transparent 80%
-    );
+    background: linear-gradient(110deg,
+        transparent 20%,
+        rgba(0, 0, 0, 0.1) 50%,
+        transparent 80%);
     background-size: 200% 100%;
     opacity: 0;
     animation: holo-rotate 6s linear infinite;
@@ -819,12 +858,10 @@
   }
 
   .game .holo-effect::after {
-    background: linear-gradient(
-      110deg,
-      transparent 20%,
-      rgba(170, 254, 72, 0.4) 50%,
-      transparent 80%
-    );
+    background: linear-gradient(110deg,
+        transparent 20%,
+        rgba(170, 254, 72, 0.4) 50%,
+        transparent 80%);
   }
 
   .game .holo-effect:hover::after {
@@ -845,11 +882,14 @@
   }
 
   @keyframes glow-pulse-bronze {
-    0%, 100% {
+
+    0%,
+    100% {
       box-shadow:
         0 0 10px rgba(205, 127, 50, 0.4),
         inset 0 0 15px rgba(205, 127, 50, 0.1);
     }
+
     50% {
       box-shadow:
         0 0 20px rgba(205, 127, 50, 0.6),
@@ -867,11 +907,14 @@
   }
 
   @keyframes glow-pulse-silver {
-    0%, 100% {
+
+    0%,
+    100% {
       box-shadow:
         0 0 15px rgba(192, 192, 192, 0.5),
         inset 0 0 20px rgba(192, 192, 192, 0.15);
     }
+
     50% {
       box-shadow:
         0 0 25px rgba(192, 192, 192, 0.7),
@@ -889,11 +932,14 @@
   }
 
   @keyframes glow-pulse-gold {
-    0%, 100% {
+
+    0%,
+    100% {
       box-shadow:
         0 0 20px hsla(43, 96%, 56%, 0.6),
         inset 0 0 25px hsla(43, 96%, 56%, 0.2);
     }
+
     50% {
       box-shadow:
         0 0 30px hsla(43, 96%, 56%, 0.8),
@@ -906,14 +952,12 @@
     border: 3px solid transparent;
     background:
       linear-gradient(var(--card), var(--card)) padding-box,
-      linear-gradient(
-        135deg,
+      linear-gradient(135deg,
         #ff00ff 0%,
         #00ffff 25%,
         #ffff00 50%,
         #ff00ff 75%,
-        #00ffff 100%
-      ) border-box;
+        #00ffff 100%) border-box;
     background-size: 200% 200%;
     box-shadow:
       0 0 30px rgba(255, 0, 255, 0.5),
@@ -923,17 +967,25 @@
   }
 
   @keyframes glow-rotate-elite {
-    0% { background-position: 0% 50%; }
-    100% { background-position: 200% 50%; }
+    0% {
+      background-position: 0% 50%;
+    }
+
+    100% {
+      background-position: 200% 50%;
+    }
   }
 
   @keyframes glow-pulse-elite {
-    0%, 100% {
+
+    0%,
+    100% {
       box-shadow:
         0 0 30px rgba(255, 0, 255, 0.5),
         0 0 40px rgba(0, 255, 255, 0.3),
         inset 0 0 30px rgba(255, 255, 0, 0.15);
     }
+
     50% {
       box-shadow:
         0 0 40px rgba(255, 0, 255, 0.7),
@@ -947,44 +999,32 @@
      ======================================== */
 
   @media (max-width: 768px) {
-    /* Static holographic effect on mobile (no animation) */
+
+    /* Holographic effect on mobile: keep animation but reduce intensity */
     .holo-effect::before {
-      animation: none;
-      opacity: 0.15;
+      animation: holo-rainbow 8s ease-in-out infinite;
+      opacity: 0.12;
     }
 
     .holo-effect:active::before {
-      opacity: 0.3;
+      opacity: 0.22;
     }
 
-    /* Disable diagonal sweep on mobile */
+    /* Diagonal sweep: keep but lower opacity */
     .holo-effect::after {
-      display: none;
+      opacity: 0.12;
     }
 
-    /* Simpler border glow on mobile (no pulse animation) */
+    /* Border glow: keep animation but reduce shadow */
     .border-glow-bronze,
     .border-glow-silver,
     .border-glow-gold {
-      animation: none;
-      box-shadow: 0 0 8px currentColor;
-    }
-
-    .border-glow-bronze {
-      border-color: rgba(205, 127, 50, 0.6);
-    }
-
-    .border-glow-silver {
-      border-color: rgba(192, 192, 192, 0.7);
-    }
-
-    .border-glow-gold {
-      border-color: hsl(43, 96%, 56%);
+      animation-duration: 4s;
+      box-shadow: 0 0 6px currentColor;
     }
 
     .border-glow-elite {
       animation: glow-rotate-elite 4s linear infinite;
-      /* Keep rotating gradient but remove pulse */
     }
   }
 
@@ -993,6 +1033,7 @@
      ======================================== */
 
   @media (prefers-reduced-motion: reduce) {
+
     .holo-effect::before,
     .holo-effect::after,
     .border-glow-bronze,
@@ -1000,14 +1041,15 @@
     .border-glow-gold,
     .border-glow-elite {
       animation: none !important;
+      transition: none !important;
     }
 
     .holo-effect::before {
-      opacity: 0.2;
+      opacity: 0.12;
     }
 
     .holo-effect::after {
-      display: none;
+      opacity: 0.08;
     }
   }
 
@@ -1022,8 +1064,17 @@
 
   /* Dot pulsante para EN VIVO */
   @keyframes live-pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(1.2); }
+
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 0.5;
+      transform: scale(1.2);
+    }
   }
 
   .live-dot {
@@ -1036,6 +1087,7 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
@@ -1044,14 +1096,22 @@
   .sports-card-hover {
     @apply transition-all duration-300;
   }
+
   .sports-card-hover:hover {
     @apply -translate-y-1 shadow-xl;
   }
 
   /* Glow effect for active pills */
   @keyframes pill-glow {
-    0%, 100% { box-shadow: 0 0 10px hsl(var(--primary) / 0.4); }
-    50% { box-shadow: 0 0 20px hsl(var(--primary) / 0.6); }
+
+    0%,
+    100% {
+      box-shadow: 0 0 10px hsl(var(--primary) / 0.4);
+    }
+
+    50% {
+      box-shadow: 0 0 20px hsl(var(--primary) / 0.6);
+    }
   }
 
   .pill-active-glow {
@@ -1060,8 +1120,15 @@
 
   /* Badge glow animation */
   @keyframes badge-glow {
-    0%, 100% { box-shadow: 0 0 8px currentColor; }
-    50% { box-shadow: 0 0 16px currentColor; }
+
+    0%,
+    100% {
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    50% {
+      box-shadow: 0 0 16px currentColor;
+    }
   }
 
   .badge-glow {
@@ -1075,8 +1142,8 @@
   /* === FIFA CUP (Dorado/Trofeo) === */
   .fifa-cup-card {
     background: linear-gradient(135deg,
-      rgba(255, 215, 0, 0.08) 0%,
-      rgba(245, 158, 11, 0.04) 100%);
+        rgba(255, 215, 0, 0.08) 0%,
+        rgba(245, 158, 11, 0.04) 100%);
     border: 1px solid rgba(255, 215, 0, 0.3);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -1084,21 +1151,21 @@
   .fifa-cup-card:hover {
     border-color: rgba(255, 215, 0, 0.5);
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.2),
-                0 4px 12px rgba(255, 215, 0, 0.1);
+      0 4px 12px rgba(255, 215, 0, 0.1);
     transform: translateY(-2px);
   }
 
   .game .fifa-cup-card {
     background: linear-gradient(135deg,
-      rgba(255, 215, 0, 0.12) 0%,
-      rgba(245, 158, 11, 0.06) 100%);
+        rgba(255, 215, 0, 0.12) 0%,
+        rgba(245, 158, 11, 0.06) 100%);
     border-color: rgba(255, 215, 0, 0.4);
   }
 
   .game .fifa-cup-card:hover {
     border-color: rgba(255, 215, 0, 0.6);
     box-shadow: 0 0 30px rgba(255, 215, 0, 0.3),
-                0 4px 16px rgba(255, 215, 0, 0.15);
+      0 4px 16px rgba(255, 215, 0, 0.15);
   }
 
   .fifa-cup-badge {
@@ -1116,9 +1183,17 @@
   }
 
   @keyframes trophy-shine {
-    0% { filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.3)); }
-    50% { filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.6)); }
-    100% { filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.3)); }
+    0% {
+      filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.3));
+    }
+
+    50% {
+      filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.6));
+    }
+
+    100% {
+      filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.3));
+    }
   }
 
   .fifa-cup-icon-animated:hover {
@@ -1128,8 +1203,8 @@
   /* === FIFA LEAGUE (Azul/Champions) === */
   .fifa-league-card {
     background: linear-gradient(135deg,
-      rgba(30, 58, 138, 0.1) 0%,
-      rgba(59, 130, 246, 0.05) 100%);
+        rgba(30, 58, 138, 0.1) 0%,
+        rgba(59, 130, 246, 0.05) 100%);
     border: 1px solid rgba(59, 130, 246, 0.3);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -1137,21 +1212,21 @@
   .fifa-league-card:hover {
     border-color: rgba(59, 130, 246, 0.5);
     box-shadow: 0 0 20px rgba(59, 130, 246, 0.2),
-                0 4px 12px rgba(59, 130, 246, 0.1);
+      0 4px 12px rgba(59, 130, 246, 0.1);
     transform: translateY(-2px);
   }
 
   .game .fifa-league-card {
     background: linear-gradient(135deg,
-      rgba(30, 58, 138, 0.15) 0%,
-      rgba(59, 130, 246, 0.08) 100%);
+        rgba(30, 58, 138, 0.15) 0%,
+        rgba(59, 130, 246, 0.08) 100%);
     border-color: rgba(59, 130, 246, 0.4);
   }
 
   .game .fifa-league-card:hover {
     border-color: rgba(59, 130, 246, 0.6);
     box-shadow: 0 0 30px rgba(59, 130, 246, 0.3),
-                0 4px 16px rgba(59, 130, 246, 0.15);
+      0 4px 16px rgba(59, 130, 246, 0.15);
   }
 
   .fifa-league-badge {
@@ -1169,8 +1244,15 @@
   }
 
   @keyframes league-bars {
-    0%, 100% { transform: scaleY(1); }
-    50% { transform: scaleY(1.1); }
+
+    0%,
+    100% {
+      transform: scaleY(1);
+    }
+
+    50% {
+      transform: scaleY(1.1);
+    }
   }
 
   .fifa-league-icon-animated:hover {
@@ -1180,8 +1262,8 @@
   /* === FIFA FRIENDLY (Verde/Cancha) === */
   .fifa-friendly-card {
     background: linear-gradient(135deg,
-      rgba(16, 185, 129, 0.08) 0%,
-      rgba(52, 211, 153, 0.04) 100%);
+        rgba(16, 185, 129, 0.08) 0%,
+        rgba(52, 211, 153, 0.04) 100%);
     border: 1px solid rgba(16, 185, 129, 0.3);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -1189,21 +1271,21 @@
   .fifa-friendly-card:hover {
     border-color: rgba(16, 185, 129, 0.5);
     box-shadow: 0 0 20px rgba(16, 185, 129, 0.2),
-                0 4px 12px rgba(16, 185, 129, 0.1);
+      0 4px 12px rgba(16, 185, 129, 0.1);
     transform: translateY(-2px);
   }
 
   .game .fifa-friendly-card {
     background: linear-gradient(135deg,
-      rgba(16, 185, 129, 0.12) 0%,
-      rgba(52, 211, 153, 0.06) 100%);
+        rgba(16, 185, 129, 0.12) 0%,
+        rgba(52, 211, 153, 0.06) 100%);
     border-color: rgba(16, 185, 129, 0.4);
   }
 
   .game .fifa-friendly-card:hover {
     border-color: rgba(16, 185, 129, 0.6);
     box-shadow: 0 0 30px rgba(16, 185, 129, 0.3),
-                0 4px 16px rgba(16, 185, 129, 0.15);
+      0 4px 16px rgba(16, 185, 129, 0.15);
   }
 
   .fifa-friendly-badge {
@@ -1221,9 +1303,19 @@
   }
 
   @keyframes swords-clash {
-    0%, 100% { transform: rotate(0deg); }
-    25% { transform: rotate(-5deg); }
-    75% { transform: rotate(5deg); }
+
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+
+    25% {
+      transform: rotate(-5deg);
+    }
+
+    75% {
+      transform: rotate(5deg);
+    }
   }
 
   .fifa-friendly-icon-animated:hover {
@@ -1232,43 +1324,39 @@
 
   /* === FIFA SECTION BANNERS === */
   .fifa-banner-pattern {
-    background-image: repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 10px,
-      rgba(255, 255, 255, 0.03) 10px,
-      rgba(255, 255, 255, 0.03) 20px
-    );
+    background-image: repeating-linear-gradient(-45deg,
+        transparent,
+        transparent 10px,
+        rgba(255, 255, 255, 0.03) 10px,
+        rgba(255, 255, 255, 0.03) 20px);
   }
 
   .game .fifa-banner-pattern {
-    background-image: repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 10px,
-      rgba(255, 255, 255, 0.05) 10px,
-      rgba(255, 255, 255, 0.05) 20px
-    );
+    background-image: repeating-linear-gradient(-45deg,
+        transparent,
+        transparent 10px,
+        rgba(255, 255, 255, 0.05) 10px,
+        rgba(255, 255, 255, 0.05) 20px);
   }
 
   .fifa-banner-cup {
     background: linear-gradient(135deg,
-      rgba(255, 215, 0, 0.1) 0%,
-      rgba(245, 158, 11, 0.05) 100%);
+        rgba(255, 215, 0, 0.1) 0%,
+        rgba(245, 158, 11, 0.05) 100%);
     border: 1px solid rgba(255, 215, 0, 0.2);
   }
 
   .fifa-banner-league {
     background: linear-gradient(135deg,
-      rgba(30, 58, 138, 0.1) 0%,
-      rgba(59, 130, 246, 0.05) 100%);
+        rgba(30, 58, 138, 0.1) 0%,
+        rgba(59, 130, 246, 0.05) 100%);
     border: 1px solid rgba(59, 130, 246, 0.2);
   }
 
   .fifa-banner-friendly {
     background: linear-gradient(135deg,
-      rgba(16, 185, 129, 0.1) 0%,
-      rgba(52, 211, 153, 0.05) 100%);
+        rgba(16, 185, 129, 0.1) 0%,
+        rgba(52, 211, 153, 0.05) 100%);
     border: 1px solid rgba(16, 185, 129, 0.2);
   }
 
@@ -1278,6 +1366,7 @@
       opacity: 0;
       transform: translateY(20px);
     }
+
     100% {
       opacity: 1;
       transform: translateY(0);
@@ -1288,15 +1377,33 @@
     animation: fifa-card-enter 0.4s ease-out forwards;
   }
 
-  .fifa-card-animate:nth-child(1) { animation-delay: 0ms; }
-  .fifa-card-animate:nth-child(2) { animation-delay: 100ms; }
-  .fifa-card-animate:nth-child(3) { animation-delay: 200ms; }
-  .fifa-card-animate:nth-child(4) { animation-delay: 300ms; }
-  .fifa-card-animate:nth-child(5) { animation-delay: 400ms; }
-  .fifa-card-animate:nth-child(6) { animation-delay: 500ms; }
+  .fifa-card-animate:nth-child(1) {
+    animation-delay: 0ms;
+  }
+
+  .fifa-card-animate:nth-child(2) {
+    animation-delay: 100ms;
+  }
+
+  .fifa-card-animate:nth-child(3) {
+    animation-delay: 200ms;
+  }
+
+  .fifa-card-animate:nth-child(4) {
+    animation-delay: 300ms;
+  }
+
+  .fifa-card-animate:nth-child(5) {
+    animation-delay: 400ms;
+  }
+
+  .fifa-card-animate:nth-child(6) {
+    animation-delay: 500ms;
+  }
 
   /* === MOBILE OPTIMIZATIONS === */
   @media (max-width: 768px) {
+
     .fifa-cup-card:hover,
     .fifa-league-card:hover,
     .fifa-friendly-card:hover {
@@ -1317,6 +1424,7 @@
 
   /* === ACCESSIBILITY === */
   @media (prefers-reduced-motion: reduce) {
+
     .fifa-cup-card,
     .fifa-league-card,
     .fifa-friendly-card {
@@ -1417,9 +1525,17 @@
 
   /* Swipe to reply animation */
   @keyframes swipe-reply {
-    0% { transform: translateX(0); }
-    50% { transform: translateX(20px); }
-    100% { transform: translateX(0); }
+    0% {
+      transform: translateX(0);
+    }
+
+    50% {
+      transform: translateX(20px);
+    }
+
+    100% {
+      transform: translateX(0);
+    }
   }
 
   .chat-swipe-reply {
@@ -1437,6 +1553,7 @@
       opacity: 0;
       transform: scale(0.8) translateY(10px);
     }
+
     100% {
       opacity: 1;
       transform: scale(1) translateY(0);

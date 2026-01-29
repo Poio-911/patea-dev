@@ -18,6 +18,7 @@ import {
   Activity,
 } from 'lucide-react';
 import { useUser } from '@/firebase';
+import ActivityCard from '@/components/social/activity-card';
 import { getFeedActivitiesAction } from '@/lib/actions/server-actions';
 import type { SocialActivity } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
@@ -234,58 +235,23 @@ export function SocialFeed({ limit = 20, showHeader = true }: SocialFeedProps) {
           </div>
         </CardHeader>
       )}
-      <CardContent className="space-y-4">
+      <CardContent className="p-0">
         {activities.length === 0 ? (
-          <div className="text-center py-10 text-muted-foreground">
+          <div className="text-center py-10 text-muted-foreground px-4">
             <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
             <p className="mb-1">No hay actividad reciente</p>
             <p className="text-sm">Seguí a otros jugadores para ver su actividad aquí</p>
           </div>
         ) : (
-          activities.map((activity) => {
-            const link = getActivityLink(activity);
-            const content = (
-              <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                <div className="flex-shrink-0 mt-1">{getActivityIcon(activity.type)}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start gap-2">
-                    {activity.playerPhotoUrl && (
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={activity.playerPhotoUrl} alt={activity.playerName} />
-                        <AvatarFallback>
-                          {activity.playerName?.charAt(0).toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm leading-relaxed">{getActivityTitle(activity)}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatDistanceToNow(
-                          activity.timestamp && typeof (activity as any).timestamp?.toDate === 'function'
-                            ? (activity as any).timestamp.toDate()
-                            : new Date(activity.timestamp as any),
-                          {
-                            addSuffix: true,
-                            locale: es,
-                          }
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-
-            if (link) {
+          <div className="flex flex-col divide-y divide-border">
+            {activities.map((activity) => {
+              // Handler para refrescar el feed tras like/unlike
+              const handleLikeChange = () => loadActivities(true);
               return (
-                <Link key={activity.id} href={link}>
-                  {content}
-                </Link>
+                <ActivityCard key={activity.id} activity={activity} onLikeChange={handleLikeChange} />
               );
-            }
-
-            return <div key={activity.id}>{content}</div>;
-          })
+            })}
+          </div>
         )}
       </CardContent>
     </Card>

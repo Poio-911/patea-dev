@@ -3,7 +3,7 @@
 
 import { PageHeader } from '@/components/page-header';
 import { useUser, useFirestore, useCollection } from '@/firebase';
-import { Loader2, Users, Bell, Search, Swords, Trophy, History, BarChart3, Globe } from 'lucide-react';
+import { Loader2, Users, Bell, Search, Swords, Trophy, History, Shield, Globe } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { InvitationsSheet } from '@/components/invitations-sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -44,12 +44,12 @@ export default function CompetitionsPage() {
   const { data: teams, loading: teamsLoading } = useCollection<GroupTeam>(teamsQuery);
   const myTeams = useMemo(() => teams?.filter(t => t.createdBy === user?.uid) || [], [teams, user]);
   const myTeamIds = useMemo(() => myTeams.map(t => t.id), [myTeams]);
-  
+
   const leaguesQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
     return query(
-        collection(firestore, 'leagues'),
-        where('groupId', '==', user.activeGroupId)
+      collection(firestore, 'leagues'),
+      where('groupId', '==', user.activeGroupId)
     );
   }, [firestore, user?.activeGroupId]);
 
@@ -58,8 +58,8 @@ export default function CompetitionsPage() {
   const cupsQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
     return query(
-        collection(firestore, 'cups'),
-        where('groupId', '==', user.activeGroupId)
+      collection(firestore, 'cups'),
+      where('groupId', '==', user.activeGroupId)
     );
   }, [firestore, user?.activeGroupId]);
 
@@ -95,7 +95,7 @@ export default function CompetitionsPage() {
       setInvitationsLoading(false);
     }
   }, [firestore, myTeamIds.join(',')]);
-  
+
   useEffect(() => {
     if (myTeamIds.length > 0) {
       fetchInvitations();
@@ -119,7 +119,7 @@ export default function CompetitionsPage() {
       </Alert>
     );
   }
-  
+
   if (!user.activeGroupId) {
     return (
       <Alert>
@@ -143,25 +143,44 @@ export default function CompetitionsPage() {
         </PageHeader>
 
         <Tabs defaultValue="friendly" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="friendly" className="gap-2">
-              <Swords className="h-4 w-4 hidden sm:inline fifa-friendly-icon" />
-              Amistosos
-            </TabsTrigger>
-            <TabsTrigger value="leagues" className="gap-2">
-              <BarChart3 className="h-4 w-4 hidden sm:inline fifa-league-icon" />
-              Ligas
-            </TabsTrigger>
-            <TabsTrigger value="cups" className="gap-2">
-              <Trophy className="h-4 w-4 hidden sm:inline fifa-cup-icon" />
-              Copas
-            </TabsTrigger>
-            <TabsTrigger value="public" className="gap-2">
-              <Globe className="h-4 w-4 hidden sm:inline" />
-              Públicas
-            </TabsTrigger>
-          </TabsList>
-          
+          <div className="relative mb-6">
+            <TabsList className="grid w-full grid-cols-4 h-auto p-1 bg-muted/50">
+              <TabsTrigger
+                value="friendly"
+                className="gap-1.5 sm:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+              >
+                <Swords className="h-4 w-4 fifa-friendly-icon" />
+                <span className="text-xs sm:text-sm">Amistosos</span>
+                {invitations.length > 0 && (
+                  <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-success text-[10px] font-bold text-success-foreground">
+                    {invitations.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger
+                value="leagues"
+                className="gap-1.5 sm:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+              >
+                <Shield className="h-4 w-4 fifa-league-icon" />
+                <span className="text-xs sm:text-sm">Ligas</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="cups"
+                className="gap-1.5 sm:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+              >
+                <Trophy className="h-4 w-4 fifa-cup-icon" />
+                <span className="text-xs sm:text-sm">Copas</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="public"
+                className="gap-1.5 sm:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+              >
+                <Globe className="h-4 w-4" />
+                <span className="text-xs sm:text-sm">Públicas</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
           <TabsContent value="friendly" className="mt-6 space-y-8">
             <SectionBanner
               type="friendly"
@@ -179,26 +198,26 @@ export default function CompetitionsPage() {
                 </Button>
               </div>
               {invitationsLoading || teamsLoading ? (
-                  <div className="text-center p-4"><Loader2 className="h-6 w-6 animate-spin"/></div>
+                <div className="text-center p-4"><Loader2 className="h-6 w-6 animate-spin" /></div>
               ) : myTeams.length > 0 && invitations.length > 0 ? (
-                  <TeamChallengesList
-                      invitations={invitations.slice(0, 2)}
-                      teamId={myTeams[0].id} 
-                      userId={user.uid}
-                      onUpdate={fetchInvitations}
-                  />
+                <TeamChallengesList
+                  invitations={invitations.slice(0, 2)}
+                  teamId={myTeams[0].id}
+                  userId={user.uid}
+                  onUpdate={fetchInvitations}
+                />
               ) : (
-                  <Alert>
-                      <AlertDescription>
-                          {myTeams.length === 0 ? "Primero debés crear un equipo para poder recibir desafíos." : "No tenés desafíos pendientes en este momento."}
-                      </AlertDescription>
-                  </Alert>
+                <Alert>
+                  <AlertDescription>
+                    {myTeams.length === 0 ? "Primero debés crear un equipo para poder recibir desafíos." : "No tenés desafíos pendientes en este momento."}
+                  </AlertDescription>
+                </Alert>
               )}
             </div>
             <div className="space-y-4">
-               <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold">Postulaciones Activas</h2>
-                 <Button variant="link" size="sm" asChild>
+                <Button variant="link" size="sm" asChild>
                   <Link href="/competitions/my-teams">Gestionar</Link>
                 </Button>
               </div>
@@ -207,11 +226,11 @@ export default function CompetitionsPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold">Buscar Rivales</h2>
-                 <Button variant="link" size="sm" asChild>
+                <Button variant="link" size="sm" asChild>
                   <Link href="/competitions/search">Buscar</Link>
                 </Button>
               </div>
-               <AvailablePostsGrid userId={user.uid} userTeams={teams || []} isActive={true} />
+              <AvailablePostsGrid userId={user.uid} userTeams={teams || []} isActive={true} />
             </div>
           </TabsContent>
 
@@ -222,30 +241,27 @@ export default function CompetitionsPage() {
               subtitle="Competí en formato todos contra todos con tabla de posiciones"
               action={<Button onClick={() => setCreateLeagueOpen(true)} className="bg-gradient-to-r from-primary to-[hsl(var(--primary)/0.9)] hover:from-[hsl(var(--primary)/0.95)] hover:to-[hsl(var(--primary)/0.85)] text-primary-foreground">Crear Liga</Button>}
             />
-            <div className="flex items-center justify-between md:hidden">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 fifa-league-icon" />
-                  Ligas
-                </h2>
-                <Button onClick={() => setCreateLeagueOpen(true)} size="sm">Crear Liga</Button>
-            </div>
+
 
             {leaguesLoading ? (
-                 <div className="text-center p-8"><Loader2 className="h-8 w-8 animate-spin fifa-league-icon"/></div>
+              <div className="text-center p-8"><Loader2 className="h-8 w-8 animate-spin fifa-league-icon" /></div>
             ) : leagues && leagues.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {leagues.map(league => (
-                      <LeagueCard key={league.id} league={league} />
-                    ))}
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {leagues.map(league => (
+                  <LeagueCard key={league.id} league={league} />
+                ))}
+              </div>
             ) : (
-                <div className="fifa-league-card rounded-xl p-8 text-center">
-                    <BarChart3 className="h-12 w-12 mx-auto mb-4 fifa-league-icon opacity-50" />
-                    <h3 className="font-semibold text-lg mb-2">Sin ligas todavía</h3>
-                    <p className="text-muted-foreground text-sm">
-                        Aún no hay ligas creadas en este grupo. ¡Sé el primero en organizar una!
-                    </p>
-                </div>
+              <div className="fifa-league-card rounded-xl p-8 text-center">
+                <Shield className="h-12 w-12 mx-auto mb-4 fifa-league-icon opacity-50" />
+                <h3 className="font-semibold text-lg mb-2">Sin ligas todavía</h3>
+                <p className="text-muted-foreground text-sm mb-4">
+                  Aún no hay ligas creadas en este grupo. ¡Sé el primero en organizar una!
+                </p>
+                <Button onClick={() => setCreateLeagueOpen(true)} className="mt-2">
+                  Crear Primera Liga
+                </Button>
+              </div>
             )}
           </TabsContent>
           <TabsContent value="cups" className="mt-6 space-y-6">
@@ -255,30 +271,27 @@ export default function CompetitionsPage() {
               subtitle="Competí en formato eliminación directa hasta coronarte campeón"
               action={<Button onClick={() => setCreateCupOpen(true)} className="bg-gradient-to-r from-warning to-[hsl(var(--warning)/0.9)] hover:from-[hsl(var(--warning)/0.95)] hover:to-[hsl(var(--warning)/0.85)] text-foreground font-semibold">Crear Copa</Button>}
             />
-            <div className="flex items-center justify-between md:hidden">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <Trophy className="h-5 w-5 fifa-cup-icon" />
-                  Copas
-                </h2>
-                <Button onClick={() => setCreateCupOpen(true)} size="sm">Crear Copa</Button>
-            </div>
+
 
             {cupsLoading ? (
-                 <div className="text-center p-8"><Loader2 className="h-8 w-8 animate-spin fifa-cup-icon"/></div>
+              <div className="text-center p-8"><Loader2 className="h-8 w-8 animate-spin fifa-cup-icon" /></div>
             ) : cups && cups.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {cups.map(cup => (
-                      <CupCard key={cup.id} cup={cup} />
-                    ))}
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {cups.map(cup => (
+                  <CupCard key={cup.id} cup={cup} />
+                ))}
+              </div>
             ) : (
-                <div className="fifa-cup-card rounded-xl p-8 text-center">
-                    <Trophy className="h-12 w-12 mx-auto mb-4 fifa-cup-icon opacity-50" />
-                    <h3 className="font-semibold text-lg mb-2">Sin copas todavía</h3>
-                    <p className="text-muted-foreground text-sm">
-                        Aún no hay copas creadas en este grupo. ¡Sé el primero en organizar una!
-                    </p>
-                </div>
+              <div className="fifa-cup-card rounded-xl p-8 text-center">
+                <Trophy className="h-12 w-12 mx-auto mb-4 fifa-cup-icon opacity-50" />
+                <h3 className="font-semibold text-lg mb-2">Sin copas todavía</h3>
+                <p className="text-muted-foreground text-sm mb-4">
+                  Aún no hay copas creadas en este grupo. ¡Sé el primero en organizar una!
+                </p>
+                <Button onClick={() => setCreateCupOpen(true)} className="mt-2">
+                  Crear Primera Copa
+                </Button>
+              </div>
             )}
           </TabsContent>
 

@@ -38,7 +38,7 @@ export function SectionBanner({ type, title, subtitle, action }: SectionBannerPr
   return (
     <div
       className={cn(
-        'relative rounded-xl p-4 md:p-6 overflow-hidden hidden md:block',
+        'relative rounded-xl p-4 md:p-6 overflow-hidden',
         config.bannerClass
       )}
     >
@@ -48,8 +48,8 @@ export function SectionBanner({ type, title, subtitle, action }: SectionBannerPr
       {/* Content */}
       <div className="relative flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className={cn('p-3 rounded-xl bg-background/50 backdrop-blur-sm')}>
-            <Icon className={cn('h-6 w-6 md:h-8 md:w-8', config.iconClass)} />
+          <div className={cn('p-3 rounded-xl bg-background/50 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110')}>
+            <Icon className={cn('h-6 w-6 md:h-8 md:w-8 transition-transform duration-300 group-hover:rotate-6', config.iconClass)} />
           </div>
           <div>
             <h2 className={cn('text-xl md:text-2xl font-bold uppercase tracking-tight', config.accentColor)}>

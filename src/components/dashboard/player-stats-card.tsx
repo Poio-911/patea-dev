@@ -90,21 +90,21 @@ export function PlayerStatsCard({ player }: PlayerStatsCardProps) {
         <CardTitle>Mis Estadísticas</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           {statCards.map((stat, index) => (
             <motion.div
               key={stat.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1, duration: 0.3 }}
-              className={`flex items-center gap-3 p-4 rounded-lg ${stat.bgColor}`}
+              className={`flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg ${stat.bgColor}`}
             >
-              <div className={`p-2 rounded-full bg-background/40 ${stat.color}`}>
-                <stat.icon className="h-5 w-5" />
+              <div className={`p-1.5 sm:p-2 rounded-full bg-background/40 ${stat.color} shrink-0`}>
+                <stat.icon className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
-              <div>
-                <p className={`text-2xl font-bold ${stat.valueColor}`}>{stat.value}</p>
-                <p className="text-xs text-muted-foreground">{stat.title}</p>
+              <div className="min-w-0">
+                <p className={`text-xl sm:text-2xl font-bold ${stat.valueColor} truncate`}>{stat.value}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{stat.title}</p>
               </div>
             </motion.div>
           ))}

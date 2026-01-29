@@ -26,9 +26,10 @@ export function CupCard({ cup }: CupCardProps) {
   const isCompleted = cup.status === 'completed' && cup.championTeamId;
 
   return (
-    <Link href={`/competitions/cups/${cup.id}`} className="block group fifa-card-animate">
+    <Link href={`/competitions/cups/${cup.id}`} className="block group">
       <Card className={cn(
-        "fifa-cup-card h-full",
+        "fifa-cup-card h-full transition-all duration-200",
+        "hover:shadow-lg hover:-translate-y-1",
         "hover:bg-transparent"
       )}>
         <CardHeader className="pb-3">
@@ -49,11 +50,8 @@ export function CupCard({ cup }: CupCardProps) {
                 <CardTitle className="text-lg group-hover:text-yellow-600 dark:group-hover:text-yellow-500 transition-colors">
                   {cup.name}
                 </CardTitle>
-                <Badge className={cn(
-                  "shrink-0",
-                  cup.status === 'in_progress' && "fifa-cup-badge"
-                )} variant={cup.status !== 'in_progress' ? status.variant : undefined}>
-                  {cup.status === 'in_progress' ? 'COPA' : status.label}
+                <Badge className="shrink-0" variant={cup.status === 'in_progress' ? 'default' : status.variant}>
+                  {cup.status === 'in_progress' ? 'En Curso' : status.label}
                 </Badge>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -111,7 +109,7 @@ export function CupCard({ cup }: CupCardProps) {
 
         <CardFooter className="pt-0">
           <Button variant="link" className="p-0 h-auto group-hover:gap-3 transition-all text-yellow-700 dark:text-yellow-500 hover:text-yellow-600">
-            Ver Copa <ArrowRight className="ml-2 h-4 w-4" />
+            Ver Copa <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Button>
         </CardFooter>
       </Card>

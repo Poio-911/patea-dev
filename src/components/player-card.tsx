@@ -12,8 +12,8 @@ import { Eye, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AnimatedCardWrapper } from '@/components/animated-card-wrapper';
 import { getAnimationByRarity, getStaggerDelay } from '@/lib/animation-utils';
-import { JerseyWatermark } from '@/components/jersey-watermark';
-import { getOvrLevel } from '@/lib/player-utils';
+import { getOvrLevel, getOvrColorClass } from '@/lib/player-utils';
+import { Sparkles } from 'lucide-react';
 
 
 type PlayerCardProps = {
@@ -50,12 +50,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, je
     const animationType = getAnimationByRarity(player.ovr);
     const staggerDelay = getStaggerDelay(index, 3);
 
-    const borderGlowClasses: Record<string, string> = {
-        bronze: 'border-glow-bronze',
-        silver: 'border-glow-silver',
-        gold: 'border-glow-gold',
-        elite: 'border-glow-elite',
-    };
+    // Eliminado: borderGlowClasses, no se usa ningún borde difuminado
 
     const handleCardClick = () => {
         setShowDetailsButton(true);
@@ -66,17 +61,23 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, je
         setShowDetailsButton(false);
     };
 
+    // Calculate intensity for elite cards (0.0 to 1.0) based on OVR 86-99
+    // 86 -> 0.0, 99 -> 1.0
+    const intensity = ovrLevel === 'elite' ? Math.max(0, Math.min(1, (player.ovr - 86) / 13)) : 0;
+
+    const cardStyle = ovrLevel === 'elite' ? {
+        '--intensity': intensity.toFixed(2),
+        // Animation duration adjusts with intensity: 15s (slow) -> 8s (fast)
+        animationDuration: `${15 - (intensity * 7)}s`
+    } as React.CSSProperties : undefined;
+
     return (
         <AnimatedCardWrapper animation={animationType} delay={staggerDelay} className="h-full w-full">
             <Card
                 className={cn(
-                    "player-card relative h-full flex flex-col overflow-hidden rounded-2xl shadow-lg",
-                    "game:bg-card game:border-border bg-card",
-                    // NEW: Holographic effect (only on dark theme)
-                    "game:holo-effect",
-                    ovrLevel === 'elite' && "game:holo-effect-elite",
-                    // NEW: Glowing border by tier (only on dark theme)
-                    "game:" + borderGlowClasses[ovrLevel],
+                    "player-card relative h-full flex flex-col overflow-hidden rounded-2xl",
+                    "bg-card border-border",
+                    // Holo-effect overlay solo para elite en desktop
                     // Hover effects for desktop
                     "transition-all duration-300 ease-out",
                     "md:hover:shadow-2xl md:hover:scale-[1.02] md:hover:-translate-y-1",
@@ -88,13 +89,14 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, je
                 )}
                 onClick={handleCardClick}
                 onMouseLeave={() => setShowDetailsButton(false)}
+                style={cardStyle}
             >
+                {/* Holo-effect overlay solo para elite en desktop, sin tocar bordes ni gradientes */}
+                {ovrLevel === 'elite' && (
+                    <div className="hidden md:block absolute inset-0 z-10 pointer-events-none holo-effect holo-effect-elite rounded-2xl" />
+                )}
                 <div className={cn("absolute inset-0 z-0", selectedAuraClass)} />
 
-                {/* NEW: Jersey watermark (only on dark theme) */}
-                <div className="hidden game:block">
-                    <JerseyWatermark jersey={jersey || player.jersey} position="bottom-right" opacity={0.06} />
-                </div>
 
                 {/* "Ver detalles" button - shows on click/tap and on hover */}
                 <div
@@ -133,8 +135,27 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, je
                     </div>
                     <div className="relative z-10 flex flex-col h-full justify-between">
                         <div className="flex items-start justify-between mb-2">
-                            <PlayerPositionBadge position={player.position} showIcon={false} />
-                            <PlayerOvr value={player.ovr} context="card" />
+                            <PlayerPositionBadge
+                                position={player.position}
+                                showIcon={false}
+                                className={cn(
+                                    ovrLevel === 'elite' && "bg-white/80 border-violet-400 text-violet-900 font-bold shadow-sm"
+                                )}
+                            />
+                            <div className="flex items-center gap-1">
+                                {player.ovr >= 90 && (
+                                    <Sparkles className="w-4 h-4 text-yellow-500 animate-pulse" fill="currentColor" />
+                                )}
+                                <div className={cn("transition-all", ovrLevel === 'elite' && "scale-110 origin-top-right")}>
+                                    <PlayerOvr
+                                        value={player.ovr}
+                                        context="card"
+                                        className={cn(
+                                            ovrLevel === 'elite' && "text-violet-900 drop-shadow-sm font-black"
+                                        )}
+                                    />
+                                </div>
+                            </div>
                         </div>
                         <div className="flex flex-col items-center gap-2 mb-2">
                             <Dialog>

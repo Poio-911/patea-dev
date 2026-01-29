@@ -84,8 +84,8 @@ export function PlayerPositionBadge({ position, className, showIcon = false, siz
 
 import { getOvrLevel } from '@/lib/player-utils';
 
-export type PlayerOvrProps = { value: number; size?: 'compact' | 'standard'; highlight?: boolean; neutral?: boolean; context?: 'default' | 'card' };
-export function PlayerOvr({ value, size = 'standard', highlight, neutral = false, context = 'default' }: PlayerOvrProps) {
+export type PlayerOvrProps = { value: number; size?: 'compact' | 'standard'; highlight?: boolean; neutral?: boolean; context?: 'default' | 'card'; className?: string };
+export function PlayerOvr({ value, size = 'standard', highlight, neutral = false, context = 'default', className }: PlayerOvrProps) {
   const base = 'font-headline font-bold tabular-nums';
   const level = getOvrLevel(value);
   const levelText: Record<string, string> = {
@@ -120,7 +120,8 @@ export function PlayerOvr({ value, size = 'standard', highlight, neutral = false
         base,
         'text-4xl leading-none',
         highlight && 'text-primary',
-        neutral ? undefined : (context === 'card' ? levelText[level] : levelText[level])
+        neutral ? undefined : (context === 'card' ? levelText[level] : levelText[level]),
+        className
       )}
     >
       {value}

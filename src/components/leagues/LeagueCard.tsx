@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-import { Trophy, Calendar, ArrowRight, BarChart3 } from 'lucide-react';
+import { Trophy, Calendar, ArrowRight, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getLeagueProgress, getNextMatchForTeam } from '@/lib/utils/league-standings';
@@ -43,9 +43,10 @@ export function LeagueCard({ league, matches = [], standings = [] }: LeagueCardP
   }, [matches]);
 
   return (
-    <Link href={`/competitions/leagues/${league.id}`} className="block group fifa-card-animate">
+    <Link href={`/competitions/leagues/${league.id}`} className="block group">
       <Card className={cn(
-        "fifa-league-card h-full",
+        "fifa-league-card h-full transition-all duration-200",
+        "hover:shadow-lg hover:-translate-y-1",
         "hover:bg-transparent"
       )}>
         <CardHeader className="pb-3">
@@ -58,7 +59,7 @@ export function LeagueCard({ league, matches = [], standings = [] }: LeagueCardP
               {league.logoUrl ? (
                 <img src={league.logoUrl} alt={league.name} className="w-full h-full object-contain" />
               ) : (
-                <BarChart3 className="h-6 w-6 fifa-league-icon fifa-league-icon-animated" />
+                <Shield className="h-6 w-6 fifa-league-icon fifa-league-icon-animated" />
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -66,11 +67,8 @@ export function LeagueCard({ league, matches = [], standings = [] }: LeagueCardP
                 <CardTitle className="text-lg group-hover:text-foreground transition-colors">
                   {league.name}
                 </CardTitle>
-                <Badge className={cn(
-                  "shrink-0",
-                  league.status === 'in_progress' && "fifa-league-badge"
-                )} variant={league.status !== 'in_progress' ? status.variant : undefined}>
-                  {league.status === 'in_progress' ? 'LIGA' : status.label}
+                <Badge className="shrink-0" variant={league.status === 'in_progress' ? 'default' : status.variant}>
+                  {league.status === 'in_progress' ? 'En Curso' : status.label}
                 </Badge>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -136,7 +134,7 @@ export function LeagueCard({ league, matches = [], standings = [] }: LeagueCardP
 
         <CardFooter className="pt-0">
           <Button variant="link" className="p-0 h-auto group-hover:gap-3 transition-all">
-            Ver Liga <ArrowRight className="ml-2 h-4 w-4" />
+            Ver Liga <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Button>
         </CardFooter>
       </Card>
