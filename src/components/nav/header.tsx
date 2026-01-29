@@ -50,18 +50,18 @@ export function Header({ user, player, onLogout, onRequestPermission }: HeaderPr
                             <div className="text-right hidden sm:block">
                                 <p className="font-bold text-sm truncate max-w-[100px] xl:max-w-[150px]">{player.name}</p>
                                 <div className="flex justify-end">
-                                    <PlayerPositionBadge position={player.position} size="sm" showIcon={false} className="h-4 px-1.5 text-[9px] uppercase tracking-tighter" />
+                                    <PlayerPositionBadge position={player.position} size="sm" showIcon={false} showFullName={true} textOnly={true} className="text-[10px]" />
                                 </div>
                             </div>
 
                             {/* Mobile Layout (Visible on Mobile) */}
                             <div className="flex flex-col items-end sm:hidden">
-                                <span className="text-xs font-bold truncate max-w-[90px] leading-tight">{player.name}</span>
-                                <PlayerPositionBadge position={player.position} size="sm" showIcon={false} className="h-4 px-1.5 text-[10px] mt-0.5" />
+                                <span className="text-sm font-bold truncate max-w-[100px] leading-tight">{player.name}</span>
+                                <PlayerPositionBadge position={player.position} size="md" showIcon={false} showFullName={true} textOnly={true} className="text-xs" />
                             </div>
 
                             {/* OVR Circle */}
-                            <div className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 text-base md:text-lg font-bold rounded-full bg-primary/10 border border-primary/20 text-primary shrink-0 transition-transform hover:scale-105">
+                            <div className="flex items-center justify-center h-10 w-10 md:h-10 md:w-10 text-lg md:text-lg font-bold rounded-full bg-primary/10 border border-primary/20 text-primary shrink-0 transition-transform hover:scale-105">
                                 {player.ovr}
                             </div>
                         </div>

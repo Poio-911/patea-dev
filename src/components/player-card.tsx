@@ -138,9 +138,9 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, je
                             <PlayerPositionBadge
                                 position={player.position}
                                 showIcon={false}
-                                className={cn(
-                                    ovrLevel === 'elite' && "bg-white/80 border-violet-400 text-violet-900 font-bold shadow-sm"
-                                )}
+                                textOnly={true}
+                                size="lg"
+                                className="text-sm"
                             />
                             <div className="flex items-center gap-1">
                                 {player.ovr >= 90 && (
@@ -150,9 +150,6 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, je
                                     <PlayerOvr
                                         value={player.ovr}
                                         context="card"
-                                        className={cn(
-                                            ovrLevel === 'elite' && "text-violet-900 drop-shadow-sm font-black"
-                                        )}
                                     />
                                 </div>
                             </div>
