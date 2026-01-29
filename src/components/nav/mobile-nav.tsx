@@ -45,8 +45,8 @@ export function MobileNav() {
     const isMatchesActive = pathname.startsWith('/matches') || pathname.startsWith('/competitions') || pathname.startsWith('/find-match');
 
     return (
-        <nav className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-4 right-4 z-[2147483647] h-16 rounded-2xl border bg-card/80 backdrop-blur-lg shadow-lg md:hidden">
-            <div className="relative mx-auto h-full max-w-lg px-2">
+        <nav className="fixed bottom-0 left-0 right-0 z-[2147483647] h-16 border-t bg-card/80 backdrop-blur-lg shadow-lg md:hidden">
+            <div className="relative h-full w-full px-2">
                 <div className="flex h-full w-full items-center justify-around font-medium">
                     {/* Left: Panel & Jugadores */}
                     <MobileNavItem key={mainNavItems[0].href} item={mainNavItems[0]} pathname={pathname} />
