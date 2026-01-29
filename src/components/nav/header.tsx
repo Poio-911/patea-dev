@@ -2,8 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { User as FirebaseUser } from 'firebase/auth';
-import type { Player } from '@/lib/types';
+import type { Player, UserProfile } from '@/lib/types';
 import { Logo } from '@/components/logo';
 import { NotificationBell } from '@/components/notification-bell';
 import { HelpDialog } from '@/components/help-dialog';
@@ -13,7 +12,7 @@ import { UserMenu } from './user-menu';
 import { DesktopNav } from './desktop-nav';
 
 type HeaderProps = {
-    user: FirebaseUser;
+    user: UserProfile;
     player: Player | null;
     onLogout: () => void;
     onRequestPermission: () => void;

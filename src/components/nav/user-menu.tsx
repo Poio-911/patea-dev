@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { User as FirebaseUser } from 'firebase/auth';
 import {
     LogOut,
     User,
@@ -25,11 +24,11 @@ import {
     DropdownMenuSubContent,
     DropdownMenuPortal
 } from "@/components/ui/dropdown-menu";
-import type { Player } from '@/lib/types';
+import type { Player, UserProfile } from '@/lib/types';
 import { useTheme } from 'next-themes';
 
 type UserMenuProps = {
-    user: FirebaseUser;
+    user: UserProfile;
     player: Player | null; // For crop data
     onLogout: () => void;
     onRequestPermission: () => void;
