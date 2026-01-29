@@ -56,14 +56,12 @@ export function Header({ user, player, onLogout, onRequestPermission }: HeaderPr
 
                             {/* Mobile Layout (Visible on Mobile) */}
                             <div className="flex flex-col items-end sm:hidden">
-                                <span className="text-[10px] font-bold truncate max-w-[70px] leading-tight text-foreground/80">{player.name}</span>
-                                <div className="scale-90 origin-right mt-[1px]">
-                                    <PlayerPositionBadge position={player.position} size="sm" showIcon={false} className="h-3.5 px-1 py-0 text-[9px]" />
-                                </div>
+                                <span className="text-xs font-bold truncate max-w-[90px] leading-tight">{player.name}</span>
+                                <PlayerPositionBadge position={player.position} size="sm" showIcon={false} className="h-4 px-1.5 text-[10px] mt-0.5" />
                             </div>
 
                             {/* OVR Circle */}
-                            <div className="flex items-center justify-center h-8 w-8 md:h-10 md:w-10 text-sm md:text-lg font-bold rounded-full bg-primary/10 border border-primary/20 text-primary shrink-0 transition-transform hover:scale-105">
+                            <div className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 text-base md:text-lg font-bold rounded-full bg-primary/10 border border-primary/20 text-primary shrink-0 transition-transform hover:scale-105">
                                 {player.ovr}
                             </div>
                         </div>
