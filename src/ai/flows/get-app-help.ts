@@ -112,7 +112,7 @@ const appHelpFlow = ai.defineFlow(
     outputSchema: AppHelpOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash-lite' });
+    const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
     return output!;
   }
 );

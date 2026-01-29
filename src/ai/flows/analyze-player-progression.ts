@@ -85,7 +85,7 @@ const analyzePlayerProgressionFlow = ai.defineFlow(
     outputSchema: AnalyzePlayerProgressionOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash-lite' });
+    const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
     if (!output) {
       throw new Error('La IA no pudo generar el análisis de progresión.');
     }

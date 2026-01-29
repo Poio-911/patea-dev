@@ -73,7 +73,7 @@ const suggestPlayerImprovementsFlow = ai.defineFlow(
     outputSchema: SuggestPlayerImprovementsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input, {model: 'googleai/gemini-2.0-flash-lite'});
+    const {output} = await prompt(input, {model: 'googleai/gemini-2.0-flash'});
     return output!;
   }
 );
