@@ -99,15 +99,11 @@ export default function PlayersPage() {
       )}
 
       {sortedPlayers && sortedPlayers.length > 0 && (
-        <>
-          <h2 className="text-xl font-bold">Jugadores del grupo</h2>
-          <p className="text-sm text-muted-foreground">Ordenados por OVR, de mayor a menor</p>
-          <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {sortedPlayers.map((player, index) => (
-              <PlayerCard key={player.id} player={player} index={index} />
-            ))}
-          </section>
-        </>
+        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {sortedPlayers.map((player, index) => (
+            <PlayerCard key={player.id} player={player} index={index} />
+          ))}
+        </section>
       )}
     </div>
   );
