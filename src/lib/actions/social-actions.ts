@@ -189,6 +189,16 @@ export async function publishOvrChangeActivity(player: Player, history: OvrHisto
       ovrChange: delta,
     },
   });
+
+  // Check OVR milestone achievements when OVR increases
+  if (delta > 0) {
+    try {
+      const { checkAndUnlockAchievementsAction } = await import('./achievement-actions');
+      await checkAndUnlockAchievementsAction(player.id, player.ownerUid);
+    } catch (achievementError) {
+      console.warn('Failed to check achievements after OVR change', achievementError);
+    }
+  }
 }
 
 // Activity when match played (aggregate per participant user)
@@ -199,17 +209,4 @@ export async function publishMatchPlayedActivity(userId: string, matchId: string
     timestamp: FieldValue.serverTimestamp() as any,
     metadata: { matchId, matchTitle },
   });
-}
-
-// Seed a few test activities for debugging the feed
-export async function seedActivitiesAction(userId: string) {
-  const examples: Array<Omit<SocialActivity, 'id'>> = [
-    { type: 'player_created', userId, playerName: 'Jugador Seed', timestamp: FieldValue.serverTimestamp() as any },
-    { type: 'achievement_unlocked', userId, metadata: { achievementName: 'Primer Logro' }, timestamp: FieldValue.serverTimestamp() as any },
-    { type: 'match_played', userId, metadata: { matchTitle: 'Partido Seed' }, timestamp: FieldValue.serverTimestamp() as any },
-  ];
-  for (const act of examples) {
-    await publishActivityAction(act);
-  }
-  return { success: true, count: examples.length };
 }

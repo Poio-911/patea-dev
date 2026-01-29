@@ -33,6 +33,23 @@ export async function generateTeamsAction(players: Player[]) {
         return { error: 'Se necesitan al menos 2 jugadores para generar equipos.' };
     }
 
+    // Validar y loguear datos de entrada para diagnóstico
+    const invalidPlayers = players.filter(p => !p.id || !p.name || p.ovr === undefined || !p.position);
+    if (invalidPlayers.length > 0) {
+        logger.error('Jugadores con datos incompletos:', invalidPlayers.map(p => ({
+            id: p.id,
+            name: p.name,
+            ovr: p.ovr,
+            position: p.position,
+        })));
+        return { error: `Hay ${invalidPlayers.length} jugador(es) con datos incompletos. Verifica que todos tengan nombre, posición y OVR.` };
+    }
+
+    logger.info('generateTeamsAction - Entrada:', {
+        playerCount: players.length,
+        players: players.map(p => ({ id: p.id, name: p.name, ovr: p.ovr, position: p.position })),
+    });
+
     const input: GenerateBalancedTeamsInput = {
         players: players.map((p: Player) => ({
             uid: p.id,
@@ -60,6 +77,10 @@ export async function generateTeamsAction(players: Player[]) {
                     player.uid = originalPlayer.id;
                 }
             });
+        });
+
+        logger.info('generateTeamsAction - Éxito:', {
+            teams: result.teams.map(t => ({ name: t.name, playerCount: t.players.length, avgOvr: t.averageOVR })),
         });
 
         return result;
@@ -547,67 +568,6 @@ export async function generateMatchChronicleAction(matchId: string): Promise<{ d
         logger.error('[generateMatchChronicleAction] Error occurred', error, { matchId, action: 'generateMatchChronicle' });
         const formattedError = handleServerActionError(error, { matchId, action: 'generateMatchChronicle' });
         return { error: formattedError.error };
-    }
-}
-
-// ============================================================================
-// LEGACY FINAL SCORE MIGRATION
-// ============================================================================
-export async function migrateLegacyFinalScoresAction(batchSize: number = 200): Promise<{ success: boolean; updated: number; skipped: number; error?: string }> {
-    try {
-        const matchesSnap = await getAdminDb().collection('matches').get();
-        let updated = 0; let skipped = 0; const writeBatch = getAdminDb().batch();
-        matchesSnap.docs.forEach(doc => {
-            const data = doc.data() as Partial<Match>;
-            if (!data.teams || data.teams.length !== 2) { skipped++; return; }
-            // Already migrated
-            if (data.finalScore && typeof data.finalScore.team1 === 'number') { skipped++; return; }
-            const t1 = data.teams[0].finalScore;
-            const t2 = data.teams[1].finalScore;
-            if (typeof t1 === 'number' && typeof t2 === 'number') {
-                writeBatch.update(doc.ref, {
-                    finalScore: { team1: t1, team2: t2 },
-                });
-                updated++;
-            } else {
-                skipped++;
-            }
-        });
-        if (updated > 0) {
-            await writeBatch.commit();
-        }
-        return { success: true, updated, skipped };
-    } catch (error) {
-        const err = handleServerActionError(error, { action: 'migrateLegacyFinalScores' });
-        return { success: false, updated: 0, skipped: 0, error: err.error };
-    }
-}
-
-// ============================================================================
-// MIGRATION: Add assists field to existing selfEvaluations
-// ============================================================================
-export async function migrateAddAssistsToSelfEvaluationsAction(): Promise<{ success: boolean; updated: number; skipped: number; error?: string }> {
-    try {
-        const matchesSnap = await getAdminDb().collection('matches').get();
-        let updated = 0; let skipped = 0;
-        for (const matchDoc of matchesSnap.docs) {
-            const selfEvalsSnap = await getAdminDb().collection(`matches/${matchDoc.id}/selfEvaluations`).get();
-            const batch = getAdminDb().batch();
-            let batchHasWrites = false;
-            selfEvalsSnap.docs.forEach(evDoc => {
-                const data = evDoc.data();
-                if (typeof data.assists === 'number') { skipped++; return; }
-                batch.update(evDoc.ref, { assists: 0 });
-                updated++; batchHasWrites = true;
-            });
-            if (batchHasWrites) {
-                await batch.commit();
-            }
-        }
-        return { success: true, updated, skipped };
-    } catch (error) {
-        const err = handleServerActionError(error, { action: 'migrateAddAssistsToSelfEvaluations' });
-        return { success: false, updated: 0, skipped: 0, error: err.error };
     }
 }
 
@@ -1775,7 +1735,8 @@ import type { MatchEvent, LiveMatchStatus } from '../types';
  */
 export async function updatePlayerEventStatsAction(
     playerId: string,
-    stats: { goals?: number; assists?: number; yellowCards?: number; redCards?: number }
+    stats: { goals?: number; assists?: number; yellowCards?: number; redCards?: number },
+    context?: { goalsInMatch?: number; matchId?: string }
 ): Promise<{ success: boolean; error?: string }>{
     try {
         const db = getAdminDb();
@@ -1788,6 +1749,18 @@ export async function updatePlayerEventStatsAction(
         if (stats.redCards) updates['stats.redCards'] = FieldValue.increment(stats.redCards);
 
         await playerRef.update(updates);
+
+        // Check achievements after updating stats (goals-related)
+        if (stats.goals) {
+            const playerDoc = await playerRef.get();
+            if (playerDoc.exists) {
+                const player = playerDoc.data() as Player;
+                // Import dynamically to avoid circular dependencies
+                const { checkAndUnlockAchievementsAction } = await import('./achievement-actions');
+                await checkAndUnlockAchievementsAction(playerId, player.ownerUid, context);
+            }
+        }
+
         return { success: true };
     } catch (error) {
         const err = handleServerActionError(error);
@@ -1835,7 +1808,13 @@ export async function logMatchEventAction(
             updates[targetPath] = FieldValue.increment(1);
 
             // Player stats: goal + optional assist
-            await updatePlayerEventStatsAction(event.playerId, { goals: 1 });
+            // Count goals by this player in this match for hat-trick achievement
+            const existingGoals = (match.events || []).filter(
+                (e: any) => e.type === 'goal' && e.playerId === event.playerId
+            ).length;
+            const goalsInMatch = existingGoals + 1; // Include current goal
+
+            await updatePlayerEventStatsAction(event.playerId, { goals: 1 }, { goalsInMatch, matchId });
             if ((event as any).assistId) {
                 await updatePlayerEventStatsAction((event as any).assistId, { assists: 1 });
             }
@@ -2662,6 +2641,14 @@ export async function followUserAction(
             userId: followerId,
             timestamp: new Date().toISOString(),
         });
+
+        // Check achievements for the user who gained a follower
+        try {
+            const { checkAndUnlockAchievementsAction } = await import('./achievement-actions');
+            await checkAndUnlockAchievementsAction(followingId, followingId);
+        } catch (achievementError) {
+            logger.warn('Failed to check achievements after follow', { followingId, error: achievementError });
+        }
 
         logger.info('User followed successfully', { followerId, followingId });
         return { success: true };

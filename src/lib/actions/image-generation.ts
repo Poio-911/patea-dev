@@ -74,11 +74,11 @@ export async function generatePlayerCardImageAction(userId: string) {
       metadata: { contentType: 'image/png' },
     });
 
-    // Get download URL with access token (same method as crop - this works reliably)
-    const [newPhotoURL] = await newFile.getSignedUrl({
-      action: 'read',
-      expires: '03-01-2500', // Far future expiration
-    });
+    // Make the file public and get standard download URL to match client-side crop behavior
+    await newFile.makePublic();
+    
+    // Get public download URL (same format as getDownloadURL from client)
+    const newPhotoURL = `https://firebasestorage.googleapis.com/v0/b/${getAdminStorage().name}/o/${encodeURIComponent(newFilePath)}?alt=media`;
 
     // Use transaction instead of batch to ensure atomicity and credit validation
     await db.runTransaction(async (transaction) => {

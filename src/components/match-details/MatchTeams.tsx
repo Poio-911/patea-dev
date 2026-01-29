@@ -7,22 +7,18 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-import { Shuffle, Loader2, Pencil } from 'lucide-react';
 import { useMemo } from 'react';
-import { EditableTeamsDialog } from '../editable-teams-dialog';
 import { TeamRosterPlayer } from '../team-roster-player';
 
 
 interface MatchTeamsProps {
     match: Match;
     isOwner: boolean;
-    isShuffling: boolean;
-    onShuffle?: () => void;
 }
 
 // ... (styles remain same)
 
-export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeamsProps) => {
+export const MatchTeams = ({ match, isOwner }: MatchTeamsProps) => {
     const whatsAppTeamsText = useMemo(() => {
         if (!match || !match.teams || match.teams.length < 2) return '';
         let message = `*Equipos para el partido "${match.title}"*:\n\n`;
@@ -48,42 +44,16 @@ export const MatchTeams = ({ match, isOwner, isShuffling, onShuffle }: MatchTeam
                     </p>
                 </div>
                 {isOwner && match.status === 'upcoming' && (
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                        {onShuffle && match.type !== 'by_teams' && (
-                            <>
-                                <Button
-                                    onClick={onShuffle}
-                                    disabled={isShuffling}
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-full sm:w-auto bg-gradient-to-r from-primary/10 to-primary/5 border-primary/30 hover:from-primary/20 hover:to-primary/10 transition-all duration-300"
-                                >
-                                    {isShuffling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Shuffle className="mr-2 h-4 w-4 text-primary" />}
-                                    Volver a Sortear
-                                </Button>
-                                <EditableTeamsDialog match={match}>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="w-full sm:w-auto bg-card border hover:bg-card/80 transition-all duration-300"
-                                    >
-                                        <Pencil className="mr-2 h-4 w-4 text-foreground" />
-                                        Editar Equipos
-                                    </Button>
-                                </EditableTeamsDialog>
-                            </>
-                        )}
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            asChild
-                            className="w-full sm:w-auto bg-card border hover:bg-card/80 transition-all duration-300"
-                        >
-                            <a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer">
-                                <WhatsAppIcon className="mr-2 h-4 w-4 text-foreground" />Compartir
-                            </a>
-                        </Button>
-                    </div>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        asChild
+                        className="w-full sm:w-auto bg-card border hover:bg-card/80 transition-all duration-300"
+                    >
+                        <a href={`https://wa.me/?text=${whatsAppTeamsText}`} target="_blank" rel="noopener noreferrer">
+                            <WhatsAppIcon className="mr-2 h-4 w-4 text-foreground" />Compartir
+                        </a>
+                    </Button>
                 )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

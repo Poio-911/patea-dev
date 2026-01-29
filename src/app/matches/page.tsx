@@ -360,7 +360,7 @@ export default function MatchesPage() {
                                     ))}
                                 </motion.div>
                             ) : (
-                                <motion.div className="flex flex-col gap-2" variants={listVariants} initial="hidden" animate="visible" key={`compact-${timeFilter}`}>
+                                <motion.div className="grid grid-cols-2 md:grid-cols-1 gap-2 md:gap-3" variants={listVariants} initial="hidden" animate="visible" key={`compact-${timeFilter}`}>
                                     {gridMatches.map(match => (
                                         <motion.div key={match.id} variants={itemVariants}>
                                             <CompactMatchCard match={match} />

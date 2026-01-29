@@ -36,6 +36,7 @@ import { OVRProgressionChart } from '@/components/dashboard/ovr-progression-char
 import { SocialFeed } from '@/components/social/social-feed';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { NotificationPermissionPrompt } from '@/components/notifications/notification-permission-prompt';
+import { LeaderboardWidget } from '@/components/dashboard/leaderboard-widget';
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
   upcoming: { label: 'Próximo', className: 'bg-primary/10 text-foreground border border-primary/30 rounded-full backdrop-blur-sm' },
@@ -465,6 +466,15 @@ function DashboardContent() {
                 </motion.div>
               </CardContent>
             </Card>
+            </motion.div>
+
+            <motion.div variants={cardVariants}>
+              <LeaderboardWidget
+                groupId={user?.activeGroupId}
+                category="goals"
+                limit={5}
+                currentUserId={user?.uid}
+              />
             </motion.div>
 
             <motion.div variants={cardVariants}>

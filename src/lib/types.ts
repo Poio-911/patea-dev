@@ -962,3 +962,55 @@ export type CreditTransaction = {
     packageTitle?: string;
   };
 } & DocumentData;
+
+// ============================================
+// GAMIFICATION - ACHIEVEMENTS & LEADERBOARDS
+// ============================================
+
+export type AchievementCategory = 'performance' | 'social' | 'competition' | 'milestones';
+
+export type AchievementRequirementType =
+  | 'goals'
+  | 'goals_in_match'
+  | 'matches'
+  | 'wins'
+  | 'ovr'
+  | 'followers'
+  | 'organized'
+  | 'champion';
+
+// Definition of an achievement
+export type Achievement = {
+  id: string;
+  name: string;
+  description: string;
+  icon: string; // Lucide icon name
+  category: AchievementCategory;
+  requirement: {
+    type: AchievementRequirementType;
+    count: number;
+  };
+};
+
+// Achievement unlocked by a player
+export type PlayerAchievement = {
+  id: string;
+  achievementId: string;
+  odplayerId: string;
+  oduserId: string;
+  unlockedAt: string; // ISO date
+} & DocumentData;
+
+// Leaderboard categories
+export type LeaderboardCategory = 'ovr' | 'goals' | 'assists' | 'matches' | 'rating';
+
+// Leaderboard entry
+export type LeaderboardEntry = {
+  rank: number;
+  playerId: string;
+  playerName: string;
+  playerPhotoUrl?: string;
+  position: PlayerPosition;
+  value: number;
+  userId: string;
+};

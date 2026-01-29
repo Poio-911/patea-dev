@@ -171,6 +171,14 @@ export async function POST(request: NextRequest) {
       },
     } as any);
 
+    // Check achievements for organizer
+    try {
+      const { checkAndUnlockAchievementsAction } = await import('@/lib/actions/achievement-actions');
+      await checkAndUnlockAchievementsAction(userId, userId);
+    } catch (achievementError) {
+      console.warn('Failed to check achievements after match creation', achievementError);
+    }
+
     // Notifications for participants (manual|by_teams)
     if (baseData.playerUids?.length) {
       await Promise.all(

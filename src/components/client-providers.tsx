@@ -11,6 +11,7 @@ import { MainNav } from '@/app/main-nav';
 import { ThemeProvider } from 'next-themes';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { ThemeBackground } from '@/components/theme-background';
+import { AchievementToastProvider } from '@/components/achievement-toast';
 
 type FirebaseClientProviderProps = {
   children: React.ReactNode;
@@ -75,7 +76,9 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
         firestore={firebaseInstances.firestore}
       >
         <UserProvider>
-          <MainNav>{children}</MainNav>
+          <AchievementToastProvider>
+            <MainNav>{children}</MainNav>
+          </AchievementToastProvider>
         </UserProvider>
       </FirebaseProvider>
     </ThemeProvider>

@@ -16,7 +16,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { InvitePlayerDialog } from '../invite-player-dialog';
-import { Loader2, CheckCircle, Trash2, UserPlus, FileSignature } from 'lucide-react';
+import { EditableTeamsDialog } from '../editable-teams-dialog';
+import { Loader2, CheckCircle, Trash2, UserPlus, FileSignature, Shuffle } from 'lucide-react';
 import Link from 'next/link';
 
 interface MatchManagementActionsProps {
@@ -28,6 +29,9 @@ interface MatchManagementActionsProps {
   onFinish: () => void;
   onDelete: () => void;
   isCompetitionMatch?: boolean;
+  // Acciones de equipos consolidadas
+  onShuffle?: () => void;
+  isShuffling?: boolean;
 }
 
 /**
@@ -43,17 +47,60 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
   onFinish,
   onDelete,
   isCompetitionMatch = false,
+  onShuffle,
+  isShuffling = false,
 }: MatchManagementActionsProps) {
+  const isManual = match.type === 'manual';
+  const isCollaborative = match.type === 'collaborative';
+  const isCompetitive = ['league', 'cup', 'league_final', 'by_teams'].includes(match.type);
+  const hasTeams = match.teams && match.teams.length === 2;
+  const isFull = match.players && match.players.length === match.matchSize;
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold text-foreground/90 pt-6">Gestión del Partido</h2>
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+    <div className="space-y-3">
+      <h3 className="text-lg font-semibold text-foreground/90">Acciones</h3>
+      <div className="flex flex-wrap gap-2">
+        {/* Invitar solo si es manual o colaborativo y no hay equipos */}
+        {(isManual || isCollaborative) && !hasTeams && (
+          <InvitePlayerDialog allGroupPlayers={allGroupPlayers} userMatches={[]} match={match}>
+            <Button size="sm" variant="outline" aria-label="Invitar jugadores">
+              <UserPlus className="mr-2 h-4 w-4" />
+              Invitar Jugadores
+            </Button>
+          </InvitePlayerDialog>
+        )}
+        {/* Volver a sortear equipos: manual y colaborativo, solo si ya hay equipos */}
+        {onShuffle && hasTeams && match.type !== 'by_teams' && match.status === 'upcoming' && (
+          <Button
+            onClick={onShuffle}
+            disabled={isShuffling}
+            size="sm"
+            variant="outline"
+            aria-label="Volver a sortear equipos"
+          >
+            {isShuffling ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Shuffle className="mr-2 h-4 w-4" aria-hidden="true" />
+            )}
+            Sortear
+          </Button>
+        )}
+        {/* Editar equipos: manual siempre, colaborativo solo si está completo */}
+        {(isManual || (isCollaborative && isFull)) && (
+          <EditableTeamsDialog match={match}>
+            <Button size="sm" variant="outline" aria-label="Editar equipos">
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Editar Equipos
+            </Button>
+          </EditableTeamsDialog>
+        )}
+        {/* Acciones generales */}
         {canFinalize && (
           <Button
             onClick={onFinish}
             disabled={isFinishing}
             size="sm"
-            className="min-h-[48px] w-full sm:w-auto"
             aria-label="Finalizar partido"
           >
             {isFinishing ? (
@@ -64,23 +111,21 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
             Finalizar
           </Button>
         )}
-
-        {!isCompetitionMatch && match.status === 'completed' && (
-          <Button asChild size="sm" className="min-h-[48px] w-full sm:w-auto">
+        {!isCompetitive && match.status === 'completed' && (
+          <Button asChild size="sm" variant="outline">
             <Link href={`/matches/${match.id}/evaluate`}>
               <FileSignature className="mr-2 h-4 w-4" />
-              Supervisar Evaluaciones
+              Evaluaciones
             </Link>
           </Button>
         )}
-
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
               disabled={isDeleting}
-              className="min-h-[48px] text-destructive hover:bg-destructive/10 hover:text-destructive w-full sm:w-auto"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
               aria-label="Eliminar partido"
             >
               <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />

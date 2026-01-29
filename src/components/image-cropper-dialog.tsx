@@ -64,6 +64,32 @@ async function getCroppedImg(
   });
 }
 
+// Helper function to validate and normalize Firebase Storage URLs
+function normalizeFirebaseStorageUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    
+    // If it's already a proper Firebase Storage URL, return as-is
+    if (urlObj.hostname === 'firebasestorage.googleapis.com' && urlObj.pathname.includes('/o/')) {
+      return url;
+    }
+    
+    // If it's a Firebase App domain, try to extract the file path and convert
+    if (urlObj.hostname.includes('firebasestorage.app')) {
+      // Extract the file path and reconstruct the URL
+      const pathMatch = url.match(/\/v0\/b\/[^/]+\/o\/(.+?)(\?|$)/);
+      if (pathMatch) {
+        const filePath = pathMatch[1];
+        return `https://firebasestorage.googleapis.com/v0/b/${urlObj.hostname.split('.')[0]}.appspot.com/o/${filePath}?alt=media`;
+      }
+    }
+    
+    return url;
+  } catch {
+    return url; // Return original if URL parsing fails
+  }
+}
+
 
 export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCropperDialogProps) {
   const [open, setOpen] = useState(false);
@@ -98,33 +124,94 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
 
   useEffect(() => {
     if (open && player.photoUrl) {
+      const photoUrl = player.photoUrl; // Capture for TypeScript narrowing
       setIsLoadingImage(true);
 
-      // Fetch image directly from client (Firebase Storage URLs are public with token)
-      fetch(player.photoUrl)
-        .then((response) => {
+      // Try multiple strategies to load the image
+      const loadImage = async () => {
+        try {
+          // Normalize the URL first
+          const normalizedUrl = normalizeFirebaseStorageUrl(photoUrl);
+          
+          // Strategy 1: Direct fetch with proper error handling
+          const response = await fetch(normalizedUrl, {
+            method: 'GET',
+            headers: {
+              'Accept': 'image/*',
+            },
+            mode: 'cors',
+          });
+          
           if (!response.ok) {
-            throw new Error('Failed to fetch image');
+            throw new Error(`HTTP error! status: ${response.status}`);
           }
-          return response.blob();
-        })
-        .then((blob) => {
+          
+          const blob = await response.blob();
+          
+          // Verify it's actually an image
+          if (!blob.type.startsWith('image/')) {
+            throw new Error('Response is not an image');
+          }
+          
           return new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
+            reader.onerror = () => reject(new Error('Failed to read blob as data URL'));
             reader.readAsDataURL(blob);
           });
-        })
+        } catch (fetchError) {
+          console.warn('Direct fetch failed:', fetchError);
+          
+          // Strategy 2: Try loading via Image element (handles CORS better in some cases)
+          return new Promise<string>((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            
+            img.onload = () => {
+              try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                  reject(new Error('Could not get canvas context'));
+                  return;
+                }
+                
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                ctx.drawImage(img, 0, 0);
+                
+                resolve(canvas.toDataURL('image/jpeg', 0.9));
+              } catch (canvasError) {
+                reject(canvasError);
+              }
+            };
+            
+            img.onerror = () => {
+              reject(new Error('Failed to load image via Image element'));
+            };
+            
+            // Try both normalized URL and original URL
+            const urlToTry = normalizeFirebaseStorageUrl(photoUrl);
+            const urlWithCacheBust = urlToTry.includes('?') 
+              ? `${urlToTry}&_cb=${Date.now()}`
+              : `${urlToTry}?_cb=${Date.now()}`;
+            
+            img.src = urlWithCacheBust;
+          });
+        }
+      };
+
+      loadImage()
         .then((dataUri) => {
           setImgSrc(dataUri);
         })
         .catch((error) => {
-          console.error('Error loading image:', error);
+          console.error('All image loading strategies failed for URL:', player.photoUrl);
+          console.error('Error details:', error);
           toast({
             variant: 'destructive',
             title: 'Error al cargar imagen',
-            description: 'No se pudo cargar la imagen actual.',
+            description: 'No se pudo cargar la imagen actual. Intenta subir una nueva imagen.',
           });
         })
         .finally(() => {
@@ -167,8 +254,13 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
       const filePath = `profile-images/${user.uid}/profile_${Date.now()}.jpg`;
       const storageRef = ref(storage, filePath);
 
+      console.log('Uploading to path:', filePath);
+
       const uploadResult = await uploadBytes(storageRef, croppedImageBlob);
+      console.log('Upload completed:', uploadResult.metadata.fullPath);
+      
       const newPhotoURL = await getDownloadURL(uploadResult.ref);
+      console.log('Download URL obtained:', newPhotoURL);
 
       // ✅ FIX: Update both user and player documents in a single batch
       const userDocRef = doc(firestore, 'users', user.uid);
@@ -183,9 +275,11 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
           cropZoom: 1
       });
       await batch.commit();
+      console.log('Firestore batch update completed');
 
       // ✅ FIX: Force update the auth user profile to propagate changes globally
       await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
+      console.log('Auth profile updated');
       
       if(onSaveComplete) {
         onSaveComplete(newPhotoURL);
@@ -196,7 +290,26 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
 
     } catch (error: any) {
       console.error("Error saving cropped image:", error);
-      toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudo guardar la imagen.' });
+      
+      let errorMessage = 'No se pudo guardar la imagen.';
+      
+      if (error.code === 'storage/unauthorized') {
+        errorMessage = 'No tienes permisos para subir la imagen. Verifica que estés autenticado.';
+      } else if (error.code === 'storage/quota-exceeded') {
+        errorMessage = 'Se ha excedido la cuota de almacenamiento.';
+      } else if (error.code === 'storage/unauthenticated') {
+        errorMessage = 'Tu sesión ha expirado. Por favor, vuelve a iniciar sesión.';
+      } else if (error.code === 'storage/retry-limit-exceeded') {
+        errorMessage = 'Error de conexión. Por favor, intenta nuevamente.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast({ 
+        variant: 'destructive', 
+        title: 'Error', 
+        description: errorMessage 
+      });
     } finally {
       setIsUploading(false);
     }

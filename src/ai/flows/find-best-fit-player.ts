@@ -55,7 +55,7 @@ const prompt = ai.definePrompt({
   name: 'findBestFitPlayerPrompt',
   input: { schema: FindBestFitPlayerInputSchema },
   output: { schema: FindBestFitPlayerOutputSchema },
-  model: 'googleai/gemini-2.5-flash',
+  model: 'googleai/gemini-2.0-flash-lite',
   prompt: `
     Eres un director deportivo experto en fútbol amateur del Río de la Plata, con un ojo clínico para fichajes.
     Tu tarea es analizar un partido incompleto y una lista de jugadores libres para recomendar los mejores fichajes posibles.
@@ -98,7 +98,7 @@ const findBestFitPlayerFlow = ai.defineFlow(
     if (input.availablePlayers.length === 0 || input.spotsToFill <= 0) {
         return { recommendations: [] };
     }
-    const { output } = await prompt(input, { model: 'googleai/gemini-2.5-flash' });
+    const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash-lite' });
     return output!;
   }
 );

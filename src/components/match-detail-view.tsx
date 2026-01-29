@@ -27,7 +27,7 @@ import { MatchTimeline } from '@/components/match/match-timeline';
 import { LiveStats } from '@/components/match/live-stats';
 import { logMatchEventAction, updateLiveStateAction } from '@/lib/actions/server-actions';
 import { useToast } from '@/hooks/use-toast';
-import { MatchWeatherForecast } from './matches/match-weather-forecast';
+import { MatchWeatherAlert } from './match-details/MatchWeatherAlert';
 import { logger } from '@/lib/logger';
 
 interface MatchDetailViewProps {
@@ -165,6 +165,25 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
           onJoinOrLeave={isCompetitionMatch ? undefined : actions.handleJoinOrLeave}
         />
 
+        {/* Advertencias climáticas */}
+        <MatchWeatherAlert match={match} />
+
+        {/* Management Actions - Centralizadas para organizadores */}
+        {permissions.isOwner && (
+          <MatchManagementActions
+            match={match}
+            allGroupPlayers={allGroupPlayers || []}
+            canFinalize={permissions.canFinalize}
+            isFinishing={actions.isFinishing}
+            isDeleting={actions.isDeleting}
+            onFinish={actions.handleFinish}
+            onDelete={actions.handleDelete}
+            isCompetitionMatch={isCompetitionMatch}
+            onShuffle={isCompetitionMatch ? undefined : actions.handleShuffleTeams}
+            isShuffling={actions.isShuffling}
+          />
+        )}
+
         {/* Competition Controls */}
         {isCompetitionMatch && permissions.isOwner && (
           <div className="mt-6">
@@ -178,8 +197,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
               <MatchTeams
                 match={match}
                 isOwner={permissions.isOwner}
-                onShuffle={isCompetitionMatch ? undefined : actions.handleShuffleTeams}
-                isShuffling={actions.isShuffling}
               />
             ) : (
               <PlayersConfirmed match={match} />
@@ -228,9 +245,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
               />
             )}
 
-            {/* Pronóstico del clima expandido */}
-            {match.weather && <MatchWeatherForecast match={match} />}
-
             {match.status === 'evaluated' && <MatchChronicleCard match={match} />}
 
             {/* Physical Metrics Section - Only for players who participated */}
@@ -261,20 +275,6 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
               </div>
             )}
           </div>
-          {permissions.isOwner && (
-            <div className="lg:col-span-3">
-              <MatchManagementActions
-                match={match}
-                allGroupPlayers={allGroupPlayers || []}
-                canFinalize={permissions.canFinalize}
-                isFinishing={actions.isFinishing}
-                isDeleting={actions.isDeleting}
-                onFinish={actions.handleFinish}
-                onDelete={actions.handleDelete}
-                isCompetitionMatch={isCompetitionMatch}
-              />
-            </div>
-          )}
         </div>
       </div>
 
