@@ -16,10 +16,11 @@ import { useUser, useAuth, initializeFirebase } from '../firebase';
 import { useToast } from '../hooks/use-toast';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
-import { doc, writeBatch } from 'firebase/firestore';
+import { doc, writeBatch, getDoc } from 'firebase/firestore';
 import { Loader2, Upload, Scissors } from 'lucide-react';
 import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { convertStorageUrlToBase64 } from '@/lib/actions/image-generation';
 
 interface ImageCropperDialogProps {
   player: {
@@ -127,12 +128,21 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
       const photoUrl = player.photoUrl; // Capture for TypeScript narrowing
       setIsLoadingImage(true);
 
-      // Try multiple strategies to load the image
-      const loadImage = async () => {
+      // Use server action to load image (bypasses CORS issues in production)
+      const loadImageViaServer = async () => {
+        const result = await convertStorageUrlToBase64(photoUrl);
+        if (result.error) {
+          throw new Error(result.error);
+        }
+        return result.dataUri!;
+      };
+
+      // Fallback: Try client-side strategies
+      const loadImageClientSide = async () => {
         try {
           // Normalize the URL first
           const normalizedUrl = normalizeFirebaseStorageUrl(photoUrl);
-          
+
           // Strategy 1: Direct fetch with proper error handling
           const response = await fetch(normalizedUrl, {
             method: 'GET',
@@ -141,18 +151,18 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
             },
             mode: 'cors',
           });
-          
+
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
-          
+
           const blob = await response.blob();
-          
+
           // Verify it's actually an image
           if (!blob.type.startsWith('image/')) {
             throw new Error('Response is not an image');
           }
-          
+
           return new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onloadend = () => resolve(reader.result as string);
@@ -161,12 +171,12 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
           });
         } catch (fetchError) {
           console.warn('Direct fetch failed:', fetchError);
-          
+
           // Strategy 2: Try loading via Image element (handles CORS better in some cases)
           return new Promise<string>((resolve, reject) => {
             const img = new Image();
             img.crossOrigin = 'anonymous';
-            
+
             img.onload = () => {
               try {
                 const canvas = document.createElement('canvas');
@@ -175,33 +185,38 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
                   reject(new Error('Could not get canvas context'));
                   return;
                 }
-                
+
                 canvas.width = img.naturalWidth;
                 canvas.height = img.naturalHeight;
                 ctx.drawImage(img, 0, 0);
-                
+
                 resolve(canvas.toDataURL('image/jpeg', 0.9));
               } catch (canvasError) {
                 reject(canvasError);
               }
             };
-            
+
             img.onerror = () => {
               reject(new Error('Failed to load image via Image element'));
             };
-            
+
             // Try both normalized URL and original URL
             const urlToTry = normalizeFirebaseStorageUrl(photoUrl);
-            const urlWithCacheBust = urlToTry.includes('?') 
+            const urlWithCacheBust = urlToTry.includes('?')
               ? `${urlToTry}&_cb=${Date.now()}`
               : `${urlToTry}?_cb=${Date.now()}`;
-            
+
             img.src = urlWithCacheBust;
           });
         }
       };
 
-      loadImage()
+      // Try server action first (production-safe), fallback to client-side
+      loadImageViaServer()
+        .catch((serverError) => {
+          console.warn('Server-side image loading failed:', serverError);
+          return loadImageClientSide();
+        })
         .then((dataUri) => {
           setImgSrc(dataUri);
         })
@@ -262,20 +277,32 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
       const newPhotoURL = await getDownloadURL(uploadResult.ref);
       console.log('Download URL obtained:', newPhotoURL);
 
-      // ✅ FIX: Update both user and player documents in a single batch
+      // ✅ FIX: Update user, player, and availablePlayers documents in a single batch
       const userDocRef = doc(firestore, 'users', user.uid);
       const playerDocRef = doc(firestore, 'players', user.uid);
+      const availablePlayerRef = doc(firestore, 'availablePlayers', user.uid);
+
+      // Check if availablePlayers document exists before updating
+      const availablePlayerSnap = await getDoc(availablePlayerRef);
+
+      const photoUpdates = {
+        photoUrl: newPhotoURL,
+        // Reset crop and zoom as the new image is already cropped
+        cropPosition: { x: 50, y: 50 },
+        cropZoom: 1
+      };
 
       const batch = writeBatch(firestore);
       batch.update(userDocRef, { photoURL: newPhotoURL });
-      batch.update(playerDocRef, { 
-          photoUrl: newPhotoURL,
-          // Reset crop and zoom as the new image is already cropped
-          cropPosition: { x: 50, y: 50 }, 
-          cropZoom: 1
-      });
+      batch.update(playerDocRef, photoUpdates);
+
+      // Only update availablePlayers if document exists (player is looking for match)
+      if (availablePlayerSnap.exists()) {
+        batch.update(availablePlayerRef, photoUpdates);
+      }
+
       await batch.commit();
-      console.log('Firestore batch update completed');
+      console.log('Firestore batch update completed (including availablePlayers if exists)');
 
       // ✅ FIX: Force update the auth user profile to propagate changes globally
       await updateProfile(auth.currentUser, { photoURL: newPhotoURL });

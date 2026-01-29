@@ -63,10 +63,26 @@ export async function generatePlayerCardImageAction(userId: string) {
 
     // Call AI flow (dynamic import to avoid loading Genkit during build)
     const { generatePlayerCardImage } = await import('../../ai/flows/generate-player-card-image');
-    const generatedImageDataUri = await generatePlayerCardImage(photoDataUri);
+    const generatedImageResponse = await generatePlayerCardImage(photoDataUri);
 
-    // Upload new image to storage
-    const generatedImageBuffer = Buffer.from(generatedImageDataUri.split(',')[1], 'base64');
+    // Handle both Data URI and URL responses from Gemini
+    let generatedImageBuffer: Buffer;
+    if (generatedImageResponse.startsWith('data:')) {
+      // Data URI format: data:image/png;base64,iVBORw0...
+      const base64Data = generatedImageResponse.split(',')[1];
+      if (!base64Data) {
+        throw new Error('Data URI inválida recibida de la IA');
+      }
+      generatedImageBuffer = Buffer.from(base64Data, 'base64');
+    } else {
+      // URL format: https://generativelanguage.googleapis.com/...
+      const response = await fetch(generatedImageResponse);
+      if (!response.ok) {
+        throw new Error('No se pudo descargar la imagen generada por la IA');
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      generatedImageBuffer = Buffer.from(arrayBuffer);
+    }
     const newFilePath = `profile-images/${userId}/generated_${Date.now()}.png`;
     const newFile = getAdminStorage().file(newFilePath);
 
