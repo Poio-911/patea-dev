@@ -29,9 +29,11 @@ export type PlayerPositionBadgeProps = {
   showIcon?: boolean;
   size?: 'sm' | 'md' | 'lg';
   neutral?: boolean; // when true, keep grayscale tokens (for player-cards)
+  showFullName?: boolean; // when true, show full name (e.g., "Delantero" instead of "DEL")
+  textOnly?: boolean; // when true, render only colored text without badge/background/border
 };
 
-export function PlayerPositionBadge({ position, className, showIcon = false, size = 'md', neutral = false }: PlayerPositionBadgeProps) {
+export function PlayerPositionBadge({ position, className, showIcon = false, size = 'md', neutral = false, showFullName = false, textOnly = false }: PlayerPositionBadgeProps) {
   const config = positionConfig[position];
   const Icon = config.Icon;
 
@@ -39,6 +41,12 @@ export function PlayerPositionBadge({ position, className, showIcon = false, siz
     sm: 'text-[10px] px-1.5 py-0.5 h-5',
     md: 'text-xs px-2.5 py-1 h-7',
     lg: 'text-sm px-3 py-1.5 h-8'
+  };
+
+  const textSizeClasses = {
+    sm: 'text-[10px]',
+    md: 'text-xs',
+    lg: 'text-sm'
   };
 
   const iconSizes = {
@@ -55,6 +63,30 @@ export function PlayerPositionBadge({ position, className, showIcon = false, siz
     POR: 'bg-pos-por/15 text-pos-por border border-pos-por',
   };
 
+  // Text-only color classes (just the text color)
+  const textColorClasses: Record<PlayerPosition, string> = {
+    DEL: 'text-pos-del',
+    MED: 'text-pos-med',
+    DEF: 'text-pos-def',
+    POR: 'text-pos-por',
+  };
+
+  const displayText = showFullName ? config.name : position;
+
+  // Text-only mode: render just colored bold text without badge
+  if (textOnly) {
+    return (
+      <span className={cn(
+        'font-headline font-bold uppercase',
+        textColorClasses[position],
+        textSizeClasses[size],
+        className
+      )}>
+        {displayText}
+      </span>
+    );
+  }
+
   return (
     <TooltipProvider>
       <Tooltip delayDuration={300}>
@@ -70,7 +102,7 @@ export function PlayerPositionBadge({ position, className, showIcon = false, siz
               )}
             >
               {showIcon && <Icon className={cn(iconSizes[size])} />}
-              {position}
+              {displayText}
             </Badge>
           </span>
         </TooltipTrigger>
