@@ -28,6 +28,7 @@ import { CreateGroupDialog, JoinGroupDialog } from '@/components/groups/group-di
 import { useToast } from '@/hooks/use-toast';
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import { cn } from '@/lib/utils';
+import { GroupSummaryCard } from '@/components/group-summary-card';
 
 export default function GroupsPage() {
   const { user, loading: userLoading } = useUser();
@@ -163,6 +164,11 @@ export default function GroupsPage() {
                   </div>
                 </CardContent>
               </Card>
+            </motion.div>
+
+            {/* AI Summary Card */}
+            <motion.div variants={item}>
+              <GroupSummaryCard groupId={user.activeGroupId} />
             </motion.div>
 
             {/* Layout de 3 columnas responsive */}

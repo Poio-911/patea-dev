@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import Link from 'next/link';
 import { PlayerRecentActivity } from './player-recent-activity';
+import { PlayerSuggestionsCard } from './player-suggestions-card';
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -37,38 +38,45 @@ export default function PlayerProfileView({ playerId, player, jersey }: PlayerPr
       />
       
       {isCurrentUserProfile && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Link href={`/players/${playerId}/analysis`}>
-            <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Análisis con IA
-                </CardTitle>
-                <BrainCircuit className="h-5 w-5 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  Descubrí patrones y recibí consejos del DT virtual.
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href={`/players/${playerId}/progression`}>
-             <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer">
-               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Progresión de OVR
-                </CardTitle>
-                <LineChart className="h-5 w-5 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  Mirá el gráfico de cómo evolucionaron tus estadísticas.
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Link href={`/players/${playerId}/analysis`}>
+              <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Análisis con IA
+                  </CardTitle>
+                  <BrainCircuit className="h-5 w-5 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    Descubrí patrones y recibí consejos del DT virtual.
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href={`/players/${playerId}/progression`}>
+              <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Progresión de OVR
+                  </CardTitle>
+                  <LineChart className="h-5 w-5 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    Mirá el gráfico de cómo evolucionaron tus estadísticas.
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+
+          {/* AI Suggestions Card */}
+          {player.groupId && (
+            <PlayerSuggestionsCard playerId={playerId} groupId={player.groupId} />
+          )}
+        </>
       )}
 
       <PlayerRecentActivity playerId={playerId} />
