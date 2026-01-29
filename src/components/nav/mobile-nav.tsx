@@ -14,7 +14,9 @@ export function MobileNav() {
     // Detectar modo standalone (PWA instalado)
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            // navigator.standalone is iOS Safari specific (non-standard)
+            const nav = window.navigator as Navigator & { standalone?: boolean };
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || nav.standalone === true;
             if (isStandalone) {
                 document.body.classList.add('standalone');
             } else {
