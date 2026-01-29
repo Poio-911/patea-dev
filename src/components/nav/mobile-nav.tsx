@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
@@ -11,6 +11,17 @@ import { useToast } from '@/hooks/use-toast';
 import { mainNavItems, matchesNavItems, extraNavItems } from './nav-config';
 
 export function MobileNav() {
+    // Detectar modo standalone (PWA instalado)
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            if (isStandalone) {
+                document.body.classList.add('standalone');
+            } else {
+                document.body.classList.remove('standalone');
+            }
+        }
+    }, []);
     const pathname = usePathname() ?? '';
     const [matchesMenuOpen, setMatchesMenuOpen] = React.useState(false);
     const matchesMenuRef = React.useRef<HTMLDivElement | null>(null);

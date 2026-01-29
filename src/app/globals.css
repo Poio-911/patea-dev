@@ -1,3 +1,45 @@
+/* Ajuste para menú en modo PWA standalone */
+body.standalone nav.fixed {
+  bottom: 1rem !important;
+}
+/* CONTRASTE MEJORADO PARA GAME Y NIKE */
+.game .player-card .text-muted-foreground,
+.game .player-card h3,
+.game .player-card .ovr-value,
+.nike .player-card .text-muted-foreground,
+.nike .player-card h3,
+.nike .player-card .ovr-value {
+  color: #fff !important;
+  opacity: 0.92;
+}
+
+.game .aura-elite,
+.nike .aura-elite {
+  opacity: 0.22 !important;
+}
+
+.game .player-card .badge,
+.nike .player-card .badge {
+  border: 1px solid #fff !important;
+  box-shadow: 0 0 4px #fff2;
+}
+
+.game .btn-add-player {
+  background: #1e90ff !important;
+  color: #fff !important;
+  box-shadow: 0 2px 8px #0004;
+}
+.nike .btn-add-player {
+  background: #fff !important;
+  color: #222 !important;
+  box-shadow: 0 2px 8px #0004;
+}
+
+.game .player-card,
+.nike .player-card {
+  box-shadow: 0 2px 12px #0006 !important;
+  border: 1px solid #fff2 !important;
+}
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @tailwind base;
