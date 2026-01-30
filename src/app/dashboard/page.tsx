@@ -1,42 +1,33 @@
 
 'use client';
 
-import { Suspense, useState, useMemo, useCallback, useEffect } from 'react';
+import { Suspense, useState, useMemo } from 'react';
 import { useCollection, useDoc, useFirestore, useUser } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, Users2, Calendar, User, Eye, Loader2, LocateFixed, AlertCircle, UserRound, CheckCircle, Search, PlayCircle } from 'lucide-react';
+import { Star, Users2, Calendar, User, Loader2, UserRound, Search, PlayCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { collection, query, where, orderBy, limit, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, doc } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import type { Player, Match, AvailablePlayer } from '@/lib/types';
+import type { Player, Match, AvailablePlayer, UserProfile } from '@/lib/types';
 import { MatchVisualizer } from '@/components/match/match-visualizer';
-import { useMatchPresence } from '@/hooks/useMatchPresence';
 import { NextMatchCard } from '@/components/next-match-card';
 import { Badge } from '@/components/ui/badge';
 import { format, isToday, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Separator } from '@/components/ui/separator';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
-import { SetAvailabilityDialog } from '@/components/set-availability-dialog';
-import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/hooks/use-toast';
-import { Label } from '@/components/ui/label';
 import { MateIcon } from '@/components/icons/mate-icon';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
-import { logger } from '@/lib/logger';
 import { motion } from 'framer-motion';
 import { FindMatchIcon } from '@/components/icons/find-match-icon';
 import { PlayerStatsCard } from '@/components/dashboard/player-stats-card';
 import { PlayerPositionBadge } from '@/components/player-styles';
-import { OVRProgressionChart } from '@/components/dashboard/ovr-progression-chart';
-import { SocialFeed } from '@/components/social/social-feed';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { NotificationPermissionPrompt } from '@/components/notifications/notification-permission-prompt';
-import { LeaderboardWidget } from '@/components/dashboard/leaderboard-widget';
 import { DashboardTabs } from '@/components/dashboard/dashboard-tabs';
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
@@ -76,9 +67,6 @@ const cardVariants = {
 function DashboardContent() {
   const { user } = useUser();
   const firestore = useFirestore();
-  const { toast } = useToast();
-  const [isToggling, setIsToggling] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
 
   const top5PlayersQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
@@ -113,6 +101,10 @@ function DashboardContent() {
 
   const availablePlayerRef = useMemo(() => firestore && user?.uid ? doc(firestore, 'availablePlayers', user.uid) : null, [firestore, user?.uid]);
   const { data: availablePlayerData, loading: availablePlayerLoading } = useDoc<AvailablePlayer>(availablePlayerRef);
+
+  // Get user profile for savedLocation
+  const userProfileRef = useMemo(() => firestore && user?.uid ? doc(firestore, 'users', user.uid) : null, [firestore, user?.uid]);
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   const { data: top5Players, loading: top5PlayersLoading } = useCollection<Player>(top5PlayersQuery);
 
@@ -198,59 +190,6 @@ function DashboardContent() {
     };
   }, [matches]);
 
-  const requestLocationAndToggle = () => {
-    if (!firestore || !user || !player) return;
-    setIsToggling(true);
-    setLocationError(null);
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        const availablePlayerDocRef = doc(firestore, 'availablePlayers', user.uid);
-        const newAvailablePlayer: Omit<AvailablePlayer, 'id'> = {
-          uid: user.uid,
-          displayName: player.name,
-          photoUrl: player.photoUrl || '',
-          position: player.position,
-          ovr: player.ovr,
-          location: { lat: latitude, lng: longitude },
-          availability: {},
-        };
-        await setDoc(availablePlayerDocRef, newAvailablePlayer);
-        toast({ title: 'Ahora estás visible', description: 'Otros DTs pueden encontrarte para invitarte.' });
-        setIsToggling(false);
-      },
-      (error) => {
-        const message = error.code === 1
-          ? 'Debes permitir el acceso a la ubicación en tu navegador para hacerte visible.'
-          : 'No se pudo obtener tu ubicación. Inténtalo de nuevo.';
-        setLocationError(message);
-        setIsToggling(false);
-      }
-    );
-  }
-
-  const handleToggleAvailability = async (isAvailable: boolean) => {
-    if (!firestore || !user || !player) return;
-
-    if (isAvailable) {
-      requestLocationAndToggle();
-    } else {
-      setIsToggling(true);
-      try {
-        const availablePlayerDocRef = doc(firestore, 'availablePlayers', user.uid);
-        await deleteDoc(availablePlayerDocRef);
-        toast({ title: 'Ya no estás visible', description: 'Has sido eliminado de la lista de jugadores libres.' });
-        setLocationError(null);
-      } catch (error) {
-        logger.error('Error turning off availability', error, { userId: user.uid });
-        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cambiar tu visibilidad.' });
-      } finally {
-        setIsToggling(false);
-      }
-    }
-  };
-
   if (loading) {
     return <DashboardSkeleton />;
   }
@@ -311,10 +250,7 @@ function DashboardContent() {
         player={player}
         recentMatches={recentMatches}
         availablePlayerData={availablePlayerData}
-        isToggling={isToggling}
-        locationError={locationError}
-        onToggleAvailability={handleToggleAvailability}
-        onRequestLocation={requestLocationAndToggle}
+        savedLocation={userProfile?.savedLocation}
         onOpenLiveMatch={(match) => { setSelectedLive(match); setShowVisualizer(true); }}
         groupId={user?.activeGroupId}
         userId={user?.uid}

@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Match } from '@/lib/types';
@@ -6,39 +5,71 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PlayerPositionBadge } from '@/components/player-styles';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PlayersConfirmedProps {
   match: Match;
 }
 
-// Use shared PlayerPositionBadge for consistent position styling across the app
-
 export const PlayersConfirmed = ({ match }: PlayersConfirmedProps) => {
-    return (
-        <Card className="bg-card/60 backdrop-blur-sm border-2">
-            <CardHeader>
-                <CardTitle className="text-xl font-semibold">Jugadores Confirmados ({match.players.length} / {match.matchSize})</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {match.players.map((player, idx) => (
-                        <div key={`${player.uid}-${idx}`} className="flex flex-col items-center text-center p-3 gap-2 border border-foreground/10 rounded-lg bg-card/60 hover:bg-background/40 hover:-translate-y-1 transition-all duration-300">
-                            <Avatar className="h-16 w-16">
-                                <AvatarImage src={player.photoUrl} alt={player.displayName} />
-                                <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="font-bold text-sm truncate w-24">{player.displayName}</p>
-                                <div className="flex items-center justify-center gap-1.5 mt-1">
-                                    <PlayerPositionBadge position={player.position} showIcon={false} size="sm" />
-                                    <Badge variant="secondary">{player.ovr}</Badge>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+  const confirmedCount = match.players.length;
+  const totalNeeded = match.matchSize;
+  const isFull = confirmedCount >= totalNeeded;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Jugadores
+          </CardTitle>
+          <Badge variant={isFull ? 'default' : 'secondary'} className="font-mono">
+            {confirmedCount}/{totalNeeded}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {confirmedCount === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Todavia no hay jugadores confirmados
+          </p>
+        ) : (
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2 scrollbar-hide">
+            {match.players.map((player, idx) => (
+              <div
+                key={`${player.uid}-${idx}`}
+                className="flex flex-col items-center gap-1.5 min-w-[60px]"
+              >
+                <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
+                  <AvatarImage src={player.photoUrl} alt={player.displayName} />
+                  <AvatarFallback className="text-sm">
+                    {player.displayName.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="text-center">
+                  <p className="text-[11px] font-medium truncate w-14 leading-tight">
+                    {player.displayName.split(' ')[0]}
+                  </p>
+                  <div className="flex items-center justify-center gap-1 mt-0.5">
+                    <span className={cn(
+                      "text-[9px] font-bold uppercase",
+                      player.position === 'DEL' && "text-pos-del",
+                      player.position === 'MED' && "text-pos-med",
+                      player.position === 'DEF' && "text-pos-def",
+                      player.position === 'POR' && "text-pos-por",
+                    )}>
+                      {player.position}
+                    </span>
+                    <span className="text-[9px] text-muted-foreground">{player.ovr}</span>
+                  </div>
                 </div>
-            </CardContent>
-        </Card>
-    );
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 };

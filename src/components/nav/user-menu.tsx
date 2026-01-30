@@ -89,7 +89,8 @@ export function UserMenu({ user, player, onLogout, onRequestPermission }: UserMe
                         <DropdownMenuSubContent>
                             <DropdownMenuItem onClick={() => setTheme("light")}>Claro</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setTheme("game")}>Game</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setTheme("nike")}>Nike</DropdownMenuItem>
+                            {/* Nike theme hidden for now */}
+                            {/* <DropdownMenuItem onClick={() => setTheme("nike")}>Nike</DropdownMenuItem> */}
                         </DropdownMenuSubContent>
                     </DropdownMenuPortal>
                 </DropdownMenuSub>

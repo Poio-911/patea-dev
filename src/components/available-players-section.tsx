@@ -4,20 +4,16 @@ import { useMemo, useState } from 'react';
 import type { Match, AvailablePlayer } from '@/lib/types';
 import { useCollection, useFirestore } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
-import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Badge } from './ui/badge';
-import { PlayerPositionBadge } from '@/components/player-styles';
 import { InvitePlayerDialog } from './invite-player-dialog';
-import { PlayerSelectItem } from '@/components/player-select-item';
 import { FindBestFitDialog } from './find-best-fit-dialog';
-import { Sparkles, Search, Send, Users, Loader2 } from 'lucide-react';
+import { Sparkles, Search, Send, UserPlus, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Label } from './ui/label';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import { cn } from '@/lib/utils';
 
 interface AvailablePlayersSectionProps {
   match: Match;
@@ -28,6 +24,7 @@ export function AvailablePlayersSection({ match, isOwner }: AvailablePlayersSect
   const firestore = useFirestore();
   const [searchTerm, setSearchTerm] = useState('');
   const [positionFilter, setPositionFilter] = useState<string>('all');
+  const [isOpen, setIsOpen] = useState(false);
 
   // Query all available players
   const availablePlayersQuery = useMemo(() => {
@@ -44,19 +41,13 @@ export function AvailablePlayersSection({ match, isOwner }: AvailablePlayersSect
     const playerUidsInMatch = new Set(match.playerUids || []);
 
     return allAvailablePlayers.filter(player => {
-      // Exclude players already in the match
       if (playerUidsInMatch.has(player.uid)) return false;
-
-      // Filter by search term
       if (searchTerm && !player.displayName.toLowerCase().includes(searchTerm.toLowerCase())) {
         return false;
       }
-
-      // Filter by position
       if (positionFilter !== 'all' && player.position !== positionFilter) {
         return false;
       }
-
       return true;
     });
   }, [allAvailablePlayers, match.playerUids, searchTerm, positionFilter]);
@@ -66,130 +57,129 @@ export function AvailablePlayersSection({ match, isOwner }: AvailablePlayersSect
   if (!isOwner) return null;
 
   return (
-    <Card className="border-border bg-gradient-to-br from-card/60 to-transparent">
-      <CardHeader>
-        <Alert className="border-border bg-card">
-          <Users className="h-5 w-5 text-foreground" />
-          <AlertTitle className="text-foreground">
-            Partido Incompleto
-          </AlertTitle>
-          <AlertDescription className="text-muted-foreground">
-            Faltan <strong>{spotsLeft}</strong> jugador{spotsLeft !== 1 ? 'es' : ''} para completar el partido.
-          </AlertDescription>
-        </Alert>
-      </CardHeader>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <Card>
+        <CollapsibleTrigger asChild>
+          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors rounded-t-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <UserPlus className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Invitar Jugadores</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Faltan {spotsLeft} para completar
+                  </p>
+                </div>
+              </div>
+              <Button variant="ghost" size="icon" className="shrink-0">
+                {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              </Button>
+            </div>
+          </CardHeader>
+        </CollapsibleTrigger>
 
-      <CardContent>
-        <Tabs defaultValue="manual" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="manual" className="gap-2">
-              <Search className="h-4 w-4" />
-              Búsqueda Manual
-            </TabsTrigger>
-            <TabsTrigger value="ai" className="gap-2">
-              <Sparkles className="h-4 w-4" />
-              Asistente IA
-            </TabsTrigger>
-          </TabsList>
+        <CollapsibleContent>
+          <CardContent className="pt-0 space-y-4">
+            {/* AI Assistant CTA */}
+            <FindBestFitDialog
+              userMatches={[match]}
+              availablePlayers={allAvailablePlayers || []}
+              selectedMatchId={match.id}
+            >
+              <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 hover:from-primary/10 hover:to-primary/15 transition-colors text-left">
+                <div className="h-9 w-9 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">Asistente IA</p>
+                  <p className="text-xs text-muted-foreground">Encontra el jugador ideal</p>
+                </div>
+              </button>
+            </FindBestFitDialog>
 
-          <TabsContent value="manual" className="space-y-4">
-            {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="search">Buscar por nombre</Label>
+            {/* Search & Filter */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="search"
-                  placeholder="Nombre del jugador..."
+                  placeholder="Buscar..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full"
+                  className="pl-9 h-9"
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="position">Posición</Label>
-                <Select value={positionFilter} onValueChange={setPositionFilter}>
-                  <SelectTrigger id="position">
-                    <SelectValue placeholder="Todas las posiciones" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas</SelectItem>
-                    <SelectItem value="Portero">Portero</SelectItem>
-                    <SelectItem value="Defensor">Defensor</SelectItem>
-                    <SelectItem value="Mediocampista">Mediocampista</SelectItem>
-                    <SelectItem value="Delantero">Delantero</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={positionFilter} onValueChange={setPositionFilter}>
+                <SelectTrigger className="w-24 h-9">
+                  <SelectValue placeholder="Pos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="POR">POR</SelectItem>
+                  <SelectItem value="DEF">DEF</SelectItem>
+                  <SelectItem value="MED">MED</SelectItem>
+                  <SelectItem value="DEL">DEL</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Player List */}
             {loading ? (
-              <div className="flex justify-center items-center h-40">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : filteredPlayers.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
                 {filteredPlayers.map(player => (
-                  <PlayerSelectItem
+                  <div
                     key={player.uid}
-                    variant="card"
-                    player={{
-                      id: player.uid,
-                      name: player.displayName,
-                      photoUrl: player.photoUrl || '',
-                      position: player.position,
-                      ovr: player.ovr,
-                      uid: player.uid,
-                      displayName: player.displayName,
-                    }}
-                    showPosition
-                    showOvr
-                    rightActions={(
-                      <InvitePlayerDialog
-                        playerToInvite={player}
-                        userMatches={[match]}
-                        match={match}
-                      >
-                        <Button size="sm" className="w-full">
-                          <Send className="mr-2 h-4 w-4" />
-                          Invitar
-                        </Button>
-                      </InvitePlayerDialog>
-                    )}
-                  />
+                    className="flex items-center gap-3 p-2 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                  >
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={player.photoUrl} alt={player.displayName} />
+                      <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{player.displayName}</p>
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className={cn(
+                          "font-bold uppercase",
+                          player.position === 'DEL' && "text-pos-del",
+                          player.position === 'MED' && "text-pos-med",
+                          player.position === 'DEF' && "text-pos-def",
+                          player.position === 'POR' && "text-pos-por",
+                        )}>
+                          {player.position}
+                        </span>
+                        <span className="text-muted-foreground">{player.ovr}</span>
+                      </div>
+                    </div>
+                    <InvitePlayerDialog
+                      playerToInvite={player}
+                      userMatches={[match]}
+                      match={match}
+                    >
+                      <Button size="sm" variant="ghost" className="h-8 px-2">
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </InvitePlayerDialog>
+                  </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <div className="text-center py-8 text-muted-foreground">
+                <UserPlus className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">
                   {searchTerm || positionFilter !== 'all'
-                    ? 'No se encontraron jugadores con estos filtros.'
-                    : 'No hay jugadores disponibles en este momento.'}
+                    ? 'Sin resultados'
+                    : 'No hay jugadores disponibles'}
                 </p>
               </div>
             )}
-          </TabsContent>
-
-          <TabsContent value="ai" className="space-y-4">
-            <div className="flex flex-col items-center justify-center py-12 gap-6 text-center border-2 border-dashed rounded-lg">
-              <Sparkles className="h-16 w-16" />
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold">Asistente de Fichajes con IA</h3>
-                <p className="text-sm text-muted-foreground max-w-md">
-                  Deja que la IA analice tu partido y te recomiende los mejores jugadores disponibles según las necesidades de tu equipo.
-                </p>
-              </div>
-              <FindBestFitDialog
-                userMatches={[match]}
-                availablePlayers={allAvailablePlayers || []}
-                selectedMatchId={match.id}
-              />
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }

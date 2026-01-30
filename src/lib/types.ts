@@ -530,6 +530,13 @@ export type UserPreferences = {
   matchFilters?: MatchFilters;
 };
 
+export type SavedLocation = {
+  lat: number;
+  lng: number;
+  label?: string; // e.g., "Centro, Buenos Aires"
+  savedAt: string; // ISO 8601 timestamp
+};
+
 export type UserProfile = {
   uid: string;
   email: string | null;
@@ -545,6 +552,7 @@ export type UserProfile = {
     matchUpdates?: boolean;
   };
   preferences?: UserPreferences;
+  savedLocation?: SavedLocation; // Persisted location for availability feature
 };
 
 export type AppHelpInput = {

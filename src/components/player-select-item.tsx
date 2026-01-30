@@ -60,9 +60,9 @@ export function PlayerSelectItem({
       <div className="flex-1 min-w-0">
         <p className="font-semibold truncate">{name}</p>
         {(showPosition || showOvr) && (
-          <div className={cn("flex items-center gap-2", compact ? "text-xs" : "text-sm")}> 
+          <div className={cn("flex items-center gap-2", compact ? "text-xs" : "text-sm")}>
             {showPosition && (
-              <PlayerPositionBadge position={player.position} showIcon={false} size={compact ? "sm" : "md"} />
+              <PlayerPositionBadge position={player.position} showIcon={false} size={compact ? "sm" : "md"} textOnly={true} />
             )}
             {showOvr && <span className="text-muted-foreground">{compact ? player.ovr : `OVR ${player.ovr}`}</span>}
           </div>

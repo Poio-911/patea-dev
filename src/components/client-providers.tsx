@@ -12,7 +12,7 @@ import { ThemeProvider } from 'next-themes';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { ThemeBackground } from '@/components/theme-background';
 import { AchievementToastProvider } from '@/components/achievement-toast';
-import { HelpChatFab } from '@/components/help-chat-fab';
+
 
 type FirebaseClientProviderProps = {
   children: React.ReactNode;
@@ -48,7 +48,7 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
     return (
       <ThemeProvider
         attribute="class"
-        themes={['light', 'game', 'nike']}
+        themes={['light', 'game']}
         defaultTheme="light"
         enableSystem={false}
         disableTransitionOnChange
@@ -65,7 +65,7 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
   return (
     <ThemeProvider
       attribute="class"
-      themes={['light', 'game', 'nike']}
+      themes={['light', 'game']}
       defaultTheme="light"
       enableSystem={false}
       disableTransitionOnChange
@@ -79,7 +79,7 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
         <UserProvider>
           <AchievementToastProvider>
             <MainNav>{children}</MainNav>
-            <HelpChatFab />
+
           </AchievementToastProvider>
         </UserProvider>
       </FirebaseProvider>

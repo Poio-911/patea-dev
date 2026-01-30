@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3, TrendingUp, Users } from 'lucide-react';
-import type { Match, Player, AvailablePlayer } from '@/lib/types';
+import type { Match, Player, AvailablePlayer, SavedLocation } from '@/lib/types';
 import { ResumenTab } from './resumen-tab';
 import { ProgresoTab } from './progreso-tab';
 import { SocialTab } from './social-tab';
@@ -16,10 +16,7 @@ interface DashboardTabsProps {
     player: Player | null;
     recentMatches: Match[];
     availablePlayerData: AvailablePlayer | null;
-    isToggling: boolean;
-    locationError: string | null;
-    onToggleAvailability: (isAvailable: boolean) => void;
-    onRequestLocation: () => void;
+    savedLocation?: SavedLocation;
     onOpenLiveMatch: (match: Match) => void;
     groupId?: string;
     userId?: string;
@@ -33,10 +30,7 @@ export function DashboardTabs({
     player,
     recentMatches,
     availablePlayerData,
-    isToggling,
-    locationError,
-    onToggleAvailability,
-    onRequestLocation,
+    savedLocation,
     onOpenLiveMatch,
     groupId,
     userId,
@@ -103,10 +97,7 @@ export function DashboardTabs({
                 <SocialTab
                     player={player}
                     availablePlayerData={availablePlayerData}
-                    isToggling={isToggling}
-                    locationError={locationError}
-                    onToggleAvailability={onToggleAvailability}
-                    onRequestLocation={onRequestLocation}
+                    savedLocation={savedLocation}
                 />
             </TabsContent>
         </Tabs>

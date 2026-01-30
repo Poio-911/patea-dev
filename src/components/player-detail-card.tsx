@@ -112,7 +112,7 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
         </div>
         <div className="relative z-10 flex flex-col h-full justify-between">
           <div className="flex items-start justify-between mb-2">
-            <PlayerPositionBadge position={player.position} showIcon={false} />
+            <PlayerPositionBadge position={player.position} showIcon={false} textOnly={true} />
             <PlayerOvr value={player.ovr} />
           </div>
 

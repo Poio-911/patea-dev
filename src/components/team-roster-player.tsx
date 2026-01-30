@@ -79,7 +79,7 @@ export const TeamRosterPlayer = ({ player, match, isOwner = false, index = 0 }: 
                 </div>
                 <div className="flex items-center justify-center gap-2 mt-1">
                     <PlayerOvr value={player.ovr} size="compact" />
-                    <PlayerPositionBadge position={player.position} size="sm" showIcon={false} />
+                    <PlayerPositionBadge position={player.position} size="sm" showIcon={false} textOnly={true} />
                 </div>
             </div>
         </Card>

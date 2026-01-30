@@ -1,3 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Ajuste para menú en modo PWA standalone */
 body.standalone nav.fixed {
   bottom: 1rem !important;
@@ -40,11 +46,6 @@ body.standalone nav.fixed {
   box-shadow: 0 2px 12px #0006 !important;
   border: 1px solid #fff2 !important;
 }
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 @layer base {
   :root {
@@ -114,6 +115,16 @@ body.standalone nav.fixed {
     /* Defensa */
     --pos-por: 30 90% 60%;
     /* Portero */
+
+    /* OVR level colors */
+    --ovr-elite: 280 85% 55%;
+    /* Purple */
+    --ovr-gold: 43 96% 46%;
+    /* Gold - darker for light bg */
+    --ovr-silver: 220 10% 50%;
+    /* Silver - darker for light bg */
+    --ovr-bronze: 30 60% 40%;
+    /* Bronze - darker for light bg */
   }
 
   /* Game Mode (FC SPORT inspired) palette scoped by .game theme class on <html> */
@@ -171,6 +182,16 @@ body.standalone nav.fixed {
     --whatsapp-outgoing: 142 50% 25%;
     --whatsapp-incoming: 220 20% 18%;
     --whatsapp-foreground: 0 0% 100%;
+
+    /* OVR level colors - brighter for dark bg */
+    --ovr-elite: 280 85% 70%;
+    /* Electric Purple */
+    --ovr-gold: 43 96% 60%;
+    /* Bright Gold */
+    --ovr-silver: 220 15% 80%;
+    /* Bright Silver */
+    --ovr-bronze: 30 60% 55%;
+    /* Bright Bronze */
   }
 
   /* Nike Theme: bold black/white with authentic Nike brand colors */
@@ -226,15 +247,15 @@ body.standalone nav.fixed {
     --pos-por: 30 90% 60%;
     /* Goalkeeper - orange */
 
-    /* OVR level accent colors */
-    --ovr-elite: 280 85% 65%;
-    /* Electric Purple */
-    --ovr-gold: 43 96% 56%;
-    /* Gold */
-    --ovr-silver: 220 15% 75%;
-    /* Silver */
-    --ovr-bronze: 30 60% 50%;
-    /* Bronze */
+    /* OVR level colors - bright for dark bg (Nike grayscale with accents) */
+    --ovr-elite: 0 0% 100%;
+    /* Pure White for elite */
+    --ovr-gold: 43 96% 60%;
+    /* Bright Gold */
+    --ovr-silver: 0 0% 80%;
+    /* Light Gray */
+    --ovr-bronze: 30 60% 55%;
+    /* Warm Bronze */
     /* WhatsApp Foreground */
     --whatsapp-foreground: 0 0% 98%;
   }
@@ -467,6 +488,68 @@ body.standalone nav.fixed {
     color: rgba(255, 255, 255, 0.5) !important;
   }
 
+  /* ========================================
+     NIKE THEME - PLAYER CARD CONTRAST FIX
+     ======================================== */
+
+  /* Nike OVR value - white with subtle shadow */
+  .nike .player-card .ovr-value,
+  .nike .player-card [class*="text-5xl"],
+  .nike .player-card [class*="text-4xl"] {
+    color: #ffffff !important;
+    text-shadow: 0 2px 8px rgba(255, 255, 255, 0.3),
+      0 0 20px rgba(255, 255, 255, 0.15) !important;
+  }
+
+  /* Nike player name - high contrast white */
+  .nike .player-card h3,
+  .nike .player-card .player-name {
+    color: rgba(255, 255, 255, 0.95) !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+  }
+
+  /* Nike attributes grid - subtle gray background */
+  .nike .player-card [class*="grid"] > div {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* Nike primary attribute highlight */
+  .nike .player-card [class*="bg-primary"] {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+  }
+
+  /* Nike text colors for attributes */
+  .nike .player-card [class*="font-bold"],
+  .nike .player-card .font-bold {
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  .nike .player-card [class*="text-muted-foreground"],
+  .nike .player-card .text-muted-foreground {
+    color: rgba(255, 255, 255, 0.6) !important;
+  }
+
+  /* Nike position text color - ensure visibility */
+  .nike .player-card .text-pos-del,
+  .nike .player-card .text-pos-med,
+  .nike .player-card .text-pos-def,
+  .nike .player-card .text-pos-por {
+    filter: brightness(1.2);
+  }
+
+  /* Nike card border and shadow */
+  .nike .player-card {
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .nike .player-card:hover {
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6) !important;
+  }
+
   /* Player Card Aura Effects */
   .aura-bronze {
     background-image: radial-gradient(ellipse at top right, rgba(205, 127, 50, 0.2) 0%, transparent 70%);
@@ -474,6 +557,10 @@ body.standalone nav.fixed {
 
   .game .aura-bronze {
     background-image: radial-gradient(ellipse at top right, rgba(205, 127, 50, 0.3) 0%, transparent 70%);
+  }
+
+  .nike .aura-bronze {
+    background-image: radial-gradient(ellipse at top right, rgba(205, 127, 50, 0.25) 0%, transparent 70%);
   }
 
   .aura-silver {
@@ -484,12 +571,20 @@ body.standalone nav.fixed {
     background-image: radial-gradient(ellipse at top right, hsla(220, 15%, 75%, 0.35) 0%, transparent 70%);
   }
 
+  .nike .aura-silver {
+    background-image: radial-gradient(ellipse at top right, rgba(192, 192, 192, 0.3) 0%, transparent 70%);
+  }
+
   .aura-gold {
     background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.2) 0%, transparent 70%);
   }
 
   .game .aura-gold {
     background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.3) 0%, transparent 70%);
+  }
+
+  .nike .aura-gold {
+    background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.25) 0%, transparent 70%);
   }
 
   /* Liquid Mesh Gradient for Elite Cards - Light & Fantasy Style */
@@ -507,6 +602,16 @@ body.standalone nav.fixed {
       radial-gradient(at 0% 0%, hsla(280, 90%, 80%, 1) 0, transparent 50%),
       radial-gradient(at 50% 0%, hsla(190, 90%, 80%, 1) 0, transparent 50%),
       radial-gradient(at 100% 0%, hsla(320, 90%, 80%, 1) 0, transparent 50%);
+    background-size: 200% 200%;
+    animation: aura-liquid 15s ease infinite alternate;
+  }
+
+  /* Nike Elite - Monochrome grayscale gradient with subtle white accents */
+  .nike .aura-elite {
+    background:
+      radial-gradient(at 0% 0%, rgba(255, 255, 255, 0.25) 0, transparent 50%),
+      radial-gradient(at 50% 0%, rgba(200, 200, 200, 0.2) 0, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(255, 255, 255, 0.25) 0, transparent 50%);
     background-size: 200% 200%;
     animation: aura-liquid 15s ease infinite alternate;
   }

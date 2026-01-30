@@ -30,12 +30,14 @@ type FindBestFitDialogProps = {
   userMatches: Match[];
   availablePlayers: AvailablePlayer[];
   selectedMatchId: string | null;
+  children?: React.ReactNode;
 };
 
 export function FindBestFitDialog({
   userMatches,
   availablePlayers,
   selectedMatchId,
+  children,
 }: FindBestFitDialogProps) {
   const [open, setOpen] = useState(false);
   const [recommendedPlayers, setRecommendedPlayers] = useState<RecommendedPlayer[]>([]);
@@ -104,10 +106,12 @@ export function FindBestFitDialog({
         }
     }}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full sm:w-auto" disabled={!selectedMatchId}>
-          <Sparkles className="mr-2 h-4 w-4" />
+        {children || (
+          <Button variant="outline" className="w-full sm:w-auto" disabled={!selectedMatchId}>
+            <Sparkles className="mr-2 h-4 w-4" />
             Asistente de Fichajes
-        </Button>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[80vh] flex flex-col">
         <DialogHeader>

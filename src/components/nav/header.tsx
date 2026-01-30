@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { PlayerPositionBadge } from '@/components/player-styles';
 import { UserMenu } from './user-menu';
 import { DesktopNav } from './desktop-nav';
+import { InvitationsBell } from './invitations-bell';
 
 type HeaderProps = {
     user: UserProfile;
@@ -36,11 +37,12 @@ export function Header({ user, player, onLogout, onRequestPermission }: HeaderPr
 
                 {/* Right section: Actions + User Info */}
                 <div className="flex items-center gap-1 sm:gap-3 lg:gap-4">
-                    {/* Actions: Help + Bell */}
+                    {/* Actions: Help + Invitations + Notifications */}
                     <div className="flex items-center gap-1 sm:gap-2">
                         <div className="hidden md:block">
                             <HelpDialog />
                         </div>
+                        <InvitationsBell />
                         <NotificationBell />
                     </div>
 
