@@ -39,7 +39,7 @@ export type Player = {
   dri: number;
   def: number;
   phy: number;
-  photoUrl?: string;
+  photoURL?: string;
   stats: PlayerStats;
   ownerUid: string; // The UID of the user who created this player
   groupId: string | null;
@@ -65,7 +65,7 @@ export type Availability = {
 export type AvailablePlayer = {
   uid: string;
   displayName: string;
-  photoUrl: string;
+  photoURL: string;
   position: PlayerPosition;
   ovr: number;
   location: {
@@ -104,16 +104,16 @@ export type MatchCard = {
 };
 
 // Enhanced event tracking types
-export type MatchEventType = 
-  | 'goal' 
-  | 'card' 
-  | 'substitution' 
-  | 'foul' 
-  | 'corner' 
-  | 'throw_in' 
-  | 'offside' 
-  | 'penalty' 
-  | 'free_kick' 
+export type MatchEventType =
+  | 'goal'
+  | 'card'
+  | 'substitution'
+  | 'foul'
+  | 'corner'
+  | 'throw_in'
+  | 'offside'
+  | 'penalty'
+  | 'free_kick'
   | 'save'
   | 'kick_off'
   | 'half_time'
@@ -179,15 +179,15 @@ export type MatchStatistics = {
   saves: { team1: number; team2: number };
 };
 
-export type LiveMatchStatus = 
-  | 'not_started' 
-  | 'first_half' 
-  | 'half_time' 
-  | 'second_half' 
-  | 'extra_time_first' 
-  | 'extra_time_break' 
-  | 'extra_time_second' 
-  | 'penalty_shootout' 
+export type LiveMatchStatus =
+  | 'not_started'
+  | 'first_half'
+  | 'half_time'
+  | 'second_half'
+  | 'extra_time_first'
+  | 'extra_time_break'
+  | 'extra_time_second'
+  | 'penalty_shootout'
   | 'finished';
 
 export type MatchPeriod = {
@@ -210,7 +210,7 @@ export type Match = {
   location: MatchLocation;
   type: MatchType;
   matchSize: MatchSize;
-  players: { uid: string; displayName: string; ovr: number; position: PlayerPosition; photoUrl: string }[];
+  players: { uid: string; displayName: string; ovr: number; position: PlayerPosition; photoURL: string }[];
   playerUids: string[]; // Added for simpler queries
   teams: Team[];
   status: MatchStatus;
@@ -468,6 +468,9 @@ export type Evaluation = {
   rating?: number;
   goals: number;
   performanceTags?: PerformanceTag[];
+  // Texto de evaluación y resumen IA (solo informativo)
+  textDescription?: string;
+  aiSummary?: string;
   evaluatedAt: string;
 } & DocumentData;
 
@@ -494,11 +497,18 @@ export type PlayerEvaluationFormData = {
   assignmentId: string;
   subjectId: string;
   displayName: string;
-  photoUrl: string;
+  photoURL: string;
   position: string;
-  evaluationType: 'points' | 'tags';
+  evaluationType: 'points' | 'tags' | 'text';
   rating?: number;
   performanceTags?: PerformanceTag[];
+  extractedTags?: PerformanceTag[];
+  // Evaluación por descripción y resumen IA
+  textDescription?: string;
+  aiAnalysisComplete?: boolean; // Added
+  aiSummary?: string;
+  // Override consciente: permitir sólo positivas en modo tags
+  overrideNoNegative?: boolean;
 };
 
 export type EvaluationSubmission = {
@@ -628,9 +638,9 @@ export const GenerateMatchChronicleOutputSchema = z.object({
 export type GenerateMatchChronicleOutput = z.infer<typeof GenerateMatchChronicleOutputSchema>;
 
 export const GenerateDuoImageInputSchema = z.object({
-  player1PhotoUrl: z.string().describe("URL de Firebase Storage de la foto del primer jugador."),
+  player1PhotoURL: z.string().describe("URL de Firebase Storage de la foto del primer jugador."),
   player1Name: z.string().describe("Nombre del primer jugador."),
-  player2PhotoUrl: z.string().optional().describe("URL de Firebase Storage de la foto del segundo jugador (opcional para imagen individual)."),
+  player2PhotoURL: z.string().optional().describe("URL de Firebase Storage de la foto del segundo jugador (opcional para imagen individual)."),
   player2Name: z.string().optional().describe("Nombre del segundo jugador (opcional para imagen individual)."),
   prompt: z.string().describe("La instrucción que describe la escena a generar entre los jugadores."),
 });

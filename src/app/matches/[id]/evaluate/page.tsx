@@ -173,8 +173,19 @@ export default function EvaluateMatchPage() {
                             evaluatedAt: submissionData.submittedAt,
                         };
 
-                        if (evaluation.evaluationType === 'points') newEvaluation.rating = evaluation.rating;
-                        else newEvaluation.performanceTags = evaluation.performanceTags;
+                        if (evaluation.evaluationType === 'points') {
+                            newEvaluation.rating = evaluation.rating;
+                        } else if (evaluation.evaluationType === 'tags') {
+                            newEvaluation.performanceTags = evaluation.performanceTags;
+                        } else if (evaluation.evaluationType === 'text') {
+                            // Persist text description and IA summary (informational only)
+                            newEvaluation.textDescription = evaluation.textDescription || '';
+                            if ((evaluation as any).aiSummary) newEvaluation.aiSummary = (evaluation as any).aiSummary;
+                            // Merge/performanceTags may already include AI-extracted tags from UI
+                            if (evaluation.performanceTags && evaluation.performanceTags.length > 0) {
+                                newEvaluation.performanceTags = evaluation.performanceTags;
+                            }
+                        }
 
                         transaction.set(evalRef, newEvaluation);
 

@@ -395,6 +395,22 @@ export const performanceTagsDb: PerformanceTag[] = [
         impact: 'negative',
         positions: ['MED', 'DEF']
     },
+    {
+        id: 'no_bajo_a_marcar',
+        name: 'No Bajó a Marcar',
+        description: 'Se quedó en ataque y no colaboró en la marca ni presión.',
+        effects: [{ attribute: 'def', change: -2 }, { attribute: 'phy', change: -1 }],
+        impact: 'negative',
+        positions: ['DEL', 'MED']
+    },
+    {
+        id: 'no_presiono_arriba',
+        name: 'No Presionó Arriba',
+        description: 'Dejó salir cómodo al rival sin presionar la salida.',
+        effects: [{ attribute: 'def', change: -1 }, { attribute: 'pac', change: -1 }],
+        impact: 'negative',
+        positions: ['DEL']
+    },
 
     // GENERAL / ATTITUDE
     {

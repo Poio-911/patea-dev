@@ -49,14 +49,16 @@ export function ViewSubmissionDialog({ submission, children }: ViewSubmissionDia
                     <div key={evaluation.assignmentId} className="border p-4 rounded-lg">
                       <p className="font-bold">{evaluation.displayName}</p>
                       <Separator className="my-2" />
-                      {evaluation.evaluationType === 'points' ? (
+                      {evaluation.evaluationType === 'points' && (
                         <div className="flex items-center gap-2">
                            <p className="text-sm text-muted-foreground">Rating:</p>
                            <Badge>
                                <Star className="mr-1 h-3 w-3"/> {evaluation.rating}
                            </Badge>
                         </div>
-                      ) : (
+                      )}
+
+                      {evaluation.evaluationType === 'tags' && (
                         <div>
                           <p className="text-sm text-muted-foreground mb-2">Etiquetas seleccionadas:</p>
                           <div className="flex flex-wrap gap-2">
@@ -64,6 +66,31 @@ export function ViewSubmissionDialog({ submission, children }: ViewSubmissionDia
                               <Badge key={tag.id} variant="outline">{tag.name}</Badge>
                             ))}
                           </div>
+                        </div>
+                      )}
+
+                      {evaluation.evaluationType === 'text' && (
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-sm text-muted-foreground mb-1">Descripción enviada:</p>
+                            <p className="text-sm">{evaluation.textDescription || '—'}</p>
+                          </div>
+                          {evaluation.aiSummary && (
+                            <div>
+                              <p className="text-sm text-muted-foreground mb-1">Resumen IA:</p>
+                              <p className="text-sm">{evaluation.aiSummary}</p>
+                            </div>
+                          )}
+                          {evaluation.performanceTags && evaluation.performanceTags.length > 0 && (
+                            <div>
+                              <p className="text-sm text-muted-foreground mb-2">Etiquetas aplicadas:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {evaluation.performanceTags.map((tag) => (
+                                  <Badge key={tag.id} variant="outline">{tag.name}</Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
