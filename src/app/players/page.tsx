@@ -11,7 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Users2, Users, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import type { Player } from '@/lib/types';
+import type { Player, UserProfile } from '@/lib/types';
 import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 import { motion } from 'framer-motion';
@@ -42,12 +42,32 @@ export default function PlayersPage() {
 
   const { data: players, loading: playersLoading } = useCollection<Player>(playersQuery);
 
-  const loading = userLoading || playersLoading;
+  // Query users in the active group to get their photoURL as fallback
+  const usersQuery = useMemo(() => {
+    if (!firestore || !user?.activeGroupId) return null;
+    return query(collection(firestore, 'users'), where('groups', 'array-contains', user.activeGroupId));
+  }, [firestore, user?.activeGroupId]);
+
+  const { data: groupUsers, loading: usersLoading } = useCollection<UserProfile>(usersQuery);
+
+  const loading = userLoading || playersLoading || usersLoading;
 
   const sortedPlayers = useMemo(() => {
     if (!players) return [];
-    return [...players].sort((a, b) => b.ovr - a.ovr);
-  }, [players]);
+    return [...players]
+      .map(player => {
+        // If player has no photoUrl but has ownerUid, try to get it from users collection
+        // Note: PlayerPhoto component uses photoUrl (camelCase), users have photoURL (uppercase)
+        if (!(player as any).photoUrl && player.ownerUid) {
+          const userDoc = groupUsers?.find(u => u.uid === player.ownerUid);
+          if (userDoc?.photoURL) {
+            return { ...player, photoUrl: userDoc.photoURL };
+          }
+        }
+        return player;
+      })
+      .sort((a, b) => b.ovr - a.ovr);
+  }, [players, groupUsers]);
 
 
   return (

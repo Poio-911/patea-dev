@@ -1,29 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Trophy,
-  TrendingUp,
-  TrendingDown,
-  Target,
-  Award,
-  UserPlus,
-  Users,
-  RefreshCw,
-  Activity,
-} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { RefreshCw, Users, Activity } from 'lucide-react';
 import { useUser } from '@/firebase';
-import ActivityCard from '@/components/social/activity-card';
+import { PostItem } from '@/components/social/post-item';
 import { getFeedActivitiesAction } from '@/lib/actions/server-actions';
 import type { SocialActivity } from '@/lib/types';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
-import Link from 'next/link';
 
 interface SocialFeedProps {
   limit?: number;
@@ -62,168 +46,62 @@ export function SocialFeed({ limit = 20, showHeader = true }: SocialFeedProps) {
     loadActivities();
   }, [user]);
 
-  const getActivityIcon = (type: SocialActivity['type']) => {
-    switch (type) {
-      case 'match_played':
-        return <Trophy className="h-5 w-5 text-foreground" />;
-      case 'match_organized':
-        return <Trophy className="h-5 w-5 text-primary" />;
-      case 'ovr_increased':
-        return <TrendingUp className="h-5 w-5 text-foreground" />;
-      case 'ovr_decreased':
-        return <TrendingDown className="h-5 w-5 text-foreground" />;
-      case 'goal_scored':
-        return <Target className="h-5 w-5 text-foreground" />;
-      case 'achievement_unlocked':
-        return <Award className="h-5 w-5 text-foreground" />;
-      case 'player_created':
-        return <UserPlus className="h-5 w-5 text-foreground" />;
-      case 'new_follower':
-        return <Users className="h-5 w-5 text-pink-500" />;
-      default:
-        return <Activity className="h-5 w-5 text-muted-foreground" />;
-    }
-  };
-
-  const getActivityTitle = (activity: SocialActivity) => {
-    const playerName = activity.playerName || 'Un jugador';
-    const metadata = activity.metadata;
-
-    switch (activity.type) {
-      case 'match_played':
-        return (
-          <span>
-            <strong>{playerName}</strong> jugó un partido
-            {metadata?.matchTitle && (
-              <span className="text-muted-foreground"> - {metadata.matchTitle}</span>
-            )}
-          </span>
-        );
-      case 'match_organized':
-        return (
-          <span>
-            <strong>{playerName}</strong> organizó un partido
-            {metadata?.matchTitle && (
-              <span className="text-muted-foreground"> - {metadata.matchTitle}</span>
-            )}
-          </span>
-        );
-      case 'ovr_increased':
-        return (
-          <span>
-            <strong>{playerName}</strong> mejoró su OVR{' '}
-            {metadata?.oldOvr && metadata?.newOvr && (
-              <Badge variant="outline" className="ml-1 border-foreground text-foreground">
-                {metadata.oldOvr} → {metadata.newOvr}
-              </Badge>
-            )}
-          </span>
-        );
-      case 'ovr_decreased':
-        return (
-          <span>
-            <strong>{playerName}</strong> bajó su OVR{' '}
-            {metadata?.oldOvr && metadata?.newOvr && (
-              <Badge variant="outline" className="ml-1 border-foreground text-foreground">
-                {metadata.oldOvr} → {metadata.newOvr}
-              </Badge>
-            )}
-          </span>
-        );
-      case 'goal_scored':
-        return (
-          <span>
-            <strong>{playerName}</strong> marcó{' '}
-            {metadata?.goals && metadata.goals > 1 ? `${metadata.goals} goles` : 'un gol'}
-            {metadata?.matchTitle && (
-              <span className="text-muted-foreground"> en {metadata.matchTitle}</span>
-            )}
-          </span>
-        );
-      case 'achievement_unlocked':
-        return (
-          <span>
-            <strong>{playerName}</strong> desbloqueó un logro
-            {metadata?.achievementName && (
-              <span className="text-muted-foreground"> - {metadata.achievementName}</span>
-            )}
-          </span>
-        );
-      case 'player_created':
-        return (
-          <span>
-            <strong>{playerName}</strong> se unió a Pateá
-          </span>
-        );
-      case 'new_follower':
-        return (
-          <span>
-            <strong>{playerName}</strong> tiene un nuevo seguidor
-          </span>
-        );
-      default:
-        return <span>Actividad desconocida</span>;
-    }
-  };
-
-  const getActivityLink = (activity: SocialActivity) => {
-    if (activity.playerId) {
-      return `/players/${activity.playerId}`;
-    }
-    if (activity.metadata?.matchId) {
-      return `/matches/${activity.metadata.matchId}`;
-    }
-    return null;
-  };
-
   if (!user) {
     return (
-      <Card>
-        <CardContent className="py-10">
+      <div className="border border-border rounded-lg">
+        <div className="py-10 px-4">
           <div className="text-center text-muted-foreground">
             <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p>Inicia sesión para ver el feed de actividad</p>
+            <p>Inicia sesion para ver el feed de actividad</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   if (isLoading) {
     return (
-      <Card>
+      <div className="border border-border rounded-lg overflow-hidden">
         {showHeader && (
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
+          <div className="p-4 border-b border-border">
+            <div className="flex items-center gap-3">
               <Activity className="h-5 w-5" aria-hidden="true" />
-              Feed de Actividad
-            </CardTitle>
-          </CardHeader>
+              <span className="font-semibold">Feed de Actividad</span>
+            </div>
+          </div>
         )}
-        <CardContent className="space-y-4">
+        <div className="divide-y divide-border">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex items-start gap-3">
-              <Skeleton className="h-10 w-10 rounded-full" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/4" />
+            <div key={i} className="p-4">
+              <div className="flex items-start gap-3">
+                <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                  <div className="flex gap-4 pt-2">
+                    <Skeleton className="h-8 w-16" />
+                    <Skeleton className="h-8 w-16" />
+                    <Skeleton className="h-8 w-16" />
+                  </div>
+                </div>
               </div>
             </div>
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
+    <div className="border border-border rounded-lg overflow-hidden">
       {showHeader && (
-        <CardHeader>
+        <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
               <Activity className="h-5 w-5" aria-hidden="true" />
-              Feed de Actividad
-            </CardTitle>
+              <span className="font-semibold">Feed de Actividad</span>
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -233,27 +111,31 @@ export function SocialFeed({ limit = 20, showHeader = true }: SocialFeedProps) {
               <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             </Button>
           </div>
-        </CardHeader>
+        </div>
       )}
-      <CardContent className="p-0">
-        {activities.length === 0 ? (
-          <div className="text-center py-10 text-muted-foreground px-4">
-            <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p className="mb-1">No hay actividad reciente</p>
-            <p className="text-sm">Seguí a otros jugadores para ver su actividad aquí</p>
-          </div>
-        ) : (
-          <div className="flex flex-col divide-y divide-border">
-            {activities.map((activity) => {
-              // Handler para refrescar el feed tras like/unlike
-              const handleLikeChange = () => loadActivities(true);
-              return (
-                <ActivityCard key={activity.id} activity={activity} onLikeChange={handleLikeChange} />
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+
+      {activities.length === 0 ? (
+        <div className="text-center py-10 text-muted-foreground px-4">
+          <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
+          <p className="mb-1">No hay actividad reciente</p>
+          <p className="text-sm">Segui a otros jugadores para ver su actividad aqui</p>
+        </div>
+      ) : (
+        <div className="flex flex-col">
+          {activities.map((activity) => (
+            <PostItem
+              key={activity.id}
+              activity={activity}
+              userId={user.uid}
+              userName={user.displayName || undefined}
+              userPhotoUrl={user.photoURL || undefined}
+              onRefresh={() => loadActivities(true)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
+
+export default SocialFeed;

@@ -890,7 +890,43 @@ export type ActivityType =
   | 'goal_scored'
   | 'achievement_unlocked'
   | 'player_created'
-  | 'new_follower';
+  | 'new_follower'
+  | 'repost';
+
+// Reaction types for social activities (Twitter/X style)
+export type ReactionType = 'fire' | 'clap' | 'goal';
+
+export type Reactions = {
+  fire: string[];
+  clap: string[];
+  goal: string[];
+};
+
+// Comment on a social activity
+export type SocialComment = {
+  id: string;
+  activityId: string;
+  userId: string;
+  userName: string;
+  userPhotoUrl?: string;
+  text: string;
+  createdAt: Timestamp | string;
+  likes: string[];
+} & DocumentData;
+
+// Suggested user for explore page
+export type SuggestedUserReason = 'same_group' | 'most_followed' | 'recently_active';
+
+export type SuggestedUser = {
+  uid: string;
+  displayName: string;
+  photoURL?: string;
+  position?: PlayerPosition;
+  ovr?: number;
+  followerCount: number;
+  matchesPlayed?: number;
+  reason: SuggestedUserReason;
+};
 
 // Social activity for the feed
 export type SocialActivity = {
@@ -913,7 +949,19 @@ export type SocialActivity = {
     achievementName?: string;
     achievementIcon?: string;
   };
-  likes?: string[]; // userIds que dieron like
+  likes?: string[]; // userIds que dieron like (DEPRECATED - use reactions)
+  // Twitter/X style features
+  reactions?: Reactions; // Multiple reaction types
+  commentCount?: number; // Denormalized comment count
+  repostCount?: number; // Denormalized repost count
+  // Repost specific fields
+  isRepost?: boolean;
+  originalActivityId?: string; // If repost, reference to original
+  repostedBy?: {
+    userId: string;
+    userName: string;
+    userPhotoUrl?: string;
+  };
 } & DocumentData;
 
 // Note: Notification types are now unified with the main notification system above (lines 199-231)
