@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useUser } from '@/firebase';
+import { useUser, useCollection, useFirestore } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,7 +13,7 @@ import { Trophy, Target, Users, Award, Loader2 } from 'lucide-react';
 import { AchievementBadge } from '@/components/achievement-badge';
 import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORIES, getAchievementsByCategory } from '@/lib/achievements-config';
 import { getAchievementProgressAction } from '@/lib/actions/achievement-actions';
-import type { Achievement } from '@/lib/types';
+import type { Achievement, Player } from '@/lib/types';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -51,18 +52,32 @@ function AchievementsSkeleton() {
 
 export default function AchievementsPage() {
   const { user } = useUser();
+  const firestore = useFirestore();
   const [progress, setProgress] = useState<AchievementProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<Achievement['category'] | 'all'>('all');
 
+  // Get the player for the current user in their active group
+  const playersQuery = useMemo(() => {
+    if (!firestore || !user?.uid || !user?.activeGroupId) return null;
+    return query(
+      collection(firestore, 'players'),
+      where('ownerUid', '==', user.uid),
+      where('groupId', '==', user.activeGroupId)
+    );
+  }, [firestore, user?.uid, user?.activeGroupId]);
+
+  const { data: userPlayers, loading: playerLoading } = useCollection<Player>(playersQuery);
+  const currentPlayer = userPlayers?.[0];
+
   // Load achievements progress
   useEffect(() => {
     async function loadProgress() {
-      if (!user?.uid) return;
+      if (!user?.uid || !currentPlayer?.id) return;
 
       setLoading(true);
       try {
-        const result = await getAchievementProgressAction(user.uid, user.uid);
+        const result = await getAchievementProgressAction(currentPlayer.id, user.uid);
         if (!result.error) {
           setProgress(result.progress);
         }
@@ -74,7 +89,7 @@ export default function AchievementsPage() {
     }
 
     loadProgress();
-  }, [user?.uid]);
+  }, [user?.uid, currentPlayer?.id]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -125,7 +140,7 @@ export default function AchievementsPage() {
         description="Desbloquea logros jugando partidos, marcando goles y siendo parte de la comunidad."
       />
 
-      {loading ? (
+      {loading || playerLoading ? (
         <AchievementsSkeleton />
       ) : (
         <>
