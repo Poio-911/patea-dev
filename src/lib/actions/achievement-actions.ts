@@ -131,7 +131,7 @@ export async function getPlayerAchievementsAction(
   try {
     const snapshot = await db
       .collection('playerAchievements')
-      .where('odplayerId', '==', playerId)
+      .where('playerId', '==', playerId)
       .orderBy('unlockedAt', 'desc')
       .get();
 
@@ -229,8 +229,8 @@ export async function checkAndUnlockAchievementsAction(
         // Unlock the achievement
         const achievementData: Omit<PlayerAchievement, 'id'> = {
           achievementId: achievement.id,
-          odplayerId: playerId,
-          oduserId: userId,
+          playerId: playerId,
+          userId: userId,
           unlockedAt: new Date().toISOString(),
         };
 
@@ -300,7 +300,7 @@ export async function getRecentAchievementsAction(
         let playerPhotoUrl: string | undefined;
 
         try {
-          const playerDoc = await db.collection('players').doc(data.odplayerId).get();
+          const playerDoc = await db.collection('players').doc(data.playerId).get();
           if (playerDoc.exists) {
             const player = playerDoc.data() as Player;
             playerName = player.name;
