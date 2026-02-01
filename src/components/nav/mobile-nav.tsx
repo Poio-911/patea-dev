@@ -49,7 +49,7 @@ export function MobileNav() {
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-[2147483647] border-t bg-card/80 backdrop-blur-lg shadow-lg md:hidden pb-[env(safe-area-inset-bottom)]">
             <div className="relative w-full px-2">
-                <div className="flex h-16 w-full items-center justify-around font-medium">
+                <div className="flex h-14 w-full items-center justify-around font-medium">
                     {/* Left: Panel & Jugadores */}
                     <MobileNavItem key={mainNavItems[0].href} item={mainNavItems[0]} pathname={pathname} />
                     <MobileNavItem key={mainNavItems[1].href} item={mainNavItems[1]} pathname={pathname} />

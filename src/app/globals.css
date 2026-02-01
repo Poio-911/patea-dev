@@ -4,9 +4,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ajuste para menú en modo PWA standalone */
+/* Ajuste para menú en modo PWA standalone - pegado al borde inferior */
 body.standalone nav.fixed {
-  bottom: 1rem !important;
+  bottom: 0 !important;
 }
 /* CONTRASTE MEJORADO PARA GAME Y NIKE */
 .game .player-card .text-muted-foreground,
