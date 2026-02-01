@@ -112,7 +112,7 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
     const player1 = match.players.find(p => p.uid === selectedPlayer1);
     const player2 = selectedPlayer2 && selectedPlayer2 !== 'none' ? match.players.find(p => p.uid === selectedPlayer2) : null;
     
-    if (!player1?.photoUrl || (selectedPlayer2 !== 'none' && selectedPlayer2 && !player2?.photoUrl)) {
+    if (!player1?.photoURL || (selectedPlayer2 !== 'none' && selectedPlayer2 && !player2?.photoURL)) {
       toast({ 
         variant: 'destructive', 
         title: 'Error', 
@@ -127,9 +127,9 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
       const prompt = generateIntelligentPrompt(selectedPlayer1, selectedPlayer2 === 'none' ? undefined : selectedPlayer2);
       
       const result = await generateDuoImageAction({
-        player1PhotoUrl: player1.photoUrl,
+        player1PhotoURL: player1.photoURL,
         player1Name: player1.displayName,
-        player2PhotoUrl: player2?.photoUrl,
+        player2PhotoURL: player2?.photoURL,
         player2Name: player2?.displayName,
         prompt
       });
@@ -249,12 +249,12 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
                         </SelectTrigger>
                         <SelectContent>
                           {match.players
-                            .filter(p => p.photoUrl) 
+                            .filter(p => p.photoURL)
                             .map(player => (
                               <SelectItem key={player.uid} value={player.uid}>
                                 <div className="flex items-center gap-2">
                                   <Avatar className="h-6 w-6">
-                                    <AvatarImage src={player.photoUrl} alt={player.displayName} />
+                                    <AvatarImage src={player.photoURL} alt={player.displayName} />
                                     <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
                                   </Avatar>
                                   <span>{player.displayName}</span>
@@ -280,12 +280,12 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
                             <span className="text-muted-foreground">Solo un jugador</span>
                           </SelectItem>
                           {match.players
-                            .filter(p => p.photoUrl && p.uid !== selectedPlayer1)
+                            .filter(p => p.photoURL && p.uid !== selectedPlayer1)
                             .map(player => (
                               <SelectItem key={player.uid} value={player.uid}>
                                 <div className="flex items-center gap-2">
                                   <Avatar className="h-6 w-6">
-                                    <AvatarImage src={player.photoUrl} alt={player.displayName} />
+                                    <AvatarImage src={player.photoURL} alt={player.displayName} />
                                     <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
                                   </Avatar>
                                   <span>{player.displayName}</span>

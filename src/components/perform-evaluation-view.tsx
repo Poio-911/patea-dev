@@ -200,7 +200,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
               assignmentId: assignment.id,
               subjectId: assignment.subjectId,
               displayName: subject.name,
-              photoUrl: subject.photoUrl || '',
+              photoURL: subject.photoURL || '',
               position: subject.position,
               evaluationType: 'points',
               rating: 5,

@@ -9,7 +9,7 @@ import { PlayerPositionBadge } from "@/components/player-styles";
 export type PlayerSelectItemVariant = "row" | "card" | "draggableRow";
 
 interface PlayerSelectItemProps {
-  player: Pick<Player, "id" | "name" | "photoUrl" | "position" | "ovr"> & { uid?: string; displayName?: string };
+  player: Pick<Player, "id" | "name" | "photoURL" | "position" | "ovr"> & { uid?: string; displayName?: string };
   selected?: boolean;
   onToggle?: () => void;
   variant?: PlayerSelectItemVariant;
@@ -54,7 +54,7 @@ export function PlayerSelectItem({
     )}>
       {dragHandle}
       <Avatar className={avatarClasses}>
-        <AvatarImage src={player.photoUrl} alt={name} />
+        <AvatarImage src={player.photoURL} alt={name} />
         <AvatarFallback>{name?.charAt(0) || "?"}</AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">

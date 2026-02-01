@@ -24,7 +24,7 @@ import { convertStorageUrlToBase64 } from '@/lib/actions/image-generation';
 
 interface ImageCropperDialogProps {
   player: {
-    photoUrl?: string;
+    photoURL?: string;
   };
   onSaveComplete?: (newUrl: string) => void;
   children: React.ReactNode;
@@ -124,8 +124,8 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
   };
 
   useEffect(() => {
-    if (open && player.photoUrl) {
-      const photoUrl = player.photoUrl; // Capture for TypeScript narrowing
+    if (open && player.photoURL) {
+      const photoUrl = player.photoURL; // Capture for TypeScript narrowing
       setIsLoadingImage(true);
 
       // Use server action to load image (bypasses CORS issues in production)
@@ -221,7 +221,7 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
           setImgSrc(dataUri);
         })
         .catch((error) => {
-          console.error('All image loading strategies failed for URL:', player.photoUrl);
+          console.error('All image loading strategies failed for URL:', player.photoURL);
           console.error('Error details:', error);
           toast({
             variant: 'destructive',
@@ -233,7 +233,7 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
           setIsLoadingImage(false);
         });
     }
-  }, [open, player.photoUrl, toast]);
+  }, [open, player.photoURL, toast]);
 
   const handleSaveCrop = async () => {
     if (!completedCrop || !imgRef.current) {

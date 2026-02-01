@@ -66,7 +66,7 @@ export const MatchTeams = ({ match, isOwner }: MatchTeamsProps) => {
                                 name: p.displayName,
                                 position: p.position as PlayerPosition,
                                 ovr: p.ovr,
-                                photoUrl: matchPlayer?.photoUrl || '',
+                                photoURL: matchPlayer?.photoURL || '',
                                 ownerUid: p.uid,
                                 groupId: match.groupId || '',
                                 status: 'active' as const,

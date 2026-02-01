@@ -136,7 +136,7 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
                     )}
                   >
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoUrl} alt={player.displayName} />
+                      <AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoURL} alt={player.displayName} />
                       <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">

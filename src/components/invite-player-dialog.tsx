@@ -190,7 +190,7 @@ export function InvitePlayerDialog({
                       key={p.id}
                       variant="row"
                       selectionControl="checkbox"
-                      player={{ id: p.id, name: p.name, photoUrl: p.photoUrl || '', position: p.position, ovr: p.ovr }}
+                      player={{ id: p.id, name: p.name, photoURL: p.photoURL || '', position: p.position, ovr: p.ovr }}
                       selected={selectedGroupPlayers.includes(p.id)}
                       onToggle={() => {
                         setSelectedGroupPlayers(prev =>

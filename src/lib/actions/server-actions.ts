@@ -620,15 +620,15 @@ export async function generateDuoImageAction(input: GenerateDuoImageInput) {
     try {
         const { convertStorageUrlToBase64 } = await import('./image-generation');
 
-        const player1Result = await convertStorageUrlToBase64(input.player1PhotoUrl);
+        const player1Result = await convertStorageUrlToBase64(input.player1PhotoURL);
         if (player1Result.error || !player1Result.dataUri) {
             throw new Error(player1Result.error || 'No se pudo procesar la foto del primer jugador.');
         }
 
         let player2DataUri = player1Result.dataUri;
 
-        if (input.player2PhotoUrl && input.player2PhotoUrl !== input.player1PhotoUrl) {
-            const player2Result = await convertStorageUrlToBase64(input.player2PhotoUrl);
+        if (input.player2PhotoURL && input.player2PhotoURL !== input.player1PhotoURL) {
+            const player2Result = await convertStorageUrlToBase64(input.player2PhotoURL);
             if (player2Result.error || !player2Result.dataUri) {
                 throw new Error(player2Result.error || 'No se pudo procesar la foto del segundo jugador.');
             }
@@ -2136,7 +2136,7 @@ export async function createCupMatchAction(
                 return {
                     uid: player.id,
                     displayName: player.name || 'Jugador',
-                    photoUrl: player.photoUrl || '',
+                    photoURL: player.photoURL || '',
                     position: player.position || 'MED',
                     ovr: player.ovr || 50,
                     teamId: teamId
@@ -2358,7 +2358,7 @@ export async function advanceCupWinnerAction(
                                 return {
                                     uid: player.id,
                                     displayName: player.name || 'Jugador',
-                                    photoUrl: player.photoUrl || '',
+                                    photoURL: player.photoURL || '',
                                     position: player.position || 'MED',
                                     ovr: player.ovr || 50,
                                     teamId: teamId

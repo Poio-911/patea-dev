@@ -199,7 +199,7 @@ export default function RegisterPage() {
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                             <div className="flex flex-col items-center gap-4">
                                 <ImageCropperDialog
-                                    player={{ photoUrl: imagePreview || undefined }}
+                                    player={{ photoURL: imagePreview || undefined }}
                                     onSaveComplete={(newUrl) => {
                                         setImagePreview(newUrl);
                                         setGeneratedPhotoUrl(newUrl);

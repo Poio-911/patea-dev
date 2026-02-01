@@ -260,7 +260,7 @@ export function EditableTeamsDialog({ match, children }: EditableTeamsDialogProp
               <div className="flex items-center gap-3 p-2 rounded-md bg-primary text-primary-foreground shadow-lg">
                 <Avatar className="h-9 w-9">
                   <AvatarImage
-                    src={match.players.find(p => p.uid === activePlayer.uid)?.photoUrl}
+                    src={match.players.find(p => p.uid === activePlayer.uid)?.photoURL}
                     alt={activePlayer.displayName}
                   />
                   <AvatarFallback>{activePlayer.displayName.charAt(0)}</AvatarFallback>
