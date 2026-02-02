@@ -94,9 +94,6 @@ export default function EvaluationsPage() {
                 const userAssignmentCount = userPendingAssignments.filter(a => a.matchId === matchId).length;
                 const isSubmitted = submissionsMap.has(matchId);
 
-                // Mostrar si: 1. No se ha enviado la evaluación propia O 2. Tiene asignaciones de pares pendientes
-                if (isSubmitted && userAssignmentCount === 0) return null;
-
                 const item: PendingItem = {
                     match,
                     submission: submissionsMap.get(matchId),
