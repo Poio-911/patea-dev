@@ -148,14 +148,36 @@ const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = fal
         return () => { cancelled = true; };
     }, []);
 
+    const [debouncedValue, setDebouncedValue] = useState(value);
+
+    // Debounce the input value update
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [value]);
+
     // Fetch Google suggestions when active
     useEffect(() => {
         if (!useGoogleAutocomplete) return;
         let active = true;
-        if (!value || value.length < 3) { setGoogleSuggestions([]); setIsOpen(false); return; }
+
+        // Use debouncedValue instead of value
+        if (!debouncedValue || debouncedValue.length < 3) {
+            setGoogleSuggestions([]);
+            setIsOpen(false);
+            return;
+        }
+
         const svc = autocompleteServiceRef.current;
         if (!svc) return;
-        const req: any = { input: value, types: ['establishment', 'geocode'] };
+
+        // Add componentRestrictions to bias results to preferred countries if needed, 
+        // but for now relying on user input. 
+        // Could technically add location bias if we had user coordinates.
+        const req: any = { input: debouncedValue, types: ['establishment', 'geocode'] };
+
         svc.getPlacePredictions(req, (preds: any) => {
             if (!active) return;
             const arr = (preds || []).map((p: any) => {
@@ -170,15 +192,15 @@ const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = fal
             setIsOpen(arr.length > 0);
         });
         return () => { active = false; };
-    }, [value, useGoogleAutocomplete]);
+    }, [debouncedValue, useGoogleAutocomplete]);
 
     useEffect(() => {
         if (useGoogleAutocomplete) return; // skip OSM when Google is active
         let active = true;
         const fetchOsm = async () => {
             try {
-                if (!value || value.length < 3) { setOsmSuggestions([]); return; }
-                const res = await fetch(`/api/geocode/suggest?q=${encodeURIComponent(value)}`);
+                if (!debouncedValue || debouncedValue.length < 3) { setOsmSuggestions([]); return; }
+                const res = await fetch(`/api/geocode/suggest?q=${encodeURIComponent(debouncedValue)}`);
                 const json = await res.json();
                 if (active && json?.success) setOsmSuggestions(json.suggestions || []);
             } catch {
@@ -186,9 +208,9 @@ const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = fal
             }
         };
         fetchOsm();
-        setIsOpen(!!value && value.length > 2);
+        setIsOpen(!!debouncedValue && debouncedValue.length > 2);
         return () => { active = false; };
-    }, [value, useGoogleAutocomplete]);
+    }, [debouncedValue, useGoogleAutocomplete]);
 
     const handleVenueSelect = (venue: Venue) => {
         onSelectLocation({
