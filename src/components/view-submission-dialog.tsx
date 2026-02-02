@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +11,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
-import type { EvaluationSubmission } from '@/lib/types';
+import type { EvaluationSubmission, Player } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Star } from 'lucide-react';
@@ -21,8 +22,20 @@ interface ViewSubmissionDialogProps {
   children: React.ReactNode;
 }
 
-export function ViewSubmissionDialog({ submission, children }: ViewSubmissionDialogProps) {
+export function ViewSubmissionDialog({ submission, children, matchPlayers }: ViewSubmissionDialogProps & { matchPlayers?: Player[] }) {
   const { submission: formData } = submission;
+
+  // Resolve MVP name from evaluated list or from extra match players list if provided
+  const mvpName = useMemo(() => {
+    if (!formData.mvpVote) return null;
+    const evaluatedPlayer = formData.evaluations.find(e => e.subjectId === formData.mvpVote);
+    if (evaluatedPlayer) return evaluatedPlayer.displayName;
+    if (matchPlayers) {
+      const matchPlayer = matchPlayers.find(p => p.id === formData.mvpVote);
+      if (matchPlayer) return matchPlayer.name;
+    }
+    return 'Compañero';
+  }, [formData.mvpVote, formData.evaluations, matchPlayers]);
 
   return (
     <Dialog>
@@ -37,10 +50,33 @@ export function ViewSubmissionDialog({ submission, children }: ViewSubmissionDia
         <div className="flex-grow py-4 space-y-4 overflow-y-hidden">
           <ScrollArea className="h-full pr-4">
             <div className="space-y-6">
-              <div className="p-3 border rounded-md bg-muted/50">
-                  <p className="text-sm font-semibold">Tus Goles Reportados</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 border rounded-md bg-muted/50">
+                  <p className="text-xs text-muted-foreground font-semibold uppercase">Goles</p>
                   <p className="text-2xl font-bold">{formData.evaluatorGoals}</p>
+                </div>
+                <div className="p-3 border rounded-md bg-muted/50">
+                  <p className="text-xs text-muted-foreground font-semibold uppercase">Asistencias</p>
+                  <p className="text-2xl font-bold">{formData.evaluatorAssists ?? 0}</p>
+                </div>
               </div>
+
+              <div className="p-3 border rounded-md bg-yellow-50 border-yellow-200">
+                <p className="text-xs text-yellow-700 font-semibold uppercase flex items-center gap-1">
+                  <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                  Voto MVP
+                </p>
+                <p className="font-bold text-yellow-900">
+                  {mvpName}
+                </p>
+              </div>
+
+              {formData.personalChronicle && (
+                <div className="p-3 border rounded-md bg-blue-50 border-blue-100">
+                  <p className="text-xs text-blue-700 font-semibold uppercase">Mi Crónica</p>
+                  <p className="text-sm italic text-blue-900 line-clamp-4">"{formData.personalChronicle}"</p>
+                </div>
+              )}
 
               <div>
                 <h3 className="font-semibold mb-2">Evaluaciones a compañeros:</h3>
@@ -51,10 +87,10 @@ export function ViewSubmissionDialog({ submission, children }: ViewSubmissionDia
                       <Separator className="my-2" />
                       {evaluation.evaluationType === 'points' && (
                         <div className="flex items-center gap-2">
-                           <p className="text-sm text-muted-foreground">Rating:</p>
-                           <Badge>
-                               <Star className="mr-1 h-3 w-3"/> {evaluation.rating}
-                           </Badge>
+                          <p className="text-sm text-muted-foreground">Rating:</p>
+                          <Badge>
+                            <Star className="mr-1 h-3 w-3" /> {evaluation.rating}
+                          </Badge>
                         </div>
                       )}
 
