@@ -489,7 +489,9 @@ export type SelfEvaluation = {
   playerId: string;
   matchId: string;
   goals: number;
-  assists?: number;
+  assists: number;
+  personalChronicle?: string;
+  mvpVote?: string; // playerId of the voted MVP
   reportedAt: string;
 } & DocumentData;
 
@@ -531,7 +533,9 @@ export type EvaluationSubmission = {
   submittedAt: string;
   submission: {
     evaluatorGoals: number;
-    evaluatorAssists?: number;
+    evaluatorAssists: number;
+    personalChronicle?: string;
+    mvpVote?: string; // playerId
     evaluations: PlayerEvaluationFormData[];
   }
 } & DocumentData;

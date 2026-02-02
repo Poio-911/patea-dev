@@ -13,10 +13,11 @@ import {
   where,
   addDoc,
   getDocs,
+  doc,
 } from 'firebase/firestore'
-import { Loader2, Save, ShieldCheck, Goal, Plus, Minus, FileClock, Check } from 'lucide-react'
+import { Loader2, Save, ShieldCheck, Goal, Plus, Minus, FileClock, Check, Award, MessageSquare } from 'lucide-react'
 
-import { useFirestore, useUser, useCollection } from '@/firebase'
+import { useFirestore, useUser, useCollection, useDoc } from '@/firebase'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,12 +30,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Sparkles } from 'lucide-react'
 import { analyzeEvaluationTextAction } from '@/lib/actions/evaluation-actions'
 import { TagSelector } from '@/components/ui/tag-selector'
 import { PerformanceTag, performanceTagsDb } from '@/lib/performance-tags'
 import { cn } from '@/lib/utils'
-import type { Player, EvaluationAssignment, PlayerEvaluationFormData } from '@/lib/types'
+import type { Player, EvaluationAssignment, PlayerEvaluationFormData, Match } from '@/lib/types'
 import { BackButton } from '@/components/navigation/back-button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
@@ -90,6 +92,9 @@ const playerEvaluationSchema = z.discriminatedUnion('evaluationType', [
 
 const evaluationSchema = z.object({
   evaluatorGoals: z.coerce.number().min(0).max(20).default(0),
+  evaluatorAssists: z.coerce.number().min(0).max(20).default(0),
+  personalChronicle: z.string().max(1000, 'Máximo 1000 caracteres').optional(),
+  mvpVote: z.string().optional(),
   evaluations: z.array(playerEvaluationSchema),
 }).superRefine((val, ctx) => {
   val.evaluations.forEach((ev, idx) => {
@@ -255,6 +260,9 @@ export default function PerformEvaluationPage() {
   const [analyzingText, setAnalyzingText] = useState<Record<string, boolean>>({})
   const [aiResults, setAiResults] = useState<Record<string, { attributeChanges: { attribute: string; change: number; reason: string }[]; confidence: number; summary: string }>>({})
 
+  const matchRef = useMemo(() => matchId ? doc(firestore!, 'matches', matchId as string) : null, [firestore, matchId])
+  const { data: currentMatch } = useDoc<Match>(matchRef)
+
   // Function to analyze text with AI
   const analyzeTextForPlayer = async (playerIndex: number) => {
     const evaluation = form.getValues(`evaluations.${playerIndex}`) as any;
@@ -333,7 +341,13 @@ export default function PerformEvaluationPage() {
 
   const form = useForm<EvaluationFormData>({
     resolver: zodResolver(evaluationSchema),
-    defaultValues: { evaluatorGoals: 0, evaluations: [] },
+    defaultValues: {
+      evaluatorGoals: 0,
+      evaluatorAssists: 0,
+      personalChronicle: '',
+      mvpVote: '',
+      evaluations: []
+    },
   })
 
   const { fields, replace } = useFieldArray({ control: form.control, name: 'evaluations' })
@@ -521,17 +535,87 @@ export default function PerformEvaluationPage() {
               <CardTitle>Tu Rendimiento</CardTitle>
               <CardDescription>Antes de evaluar a tus compañeros, registra tu propia actuación.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="evaluatorGoals"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>¿Cuántos goles marcaste?</FormLabel>
+                      <div className="flex items-center gap-2">
+                        <Goal className="h-5 w-5 text-muted-foreground" />
+                        <FormControl>
+                          <Input type="number" min="0" {...field} />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="evaluatorAssists"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>¿Cuántas asistencias diste?</FormLabel>
+                      <div className="flex items-center gap-2">
+                        <Award className="h-5 w-5 text-muted-foreground" />
+                        <FormControl>
+                          <Input type="number" min="0" {...field} />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <FormField
                 control={form.control}
-                name="evaluatorGoals"
+                name="mvpVote"
                 render={({ field }) => (
-                  <FormItem className="max-w-xs">
-                    <FormLabel>¿Cuántos goles marcaste en este partido?</FormLabel>
+                  <FormItem>
+                    <FormLabel>¿Quién fue el MVP del partido?</FormLabel>
                     <div className="flex items-center gap-2">
-                      <Goal className="h-5 w-5 text-muted-foreground" />
+                      <Award className="h-5 w-5 text-yellow-500" />
                       <FormControl>
-                        <Input type="number" min="0" {...field} />
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona un jugador" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {currentMatch?.players.map((p) => (
+                              <SelectItem key={p.uid} value={p.uid}>
+                                {p.displayName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="personalChronicle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tu Crónica Personal</FormLabel>
+                    <div className="flex items-start gap-2">
+                      <MessageSquare className="h-5 w-5 mt-2 text-muted-foreground" />
+                      <FormControl>
+                        <Textarea
+                          placeholder="Escribe un breve resumen de cómo te sentiste en el campo hoy..."
+                          className="resize-none h-24"
+                          {...field}
+                        />
                       </FormControl>
                     </div>
                     <FormMessage />
