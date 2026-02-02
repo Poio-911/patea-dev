@@ -588,7 +588,9 @@ export default function PerformEvaluationPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {currentMatch?.players.map((p) => (
+                            {currentMatch?.players
+                              .filter((p, idx, arr) => arr.findIndex(x => x.uid === p.uid) === idx)
+                              .map((p) => (
                               <SelectItem key={p.uid} value={p.uid}>
                                 {p.displayName}
                               </SelectItem>
