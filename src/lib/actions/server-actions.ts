@@ -28,7 +28,7 @@ import { CREDITS } from '../constants';
 
 // --- Server Actions ---
 
-export async function generateTeamsAction(players: Player[]) {
+export async function generateTeamsAction(players: Array<Pick<Player, 'id' | 'name' | 'ovr' | 'position'>>) {
     if (!players || players.length < 2) {
         return { error: 'Se necesitan al menos 2 jugadores para generar equipos.' };
     }
@@ -238,7 +238,7 @@ export async function coachConversationAction(
  * If `lastCreditReset` is missing or older than the first day of the current month,
  * set `cardGenerationCredits` to CREDITS.MONTHLY_FREE and update `lastCreditReset` with a server timestamp.
  */
-export async function ensureMonthlyCreditResetAction(playerId: string): Promise<{ success: boolean; updated: boolean; error?: string }>{
+export async function ensureMonthlyCreditResetAction(playerId: string): Promise<{ success: boolean; updated: boolean; error?: string }> {
     try {
         const db = getAdminDb();
         const playerRef = db.doc(`players/${playerId}`);
@@ -1737,7 +1737,7 @@ export async function updatePlayerEventStatsAction(
     playerId: string,
     stats: { goals?: number; assists?: number; yellowCards?: number; redCards?: number },
     context?: { goalsInMatch?: number; matchId?: string }
-): Promise<{ success: boolean; error?: string }>{
+): Promise<{ success: boolean; error?: string }> {
     try {
         const db = getAdminDb();
         const playerRef = db.doc(`players/${playerId}`);
@@ -1776,7 +1776,7 @@ export async function logMatchEventAction(
     matchId: string,
     event: MatchEvent,
     userId: string
-): Promise<{ success: boolean; error?: string }>{
+): Promise<{ success: boolean; error?: string }> {
     try {
         const db = getAdminDb();
         const matchRef = db.doc(`matches/${matchId}`);
@@ -1841,7 +1841,7 @@ export async function updateLiveStateAction(
     newStatus: LiveMatchStatus,
     currentMinute: number,
     userId: string
-): Promise<{ success: boolean; error?: string }>{
+): Promise<{ success: boolean; error?: string }> {
     try {
         const db = getAdminDb();
         const matchRef = db.doc(`matches/${matchId}`);

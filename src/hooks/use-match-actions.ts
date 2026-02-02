@@ -86,7 +86,14 @@ export function useMatchActions({
       if (!finalTeams || finalTeams.length === 0) {
         const playerIdsInMatch = freshMatch.playerUids;
         if (playerIdsInMatch.length >= freshMatch.matchSize) {
-          const playersToBalance = allGroupPlayers.filter(p => playerIdsInMatch.includes(p.id));
+          const playersToBalance = allGroupPlayers
+            .filter(p => playerIdsInMatch.includes(p.id))
+            .map(p => ({
+              id: p.id,
+              name: p.name,
+              ovr: p.ovr,
+              position: p.position
+            }));
           const teamGenerationResult = await generateTeamsAction(playersToBalance);
           if ('error' in teamGenerationResult) throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
           if (!teamGenerationResult.teams) throw new Error('La respuesta de la IA no contiene equipos.');
@@ -264,7 +271,14 @@ export function useMatchActions({
     setIsShuffling(true);
 
     try {
-      const playersToBalance = allGroupPlayers.filter(p => match.playerUids.includes(p.id));
+      const playersToBalance = allGroupPlayers
+        .filter(p => match.playerUids.includes(p.id))
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          ovr: p.ovr,
+          position: p.position
+        }));
       const teamGenerationResult = await generateTeamsAction(playersToBalance);
 
       if ('error' in teamGenerationResult) throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
