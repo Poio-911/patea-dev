@@ -94,6 +94,16 @@ export default function EvaluationsPage() {
                 const userAssignmentCount = userPendingAssignments.filter(a => a.matchId === matchId).length;
                 const isSubmitted = submissionsMap.has(matchId);
 
+                // If no assignments and not submitted, check if it's too old (e.g., > 7 days)
+                // This prevents old matches where the user never self-evaluated from showing up forever
+                if (userAssignmentCount === 0 && !isSubmitted) {
+                    const matchDate = new Date(match.date);
+                    const sevenDaysAgo = subDays(new Date(), 7);
+                    if (isBefore(matchDate, sevenDaysAgo)) {
+                        return null;
+                    }
+                }
+
                 const item: PendingItem = {
                     match,
                     submission: submissionsMap.get(matchId),
@@ -175,7 +185,9 @@ export default function EvaluationsPage() {
                         <span>
                             {isEvaluationSent
                                 ? 'Tu evaluación fue enviada'
-                                : `${item.userAssignmentCount} evaluaciones pendientes`
+                                : item.userAssignmentCount === 0
+                                    ? 'Autoevaluación pendiente'
+                                    : `${item.userAssignmentCount} evaluaciones pendientes`
                             }
                         </span>
                     </div>
