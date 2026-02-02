@@ -14,9 +14,11 @@ export const metadata: Metadata = {
   description: 'Pateá es una app para organizar los partidos entre amigos: armás equipos, anotás los resultados y llevás la cuenta de quién juega bien y quién se hace el lesionado.',
   manifest: '/manifest.json',
   appleWebApp: {
-    capable: true,
     title: 'Pateá',
     statusBarStyle: 'default',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
   },
   icons: {
     apple: '/icons/icon-192x192.png',

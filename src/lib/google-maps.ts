@@ -18,7 +18,7 @@ export function loadGooglePlaces(apiKey?: string, language: string = 'es') {
 			script.async = true;
 			script.defer = true;
 			script.dataset.googleMaps = '1';
-			script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&language=${encodeURIComponent(language)}`;
+			script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&loading=async&libraries=places&language=${encodeURIComponent(language)}`;
 			script.onload = () => resolve((window as any).google);
 			script.onerror = () => reject(new Error('Google Maps script failed'));
 			document.head.appendChild(script);

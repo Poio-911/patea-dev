@@ -132,13 +132,15 @@ export async function getPlayerAchievementsAction(
     const snapshot = await db
       .collection('playerAchievements')
       .where('playerId', '==', playerId)
-      .orderBy('unlockedAt', 'desc')
       .get();
 
     const achievements = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
     })) as PlayerAchievement[];
+
+    // Sort in memory to avoid index requirements
+    achievements.sort((a, b) => new Date(b.unlockedAt).getTime() - new Date(a.unlockedAt).getTime());
 
     return { achievements };
   } catch (error: any) {
@@ -158,6 +160,9 @@ export async function getAchievementProgressAction(
   error?: string;
 }> {
   try {
+    // Ensure achievements are synchronized before getting progress
+    await checkAndUnlockAchievementsAction(playerId, userId);
+
     const [playerProgress, { achievements: unlockedAchievements }] = await Promise.all([
       getPlayerProgress(playerId, userId),
       getPlayerAchievementsAction(playerId),
@@ -234,7 +239,7 @@ export async function checkAndUnlockAchievementsAction(
           unlockedAt: new Date().toISOString(),
         };
 
-        await db.collection('playerAchievements').add(achievementData);
+        await db.collection('playerAchievements').doc(`${playerId}_${achievement.id}`).set(achievementData);
         newlyUnlocked.push(achievement);
 
         // Create notification for the user
@@ -287,13 +292,20 @@ export async function getRecentAchievementsAction(
   try {
     const snapshot = await db
       .collection('playerAchievements')
-      .orderBy('unlockedAt', 'desc')
-      .limit(limit)
       .get();
 
+    const allAchievements = snapshot.docs.map(doc => ({
+      ...doc.data(),
+      id: doc.id,
+    })) as PlayerAchievement[];
+
+    // Sort in memory and limit
+    const sortedAchievements = allAchievements
+      .sort((a, b) => new Date(b.unlockedAt).getTime() - new Date(a.unlockedAt).getTime())
+      .slice(0, limit);
+
     const achievements = await Promise.all(
-      snapshot.docs.map(async doc => {
-        const data = doc.data() as PlayerAchievement;
+      sortedAchievements.map(async data => {
 
         // Get player info
         let playerName: string | undefined;
@@ -304,7 +316,7 @@ export async function getRecentAchievementsAction(
           if (playerDoc.exists) {
             const player = playerDoc.data() as Player;
             playerName = player.name;
-            playerPhotoUrl = player.photoUrl;
+            playerPhotoUrl = player.photoURL;
           }
         } catch (e) {
           // Ignore errors fetching player info
@@ -312,9 +324,9 @@ export async function getRecentAchievementsAction(
 
         return {
           ...data,
-          id: doc.id,
+          id: data.id,
           playerName,
-          playerPhotoUrl,
+          playerPhotoUrl: playerPhotoUrl,
         };
       })
     );

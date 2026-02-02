@@ -1063,8 +1063,8 @@ export type Achievement = {
 export type PlayerAchievement = {
   id: string;
   achievementId: string;
-  odplayerId: string;
-  oduserId: string;
+  playerId: string;
+  userId: string;
   unlockedAt: string; // ISO date
 } & DocumentData;
 
