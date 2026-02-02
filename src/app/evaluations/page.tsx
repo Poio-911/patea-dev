@@ -249,27 +249,18 @@ export default function EvaluationsPage() {
                 </TabsList>
 
                 <TabsContent value="pending" className="mt-6">
-                    {pendingItems.filter(item => {
-                        if (!item.submission) return true;
-                        // Mostrar en pendientes si se evaluó hace menos de 2 días
-                        const archiveThreshold = subDays(new Date(), 2);
-                        return !isBefore(new Date(item.submission.submittedAt), archiveThreshold);
-                    }).length === 0 ? (
+                    {pendingItems.filter(item => !item.submission).length === 0 ? (
                         <Alert>
                             <ShieldQuestion className="h-4 w-4" />
                             <AlertTitle>¡Todo al día!</AlertTitle>
                             <AlertDescription>
-                                No tienes evaluaciones pendientes actuales.
+                                No tienes evaluaciones pendientes.
                             </AlertDescription>
                         </Alert>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {pendingItems
-                                .filter(item => {
-                                    if (!item.submission) return true;
-                                    const archiveThreshold = subDays(new Date(), 2);
-                                    return !isBefore(new Date(item.submission.submittedAt), archiveThreshold);
-                                })
+                                .filter(item => !item.submission)
                                 .map((item) => renderCard(item))}
                         </div>
                     )}
@@ -278,14 +269,15 @@ export default function EvaluationsPage() {
                 <TabsContent value="history" className="mt-6">
                     {pendingItems.filter(item => {
                         if (!item.submission) return false;
+                        // Mantener en historial solo por 2 días
                         const archiveThreshold = subDays(new Date(), 2);
-                        return isBefore(new Date(item.submission.submittedAt), archiveThreshold);
+                        return !isBefore(new Date(item.submission.submittedAt), archiveThreshold);
                     }).length === 0 ? (
                         <Alert>
                             <FileClock className="h-4 w-4" />
                             <AlertTitle>Historial vacío</AlertTitle>
                             <AlertDescription>
-                                Aquí aparecerán tus evaluaciones completadas después de un par de días.
+                                Aquí aparecerán tus evaluaciones completadas recientemente.
                             </AlertDescription>
                         </Alert>
                     ) : (
@@ -294,7 +286,7 @@ export default function EvaluationsPage() {
                                 .filter(item => {
                                     if (!item.submission) return false;
                                     const archiveThreshold = subDays(new Date(), 2);
-                                    return isBefore(new Date(item.submission.submittedAt), archiveThreshold);
+                                    return !isBefore(new Date(item.submission.submittedAt), archiveThreshold);
                                 })
                                 .map((item) => renderCard(item))}
                         </div>
