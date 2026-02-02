@@ -45,20 +45,55 @@ export function useMatchActions({
   const generateEvaluationAssignments = useCallback((match: Match, allPlayers: Player[]): Omit<EvaluationAssignment, 'id'>[] => {
     const assignments: Omit<EvaluationAssignment, 'id'>[] = [];
     const matchPlayers = allPlayers.filter(p => match.playerUids.includes(p.id));
+
+    // Only real users can be evaluators
     const realPlayerUids = matchPlayers.filter(isRealUser).map(p => p.id);
+
+    // All players (including guests) can be evaluated
+    // We map to simple objects to avoid potential issues with complex Player objects if used directly later,
+    // though here we mostly need IDs and team info.
+
     realPlayerUids.forEach(evaluatorId => {
+      // 1. Mandatory Self-Evaluation
+      assignments.push({
+        matchId: match.id,
+        evaluatorId: evaluatorId,
+        subjectId: evaluatorId,
+        status: 'pending',
+      });
+
       if (!match.teams) return;
-      const team = match.teams.find(t => t.players.some(p => p.uid === evaluatorId));
-      if (!team) return;
-      const teammates = team.players.filter(p => p.uid !== evaluatorId && realPlayerUids.includes(p.uid));
-      const shuffledTeammates = teammates.sort(() => 0.5 - Math.random());
-      const maxAssignments = Math.min(2, teammates.length);
-      const playersToEvaluate = shuffledTeammates.slice(0, maxAssignments);
-      playersToEvaluate.forEach(subject => {
+
+      const myTeam = match.teams.find(t => t.players.some(p => p.uid === evaluatorId));
+
+      // Identify potential peers (everyone except self)
+      const allPeers = matchPlayers.filter(p => p.id !== evaluatorId);
+
+      // Split into Teammates and Others
+      const teammates = allPeers.filter(p => myTeam?.players.some(tp => tp.uid === p.id));
+      const others = allPeers.filter(p => !myTeam?.players.some(tp => tp.uid === p.id));
+
+      // Strategy: Pick up to 2 peers. Priority: Teammates > Others
+      const MAX_PEERS = 2;
+      const selectedPeers: string[] = [];
+
+      // A. Shuffle and pick teammates
+      const shuffledTeammates = [...teammates].sort(() => 0.5 - Math.random());
+      selectedPeers.push(...shuffledTeammates.slice(0, MAX_PEERS).map(p => p.id));
+
+      // B. If we still need peers, fill with others
+      if (selectedPeers.length < MAX_PEERS && others.length > 0) {
+        const remainingSlots = MAX_PEERS - selectedPeers.length;
+        const shuffledOthers = [...others].sort(() => 0.5 - Math.random());
+        selectedPeers.push(...shuffledOthers.slice(0, remainingSlots).map(p => p.id));
+      }
+
+      // Create peer assignments
+      selectedPeers.forEach(subjectId => {
         assignments.push({
           matchId: match.id,
           evaluatorId: evaluatorId,
-          subjectId: subject.uid,
+          subjectId: subjectId,
           status: 'pending',
         });
       });
@@ -113,11 +148,11 @@ export function useMatchActions({
         const matchPlayers = allGroupPlayers.filter(p => freshMatch.playerUids.includes(p.id));
         const realPlayerUids = matchPlayers.filter(isRealUser).map(p => p.id);
 
-        if (assignments.length < realPlayerUids.length * 2) {
+        if (assignments.length < realPlayerUids.length) {
           toast({
             variant: 'default',
-            title: 'Advertencia: Pocos jugadores reales',
-            description: `No todos los jugadores recibieron 2 asignaciones.`,
+            title: 'Advertencia: Asignaciones incompletas',
+            description: `Algunos jugadores no recibieron su autoevaluación.`,
           });
         }
 
