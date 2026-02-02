@@ -54,14 +54,6 @@ export function useMatchActions({
     // though here we mostly need IDs and team info.
 
     realPlayerUids.forEach(evaluatorId => {
-      // 1. Mandatory Self-Evaluation
-      assignments.push({
-        matchId: match.id,
-        evaluatorId: evaluatorId,
-        subjectId: evaluatorId,
-        status: 'pending',
-      });
-
       if (!match.teams) return;
 
       const myTeam = match.teams.find(t => t.players.some(p => p.uid === evaluatorId));
@@ -88,15 +80,25 @@ export function useMatchActions({
         selectedPeers.push(...shuffledOthers.slice(0, remainingSlots).map(p => p.id));
       }
 
-      // Create peer assignments
-      selectedPeers.forEach(subjectId => {
+      // If NO peers found, assign self-evaluation as fallback
+      if (selectedPeers.length === 0) {
         assignments.push({
           matchId: match.id,
           evaluatorId: evaluatorId,
-          subjectId: subjectId,
+          subjectId: evaluatorId,
           status: 'pending',
         });
-      });
+      } else {
+        // Create peer assignments
+        selectedPeers.forEach(subjectId => {
+          assignments.push({
+            matchId: match.id,
+            evaluatorId: evaluatorId,
+            subjectId: subjectId,
+            status: 'pending',
+          });
+        });
+      }
     });
     return assignments;
   }, []);
