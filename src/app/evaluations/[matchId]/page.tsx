@@ -62,6 +62,12 @@ const tagsEvaluationSchema = z.object({
   overrideNoNegative: z.boolean().optional(),
 });
 
+const attributeChangeSchema = z.object({
+  attribute: z.enum(['pac', 'sho', 'pas', 'dri', 'def', 'phy']),
+  change: z.number(),
+  reason: z.string(),
+});
+
 const textEvaluationSchema = z.object({
   assignmentId: z.string(),
   subjectId: z.string(),
@@ -70,8 +76,8 @@ const textEvaluationSchema = z.object({
   position: z.string(),
   evaluationType: z.literal('text'),
   textDescription: z.string().min(10, 'Describe al menos 10 caracteres').max(500, 'Máximo 500 caracteres'),
-  extractedTags: z.array(z.custom<PerformanceTag>()).optional(), // Tags extraídos por IA
-  rating: z.coerce.number().optional(),
+  aiAttributeChanges: z.array(attributeChangeSchema).optional(),
+  aiConfidence: z.number().optional(),
   aiAnalysisComplete: z.boolean().optional(),
   aiSummary: z.string().optional(),
 });
@@ -86,8 +92,8 @@ const evaluationSchema = z.object({
   evaluatorGoals: z.coerce.number().min(0).max(20).default(0),
   evaluations: z.array(playerEvaluationSchema),
 }).superRefine((val, ctx) => {
-  // Exigir al menos 1 etiqueta negativa en evaluaciones tipo 'tags'
   val.evaluations.forEach((ev, idx) => {
+    // Exigir al menos 1 etiqueta negativa en evaluaciones tipo 'tags'
     if (ev && (ev as any).evaluationType === 'tags') {
       const tags = (ev as any).performanceTags || []
       const hasNegative = tags.some((t: any) => t && t.impact === 'negative')
@@ -97,6 +103,16 @@ const evaluationSchema = z.object({
           code: z.ZodIssueCode.custom,
           message: 'Incluye al menos 1 etiqueta negativa para equilibrar la evaluación.',
           path: ['evaluations', idx, 'performanceTags'],
+        })
+      }
+    }
+    // Exigir análisis de IA antes de enviar evaluaciones de texto
+    if (ev && (ev as any).evaluationType === 'text') {
+      if (!(ev as any).aiAnalysisComplete) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Debes presionar "Evaluar" antes de enviar.',
+          path: ['evaluations', idx, 'textDescription'],
         })
       }
     }
@@ -237,7 +253,7 @@ export default function PerformEvaluationPage() {
   const [submissionIsPending, setSubmissionIsPending] = useState(false);
   const [randomTags, setRandomTags] = useState<Record<string, PerformanceTag[]>>({})
   const [analyzingText, setAnalyzingText] = useState<Record<string, boolean>>({})
-  const [aiResults, setAiResults] = useState<Record<string, { tags: PerformanceTag[]; confidence: number; reasoning?: string; summary?: string }>>({})
+  const [aiResults, setAiResults] = useState<Record<string, { attributeChanges: { attribute: string; change: number; reason: string }[]; confidence: number; summary: string }>>({})
 
   // Function to analyze text with AI
   const analyzeTextForPlayer = async (playerIndex: number) => {
@@ -268,26 +284,19 @@ export default function PerformEvaluationPage() {
           description: result.error,
         })
       } else {
-        // Update form with extracted tags
-        form.setValue(`evaluations.${playerIndex}.extractedTags`, result.tags)
+        // Update form with attribute changes from AI
+        form.setValue(`evaluations.${playerIndex}.aiAttributeChanges`, result.attributeChanges)
+        form.setValue(`evaluations.${playerIndex}.aiConfidence`, result.confidence)
         form.setValue(`evaluations.${playerIndex}.aiAnalysisComplete`, true)
-        // Merge extracted tags into performanceTags so they impact attributes/OVR
-        const existing: PerformanceTag[] = (form.getValues(`evaluations.${playerIndex}.performanceTags`) as any) || []
-        const byId = new Map<string, PerformanceTag>()
-        for (const t of existing) byId.set(t.id, t)
-        for (const t of result.tags) byId.set(t.id, t)
-        const merged = Array.from(byId.values())
-        form.setValue(`evaluations.${playerIndex}.performanceTags`, merged, { shouldValidate: true })
-        // Persist resumen corto de IA en el form
-        if (result.summary) {
-          form.setValue(`evaluations.${playerIndex}.aiSummary`, result.summary)
-        }
+        form.setValue(`evaluations.${playerIndex}.aiSummary`, result.summary)
 
         setAiResults(prev => ({ ...prev, [playerId]: result }))
 
+        const positiveChanges = result.attributeChanges.filter(c => c.change > 0).length
+        const negativeChanges = result.attributeChanges.filter(c => c.change < 0).length
         toast({
           title: 'Análisis completado',
-          description: `Se identificaron ${result.tags.length} etiquetas relevantes (${Math.round(result.confidence * 100)}% confianza)`,
+          description: `${positiveChanges} atributo(s) suben, ${negativeChanges} bajan`,
         })
       }
     } catch (error) {
@@ -370,10 +379,9 @@ export default function PerformEvaluationPage() {
               photoURL: subject.photoURL || '',
               position: subject.position,
               evaluationType: 'points',
-              rating: 5, // ✅ Valor inicial explícito
+              rating: 5,
               performanceTags: [],
               textDescription: '',
-              extractedTags: [],
               aiAnalysisComplete: false,
             })
             tagsForPlayers[subject.id] = getRandomTagsForPosition(subject.position)
@@ -663,23 +671,34 @@ export default function PerformEvaluationPage() {
                               <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 space-y-3">
                                 <div className="flex items-center gap-2 text-emerald-800">
                                   <Check className="h-5 w-5" />
-                                  <span className="font-semibold">Etiquetas aplicadas</span>
-                                  {/* Reemplazar confianza por breve explicación/resumen */}
+                                  <span className="font-semibold">Impacto en Atributos</span>
                                 </div>
-                                <div className="text-sm">
-                                  <div className="mt-1 flex flex-wrap gap-1">
-                                    {aiResults[field.subjectId].tags.map(tag => (
-                                      <span key={tag.id} className="inline-flex px-2 py-1 bg-emerald-100 text-emerald-800 rounded-md text-xs font-medium">
-                                        {tag.name}
+                                <div className="grid grid-cols-2 gap-2">
+                                  {aiResults[field.subjectId].attributeChanges.map((change) => (
+                                    <div
+                                      key={change.attribute}
+                                      className={cn(
+                                        'flex items-center justify-between p-2 rounded-md border',
+                                        change.change > 0
+                                          ? 'bg-green-50 border-green-200'
+                                          : 'bg-red-50 border-red-200'
+                                      )}
+                                    >
+                                      <span className="font-semibold text-sm uppercase">{change.attribute}</span>
+                                      <span className={cn(
+                                        'font-bold text-sm',
+                                        change.change > 0 ? 'text-green-600' : 'text-red-600'
+                                      )}>
+                                        {change.change > 0 ? '+' : ''}{change.change}
                                       </span>
-                                    ))}
-                                  </div>
-                                  {aiResults[field.subjectId].summary && (
-                                    <p className="mt-2 text-xs text-emerald-800"><strong>Resumen:</strong> {aiResults[field.subjectId].summary}</p>
-                                  )}
-                                  {aiResults[field.subjectId].reasoning && !aiResults[field.subjectId].summary && (
-                                    <p className="mt-2 text-xs text-emerald-800"><strong>Motivo:</strong> {aiResults[field.subjectId].reasoning}</p>
-                                  )}
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="text-sm space-y-1">
+                                  <p className="text-emerald-800 italic">{aiResults[field.subjectId].summary}</p>
+                                  <p className="text-xs text-emerald-600">
+                                    Confianza: {Math.round(aiResults[field.subjectId].confidence * 100)}%
+                                  </p>
                                 </div>
                               </div>
                             )}

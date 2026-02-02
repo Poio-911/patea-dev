@@ -459,6 +459,12 @@ export type FcmToken = {
   createdAt: string;
 } & DocumentData;
 
+export type AttributeChange = {
+  attribute: 'pac' | 'sho' | 'pas' | 'dri' | 'def' | 'phy';
+  change: number;
+  reason: string;
+};
+
 export type Evaluation = {
   id: string;
   assignmentId: string;
@@ -468,9 +474,12 @@ export type Evaluation = {
   rating?: number;
   goals: number;
   performanceTags?: PerformanceTag[];
-  // Texto de evaluación y resumen IA (solo informativo)
+  // Texto de evaluación y resumen IA
   textDescription?: string;
   aiSummary?: string;
+  // Cambios de atributos extraídos por IA (para evaluaciones de texto)
+  aiAttributeChanges?: AttributeChange[];
+  aiConfidence?: number;
   evaluatedAt: string;
 } & DocumentData;
 
@@ -505,8 +514,11 @@ export type PlayerEvaluationFormData = {
   extractedTags?: PerformanceTag[];
   // Evaluación por descripción y resumen IA
   textDescription?: string;
-  aiAnalysisComplete?: boolean; // Added
+  aiAnalysisComplete?: boolean;
   aiSummary?: string;
+  // Cambios de atributos extraídos por IA (para evaluaciones de texto)
+  aiAttributeChanges?: AttributeChange[];
+  aiConfidence?: number;
   // Override consciente: permitir sólo positivas en modo tags
   overrideNoNegative?: boolean;
 };

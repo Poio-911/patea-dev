@@ -1,10 +1,15 @@
 'use server';
 
-import { extractTagsFromText } from '@/ai/flows/extract-tags-from-text';
-import { performanceTagsDb, PerformanceTag } from '@/lib/performance-tags';
+import { analyzeTextPerformance } from '@/ai/flows/analyze-text-performance';
+
+export type AttributeChange = {
+  attribute: 'pac' | 'sho' | 'pas' | 'dri' | 'def' | 'phy';
+  change: number;
+  reason: string;
+};
 
 export type AnalyzeEvaluationTextResult =
-  | { tags: PerformanceTag[]; confidence: number; reasoning?: string; summary?: string }
+  | { attributeChanges: AttributeChange[]; confidence: number; summary: string }
   | { error: string };
 
 export async function analyzeEvaluationTextAction(input: {
@@ -13,39 +18,15 @@ export async function analyzeEvaluationTextAction(input: {
   playerName: string;
 }): Promise<AnalyzeEvaluationTextResult> {
   try {
-    // Filter tags available for this position
-    const availableTags = performanceTagsDb.filter(
-      (tag) => tag.positions.includes('ALL') || tag.positions.includes(input.playerPosition)
-    );
-
-    // Prepare simplified tag info for the AI
-    const simplifiedTags = availableTags.map((tag) => ({
-      id: tag.id,
-      name: tag.name,
-      description: tag.description,
-      impact: tag.impact,
-    }));
-
-    const result = await extractTagsFromText({
+    const result = await analyzeTextPerformance({
       text: input.text,
       playerPosition: input.playerPosition,
       playerName: input.playerName,
-      availableTags: simplifiedTags,
     });
 
-    // Convert IDs to full PerformanceTag objects
-    const extractedTags = result.extractedTagIds
-      .map((id) => performanceTagsDb.find((t) => t.id === id))
-      .filter((t): t is PerformanceTag => t !== undefined);
-
-    if (extractedTags.length === 0) {
-      return { error: 'No se pudieron identificar etiquetas relevantes en el texto.' };
-    }
-
     return {
-      tags: extractedTags,
+      attributeChanges: result.attributeChanges,
       confidence: result.confidence,
-      reasoning: result.reasoning,
       summary: result.summary,
     };
   } catch (error) {

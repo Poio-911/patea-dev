@@ -89,6 +89,21 @@ const calculateAttributeChanges = (currentAttrs: Player, tags: PerformanceTag[] 
     return newAttributes;
 };
 
+// Process AI-extracted attribute changes from text evaluations
+const calculateAttributeChangesFromAI = (currentAttrs: Player, aiChanges: { attribute: string; change: number }[] = []) => {
+    const newAttributes = { ...currentAttrs };
+    if (aiChanges && aiChanges.length > 0) {
+        aiChanges.forEach(change => {
+            const key = change.attribute as keyof Player;
+            if (typeof newAttributes[key] === 'number') {
+                (newAttributes[key] as number) += change.change;
+                newAttributes[key] = Math.round(Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, newAttributes[key] as number)));
+            }
+        });
+    }
+    return newAttributes;
+};
+
 export default function EvaluateMatchPage() {
     const params = useParams<{ id: string }>();
     const matchId = params?.id;
@@ -178,13 +193,14 @@ export default function EvaluateMatchPage() {
                         } else if (evaluation.evaluationType === 'tags') {
                             newEvaluation.performanceTags = evaluation.performanceTags;
                         } else if (evaluation.evaluationType === 'text') {
-                            // Persist text description and IA summary (informational only)
+                            // Save AI attribute changes for direct attribute impact
+                            if ((evaluation as any).aiAttributeChanges) {
+                                newEvaluation.aiAttributeChanges = (evaluation as any).aiAttributeChanges;
+                                newEvaluation.aiConfidence = (evaluation as any).aiConfidence;
+                            }
+                            // Text and summary for reference
                             newEvaluation.textDescription = evaluation.textDescription || '';
                             if ((evaluation as any).aiSummary) newEvaluation.aiSummary = (evaluation as any).aiSummary;
-                            // Merge/performanceTags may already include AI-extracted tags from UI
-                            if (evaluation.performanceTags && evaluation.performanceTags.length > 0) {
-                                newEvaluation.performanceTags = evaluation.performanceTags;
-                            }
                         }
 
                         transaction.set(evalRef, newEvaluation);
@@ -318,6 +334,7 @@ export default function EvaluateMatchPage() {
                     const playerPeerEvals = peerEvalsByPlayer[playerId];
                     const pointBasedEvals = playerPeerEvals.filter(ev => ev.rating !== undefined && ev.rating !== null);
                     const tagBasedEvals = playerPeerEvals.filter(ev => ev.performanceTags && ev.performanceTags.length > 0);
+                    const textBasedEvals = playerPeerEvals.filter(ev => ev.aiAttributeChanges && ev.aiAttributeChanges.length > 0);
 
                     let updatedAttributes = { ...player };
                     let ovrChangeFromPoints = 0;
@@ -326,6 +343,12 @@ export default function EvaluateMatchPage() {
                     if (tagBasedEvals.length > 0) {
                         const combinedTags = tagBasedEvals.flatMap(ev => ev.performanceTags || []);
                         updatedAttributes = calculateAttributeChanges(player, combinedTags);
+                    }
+
+                    // ✅ STEP 1.5: Process text-based AI attribute changes → modifies specific attributes
+                    if (textBasedEvals.length > 0) {
+                        const allAiChanges = textBasedEvals.flatMap(ev => ev.aiAttributeChanges || []);
+                        updatedAttributes = calculateAttributeChangesFromAI(updatedAttributes, allAiChanges);
                     }
 
                     // ✅ STEP 2: Calculate OVR change from points-based evaluations
