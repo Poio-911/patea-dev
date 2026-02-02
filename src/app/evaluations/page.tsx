@@ -66,7 +66,16 @@ export default function EvaluationsPage() {
             const submissionMatchIds = new Set(submissionsSnapshot.docs.map(doc => doc.data().matchId));
             const submissionsMap = new Map(submissionsSnapshot.docs.map(doc => [doc.data().matchId, doc.data() as EvaluationSubmission]));
 
-            const allRelevantMatchIds = [...new Set([...pendingMatchIds, ...submissionMatchIds])];
+            // NEW: Also find matches where the user was a player to ensure self-evaluation appears
+            const participatedMatchesQuery = query(
+                collection(firestore, 'matches'),
+                where('playerUids', 'array-contains', user.uid),
+                where('status', '==', 'completed')
+            );
+            const participatedSnapshot = await getDocs(participatedMatchesQuery);
+            const participatedMatchIds = new Set(participatedSnapshot.docs.map(doc => doc.id));
+
+            const allRelevantMatchIds = [...new Set([...pendingMatchIds, ...submissionMatchIds, ...participatedMatchIds])];
 
             if (allRelevantMatchIds.length === 0) {
                 setPendingItems([]);
@@ -85,7 +94,7 @@ export default function EvaluationsPage() {
                 const userAssignmentCount = userPendingAssignments.filter(a => a.matchId === matchId).length;
                 const isSubmitted = submissionsMap.has(matchId);
 
-                // Si ya se envió y no hay pendientes, no mostrar
+                // Mostrar si: 1. No se ha enviado la evaluación propia O 2. Tiene asignaciones de pares pendientes
                 if (isSubmitted && userAssignmentCount === 0) return null;
 
                 const item: PendingItem = {
