@@ -8,8 +8,8 @@
  * - CoachConversationOutput - The return type for the coachConversation function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
 
 const CoachConversationInputSchema = z.object({
   userMessage: z.string().describe('El mensaje del usuario al entrenador.'),
@@ -32,6 +32,7 @@ const CoachConversationInputSchema = z.object({
       averageRating: z.number().describe('Calificación promedio.'),
     }).describe('Estadísticas del jugador.'),
     recentTags: z.array(z.string()).optional().describe('Etiquetas de rendimiento recientes.'),
+    recentFeedback: z.array(z.string()).optional().describe('Comentarios recientes de compañeros.'),
     strengths: z.array(z.string()).optional().describe('Fortalezas identificadas del jugador.'),
     weaknesses: z.array(z.string()).optional().describe('Debilidades identificadas del jugador.'),
   }).describe('El contexto completo del jugador para personalizar la conversación.'),
@@ -53,8 +54,8 @@ export async function coachConversation(input: CoachConversationInput): Promise<
 
 const prompt = ai.definePrompt({
   name: 'coachConversationPrompt',
-  input: {schema: CoachConversationInputSchema},
-  output: {schema: CoachConversationOutputSchema},
+  input: { schema: CoachConversationInputSchema },
+  output: { schema: CoachConversationOutputSchema },
   prompt: `Sos un DT de fútbol profesional que habla en español rioplatense. Tu estilo es directo, motivador y personal.
 Estás conversando con {{playerContext.playerName}}, un jugador {{playerContext.position}} con OVR {{playerContext.ovr}}.
 
@@ -67,6 +68,9 @@ DATOS DEL JUGADOR:
 - Rating Promedio: {{playerContext.stats.averageRating}}
 {{#if playerContext.recentTags}}
 - Etiquetas Recientes: {{playerContext.recentTags}}
+{{/if}}
+{{#if playerContext.recentFeedback}}
+- Comentarios de Compañeros: {{playerContext.recentFeedback}}
 {{/if}}
 {{#if playerContext.strengths}}
 - Fortalezas: {{playerContext.strengths}}
@@ -112,7 +116,7 @@ const coachConversationFlow = ai.defineFlow(
     outputSchema: CoachConversationOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
+    const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
     return output!;
   }
 );

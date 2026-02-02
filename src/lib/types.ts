@@ -473,6 +473,8 @@ export type Evaluation = {
   matchId: string;
   rating?: number;
   goals: number;
+  assists?: number;
+  personalChronicle?: string;
   performanceTags?: PerformanceTag[];
   // Texto de evaluación y resumen IA
   textDescription?: string;
@@ -481,6 +483,9 @@ export type Evaluation = {
   aiAttributeChanges?: AttributeChange[];
   aiConfidence?: number;
   evaluatedAt: string;
+  // Identity Reveal Feature
+  identityRequestStatus?: 'none' | 'pending' | 'accepted' | 'rejected';
+  identityRevealed?: boolean;
 } & DocumentData;
 
 

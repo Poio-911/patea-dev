@@ -19,9 +19,13 @@ const OvrHistoryEntrySchema = z.object({
 });
 
 const RecentEvaluationSchema = z.object({
-    matchDate: z.string().describe('Fecha del partido.'),
-    rating: z.number().optional().describe('Calificación recibida (1-10).'),
-    performanceTags: z.array(z.string()).optional().describe('Etiquetas de rendimiento recibidas.'),
+  matchDate: z.string().describe('Fecha del partido.'),
+  rating: z.number().optional().describe('Calificación recibida (1-10).'),
+  performanceTags: z.array(z.string()).optional().describe('Etiquetas de rendimiento recibidas.'),
+  goals: z.number().optional().describe('Goles marcados en el partido.'),
+  assists: z.number().optional().describe('Asistencias realizadas en el partido.'),
+  personalChronicle: z.string().optional().describe('Crónica personal escrita por el jugador sobre su rendimiento.'),
+  peerFeedbackSummary: z.string().optional().describe('Resumen de comentarios de texto recibidos de compañeros.'),
 });
 
 const AnalyzePlayerProgressionInputSchema = z.object({
@@ -59,21 +63,27 @@ const prompt = ai.definePrompt({
     - Fecha: {{this.date}}, Nuevo OVR: {{this.newOVR}} (Cambio: {{this.change}})
     {{/each}}
 
-    Evaluaciones Recientes (con etiquetas de rendimiento):
+    Evaluaciones Recientes:
     {{#each recentEvaluations}}
-    - Partido del {{this.matchDate}}: {{#if this.rating}}Rating {{this.rating}}/10.{{/if}} Tags: {{#if this.performanceTags}}{{this.performanceTags}}{{else}}Ninguna{{/if}}.
+    - Partido del {{this.matchDate}}: 
+      {{#if this.rating}}Rating: {{this.rating}}/10.{{/if}}
+      Goles: {{this.goals}}, Asistencias: {{this.assists}}.
+      Tags: {{#if this.performanceTags}}{{this.performanceTags}}{{else}}Ninguna{{/if}}.
+      {{#if this.personalChronicle}}Autocrítica: "{{this.personalChronicle}}"{{/if}}
+      {{#if this.peerFeedbackSummary}}Comentarios de compañeros: "{{this.peerFeedbackSummary}}"{{/if}}
     {{/each}}
 
     INSTRUCCIONES:
     1.  **Resumen General:** Empezá con un párrafo corto que resuma la trayectoria general del jugador. ¿Está en una racha positiva? ¿Es irregular? ¿Viene de un bajón?
-    2.  **Tendencias Positivas:** Identificá 2 o 3 patrones positivos. Basate en los datos. Por ejemplo:
-        - "Muestra una notable mejora en su definición, como lo demuestran las etiquetas 'La Colgó del Ángulo' en sus últimos partidos, lo que se refleja en su subida de OVR."
-        - "Su consistencia es su mayor fuerte. Mantiene un OVR estable y rara vez recibe etiquetas negativas."
-    3.  **Áreas de Mejora:** Identificá 2 o 3 áreas donde podría mejorar. Sé constructivo. Por ejemplo:
-        - "Si bien su defensa es sólida, las etiquetas 'Pase al Rival' sugieren que debe trabajar en la precisión de la salida desde el fondo."
-        - "Parece tener un bajón físico en los segundos tiempos, evidenciado por las etiquetas 'Se Cansó'. Mejorar la resistencia podría evitar esas caídas de OVR."
+    2.  **Tendencias Positivas:** Identificá 2 o 3 patrones positivos. Basate en los datos (OVR, Goles, Asistencias, Comentarios):
+        - Si tiene muchas asistencias, destacan su generosidad o visión.
+        - Si su autocrítica coincide con las mejoras, valora su mentalidad.
+        - Ejemplo: "Muestra una notable mejora en su definición, reflejada en sus 3 goles recenties y etiquetas 'La Colgó del Ángulo'."
+    3.  **Áreas de Mejora:** Identificá 2 o 3 áreas donde podría mejorar. Sé constructivo.
+        - Contrastá su autocrítica con la realidad si es necesario.
+        - Ejemplo: "Aunque su autocrítica menciona cansancio, los compañeros destacan su entrega ('Correcaminos'). Quizás deba dosificar mejor su energía."
     
-    Sé específico y conectá los datos (cambios de OVR, etiquetas) con tus conclusiones. No inventes información. Si no hay suficientes datos, mencionalo.
+    Sé específico y conectá los datos (cambios de OVR, etiquetas, estadísticas) con tus conclusiones. No inventes información. Si no hay suficientes datos, mencionalo.
     Devolvé tu análisis en formato JSON.
   `,
 });
