@@ -41,12 +41,7 @@ export function PlayerSuggestionsCard({ playerId, groupId, className }: PlayerSu
     }
   };
 
-  // Auto-load on mount
-  useEffect(() => {
-    if (!hasLoaded && !loading) {
-      loadSuggestions();
-    }
-  }, [playerId, groupId]);
+
 
   return (
     <Card className={cn('relative overflow-hidden', className)}>
@@ -104,7 +99,7 @@ export function PlayerSuggestionsCard({ playerId, groupId, className }: PlayerSu
           </ul>
         ) : (
           <p className="text-sm text-muted-foreground italic">
-            Jugá más partidos para recibir consejos personalizados del DT.
+            Hacé clic en el botón para recibir los consejos personalizados del DT.
           </p>
         )}
       </CardContent>

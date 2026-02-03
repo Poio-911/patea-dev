@@ -38,12 +38,7 @@ export function GroupSummaryCard({ groupId, className }: GroupSummaryCardProps) 
     }
   };
 
-  // Auto-load on mount if no summary exists
-  useEffect(() => {
-    if (!summary && !loading && !error) {
-      loadSummary();
-    }
-  }, [groupId]);
+
 
   return (
     <Card className={cn('relative overflow-hidden', className)}>

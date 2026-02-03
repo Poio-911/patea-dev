@@ -1,22 +1,13 @@
-
 'use client';
 
-import { useState } from 'react';
-import type { Match, Evaluation, SelfEvaluation, Player, PerformanceTag, GenerateMatchChronicleOutput } from '@/lib/types';
+import { useState, useEffect } from 'react';
+import type { Match, GenerateMatchChronicleOutput } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
-import { Loader2, Sparkles, Newspaper, Users, Image } from 'lucide-react';
+import { Loader2, Sparkles, Newspaper } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { generateMatchChronicleAction, generateDuoImageAction } from '@/lib/actions/server-actions';
+import { generateMatchChronicleAction } from '@/lib/actions/server-actions';
 import { Separator } from './ui/separator';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from './ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Label } from './ui/label';
-import { useFirestore, useUser } from '@/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { logger } from '@/lib/logger';
 
 interface MatchChronicleCardProps {
   match: Match;
@@ -25,132 +16,45 @@ interface MatchChronicleCardProps {
 export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
   const [chronicle, setChronicle] = useState<GenerateMatchChronicleOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [duoImage, setDuoImage] = useState<string | null>(null);
-  const [selectedPlayer1, setSelectedPlayer1] = useState<string>('');
-  const [selectedPlayer2, setSelectedPlayer2] = useState<string>('none');
-  const [showDuoSection, setShowDuoSection] = useState(false);
-  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
-  const [selfEvaluations, setSelfEvaluations] = useState<SelfEvaluation[]>([]);
   const { toast } = useToast();
-  const firestore = useFirestore();
-  const { user } = useUser();
+
+  // ✅ Load saved chronicle from match document
+  useEffect(() => {
+    if (match.chronicle) {
+      setChronicle(match.chronicle);
+    }
+  }, [match.chronicle]);
 
   const handleGenerateChronicle = async () => {
+    // ✅ Prevent regeneration if chronicle already exists
+    if (match.chronicle) {
+      toast({
+        title: 'Crónica ya generada',
+        description: 'Este partido ya tiene una crónica guardada.',
+        variant: 'default'
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const result = await generateMatchChronicleAction(match.id);
-      
+
       if ('error' in result) {
         throw new Error(String(result.error));
       }
-      
+
       if ('data' in result && result.data) {
         setChronicle(result.data);
-        toast({ title: 'Crónica generada', description: 'La crónica del partido está lista.' });
+        toast({ title: 'Relato generado', description: 'El relato del partido está listo.' });
       } else {
-        throw new Error('No se recibieron datos de la crónica');
+        throw new Error('No se recibieron datos del relato');
       }
-      
+
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudo generar la crónica.' });
+      toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudo generar el relato.' });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const generateIntelligentPrompt = (player1Id: string, player2Id?: string): string => {
-    const player1Evals = evaluations.filter(e => e.playerId === player1Id);
-    const player1SelfEval = selfEvaluations.find(se => se.playerId === player1Id);
-    const player1Goals = player1SelfEval?.goals || 0;
-    
-    if (!player2Id || player2Id === 'none') {
-      const tags = player1Evals.flatMap(e => e.performanceTags || []);
-      const ratings = player1Evals.map(e => e.rating).filter(r => r !== undefined) as number[];
-      const avgRating = ratings.length > 0 ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length : 0;
-      
-      if (player1Goals >= 2) {
-        return `${match.players.find(p => p.uid === player1Id)?.displayName} celebrando un gol espectacular, con expresión de triunfo y los brazos levantados al cielo en un momento épico del partido`;
-      } else if (avgRating >= 9) {
-        return `${match.players.find(p => p.uid === player1Id)?.displayName} en una jugada brillante, demostrando su técnica excepcional con el balón en los pies`;
-      } else if (tags.some(t => t.name?.includes('Defensa') || t.name?.includes('Marca'))) {
-        return `${match.players.find(p => p.uid === player1Id)?.displayName} realizando una defensa crucial, con determinación y concentración máxima`;
-      } else if (tags.some(t => t.name?.includes('Pase') || t.name?.includes('Asistencia'))) {
-        return `${match.players.find(p => p.uid === player1Id)?.displayName} ejecutando un pase perfecto, con precisión técnica y visión de juego`;
-      } else {
-        return `${match.players.find(p => p.uid === player1Id)?.displayName} en acción durante el partido, mostrando intensidad y pasión por el fútbol`;
-      }
-    } else {
-      const player2Evals = evaluations.filter(e => e.playerId === player2Id);
-      const player2SelfEval = selfEvaluations.find(se => se.playerId === player2Id);
-      const player2Goals = player2SelfEval?.goals || 0;
-      
-      const player1Tags = player1Evals.flatMap(e => e.performanceTags || []);
-      const player2Tags = player2Evals.flatMap(e => e.performanceTags || []);
-      
-      const player1Name = match.players.find(p => p.uid === player1Id)?.displayName;
-      const player2Name = match.players.find(p => p.uid === player2Id)?.displayName;
-      
-      if (player1Goals > 0 && player2Goals > 0) {
-        return `${player1Name} y ${player2Name} celebrando juntos un gol, abrazándose con alegría y emoción después de una jugada espectacular`;
-      } else if (player1Tags.some(t => t.name?.includes('Pase')) && player2Tags.some(t => t.name?.includes('Gol'))) {
-        return `${player1Name} asistiendo a ${player2Name} en una jugada de gol, mostrando la perfecta conexión entre ambos jugadores`;
-      } else if (player1Tags.some(t => t.name?.includes('Defensa')) && player2Tags.some(t => t.name?.includes('Defensa'))) {
-        return `${player1Name} y ${player2Name} trabajando juntos en defensa, coordinando una marca perfecta con determinación`;
-      } else {
-        return `${player1Name} y ${player2Name} en una jugada colaborativa durante el partido, demostrando trabajo en equipo y compañerismo`;
-      }
-    }
-  };
-
-  const handleGenerateDuoImage = async () => {
-    if (!selectedPlayer1) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Debes seleccionar al menos un jugador.' });
-      return;
-    }
-    
-    const player1 = match.players.find(p => p.uid === selectedPlayer1);
-    const player2 = selectedPlayer2 && selectedPlayer2 !== 'none' ? match.players.find(p => p.uid === selectedPlayer2) : null;
-    
-    if (!player1?.photoURL || (selectedPlayer2 !== 'none' && selectedPlayer2 && !player2?.photoURL)) {
-      toast({ 
-        variant: 'destructive', 
-        title: 'Error', 
-        description: 'Los jugadores seleccionados deben tener fotos de perfil.' 
-      });
-      return;
-    }
-    
-    setIsGeneratingImage(true);
-    
-    try {
-      const prompt = generateIntelligentPrompt(selectedPlayer1, selectedPlayer2 === 'none' ? undefined : selectedPlayer2);
-      
-      const result = await generateDuoImageAction({
-        player1PhotoURL: player1.photoURL,
-        player1Name: player1.displayName,
-        player2PhotoURL: player2?.photoURL,
-        player2Name: player2?.displayName,
-        prompt
-      });
-      
-      if ('error' in result) {
-        throw new Error(String(result.error));
-      }
-      
-      setDuoImage(result.imageUrl);
-      toast({ 
-        title: 'Imagen generada', 
-        description: `¡La imagen de ${player2 ? 'la dupla' : 'el jugador'} está lista!` 
-      });
-    } catch (error: any) {
-      toast({ 
-        variant: 'destructive', 
-        title: 'Error', 
-        description: error.message || 'No se pudo generar la imagen.' 
-      });
-    } finally {
-      setIsGeneratingImage(false);
     }
   };
 
@@ -163,10 +67,10 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-3 text-lg font-semibold">
           <Newspaper className="h-5 w-5 text-primary" />
-          Crónica del Partido
+          Relato del Partido
         </CardTitle>
         <CardDescription>
-          Un resumen del partido generado por IA
+          Un relato literario del partido generado por IA
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -182,179 +86,46 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
             </div>
           </div>
         ) : chronicle ? (
-          <div className="space-y-4">
-            <div className="p-4 border-l-4 border-primary gradient-primary rounded">
-              <h3 className="text-xl font-bold text-foreground">
+          <div className="space-y-6">
+            {/* Título Evocativo */}
+            <div className="text-center space-y-2">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">
                 {chronicle.headline}
-              </h3>
+              </h2>
+              <div className="w-24 h-1 bg-gradient-to-r from-transparent via-primary to-transparent mx-auto"></div>
             </div>
-            
-            <div className="p-3 surface-muted">
-              <p className="text-sm leading-relaxed text-muted-foreground italic">
-                &ldquo;{chronicle.introduction}&rdquo;
-              </p>
-            </div>
-            
-            <div className="space-y-3">
-              <h4 className="font-semibold text-sm text-primary border-b border-border pb-1">
-                Momentos Clave
-              </h4>
-              
-              {chronicle.keyMoments.map((moment, index) => (
-                <div key={index} className="flex gap-3 p-3 surface-muted hover:bg-muted/60 transition-colors">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-                      <span className="font-bold text-xs text-primary">{moment.minute}'</span>
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm leading-relaxed">{moment.event}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            <div className="p-3 surface-muted">
-              <p className="font-medium text-sm leading-relaxed">{chronicle.conclusion}</p>
-            </div>
-            
-            <Separator className="my-6" />
-            
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 border-b border-border pb-2">
-                <Users className="h-4 w-4 text-primary" />
-                <h4 className="font-semibold text-sm text-primary">Generar Chromo</h4>
+
+            {/* Relato Fluido */}
+            <div className="prose prose-lg dark:prose-invert max-w-none">
+              <div className="text-foreground/90 leading-relaxed whitespace-pre-line text-base md:text-lg">
+                {chronicle.story}
               </div>
-              
-              {!showDuoSection ? (
-                <Button 
-                  onClick={() => setShowDuoSection(true)} 
-                  variant="outline"
-                  className="w-full"
-                  size="sm"
-                >
-                  <Image className="mr-2 h-4 w-4" />
-                  Crear Chromo de Jugadores
-                </Button>
-              ) : (
-                <div className="space-y-4 p-4 surface-muted">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="player1" className="text-sm font-medium">
-                        Jugador Principal *
-                      </Label>
-                      <Select value={selectedPlayer1} onValueChange={setSelectedPlayer1}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar jugador" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {match.players
-                            .filter(p => p.photoURL)
-                            .map(player => (
-                              <SelectItem key={player.uid} value={player.uid}>
-                                <div className="flex items-center gap-2">
-                                  <Avatar className="h-6 w-6">
-                                    <AvatarImage src={player.photoURL} alt={player.displayName} />
-                                    <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
-                                  </Avatar>
-                                  <span>{player.displayName}</span>
-                                  <Badge variant="secondary" className="text-xs">{player.position}</Badge>
-                                </div>
-                              </SelectItem>
-                            ))
-                          }
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="player2" className="text-sm font-medium">
-                        Segundo Jugador (Opcional)
-                      </Label>
-                      <Select value={selectedPlayer2} onValueChange={setSelectedPlayer2}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Imagen individual" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">
-                            <span className="text-muted-foreground">Solo un jugador</span>
-                          </SelectItem>
-                          {match.players
-                            .filter(p => p.photoURL && p.uid !== selectedPlayer1)
-                            .map(player => (
-                              <SelectItem key={player.uid} value={player.uid}>
-                                <div className="flex items-center gap-2">
-                                  <Avatar className="h-6 w-6">
-                                    <AvatarImage src={player.photoURL} alt={player.displayName} />
-                                    <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
-                                  </Avatar>
-                                  <span>{player.displayName}</span>
-                                  <Badge variant="secondary" className="text-xs">{player.position}</Badge>
-                                </div>
-                              </SelectItem>
-                            ))
-                          }
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={handleGenerateDuoImage}
-                      disabled={!selectedPlayer1 || isGeneratingImage}
-                      className="flex-1"
-                      size="sm"
-                    >
-                      {isGeneratingImage ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Generando...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="mr-2 h-4 w-4" />
-                          Generar Chromo
-                        </>
-                      )}
-                    </Button>
-                    
-                    <Button 
-                      onClick={() => {
-                        setShowDuoSection(false);
-                        setSelectedPlayer1('');
-                        setSelectedPlayer2('none');
-                        setDuoImage(null);
-                      }}
-                      className="bg-gradient-to-r from-foreground/80 to-foreground/70 hover:from-foreground/75 hover:to-foreground/65 border-foreground/50 text-foreground font-semibold shadow-lg shadow-foreground/25 hover:shadow-foreground/40 transition-all duration-300"
-                      size="lg"
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                  
-                  {duoImage && (
-                    <div className="mt-6 relative z-10">
-                      <div className="text-center mb-4">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border">
-                          <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-                          <span className="text-sm font-semibold text-foreground">🏆 Chromo Generado</span>
-                        </div>
-                      </div>
-                      <div className="relative group/image">
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-foreground/10 rounded-xl opacity-0 group-hover/image:opacity-100 transition-opacity duration-500"></div>
-                        <img 
-                          src={duoImage} 
-                          alt="Chromo generado" 
-                          className="w-full max-w-lg mx-auto rounded-xl shadow-2xl border-2 border-primary/20 group-hover/image:border-primary/40 transition-all duration-500 group-hover/image:scale-105" 
-                        />
-                        <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-background/20 via-transparent to-transparent opacity-0 group-hover/image:opacity-100 transition-opacity duration-500"></div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
+
+            {/* Voces de los Jugadores */}
+            {chronicle.playerVoices && chronicle.playerVoices.length > 0 && (
+              <>
+                <Separator className="my-8" />
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold text-primary text-center">
+                    Voces del Vestuario
+                  </h3>
+                  <div className="space-y-4">
+                    {chronicle.playerVoices.map((voice, index) => (
+                      <div key={index} className="relative pl-6 py-3">
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary/50 to-primary/10 rounded-full"></div>
+                        <p className="text-base italic text-muted-foreground leading-relaxed mb-2">
+                          &ldquo;{voice.quote}&rdquo;
+                        </p>
+                        <p className="text-sm font-medium text-primary">
+                          — {voice.playerName}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         ) : (
           <div className="p-6 text-center space-y-4">
@@ -364,18 +135,18 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
               </div>
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold text-foreground">
-                  Generar Crónica
+                  Generar Relato
                 </h3>
                 <p className="text-muted-foreground text-sm max-w-md">
-                  Crea un resumen del partido con los momentos más destacados
+                  Creá un relato literario del partido con los momentos más destacados
                 </p>
               </div>
-              <Button 
-                onClick={handleGenerateChronicle} 
+              <Button
+                onClick={handleGenerateChronicle}
                 className="font-medium"
               >
                 <Sparkles className="mr-2 h-4 w-4" />
-                Generar Crónica
+                Generar Relato
               </Button>
             </div>
           </div>

@@ -50,22 +50,49 @@ const calculateOvrChange = (currentOvr: number, avgRating: number): number => {
             rawDelta *= 0.25 * (1 - t);
         }
     }
-    return Math.round(Math.max(-OVR_PROGRESSION.MAX_STEP, Math.min(OVR_PROGRESSION.MAX_STEP, rawDelta)));
+    return Math.max(-OVR_PROGRESSION.MAX_STEP, Math.min(OVR_PROGRESSION.MAX_STEP, rawDelta));
 };
 
-// ✅ FIXED: Distributes points-based changes proportionally across all attributes
-const calculateAttributeChangesFromPoints = (currentAttrs: Player, ovrChange: number) => {
+// Weights for distributing attribute points based on player position
+const POSITION_WEIGHTS: Record<string, Record<keyof Player, number>> = {
+    'DEL': { pac: 0.25, sho: 0.35, pas: 0.15, dri: 0.15, def: 0.05, phy: 0.05 },
+    'MED': { pac: 0.15, sho: 0.15, pas: 0.30, dri: 0.20, def: 0.10, phy: 0.10 },
+    'DEF': { pac: 0.15, sho: 0.05, pas: 0.15, dri: 0.05, def: 0.40, phy: 0.20 },
+    'POR': { pac: 0.10, sho: 0.05, pas: 0.10, dri: 0.05, def: 0.50, phy: 0.20 }, // GK uses DEF/PHY broadly
+};
+
+const DEFAULT_WEIGHTS = { pac: 0.166, sho: 0.166, pas: 0.166, dri: 0.166, def: 0.166, phy: 0.166 };
+
+// ✅ UPDATED: Distributes points-based changes weighted by position using Math.ceil
+const calculateAttributeChangesFromPoints = (currentAttrs: Player, ovrChange: number, position: string) => {
     if (ovrChange === 0) return currentAttrs;
 
     const newAttributes = { ...currentAttrs };
     const attributes: Array<keyof Player> = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'];
+    const weights = POSITION_WEIGHTS[position as keyof typeof POSITION_WEIGHTS] || DEFAULT_WEIGHTS;
 
-    // Distribute the OVR change proportionally across all 6 attributes
-    const changePerAttribute = ovrChange / 6;
+    // Total raw attribute points to add/remove (e.g., +2 OVR * 6 attrs = +12 total points)
+    const totalPointsToAdd = ovrChange * 6;
 
-    attributes.forEach(attr => {
+    // Distribute points according to weights
+    let pointsDistributed = 0;
+
+    attributes.forEach((attr, index) => {
+        const isLast = index === attributes.length - 1;
+        let pointsForAttr = 0;
+
+        if (isLast) {
+            // Assign remaining points to last attribute to avoid rounding loss
+            pointsForAttr = totalPointsToAdd - pointsDistributed;
+        } else {
+            // Apply weight and round up (ceil) for positive changes
+            const rawPoints = totalPointsToAdd * weights[attr as keyof typeof weights];
+            pointsForAttr = ovrChange > 0 ? Math.ceil(rawPoints) : Math.floor(rawPoints);
+            pointsDistributed += pointsForAttr;
+        }
+
         const currentValue = newAttributes[attr] as number;
-        const newValue = currentValue + changePerAttribute;
+        const newValue = currentValue + pointsForAttr;
         newAttributes[attr] = Math.round(Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, newValue)));
     });
 
@@ -316,7 +343,9 @@ export default function EvaluateMatchPage() {
                     return acc;
                 }, {} as Record<string, Evaluation[]>);
 
-                playerIdsToUpdate = Object.keys(peerEvalsByPlayer);
+                // ✅ FIX: Include ALL players in match, not just those who received peer evaluations
+                // This ensures manual players and players without completed assignments also get stats updates
+                playerIdsToUpdate = match.playerUids || [];
 
                 // Pre-fetch all player documents
                 if (playerIdsToUpdate.length > 0) {
@@ -331,7 +360,8 @@ export default function EvaluateMatchPage() {
                     const player = playerDocs.get(playerId);
                     if (!player) continue;
 
-                    const playerPeerEvals = peerEvalsByPlayer[playerId];
+                    // ✅ FIX: playerPeerEvals can be undefined for players without peer evaluations
+                    const playerPeerEvals = peerEvalsByPlayer[playerId] || [];
                     const pointBasedEvals = playerPeerEvals.filter(ev => ev.rating !== undefined && ev.rating !== null);
                     const tagBasedEvals = playerPeerEvals.filter(ev => ev.performanceTags && ev.performanceTags.length > 0);
                     const textBasedEvals = playerPeerEvals.filter(ev => ev.aiAttributeChanges && ev.aiAttributeChanges.length > 0);
@@ -351,33 +381,54 @@ export default function EvaluateMatchPage() {
                         updatedAttributes = calculateAttributeChangesFromAI(updatedAttributes, allAiChanges);
                     }
 
-                    // ✅ STEP 2: Calculate OVR change from points-based evaluations
+                    const playerSelfEval = selfEvalsByPlayerId.get(playerId);
+                    const goalsInMatch = playerSelfEval?.goals || 0;
+                    const assistsInMatch = playerSelfEval?.assists || 0;
+
+                    // ✅ STEP 2: Calculate OVR change
+                    let avgRating = 5; // Default baseline
+
                     if (pointBasedEvals.length > 0) {
+                        // Case A: Has evaluations -> Use average
                         const totalRating = pointBasedEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0);
-                        const avgRating = totalRating / pointBasedEvals.length;
+                        avgRating = totalRating / pointBasedEvals.length;
+                        ovrChangeFromPoints = calculateOvrChange(player.ovr, avgRating);
+                    } else {
+                        // Case B: No evaluations ("Paja") -> Infer rating from stats
+                        // Fallback logic: significant contribution implies good performance
+                        if (goalsInMatch >= 2 || assistsInMatch >= 2 || (goalsInMatch + assistsInMatch >= 3)) {
+                            avgRating = 8;
+                        } else if (goalsInMatch === 1 || assistsInMatch === 1) {
+                            avgRating = 7;
+                        } else {
+                            // No stats, no votes -> Assume average performance (no change) or slight decay if we wanted
+                            avgRating = 5;
+                        }
+
+                        // Only apply positive changes for inferred ratings to be safe, or allow full range?
+                        // User said: "hay que tener un respaldo". Let's apply implied change.
                         ovrChangeFromPoints = calculateOvrChange(player.ovr, avgRating);
                     }
 
                     // ✅ STEP 3: Apply points-based OVR change proportionally to all attributes
                     if (ovrChangeFromPoints !== 0) {
-                        updatedAttributes = calculateAttributeChangesFromPoints(updatedAttributes, ovrChangeFromPoints);
+                        // Pass player position to apply weighted distribution
+                        updatedAttributes = calculateAttributeChangesFromPoints(updatedAttributes, ovrChangeFromPoints, player.position || 'MED');
                     }
 
                     // ✅ STEP 4: Calculate new OVR as average of updated attributes (ALWAYS CONSISTENT)
                     let newOvr = Math.round((updatedAttributes.pac + updatedAttributes.sho + updatedAttributes.pas + updatedAttributes.dri + updatedAttributes.def + updatedAttributes.phy) / 6);
                     newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, newOvr));
 
-                    const playerSelfEval = selfEvalsByPlayerId.get(playerId);
-                    const goalsInMatch = playerSelfEval?.goals || 0;
-                    const assistsInMatch = playerSelfEval?.assists || 0;
                     const newMatchesPlayed = (player.stats.matchesPlayed || 0) + 1;
                     const newTotalGoals = (player.stats.goals || 0) + goalsInMatch;
                     const newTotalAssists = (player.stats.assists || 0) + assistsInMatch;
 
-                    // Clarification: averageRating represents the average rating PER MATCH, not per individual evaluation.
-                    const avgRatingFromPoints = pointBasedEvals.length > 0 ? pointBasedEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0) / pointBasedEvals.length : player.stats.averageRating;
+                    // Clarification: averageRating represents the average rating PER MATCH
+                    // Use equality-checked avgRating from above (includes fallback logic)
+
                     // Weighted average: (previous_avg * prev_matches + new_match_avg) / total_matches
-                    const newAvgRating = pointBasedEvals.length > 0 ? ((player.stats.averageRating || 0) * (player.stats.matchesPlayed || 0) + avgRatingFromPoints) / newMatchesPlayed : player.stats.averageRating;
+                    const newAvgRating = ((player.stats.averageRating || 0) * (player.stats.matchesPlayed || 0) + avgRating) / newMatchesPlayed;
 
                     const playerDocRef = doc(firestore, 'players', playerId);
                     transaction.update(playerDocRef, {
@@ -452,7 +503,15 @@ export default function EvaluateMatchPage() {
                 // Publish OVR change activities
                 for (const [playerId, { player, oldOvr, newOvr, change }] of playerOvrChanges) {
                     const historyEntry = { oldOVR: oldOvr, newOVR: newOvr, change, date: new Date().toISOString(), matchId: match.id, id: '' };
-                    publishPromises.push(publishOvrChangeActivity(player, historyEntry));
+
+                    // Create a plain object for the server action to avoid serialization warnings with Timestamps
+                    const safePlayer = {
+                        ...player,
+                        lastCreditReset: player.lastCreditReset ? new Date().toISOString() : undefined, // Convert or omit non-serializable fields
+                        // Ensure we pass a plain object
+                    };
+
+                    publishPromises.push(publishOvrChangeActivity(safePlayer, historyEntry));
                 }
 
                 await Promise.allSettled(publishPromises);

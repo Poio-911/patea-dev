@@ -542,6 +542,32 @@ export async function generateMatchChronicleAction(matchId: string): Promise<{ d
             return (current.rating > best.rating) ? { playerId: current.playerId, rating: current.rating } : best;
         }, { playerId: '', rating: 0 });
 
+        // ✅ NEW: Collect player personal chronicles
+        const playerChronicles = selfEvaluations
+            .filter(se => se.personalChronicle && se.personalChronicle.trim().length > 0)
+            .map(se => ({
+                playerName: playersMap.get(se.playerId) || 'Jugador',
+                chronicle: se.personalChronicle!,
+                position: match.players.find(p => p.uid === se.playerId)?.position || 'MED'
+            }));
+
+        // ✅ NEW: Collect top performance tags (max 10, mix of positive and negative)
+        const allTaggedEvals = evaluations
+            .flatMap(e => (e.performanceTags || []).map(tag => ({
+                playerId: e.playerId,
+                tag
+            })))
+            .filter(item => item.tag.impact === 'positive' || item.tag.impact === 'negative');
+
+        const topPerformanceTags = allTaggedEvals
+            .slice(0, 10)
+            .map(item => ({
+                playerName: playersMap.get(item.playerId) || 'Jugador',
+                tagName: item.tag.name,
+                tagDescription: item.tag.description,
+                impact: item.tag.impact as 'positive' | 'negative'
+            }));
+
         const input: GenerateMatchChronicleInput = {
             matchTitle: match.title,
             team1Name: match.teams[0].name,
@@ -552,7 +578,9 @@ export async function generateMatchChronicleAction(matchId: string): Promise<{ d
             mvp: {
                 name: playersMap.get(mvp.playerId) || 'El Equipo',
                 reason: 'por su rendimiento excepcional y una calificación de ' + mvp.rating
-            }
+            },
+            playerChronicles: playerChronicles.length > 0 ? playerChronicles : undefined,
+            topPerformanceTags: topPerformanceTags.length > 0 ? topPerformanceTags : undefined,
         };
 
         const { generateMatchChronicleFlow } = await import('../../ai/flows/generate-match-chronicle');
@@ -561,6 +589,14 @@ export async function generateMatchChronicleAction(matchId: string): Promise<{ d
         if (!result) {
             throw createError(ErrorCodes.AI_GENERATION_FAILED, { matchId });
         }
+
+        // ✅ NEW: Save chronicle to match document
+        await matchRef.update({
+            chronicle: result,
+            chronicleGeneratedAt: new Date().toISOString()
+        });
+
+        logger.info('[generateMatchChronicleAction] Chronicle saved to match', { matchId });
 
         return { data: result };
 

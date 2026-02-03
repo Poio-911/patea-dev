@@ -100,7 +100,40 @@ El formulario de evaluación es más robusto y la lógica de procesamiento de da
     -   **Cambio**: Se ajustaron los efectos del tag "Espectador de Lujo". En lugar de restar `-1` a los 6 atributos (un impacto total de -6), ahora resta `-1` a `PAC` y `-2` a `PHY`, sumando un impacto total de **-3**. Esto la pone a la par con las etiquetas positivas más fuertes, manteniendo su carácter punitivo pero de una forma mucho más balanceada y justa.
 
 ### Resultado
-El código es ahora más fácil de entender para futuros mantenimientos y el sistema de progresión de atributos es más justo y balanceado, mejorando la experiencia del usuario. Con esto, **todos los puntos del informe de evaluación han sido solucionados.**
+El código es ahora más fácil de entender para futuros mantenimientos y el sistema de progresión de atributos es más justo y balanceado, mejorando la experiencia del usuario. Con esto, **todos los puntos del informe de evaluación han sido solucionados y mejorados con feedback adicional.**
+
+---
+
+## 🐞 Error #9: Pérdida de Puntos y Falta de Respaldo por Inactividad (MEDIO)
+
+### Problema
+- **Redondeo Agresivo**: El cálculo de OVR usaba `Math.round` prematuramente en el delta general y luego dividía por 6. Esto hacía que pequeñas ganancias (ej. un promedio que daba +0.33) se convirtieran en 0 al redondearse, causando que jugadores con buenas actuaciones no subieran nada ("El misterio de Cosme").
+- **Distribución Uniforme Injusta**: Al subir de OVR, los puntos se repartían igualitariamente a todos los atributos. Un delantero recibía tanto aumento en DEFENSA como en TIRO, lo cual diluía su especialización.
+- **Falta de Respaldo ("Paja")**: Si los compañeros no votaban en un partido, el jugador se quedaba con su promedio histórico, ignorando su actuación real en ese match (ej: meter 3 goles y no recibir puntos).
+
+### Solución Aplicada
+1.  **Precisión Decimal y Redondeo al Techo**:
+    -   **Archivo modificado**: `src/app/matches/[id]/evaluate/page.tsx`.
+    -   **Cambio**: `calculateOvrChange` ahora retorna el valor decimal exacto (float) en lugar de un entero redondeado.
+    -   En la distribución de atributos, se usa `Math.ceil` (techo) para los cambios positivos. Esto garantiza que cualquier ganancia de OVR, por pequeña que sea, siempre se traduzca en al menos 1 punto de atributo.
+
+2.  **Distribución Ponderada por Posición**:
+    -   **Archivo modificado**: `src/app/matches/[id]/evaluate/page.tsx`.
+    -   **Cambio**: Se implementó una tabla de pesos (`POSITION_WEIGHTS`). Ahora, el total de puntos de atributo ganados (OVR Change * 6) se distribuye según el rol:
+        -   **DEL**: Prioriza SHO (35%) y PAC (25%).
+        -   **MED**: Prioriza PAS (30%) y DRI (20%).
+        -   **DEF**: Prioriza DEF (40%) y PHY (20%).
+        -   **POR**: Prioriza DEF (50%).
+
+3.  **Lógica de Respaldo (Fallback)**:
+    -   **Archivo modificado**: `src/app/matches/[id]/evaluate/page.tsx`.
+    -   **Cambio**: Si un jugador no recibe evaluaciones ("Paja"), el sistema ahora infiere un rating basado en sus estadísticas del partido:
+        -   2+ Goles o Asistencias: **Rating 8**.
+        -   1 Gol o Asistencia: **Rating 7**.
+        -   Sin aporte estadístico: **Rating 5** (Neutro).
+
+### Resultado
+El sistema ahora "no pierde puntos" en el camino. Los jugadores progresan de forma constante y especializada según su posición. Además, nadie se queda sin puntos por la inactividad de sus compañeros si tuvo un desempeño destacable en cancha.
 
 ---
 **Estado Final**: ¡Módulo de Evaluaciones 100% Corregido y Fortalecido!

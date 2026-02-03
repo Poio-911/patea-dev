@@ -230,7 +230,8 @@ export type Match = {
     conditions?: string;
     recommendation?: string;
   };
-  chronicle?: string; // AI-generated match summary
+  chronicle?: GenerateMatchChronicleOutput; // AI-generated match summary
+  chronicleGeneratedAt?: string; // ISO timestamp of when chronicle was generated
   startTimestamp?: string;
   participantTeamIds?: string[];
   createdAt?: string;
@@ -642,19 +643,27 @@ export const GenerateMatchChronicleInputSchema = z.object({
     name: z.string(),
     reason: z.string(),
   }).describe("El Jugador Más Valioso (MVP) y la razón."),
+  playerChronicles: z.array(z.object({
+    playerName: z.string().describe("Nombre del jugador."),
+    chronicle: z.string().describe("Crónica personal escrita por el jugador."),
+    position: z.string().describe("Posición del jugador (DEL, MED, DEF, POR)."),
+  })).optional().describe("Crónicas personales escritas por los jugadores sobre su rendimiento."),
+  topPerformanceTags: z.array(z.object({
+    playerName: z.string().describe("Nombre del jugador."),
+    tagName: z.string().describe("Nombre del tag de rendimiento."),
+    tagDescription: z.string().describe("Descripción del tag."),
+    impact: z.enum(['positive', 'negative']).describe("Impacto del tag (positivo o negativo)."),
+  })).optional().describe("Tags de rendimiento más destacados del partido."),
 });
 export type GenerateMatchChronicleInput = z.infer<typeof GenerateMatchChronicleInputSchema>;
 
 export const GenerateMatchChronicleOutputSchema = z.object({
-  headline: z.string().describe("Un titular periodístico y llamativo para la crónica."),
-  introduction: z.string().describe("Un párrafo introductorio que resume el partido y el resultado final."),
-  keyMoments: z.array(
-    z.object({
-      minute: z.string().describe("El minuto del evento, en formato 'Min XX'."),
-      event: z.string().describe("La descripción del evento clave, narrado en estilo de relator de fútbol."),
-    })
-  ).describe("Una lista de los 3-4 momentos más importantes del partido."),
-  conclusion: z.string().describe("Un párrafo final que resume el partido y nombra al MVP."),
+  headline: z.string().describe("Un título evocativo y literario (no deportivo)."),
+  story: z.string().describe("El relato completo del partido en 3-5 párrafos fluidos, estilo narrativo literario."),
+  playerVoices: z.array(z.object({
+    playerName: z.string().describe("Nombre del jugador."),
+    quote: z.string().describe("Cita destacada del jugador."),
+  })).optional().describe("Citas destacadas de jugadores (1-2 máximo)."),
 });
 export type GenerateMatchChronicleOutput = z.infer<typeof GenerateMatchChronicleOutputSchema>;
 

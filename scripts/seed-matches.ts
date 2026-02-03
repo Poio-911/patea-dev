@@ -138,16 +138,28 @@ async function seedMatches() {
         await matchRef.set(matchData);
         console.log(`   🏟️ Partido creado: ${matchData.title} (${matchId})`);
 
-        // Create Evaluations
+        // ✅ FIXED V2: Guarantee EVERY player receives exactly 2 evaluations
+        // Use round-robin assignment instead of random selection
         const batch = db.batch();
 
-        for (const player of selectedPlayers) {
-            // Distribute Evaluation Styles
-            // 33% Points + Tags
-            // 33% Text + Tags
-            // 33% Mixed/Complete
-            const style = randomInt(1, 3);
+        // Create evaluation pairs: each player evaluated by 2 specific peers
+        const evaluationPairs: Array<{ evaluatorId: string; peerId: string }> = [];
 
+        for (let i = 0; i < selectedPlayers.length; i++) {
+            const peer = selectedPlayers[i];
+            // Assign 2 evaluators using offset pattern (ensures everyone gets 2)
+            const evaluator1 = selectedPlayers[(i + 1) % selectedPlayers.length];
+            const evaluator2 = selectedPlayers[(i + 2) % selectedPlayers.length];
+
+            evaluationPairs.push(
+                { evaluatorId: evaluator1.id, peerId: peer.id },
+                { evaluatorId: evaluator2.id, peerId: peer.id }
+            );
+        }
+
+        // Create evaluations for each pair
+        for (const pair of evaluationPairs) {
+            const style = randomInt(1, 3);
             const hasRating = style !== 2 || Math.random() > 0.5;
             const hasText = style !== 1 || Math.random() > 0.5;
             const hasTags = true;
@@ -158,18 +170,11 @@ async function seedMatches() {
             const goals = Math.random() > 0.7 ? randomInt(1, 3) : 0;
             const assists = Math.random() > 0.8 ? randomInt(1, 2) : 0;
 
-            // Create Evaluation Doc
-            // We simulate that 'Aurelio' or a 'Peer' evaluated this player.
-            // Let's mix it up. Some evaluated by Organizer, some by Peers.
-            const evaluator = Math.random() > 0.7
-                ? { id: ORGANIZER_ID, name: ORGANIZER_NAME }
-                : randomPick(selectedPlayers.filter(p => p.id !== player.id)); // Peer
-
             const evalRef = db.collection('evaluations').doc();
             batch.set(evalRef, {
                 matchId: matchId,
-                playerId: player.id,
-                evaluatorId: evaluator.id || ORGANIZER_ID, // fallback
+                playerId: pair.peerId,
+                evaluatorId: pair.evaluatorId,
                 rating: rating,
                 textDescription: text,
                 performanceTags: tags,
@@ -178,19 +183,11 @@ async function seedMatches() {
                 evaluatedAt: new Date().toISOString(),
                 identityRevealed: false
             });
-
-            // Note: We are NOT calculating stats aggregations (matchesPlayed++) here.
-            // The user wants to "disparar las evaluaciones" later. 
-            // Usually, stats are updated when the calculation action runs.
-            // By NOT updating player.stats here, we allow the "Calculate" action to do it if triggered.
-            // BUT, if the status is 'evaluated', the UI might think it's done. 
-            // If the user wants to trigger the *chronicle* or *stats update*, usually that implies 
-            // the match just finished. 
-            // Let's assume creating the `evaluations` docs acts as the "Input" and the user triggers the "Process".
         }
 
         await batch.commit();
-        console.log(`      ✅ ${selectedPlayers.length} evaluaciones generadas.`);
+        const expectedEvals = selectedPlayers.length * 2;  // Each player evaluates 2 others
+        console.log(`      ✅ ~${expectedEvals} evaluaciones generadas (${selectedPlayers.length} jugadores × 2 evals c/u)`);
     }
 }
 
