@@ -21,8 +21,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { JerseyPreview } from '../team-builder/jersey-preview';
 import { Badge } from '../ui/badge';
 import { AnimatePresence, motion } from 'framer-motion';
-import { initializeFirebase } from '@/firebase';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { uploadCompetitionLogoAction } from '@/lib/actions/upload-competition-logo';
 import { TeamSelectorCard } from './team-selector-card';
 
 const createLeagueSchema = z.object({
@@ -121,13 +120,27 @@ export function CreateLeagueDialog({ open, onOpenChange, groupId, userId, teams 
 
       // Upload logo if selected
       if (logoFile) {
-        const { firebaseApp } = initializeFirebase();
-        const storage = getStorage(firebaseApp);
-        const filePath = `leagues/${groupId}/${Date.now()}_${logoFile.name}`;
-        const storageRef = ref(storage, filePath);
+        const arrayBuffer = await logoFile.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
 
-        const uploadResult = await uploadBytes(storageRef, logoFile);
-        logoUrl = await getDownloadURL(uploadResult.ref);
+        const uploadResult = await uploadCompetitionLogoAction(
+          buffer,
+          logoFile.name,
+          'league',
+          groupId
+        );
+
+        if (!uploadResult.success) {
+          toast({
+            variant: 'destructive',
+            title: 'Error al subir logo',
+            description: uploadResult.error
+          });
+          setIsCreating(false);
+          return;
+        }
+
+        logoUrl = uploadResult.url;
       }
 
       const scheduleConfig = {
