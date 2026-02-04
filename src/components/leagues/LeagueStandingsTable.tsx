@@ -63,32 +63,51 @@ export function LeagueStandingsTable({ standings, highlightTeamId }: LeagueStand
               {sortedStandings.map((standing) => {
                 const isHighlighted = highlightTeamId === standing.teamId;
                 const isFirst = standing.position === 1;
+                const isSecond = standing.position === 2;
+                const isThird = standing.position === 3;
+                const isRelegation = standing.position > standings.length - 2;
 
                 return (
                   <TableRow
                     key={standing.teamId}
                     className={`
-                      ${isHighlighted ? 'bg-muted/50' : ''}
-                      ${isFirst ? 'border-l-4 border-l-foreground/50' : ''}
-                      hover:bg-muted/50 transition-colors
+                      ${isHighlighted ? 'user-team-highlight' : ''}
+                      ${isRelegation ? 'relegation-zone' : ''}
+                      hover:bg-muted/50 transition-all
                     `}
                   >
                     <TableCell className="text-center font-medium">
-                      {standing.position}
+                      <div className="flex items-center justify-center gap-1">
+                        {isFirst && <Trophy className="h-4 w-4 medal-gold" />}
+                        {isSecond && <Trophy className="h-4 w-4 medal-silver" />}
+                        {isThird && <Trophy className="h-4 w-4 medal-bronze" />}
+                        <span>{standing.position}</span>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <span className="font-medium">{standing.teamName}</span>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-6 h-6 rounded-sm flex items-center justify-center text-xs font-bold"
+                          style={{
+                            backgroundColor: standing.teamJersey?.primaryColor || '#1e40af',
+                            color: standing.teamJersey?.secondaryColor || '#fff'
+                          }}
+                        >
+                          {standing.teamName.charAt(0)}
+                        </div>
+                        <span className="font-medium">{standing.teamName}</span>
+                      </div>
                     </TableCell>
                     <TableCell className="text-center text-muted-foreground">
                       {standing.matchesPlayed}
                     </TableCell>
-                    <TableCell className="text-center text-foreground">
+                    <TableCell className="text-center text-success font-medium">
                       {standing.wins}
                     </TableCell>
                     <TableCell className="text-center text-muted-foreground">
                       {standing.draws}
                     </TableCell>
-                    <TableCell className="text-center text-foreground">
+                    <TableCell className="text-center text-destructive font-medium">
                       {standing.losses}
                     </TableCell>
                     <TableCell className="text-center">
@@ -97,7 +116,10 @@ export function LeagueStandingsTable({ standings, highlightTeamId }: LeagueStand
                     <TableCell className="text-center">
                       {standing.goalsAgainst}
                     </TableCell>
-                    <TableCell className={`text-center font-medium ${standing.goalDifference !== 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                    <TableCell className={`text-center font-medium ${standing.goalDifference > 0 ? 'text-success' :
+                        standing.goalDifference < 0 ? 'text-destructive' :
+                          'text-muted-foreground'
+                      }`}>
                       {standing.goalDifference > 0 ? '+' : ''}{standing.goalDifference}
                     </TableCell>
                     <TableCell className="text-center font-bold text-lg">

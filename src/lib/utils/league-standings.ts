@@ -32,17 +32,28 @@ export function calculateLeagueStandings(
 
   // Process each completed match
   matches.forEach(match => {
-    if (match.status !== 'evaluated' && match.status !== 'completed') return;
-    if (!match.teams || match.teams.length !== 2) return;
-    if (!match.participantTeamIds || match.participantTeamIds.length !== 2) return;
+    // Check various status formats
+    const status = match.status as string;
+    if (status !== 'evaluated' && status !== 'completed') return;
 
-    const team1Id = match.participantTeamIds[0];
-    const team2Id = match.participantTeamIds[1];
-    const team1Data = match.teams[0];
-    const team2Data = match.teams[1];
+    // Validar teams
+    if (!match.teams || match.teams.length < 2) {
+      // Fallback to participantTeamIds if teams array is missing/empty but IDs exist
+      if (!match.participantTeamIds || match.participantTeamIds.length < 2) return;
+    }
 
-    const team1Goals = match.finalScore ? match.finalScore.team1 : (team1Data.finalScore ?? 0);
-    const team2Goals = match.finalScore ? match.finalScore.team2 : (team2Data.finalScore ?? 0);
+    const team1Id = match.participantTeamIds ? match.participantTeamIds[0] : (match.team1Id || match.teams?.[0]?.id);
+    const team2Id = match.participantTeamIds ? match.participantTeamIds[1] : (match.team2Id || match.teams?.[1]?.id);
+
+    if (!team1Id || !team2Id) return;
+
+    // Extract goals with multiple fallbacks and NaN protection
+    let t1g = match.scoreTeam1 ?? match.team1Score ?? match.finalScore?.team1 ?? (match.teams?.[0] as any)?.score ?? match.teams?.[0]?.finalScore ?? 0;
+    let t2g = match.scoreTeam2 ?? match.team2Score ?? match.finalScore?.team2 ?? (match.teams?.[1] as any)?.score ?? match.teams?.[1]?.finalScore ?? 0;
+
+    // Ensure they are numbers
+    const team1Goals = Number(t1g) || 0;
+    const team2Goals = Number(t2g) || 0;
 
     const team1Standing = standingsMap.get(team1Id);
     const team2Standing = standingsMap.get(team2Id);
@@ -201,7 +212,7 @@ function calculateHeadToHead(matches: Match[], team1Id: string, team2Id: string)
     if (match.status !== 'completed' && match.status !== 'evaluated') return false;
     const ids = match.participantTeamIds;
     return (ids[0] === team1Id && ids[1] === team2Id) ||
-           (ids[0] === team2Id && ids[1] === team1Id);
+      (ids[0] === team2Id && ids[1] === team1Id);
   });
 
   let team1Wins = 0;

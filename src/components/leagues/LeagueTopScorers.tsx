@@ -33,46 +33,86 @@ export function LeagueTopScorers({ matches }: LeagueTopScorersProps) {
     const statsMap = new Map<string, PlayerStats>();
 
     matches.forEach(match => {
-      // Process goal scorers
-      if (match.goalScorers) {
-        match.goalScorers.forEach((scorer: MatchGoalScorer) => {
-          const key = scorer.playerId;
-          if (!statsMap.has(key)) {
-            statsMap.set(key, {
-              playerId: scorer.playerId,
-              playerName: scorer.playerName,
-              teamId: scorer.teamId,
-              goals: 0,
-              yellowCards: 0,
-              redCards: 0,
-            });
+      // Prioritize new events system
+      if (match.events && match.events.length > 0) {
+        match.events.forEach(event => {
+          if (event.type === 'goal' && (event as any).goalType !== 'own_goal') {
+            const key = event.playerId;
+            if (!statsMap.has(key)) {
+              statsMap.set(key, {
+                playerId: event.playerId,
+                playerName: event.playerName,
+                teamId: event.teamId,
+                goals: 0,
+                yellowCards: 0,
+                redCards: 0,
+              });
+            }
+            const stats = statsMap.get(key)!;
+            stats.goals++;
+          } else if (event.type === 'card') {
+            const key = event.playerId;
+            if (!statsMap.has(key)) {
+              statsMap.set(key, {
+                playerId: event.playerId,
+                playerName: event.playerName,
+                teamId: event.teamId,
+                goals: 0,
+                yellowCards: 0,
+                redCards: 0,
+              });
+            }
+            const stats = statsMap.get(key)!;
+            if (event.cardType === 'yellow') {
+              stats.yellowCards++;
+            } else if (event.cardType === 'red') {
+              stats.redCards++;
+            }
           }
-          const stats = statsMap.get(key)!;
-          stats.goals++;
         });
-      }
+      } else {
+        // Fallback for legacy matches
+        // Process goal scorers
+        if (match.goalScorers) {
+          match.goalScorers.forEach((scorer: MatchGoalScorer) => {
+            const key = scorer.playerId;
+            if (!statsMap.has(key)) {
+              statsMap.set(key, {
+                playerId: scorer.playerId,
+                playerName: scorer.playerName,
+                teamId: scorer.teamId,
+                goals: 0,
+                yellowCards: 0,
+                redCards: 0,
+              });
+            }
+            const stats = statsMap.get(key)!;
+            stats.goals++;
+          });
+        }
 
-      // Process cards
-      if (match.cards) {
-        match.cards.forEach((card: MatchCard) => {
-          const key = card.playerId;
-          if (!statsMap.has(key)) {
-            statsMap.set(key, {
-              playerId: card.playerId,
-              playerName: card.playerName,
-              teamId: card.teamId,
-              goals: 0,
-              yellowCards: 0,
-              redCards: 0,
-            });
-          }
-          const stats = statsMap.get(key)!;
-          if (card.cardType === 'yellow') {
-            stats.yellowCards++;
-          } else if (card.cardType === 'red') {
-            stats.redCards++;
-          }
-        });
+        // Process cards
+        if (match.cards) {
+          match.cards.forEach((card: MatchCard) => {
+            const key = card.playerId;
+            if (!statsMap.has(key)) {
+              statsMap.set(key, {
+                playerId: card.playerId,
+                playerName: card.playerName,
+                teamId: card.teamId,
+                goals: 0,
+                yellowCards: 0,
+                redCards: 0,
+              });
+            }
+            const stats = statsMap.get(key)!;
+            if (card.cardType === 'yellow') {
+              stats.yellowCards++;
+            } else if (card.cardType === 'red') {
+              stats.redCards++;
+            }
+          });
+        }
       }
     });
 

@@ -8,11 +8,12 @@ import { useDoc, useFirestore } from '@/firebase';
 import { useMemo } from 'react';
 import { doc } from 'firebase/firestore';
 import type { Player } from '@/lib/types';
+import { PersonalInfoEditor } from '@/components/profile/personal-info-editor';
 
 export default function ProfilePage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
-  
+
   const playerRef = useMemo(() => {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'players', user.uid);
@@ -32,11 +33,16 @@ export default function ProfilePage() {
 
   return (
     <div className="flex flex-col gap-8">
-        <PageHeader
-            title="Mi Perfil"
-            description="Tu información personal, estadísticas de jugador y actividad."
-        />
-        <PlayerProfileView playerId={user.uid} player={player} />
+      <PageHeader
+        title="Mi Perfil"
+        description="Tu información personal, estadísticas de jugador y actividad."
+      />
+
+      {/* Personal Information Section */}
+      <PersonalInfoEditor user={user} />
+
+      {/* Player Stats and Performance */}
+      <PlayerProfileView playerId={user.uid} player={player} />
     </div>
   );
 }

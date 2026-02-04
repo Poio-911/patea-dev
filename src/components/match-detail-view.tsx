@@ -22,6 +22,7 @@ import { AvailablePlayersSection } from './available-players-section';
 import { ImportActivityDialog } from './health/import-activity-dialog';
 import { PhysicalMetricsCard } from './health/physical-metrics-card';
 import { CupMatchView } from './cup/CupMatchView';
+import { LeagueMatchView } from './league/LeagueMatchView';
 import { LiveMatchDashboard } from '@/components/match/live-match-dashboard';
 import { MatchTimeline } from '@/components/match/match-timeline';
 import { LiveStats } from '@/components/match/live-stats';
@@ -140,9 +141,13 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
 
   const isCompetitionMatch = ['league', 'cup', 'league_final'].includes(match.type);
 
-  // Use simplified view for cup matches
+  // Use dedicated views for competition matches
   if (match.type === 'cup' && match.leagueInfo?.leagueId && user?.uid) {
     return <CupMatchView match={match} cupId={match.leagueInfo.leagueId} userId={user.uid} />;
+  }
+
+  if ((match.type === 'league' || match.type === 'league_final') && match.leagueInfo?.leagueId && user?.uid) {
+    return <LeagueMatchView match={match} leagueId={match.leagueInfo.leagueId} userId={user.uid} />;
   }
 
   return (
@@ -226,12 +231,12 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                   }}
                 />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <MatchTimeline 
-                    events={match.events || []} 
+                  <MatchTimeline
+                    events={match.events || []}
                     currentMinute={match.currentMinute || 0}
                   />
-                  <LiveStats 
-                    match={match} 
+                  <LiveStats
+                    match={match}
                   />
                 </div>
               </div>

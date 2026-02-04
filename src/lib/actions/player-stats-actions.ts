@@ -33,11 +33,16 @@ export async function updatePlayerStatsFromMatch(matchId: string): Promise<{
     // Add players from teams
     match.playerUids?.forEach(uid => playerIds.add(uid));
 
-    // Add goal scorers
+    // Add goal scorers (legacy)
     match.goalScorers?.forEach(scorer => playerIds.add(scorer.playerId));
 
-    // Add card recipients
+    // Add card recipients (legacy)
     match.cards?.forEach(card => playerIds.add(card.playerId));
+
+    // Add players from events (new structure)
+    match.events?.forEach(event => {
+      if (event.playerId) playerIds.add(event.playerId);
+    });
 
     if (playerIds.size === 0) {
       return { success: true, message: 'No hay jugadores para actualizar' };
@@ -51,9 +56,28 @@ export async function updatePlayerStatsFromMatch(matchId: string): Promise<{
       const playerRef = getAdminDb().collection('players').doc(playerId);
 
       // Calculate stats changes for this player
-      const goalsScored = match.goalScorers?.filter(g => g.playerId === playerId).length || 0;
-      const yellowCardsReceived = match.cards?.filter(c => c.playerId === playerId && c.cardType === 'yellow').length || 0;
-      const redCardsReceived = match.cards?.filter(c => c.playerId === playerId && c.cardType === 'red').length || 0;
+      let goalsScored = 0;
+      let yellowCardsReceived = 0;
+      let redCardsReceived = 0;
+
+      if (match.events && match.events.length > 0) {
+        // New structure: Process events
+        match.events.forEach(event => {
+          if (event.playerId === playerId) {
+            if (event.type === 'goal' && (event as any).goalType !== 'own_goal') {
+              goalsScored++;
+            } else if (event.type === 'card') {
+              if (event.cardType === 'yellow') yellowCardsReceived++;
+              else if (event.cardType === 'red') redCardsReceived++;
+            }
+          }
+        });
+      } else {
+        // Legacy structure fallback
+        goalsScored = match.goalScorers?.filter(g => g.playerId === playerId).length || 0;
+        yellowCardsReceived = match.cards?.filter(c => c.playerId === playerId && c.cardType === 'yellow').length || 0;
+        redCardsReceived = match.cards?.filter(c => c.playerId === playerId && c.cardType === 'red').length || 0;
+      }
 
       // Use atomic increment operations - no need to read current values
       // This prevents race conditions when multiple matches complete simultaneously
@@ -135,14 +159,24 @@ export async function recalculateAllPlayerStats(groupId?: string): Promise<{
       const matchesPlayed = playerMatches.length;
 
       playerMatches.forEach(match => {
-        // Count goals
-        totalGoals += match.goalScorers?.filter(g => g.playerId === player.id).length || 0;
-
-        // Count yellow cards
-        totalYellowCards += match.cards?.filter(c => c.playerId === player.id && c.cardType === 'yellow').length || 0;
-
-        // Count red cards
-        totalRedCards += match.cards?.filter(c => c.playerId === player.id && c.cardType === 'red').length || 0;
+        if (match.events && match.events.length > 0) {
+          // New structure: Process events
+          match.events.forEach(event => {
+            if (event.playerId === player.id) {
+              if (event.type === 'goal' && (event as any).goalType !== 'own_goal') {
+                totalGoals++;
+              } else if (event.type === 'card') {
+                if (event.cardType === 'yellow') totalYellowCards++;
+                else if (event.cardType === 'red') totalRedCards++;
+              }
+            }
+          });
+        } else {
+          // Legacy structure fallback
+          totalGoals += match.goalScorers?.filter(g => g.playerId === player.id).length || 0;
+          totalYellowCards += match.cards?.filter(c => c.playerId === player.id && c.cardType === 'yellow').length || 0;
+          totalRedCards += match.cards?.filter(c => c.playerId === player.id && c.cardType === 'red').length || 0;
+        }
       });
 
       // Update player stats

@@ -8,6 +8,7 @@
 body.standalone nav.fixed {
   bottom: 0 !important;
 }
+
 /* CONTRASTE MEJORADO PARA GAME Y NIKE */
 .game .player-card .text-muted-foreground,
 .game .player-card h3,
@@ -35,6 +36,7 @@ body.standalone nav.fixed {
   color: #fff !important;
   box-shadow: 0 2px 8px #0004;
 }
+
 .nike .btn-add-player {
   background: #fff !important;
   color: #222 !important;
@@ -49,6 +51,9 @@ body.standalone nav.fixed {
 
 @layer base {
   :root {
+    /* Video background control */
+    --video-display: block;
+
     /* Light theme: increase surface contrast */
     --background: 210 20% 99%;
     --foreground: 222.2 84% 5%;
@@ -509,7 +514,7 @@ body.standalone nav.fixed {
   }
 
   /* Nike attributes grid - subtle gray background */
-  .nike .player-card [class*="grid"] > div {
+  .nike .player-card [class*="grid"]>div {
     background: rgba(255, 255, 255, 0.06) !important;
     border-color: rgba(255, 255, 255, 0.1) !important;
   }
@@ -1738,4 +1743,266 @@ body.standalone nav.fixed {
   .chat-send-button:disabled {
     @apply bg-muted text-muted-foreground;
   }
+
+  /* ========================================
+     COMPETITION UI REDESIGN - DESIGN TOKENS
+     ======================================== */
+
+  /* Base Competition Colors - Light Theme */
+  :root {
+    /* Friendly/Amistosos - Emerald to Teal */
+    --friendly-primary: 168 76% 42%;
+    --friendly-secondary: 158 64% 52%;
+    --friendly-gradient: linear-gradient(135deg, hsl(var(--friendly-primary)), hsl(var(--friendly-secondary)));
+
+    /* League - Blue to Indigo */
+    --league-primary: 142 76% 36%;
+    --league-secondary: 199 89% 48%;
+    --league-gradient: linear-gradient(135deg, hsl(var(--league-primary)), hsl(var(--league-secondary)));
+
+    /* Cup - Amber to Orange */
+    --cup-primary: 38 88% 55%;
+    --cup-secondary: 25 90% 60%;
+    --cup-gradient: linear-gradient(135deg, hsl(var(--cup-primary)), hsl(var(--cup-secondary)));
+
+    /* Competition Card Effects */
+    --competition-shadow: 0 4px 12px hsl(var(--league-primary) / 0.15);
+    --competition-hover-shadow: 0 8px 24px hsl(var(--league-primary) / 0.25);
+  }
+
+  /* Game Theme - Dark */
+  .game {
+    /* Friendly - Brighter for dark bg */
+    --friendly-primary: 168 76% 50%;
+    --friendly-secondary: 158 64% 58%;
+    --friendly-gradient: linear-gradient(135deg, hsl(var(--friendly-primary)), hsl(var(--friendly-secondary)));
+
+    /* League - Vibrant greens/blues */
+    --league-primary: 142 76% 45%;
+    --league-secondary: 199 89% 55%;
+    --league-gradient: linear-gradient(135deg, hsl(var(--league-primary)), hsl(var(--league-secondary)));
+
+    /* Cup - Bright golds */
+    --cup-primary: 38 92% 60%;
+    --cup-secondary: 25 95% 63%;
+    --cup-gradient: linear-gradient(135deg, hsl(var(--cup-primary)), hsl(var(--cup-secondary)));
+
+    /* Glow effects for dark theme */
+    --league-glow: 0 0 20px hsl(var(--league-primary) / 0.3);
+    --cup-glow: 0 0 20px hsl(var(--cup-primary) / 0.3);
+    --friendly-glow: 0 0 20px hsl(var(--friendly-primary) / 0.3);
+
+    --competition-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --competition-hover-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Nike Theme - Grayscale with subtle accents */
+  .nike {
+    --friendly-primary: 168 30% 50%;
+    --friendly-secondary: 158 25% 55%;
+    --friendly-gradient: linear-gradient(135deg, hsl(var(--friendly-primary)), hsl(var(--friendly-secondary)));
+
+    --league-primary: 142 30% 45%;
+    --league-secondary: 199 30% 52%;
+    --league-gradient: linear-gradient(135deg, hsl(var(--league-primary)), hsl(var(--league-secondary)));
+
+    --cup-primary: 38 40% 60%;
+    --cup-secondary: 25 40% 63%;
+    --cup-gradient: linear-gradient(135deg, hsl(var(--cup-primary)), hsl(var(--cup-secondary)));
+
+    --competition-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --competition-hover-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Competition Card Gradients */
+  .competition-card-friendly {
+    background: var(--friendly-gradient);
+  }
+
+  .competition-card-league {
+    background: var(--league-gradient);
+  }
+
+  .competition-card-cup {
+    background: var(--cup-gradient);
+  }
+
+  /* User Team Highlight Glow (for standings/bracket) */
+  .user-team-highlight {
+    position: relative;
+  }
+
+  .user-team-highlight::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, hsl(var(--league-primary)), hsl(var(--league-secondary)));
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0.4;
+  }
+
+  .game .user-team-highlight::before {
+    box-shadow: var(--league-glow);
+  }
+
+  /* Live Match Pulse Indicator */
+  @keyframes live-pulse {
+
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 0.6;
+      transform: scale(1.1);
+    }
+  }
+
+  .live-indicator {
+    animation: live-pulse 2s ease-in-out infinite;
+  }
+
+  /* Live indicator with ping effect */
+  .live-indicator-ping::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: inherit;
+    animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+    opacity: 0.75;
+  }
+
+  /* Bracket Connector Line Animation */
+  @keyframes dash-flow {
+    0% {
+      stroke-dashoffset: 0;
+    }
+
+    100% {
+      stroke-dashoffset: 20;
+    }
+  }
+
+  .connector-line-animated {
+    stroke-dasharray: 10 5;
+    animation: dash-flow 1s linear infinite;
+  }
+
+  /* Form Streak Indicators (W-W-L-D-W) */
+  .form-indicator-w {
+    @apply w-6 h-6 rounded-sm bg-success/20 text-success text-xs font-bold flex items-center justify-center;
+  }
+
+  .form-indicator-l {
+    @apply w-6 h-6 rounded-sm bg-destructive/20 text-destructive text-xs font-bold flex items-center justify-center;
+  }
+
+  .form-indicator-d {
+    @apply w-6 h-6 rounded-sm bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center;
+  }
+
+  /* Glassmorphism for competition cards */
+  .competition-glass {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: hsl(var(--card) / 0.7);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  .game .competition-glass {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    background: hsl(var(--card) / 0.8);
+  }
+
+  /* Medal icons for top 3 */
+  /* Medal icons for top 3 */
+  .medal-gold {
+    color: hsl(var(--ovr-gold));
+    filter: drop-shadow(0 2px 4px rgba(255, 215, 0, 0.4));
+  }
+
+  .medal-silver {
+    color: hsl(var(--ovr-silver));
+    filter: drop-shadow(0 2px 4px rgba(192, 192, 192, 0.4));
+  }
+
+  .medal-bronze {
+    color: hsl(var(--ovr-bronze));
+    filter: drop-shadow(0 2px 4px rgba(205, 127, 50, 0.4));
+  }
+
+  /* Relegation zone tint */
+  .relegation-zone {
+    background: linear-gradient(90deg, transparent, hsl(var(--destructive) / 0.08), transparent);
+  }
+
+  .game .relegation-zone {
+    background: linear-gradient(90deg, transparent, hsl(var(--destructive) / 0.12), transparent);
+  }
+
+  /* Hover effects for competition cards */
+  .competition-card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .competition-card-hover:hover {
+    transform: scale(1.05);
+    box-shadow: var(--competition-hover-shadow);
+  }
+
+  .game .competition-card-hover:hover {
+    box-shadow: var(--league-glow), var(--competition-hover-shadow);
+  }
+
+  /* Round/Jornada timeline dots */
+  .round-dot {
+    @apply w-3 h-3 rounded-full border-2 transition-all;
+  }
+
+  .round-dot-active {
+    @apply bg-primary border-primary scale-125;
+  }
+
+  .round-dot-completed {
+    @apply bg-success border-success;
+  }
+
+  .round-dot-pending {
+    @apply bg-muted border-border;
+  }
+
+  /* Trophy shimmer for winners */
+  @keyframes trophy-shimmer {
+    0% {
+      background-position: -200% center;
+    }
+
+    100% {
+      background-position: 200% center;
+    }
+  }
+
+  .trophy-shimmer {
+    background: linear-gradient(90deg,
+        hsl(var(--cup-primary)) 0%,
+        hsl(var(--cup-secondary)) 50%,
+        hsl(var(--cup-primary)) 100%);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: trophy-shimmer 3s linear infinite;
+  }
+}
+
+/* Video logic */
+.game,
+.nike,
+.dark {
+  --video-display: none !important;
 }

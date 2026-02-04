@@ -3,7 +3,7 @@ import { ai } from '@/ai/genkit';
 
 export async function generatePlayerCardImage(photoDataUri: string): Promise<string> {
   const { media } = await ai.generate({
-    model: 'googleai/gemini-2.5-flash-image-preview',
+    model: 'googleai/gemini-2.0-flash-exp',
     prompt: [
       { media: { url: photoDataUri, contentType: 'image/jpeg' } },
       {

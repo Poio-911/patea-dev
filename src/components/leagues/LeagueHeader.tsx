@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeft, Play, Trophy, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type LeagueTab = 'standings' | 'fixture' | 'teams' | 'scorers' | 'applications';
+type LeagueTab = 'standings' | 'fixture' | 'teams' | 'scorers' | 'applications' | 'my-team';
 
 type LeagueHeaderProps = {
   league: League;
@@ -18,6 +18,8 @@ type LeagueHeaderProps = {
   onStartLeague?: () => void;
   onCompleteLeague?: () => void;
   onDeleteLeague?: () => void;
+  organizer?: any; // UserProfile
+  hasUserTeam?: boolean;
 };
 
 const statusConfig: Record<CompetitionStatus, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
@@ -35,6 +37,8 @@ export function LeagueHeader({
   onStartLeague,
   onCompleteLeague,
   onDeleteLeague,
+  organizer,
+  hasUserTeam
 }: LeagueHeaderProps) {
   const status = statusConfig[league.status];
 
@@ -46,70 +50,82 @@ export function LeagueHeader({
           Competiciones
         </Link>
         <span>/</span>
-        <Link href="/competitions?tab=leagues" className="hover:text-foreground transition-colors">
-          Ligas
-        </Link>
-        <span>/</span>
-        <span className="text-foreground">{league.name}</span>
+        <span className="text-foreground font-medium">{league.name}</span>
       </div>
 
-      {/* Title and Actions */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/competitions?tab=leagues">
-              <ChevronLeft className="h-5 w-5" />
-            </Link>
-          </Button>
-          {league.logoUrl && (
-            <div className="w-16 h-16 rounded-lg overflow-hidden border shrink-0 bg-muted/30">
-              <img src={league.logoUrl} alt={league.name} className="w-full h-full object-contain" />
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">{league.name}</h1>
+            <Badge variant={status.variant as any}>{status.label}</Badge>
+          </div>
+          {organizer && (
+            <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+              <span>Organizado por {organizer.displayName || 'Usuario'}</span>
             </div>
           )}
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">{league.name}</h1>
-              <Badge variant={status.variant}>{status.label}</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              {league.format === 'round_robin' ? 'Todos contra todos (Ida)' : 'Todos contra todos (Ida y Vuelta)'} · {league.teams.length} equipos
-            </p>
-          </div>
         </div>
 
-        {/* Action Buttons */}
-        {isOwner && (
-          <div className="flex gap-2">
-            {league.status === 'draft' && onStartLeague && (
-              <Button onClick={onStartLeague} className="gap-2">
-                <Play className="h-4 w-4" />
-                Iniciar Liga
-              </Button>
-            )}
-            {league.status === 'in_progress' && onCompleteLeague && (
-              <Button onClick={onCompleteLeague} variant="outline" className="gap-2">
-                <Trophy className="h-4 w-4" />
-                Finalizar Liga
-              </Button>
-            )}
-            {onDeleteLeague && (
-              <Button onClick={onDeleteLeague} variant="destructive" size="icon" title="Eliminar Liga">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {isOwner && league.status === 'open_for_applications' && (
+            <Button onClick={onStartLeague} className="gap-2">
+              <Play className="h-4 w-4" /> Iniciar Liga
+            </Button>
+          )}
+          {isOwner && league.status === 'in_progress' && (
+            <Button onClick={onCompleteLeague} variant="outline" className="gap-2">
+              <Trophy className="h-4 w-4" /> Finalizar
+            </Button>
+          )}
+          {isOwner && (
+            <Button onClick={onDeleteLeague} variant="destructive" size="icon">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(value) => onTabChange(value as LeagueTab)}>
-        <TabsList>
-          <TabsTrigger value="standings">Tabla de Posiciones</TabsTrigger>
-          <TabsTrigger value="fixture">Fixture</TabsTrigger>
-          <TabsTrigger value="scorers">Goleadores</TabsTrigger>
-          <TabsTrigger value="teams">Equipos</TabsTrigger>
-          {isOwner && (league.status === 'draft' || league.status === 'open_for_applications') && (
-            <TabsTrigger value="applications">Aplicaciones</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={(v) => onTabChange(v as LeagueTab)} className="w-full">
+        <TabsList className="bg-transparent p-0 border-b w-full justify-start h-auto rounded-none space-x-6 overflow-x-auto scrollbar-hide">
+          {hasUserTeam && (
+            <TabsTrigger
+              value="my-team"
+              className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium text-emerald-600 dark:text-emerald-400"
+            >
+              Mi Equipo
+            </TabsTrigger>
+          )}
+          <TabsTrigger
+            value="standings"
+            className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium"
+          >
+            Tabla
+          </TabsTrigger>
+          <TabsTrigger
+            value="fixture"
+            className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium"
+          >
+            Fixture
+          </TabsTrigger>
+          <TabsTrigger
+            value="teams"
+            className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium"
+          >
+            Equipos
+          </TabsTrigger>
+          <TabsTrigger
+            value="scorers"
+            className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium"
+          >
+            Goleadores
+          </TabsTrigger>
+          {isOwner && league.status === 'open_for_applications' && (
+            <TabsTrigger
+              value="applications"
+              className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium"
+            >
+              Solicitudes
+            </TabsTrigger>
           )}
         </TabsList>
       </Tabs>

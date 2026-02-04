@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -7,10 +6,10 @@ import type { Player, Jersey } from '@/lib/types';
 import { PlayerDetailCard } from '@/components/player-detail-card';
 import { LineChart, BrainCircuit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from './ui/button';
 import Link from 'next/link';
 import { PlayerRecentActivity } from './player-recent-activity';
 import { PlayerSuggestionsCard } from './player-suggestions-card';
+import { PlayerTeamsList } from './player-teams-list';
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -36,7 +35,10 @@ export default function PlayerProfileView({ playerId, player, jersey }: PlayerPr
         isCurrentUserProfile={isCurrentUserProfile}
         jersey={jersey}
       />
-      
+
+      {/* NEW: Teams List */}
+      <PlayerTeamsList playerId={playerId} groupId={player.groupId} />
+
       {isCurrentUserProfile && (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

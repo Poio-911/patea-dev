@@ -294,7 +294,13 @@ export default function CupDetailPage() {
 
           <TabsContent value="bracket" className="mt-6">
             {cup.bracket && cup.bracket.length > 0 ? (
-              <CupBracket bracket={cup.bracket} onMatchClick={handleMatchClick} currentRound={cup.currentRound} canCreate={isOwner} />
+              <CupBracket
+                bracket={cup.bracket}
+                onMatchClick={handleMatchClick}
+                currentRound={cup.currentRound}
+                canCreate={isOwner}
+                userTeamId={teams?.find(t => t.ownerUid === user?.uid || t.members.some(m => m.uid === user?.uid))?.id}
+              />
             ) : (
               <div className="text-center py-16 border-2 border-dashed rounded-xl">
                 <Trophy className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
@@ -316,9 +322,9 @@ export default function CupDetailPage() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {teams?.map(team => (
-                    <div key={team.id} className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 transition-colors">
-                      <div className="w-10 h-10 flex-shrink-0">
-                        <JerseyPreview jersey={team.jersey} />
+                    <div key={team.id} className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer">
+                      <div className="flex-shrink-0">
+                        <JerseyPreview jersey={team.jersey} size="sm" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold truncate">{team.name}</p>

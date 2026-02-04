@@ -33,7 +33,9 @@ import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BackButton } from '@/components/navigation/back-button';
 
-type LeagueTab = 'standings' | 'fixture' | 'teams' | 'scorers' | 'applications';
+import { MyTeamView } from '@/components/competitions/my-team-view';
+
+type LeagueTab = 'standings' | 'fixture' | 'teams' | 'scorers' | 'applications' | 'my-team';
 
 export default function LeagueDetailPage() {
   const params = useParams<{ id: string }>();
@@ -57,6 +59,14 @@ export default function LeagueDetailPage() {
   }, [firestore, leagueId]);
 
   const { data: league, loading: leagueLoading } = useDoc<League>(leagueRef);
+
+  // Fetch organizer data
+  const organizerRef = useMemo(() => {
+    if (!firestore || !league?.ownerUid) return null;
+    return doc(firestore, 'users', league.ownerUid);
+  }, [firestore, league?.ownerUid]);
+
+  const { data: organizer } = useDoc<any>(organizerRef);
 
   // Fetch matches
   const matchesQuery = useMemo(() => {
@@ -91,6 +101,46 @@ export default function LeagueDetailPage() {
       teams.map(t => ({ id: t.id, name: t.name, jersey: t.jersey }))
     );
   }, [matches, teams]);
+
+  // User Team Logic
+  const userTeam = useMemo(() => {
+    if (!user || !teams) return null;
+    return teams.find(t => t.createdBy === user.uid || t.ownerUid === user.uid || t.members.some(m => m.playerId === user.uid));
+  }, [user, teams]);
+
+  const userTeamStats = useMemo(() => {
+    if (!userTeam || !standings) return null;
+    return standings.find(s => s.teamId === userTeam.id);
+  }, [userTeam, standings]);
+
+  const userNextMatch = useMemo(() => {
+    if (!userTeam || !matches) return null;
+    return matches.find(m =>
+      (m.team1Id === userTeam.id || m.team2Id === userTeam.id) &&
+      !['completed', 'evaluated', 'cancelled', 'rejected'].includes(m.status as string)
+    );
+  }, [userTeam, matches]);
+
+  const userRecentForm = useMemo(() => {
+    if (!userTeam || !matches) return [];
+
+    // Sort matches by date descending (newest first)
+    const sortedMatches = [...matches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const completedMatches = sortedMatches.filter(m =>
+      (m.team1Id === userTeam.id || m.team2Id === userTeam.id) &&
+      (m.status === 'completed' || m.status === 'evaluated')
+    ).slice(0, 5);
+
+    return completedMatches.map(m => {
+      const isTeam1 = m.team1Id === userTeam.id;
+      const myScore = isTeam1 ? (m.scoreTeam1 ?? 0) : (m.scoreTeam2 ?? 0);
+      const rivalScore = isTeam1 ? (m.scoreTeam2 ?? 0) : (m.scoreTeam1 ?? 0);
+      if (myScore > rivalScore) return 'W';
+      if (myScore < rivalScore) return 'L';
+      return 'D';
+    });
+  }, [userTeam, matches]);
 
   // Get current round
   const currentRound = useMemo(() => {
@@ -213,6 +263,8 @@ export default function LeagueDetailPage() {
         onStartLeague={() => setShowStartDialog(true)}
         onCompleteLeague={() => setShowCompleteDialog(true)}
         onDeleteLeague={() => setShowDeleteDialog(true)}
+        organizer={organizer}
+        hasUserTeam={!!userTeam}
       />
 
       {/* Champion Celebration */}
@@ -226,6 +278,18 @@ export default function LeagueDetailPage() {
       )}
 
       {/* Tab Content */}
+      {activeTab === 'my-team' && userTeam && (
+        <MyTeamView
+          teamId={userTeam.id}
+          teamName={userTeam.name}
+          jersey={userTeam.jersey}
+          stats={userTeamStats}
+          nextMatch={userNextMatch}
+          recentForm={userRecentForm as ('W' | 'L' | 'D')[]}
+          competitionType="league"
+        />
+      )}
+
       {activeTab === 'standings' && (
         <LeagueStandingsTable standings={standings} />
       )}
@@ -260,7 +324,7 @@ export default function LeagueDetailPage() {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold truncate">{team.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {team.players?.length || 0} jugadores
+                        {team.members?.length || 0} jugadores
                       </p>
                     </div>
                   </CardContent>

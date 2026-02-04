@@ -108,8 +108,17 @@ export function CupCard({ cup }: CupCardProps) {
         </CardContent>
 
         <CardFooter className="pt-0">
-          <Button variant="link" className="p-0 h-auto group-hover:gap-3 transition-all text-yellow-700 dark:text-yellow-500 hover:text-yellow-600">
-            Ver Copa <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+          <Button
+            variant="link"
+            className={cn(
+              "p-0 h-auto group-hover:gap-3 transition-all",
+              isCompleted
+                ? "trophy-shimmer"
+                : "text-[hsl(var(--cup-primary))] hover:text-[hsl(var(--cup-secondary))]"
+            )}
+          >
+            {isCompleted ? 'Ver Campeón' : 'Ver Copa'}
+            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Button>
         </CardFooter>
       </Card>

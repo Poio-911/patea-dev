@@ -574,6 +574,7 @@ export type UserProfile = {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
+  phoneNumber?: string; // WhatsApp or phone number
   groups?: string[];
   activeGroupId?: string | null;
   fcmTokens?: string[]; // Firebase Cloud Messaging tokens for push notifications

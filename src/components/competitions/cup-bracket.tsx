@@ -2,10 +2,10 @@
 
 import { BracketMatch, CupRound } from '@/lib/types';
 import { getRoundName, getMatchesByRound } from '@/lib/utils/cup-bracket';
-import { JerseyPreview } from '../team-builder/jersey-preview';
-import { Card } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { Trophy, Clock } from 'lucide-react';
+import { JerseyPreview } from '@/components/team-builder/jersey-preview';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Trophy, Clock, Medal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CupBracketProps {
@@ -13,59 +13,49 @@ interface CupBracketProps {
   onMatchClick?: (match: BracketMatch) => void;
   highlightedMatchId?: string;
   currentRound?: CupRound;
-  canCreate?: boolean; // whether current user can create/retry match
+  canCreate?: boolean;
+  userTeamId?: string;
 }
 
-export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentRound, canCreate }: CupBracketProps) {
+export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentRound, canCreate, userTeamId }: CupBracketProps) {
   if (!bracket || bracket.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-        <Trophy className="h-12 w-12 mb-4 opacity-50" />
-        <p>El bracket aún no ha sido generado.</p>
-        <p className="text-sm">Inicia la copa para crear el bracket.</p>
+      <div className="flex flex-col items-center justify-center py-20 text-muted-foreground bg-muted/10 rounded-2xl border border-dashed border-border/50">
+        <Trophy className="h-16 w-16 mb-4 opacity-20" />
+        <p className="text-lg font-medium">El bracket aún no ha sido generado</p>
+        <p className="text-sm">Iniciá la copa para sortear las llaves.</p>
       </div>
     );
   }
 
   // Constants for layout
-  const CARD_WIDTH = 256; // w-64
-  const CARD_HEIGHT = 100; // Approximate height of the new card
-  const GAP_X = 80; // Horizontal gap between rounds
-  const BASE_GAP_Y = 20; // Vertical gap in the first round
+  const CARD_WIDTH = 260;
+  const CARD_HEIGHT = 110;
+  const GAP_X = 100;
+  const BASE_GAP_Y = 32;
 
   // Get rounds
   const allRounds: CupRound[] = ['round_of_32', 'round_of_16', 'round_of_8', 'semifinals', 'final'];
   const activeRounds = allRounds.filter(round => bracket.some(m => m.round === round));
 
   // Calculate positions
-  // We need to map each match to a {x, y} coordinate
   const matchPositions = new Map<string, { x: number; y: number }>();
-
-  // Group matches by round
   const roundsMap = new Map<CupRound, BracketMatch[]>();
+
   activeRounds.forEach(round => {
     roundsMap.set(round, getMatchesByRound(bracket, round).sort((a, b) => a.matchNumber - b.matchNumber));
   });
 
-  // Calculate Y positions
-  // We start from the first round and propagate positions? 
-  // Actually, standard bracket logic: Round 0 determines base spacing.
-  // But if we have byes or uneven brackets, it's harder.
-  // Assumption: Full bracket or standard powers of 2.
-
   activeRounds.forEach((round, roundIndex) => {
     const matches = roundsMap.get(round) || [];
-    const x = roundIndex * (CARD_WIDTH + GAP_X);
+    const x = roundIndex * (CARD_WIDTH + GAP_X) + 20; // +20 padding
 
     matches.forEach((match, index) => {
       let y = 0;
 
       if (roundIndex === 0) {
-        // Base round: simple spacing
-        y = index * (CARD_HEIGHT + BASE_GAP_Y);
+        y = index * (CARD_HEIGHT + BASE_GAP_Y) + 60; // +60 for headers
       } else {
-        // Subsequent rounds: center between children (previous round matches that feed into this one)
-        // We need to find the matches in the previous round that have nextMatchNumber === match.matchNumber
         const prevRound = activeRounds[roundIndex - 1];
         const prevMatches = roundsMap.get(prevRound) || [];
         const feeders = prevMatches.filter(m => m.nextMatchNumber === match.matchNumber);
@@ -75,8 +65,7 @@ export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentR
           const maxY = Math.max(...feeders.map(m => matchPositions.get(m.id)?.y || 0));
           y = (minY + maxY) / 2;
         } else {
-          // Fallback if no feeders (shouldn't happen in standard tree)
-          y = index * (CARD_HEIGHT + BASE_GAP_Y) * Math.pow(2, roundIndex);
+          y = index * (CARD_HEIGHT + BASE_GAP_Y) * Math.pow(2, roundIndex) + 60;
         }
       }
 
@@ -84,12 +73,11 @@ export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentR
     });
   });
 
-  // Calculate container dimensions
-  const totalWidth = activeRounds.length * (CARD_WIDTH + GAP_X) - GAP_X;
-  const maxHeight = Math.max(...Array.from(matchPositions.values()).map(p => p.y)) + CARD_HEIGHT;
+  const totalWidth = activeRounds.length * (CARD_WIDTH + GAP_X) + 40;
+  const maxHeight = Math.max(...Array.from(matchPositions.values()).map(p => p.y)) + CARD_HEIGHT + 40;
 
   return (
-    <div className="w-full overflow-x-auto pb-8 pt-4 px-4 bg-muted/5 rounded-xl border border-dashed">
+    <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
       <div
         className="relative mx-auto"
         style={{ width: totalWidth, height: maxHeight }}
@@ -99,86 +87,56 @@ export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentR
           className="absolute inset-0 pointer-events-none"
           style={{ width: totalWidth, height: maxHeight }}
         >
+          <defs>
+            <linearGradient id="gradient-connector" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.4" />
+            </linearGradient>
+            <linearGradient id="gradient-user" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="hsl(var(--ovr-elite))" stopOpacity="1" />
+              <stop offset="100%" stopColor="hsl(var(--ovr-elite))" stopOpacity="0.6" />
+            </linearGradient>
+          </defs>
+
           {bracket.map(match => {
             if (!match.nextMatchNumber) return null;
-
-            // Find next match
             const currentPos = matchPositions.get(match.id);
-            // We need to find the match in the next round with matchNumber === nextMatchNumber
-            // Optimization: we could build a map of matches by round+number, but iterating is fine for small brackets
-            const nextMatch = bracket.find(m => m.matchNumber === match.nextMatchNumber && m.round !== match.round); // Ensure it's a different round (next one)
-
+            const nextMatch = bracket.find(m => m.matchNumber === match.nextMatchNumber && m.round !== match.round);
             if (!currentPos || !nextMatch) return null;
-
             const nextPos = matchPositions.get(nextMatch.id);
             if (!nextPos) return null;
 
-            // Draw line from Right-Center of Current to Left-Center of Next
             const startX = currentPos.x + CARD_WIDTH;
             const startY = currentPos.y + (CARD_HEIGHT / 2);
             const endX = nextPos.x;
             const endY = nextPos.y + (CARD_HEIGHT / 2);
-
-            // Bezier curve control points
             const cp1x = startX + (GAP_X / 2);
             const cp1y = startY;
             const cp2x = endX - (GAP_X / 2);
             const cp2y = endY;
 
             const path = `M ${startX} ${startY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${endX} ${endY}`;
-
-            // Determine line color/status
-            const isWinner = match.winnerId && (match.winnerId === match.team1Id || match.winnerId === match.team2Id);
-            // Actually, the line represents the "slot" advancing. 
-            // If this match has a winner, the line to the next match is "active" for that winner?
-            // No, the line connects Match A to Match B. 
-            // If Match A is done, the line is "completed".
             const isCompleted = !!match.winnerId;
+
+            // Highlight logic
+            const isUserPath = userTeamId &&
+              (match.team1Id === userTeamId || match.team2Id === userTeamId) &&
+              match.winnerId === userTeamId;
 
             return (
               <path
                 key={`conn-${match.id}-${nextMatch.id}`}
                 d={path}
                 fill="none"
-                stroke={isCompleted ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))"}
-                strokeWidth={isCompleted ? 2 : 1}
-                strokeOpacity={isCompleted ? 0.8 : 0.3}
-                className="transition-all duration-500"
+                stroke={isUserPath ? "hsl(var(--ovr-elite))" : isCompleted ? "hsl(var(--primary))" : "hsl(var(--border))"}
+                strokeWidth={isUserPath ? 3 : isCompleted ? 2 : 1.5}
+                strokeOpacity={isUserPath ? 0.8 : isCompleted ? 0.6 : 0.3}
+                strokeDasharray={isCompleted || isUserPath ? "0" : "6 4"}
+                className="transition-all duration-700 ease-in-out"
               />
             );
           })}
         </svg>
-
-        {/* Matches Layer */}
-        {bracket.map(match => {
-          const pos = matchPositions.get(match.id);
-          if (!pos) return null;
-
-          return (
-            <div
-              key={match.id}
-              className="absolute transition-all duration-500"
-              style={{
-                left: pos.x,
-                top: pos.y,
-                width: CARD_WIDTH,
-                height: CARD_HEIGHT
-              }}
-            >
-              {/* Round Label (only for first match in column to act as header?) 
-                  No, better to have headers separate. 
-                  Let's just render the card.
-              */}
-              <BracketMatchCard
-                match={match}
-                onClick={onMatchClick}
-                isHighlighted={highlightedMatchId === match.id}
-                isFinal={match.round === 'final'}
-                canCreate={!!canCreate}
-              />
-            </div>
-          );
-        })}
 
         {/* Round Headers */}
         {activeRounds.map((round, index) => {
@@ -187,20 +145,46 @@ export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentR
             <div
               key={`header-${round}`}
               className={cn(
-                "absolute top-[-40px] text-center font-bold text-sm uppercase tracking-wider transition-all duration-300",
+                "absolute top-0 text-center font-bold text-sm tracking-wider uppercase transition-all duration-300 py-2 rounded-full",
                 isCurrentRound
-                  ? "text-primary scale-110"
+                  ? "text-primary bg-primary/10 border border-primary/20 shadow-sm"
                   : "text-muted-foreground"
               )}
               style={{
-                left: index * (CARD_WIDTH + GAP_X),
+                left: index * (CARD_WIDTH + GAP_X) + 20,
                 width: CARD_WIDTH
               }}
             >
-              {isCurrentRound && (
-                <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rounded-full animate-pulse" />
-              )}
               {getRoundName(round)}
+            </div>
+          );
+        })}
+
+        {/* Matches Layer */}
+        {bracket.map(match => {
+          const pos = matchPositions.get(match.id);
+          if (!pos) return null;
+          const isUserMatch = Boolean(userTeamId && (match.team1Id === userTeamId || match.team2Id === userTeamId));
+
+          return (
+            <div
+              key={match.id}
+              className="absolute transition-all duration-500 ease-out"
+              style={{
+                left: pos.x,
+                top: pos.y,
+                width: CARD_WIDTH,
+                height: CARD_HEIGHT
+              }}
+            >
+              <BracketMatchCard
+                match={match}
+                onClick={onMatchClick}
+                isHighlighted={highlightedMatchId === match.id || isUserMatch}
+                isFinal={match.round === 'final'}
+                canCreate={!!canCreate}
+                userTeamId={userTeamId}
+              />
             </div>
           );
         })}
@@ -215,117 +199,93 @@ interface BracketMatchCardProps {
   isHighlighted?: boolean;
   isFinal?: boolean;
   canCreate?: boolean;
+  userTeamId?: string;
 }
 
-function BracketMatchCard({ match, onClick, isHighlighted, isFinal, canCreate }: BracketMatchCardProps) {
+function BracketMatchCard({ match, onClick, isHighlighted, isFinal, canCreate, userTeamId }: BracketMatchCardProps) {
   const hasTeams = match.team1Id && match.team2Id;
   const isCompleted = !!match.winnerId;
-  const team1IsWinner = match.winnerId === match.team1Id;
-  const team2IsWinner = match.winnerId === match.team2Id;
 
-  // Helper to render a team row
-  const TeamRow = ({
-    name,
-    jersey,
-    isWinner,
-    score,
-    isPlaceholder
-  }: {
-    name?: string,
-    jersey?: any,
-    isWinner?: boolean,
-    score?: number,
-    isPlaceholder?: boolean
-  }) => (
-    <div className={cn(
-      "flex items-center justify-between px-3 py-2 transition-colors",
-      isWinner && "bg-primary/5 font-semibold",
-      !isWinner && isCompleted && "opacity-60",
-      isPlaceholder && "opacity-40"
-    )}>
-      <div className="flex items-center gap-2 min-w-0 flex-1">
-        {jersey ? (
-          <div className="w-6 h-6 flex-shrink-0">
-            <JerseyPreview jersey={jersey} size="xs" />
-          </div>
-        ) : (
-          <div className="w-6 h-6 flex-shrink-0 rounded-full bg-muted flex items-center justify-center">
-            <span className="text-[10px] text-muted-foreground">?</span>
-          </div>
+  const TeamRow = ({ name, jersey, isWinner, score, teamId }: { name?: string, jersey?: any, isWinner?: boolean, score?: number, teamId?: string }) => {
+    const isUser = userTeamId && teamId === userTeamId;
+    return (
+      <div className={cn(
+        "flex items-center justify-between px-3 py-1.5 transition-colors border-l-2",
+        isWinner ? (isUser ? "bg-purple-500/10 border-purple-500 font-bold" : "bg-primary/5 border-primary font-semibold") : "border-transparent",
+        !isWinner && isCompleted && "opacity-60 grayscale",
+        !name && "opacity-40"
+      )}>
+        <div className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden">
+          {jersey ? (
+            <div className="w-5 h-5 flex-shrink-0 shadow-sm">
+              <JerseyPreview jersey={jersey} size="xs" />
+            </div>
+          ) : (
+            <div className="w-5 h-5 flex-shrink-0 rounded-full bg-muted/50 border border-white/10" />
+          )}
+          <span className={cn(
+            "text-sm truncate",
+            isUser && "text-purple-600 dark:text-purple-400 font-medium"
+          )}>
+            {name || "Esperando..."}
+          </span>
+        </div>
+        {name && (
+          <span className={cn(
+            "text-sm font-variant-numeric tabular-nums w-6 text-center rounded-sm",
+            isCompleted ? (isWinner ? "text-foreground font-bold" : "text-muted-foreground") : "text-muted-foreground/50",
+            score !== undefined ? "bg-muted/10" : ""
+          )}>
+            {score ?? "-"}
+          </span>
         )}
-        <span className={cn(
-          "text-sm truncate",
-          isWinner ? "text-foreground" : "text-muted-foreground"
-        )}>
-          {name || 'TBD'}
-        </span>
       </div>
-      {typeof score === 'number' && (
-        <span className={cn(
-          "text-sm font-variant-numeric tabular-nums ml-2",
-          isWinner ? "font-bold text-primary" : "text-muted-foreground"
-        )}>
-          {score}
-        </span>
-      )}
-    </div>
-  );
+    );
+  };
 
   return (
-    <div
-      className={cn(
-        'w-64 rounded-lg border bg-card shadow-sm transition-all cursor-pointer hover:shadow-md hover:border-primary/50 overflow-hidden relative group',
-        isHighlighted && 'ring-2 ring-primary',
-        isFinal && 'border-amber-500/50 shadow-amber-500/10',
-        !hasTeams && 'opacity-70'
-      )}
+    <Card
       onClick={() => onClick?.(match)}
+      className={cn(
+        "h-full flex flex-col justify-center overflow-hidden cursor-pointer transition-all duration-300",
+        "bg-white dark:bg-card/90 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md",
+        isHighlighted && "ring-2 ring-primary ring-offset-2 dark:ring-offset-card",
+        isFinal && "ring-1 ring-amber-500/50 shadow-amber-500/10",
+        userTeamId && (match.team1Id === userTeamId || match.team2Id === userTeamId) && "border-purple-500/30"
+      )}
     >
-      {/* Status Bar */}
-      <div className={cn(
-        "absolute left-0 top-0 bottom-0 w-1 transition-colors",
-        isCompleted ? (match.winnerId ? "bg-primary" : "bg-muted") : "bg-transparent group-hover:bg-primary/30"
-      )} />
-
-      <div className="flex flex-col divide-y">
-        {/* Header with Match Number */}
-        <div className="px-3 py-1 bg-muted/30 flex justify-between items-center">
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-            Match {match.matchNumber}
-          </span>
-          {isFinal && <Trophy className="h-3 w-3 text-amber-500" />}
-        </div>
-
+      <div className="flex flex-col gap-0.5 w-full">
         <TeamRow
           name={match.team1Name}
           jersey={match.team1Jersey}
-          isWinner={team1IsWinner}
+          isWinner={match.winnerId === match.team1Id}
           score={match.finalScore?.team1}
-          isPlaceholder={!match.team1Id}
+          teamId={match.team1Id}
         />
+        <div className="h-px bg-border/40 mx-3" />
         <TeamRow
           name={match.team2Name}
           jersey={match.team2Jersey}
-          isWinner={team2IsWinner}
+          isWinner={match.winnerId === match.team2Id}
           score={match.finalScore?.team2}
-          isPlaceholder={!match.team2Id}
+          teamId={match.team2Id}
         />
       </div>
 
-      {/* Create/Retry affordance */}
-      {hasTeams && !match.matchId && (
-        <div className="absolute bottom-2 right-2">
-          {canCreate ? (
-            <div className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/30 shadow-sm group-hover:bg-primary/15">
-              Crear/Reintentar
-            </div>
-          ) : (
-            <div className="text-[10px] px-2 py-1 rounded-full bg-muted/40 text-muted-foreground border border-muted/50">
-              Pendiente
-            </div>
-          )}
+      {/* Status Footer */}
+      {(hasTeams || isFinal) && (
+        <div className="absolute top-1 right-2 flex gap-1">
+          {isCompleted && isFinal ? (
+            <Badge variant="secondary" className="h-4 px-1 text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+              <Medal className="w-3 h-3 mr-1" /> Campeón
+            </Badge>
+          ) : isCompleted ? (
+            <Badge variant="outline" className="h-4 px-1 text-[9px] border-0 bg-muted/50">Finalizado</Badge>
+          ) : canCreate ? (
+            <Badge variant="default" className="h-4 px-1 text-[9px] animate-pulse">Jugar</Badge>
+          ) : null}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

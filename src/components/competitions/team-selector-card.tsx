@@ -44,9 +44,7 @@ export function TeamSelectorCard({
       />
       {/* Jersey */}
       <div className="flex-shrink-0">
-        <div className="w-10 h-10">
-          <JerseyPreview jersey={team.jersey} />
-        </div>
+        <JerseyPreview jersey={team.jersey} size="sm" />
       </div>
 
       <Label

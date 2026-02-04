@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,7 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Trophy, Loader2, ArrowLeft } from 'lucide-react';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-import { updateMatchFinalScoreAction, logMatchEventAction, updateLiveStateAction } from '@/lib/actions/server-actions';
+import { updateMatchFinalScoreAction, logMatchEventAction, updateLiveStateAction, updateLeagueStandingsAction } from '@/lib/actions/server-actions';
+import { checkAndCompleteLeague, resolveTiebreakerFinal } from '@/lib/actions/league-completion-actions';
+import { updatePlayerStatsFromMatch } from '@/lib/actions/player-stats-actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -17,13 +18,13 @@ import { LiveMatchDashboard } from '@/components/match/live-match-dashboard';
 import { MatchTimeline } from '@/components/match/match-timeline';
 import { LiveStats } from '@/components/match/live-stats';
 
-interface CupMatchViewProps {
+interface LeagueMatchViewProps {
     match: Match;
-    cupId: string;
+    leagueId: string;
     userId: string;
 }
 
-export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
+export function LeagueMatchView({ match, leagueId, userId }: LeagueMatchViewProps) {
     const { toast } = useToast();
     const router = useRouter();
     const [team1Score, setTeam1Score] = useState(match.finalScore?.team1?.toString() || '0');
@@ -32,7 +33,8 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
 
     const team1 = match.teams[0];
     const team2 = match.teams[1];
-    const isCompleted = match.status === 'completed';
+    const isCompleted = match.status === 'completed' || match.status === 'evaluated';
+    const isOwner = userId === match.ownerUid;
 
     // ✅ Sync local state if match prop changes (e.g. goals added in visualizer)
     useEffect(() => {
@@ -53,45 +55,72 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
             return;
         }
 
-        if (score1 === score2) {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: 'En copas no puede haber empate. Debe haber un ganador.',
-            });
-            return;
-        }
-
         setIsSubmitting(true);
 
         try {
-            console.log('[CupMatchView] Starting match finalization', {
+            console.log('[LeagueMatchView] Starting match finalization', {
                 matchId: match.id,
-                cupId,
+                leagueId,
                 score1,
                 score2,
-                participantTeamIds: match.participantTeamIds,
-                team1Id: team1.id,
-                team2Id: team2.id,
+                matchType: match.type,
             });
 
-            // Update match score & finalize (this now handles standings and cup advancement on the server)
+            // Update match score & finalize
             const scoreResult = await updateMatchFinalScoreAction(match.id, score1, score2, userId);
-            console.log('[CupMatchView] Score update result:', scoreResult);
+            console.log('[LeagueMatchView] Score update result:', scoreResult);
 
             if (!scoreResult.success) {
                 throw new Error(scoreResult.error || 'Error al actualizar el resultado');
             }
 
+            // Update league standings
+            await updateLeagueStandingsAction(leagueId);
+
+            // Update player stats
+            await updatePlayerStatsFromMatch(match.id);
+
+            // Check if league should be completed
+            if (match.type === 'league') {
+                const completionResult = await checkAndCompleteLeague(leagueId);
+
+                if (completionResult.requiresTiebreaker) {
+                    toast({
+                        title: '¡Se requiere partido final!',
+                        description: completionResult.message,
+                        duration: 5000,
+                    });
+                } else if (completionResult.success) {
+                    toast({
+                        title: '¡Liga finalizada!',
+                        description: completionResult.message,
+                        duration: 5000,
+                    });
+                }
+            }
+
+            // Resolve tiebreaker if this was a final match
+            if (match.type === 'league_final') {
+                const tiebreakerResult = await resolveTiebreakerFinal(leagueId, match.id);
+
+                if (tiebreakerResult.success) {
+                    toast({
+                        title: '¡Campeón definido!',
+                        description: tiebreakerResult.message,
+                        duration: 5000,
+                    });
+                }
+            }
+
             toast({
                 title: '¡Partido finalizado!',
-                description: 'El resultado se guardó y el bracket se actualizó.',
+                description: 'El resultado se guardó y la tabla de posiciones se actualizó.',
             });
 
-            // Redirect to cup page
-            router.push(`/competitions/cups/${cupId}`);
+            // Redirect to league page
+            router.push(`/competitions/leagues/${leagueId}`);
         } catch (error: any) {
-            console.error('[CupMatchView] Error finalizing match:', error);
+            console.error('[LeagueMatchView] Error finalizing match:', error);
             toast({
                 variant: 'destructive',
                 title: 'Error',
@@ -107,9 +136,9 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <Button asChild variant="outline">
-                    <Link href={`/competitions/cups/${cupId}`}>
+                    <Link href={`/competitions/leagues/${leagueId}`}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Volver a la Copa
+                        Volver a la Liga
                     </Link>
                 </Button>
             </div>
@@ -117,11 +146,13 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
             {/* Match Title */}
             <div className="text-center">
                 <h1 className="text-2xl font-bold">{match.title}</h1>
-                <p className="text-sm text-muted-foreground mt-1">Partido de Copa</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                    {match.type === 'league_final' ? 'Partido Final' : `Fecha ${match.leagueInfo?.round || 1}`}
+                </p>
             </div>
 
             {/* Score Card */}
-            {userId === match.ownerUid && (
+            {isOwner && (
                 <Card className="border-border bg-card/70">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -186,12 +217,12 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
                 </Card>
             )}
 
-            {/* Live Match Dashboard - Show for cup matches */}
-            {(match.status === 'upcoming' || match.status === 'active') && userId === match.ownerUid && (
+            {/* Live Match Dashboard - Show for league matches */}
+            {(match.status === 'upcoming' || match.status === 'active') && isOwner && (
                 <div className="space-y-6">
                     <LiveMatchDashboard
                         match={match}
-                        isAdmin={userId === match.ownerUid}
+                        isAdmin={isOwner}
                         onEventLogged={async (event) => {
                             const result = await logMatchEventAction(match.id, event, userId);
                             if (!result.success) {

@@ -1,12 +1,12 @@
 'use client';
 
 import { useUser } from '@/firebase';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Match } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { updateMatchFinalScoreAction, advanceCupWinnerAction } from '@/lib/actions/server-actions';
+import { updateMatchFinalScoreAction } from '@/lib/actions/server-actions';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Trophy, Save } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +28,12 @@ export const CompetitionMatchControls = ({ match, onSuccess }: CompetitionMatchC
 
     if (!team1 || !team2) return null;
 
+    // ✅ Sync local state if match prop changes (e.g. goals added in visualizer)
+    useEffect(() => {
+        setTeam1Score(match.finalScore?.team1?.toString() || match.teams?.[0]?.finalScore?.toString() || '0');
+        setTeam2Score(match.finalScore?.team2?.toString() || match.teams?.[1]?.finalScore?.toString() || '0');
+    }, [match.finalScore, match.teams]);
+
     const handleSaveScore = async () => {
         if (!user) {
             toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión.' });
@@ -45,38 +51,31 @@ export const CompetitionMatchControls = ({ match, onSuccess }: CompetitionMatchC
                 return;
             }
 
-            // 1. Update match score
+            // In cups, we should prevent draw if possible, or warn at least.
+            if (match.type === 'cup' && score1 === score2) {
+                toast({
+                    title: 'Empate en Copa',
+                    description: 'En copas debe haber un ganador para avanzar en el bracket.',
+                    variant: 'destructive'
+                });
+                setIsSubmitting(false);
+                return;
+            }
+
+            // 1. Update match score & finalize (this now handles standings and cup advancement on the server)
             const updateResult = await updateMatchFinalScoreAction(match.id, score1, score2, user.uid);
             if (!updateResult.success) throw new Error(updateResult.error);
 
-            toast({ title: 'Marcador actualizado', description: 'El resultado se ha guardado correctamente.' });
+            toast({ title: 'Partido Finalizado', description: 'El resultado se ha guardado y las tablas se han actualizado.' });
 
-            // 2. If it's a cup match, advance the winner
-            if (match.type === 'cup' && match.leagueInfo?.leagueId && match.participantTeamIds && match.participantTeamIds.length === 2) {
-                if (score1 === score2) {
-                    toast({
-                        title: 'Empate',
-                        description: 'En copas no puede haber empate. Por favor define un ganador (penales, etc).',
-                        className: 'bg-warning text-warning-foreground border-none'
-                    });
-                    setIsSubmitting(false);
-                    // We don't advance winner on draw yet
-                } else {
-                    // Use participantTeamIds to determine winner (index 0 or 1)
-                    const winnerId = score1 > score2 ? match.participantTeamIds[0] : match.participantTeamIds[1];
-                    const advanceResult = await advanceCupWinnerAction(match.leagueInfo.leagueId, match.id, winnerId);
-
-                    if (advanceResult.success) {
-                        toast({ title: '¡Ganador avanzado!', description: 'El bracket se ha actualizado y el siguiente partido se creó.' });
-                        // Refresh the page to show updated bracket
-                        window.location.reload();
-                    } else {
-                        throw new Error(advanceResult.error);
-                    }
-                }
-            } else if (onSuccess) {
+            if (onSuccess) {
                 onSuccess();
             }
+
+            // Refresh the page to show updated bracket or standings
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
 
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message || 'Ocurrió un error al guardar.' });

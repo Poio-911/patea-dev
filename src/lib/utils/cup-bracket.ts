@@ -169,7 +169,8 @@ export function advanceWinner(
   completedMatchId: string,
   winnerId: string,
   winnerName: string,
-  winnerJersey: Jersey
+  winnerJersey: Jersey,
+  finalScore?: { team1: number; team2: number }
 ): BracketMatch[] {
   const updatedBracket = [...bracket];
 
@@ -181,10 +182,11 @@ export function advanceWinner(
 
   const completedMatch = updatedBracket[completedMatchIndex];
 
-  // Mark winner in completed match
+  // Mark winner and score in completed match
   updatedBracket[completedMatchIndex] = {
     ...completedMatch,
     winnerId,
+    finalScore,
   };
 
   // If final, no advancement needed

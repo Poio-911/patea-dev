@@ -6,15 +6,16 @@ import { } from '@/components/ui/card';
 import { PlayerCard } from '@/components/player-card';
 import { AddPlayerDialog } from '@/components/add-player-dialog';
 import { collection, query, where } from 'firebase/firestore';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Users2, Users, Loader2 } from 'lucide-react';
+import { Users2, Users, Loader2, Filter } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import type { Player, UserProfile } from '@/lib/types';
 import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 import { motion } from 'framer-motion';
+import { PlayerFiltersComponent, type PlayerFilters } from '@/components/players/player-filters';
 
 const listVariants = {
   hidden: { opacity: 0 },
@@ -34,6 +35,10 @@ const itemVariants = {
 export default function PlayersPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
+  const [filters, setFilters] = useState<PlayerFilters>({
+    positions: [],
+    ovrRange: [40, 99],
+  });
 
   const playersQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
@@ -69,6 +74,25 @@ export default function PlayersPage() {
       .sort((a, b) => b.ovr - a.ovr);
   }, [players, groupUsers]);
 
+  // Apply filters
+  const filteredPlayers = useMemo(() => {
+    let result = sortedPlayers;
+
+    // Filter by position
+    if (filters.positions && filters.positions.length > 0) {
+      result = result.filter(player => filters.positions!.includes(player.position));
+    }
+
+    // Filter by OVR range
+    if (filters.ovrRange) {
+      result = result.filter(player =>
+        player.ovr >= filters.ovrRange![0] && player.ovr <= filters.ovrRange![1]
+      );
+    }
+
+    return result;
+  }, [sortedPlayers, filters]);
+
 
   return (
     <div className="flex flex-col gap-8">
@@ -84,9 +108,13 @@ export default function PlayersPage() {
         <AddPlayerDialog />
       </PageHeader>
 
-      <AttributesHelpDialog>
-        <Button variant="link" className="p-0 h-auto self-start">¿Qué significan los atributos?</Button>
-      </AttributesHelpDialog>
+      <div className="flex items-center justify-between gap-4">
+        <AttributesHelpDialog>
+          <Button variant="link" className="p-0 h-auto self-start">¿Qué significan los atributos?</Button>
+        </AttributesHelpDialog>
+
+        <PlayerFiltersComponent filters={filters} onFiltersChange={setFilters} />
+      </div>
 
       {loading && (
         <div className="flex items-center justify-center p-8">
@@ -118,12 +146,27 @@ export default function PlayersPage() {
         </Alert>
       )}
 
-      {sortedPlayers && sortedPlayers.length > 0 && (
-        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {sortedPlayers.map((player, index) => (
-            <PlayerCard key={player.id} player={player} index={index} />
-          ))}
-        </section>
+      {!loading && user?.activeGroupId && sortedPlayers?.length > 0 && filteredPlayers.length === 0 && (
+        <Alert>
+          <Filter className="h-4 w-4" />
+          <AlertTitle>No hay jugadores que coincidan con los filtros</AlertTitle>
+          <AlertDescription>
+            Intentá ajustar los filtros para ver más resultados.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {filteredPlayers && filteredPlayers.length > 0 && (
+        <>
+          <div className="text-sm text-muted-foreground">
+            Mostrando {filteredPlayers.length} de {sortedPlayers.length} jugadores
+          </div>
+          <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filteredPlayers.map((player, index) => (
+              <PlayerCard key={player.id} player={player} index={index} />
+            ))}
+          </section>
+        </>
       )}
     </div>
   );
