@@ -60,7 +60,7 @@ async function inspect() {
         console.log(`Found ${matchesSnap.size} matches.`);
 
         // Analyze scores and status
-        matchesSnap.forEach(doc => {
+        matchesSnap.forEach((doc: any) => {
             const m = doc.data();
             console.log(`Match ${doc.id} [${m.status}]: ${m.team1Name} (${m.scoreTeam1}) vs ${m.team2Name} (${m.scoreTeam2})`);
 
