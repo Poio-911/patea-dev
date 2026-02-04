@@ -299,7 +299,7 @@ export default function CupDetailPage() {
                 onMatchClick={handleMatchClick}
                 currentRound={cup.currentRound}
                 canCreate={isOwner}
-                userTeamId={teams?.find(t => t.ownerUid === user?.uid || t.members.some(m => m.uid === user?.uid))?.id}
+                userTeamId={teams?.find(t => t.ownerUid === user?.uid || t.members.some(m => m.playerId === user?.uid))?.id}
               />
             ) : (
               <div className="text-center py-16 border-2 border-dashed rounded-xl">
