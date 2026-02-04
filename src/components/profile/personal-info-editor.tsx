@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Mail, Phone, Loader2, Check, Upload } from 'lucide-react';
+import { User, Mail, Phone, Loader2, Check, Upload, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
@@ -23,7 +23,7 @@ export function PersonalInfoEditor({ user }: PersonalInfoEditorProps) {
     const firestore = useFirestore();
     const auth = useAuth();
 
-    const [isEditing, setIsEditing] = useState(false);
+    const [open, setOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState({
         displayName: user.displayName || '',
@@ -55,7 +55,7 @@ export function PersonalInfoEditor({ user }: PersonalInfoEditorProps) {
                 description: 'Tus datos personales se guardaron correctamente.',
             });
 
-            setIsEditing(false);
+            setOpen(false);
         } catch (error) {
             console.error('Error updating profile:', error);
             toast({
@@ -68,108 +68,107 @@ export function PersonalInfoEditor({ user }: PersonalInfoEditorProps) {
         }
     };
 
-    const handleCancel = () => {
-        setFormData({
-            displayName: user.displayName || '',
-            phoneNumber: user.phoneNumber || '',
-        });
-        setIsEditing(false);
+    const handleOpenChange = (isOpen: boolean) => {
+        setOpen(isOpen);
+        if (!isOpen) {
+            // Reset form data when closing
+            setFormData({
+                displayName: user.displayName || '',
+                phoneNumber: user.phoneNumber || '',
+            });
+        }
     };
 
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <CardTitle className="flex items-center gap-2">
-                            <User className="h-5 w-5" />
-                            Información Personal
-                        </CardTitle>
-                        <CardDescription>
-                            Gestioná tus datos personales y de contacto
-                        </CardDescription>
-                    </div>
-                    {!isEditing && (
-                        <Button onClick={() => setIsEditing(true)} variant="outline" size="sm">
-                            Editar
-                        </Button>
-                    )}
-                </div>
-            </CardHeader>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+            <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Editar Información Personal
+                </Button>
+            </DialogTrigger>
 
-            <CardContent className="space-y-6">
-                {/* Avatar Section */}
-                <div className="flex items-center gap-4">
-                    <Avatar className="h-20 w-20">
-                        <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'Usuario'} />
-                        <AvatarFallback className="text-lg">
-                            {user.displayName?.substring(0, 2).toUpperCase() || 'US'}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                        <p className="text-sm text-muted-foreground mb-2">Foto de perfil</p>
-                        <Button variant="outline" size="sm" disabled>
-                            <Upload className="h-4 w-4 mr-2" />
-                            Cambiar foto
-                        </Button>
-                        <p className="text-xs text-muted-foreground mt-1">Próximamente disponible</p>
-                    </div>
-                </div>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <User className="h-5 w-5" />
+                        Información Personal
+                    </DialogTitle>
+                    <DialogDescription>
+                        Actualizá tus datos personales y de contacto
+                    </DialogDescription>
+                </DialogHeader>
 
-                {/* Form Fields */}
-                <div className="space-y-4">
-                    {/* Display Name */}
-                    <div className="space-y-2">
-                        <Label htmlFor="displayName">Nombre completo</Label>
-                        <Input
-                            id="displayName"
-                            value={formData.displayName}
-                            onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                            disabled={!isEditing}
-                            placeholder="Tu nombre completo"
-                        />
+                <div className="space-y-6 py-4">
+                    {/* Avatar Section */}
+                    <div className="flex items-center gap-4">
+                        <Avatar className="h-20 w-20">
+                            <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'Usuario'} />
+                            <AvatarFallback className="text-lg">
+                                {user.displayName?.substring(0, 2).toUpperCase() || 'US'}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                            <p className="text-sm text-muted-foreground mb-2">Foto de perfil</p>
+                            <Button variant="outline" size="sm" disabled>
+                                <Upload className="h-4 w-4 mr-2" />
+                                Cambiar foto
+                            </Button>
+                            <p className="text-xs text-muted-foreground mt-1">Próximamente disponible</p>
+                        </div>
                     </div>
 
-                    {/* Email (Read-only) */}
-                    <div className="space-y-2">
-                        <Label htmlFor="email">Correo electrónico</Label>
-                        <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    {/* Form Fields */}
+                    <div className="space-y-4">
+                        {/* Display Name */}
+                        <div className="space-y-2">
+                            <Label htmlFor="displayName">Nombre completo</Label>
                             <Input
-                                id="email"
-                                value={user.email || ''}
-                                disabled
-                                className="pl-10 bg-muted"
+                                id="displayName"
+                                value={formData.displayName}
+                                onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                                placeholder="Tu nombre completo"
                             />
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            El correo no se puede modificar por seguridad
-                        </p>
-                    </div>
 
-                    {/* Phone Number */}
-                    <div className="space-y-2">
-                        <Label htmlFor="phoneNumber">WhatsApp / Teléfono</Label>
-                        <div className="relative">
-                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                id="phoneNumber"
-                                value={formData.phoneNumber}
-                                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                                disabled={!isEditing}
-                                placeholder="+54 9 11 1234-5678"
-                                className="pl-10"
-                            />
+                        {/* Email (Read-only) */}
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Correo electrónico</Label>
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    id="email"
+                                    value={user.email || ''}
+                                    disabled
+                                    className="pl-10 bg-muted"
+                                />
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                El correo no se puede modificar por seguridad
+                            </p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            Formato recomendado: +54 9 11 1234-5678
-                        </p>
-                    </div>
-                </div>
 
-                {/* Action Buttons */}
-                {isEditing && (
-                    <div className="flex gap-2 pt-4 border-t">
+                        {/* Phone Number */}
+                        <div className="space-y-2">
+                            <Label htmlFor="phoneNumber">WhatsApp / Teléfono</Label>
+                            <div className="relative">
+                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    id="phoneNumber"
+                                    value={formData.phoneNumber}
+                                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                                    placeholder="+54 9 11 1234-5678"
+                                    className="pl-10"
+                                />
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Formato recomendado: +54 9 11 1234-5678
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-4">
                         <Button onClick={handleSave} disabled={isSaving} className="flex-1">
                             {isSaving ? (
                                 <>
@@ -183,12 +182,12 @@ export function PersonalInfoEditor({ user }: PersonalInfoEditorProps) {
                                 </>
                             )}
                         </Button>
-                        <Button onClick={handleCancel} variant="outline" disabled={isSaving}>
+                        <Button onClick={() => setOpen(false)} variant="outline" disabled={isSaving}>
                             Cancelar
                         </Button>
                     </div>
-                )}
-            </CardContent>
-        </Card>
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 }

@@ -33,13 +33,13 @@ export default function ProfilePage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader
-        title="Mi Perfil"
-        description="Tu información personal, estadísticas de jugador y actividad."
-      />
-
-      {/* Personal Information Section */}
-      <PersonalInfoEditor user={user} />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <PageHeader
+          title="Mi Perfil"
+          description="Tu información personal, estadísticas de jugador y actividad."
+        />
+        <PersonalInfoEditor user={user} />
+      </div>
 
       {/* Player Stats and Performance */}
       <PlayerProfileView playerId={user.uid} player={player} />
