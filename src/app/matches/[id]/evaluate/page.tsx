@@ -100,18 +100,46 @@ const calculateAttributeChangesFromPoints = (currentAttrs: Player, ovrChange: nu
 
 const calculateAttributeChanges = (currentAttrs: Player, tags: PerformanceTag[] = []) => {
     const newAttributes = { ...currentAttrs };
+
     if (tags && tags.length > 0) {
         tags.forEach(tag => {
             if (!tag.effects) return;
             tag.effects.forEach(effect => {
                 const key = effect.attribute as keyof Player;
                 if (typeof newAttributes[key] === 'number') {
-                    (newAttributes[key] as number) += effect.change;
-                    newAttributes[key] = Math.round(Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, newAttributes[key] as number)));
+                    const currentVal = newAttributes[key] as number;
+                    const baseChange = effect.change;
+
+                    // --- DIMINISHING RETURNS FORMULA ---
+                    let multiplier = 1.0;
+                    if (currentVal >= 92) multiplier = 0.1;       // Legend: 10% effective
+                    else if (currentVal >= 85) multiplier = 0.2;  // Elite: 20% effective
+                    else if (currentVal >= 75) multiplier = 0.4;  // Star: 40% effective
+                    else if (currentVal >= 60) multiplier = 0.7;  // Pro: 70% effective
+                    // Below 60: 100% effective
+
+                    // Apply formula: New = Current + (Base * Multiplier)
+                    // We keep decimals internally but check bounds
+                    let newVal = currentVal + (baseChange * multiplier);
+
+                    // Clamp immediately to avoid overshooting 99 even with decimals
+                    newVal = Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, newVal));
+
+                    newAttributes[key] = newVal; // Note: Typescript might complain if Player expects integers, but we handle rounding at save time or display
                 }
             });
         });
     }
+
+    // Round everything at the end to ensure clean integers for storage if needed, 
+    // OR keep decimals if we want smooth progression. 
+    // Given the prompt implies "visualmente sigue en 92", we should probably store decimals 
+    // but the Player type might be strictly integers.
+    // Let's assume for now we ROUND for storage to keep it simple and consistent with previous behavior,
+    // UNLESS the user wants sub-integer progression.
+    // The requirement said: "92 + 0.3 = 92.3 (Visualmente sigue en 92, internamente avanza lento)"
+    // This implies we DO need to store decimals.
+
     return newAttributes;
 };
 
@@ -342,6 +370,12 @@ export default function EvaluateMatchPage() {
                     return acc;
                 }, {} as Record<string, Evaluation[]>);
 
+                // Initialize team scores
+                let team1CalculatedScore = 0;
+                let team2CalculatedScore = 0;
+                const team1Id = match.participantTeamIds?.[0] || match.teams?.[0]?.id;
+                const team2Id = match.participantTeamIds?.[1] || match.teams?.[1]?.id;
+
                 // ✅ FIX: Include ALL players in match, not just those who received peer evaluations
                 // This ensures manual players and players without completed assignments also get stats updates
                 playerIdsToUpdate = match.playerUids || [];
@@ -423,6 +457,13 @@ export default function EvaluateMatchPage() {
                     const newTotalGoals = (player.stats.goals || 0) + goalsInMatch;
                     const newTotalAssists = (player.stats.assists || 0) + assistsInMatch;
 
+                    // Sum goals for match final score
+                    const isInTeam1 = match.teams?.[0]?.players.some(p => p.uid === playerId);
+                    const isInTeam2 = match.teams?.[1]?.players.some(p => p.uid === playerId);
+
+                    if (isInTeam1) team1CalculatedScore += goalsInMatch;
+                    else if (isInTeam2) team2CalculatedScore += goalsInMatch;
+
                     // Clarification: averageRating represents the average rating PER MATCH
                     // Use equality-checked avgRating from above (includes fallback logic)
 
@@ -452,7 +493,11 @@ export default function EvaluateMatchPage() {
                     transaction.set(historyRef, historyEntry);
                 }
 
-                transaction.update(matchRef, { status: 'evaluated' });
+                transaction.update(matchRef, {
+                    status: 'evaluated',
+                    finalScore: { team1: team1CalculatedScore, team2: team2CalculatedScore },
+                    finalizedAt: new Date().toISOString()
+                });
             });
 
             // 🎉 Confetti celebration on successful finalization

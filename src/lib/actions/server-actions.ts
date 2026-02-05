@@ -436,8 +436,72 @@ export async function generateMatchChronicleAction(matchId: string): Promise<{ d
             team2Score = match.finalScore.team2;
         } else {
             let t1 = 0; let t2 = 0;
-            match.teams[0].players.forEach(p => t1 += goalsByPlayer[p.uid] || 0);
-            match.teams[1].players.forEach(p => t2 += goalsByPlayer[p.uid] || 0);
+            // First try from selfEvaluations
+            const hasSelfEvalData = Object.keys(goalsByPlayer).length > 0;
+
+            if (hasSelfEvalData) {
+                match.teams[0].players.forEach(p => t1 += goalsByPlayer[p.uid] || 0);
+                match.teams[1].players.forEach(p => t2 += goalsByPlayer[p.uid] || 0);
+            } else {
+                // Fallback: Use aggregated evaluations (votes)
+                // Assuming 'mvp.rating' logic accesses 'evaluations', we can also extract aggregated goals if available
+                // But evaluations are usually 'votes for others'.
+                // If the system aggregates stats into a 'matchStats' object, use that.
+                // If not, we rely on 'selfEvaluations' being present.
+                // However, seeing 0-0 implies selfEvaluations are missing.
+
+                // Try to infer from 'evaluationSubmissions' via 'evaluations' logic? 
+                // Actually, let's use the raw evaluations if they have goal data?
+                // Typically 'Evaluation' object has 'rating' and 'performanceTags'.
+                // It does NOT strictly have 'goals' unless it's a specific type.
+
+                // CHECK IF evaluations have stats?
+                // The TYPE 'Evaluation' doesn't seem to have 'goals' property in the map (line 417).
+                // Let's check the type definition again.
+                // If seed script created submissions with 'evaluatorGoals', those land in 'processedSubmissions' or 'selfEvaluations'.
+
+                // CRITICAL FIX: The seed script creates 'evaluationSubmissions'.
+                // The process script (check-submissions.ts) supposedly processes them.
+                // If it creates 'evaluations', those are VOTES.
+                // Does it create 'selfEvaluations'?
+                // If 'check-submissions.ts' logic (which I read) doesn't show creating 'selfEvaluations', then THAT is the missing link.
+                // I will add logic here to READ 'evaluationSubmissions' directly if needed? No, that's expensive.
+
+                // Let's assume the user provided valid seed data which populates 'selfEvaluations'.
+                // If not, I will default to random scores for now to satisfy the "Chronicle generation" request if real data is 0.
+
+                // But user asked to SUM goals.
+                // I will update this block to default to match.finalScore if available, else 0-0.
+            }
+
+            // Temporary fix for the user request:
+            // READ 'evaluationSubmissions' to get the goals if selfEvaluations are empty.
+            if (t1 === 0 && t2 === 0) {
+                // Try processedSubmissions (the most likely place for archived data)
+                const processedSnap = await getAdminDb().collection(`matches/${matchId}/processedSubmissions`).get();
+                if (processedSnap.size > 0) {
+                    processedSnap.forEach(doc => {
+                        const data = doc.data();
+                        if (data.submission?.evaluatorGoals) {
+                            subGoalsByPlayer[data.evaluatorId] = data.submission.evaluatorGoals;
+                        }
+                    });
+                } else {
+                    // Try pending evaluationSubmissions
+                    const submissionsSnap = await getAdminDb().collection('evaluationSubmissions')
+                        .where('matchId', '==', matchId).get();
+                    submissionsSnap.forEach(doc => {
+                        const data = doc.data();
+                        if (data.submission?.evaluatorGoals) {
+                            subGoalsByPlayer[data.evaluatorId] = data.submission.evaluatorGoals;
+                        }
+                    });
+                }
+
+                match.teams[0].players.forEach(p => t1 += subGoalsByPlayer[p.uid] || 0);
+                match.teams[1].players.forEach(p => t2 += subGoalsByPlayer[p.uid] || 0);
+            }
+
             team1Score = t1; team2Score = t2;
         }
 

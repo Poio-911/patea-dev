@@ -96,12 +96,12 @@ function generateMatchStats(players: Player[], teams: any[]) {
 
         // Distribute goals (DEL more likely)
         for (let i = 0; i < teamGoals; i++) {
-            const delanteros = teamPlayers.filter(p => p.position === 'DEL');
-            const otros = teamPlayers.filter(p => p.position !== 'POR');
+            const delanteros = teamPlayers.filter(p => p.position === 'DEL' || p.position === 'MED');
+            const otros = teamPlayers.filter(p => p.position === 'DEF' || p.position === 'POR');
 
             let scorer: Player;
-            // Robust selection
-            if (delanteros.length > 0 && Math.random() > 0.3) {
+            // Robust selection (80% DEL/MED)
+            if (delanteros.length > 0 && Math.random() > 0.2) {
                 scorer = delanteros[Math.floor(Math.random() * delanteros.length)];
             } else if (otros.length > 0) {
                 scorer = otros[Math.floor(Math.random() * otros.length)];
@@ -149,8 +149,8 @@ async function seedEvaluations(matchId: string) {
 
     const match = { id: matchDoc.id, ...matchDoc.data() } as any;
 
-    if (match.status !== 'completed') {
-        console.log(`❌ Match status is "${match.status}", must be "completed"`);
+    if (match.status !== 'completed' && match.status !== 'evaluated') {
+        console.log(`❌ Match status is "${match.status}", must be "completed" or "evaluated"`);
         return;
     }
 
@@ -230,14 +230,15 @@ async function seedEvaluations(matchId: string) {
 
     console.log(`   MVP: ${mvp.name}\n`);
 
-    // 7. Generate evaluations for each real user
-    const realUsers = players.filter(p => p.id === p.ownerUid);
-    console.log(`📝 Generating evaluations for ${realUsers.length} real users...\n`);
+    // 7. Generate evaluations for ALL players (Simulate everyone evaluates)
+    // The user expects full coverage: "si todos evaluan 2 veces todos deben de tener 2 evaluaciones"
+    const evaluators = players;
+    console.log(`📝 Generating evaluations for ${evaluators.length} players (Real + AI)...\n`);
 
     let submissionsCreated = 0;
 
     try {
-        for (const evaluator of realUsers) {
+        for (const evaluator of evaluators) {
             console.log(`   Processing ${evaluator.name}...`);
             const myAssignments = assignments.filter(a => a.evaluatorId === evaluator.id);
 
@@ -248,7 +249,10 @@ async function seedEvaluations(matchId: string) {
 
             const evaluations = myAssignments.map(assignment => {
                 const subject = players.find(p => p.id === assignment.subjectId);
-                if (!subject) return null;
+                if (!subject) {
+                    console.log(`   ⚠️  Assignment ${assignment.id} SKIPPED: Subject ${assignment.subjectId} not found in players list.`);
+                    return null;
+                }
 
                 // 50/50 points vs tags
                 const usePoints = Math.random() > 0.5;
@@ -267,7 +271,7 @@ async function seedEvaluations(matchId: string) {
                     };
                 } else {
                     // TAGS evaluation
-                    const numTags = Math.floor(Math.random() * 3) + 3; // 3-5 tags
+                    const numTags = 3; // Exactly 3 tags per new rules
                     const tags = selectRandomTags(subject.position, numTags);
 
                     return {
@@ -283,14 +287,51 @@ async function seedEvaluations(matchId: string) {
             }).filter(Boolean);
 
             // Create submission
+            const goals = matchStats[evaluator.id].goals;
+            const assists = matchStats[evaluator.id].assists;
+
+            // Richer chronicles
+            const winTemplates = [
+                "¡Qué partido ganamos! Dejé el alma.",
+                "Partido durísimo pero nos llevamos los 3 puntos.",
+                "Jugué bien, aunque terminé muerto.",
+                "Eminencia se jugó todo, gran equipo.",
+                "Ganamos a lo Peñarol, sufriendo."
+            ];
+            const goalTemplates = [
+                "¡Mojé! Qué lindo hacer goles.",
+                "El arco se me abrió hoy, por suerte.",
+                "Gol y victoria, noche redonda.",
+                "La mandé a guardar, como corresponde."
+            ];
+            const genericTemplates = [
+                "Partido parejo, se corrió mucho.",
+                "Me faltó aire pero cumplí.",
+                "Buen picado, divertido.",
+                "Terminé con los gemelos cargados.",
+                "Hay que mejorar la defensa para la próxima."
+            ];
+
+            let chronicle = "";
+            if (goals > 0) {
+                chronicle = goalTemplates[Math.floor(Math.random() * goalTemplates.length)];
+            } else if (Math.random() > 0.5) {
+                chronicle = winTemplates[Math.floor(Math.random() * winTemplates.length)];
+            } else {
+                chronicle = genericTemplates[Math.floor(Math.random() * genericTemplates.length)];
+            }
+
+            // Add some funny generic suffix randomly
+            if (Math.random() > 0.7) chronicle += " ¡Vamo arriba!";
+
             const submission = {
                 evaluatorId: evaluator.id,
                 matchId: matchId,
                 submittedAt: new Date().toISOString(),
                 submission: {
-                    evaluatorGoals: matchStats[evaluator.id].goals,
-                    evaluatorAssists: matchStats[evaluator.id].assists,
-                    personalChronicle: `Gran partido! ${matchStats[evaluator.id].goals > 0 ? 'Logré marcar gol(es).' : 'Di todo en la cancha.'}`,
+                    evaluatorGoals: goals,
+                    evaluatorAssists: assists,
+                    personalChronicle: chronicle,
                     mvpVote: mvp.id,
                     evaluations: evaluations
                 }

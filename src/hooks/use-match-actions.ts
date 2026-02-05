@@ -49,57 +49,69 @@ export function useMatchActions({
     // Only real users can be evaluators
     const realPlayerUids = matchPlayers.filter(isRealUser).map(p => p.id);
 
-    // All players (including guests) can be evaluated
-    // We map to simple objects to avoid potential issues with complex Player objects if used directly later,
-    // though here we mostly need IDs and team info.
+    // Track incoming evaluation counts to ensure balance
+    const incomingCounts: Record<string, number> = {};
+    matchPlayers.forEach(p => incomingCounts[p.id] = 0);
 
-    realPlayerUids.forEach(evaluatorId => {
+    // Shuffle evaluators to avoid deterministic bias in order
+    const shuffledEvaluators = [...realPlayerUids].sort(() => 0.5 - Math.random());
+
+    shuffledEvaluators.forEach(evaluatorId => {
       if (!match.teams) return;
 
       const myTeam = match.teams.find(t => t.players.some(p => p.uid === evaluatorId));
 
-      // Identify potential peers (everyone except self)
-      const allPeers = matchPlayers.filter(p => p.id !== evaluatorId);
+      // 1. Define candidates (ALL players except self)
+      // We do NOT filter by 'already assigned' here because we want to soft-balance, 
+      // but we will prioritize those with fewer incoming counts.
+      let candidates = matchPlayers.filter(p => p.id !== evaluatorId);
 
-      // Split into Teammates and Others
-      const teammates = allPeers.filter(p => myTeam?.players.some(tp => tp.uid === p.id));
-      const others = allPeers.filter(p => !myTeam?.players.some(tp => tp.uid === p.id));
+      // 2. Sort candidates by:
+      //    a. Incoming Count (Ascending) -> PRIMARY: STARVE THE RICH (Ensure everyone gets evals)
+      //    b. Is Teammate (Descending)   -> SECONDARY: PREFER TEAMMATES
+      //    c. Random                     -> TERTIARY: VARIETY
 
-      // Strategy: Pick up to 2 peers. Priority: Teammates > Others
+      candidates.sort((a, b) => {
+        // Primary: Starvation (Load Balancing)
+        const countDiff = incomingCounts[a.id] - incomingCounts[b.id];
+        if (countDiff !== 0) return countDiff;
+
+        // Secondary: Teammate Priority
+        const aIsTeammate = myTeam?.players.some(tp => tp.uid === a.id);
+        const bIsTeammate = myTeam?.players.some(tp => tp.uid === b.id);
+
+        if (aIsTeammate && !bIsTeammate) return -1;
+        if (!aIsTeammate && bIsTeammate) return 1;
+
+        // Tertiary: Random
+        return 0.5 - Math.random();
+      });
+
+      // 3. Pick top 2
       const MAX_PEERS = 2;
-      const selectedPeers: string[] = [];
+      const selectedPeers = candidates.slice(0, MAX_PEERS);
 
-      // A. Shuffle and pick teammates
-      const shuffledTeammates = [...teammates].sort(() => 0.5 - Math.random());
-      selectedPeers.push(...shuffledTeammates.slice(0, MAX_PEERS).map(p => p.id));
-
-      // B. If we still need peers, fill with others
-      if (selectedPeers.length < MAX_PEERS && others.length > 0) {
-        const remainingSlots = MAX_PEERS - selectedPeers.length;
-        const shuffledOthers = [...others].sort(() => 0.5 - Math.random());
-        selectedPeers.push(...shuffledOthers.slice(0, remainingSlots).map(p => p.id));
-      }
-
-      // If NO peers found, assign self-evaluation as fallback
+      // If NO peers found (e.g. only 1 player match?), assign self-evaluation fallback
       if (selectedPeers.length === 0) {
         assignments.push({
           matchId: match.id,
           evaluatorId: evaluatorId,
-          subjectId: evaluatorId,
+          subjectId: evaluatorId, // Self
           status: 'pending',
         });
       } else {
-        // Create peer assignments
-        selectedPeers.forEach(subjectId => {
+        selectedPeers.forEach(subject => {
+          incomingCounts[subject.id]++;
           assignments.push({
             matchId: match.id,
             evaluatorId: evaluatorId,
-            subjectId: subjectId,
+            subjectId: subject.id,
             status: 'pending',
           });
         });
       }
     });
+
     return assignments;
   }, []);
 

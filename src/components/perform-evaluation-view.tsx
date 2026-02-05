@@ -51,7 +51,7 @@ const tagsEvaluationSchema = z.object({
   position: z.string(),
   evaluationType: z.literal('tags'),
   rating: z.coerce.number().optional(), // Puede no estar
-  performanceTags: z.array(z.custom<PerformanceTag>()).min(3, 'Debes seleccionar al menos 3 etiquetas.'), // Requerido
+  performanceTags: z.array(z.custom<PerformanceTag>()).min(3, 'Debes seleccionar exactamente 3 etiquetas.').max(3, 'Solo puedes seleccionar 3 etiquetas.'), // Requerido exacto
 });
 
 const playerEvaluationSchema = z.discriminatedUnion('evaluationType', [
@@ -385,7 +385,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
                             control={form.control}
                             render={({ field: tagsField, fieldState }) => (
                               <FormItem>
-                                <FormLabel>Elige al menos 3 etiquetas</FormLabel>
+                                <FormLabel>Elige exactamente 3 etiquetas</FormLabel>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2 max-h-96 overflow-y-auto">
                                   {randomTags[field.subjectId]?.map((tag) => (
                                     <TagCheckbox
@@ -395,6 +395,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
                                       isChecked={!!(tagsField.value || []).find((t: any) => t.id === tag.id)}
                                       onCheckedChange={(checked) => {
                                         const currentVal = tagsField.value || []
+                                        if (checked && currentVal.length >= 3) return; // Limit directly in UI
                                         const newVal = checked
                                           ? [...currentVal, tag]
                                           : currentVal.filter((t: any) => t.id !== tag.id)

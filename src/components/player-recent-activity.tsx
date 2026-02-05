@@ -5,7 +5,7 @@ import { useFirestore, useUser } from '@/firebase';
 import { collection, query, where, orderBy, getDocs, doc, getDoc, limit, Timestamp } from 'firebase/firestore';
 import type { Evaluation, Match, OvrHistory } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Goal, Star, Calendar, Quote, Lock, MessageSquare, ChevronDown, CheckCircle2, Clock } from 'lucide-react';
+import { Loader2, Goal, Star, Calendar, Quote, Lock, MessageSquare, ChevronDown, CheckCircle2, Clock, Brain, Zap, Target } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -278,60 +278,136 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
                   )}
 
                   {/* Peer Feedback */}
+                  {/* Peer Feedback - Aura Style */}
+                  {/* Peer Feedback - High Contrast Gamer Style */}
                   {peerEvaluations.length > 0 ? (
                     <div>
-                      <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-muted-foreground uppercase tracking-wider">
-                        <MessageSquare className="h-3 w-3" /> Feedback de compañeros
+                      <h4 className="text-xs font-semibold mb-3 flex items-center gap-1.5 text-muted-foreground uppercase tracking-wider">
+                        <MessageSquare className="h-3 w-3" /> Feedback del Vestuario
                       </h4>
-                      <div className="grid gap-2">
-                        {peerEvaluations.map((evalItem) => (
-                          <div key={evalItem.id} className="bg-background border rounded-md p-3 text-sm shadow-sm flex gap-3">
-                            <Avatar className="h-8 w-8 mt-0.5">
-                              {evalItem.identityRevealed ? (
-                                <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${evalItem.evaluatorId}`} />
-                              ) : (
-                                <AvatarFallback><Lock className="h-3 w-3 text-muted-foreground" /></AvatarFallback>
-                              )}
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex justify-between items-start mb-1">
-                                <span className="font-medium text-foreground">
-                                  {evalItem.identityRevealed ? "Compañero (Revelado)" : "Compañero Anónimo"}
-                                </span>
-                                {!evalItem.identityRevealed && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-5 px-2 text-[10px] text-primary hover:bg-primary/10"
-                                    onClick={() => handleRequestIdentity(evalItem.id)}
-                                  >
-                                    Solicitar Identidad
-                                  </Button>
-                                )}
-                              </div>
+                      <div className="grid gap-3">
+                        {peerEvaluations.map((evalItem) => {
+                          const hasRating = typeof evalItem.rating === 'number';
+                          const hasTags = evalItem.performanceTags && evalItem.performanceTags.length > 0;
 
-                              {evalItem.textDescription ? (
-                                <p className="text-muted-foreground leading-relaxed">"{evalItem.textDescription}"</p>
-                              ) : (
-                                <p className="text-muted-foreground/50 italic text-xs">Sin comentario escrito.</p>
-                              )}
+                          // Determine Style Scheme based on rating or default
+                          let cardBorderColor = "border-l-slate-300";
+                          let ratingBadgeColor = "bg-slate-100 text-slate-700";
 
-                              {evalItem.performanceTags && evalItem.performanceTags.length > 0 && (
-                                <div className="flex flex-wrap gap-1 pt-2">
-                                  {evalItem.performanceTags.map((tag, i) => (
-                                    <Badge key={i} variant="secondary" className="text-[10px] h-5 px-1.5 border-0 bg-secondary/40 text-secondary-foreground font-normal">
-                                      {typeof tag === 'string' ? tag : tag.name}
-                                    </Badge>
-                                  ))}
+                          if (hasRating) {
+                            if (evalItem.rating! >= 9) {
+                              cardBorderColor = "border-l-[hsl(280,85%,60%)]"; // Elite Purple
+                              ratingBadgeColor = "bg-[hsl(280,85%,60%)] text-white shadow-lg shadow-purple-500/20";
+                            } else if (evalItem.rating! >= 7) {
+                              cardBorderColor = "border-l-[hsl(43,96%,50%)]"; // Gold
+                              ratingBadgeColor = "bg-[hsl(43,96%,50%)] text-black shadow-lg shadow-amber-500/20";
+                            } else if (evalItem.rating! < 5) {
+                              cardBorderColor = "border-l-red-500";
+                              ratingBadgeColor = "bg-red-500 text-white";
+                            } else {
+                              cardBorderColor = "border-l-slate-400"; // Silver
+                              ratingBadgeColor = "bg-slate-200 text-slate-700";
+                            }
+                          } else if (hasTags) {
+                            // If only tags, use primary color
+                            cardBorderColor = "border-l-primary";
+                          }
+
+                          return (
+                            <div key={evalItem.id} className={cn(
+                              "relative overflow-hidden rounded-lg bg-card border shadow-sm transition-all hover:shadow-md",
+                              "border-l-[6px]", cardBorderColor // Thicker border for visual impact
+                            )}>
+                              <div className="p-4 flex gap-4 items-start">
+                                {/* Avatar Section */}
+                                <div className="flex flex-col items-center gap-2 min-w-[3.5rem]">
+                                  <Avatar className="h-12 w-12 ring-2 ring-background shadow-md">
+                                    {evalItem.identityRevealed ? (
+                                      <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${evalItem.evaluatorId}`} />
+                                    ) : (
+                                      <AvatarFallback className="bg-muted text-muted-foreground"><Lock className="h-4 w-4" /></AvatarFallback>
+                                    )}
+                                  </Avatar>
+                                  <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight text-center leading-tight">
+                                    {evalItem.identityRevealed ? "Revelado" : "Anónimo"}
+                                  </span>
                                 </div>
-                              )}
+
+                                {/* Content Section */}
+                                <div className="flex-1 min-w-0 space-y-3">
+                                  {/* Header with Request Identity */}
+                                  <div className="flex justify-between items-start h-6">
+                                    <div className="flex-1"></div> {/* Spacer */}
+                                    {(!evalItem.identityRevealed && evalItem.evaluatorId !== 'AI') && (
+                                      <button
+                                        onClick={() => handleRequestIdentity(evalItem.id)}
+                                        className="text-[10px] font-semibold text-primary/80 hover:text-primary hover:underline flex items-center gap-1 transition-colors bg-primary/5 px-2 py-1 rounded-full"
+                                      >
+                                        <Lock className="h-3 w-3" /> Solicitar ID
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  {/* 1. RATING BADGE (High Visibility) */}
+                                  {hasRating && (
+                                    <div className="flex items-center gap-3">
+                                      <div className={cn(
+                                        "h-12 w-12 rounded-full flex items-center justify-center text-xl font-black font-headline tracking-tighter shrink-0",
+                                        ratingBadgeColor
+                                      )}>
+                                        {evalItem.rating?.toFixed(1)}
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className="text-sm font-bold uppercase tracking-wide text-foreground">Puntaje General</span>
+                                        <span className="text-xs text-muted-foreground">Evaluación de rendimiento</span>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* 2. TAGS (Solid Pills) */}
+                                  {hasTags && (
+                                    <div className="space-y-2">
+                                      {!hasRating && <span className="text-xs font-bold uppercase text-muted-foreground tracking-wide block mb-1">Destaques</span>}
+                                      <div className="flex flex-wrap gap-2">
+                                        {evalItem.performanceTags!.map((tag, i) => (
+                                          <div key={i} className="flex items-center gap-2 bg-secondary text-secondary-foreground border border-border/50 rounded-md px-3 py-1.5 shadow-sm">
+                                            {/* Start Icon mapped by common keywords */}
+                                            <div className="text-accent">
+                                              {(typeof tag === 'string' ? tag : tag.name).toLowerCase().includes('tact') ? <Brain className="h-3.5 w-3.5" /> :
+                                                (typeof tag === 'string' ? tag : tag.name).toLowerCase().includes('veloc') ? <Zap className="h-3.5 w-3.5" /> :
+                                                  (typeof tag === 'string' ? tag : tag.name).toLowerCase().includes('gol') ? <Target className="h-3.5 w-3.5" /> :
+                                                    <Star className="h-3.5 w-3.5" />}
+                                            </div>
+                                            <span className="text-xs font-semibold leading-none pt-0.5">
+                                              {typeof tag === 'string' ? tag : tag.name}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* 3. Text Description */}
+                                  {evalItem.textDescription ? (
+                                    <div className="relative mt-2 p-3 bg-muted/40 rounded-r-lg border-l-2 border-primary/20 text-sm text-foreground/80 italic">
+                                      "{evalItem.textDescription}"
+                                    </div>
+                                  ) : (
+                                    // If empty text, no placeholder needed if we have rating or tags
+                                    (!hasRating && !hasTags) && <p className="text-xs text-muted-foreground italic">Sin detalles adicionales.</p>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground italic text-center py-2">No recibiste feedback escrito en este partido.</p>
+                    <div className="flex flex-col items-center justify-center py-8 text-center space-y-2 opacity-60">
+                      <MessageSquare className="h-8 w-8 text-muted-foreground/50" />
+                      <p className="text-sm text-muted-foreground">Sin feedback escrito esta vez.</p>
+                    </div>
                   )}
                 </div>
               </CollapsibleContent>
