@@ -47,8 +47,8 @@ export const TeamRosterPlayer = ({ player, match, isOwner = false, index = 0 }: 
                 ovrLevel === 'silver' && "game:hover:border-gray-400/50 game:hover:shadow-lg game:hover:shadow-gray-400/30",
                 ovrLevel === 'bronze' && "game:hover:border-amber-700/50 game:hover:shadow-lg game:hover:shadow-amber-700/30",
             )}>
-                {/* Swap button */}
-                {isOwner && match.status === 'upcoming' && matchPlayer && (
+                {/* Swap button - Disable for intergroup matches */}
+                {isOwner && match.status === 'upcoming' && matchPlayer && match.type !== 'intergroup_friendly' && (
                     <div className="absolute top-1 right-1 z-10">
                         <SwapPlayerDialog match={match} playerToSwap={matchPlayer}>
                             <Button
@@ -63,6 +63,13 @@ export const TeamRosterPlayer = ({ player, match, isOwner = false, index = 0 }: 
                     </div>
                 )}
 
+                {/* Captain Badge for Inter-Group */}
+                {match.type === 'intergroup_friendly' && match.captains?.includes(player.id) && (
+                    <div className="absolute top-1 right-1 z-10 bg-yellow-400 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                        <span>C</span>
+                    </div>
+                )}
+
                 {/* NEW: Tiny jersey indicator (only on dark theme) */}
                 {playerTeam?.jersey && (
                     <div className="hidden game:block absolute top-1 left-1 opacity-30 z-0">
@@ -70,19 +77,19 @@ export const TeamRosterPlayer = ({ player, match, isOwner = false, index = 0 }: 
                     </div>
                 )}
 
-            <div className="relative mt-4">
-                <PlayerPhoto player={player as any} size="compact" />
-            </div>
-            <div className="flex flex-col items-center">
-                <div className="flex items-center gap-2">
-                    <p className="font-bold truncate w-24 text-base">{player.name}</p>
+                <div className="relative mt-4">
+                    <PlayerPhoto player={player as any} size="compact" />
                 </div>
-                <div className="flex items-center justify-center gap-2 mt-1">
-                    <PlayerOvr value={player.ovr} size="compact" />
-                    <PlayerPositionBadge position={player.position} size="sm" showIcon={false} textOnly={true} />
+                <div className="flex flex-col items-center">
+                    <div className="flex items-center gap-2">
+                        <p className="font-bold truncate w-24 text-base">{player.name}</p>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 mt-1">
+                        <PlayerOvr value={player.ovr} size="compact" />
+                        <PlayerPositionBadge position={player.position} size="sm" showIcon={false} textOnly={true} />
+                    </div>
                 </div>
-            </div>
-        </Card>
+            </Card>
         </AnimatedCardWrapper>
     );
 };

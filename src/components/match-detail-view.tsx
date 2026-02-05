@@ -30,6 +30,7 @@ import { logMatchEventAction, updateLiveStateAction } from '@/lib/actions/server
 import { useToast } from '@/hooks/use-toast';
 import { MatchWeatherAlert } from './match-details/MatchWeatherAlert';
 import { logger } from '@/lib/logger';
+import { LocationVoting } from './match-details/location-voting';
 
 interface MatchDetailViewProps {
   matchId: string;
@@ -196,8 +197,15 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
           </div>
         )}
 
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           <div className="lg:col-span-3 space-y-6">
+
+            {/* Votación de Cancha (Inter-Group) */}
+            {match.type === 'intergroup_friendly' && (
+              <LocationVoting match={match} userId={user?.uid || ''} />
+            )}
+
             {match.teams && match.teams.length > 0 ? (
               <MatchTeams
                 match={match}

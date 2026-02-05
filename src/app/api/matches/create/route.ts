@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       const selectedPlayers = playerIds
         .map(id => playersMap.get(id))
         .filter((p): p is Player => !!p);
-      baseData.players = selectedPlayers.map(p => ({ uid: p.id, displayName: p.name, ovr: p.ovr, position: p.position, photoUrl: p.photoUrl || '' }));
+      baseData.players = selectedPlayers.map(p => ({ uid: p.id, displayName: p.name, ovr: p.ovr, position: p.position, photoURL: p.photoURL || '' }));
       baseData.playerUids = selectedPlayers.map(p => p.id);
 
       if (selectedPlayers.length === input.matchSize) {
@@ -140,6 +140,7 @@ export async function POST(request: NextRequest) {
             displayName: p?.name || 'Jugador',
             ovr: p?.ovr || 50,
             position: p?.position || 'MED',
+            photoURL: p?.photoURL || '',
           };
         });
         const totalOVR = teamPlayers.reduce((sum, p) => sum + p.ovr, 0);
@@ -157,13 +158,17 @@ export async function POST(request: NextRequest) {
 
     const matchRef = await db.collection('matches').add(baseData);
 
+    // Fetch organizer to get photo for activity
+    const organizerSnap = await db.collection('players').doc(userId).get();
+    const organizerData = organizerSnap.data();
+
     // Create social activity
     await createActivityAction({
       type: 'match_organized',
       userId,
       playerId: userId,
-      playerName: '',
-      playerPhotoUrl: '',
+      playerName: organizerData?.name || 'Organizador',
+      playerPhotoUrl: organizerData?.photoURL || '',
       timestamp: new Date().toISOString(),
       metadata: {
         matchId: matchRef.id,

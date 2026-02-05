@@ -6,12 +6,12 @@ import Link from 'next/link'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { 
-  collection, 
-  query, 
-  where, 
-  addDoc, 
-  getDocs, 
+import {
+  collection,
+  query,
+  where,
+  addDoc,
+  getDocs,
 } from 'firebase/firestore'
 import { Loader2, Save, ShieldCheck, Goal, Plus, Minus, FileClock } from 'lucide-react'
 
@@ -36,7 +36,7 @@ const pointsEvaluationSchema = z.object({
   assignmentId: z.string(),
   subjectId: z.string(),
   displayName: z.string(),
-  photoUrl: z.string(),
+  photoURL: z.string(),
   position: z.string(),
   evaluationType: z.literal('points'),
   rating: z.coerce.number().min(1, 'El rating debe ser al menos 1').max(10, 'El rating debe ser máximo 10'), // ✅ Requerido y con mensajes
@@ -47,7 +47,7 @@ const tagsEvaluationSchema = z.object({
   assignmentId: z.string(),
   subjectId: z.string(),
   displayName: z.string(),
-  photoUrl: z.string(),
+  photoURL: z.string(),
   position: z.string(),
   evaluationType: z.literal('tags'),
   rating: z.coerce.number().optional(), // Puede no estar
@@ -72,7 +72,7 @@ const shuffleArray = <T,>(array: T[]): T[] => {
   while (currentIndex !== 0) {
     const randomIndex = Math.floor(Math.random() * currentIndex)
     currentIndex--
-    ;[array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]]
+      ;[array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]]
   }
   return array
 }
@@ -261,19 +261,19 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
 
   if (submissionIsPending) {
     return (
-        <div className="flex flex-col gap-8">
-            <PageHeader title="Evaluar Partido" description="Tus evaluaciones ya fueron enviadas." />
-            <Alert variant="default" className="border-info text-info">
-              <FileClock className="h-4 w-4 text-info" />
-              <AlertTitle className="text-info">Evaluación en Proceso</AlertTitle>
-                <AlertDescription>
-                    Tus evaluaciones para este partido ya fueron enviadas y están esperando ser procesadas por el organizador.
-                    <Button asChild variant="link" className="p-0 h-auto ml-1">
-                        <Link href="/evaluations">Volver a mis evaluaciones</Link>
-                    </Button>
-                </AlertDescription>
-            </Alert>
-        </div>
+      <div className="flex flex-col gap-8">
+        <PageHeader title="Evaluar Partido" description="Tus evaluaciones ya fueron enviadas." />
+        <Alert variant="default" className="border-info text-info">
+          <FileClock className="h-4 w-4 text-info" />
+          <AlertTitle className="text-info">Evaluación en Proceso</AlertTitle>
+          <AlertDescription>
+            Tus evaluaciones para este partido ya fueron enviadas y están esperando ser procesadas por el organizador.
+            <Button asChild variant="link" className="p-0 h-auto ml-1">
+              <Link href="/evaluations">Volver a mis evaluaciones</Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
+      </div>
     )
   }
 
@@ -335,7 +335,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
                 <div key={field.id} className="border-b pb-6 last:border-b-0 last:pb-0">
                   <div className="flex items-center gap-4 mb-4">
                     <Avatar className="h-12 w-12">
-                      <AvatarImage src={field.photoUrl} alt={field.displayName} />
+                      <AvatarImage src={field.photoURL} alt={field.displayName} />
                       <AvatarFallback>{field.displayName.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <p className="font-semibold text-lg">{field.displayName}</p>

@@ -868,6 +868,53 @@ export async function acceptTeamChallengeAction(invitationId: string, teamId: st
                 throw createError(ErrorCodes.AUTH_INSUFFICIENT_PERMISSIONS);
             }
 
+            // --- FETCH PLAYERS & POPULATE TEAMS (Fix for Inter-Group Matches) ---
+            const allPlayerIds = new Set<string>();
+            (team1Data.members || []).forEach((m: any) => allPlayerIds.add(m.playerId));
+            (team2Data.members || []).forEach((m: any) => allPlayerIds.add(m.playerId));
+
+            const playersArr = Array.from(allPlayerIds);
+            const playersMap = new Map<string, any>();
+
+            // Limit to 30 for "in" query safe limit (chunking needed if larger)
+            const chunkSize = 10;
+            for (let i = 0; i < playersArr.length; i += chunkSize) {
+                const chunk = playersArr.slice(i, i + chunkSize);
+                if (chunk.length > 0) {
+                    const pSnaps = await getAdminDb().collection('players').where('__name__', 'in', chunk).get();
+                    pSnaps.forEach(doc => playersMap.set(doc.id, { id: doc.id, ...doc.data() }));
+                }
+            }
+
+            const buildTeam = (td: GroupTeam) => {
+                const teamPlayers = (td.members || []).map((m: any) => {
+                    const p = playersMap.get(m.playerId);
+                    const photo = p?.photoURL || p?.photoUrl || '';
+                    return {
+                        uid: m.playerId,
+                        displayName: p?.name || 'Jugador',
+                        ovr: p?.ovr || 50,
+                        position: p?.position || 'MED',
+                        photoURL: photo
+                    };
+                });
+                const totalOVR = teamPlayers.reduce((sum: number, p: any) => sum + p.ovr, 0);
+                const avgOVR = teamPlayers.length ? Math.round(totalOVR / teamPlayers.length) : 0;
+                return {
+                    name: td.name,
+                    jersey: td.jersey,
+                    players: teamPlayers,
+                    totalOVR,
+                    averageOVR: avgOVR
+                };
+            };
+
+            const finalTeam1 = buildTeam(team1Data);
+            const finalTeam2 = buildTeam(team2Data);
+            const finalTeams = [finalTeam1, finalTeam2];
+            const finalPlayers = finalTeams.flatMap(t => t.players);
+            const finalPlayerUids = finalPlayers.map(p => p.uid);
+
             let matchDate: string = new Date().toISOString().split('T')[0];
             let matchTime: string = '19:00';
             let matchLocation: MatchLocation = { name: 'A confirmar', address: '', lat: 0, lng: 0, placeId: '' };
@@ -891,16 +938,17 @@ export async function acceptTeamChallengeAction(invitationId: string, teamId: st
                 time: matchTime,
                 location: matchLocation,
                 type: 'intergroup_friendly',
-                matchSize: 22,
-                players: [],
-                playerUids: [],
-                teams: [],
+                matchSize: finalPlayers.length > 0 ? finalPlayers.length : 22,
+                players: finalPlayers,
+                playerUids: finalPlayerUids,
+                teams: finalTeams,
                 status: 'upcoming',
                 ownerUid: team1Data.createdBy,
                 groupId: team1Data.groupId,
                 isPublic: false,
                 startTimestamp: new Date(`${matchDate}T${matchTime}`).toISOString(),
                 participantTeamIds: [team1Data.id!, team2Data.id!],
+                captains: [team1Data.createdBy, team2Data.createdBy],
                 createdAt: new Date().toISOString(),
             };
 
@@ -2420,37 +2468,10 @@ export async function advanceCupWinnerAction(
                             bm => bm.round === nextRound && bm.matchNumber === nextMatchNumber
                         );
 
-                        if (nextBracketMatch && nextBracketMatch.team1Id && nextBracketMatch.team2Id && !nextBracketMatch.matchId) {
-                            const nextMatchId = db.collection('matches').doc().id;
-                            const nextMatchData: Partial<Match> = {
-                                title: `${nextBracketMatch.team1Name} vs ${nextBracketMatch.team2Name}`,
-                                date: cup.startDate || new Date().toISOString(),
-                                time: '19:00',
-                                location: cup.defaultLocation || { name: 'A definir', address: '', lat: 0, lng: 0, placeId: '' },
-                                type: 'cup',
-                                matchSize: 22,
-                                status: 'upcoming',
-                                ownerUid: cup.ownerUid,
-                                groupId: cup.groupId,
-                                participantTeamIds: [nextBracketMatch.team1Id, nextBracketMatch.team2Id],
-                                teams: [
-                                    { id: nextBracketMatch.team1Id, name: nextBracketMatch.team1Name || '', players: [], totalOVR: 0, averageOVR: 0, jersey: nextBracketMatch.team1Jersey || { type: 'plain', primaryColor: '#000000', secondaryColor: '#ffffff' } },
-                                    { id: nextBracketMatch.team2Id, name: nextBracketMatch.team2Name || '', players: [], totalOVR: 0, averageOVR: 0, jersey: nextBracketMatch.team2Jersey || { type: 'plain', primaryColor: '#000000', secondaryColor: '#ffffff' } },
-                                ],
-                                leagueInfo: { leagueId: cup.id, round: 0 },
-                                createdAt: new Date().toISOString(),
-                                players: [],
-                                playerUids: []
-                            };
-
-                            transaction.set(db.collection('matches').doc(nextMatchId), nextMatchData);
-
-                            const idx = updatedBracket.findIndex(bm => bm.round === nextRound && bm.matchNumber === nextMatchNumber);
-                            if (idx !== -1) {
-                                updatedBracket[idx].matchId = nextMatchId;
-                                updateData.bracket = updatedBracket;
-                            }
-                        }
+                        // Removed eager creation of next match. 
+                        // We rely on createCupMatchAction to create the match with full player details (including photos)
+                        // when the user interacts with it or when requested.
+                        // preventing creation of matches with empty player lists.
                     }
                 }
             }

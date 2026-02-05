@@ -25,14 +25,13 @@ import { Calendar } from './ui/calendar';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-// Removed Google Places; using OSM endpoints instead
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { createTeamAvailabilityPostAction } from '@/lib/actions/server-actions';
+
 import { celebrationConfetti } from '@/lib/animations';
 
 const matchLocationSchema = z.object({
   name: z.string(),
-  address: z.string().min(5, 'La dirección debe tener al menos 5 caracteres.'),
+  address: z.string().min(2, 'La ubicación debe tener al menos 2 caracteres.'),
   lat: z.number(),
   lng: z.number(),
   placeId: z.string(),
@@ -56,106 +55,7 @@ interface TeamAvailabilityDialogProps {
   onSuccess?: () => void;
 }
 
-const LocationInput = ({ onSelectLocation, value: initialValue }: {
-  onSelectLocation: (location: MatchLocation) => void;
-  value?: MatchLocation;
-}) => {
-  const [value, setValue] = useState(initialValue?.address || '');
-  const [osmSuggestions, setOsmSuggestions] = useState<Array<{ label: string; lat: number; lng: number; placeId: string }>>([]);
-  const [geoLoading, setGeoLoading] = useState(false);
-  const [geoError, setGeoError] = useState<string | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    const fetchOsm = async () => {
-      try {
-        if (!value || value.length < 3) { setOsmSuggestions([]); return; }
-        const res = await fetch(`/api/geocode/suggest?q=${encodeURIComponent(value)}`);
-        const json = await res.json();
-        if (active && json?.success) setOsmSuggestions(json.suggestions || []);
-      } catch {
-        if (active) setOsmSuggestions([]);
-      }
-    };
-    fetchOsm();
-    setIsOpen(!!value && value.length > 2);
-    return () => { active = false; };
-  }, [value]);
-
-  const tryGeocode = async (addr: string) => {
-    if (!addr || addr.length < 5) { setGeoError('Ingresá una dirección válida.'); return; }
-    setGeoLoading(true);
-    setGeoError(null);
-    try {
-      const resp = await fetch('/api/geocode', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ address: addr })
-      });
-      const json = await resp.json();
-      if (!json?.success) throw new Error(json?.error || 'No se pudo geocodificar');
-      onSelectLocation({ name: json.name || addr, address: addr, lat: json.lat, lng: json.lng, placeId: json.placeId || `manual:${json.lat},${json.lng}` });
-      setIsOpen(false);
-      setOsmSuggestions([]);
-    } catch (e: any) {
-      setGeoError(e?.message || 'Error de geocodificación');
-    } finally {
-      setGeoLoading(false);
-    }
-  };
-
-  return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <div className="relative">
-          <Input
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={async (e) => {
-              if (e.key === 'Enter' && value && value.length >= 5) {
-                e.preventDefault();
-                await tryGeocode(value);
-              }
-            }}
-            placeholder="Buscá la dirección de la cancha..."
-            autoComplete="off"
-          />
-          <div className="mt-2 flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">Tip: Elegí una sugerencia o usá la dirección escrita.</p>
-            <Button type="button" variant="outline" size="sm" onClick={() => tryGeocode(value)} disabled={geoLoading || !value || value.length < 5}>Usar dirección</Button>
-          </div>
-          {geoError && <p className="text-xs text-destructive mt-1">{geoError}</p>}
-        </div>
-      </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
-        <Command>
-          <CommandList>
-            <CommandEmpty>No se encontraron resultados.</CommandEmpty>
-            <CommandGroup>
-              {osmSuggestions.map((s) => (
-                <CommandItem
-                  key={s.placeId}
-                  onSelect={() => {
-                    onSelectLocation({ name: s.label, address: s.label, lat: s.lat, lng: s.lng, placeId: s.placeId });
-                    setValue(s.label);
-                    setIsOpen(false);
-                    setOsmSuggestions([]);
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <div className="flex-1">
-                    <div className="font-medium">{s.label}</div>
-                    <div className="text-xs text-muted-foreground">Coordenadas: {s.lat}, {s.lng}</div>
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-};
 
 export function TeamAvailabilityDialog({ team, userId, trigger, onSuccess }: TeamAvailabilityDialogProps) {
   const [open, setOpen] = useState(false);
@@ -277,20 +177,29 @@ export function TeamAvailabilityDialog({ team, userId, trigger, onSuccess }: Tea
             {errors.time && <p className="text-sm text-destructive">{errors.time.message}</p>}
           </div>
 
-          {/* Location Input */}
           <div className="space-y-2">
-            <Label htmlFor="location">Ubicación</Label>
+            <Label htmlFor="location">Ubicación (Zona o Barrio)</Label>
             <Controller
               control={control}
               name="location"
               render={({ field }) => (
-                <LocationInput
-                  onSelectLocation={field.onChange}
-                  value={field.value}
+                <Input
+                  placeholder="Ej: Palermo, Zona Norte, Club de Amigos"
+                  value={field.value?.address || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    field.onChange({
+                      name: val,
+                      address: val,
+                      lat: 0,
+                      lng: 0,
+                      placeId: `manual-text`
+                    });
+                  }}
                 />
               )}
             />
-            {errors.location && <p className="text-sm text-destructive">{errors.location.message}</p>}
+            {errors.location && <p className="text-sm text-destructive">{errors.location.address?.message || errors.location.message}</p>}
           </div>
 
           {/* Description */}

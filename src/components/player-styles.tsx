@@ -192,7 +192,7 @@ export function PlayerPhoto({ player, size = 'standard', className }: PlayerPhot
   return (
     <Avatar className={cn(sizeMap[size], 'border-4 shadow-sm object-cover', className)}>
       <AvatarImage
-        src={player.photoUrl}
+        src={player.photoURL || (player as any).photoUrl}
         alt={player.name || 'Jugador'}
         style={{
           objectFit: 'cover',

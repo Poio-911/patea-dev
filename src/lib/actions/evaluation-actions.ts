@@ -34,3 +34,43 @@ export async function analyzeEvaluationTextAction(input: {
     return { error: 'No se pudo analizar el texto. Intenta describir el rendimiento de otra manera.' };
   }
 }
+
+export async function requestIdentityRevelation(evaluationId: string, requestingUserId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { getAdminDb } = await import('@/firebase/admin-init');
+    const { createError, ErrorCodes } = await import('../errors');
+
+    // 1. Get Evaluation
+    const evalRef = getAdminDb().collection('evaluations').doc(evaluationId);
+    const evalSnap = await evalRef.get();
+
+    if (!evalSnap.exists) {
+      throw createError(ErrorCodes.DATA_NOT_FOUND, { evaluationId });
+    }
+
+    const evaluation = evalSnap.data() as any; // Using any to avoid type check loop if types not fully loaded, or import Evaluation
+
+    // Verify requester is the subject
+    if (evaluation.playerId !== requestingUserId) {
+      return { success: false, error: 'No tienes permiso para solicitar esta identidad.' };
+    }
+
+    if (evaluation.identityRequestStatus === 'pending' || evaluation.identityRequestStatus === 'accepted') {
+      return { success: true }; // Already processing
+    }
+
+    // 2. Update Status
+    await evalRef.update({
+      identityRequestStatus: 'pending',
+      identityRequestDate: new Date().toISOString()
+    });
+
+    // 3. TODO: Send Notification to Evaluator (evaluation.evaluatorId)
+    // We would insert into 'notifications' collection here.
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error requesting identity revelation:', error);
+    return { success: false, error: error.message || 'Error al procesar la solicitud.' };
+  }
+}

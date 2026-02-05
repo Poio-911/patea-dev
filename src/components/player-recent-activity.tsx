@@ -2,21 +2,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { useFirestore, useUser } from '@/firebase';
-import { collection, query, where, orderBy, getDocs, doc, getDoc, limit, addDoc } from 'firebase/firestore';
-import type { Evaluation, Match, PerformanceTag } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Loader2, Goal, Star, Calendar, Quote, Lock, Unlock, User, MessageSquare } from 'lucide-react';
+import { collection, query, where, orderBy, getDocs, doc, getDoc, limit, Timestamp } from 'firebase/firestore';
+import type { Evaluation, Match, OvrHistory } from '@/lib/types';
+import { Card, CardContent } from '@/components/ui/card';
+import { Loader2, Goal, Star, Calendar, Quote, Lock, MessageSquare, ChevronDown, CheckCircle2, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { requestIdentityRevelation } from '@/lib/actions/evaluation-actions';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logger } from '@/lib/logger';
-import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 type PlayerRecentActivityProps = {
   playerId: string;
@@ -30,20 +30,41 @@ type MatchFeedbackContext = {
     goals: number;
     assists: number;
     avgRating: number;
-  }
+  };
+  ovrUpdate?: {
+    change: number;
+    newOVR: number;
+  };
 };
 
 export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
   const firestore = useFirestore();
-  const { user } = useUser();
   const { toast } = useToast();
   const [activities, setActivities] = useState<MatchFeedbackContext[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Helper to handle identity request (Mock logic for now)
+  // Helper to handle identity request
   const handleRequestIdentity = async (evaluationId: string) => {
-    toast({ description: 'Solicitud de identidad enviada (Simulación)' });
-    // TODO: Implement actual notification logic
+    try {
+      const result = await requestIdentityRevelation(evaluationId, playerId);
+      if (result.success) {
+        toast({
+          title: "Solicitud Enviada",
+          description: 'Se ha notificado al compañero que quieres saber su identidad.'
+        });
+        // Optimistic update
+        setActivities(prev => prev.map(activity => ({
+          ...activity,
+          peerEvaluations: activity.peerEvaluations.map(ev =>
+            ev.id === evaluationId ? { ...ev, identityRequestStatus: 'pending' as const } : ev
+          )
+        })));
+      } else {
+        toast({ variant: 'destructive', description: result.error || "Error al solicitar identidad." });
+      }
+    } catch (error) {
+      toast({ variant: 'destructive', description: "Error de conexión." });
+    }
   };
 
   useEffect(() => {
@@ -55,12 +76,12 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
       setIsLoading(true);
 
       try {
-        // 1. Fetch recent evaluations (both self and peer)
+        // 1. Fetch recent evaluations
         const evalsQuery = query(
           collection(firestore, 'evaluations'),
           where('playerId', '==', playerId),
           orderBy('evaluatedAt', 'desc'),
-          limit(20) // Fetch more to group by match
+          limit(20)
         );
         const evalsSnapshot = await getDocs(evalsQuery);
         const allEvals = evalsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Evaluation));
@@ -80,10 +101,24 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
 
         const matchIds = Object.keys(evalsByMatchId);
 
-        // 3. Fetch Match Details
+        // 3. Fetch Match Details & OVR History concurrently
         const matchPromises = matchIds.map(id => getDoc(doc(firestore, 'matches', id)));
-        const matchSnaps = await Promise.all(matchPromises);
+        const ovrHistoryQuery = query(
+          collection(firestore, 'players', playerId, 'ovrHistory'),
+          where('matchId', 'in', matchIds.slice(0, 10)) // Limit check (max 10 for 'in')
+        );
+
+        const [matchSnaps, ovrHistorySnap] = await Promise.all([
+          Promise.all(matchPromises),
+          matchIds.length > 0 ? getDocs(ovrHistoryQuery) : Promise.resolve({ docs: [] } as any)
+        ]);
+
         const matchesMap = new Map(matchSnaps.map(snap => [snap.id, { id: snap.id, ...snap.data() } as Match]));
+        const ovrHistoryMap = new Map();
+        ovrHistorySnap.docs.forEach((doc: any) => {
+          const data = doc.data();
+          ovrHistoryMap.set(data.matchId, data);
+        });
 
         const contexts: MatchFeedbackContext[] = [];
 
@@ -92,35 +127,35 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
           if (!match) continue;
 
           const evals = evalsByMatchId[matchId];
-
-          // Separate Self Eval vs Peer Evals
-          // Assuming self-eval is where evaluatorId === playerId
           const selfEval = evals.find(e => e.evaluatorId === playerId);
           const peerEvaluations = evals.filter(e => e.evaluatorId !== playerId);
 
-          // Calculate Aggregates
-          // Stats usually come from Self-Evaluation or are aggregated. 
-          // If SelfEval exists, distinct stats are there.
+          // Calculate Aggregates (Rounded to integer for goals)
+          const avgGoals = evals.reduce((sum, e) => sum + (e.goals || 0), 0) / (evals.length || 1);
+
           const stats = {
-            goals: selfEval ? selfEval.goals : evals.reduce((sum, e) => sum + (e.goals || 0), 0) / (evals.length || 1), // Fallback avg if no self
+            goals: selfEval ? selfEval.goals : Math.round(avgGoals), // Use round to avoid 0.5
             assists: selfEval ? (selfEval.assists || 0) : 0,
             avgRating: peerEvaluations.length > 0
               ? peerEvaluations.reduce((sum, e) => sum + (e.rating || 0), 0) / peerEvaluations.length
-              : (selfEval?.rating || 0) // Fallback to self-rating if no peers (solo match)
+              : (selfEval?.rating || 0)
           };
 
           contexts.push({
             match,
             selfEvaluation: selfEval,
             peerEvaluations,
-            stats
+            stats,
+            ovrUpdate: ovrHistoryMap.get(matchId)
           });
         }
 
         // Sort by match date descending
         contexts.sort((a, b) => {
-          if (!a.match.date || !b.match.date) return 0;
-          return new Date(b.match.date).getTime() - new Date(a.match.date).getTime();
+          const getTs = (d: any) => d?.toDate ? d.toDate().getTime() : new Date(d).getTime();
+          const dateA = a.match.date ? getTs(a.match.date) : 0;
+          const dateB = b.match.date ? getTs(b.match.date) : 0;
+          return dateB - dateA;
         });
 
         setActivities(contexts);
@@ -138,8 +173,7 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
   if (isLoading) {
     return (
       <Card>
-        <CardHeader><CardTitle>Historial de Partidos</CardTitle></CardHeader>
-        <CardContent><div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin" /></div></CardContent>
+        <CardContent className="pt-6"><div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin" /></div></CardContent>
       </Card>
     );
   }
@@ -147,156 +181,164 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
   if (activities.length === 0) {
     return (
       <Card>
-        <CardHeader><CardTitle>Historial de Partidos</CardTitle></CardHeader>
-        <CardContent><p className="text-sm text-muted-foreground text-center py-4">Aún no hay partidos evaluados.</p></CardContent>
+        <CardContent className="pt-6"><p className="text-sm text-muted-foreground text-center py-4">Aún no hay partidos evaluados.</p></CardContent>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <h3 className="text-xl font-bold px-1">Historial y Feedback</h3>
-      {activities.map(({ match, selfEvaluation, peerEvaluations, stats }) => (
-        <Card key={match.id} className="overflow-hidden border-l-4 border-l-primary/70">
-          <CardHeader className="bg-muted/20 pb-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-lg">{match.title}</CardTitle>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                  <Calendar className="h-3 w-3" />
-                  {match.date ? format(new Date(match.date), 'EEEE d MMMM, yyyy', { locale: es }) : 'Fecha desconocida'}
-                </div>
-              </div>
-              {stats.avgRating > 0 && (
-                <div className="flex flex-col items-end">
-                  <Badge variant="secondary" className={cn(
-                    "text-lg font-bold px-2 py-1",
-                    stats.avgRating >= 9 ? "bg-amber-100 text-amber-700 hover:bg-amber-200" :
-                      stats.avgRating >= 7 ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" :
-                        "bg-slate-100 text-slate-700"
-                  )}>
-                    <Star className={cn("h-4 w-4 mr-1 fill-current", stats.avgRating >= 9 ? "text-amber-500" : "text-emerald-500")} />
-                    {stats.avgRating.toFixed(1)}
-                  </Badge>
-                </div>
-              )}
-            </div>
+    <div className="space-y-4">
+      <h3 className="text-xl font-bold px-1 flex items-center gap-2">
+        Historial y Feedback
+        <Badge variant="outline" className="text-xs font-normal">Últimos {activities.length}</Badge>
+      </h3>
 
-            {/* Stats Summary */}
-            <div className="flex gap-4 mt-4">
-              <div className="flex items-center gap-1.5 bg-background/50 px-3 py-1.5 rounded-full border text-sm font-medium">
-                <Goal className="h-4 w-4 text-primary" />
-                <span>{stats.goals} {stats.goals === 1 ? 'Gol' : 'Goles'}</span>
-              </div>
-              {stats.assists > 0 && (
-                <div className="flex items-center gap-1.5 bg-background/50 px-3 py-1.5 rounded-full border text-sm font-medium">
-                  <div className="h-4 w-4 flex items-center justify-center font-serif italic font-bold text-primary">A</div>
-                  <span>{stats.assists} {stats.assists === 1 ? 'Asistencia' : 'Asistencias'}</span>
-                </div>
-              )}
-            </div>
-          </CardHeader>
+      {activities.map(({ match, selfEvaluation, peerEvaluations, stats, ovrUpdate }) => {
+        // Fix Date Parsing
+        let matchDate: Date | null = null;
+        const rawDate = match.date || selfEvaluation?.reportedAt || (peerEvaluations[0] as any)?.evaluatedAt;
 
-          <CardContent className="pt-6 space-y-6">
-            {/* Personal Chronicle */}
-            {selfEvaluation?.personalChronicle && (
-              <div className="bg-muted/30 p-4 rounded-lg italic text-sm text-muted-foreground border border-dashed">
-                <div className="flex items-center gap-2 mb-2 not-italic font-semibold text-foreground/80">
-                  <Quote className="h-3 w-3 rotate-180" /> Tu Crónica
-                </div>
-                "{selfEvaluation.personalChronicle}"
-              </div>
-            )}
+        if (rawDate) {
+          if (typeof (rawDate as any).toDate === 'function') {
+            matchDate = (rawDate as any).toDate();
+          } else {
+            matchDate = new Date(rawDate);
+            // Check if valid
+            if (isNaN(matchDate.getTime())) matchDate = null;
+          }
+        }
 
-            {/* Peer Feedback Wall */}
-            {peerEvaluations.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4" /> Feedback de compañeros
-                </h4>
-                <div className="space-y-3">
-                  {peerEvaluations.map((evalItem) => (
-                    <div key={evalItem.id} className="group relative bg-background border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-start gap-3">
-                        <Avatar className="h-10 w-10 border-2 border-background shadow-sm">
-                          {evalItem.identityRevealed ? (
-                            <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${evalItem.evaluatorId}`} />
-                            // Ideally fetch real photoURL if revealed
-                          ) : (
-                            <div className="h-full w-full bg-muted flex items-center justify-center">
-                              <User className="h-5 w-5 text-muted-foreground opacity-50" />
-                            </div>
-                          )}
-                          <AvatarFallback>?</AvatarFallback>
-                        </Avatar>
+        const formattedDate = matchDate ? format(matchDate, 'EEE d MMM, yyyy', { locale: es }) : 'Fecha desconocida';
 
-                        <div className="flex-1 space-y-2">
-                          <div className="flex justify-between items-start">
-                            <div className="flex flex-col">
-                              <span className="text-sm font-semibold text-foreground/90 flex items-center gap-2">
-                                {evalItem.identityRevealed ? "Nombre del Jugador" : "Compañero Anónimo"}
-                                {evalItem.identityRevealed && <Badge variant="outline" className="text-[10px] h-4 px-1">Verificado</Badge>}
-                              </span>
-                              {evalItem.role && <span className="text-xs text-muted-foreground capitalize">{evalItem.role}</span>}
-                            </div>
+        // Fix Title parsing
+        const displayTitle = match.title
+          ? match.title
+          : (match.teams && match.teams.length >= 2
+            ? `${match.teams[0].name} vs ${match.teams[1].name}`
+            : 'Partido Amistoso');
 
-                            {!evalItem.identityRevealed && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6 text-muted-foreground hover:text-primary"
-                                      onClick={() => handleRequestIdentity(evalItem.id)}
-                                      disabled={evalItem.identityRequestStatus === 'pending'}
-                                    >
-                                      {evalItem.identityRequestStatus === 'pending' ? (
-                                        <Loader2 className="h-3 w-3 animate-spin" />
-                                      ) : (
-                                        <Lock className="h-3 w-3" />
-                                      )}
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>{evalItem.identityRequestStatus === 'pending' ? 'Solicitud pendiente' : 'Solicitar identidad'}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </div>
+        return (
+          <Collapsible key={match.id} className="group">
+            <Card className="overflow-hidden border-l-4 border-l-primary/70 hover:shadow-md transition-all">
+              <CollapsibleTrigger className="w-full text-left">
+                <div className="p-4 flex items-center justify-between bg-card hover:bg-accent/5 transition-colors">
+                  {/* Left: Date & Title */}
+                  <div className="flex-1 min-w-0 pr-4">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                      <Calendar className="h-3 w-3" />
+                      <span className="capitalize">{formattedDate}</span>
+                      {ovrUpdate ? (
+                        <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-green-100 text-green-700 hover:bg-green-100 gap-1">
+                          <CheckCircle2 className="h-3 w-3" /> OVR {ovrUpdate.change >= 0 ? '+' : ''}{ovrUpdate.change.toFixed(1)}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="h-5 px-1.5 text-[10px] text-muted-foreground gap-1">
+                          <Clock className="h-3 w-3" /> Pendiente
+                        </Badge>
+                      )}
+                    </div>
+                    <h4 className="font-bold text-base truncate">{displayTitle}</h4>
+                  </div>
 
-                          {/* Text Description */}
-                          {evalItem.textDescription ? (
-                            <p className="text-sm text-foreground/80 leading-relaxed">
-                              "{evalItem.textDescription}"
-                            </p>
-                          ) : (
-                            <p className="text-xs text-muted-foreground italic">
-                              Sin comentario escrito.
-                            </p>
-                          )}
-
-                          {/* Tags */}
-                          {evalItem.performanceTags && evalItem.performanceTags.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 pt-1">
-                              {evalItem.performanceTags.map((tag, i) => (
-                                <Badge key={i} variant="secondary" className="text-[10px] bg-secondary/50 hover:bg-secondary/70 border-0">
-                                  {typeof tag === 'string' ? tag : tag.name}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                  {/* Right: Rating & Stats */}
+                  <div className="flex items-center gap-4">
+                    <div className="hidden sm:flex gap-2">
+                      <div className="flex items-center gap-1.5 bg-muted/40 px-2.5 py-1 rounded-full text-xs font-medium">
+                        <Goal className="h-3 w-3 text-primary" />
+                        <span>{stats.goals}</span>
                       </div>
                     </div>
-                  ))}
+
+                    {stats.avgRating > 0 && (
+                      <Badge className={cn(
+                        "text-sm font-bold px-2 py-1 h-8 min-w-[3rem] justify-center",
+                        stats.avgRating >= 8 ? "bg-emerald-500 hover:bg-emerald-600" :
+                          stats.avgRating >= 6 ? "bg-amber-500 hover:bg-amber-600" : "bg-slate-500"
+                      )}>
+                        {stats.avgRating.toFixed(1)}
+                      </Badge>
+                    )}
+
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                  </div>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+              </CollapsibleTrigger>
+
+              <CollapsibleContent>
+                <div className="px-4 pb-4 pt-0 space-y-4">
+                  <div className="h-px bg-border/50 mx-2 mb-4" />
+
+                  {/* Personal Chronicle */}
+                  {selfEvaluation?.personalChronicle && (
+                    <div className="bg-muted/30 p-3 rounded-lg italic text-sm text-muted-foreground border border-dashed relative">
+                      <Quote className="h-6 w-6 text-muted-foreground/10 absolute top-2 right-2 rotate-180" />
+                      <span className="font-semibold text-foreground/80 not-italic block mb-1 text-xs uppercase tracking-wider">Tu Crónica</span>
+                      "{selfEvaluation.personalChronicle}"
+                    </div>
+                  )}
+
+                  {/* Peer Feedback */}
+                  {peerEvaluations.length > 0 ? (
+                    <div>
+                      <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-muted-foreground uppercase tracking-wider">
+                        <MessageSquare className="h-3 w-3" /> Feedback de compañeros
+                      </h4>
+                      <div className="grid gap-2">
+                        {peerEvaluations.map((evalItem) => (
+                          <div key={evalItem.id} className="bg-background border rounded-md p-3 text-sm shadow-sm flex gap-3">
+                            <Avatar className="h-8 w-8 mt-0.5">
+                              {evalItem.identityRevealed ? (
+                                <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${evalItem.evaluatorId}`} />
+                              ) : (
+                                <AvatarFallback><Lock className="h-3 w-3 text-muted-foreground" /></AvatarFallback>
+                              )}
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex justify-between items-start mb-1">
+                                <span className="font-medium text-foreground">
+                                  {evalItem.identityRevealed ? "Compañero (Revelado)" : "Compañero Anónimo"}
+                                </span>
+                                {!evalItem.identityRevealed && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-5 px-2 text-[10px] text-primary hover:bg-primary/10"
+                                    onClick={() => handleRequestIdentity(evalItem.id)}
+                                  >
+                                    Solicitar Identidad
+                                  </Button>
+                                )}
+                              </div>
+
+                              {evalItem.textDescription ? (
+                                <p className="text-muted-foreground leading-relaxed">"{evalItem.textDescription}"</p>
+                              ) : (
+                                <p className="text-muted-foreground/50 italic text-xs">Sin comentario escrito.</p>
+                              )}
+
+                              {evalItem.performanceTags && evalItem.performanceTags.length > 0 && (
+                                <div className="flex flex-wrap gap-1 pt-2">
+                                  {evalItem.performanceTags.map((tag, i) => (
+                                    <Badge key={i} variant="secondary" className="text-[10px] h-5 px-1.5 border-0 bg-secondary/40 text-secondary-foreground font-normal">
+                                      {typeof tag === 'string' ? tag : tag.name}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic text-center py-2">No recibiste feedback escrito en este partido.</p>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        );
+      })}
     </div>
   );
 }

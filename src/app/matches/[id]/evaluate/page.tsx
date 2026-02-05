@@ -27,29 +27,31 @@ const isRealUser = (player: Player) => player.id === player.ownerUid;
 // --- Player Progression Logic ---
 const OVR_PROGRESSION = {
     BASELINE_RATING: 5,
-    SCALE: 0.6,
-    MAX_STEP: 2,
-    DECAY_START: 70,
-    SOFT_CAP: 95,
-    HARD_CAP: 99,
+    MAX_STEP: 1.5,
     MIN_OVR: 40,
+    MAX_OVR: 99,
     MIN_ATTRIBUTE: 20,
-    MAX_ATTRIBUTE: 90
+    MAX_ATTRIBUTE: 99
 };
 
 const calculateOvrChange = (currentOvr: number, avgRating: number): number => {
     if (avgRating === OVR_PROGRESSION.BASELINE_RATING) return 0;
-    const ratingDelta = avgRating - OVR_PROGRESSION.BASELINE_RATING;
-    let rawDelta = ratingDelta * OVR_PROGRESSION.SCALE;
-    if (currentOvr >= OVR_PROGRESSION.DECAY_START) {
-        if (currentOvr < OVR_PROGRESSION.SOFT_CAP) {
-            const t = (currentOvr - OVR_PROGRESSION.DECAY_START) / (OVR_PROGRESSION.SOFT_CAP - OVR_PROGRESSION.DECAY_START);
-            rawDelta *= 1 - (0.6 * t);
-        } else {
-            const t = (currentOvr - OVR_PROGRESSION.SOFT_CAP) / (OVR_PROGRESSION.HARD_CAP - OVR_PROGRESSION.SOFT_CAP);
-            rawDelta *= 0.25 * (1 - t);
-        }
-    }
+
+    const ratingDelta = avgRating - OVR_PROGRESSION.BASELINE_RATING; // -5 to +5 range
+
+    // Dynamic Scale based on OVR Tier (Catch-up mechanic)
+    let scale = 0.30; // Default (Normal)
+
+    if (currentOvr < 50) scale = 0.50;      // Very Fast (Rookie)
+    else if (currentOvr < 60) scale = 0.40; // Fast
+    else if (currentOvr < 70) scale = 0.30; // Standard
+    else if (currentOvr < 80) scale = 0.20; // Harder
+    else if (currentOvr < 90) scale = 0.10; // Elite Grind
+    else scale = 0.05;                      // Legend (Very slow)
+
+    let rawDelta = ratingDelta * scale;
+
+    // Apply limits
     return Math.max(-OVR_PROGRESSION.MAX_STEP, Math.min(OVR_PROGRESSION.MAX_STEP, rawDelta));
 };
 
@@ -63,7 +65,7 @@ const POSITION_WEIGHTS: Record<string, Record<keyof Player, number>> = {
 
 const DEFAULT_WEIGHTS = { pac: 0.166, sho: 0.166, pas: 0.166, dri: 0.166, def: 0.166, phy: 0.166 };
 
-// ✅ UPDATED: Distributes points-based changes weighted by position using Math.ceil
+// ✅ UPDATED: Distributes points using Error Accumulation (Dithering) instead of Ceil/Floor bias
 const calculateAttributeChangesFromPoints = (currentAttrs: Player, ovrChange: number, position: string) => {
     if (ovrChange === 0) return currentAttrs;
 
@@ -71,29 +73,26 @@ const calculateAttributeChangesFromPoints = (currentAttrs: Player, ovrChange: nu
     const attributes: Array<keyof Player> = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'];
     const weights = POSITION_WEIGHTS[position as keyof typeof POSITION_WEIGHTS] || DEFAULT_WEIGHTS;
 
-    // Total raw attribute points to add/remove (e.g., +2 OVR * 6 attrs = +12 total points)
+    // Total raw attribute points to distribute
+    // OVR is roughly (Sum Attributes)/6, so to raise OVR by X, we need X*6 attribute points.
     const totalPointsToAdd = ovrChange * 6;
 
-    // Distribute points according to weights
-    let pointsDistributed = 0;
+    // Distribute with error accumulation to avoid "Ceil" inflation
+    let accumulatedError = 0;
 
-    attributes.forEach((attr, index) => {
-        const isLast = index === attributes.length - 1;
-        let pointsForAttr = 0;
+    attributes.forEach((attr) => {
+        const targetShare = totalPointsToAdd * weights[attr as keyof typeof weights];
+        const pointWithDecimal = targetShare + accumulatedError;
+        const pointRounded = Math.round(pointWithDecimal);
 
-        if (isLast) {
-            // Assign remaining points to last attribute to avoid rounding loss
-            pointsForAttr = totalPointsToAdd - pointsDistributed;
-        } else {
-            // Apply weight and round up (ceil) for positive changes
-            const rawPoints = totalPointsToAdd * weights[attr as keyof typeof weights];
-            pointsForAttr = ovrChange > 0 ? Math.ceil(rawPoints) : Math.floor(rawPoints);
-            pointsDistributed += pointsForAttr;
-        }
+        accumulatedError = pointWithDecimal - pointRounded; // Carry over difference to next attribute
 
         const currentValue = newAttributes[attr] as number;
-        const newValue = currentValue + pointsForAttr;
-        newAttributes[attr] = Math.round(Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, newValue)));
+        // Apply change and clamp
+        newAttributes[attr] = Math.round(Math.max(
+            OVR_PROGRESSION.MIN_ATTRIBUTE,
+            Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, currentValue + pointRounded)
+        ));
     });
 
     return newAttributes;
@@ -418,7 +417,7 @@ export default function EvaluateMatchPage() {
 
                     // ✅ STEP 4: Calculate new OVR as average of updated attributes (ALWAYS CONSISTENT)
                     let newOvr = Math.round((updatedAttributes.pac + updatedAttributes.sho + updatedAttributes.pas + updatedAttributes.dri + updatedAttributes.def + updatedAttributes.phy) / 6);
-                    newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.HARD_CAP, newOvr));
+                    newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.MAX_OVR, newOvr));
 
                     const newMatchesPlayed = (player.stats.matchesPlayed || 0) + 1;
                     const newTotalGoals = (player.stats.goals || 0) + goalsInMatch;
@@ -659,7 +658,7 @@ export default function EvaluateMatchPage() {
                                     className="flex items-center gap-3 p-2 rounded-md border"
                                 >
                                     <Avatar className="h-8 w-8">
-                                        <AvatarImage src={player.photoUrl} alt={player.name} />
+                                        <AvatarImage src={player.photoURL} alt={player.name} />
                                         <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                     <span className="flex-1 font-medium">{player.name}</span>

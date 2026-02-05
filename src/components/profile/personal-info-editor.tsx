@@ -36,12 +36,25 @@ export function PersonalInfoEditor({ user }: PersonalInfoEditorProps) {
         setIsSaving(true);
         try {
             const userRef = doc(firestore, 'users', user.uid);
+            const playerRef = doc(firestore, 'players', user.uid);
 
-            // Update Firestore
+            // Update Firestore User
             await updateDoc(userRef, {
                 displayName: formData.displayName,
                 phoneNumber: formData.phoneNumber,
             });
+
+            // Update Firestore Player (sync name and photo if changed)
+            try {
+                // We use updateDoc but catch if it doesn't exist (though it should for registered users)
+                await updateDoc(playerRef, {
+                    name: formData.displayName,
+                    // If user.photoURL is updated (currently not in form but for future proofing / consistency)
+                    ...(user.photoURL ? { photoURL: user.photoURL } : {})
+                });
+            } catch (err) {
+                console.warn('Player document update failed or not found', err);
+            }
 
             // Update Firebase Auth displayName
             if (formData.displayName !== user.displayName) {

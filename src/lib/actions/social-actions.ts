@@ -31,13 +31,13 @@ export async function publishActivityAction(activity: Omit<SocialActivity, 'id'>
 
       if (!followsSnapshot.empty) {
         const batch = getAdminDb().batch();
-        
+
         followsSnapshot.docs.forEach(followDoc => {
           const followerData = followDoc.data();
           const followerFeedRef = getAdminDb()
             .collection(`users/${followerData.followerId}/feeds`)
             .doc();
-          
+
           batch.set(followerFeedRef, activityWithId);
         });
 
@@ -203,10 +203,28 @@ export async function publishOvrChangeActivity(player: Player, history: OvrHisto
 
 // Activity when match played (aggregate per participant user)
 export async function publishMatchPlayedActivity(userId: string, matchId: string, matchTitle: string) {
-  await publishActivityAction({
-    type: 'match_played',
-    userId,
-    timestamp: FieldValue.serverTimestamp() as any,
-    metadata: { matchId, matchTitle },
-  });
+  try {
+    const db = getAdminDb();
+    // Fetch player data to include photo and name
+    const playerSnapshot = await db.collection('players').doc(userId).get();
+    let playerDetails = {};
+
+    if (playerSnapshot.exists) {
+      const playerData = playerSnapshot.data();
+      playerDetails = {
+        playerName: playerData?.name,
+        playerPhotoUrl: playerData?.photoURL,
+      };
+    }
+
+    await publishActivityAction({
+      type: 'match_played',
+      userId,
+      ...playerDetails,
+      timestamp: FieldValue.serverTimestamp() as any,
+      metadata: { matchId, matchTitle },
+    });
+  } catch (error) {
+    console.error('[publishMatchPlayedActivity] Error publishing activity', error);
+  }
 }

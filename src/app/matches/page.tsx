@@ -124,32 +124,31 @@ export default function MatchesPage() {
         if (!firestore || !user?.activeGroupId) return null;
         return query(collection(firestore, 'matches'), where('groupId', '==', user.activeGroupId), orderBy('date', 'desc'));
     }, [firestore, user?.activeGroupId]);
-    const joinedPublicMatchesQuery = useMemo(() => {
-        if (!firestore || !user?.uid || !user?.activeGroupId) return null;
+    const joinedMatchesQuery = useMemo(() => {
+        if (!firestore || !user?.uid) return null;
         return query(
             collection(firestore, 'matches'),
-            where('playerUids', 'array-contains', user.uid),
-            where('isPublic', '==', true),
-            where('groupId', '!=', user.activeGroupId)
+            where('playerUids', 'array-contains', user.uid)
         );
-    }, [firestore, user?.uid, user?.activeGroupId]);
+    }, [firestore, user?.uid]);
 
     const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(groupMatchesQuery);
-    const { data: joinedPublicMatches, loading: joinedPublicMatchesLoading } = useCollection<Match>(joinedPublicMatchesQuery);
+
+    const { data: joinedMatches, loading: joinedMatchesLoading } = useCollection<Match>(joinedMatchesQuery);
 
     const allMatches = useMemo(() => {
         const all = new Map<string, Match>();
         (groupMatches || []).forEach(m => all.set(m.id, m));
-        (joinedPublicMatches || []).forEach(m => all.set(m.id, m));
+        (joinedMatches || []).forEach(m => all.set(m.id, m));
         return Array.from(all.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [groupMatches, joinedPublicMatches]);
+    }, [groupMatches, joinedMatches]);
 
     const pendingFinalizationMatches = useMemo(() => {
-     if (!user?.uid) return [];
-     const now = new Date();
-     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-     const competitionTypes = ['league', 'cup', 'league_final'];
-     return allMatches.filter(match => match.ownerUid === user.uid && match.status === 'upcoming' && new Date(match.date) < today && !competitionTypes.includes(match.type));
+        if (!user?.uid) return [];
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const competitionTypes = ['league', 'cup', 'league_final'];
+        return allMatches.filter(match => match.ownerUid === user.uid && match.status === 'upcoming' && new Date(match.date) < today && !competitionTypes.includes(match.type));
     }, [allMatches, user?.uid]);
 
     useEffect(() => {
@@ -243,9 +242,9 @@ export default function MatchesPage() {
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const getTs = (m: Match) => {
             const d = new Date(m.date);
-            const clean = (m.time || '').replace(' hs','').replace('hs','').trim();
+            const clean = (m.time || '').replace(' hs', '').replace('hs', '').trim();
             const [hh, mm = '0'] = clean.split(':');
-            d.setHours(parseInt(hh || '0',10) || 0, parseInt(mm || '0',10) || 0, 0, 0);
+            d.setHours(parseInt(hh || '0', 10) || 0, parseInt(mm || '0', 10) || 0, 0, 0);
             return d.getTime();
         };
         const upcomingMatches = amistososMatches
@@ -281,7 +280,7 @@ export default function MatchesPage() {
         };
     }, [amistososMatches]);
 
-    const loading = userLoading || playersLoading || groupMatchesLoading || joinedPublicMatchesLoading;
+    const loading = userLoading || playersLoading || groupMatchesLoading || joinedMatchesLoading;
 
     const sortedPlayers = useMemo(() => {
         if (!allGroupPlayers) return [];

@@ -101,7 +101,73 @@ export type MatchCard = {
   playerName: string;
   teamId: string;
   cardType: CardType;
+  minute?: number;
 };
+
+export type LocationProposal = {
+  id: string;
+  location: MatchLocation;
+  proposedBy: string; // uid
+  votes: string[]; // array of user uids
+  createdAt: string;
+};
+
+export type Match = {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  location: MatchLocation;
+  type: MatchType;
+  matchSize: number;
+  isPublic: boolean;
+  status: MatchStatus;
+
+  // Participants
+  ownerUid: string;
+  groupId: string | null;
+  players: { uid: string; displayName: string; ovr: number; position: PlayerPosition; photoURL: string }[]; // Flattened list
+  playerUids: string[];
+
+  // Teams structure (for by_teams/intergroup)
+  teams?: Team[];
+
+  // Additional Metadata
+  weather?: {
+    description: string;
+    temperature?: number;
+    icon?: string;
+  };
+
+  // Inter-Group specific
+  participantTeamIds?: string[];
+  captains?: string[]; // [uid1, uid2]
+  locationProposals?: LocationProposal[];
+  isVotingOpen?: boolean;
+
+  // Game Data
+  finalScore?: { team1: number; team2: number };
+  scorers?: MatchGoalScorer[];
+  cards?: MatchCard[];
+  startedAt?: string;
+  endedAt?: string;
+
+  // Legacy/Optional
+  leagueId?: string;
+  leagueInfo?: {
+    leagueId: string;
+    round?: number;
+    isCupMatch?: boolean;
+    cupId?: string;
+    bracketMatchId?: string;
+  };
+
+  startTimestamp?: string;
+  createdAt?: string;
+
+  mvpId?: string;
+  mvpData?: any;
+} & DocumentData;
 
 // Enhanced event tracking types
 export type MatchEventType =
@@ -202,87 +268,7 @@ export type TeamFormation = {
   [key: string]: { x: number, y: number } // player.uid -> {x, y} percentage coordinates
 };
 
-export type Match = {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  location: MatchLocation;
-  type: MatchType;
-  matchSize: MatchSize;
-  players: { uid: string; displayName: string; ovr: number; position: PlayerPosition; photoURL: string }[];
-  playerUids: string[]; // Added for simpler queries
-  teams: Team[];
-  status: MatchStatus;
-  ownerUid: string;
-  groupId: string;
-  isPublic?: boolean;
-  weather?: {
-    description: string;
-    icon: string;
-    temperature: number;
-    // Forecast expandido (opcional)
-    humidity?: number; // 0-100
-    windSpeed?: number; // km/h
-    precipitation?: number; // 0-100 probability
-    uvIndex?: number; // 0-11+
-    feelsLike?: number; // °C
-    conditions?: string;
-    recommendation?: string;
-  };
-  chronicle?: GenerateMatchChronicleOutput; // AI-generated match summary
-  chronicleGeneratedAt?: string; // ISO timestamp of when chronicle was generated
-  startTimestamp?: string;
-  participantTeamIds?: string[];
-  createdAt?: string;
-  finalScore?: { team1: number; team2: number } | null;
-  finalizedAt?: string | null;
-  leagueInfo?: {
-    leagueId: string;
-    round: number;
-  };
-  goalScorers?: MatchGoalScorer[]; // Individual goal scorers (DEPRECATED - use events)
-  cards?: MatchCard[]; // Yellow and red cards (DEPRECATED - use events)
-  // Enhanced event tracking
-  events?: MatchEvent[]; // Live match events
-  timeline?: MatchTimelineEvent[]; // Match timeline
-  statistics?: MatchStatistics; // Match statistics
-  liveStatus?: LiveMatchStatus; // Current match status
-  currentMinute?: number; // Current match minute
-  periodStartTs?: any; // Firestore server timestamp when current period started
-  timerPaused?: boolean; // If true, do not advance client clock
-  periods?: MatchPeriod[]; // Match periods (halves, extra time)
-  referee?: {
-    name: string;
-    id?: string;
-  };
-  attendance?: number;
-  // Live streaming (optional)
-  stream?: {
-    provider: 'youtube' | 'twitch' | 'kick' | 'custom';
-    id?: string; // e.g., YouTube Live videoId
-    url?: string; // fallback embed URL for custom
-    active?: boolean;
-  };
-  // Confirmación de asistencia (opcional)
-  requiresConfirmation?: boolean; // Si es true, mostrar confirmación
-  confirmationDeadline?: string; // ISO 8601 - deadline opcional
-  confirmedCount?: number; // Cache de confirmados
-  declinedCount?: number; // Cache de declinados
-  maybeCount?: number; // Cache de "tal vez"
-  // Cancha predefinida (opcional)
-  venueId?: string; // Si está presente, usar info de la cancha en lugar de location custom
-  // Costos y split
-  cost?: {
-    total: number;
-    currency: string;
-    splitBetweenPlayers?: boolean; // Si es true, dividir entre confirmados
-    perPlayerAmount?: number; // Calculado automáticamente si split es true
-  };
-  // Lista de espera/suplentes
-  waitlist?: string[]; // UserIds en lista de espera
-  maxPlayers?: number; // Límite de jugadores confirmados (después van a waitlist)
-} & DocumentData;
+// Duplicate Match definition removed
 
 export type Team = {
   id?: string;
