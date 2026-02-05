@@ -27,7 +27,7 @@ async function runTest() {
             config: { temperature: 0.1 }
         });
 
-        console.log(`✅ Success! Response: ${response.text()}`);
+        console.log(`✅ Success! Response: ${response.text}`);
     } catch (error: any) {
         console.error(`❌ Failed: ${error.message}`);
     }

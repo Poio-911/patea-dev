@@ -35,7 +35,7 @@ async function testModel(modelName: string) {
             config: { temperature: 0.1 }
         });
 
-        console.log(`✅ Success! Response: ${response.text()}`);
+        console.log(`✅ Success! Response: ${response.text}`);
         return true;
     } catch (error: any) {
         console.error(`❌ Failed: ${error.message}`);
