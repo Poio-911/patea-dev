@@ -26,84 +26,76 @@ export function CompetitionCard({
     onClick,
     className,
 }: CompetitionCardProps) {
-    const config = {
-        friendly: {
-            gradient: 'linear-gradient(135deg, hsl(168, 76%, 50%), hsl(158, 64%, 58%))',
-            shadow: '0 8px 32px rgba(16, 185, 129, 0.3)',
-            hoverShadow: '0 12px 48px rgba(16, 185, 129, 0.4)',
-        },
-        league: {
-            gradient: 'linear-gradient(135deg, hsl(142, 76%, 45%), hsl(199, 89%, 55%))',
-            shadow: '0 8px 32px rgba(34, 197, 94, 0.3)',
-            hoverShadow: '0 12px 48px rgba(34, 197, 94, 0.4)',
-        },
-        cup: {
-            gradient: 'linear-gradient(135deg, hsl(38, 92%, 60%), hsl(25, 95%, 63%))',
-            shadow: '0 8px 32px rgba(251, 146, 60, 0.3)',
-            hoverShadow: '0 12px 48px rgba(251, 146, 60, 0.4)',
-        },
-    };
-
-    const { gradient, shadow, hoverShadow } = config[type];
-
     return (
         <Card
             className={cn(
                 'relative overflow-hidden cursor-pointer',
-                'border-0 rounded-2xl',
-                'p-8 flex flex-col gap-5 min-h-[320px]',
+                'rounded-2xl border',
+                'p-5 flex flex-col gap-3 min-h-[200px]',
                 'transition-all duration-300 ease-out',
                 'hover:scale-[1.02] hover:-translate-y-1',
+                // Glassmorphism - light for light theme, dark for dark theme
+                'bg-white/50 dark:bg-black/50',
+                'backdrop-blur-xl',
+                'shadow-xl',
+                // Border with accent color hint
+                type === 'friendly' && 'border-emerald-200 dark:border-emerald-500/20 hover:border-emerald-400 dark:hover:border-emerald-500/50 hover:shadow-emerald-500/20',
+                type === 'league' && 'border-blue-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/50 hover:shadow-blue-500/20',
+                type === 'cup' && 'border-amber-200 dark:border-amber-500/20 hover:border-amber-400 dark:hover:border-amber-500/50 hover:shadow-amber-500/20',
                 className
             )}
-            style={{
-                background: gradient,
-                boxShadow: shadow,
-            }}
-            onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = hoverShadow;
-            }}
-            onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = shadow;
-            }}
             onClick={onClick}
         >
-            {/* Decorative overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+            {/* Subtle gradient overlay for depth */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/50 dark:from-white/5 via-transparent to-transparent dark:to-black/20 pointer-events-none" />
 
             {/* Notification Badge */}
             {(notificationCount ?? 0) > 0 && (
                 <Badge
-                    className="absolute top-4 right-4 bg-white text-gray-900 font-bold px-3 py-1 shadow-lg z-10"
+                    className={cn(
+                        'absolute top-3 right-3 font-bold px-2.5 py-0.5 shadow-lg z-10',
+                        type === 'friendly' && 'bg-emerald-500 text-white',
+                        type === 'league' && 'bg-blue-500 text-white',
+                        type === 'cup' && 'bg-amber-500 text-white',
+                    )}
                     variant="default"
                 >
                     {notificationCount}
                 </Badge>
             )}
 
-            {/* Icon */}
+            {/* Icon with accent color */}
             <div className="flex items-center justify-center relative z-10">
-                <div className="relative">
-                    <Icon className="w-20 h-20 text-white drop-shadow-2xl" strokeWidth={2.5} />
-                    <div className="absolute inset-0 blur-xl opacity-50 bg-white/30" />
-                </div>
+                <Icon
+                    className={cn(
+                        'w-12 h-12 drop-shadow-lg',
+                        type === 'friendly' && 'text-emerald-600 dark:text-emerald-400',
+                        type === 'league' && 'text-blue-600 dark:text-blue-400',
+                        type === 'cup' && 'text-amber-600 dark:text-amber-400',
+                    )}
+                    strokeWidth={2}
+                />
             </div>
 
             {/* Title */}
-            <h3 className="text-3xl font-black text-white text-center drop-shadow-lg tracking-tight relative z-10">
+            <h3 className="text-xl font-bold text-foreground text-center drop-shadow-sm dark:drop-shadow-md tracking-tight relative z-10">
                 {title}
             </h3>
 
             {/* Quick Stats */}
             {stats.length > 0 && (
-                <div className="flex flex-col gap-2.5 mt-auto relative z-10">
+                <div className="flex flex-col gap-2 mt-auto relative z-10">
                     {stats.map((stat, index) => (
                         <div
                             key={index}
-                            className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 shadow-lg"
+                            className={cn(
+                                'flex items-center justify-between px-3 py-2 rounded-lg border',
+                                'bg-black/5 dark:bg-black/30',
+                                'border-black/10 dark:border-white/10'
+                            )}
                         >
-                            <span className="text-sm font-medium text-white/90">{stat.label}</span>
-                            <span className="text-lg font-bold text-white">{stat.value}</span>
+                            <span className="text-xs font-medium text-muted-foreground">{stat.label}</span>
+                            <span className="text-sm font-bold text-foreground">{stat.value}</span>
                         </div>
                     ))}
                 </div>

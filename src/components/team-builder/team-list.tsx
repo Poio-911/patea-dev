@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -12,7 +11,6 @@ import { collection, query, where } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { JerseyPreview } from './jersey-preview';
 import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { Separator } from '../ui/separator';
 
 interface TeamListProps {
@@ -52,30 +50,28 @@ export function TeamList({ groupId, players, currentUserId, compact = false }: T
         {teams && teams.length > 0 ? (
           <div className="space-y-2">
             {teams.map(team => (
-              <Link key={team.id} href={`/groups/teams/${team.id}`} className="block">
-                <Card className="hover:bg-muted/50 transition-colors">
-                  <CardContent className="flex items-center justify-between gap-3 p-3">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="w-10 h-10 flex-shrink-0">
-                        <JerseyPreview jersey={team.jersey} size="sm" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">{team.name}</p>
-                        <p className="text-xs text-muted-foreground">{team.members.length} jugadores</p>
-                      </div>
+              <Link key={team.id} href={`/groups/teams/${team.id}`} className="block group">
+                <div className="bg-white rounded-lg border border-slate-200 hover:border-primary/50 transition-all duration-300 flex items-center justify-between gap-3 p-3 group-hover:shadow-sm">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-10 h-10 flex-shrink-0 drop-shadow-sm">
+                      <JerseyPreview jersey={team.jersey} size="sm" />
                     </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  </CardContent>
-                </Card>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm truncate text-slate-800 group-hover:text-primary transition-colors font-headline tracking-wide">{team.name}</p>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-wider">{team.members.length} MK</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-primary transition-colors transform group-hover:translate-x-1" />
+                </div>
               </Link>
             ))}
           </div>
         ) : (
-          <Alert className="text-center py-6">
-            <UsersRound className="mx-auto h-6 w-6 mb-2" />
-            <AlertTitle className="text-sm">No hay equipos</AlertTitle>
-            <AlertDescription className="text-xs">
-              Creá el primer equipo del grupo.
+          <Alert className="text-center py-6 bg-white border border-dashed border-slate-200">
+            <UsersRound className="mx-auto h-6 w-6 mb-2 text-slate-400" />
+            <AlertTitle className="text-sm text-slate-800">Sin Equipos</AlertTitle>
+            <AlertDescription className="text-xs text-slate-500">
+              Creá el primer equipo.
             </AlertDescription>
           </Alert>
         )}
@@ -97,15 +93,15 @@ export function TeamList({ groupId, players, currentUserId, compact = false }: T
         <div className="flex items-center gap-3">
           <UsersRound className="h-8 w-8 text-primary" />
           <div>
-            <h2 className="text-2xl font-bold">Equipos del Grupo</h2>
-            <p className="text-sm text-muted-foreground">
+            <h2 className="text-2xl font-bold text-slate-900">Equipos del Grupo</h2>
+            <p className="text-sm text-slate-500">
               {teams?.length || 0} equipos creados
             </p>
           </div>
         </div>
         <Button onClick={() => setCreateDialogOpen(true)}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Crear Equipo
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Crear Equipo
         </Button>
       </div>
 
@@ -114,34 +110,34 @@ export function TeamList({ groupId, players, currentUserId, compact = false }: T
       {teams && teams.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {teams.map(team => (
-            <Link key={team.id} href={`/groups/teams/${team.id}`} className="block">
-                <Card className="hover:bg-muted/50 transition-colors h-full">
-                  <CardHeader className="flex-row items-center justify-between gap-4 p-4">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="w-12 h-12 flex-shrink-0">
-                              <JerseyPreview jersey={team.jersey} size="sm" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                              <CardTitle className="text-base font-bold truncate">{team.name}</CardTitle>
-                          </div>
-                      </div>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <div className="text-sm text-muted-foreground flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        <span>{team.members.length} jugadores</span>
+            <Link key={team.id} href={`/groups/teams/${team.id}`} className="block group">
+              <div className="h-full bg-white rounded-xl border border-slate-200 overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-sm">
+                <div className="flex flex-row items-center justify-between gap-4 p-4 border-b border-slate-100 bg-slate-50/50 group-hover:bg-slate-100 transition-colors">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-12 h-12 flex-shrink-0 drop-shadow-sm transform group-hover:scale-110 transition-transform duration-300">
+                      <JerseyPreview jersey={team.jersey} size="sm" />
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-bold truncate font-headline text-slate-800 group-hover:text-primary transition-colors">{team.name}</h3>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-primary transition-colors transform group-hover:translate-x-1" />
+                </div>
+                <div className="p-4">
+                  <div className="text-xs font-medium text-slate-500 flex items-center gap-2 uppercase tracking-wide">
+                    <Users className="h-4 w-4 text-primary/70" />
+                    <span>{team.members.length} {team.members.length === 1 ? 'Jugador' : 'Jugadores'}</span>
+                  </div>
+                </div>
+              </div>
             </Link>
           ))}
         </div>
       ) : (
-        <Alert className="text-center py-10">
-          <UsersRound className="mx-auto h-8 w-8 mb-2" />
-          <AlertTitle>No hay equipos creados</AlertTitle>
-          <AlertDescription>
+        <Alert className="text-center py-10 bg-white border border-slate-200">
+          <UsersRound className="mx-auto h-8 w-8 mb-2 text-slate-400" />
+          <AlertTitle className="text-slate-800">No hay equipos creados</AlertTitle>
+          <AlertDescription className="text-slate-500">
             Creá el primer equipo del grupo. Podrás usarlos para armar partidos y llevar estadísticas.
           </AlertDescription>
         </Alert>

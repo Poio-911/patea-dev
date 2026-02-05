@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -12,28 +11,37 @@ interface GroupStatsCardsProps {
 }
 
 const StatCard = ({ title, icon, data }: { title: string, icon: React.ReactNode, data: { name: string; value: string | number; photoUrl?: string }[] }) => (
-    <Card>
-        <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base text-muted-foreground">
+    <div className="bg-white rounded-xl border border-slate-200 p-4 hover:border-primary/30 transition-all shadow-sm group">
+        <div className="flex items-center gap-2 mb-4 text-primary font-headline uppercase tracking-wide text-sm font-bold">
+            <div className="p-1.5 bg-primary/10 rounded-md group-hover:bg-primary/20 transition-colors">
                 {icon}
-                {title}
-            </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+            </div>
+            {title}
+        </div>
+        <div className="space-y-3">
             {data.length > 0 ? data.map((item, index) => (
-                <div key={index} className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9 border">
-                        <AvatarImage src={item.photoUrl} alt={item.name} />
-                        <AvatarFallback>{item.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                        <p className="font-semibold text-sm truncate">{item.name}</p>
+                <div key={index} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors">
+                    <div className="relative">
+                        <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                            <AvatarImage src={item.photoUrl} alt={item.name} />
+                            <AvatarFallback className="bg-slate-100 text-slate-600 font-bold">{item.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        {index === 0 && (
+                            <div className="absolute -top-1 -right-1 bg-yellow-400 text-[10px] items-center justify-center flex h-4 w-4 rounded-full text-white font-bold shadow-sm ring-2 ring-white">
+                                1
+                            </div>
+                        )}
                     </div>
-                    <p className="font-bold text-lg text-primary">{item.value}</p>
+                    <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm text-slate-800 truncate">{item.name}</p>
+                    </div>
+                    <div className="flex flex-col items-end">
+                        <span className="font-headline font-black text-xl text-primary">{item.value}</span>
+                    </div>
                 </div>
-            )) : <p className="text-sm text-muted-foreground text-center py-4">No hay datos</p>}
-        </CardContent>
-    </Card>
+            )) : <p className="text-sm text-muted-foreground text-center py-4 italic">Sin datos registrados</p>}
+        </div>
+    </div>
 );
 
 export function GroupStatsCards({ players }: GroupStatsCardsProps) {
@@ -64,9 +72,9 @@ export function GroupStatsCards({ players }: GroupStatsCardsProps) {
 
     return (
         <div className="space-y-4">
-            <StatCard title="Mejores Jugadores" icon={<Star className="h-5 w-5" />} data={topPlayers} />
-            <StatCard title="Máximos Goleadores" icon={<Goal className="h-5 w-5" />} data={topGoalScorers} />
-            <StatCard title="Más Partidos Jugados" icon={<Users className="h-5 w-5" />} data={mostMatchesPlayed} />
+            <StatCard title="Top Valoración" icon={<Star className="h-4 w-4" />} data={topPlayers} />
+            <StatCard title="Goleadores" icon={<Goal className="h-4 w-4" />} data={topGoalScorers} />
+            <StatCard title="Presencia Perfecta" icon={<Users className="h-4 w-4" />} data={mostMatchesPlayed} />
         </div>
     );
 }

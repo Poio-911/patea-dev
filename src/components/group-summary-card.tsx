@@ -38,23 +38,21 @@ export function GroupSummaryCard({ groupId, className }: GroupSummaryCardProps) 
     }
   };
 
-
-
   return (
-    <Card className={cn('relative overflow-hidden', className)}>
-      {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 pointer-events-none" />
+    <Card className={cn('relative overflow-hidden bg-white hover:bg-white text-slate-800 border-slate-200 shadow-sm transition-all hover:border-primary/40 group', className)}>
+      {/* Animated Gradient Border Effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center justify-between text-base">
-          <span className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
+      <CardHeader className="pb-3 border-b border-slate-100">
+        <CardTitle className="flex items-center justify-between">
+          <span className="flex items-center gap-2 font-headline text-lg uppercase tracking-wide text-primary">
+            <Sparkles className="h-5 w-5 animate-pulse" />
             Resumen IA
           </span>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-8 w-8 text-primary hover:text-primary hover:bg-slate-50"
             onClick={loadSummary}
             disabled={loading}
             title="Regenerar resumen"
@@ -64,26 +62,32 @@ export function GroupSummaryCard({ groupId, className }: GroupSummaryCardProps) 
         </CardTitle>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="pt-4">
         {loading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-4/5" />
-            <Skeleton className="h-4 w-3/4" />
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-full bg-slate-100" />
+            <Skeleton className="h-4 w-4/5 bg-slate-100" />
+            <Skeleton className="h-4 w-3/4 bg-slate-100" />
           </div>
         ) : error ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-sm text-red-500 bg-red-50 p-3 rounded-md border border-red-100">
             <AlertCircle className="h-4 w-4" />
             <span>{error}</span>
           </div>
         ) : summary ? (
-          <p className="text-sm text-muted-foreground leading-relaxed">
+          <p className="text-sm text-slate-600 leading-relaxed font-medium">
             {summary}
           </p>
         ) : (
-          <p className="text-sm text-muted-foreground italic">
-            Hacé clic en el botón para generar un resumen del grupo.
-          </p>
+          <div className="flex flex-col items-center justify-center py-6 text-center space-y-3">
+            <p className="text-sm text-muted-foreground italic">
+              Descubrí qué dice la IA sobre el rendimiento de tu grupo.
+            </p>
+            <Button size="sm" onClick={loadSummary} variant="outline" className="border-primary/30 hover:bg-primary/5 hover:text-primary">
+              <Sparkles className="mr-2 h-3.5 w-3.5" />
+              Generar Resumen
+            </Button>
+          </div>
         )}
       </CardContent>
     </Card>

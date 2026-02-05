@@ -6,7 +6,6 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar, MapPin, Newspaper } from 'lucide-react';
 import Link from 'next/link';
-import { Button } from '../ui/button';
 import { JerseyPreview } from '../team-builder/jersey-preview';
 import { MatchWeatherForecast } from '../matches/match-weather-forecast';
 
@@ -26,29 +25,50 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
     }
 
     if (compact) {
-        // --- VISTA COMPACTA PARA LAYOUT DE COLUMNAS ---
+        // --- VISTA COMPACTA PARA LAYOUT DE COLUMNAS (Groups View) ---
         return (
             <div className="space-y-3">
                 {matches.map(match => (
                     <Link key={match.id} href={`/matches`} passHref>
-                        <Card className="hover:bg-muted/50 transition-colors">
-                            <CardContent className="p-3">
-                                <p className="font-semibold text-sm truncate mb-1">{match.title}</p>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                                    <Calendar className="h-3 w-3" />
-                                    <span>{format(new Date(match.date), "E, d MMM", { locale: es })}</span>
+                        <div className="group relative overflow-hidden bg-white rounded-xl border border-slate-200 hover:border-primary/50 transition-all duration-300 hover:shadow-sm">
+                            {/* Accent Bar */}
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/50 group-hover:bg-primary transition-colors" />
+
+                            <div className="p-3 pl-5 flex flex-col gap-2">
+                                <div className="flex justify-between items-start">
+                                    <h3 className="font-headline font-bold text-sm text-slate-800 group-hover:text-primary transition-colors tracking-wide truncate pr-2">
+                                        {match.title}
+                                    </h3>
+                                    <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-primary border border-slate-200">
+                                        VS
+                                    </span>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <MapPin className="h-3 w-3" />
-                                    <span className="truncate">{match.location.name}</span>
+
+                                <div className="flex items-center gap-3 mt-1">
+                                    <div className="flex flex-col items-center justify-center bg-slate-50 rounded p-1.5 min-w-[3rem] border border-slate-100 group-hover:bg-primary/5 group-hover:border-primary/20 transition-colors">
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase">{format(new Date(match.date), "MMM", { locale: es })}</span>
+                                        <span className="text-lg font-black text-slate-900 leading-none">{format(new Date(match.date), "d", { locale: es })}</span>
+                                    </div>
+
+                                    <div className="flex flex-col gap-1 min-w-0">
+                                        <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                                            <Calendar className="h-3 w-3 text-primary/70" />
+                                            <span className="truncate capitalize">{format(new Date(match.date), "EEEE HH:mm", { locale: es })}hs</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                                            <MapPin className="h-3 w-3 text-slate-400" />
+                                            <span className="truncate">{match.location.name}</span>
+                                        </div>
+                                    </div>
                                 </div>
+
                                 {match.weather && (
-                                    <div className="mt-2 border-t pt-2">
+                                    <div className="mt-1 pt-2 border-t border-slate-100">
                                         <MatchWeatherForecast match={match} compact />
                                     </div>
                                 )}
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     </Link>
                 ))}
             </div>
@@ -60,7 +80,7 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
         return (
             <div>
                 <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                    <Newspaper className="h-6 w-6 text-primary"/>
+                    <Newspaper className="h-6 w-6 text-primary" />
                     En la Pizarra
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -70,7 +90,7 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
 
                         if (!ourTeam || !opponentTeam) {
                             // Si no es un partido entre dos equipos, mostramos la card normal
-                             return (
+                            return (
                                 <Link key={match.id} href={`/matches`} passHref>
                                     <Card className="h-full hover:bg-muted/50 transition-colors">
                                         <CardHeader>
@@ -94,7 +114,7 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
                         }
 
                         return (
-                             <Link key={match.id} href={`/matches`} passHref>
+                            <Link key={match.id} href={`/matches`} passHref>
                                 <Card className="h-full hover:bg-muted/50 transition-colors p-3">
                                     <div className="flex justify-around items-center text-center">
                                         <div className="flex flex-col items-center gap-1 w-2/5">
@@ -121,12 +141,12 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
             </div>
         );
     }
-    
+
     // --- VISTA ORIGINAL PARA OTROS LUGARES (EJ: DASHBOARD DE GRUPO) ---
     return (
         <div>
             <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                <Newspaper className="h-6 w-6 text-primary"/>
+                <Newspaper className="h-6 w-6 text-primary" />
                 En la Pizarra
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

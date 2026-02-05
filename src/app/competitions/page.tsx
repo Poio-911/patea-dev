@@ -153,7 +153,7 @@ export default function CompetitionsPage() {
 
       {/* White overlay for video */}
       <div
-        className="fixed inset-0 -z-10 bg-white/80"
+        className="fixed inset-0 -z-10 bg-white/50"
         style={{ display: 'var(--video-display, none)' }}
       />
 
