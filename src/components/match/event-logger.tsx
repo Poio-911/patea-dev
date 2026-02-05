@@ -128,7 +128,7 @@ export function EventLogger({
 
   // Prefer match team players if available; else fallback to group team members
   const teamPlayersFromMatch = useMemo(() => {
-    return match.teams.flatMap((team, idx) =>
+    return (match.teams || []).flatMap((team, idx) =>
       (team.players || []).map(player => ({
         ...player,
         teamId: team.id || `team${idx + 1}`,

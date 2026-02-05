@@ -483,7 +483,7 @@ export async function generateMatchChronicleAction(matchId: string): Promise<{ d
                     processedSnap.forEach(doc => {
                         const data = doc.data();
                         if (data.submission?.evaluatorGoals) {
-                            subGoalsByPlayer[data.evaluatorId] = data.submission.evaluatorGoals;
+                            goalsByPlayer[data.evaluatorId] = data.submission.evaluatorGoals;
                         }
                     });
                 } else {
@@ -493,13 +493,13 @@ export async function generateMatchChronicleAction(matchId: string): Promise<{ d
                     submissionsSnap.forEach(doc => {
                         const data = doc.data();
                         if (data.submission?.evaluatorGoals) {
-                            subGoalsByPlayer[data.evaluatorId] = data.submission.evaluatorGoals;
+                            goalsByPlayer[data.evaluatorId] = data.submission.evaluatorGoals;
                         }
                     });
                 }
 
-                match.teams[0].players.forEach(p => t1 += subGoalsByPlayer[p.uid] || 0);
-                match.teams[1].players.forEach(p => t2 += subGoalsByPlayer[p.uid] || 0);
+                match.teams[0].players.forEach(p => t1 += goalsByPlayer[p.uid] || 0);
+                match.teams[1].players.forEach(p => t2 += goalsByPlayer[p.uid] || 0);
             }
 
             team1Score = t1; team2Score = t2;

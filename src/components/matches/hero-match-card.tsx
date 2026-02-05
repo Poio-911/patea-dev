@@ -175,9 +175,9 @@ export function HeroMatchCard({ match, allPlayers, className, variant = 'default
           <div className="flex items-center justify-center gap-4 sm:gap-8">
             {/* Team 1 */}
             <div className="flex flex-col items-center gap-2 text-center">
-              <JerseyPreview jersey={match.teams[0].jersey} size={variant === 'compact' ? 'md' : 'lg'} />
+              <JerseyPreview jersey={match.teams![0].jersey} size={variant === 'compact' ? 'md' : 'lg'} />
               <span className={cn('font-bold truncate max-w-[100px] sm:max-w-[140px]', variant === 'compact' ? 'text-xs sm:text-sm' : 'text-sm sm:text-base')}>
-                {match.teams[0].name}
+                {match.teams![0].name}
               </span>
             </div>
 
@@ -188,9 +188,9 @@ export function HeroMatchCard({ match, allPlayers, className, variant = 'default
 
             {/* Team 2 */}
             <div className="flex flex-col items-center gap-2 text-center">
-              <JerseyPreview jersey={match.teams[1].jersey} size={variant === 'compact' ? 'md' : 'lg'} />
+              <JerseyPreview jersey={match.teams![1].jersey} size={variant === 'compact' ? 'md' : 'lg'} />
               <span className={cn('font-bold truncate max-w-[100px] sm:max-w-[140px]', variant === 'compact' ? 'text-xs sm:text-sm' : 'text-sm sm:text-base')}>
-                {match.teams[1].name}
+                {match.teams![1].name}
               </span>
             </div>
           </div>

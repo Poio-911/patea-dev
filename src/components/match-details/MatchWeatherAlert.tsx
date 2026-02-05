@@ -34,7 +34,7 @@ export function MatchWeatherAlert({ match, className }: MatchWeatherAlertProps) 
   
   // Determinar si hay condiciones problemáticas
   const hasRainWarning = (precipitation ?? 0) > 40; // Reducido de 70% a 40%
-  const hasHeatWarning = temperature > 28; // Reducido de 30°C a 28°C
+  const hasHeatWarning = (temperature ?? 0) > 28; // Reducido de 30°C a 28°C
   const hasUvWarning = uvIndex && uvIndex > 6; // Reducido de 8 a 6
   const hasWindWarning = windSpeed && windSpeed > 20; // Reducido de 25 a 20 km/h
   

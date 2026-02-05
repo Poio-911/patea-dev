@@ -79,12 +79,12 @@ export function MatchVisualizer({ match, isOpen, onClose, isAdmin = false, onEve
   }, [dataMatch.currentMinute, dataMatch.timerPaused, dataMatch.periodStartTs]);
 
   // Live score derived from events if available
-  const goalEvents = (dataMatch.events || []).filter((e) => e.type === 'goal');
+  const goalEvents = (dataMatch.events || []).filter((e: MatchEvent) => e.type === 'goal');
   const t1Id = team1?.id || 'team1';
   const t2Id = team2?.id || 'team2';
-  const scoreFromEventsKnown = t1Id && t2Id && goalEvents.some(e => e.teamId === t1Id || e.teamId === t2Id);
-  const team1GoalsLive = scoreFromEventsKnown ? goalEvents.filter(e => e.teamId === t1Id).length : undefined;
-  const team2GoalsLive = scoreFromEventsKnown ? goalEvents.filter(e => e.teamId === t2Id).length : undefined;
+  const scoreFromEventsKnown = t1Id && t2Id && goalEvents.some((e: MatchEvent) => e.teamId === t1Id || e.teamId === t2Id);
+  const team1GoalsLive = scoreFromEventsKnown ? goalEvents.filter((e: MatchEvent) => e.teamId === t1Id).length : undefined;
+  const team2GoalsLive = scoreFromEventsKnown ? goalEvents.filter((e: MatchEvent) => e.teamId === t2Id).length : undefined;
   const team1ScoreDisplay = typeof team1GoalsLive === 'number' ? team1GoalsLive : team1ScoreFinal;
   const team2ScoreDisplay = typeof team2GoalsLive === 'number' ? team2GoalsLive : team2ScoreFinal;
 
@@ -96,7 +96,7 @@ export function MatchVisualizer({ match, isOpen, onClose, isAdmin = false, onEve
   useEffect(() => {
     const latestGoal = goalEvents
       .slice()
-      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+      .sort((a: MatchEvent, b: MatchEvent) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
       .at(-1);
     if (!latestGoal) return;
     if (lastGoalIdRef.current === latestGoal.id) return;
@@ -223,8 +223,8 @@ export function MatchVisualizer({ match, isOpen, onClose, isAdmin = false, onEve
               score2={team2ScoreDisplay}
               minute={liveMinute}
               second={liveSecond}
-              redCards1={(dataMatch.events || []).filter(e => e.type === 'card' && e.cardType === 'red' && e.teamId === t1Id).length}
-              redCards2={(dataMatch.events || []).filter(e => e.type === 'card' && e.cardType === 'red' && e.teamId === t2Id).length}
+              redCards1={(dataMatch.events || []).filter((e: MatchEvent) => e.type === 'card' && e.cardType === 'red' && e.teamId === t1Id).length}
+              redCards2={(dataMatch.events || []).filter((e: MatchEvent) => e.type === 'card' && e.cardType === 'red' && e.teamId === t2Id).length}
               showGoalAnim={showGoalAnim}
               goalSide={goalSide || undefined}
               goalColor={goalAnimColor}

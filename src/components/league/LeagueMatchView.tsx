@@ -31,10 +31,18 @@ export function LeagueMatchView({ match, leagueId, userId }: LeagueMatchViewProp
     const [team2Score, setTeam2Score] = useState(match.finalScore?.team2?.toString() || '0');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const team1 = match.teams[0];
-    const team2 = match.teams[1];
+    const team1 = match.teams?.[0];
+    const team2 = match.teams?.[1];
     const isCompleted = match.status === 'completed' || match.status === 'evaluated';
     const isOwner = userId === match.ownerUid;
+
+    if (!team1 || !team2) {
+        return (
+            <div className="max-w-4xl mx-auto p-8 text-center">
+                <p className="text-muted-foreground">Cargando equipos...</p>
+            </div>
+        );
+    }
 
     // ✅ Sync local state if match prop changes (e.g. goals added in visualizer)
     useEffect(() => {

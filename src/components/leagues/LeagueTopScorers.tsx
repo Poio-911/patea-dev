@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { Match, MatchGoalScorer, MatchCard } from '@/lib/types';
+import type { Match, MatchGoalScorer, MatchCard, MatchEvent } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -35,7 +35,7 @@ export function LeagueTopScorers({ matches }: LeagueTopScorersProps) {
     matches.forEach(match => {
       // Prioritize new events system
       if (match.events && match.events.length > 0) {
-        match.events.forEach(event => {
+        match.events.forEach((event: MatchEvent) => {
           if (event.type === 'goal' && (event as any).goalType !== 'own_goal') {
             const key = event.playerId;
             if (!statsMap.has(key)) {

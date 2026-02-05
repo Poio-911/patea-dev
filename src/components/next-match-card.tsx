@@ -91,13 +91,13 @@ export function NextMatchCard({ match, organizerName, variant = 'default' }: Nex
                         <div className="flex flex-col gap-4">
                             <div className="flex justify-around items-center text-center">
                                 <div className="flex flex-col items-center gap-2 w-2/5">
-                                    <JerseyPreview jersey={match.teams[0].jersey} size={isCompact ? 'md' : 'lg'} />
-                                    <h3 className={`${isCompact ? 'text-base' : 'text-lg'} font-bold truncate text-primary-foreground`}>{match.teams[0].name}</h3>
+                                    <JerseyPreview jersey={match.teams![0].jersey} size={isCompact ? 'md' : 'lg'} />
+                                    <h3 className={`${isCompact ? 'text-base' : 'text-lg'} font-bold truncate text-primary-foreground`}>{match.teams![0].name}</h3>
                                 </div>
                                 <p className={`${isCompact ? 'text-xl' : 'text-2xl'} font-bold text-primary-foreground/80`}>vs</p>
                                 <div className="flex flex-col items-center gap-2 w-2/5">
-                                    <JerseyPreview jersey={match.teams[1].jersey} size={isCompact ? 'md' : 'lg'} />
-                                    <h3 className={`${isCompact ? 'text-base' : 'text-lg'} font-bold truncate text-primary-foreground`}>{match.teams[1].name}</h3>
+                                    <JerseyPreview jersey={match.teams![1].jersey} size={isCompact ? 'md' : 'lg'} />
+                                    <h3 className={`${isCompact ? 'text-base' : 'text-lg'} font-bold truncate text-primary-foreground`}>{match.teams![1].name}</h3>
                                 </div>
                             </div>
                             <InfoRow size={isCompact ? 'xs' : 'sm'} icon={Calendar} text={match.date ? format(new Date(match.date), "EEEE, d MMM, yyyy", { locale: es }) : 'Fecha no definida'} />

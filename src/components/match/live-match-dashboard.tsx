@@ -213,14 +213,14 @@ export function LiveMatchDashboard({
           <div className="flex items-center justify-center text-4xl font-bold">
             <div className="text-center">
               <div className="text-sm font-normal text-muted-foreground mb-1">
-                {match.teams[0]?.name || 'Equipo 1'}
+                {match.teams?.[0]?.name || 'Equipo 1'}
               </div>
               <div>{match.finalScore?.team1 || 0}</div>
             </div>
             <Separator orientation="vertical" className="mx-8 h-16" />
             <div className="text-center">
               <div className="text-sm font-normal text-muted-foreground mb-1">
-                {match.teams[1]?.name || 'Equipo 2'}
+                {match.teams?.[1]?.name || 'Equipo 2'}
               </div>
               <div>{match.finalScore?.team2 || 0}</div>
             </div>

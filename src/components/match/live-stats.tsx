@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { BarChart3, Target, Users, Zap } from 'lucide-react';
-import type { Match, MatchStatistics } from '@/lib/types';
+import type { Match, MatchStatistics, MatchEvent } from '@/lib/types';
 
 type LiveStatsProps = {
   match: Match;
@@ -15,8 +15,8 @@ type LiveStatsProps = {
 export function LiveStats({ match, className }: LiveStatsProps) {
   // Calculate basic stats from events
   const events = match.events || [];
-  const team1 = match.teams[0];
-  const team2 = match.teams[1];
+  const team1 = match.teams?.[0];
+  const team2 = match.teams?.[1];
   
   const calculateBasicStats = () => {
     const stats = {
@@ -27,7 +27,7 @@ export function LiveStats({ match, className }: LiveStatsProps) {
       corners: { team1: 0, team2: 0 },
     };
 
-    events.forEach(event => {
+    events.forEach((event: MatchEvent) => {
       const isTeam1 = event.teamId === team1?.id;
       const teamKey = isTeam1 ? 'team1' : 'team2';
 
@@ -216,19 +216,19 @@ export function LiveStats({ match, className }: LiveStatsProps) {
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="space-y-1">
                 <div className="text-2xl font-bold text-foreground">
-                  {events.filter(e => e.type === 'goal').length}
+                  {events.filter((e: MatchEvent) => e.type === 'goal').length}
                 </div>
                 <div className="text-xs text-muted-foreground">Goles</div>
               </div>
               <div className="space-y-1">
                 <div className="text-2xl font-bold text-foreground">
-                  {events.filter(e => e.type === 'card').length}
+                  {events.filter((e: MatchEvent) => e.type === 'card').length}
                 </div>
                 <div className="text-xs text-muted-foreground">Tarjetas</div>
               </div>
               <div className="space-y-1">
                 <div className="text-2xl font-bold text-foreground">
-                  {events.filter(e => e.type === 'substitution').length}
+                  {events.filter((e: MatchEvent) => e.type === 'substitution').length}
                 </div>
                 <div className="text-xs text-muted-foreground">Cambios</div>
               </div>

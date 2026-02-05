@@ -67,7 +67,7 @@ export function MatchWeatherForecast({ match, compact = false }: MatchWeatherFor
     recommendation,
   } = match.weather;
 
-  const WeatherIcon = iconMap[icon] || Cloud;
+  const WeatherIcon = (icon && iconMap[icon]) || Cloud;
   const uvLevel = uvIndex !== undefined ? getUVLevel(uvIndex) : null;
   const precipLevel = precipitation !== undefined ? getPrecipitationLevel(precipitation) : null;
 

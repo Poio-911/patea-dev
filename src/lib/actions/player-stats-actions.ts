@@ -1,7 +1,7 @@
 'use server';
 
 import { getAdminDb } from '../../firebase/admin-init';
-import type { Match, Player, MatchGoalScorer, MatchCard } from '../../lib/types';
+import type { Match, Player, MatchGoalScorer, MatchCard, MatchEvent } from '../../lib/types';
 import { FieldValue } from 'firebase-admin/firestore';
 
 /**
@@ -34,13 +34,13 @@ export async function updatePlayerStatsFromMatch(matchId: string): Promise<{
     match.playerUids?.forEach(uid => playerIds.add(uid));
 
     // Add goal scorers (legacy)
-    match.goalScorers?.forEach(scorer => playerIds.add(scorer.playerId));
+    match.goalScorers?.forEach((scorer: MatchGoalScorer) => playerIds.add(scorer.playerId));
 
     // Add card recipients (legacy)
     match.cards?.forEach(card => playerIds.add(card.playerId));
 
     // Add players from events (new structure)
-    match.events?.forEach(event => {
+    match.events?.forEach((event: MatchEvent) => {
       if (event.playerId) playerIds.add(event.playerId);
     });
 
@@ -62,9 +62,9 @@ export async function updatePlayerStatsFromMatch(matchId: string): Promise<{
 
       if (match.events && match.events.length > 0) {
         // New structure: Process events
-        match.events.forEach(event => {
+        match.events.forEach((event: MatchEvent) => {
           if (event.playerId === playerId) {
-            if (event.type === 'goal' && (event as any).goalType !== 'own_goal') {
+            if (event.type === 'goal' && event.goalType !== 'own_goal') {
               goalsScored++;
             } else if (event.type === 'card') {
               if (event.cardType === 'yellow') yellowCardsReceived++;
@@ -74,7 +74,7 @@ export async function updatePlayerStatsFromMatch(matchId: string): Promise<{
         });
       } else {
         // Legacy structure fallback
-        goalsScored = match.goalScorers?.filter(g => g.playerId === playerId).length || 0;
+        goalsScored = match.goalScorers?.filter((g: MatchGoalScorer) => g.playerId === playerId).length || 0;
         yellowCardsReceived = match.cards?.filter(c => c.playerId === playerId && c.cardType === 'yellow').length || 0;
         redCardsReceived = match.cards?.filter(c => c.playerId === playerId && c.cardType === 'red').length || 0;
       }
@@ -158,12 +158,12 @@ export async function recalculateAllPlayerStats(groupId?: string): Promise<{
       let totalRedCards = 0;
       const matchesPlayed = playerMatches.length;
 
-      playerMatches.forEach(match => {
+      playerMatches.forEach((match: Match) => {
         if (match.events && match.events.length > 0) {
           // New structure: Process events
-          match.events.forEach(event => {
+          match.events.forEach((event: MatchEvent) => {
             if (event.playerId === player.id) {
-              if (event.type === 'goal' && (event as any).goalType !== 'own_goal') {
+              if (event.type === 'goal' && event.goalType !== 'own_goal') {
                 totalGoals++;
               } else if (event.type === 'card') {
                 if (event.cardType === 'yellow') totalYellowCards++;
@@ -173,7 +173,7 @@ export async function recalculateAllPlayerStats(groupId?: string): Promise<{
           });
         } else {
           // Legacy structure fallback
-          totalGoals += match.goalScorers?.filter(g => g.playerId === player.id).length || 0;
+          totalGoals += match.goalScorers?.filter((g: MatchGoalScorer) => g.playerId === player.id).length || 0;
           totalYellowCards += match.cards?.filter(c => c.playerId === player.id && c.cardType === 'yellow').length || 0;
           totalRedCards += match.cards?.filter(c => c.playerId === player.id && c.cardType === 'red').length || 0;
         }

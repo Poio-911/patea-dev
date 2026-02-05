@@ -39,7 +39,7 @@ export function MatchChatSheet({ match, children }: MatchChatSheetProps) {
   const { user } = useUser();
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const isPublicJoiner = user?.groups && !user.groups.includes(match.groupId) && match.isPublic;
+  const isPublicJoiner = user?.groups && match.groupId && !user.groups.includes(match.groupId) && match.isPublic;
 
   const collectionPath = `matches/${match.id}/messages`;
 

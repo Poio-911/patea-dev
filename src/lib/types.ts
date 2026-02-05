@@ -137,6 +137,13 @@ export type Match = {
     description: string;
     temperature?: number;
     icon?: string;
+    humidity?: number;
+    uvIndex?: number;
+    windSpeed?: number;
+    precipitation?: number;
+    feelsLike?: number;
+    conditions?: string;
+    recommendation?: string;
   };
 
   // Inter-Group specific
