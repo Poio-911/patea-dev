@@ -28,7 +28,7 @@ export function PlayerTeamsList({ playerId, groupId }: PlayerTeamsListProps) {
     const playerTeams = useMemo(() => {
         if (!allTeams) return [];
         return allTeams.filter(team =>
-            team.members.some(member => member.playerId === playerId)
+            team.members?.some(member => member.playerId === playerId)
         );
     }, [allTeams, playerId]);
 

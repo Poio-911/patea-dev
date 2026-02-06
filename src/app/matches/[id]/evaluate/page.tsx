@@ -65,7 +65,6 @@ const POSITION_WEIGHTS: Record<string, Record<keyof Player, number>> = {
 
 const DEFAULT_WEIGHTS = { pac: 0.166, sho: 0.166, pas: 0.166, dri: 0.166, def: 0.166, phy: 0.166 };
 
-// ✅ UPDATED: Distributes points using Error Accumulation (Dithering) instead of Ceil/Floor bias
 const calculateAttributeChangesFromPoints = (currentAttrs: Player, ovrChange: number, position: string) => {
     if (ovrChange === 0) return currentAttrs;
 
@@ -74,24 +73,39 @@ const calculateAttributeChangesFromPoints = (currentAttrs: Player, ovrChange: nu
     const weights = POSITION_WEIGHTS[position as keyof typeof POSITION_WEIGHTS] || DEFAULT_WEIGHTS;
 
     // Total raw attribute points to distribute
-    // OVR is roughly (Sum Attributes)/6, so to raise OVR by X, we need X*6 attribute points.
     const totalPointsToAdd = ovrChange * 6;
 
     // Distribute with error accumulation to avoid "Ceil" inflation
     let accumulatedError = 0;
 
     attributes.forEach((attr) => {
+        const currentVal = newAttributes[attr] as number;
         const targetShare = totalPointsToAdd * weights[attr as keyof typeof weights];
-        const pointWithDecimal = targetShare + accumulatedError;
+
+        // --- DIMINISHING RETURNS (Key Fix) ---
+        let multiplier = 1.0;
+        if (currentVal >= 92) multiplier = 0.1;
+        else if (currentVal >= 85) multiplier = 0.2;
+        else if (currentVal >= 75) multiplier = 0.4;
+        else if (currentVal >= 60) multiplier = 0.7;
+
+        // If removing points (negative ovrChange), typically we don't punish high OVR harder, 
+        // usually we punish weak attributes harder? Or symmetric?
+        // Let's keep it symmetric for now or usually improvements are harder at high levels.
+        // For regression, maybe it's constant? 
+        // The user complained about *inflation*, so limiting the UP is key.
+        // Let's only apply multiplier if targetShare > 0
+        const effectiveShare = targetShare > 0 ? targetShare * multiplier : targetShare;
+
+        const pointWithDecimal = effectiveShare + accumulatedError;
         const pointRounded = Math.round(pointWithDecimal);
 
-        accumulatedError = pointWithDecimal - pointRounded; // Carry over difference to next attribute
+        accumulatedError = pointWithDecimal - pointRounded; // Carry over difference
 
-        const currentValue = newAttributes[attr] as number;
         // Apply change and clamp
         newAttributes[attr] = Math.round(Math.max(
             OVR_PROGRESSION.MIN_ATTRIBUTE,
-            Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, currentValue + pointRounded)
+            Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, currentVal + pointRounded)
         ));
     });
 
@@ -143,15 +157,28 @@ const calculateAttributeChanges = (currentAttrs: Player, tags: PerformanceTag[] 
     return newAttributes;
 };
 
-// Process AI-extracted attribute changes from text evaluations
+// Process AI-extracted attribute changes from text evaluations (with diminishing returns)
 const calculateAttributeChangesFromAI = (currentAttrs: Player, aiChanges: { attribute: string; change: number }[] = []) => {
     const newAttributes = { ...currentAttrs };
     if (aiChanges && aiChanges.length > 0) {
         aiChanges.forEach(change => {
             const key = change.attribute as keyof Player;
             if (typeof newAttributes[key] === 'number') {
-                (newAttributes[key] as number) += change.change;
-                newAttributes[key] = Math.round(Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, newAttributes[key] as number)));
+                const currentVal = newAttributes[key] as number;
+                const baseChange = change.change;
+
+                // Diminishing returns (same formula as tags)
+                let multiplier = 1.0;
+                if (currentVal >= 92) multiplier = 0.1;
+                else if (currentVal >= 85) multiplier = 0.2;
+                else if (currentVal >= 75) multiplier = 0.4;
+                else if (currentVal >= 60) multiplier = 0.7;
+
+                const newVal = currentVal + (baseChange * multiplier);
+                newAttributes[key] = Math.round(Math.max(
+                    OVR_PROGRESSION.MIN_ATTRIBUTE,
+                    Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, newVal)
+                ));
             }
         });
     }
@@ -308,8 +335,18 @@ export default function EvaluateMatchPage() {
     const evaluatorsWhoHaveVoted = useMemo(() => {
         if (!assignments) return new Set();
         const completedEvaluators = assignments.filter(a => a.status === 'completed').map(a => a.evaluatorId);
-        return new Set(completedEvaluators);
-    }, [assignments]);
+
+        // Fix: Only count real users in the numerator to match "totalPossibleEvaluators" logic.
+        // If we don't have player data yet to verify, return the raw set (though ideally we should wait).
+        if (!allGroupPlayers) return new Set(completedEvaluators);
+
+        const realEvaluatorIds = completedEvaluators.filter(id => {
+            const player = allGroupPlayers.find(p => p.id === id);
+            return player && isRealUser(player);
+        });
+
+        return new Set(realEvaluatorIds);
+    }, [assignments, allGroupPlayers]);
 
     const totalPossibleEvaluators = realPlayersInMatch.length;
     const completedEvaluatorsCount = evaluatorsWhoHaveVoted.size;
@@ -355,9 +392,12 @@ export default function EvaluateMatchPage() {
                     throw new Error(`Aún hay ${pendingSubmissionsSnapshot.size} evaluaciones pendientes de procesar. Espera un momento y reintenta.`);
                 }
 
-                const peerEvalsQuery = query(collection(firestore, 'evaluations'), where('assignmentId', 'in', completedAssignmentIds));
+                const peerEvalsQuery = query(collection(firestore, 'evaluations'), where('matchId', '==', match.id));
                 const peerEvalsSnapshot = await getDocs(peerEvalsQuery);
-                const matchPeerEvals = peerEvalsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Evaluation));
+                // Filter ensuring they belong to completed assignments just in case, though matchId scope should be enough
+                const matchPeerEvals = peerEvalsSnapshot.docs
+                    .map(doc => ({ ...doc.data(), id: doc.id } as Evaluation))
+                    .filter(ev => completedAssignmentIds.includes(ev.assignmentId));
 
                 const selfEvalsQuery = collection(firestore, 'matches', match.id as string, 'selfEvaluations');
                 const selfEvalsSnapshot = await getDocs(selfEvalsQuery);
@@ -369,6 +409,38 @@ export default function EvaluateMatchPage() {
                     acc[ev.playerId].push(ev);
                     return acc;
                 }, {} as Record<string, Evaluation[]>);
+
+                // Auto-complete pending assignments with match average rating
+                const allCompletedPointEvals = matchPeerEvals.filter(ev => ev.rating !== undefined && ev.rating !== null);
+                const matchAvgRating = allCompletedPointEvals.length > 0
+                    ? allCompletedPointEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0) / allCompletedPointEvals.length
+                    : 5;
+
+                const assignmentsSnapshot = await getDocs(collection(firestore, 'matches', match.id, 'assignments'));
+                const allAssignments = assignmentsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as EvaluationAssignment));
+                const pendingAssignments = allAssignments.filter(a => a.status === 'pending');
+
+                for (const assignment of pendingAssignments) {
+                    const synthEvalRef = doc(collection(firestore, 'evaluations'));
+                    const synthEval: Omit<Evaluation, 'id'> = {
+                        assignmentId: assignment.id,
+                        playerId: assignment.subjectId,
+                        evaluatorId: assignment.evaluatorId,
+                        matchId: match.id,
+                        rating: Math.round(matchAvgRating * 10) / 10,
+                        goals: 0,
+                        evaluatedAt: new Date().toISOString(),
+                        autoGenerated: true,
+                    };
+                    transaction.set(synthEvalRef, synthEval);
+
+                    const assignRef = doc(firestore, 'matches', match.id, 'assignments', assignment.id);
+                    transaction.update(assignRef, { status: 'completed', autoCompleted: true, evaluationId: synthEvalRef.id });
+
+                    // Add to peerEvalsByPlayer so it's processed in the OVR loop
+                    peerEvalsByPlayer[assignment.subjectId] = peerEvalsByPlayer[assignment.subjectId] || [];
+                    peerEvalsByPlayer[assignment.subjectId].push({ ...synthEval, id: synthEvalRef.id } as Evaluation);
+                }
 
                 // Initialize team scores
                 let team1CalculatedScore = 0;
@@ -703,7 +775,7 @@ export default function EvaluateMatchPage() {
                                     className="flex items-center gap-3 p-2 rounded-md border"
                                 >
                                     <Avatar className="h-8 w-8">
-                                        <AvatarImage src={player.photoURL} alt={player.name} />
+                                        <AvatarImage src={player.photoURL || (player as any).photoUrl} alt={player.name} />
                                         <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                     <span className="flex-1 font-medium">{player.name}</span>

@@ -51,26 +51,26 @@ export function TeamList({ groupId, players, currentUserId, compact = false }: T
           <div className="space-y-2">
             {teams.map(team => (
               <Link key={team.id} href={`/groups/teams/${team.id}`} className="block group">
-                <div className="bg-white rounded-lg border border-slate-200 hover:border-primary/50 transition-all duration-300 flex items-center justify-between gap-3 p-3 group-hover:shadow-sm">
+                <div className="bg-card rounded-lg border border-border hover:border-primary/50 transition-all duration-300 flex items-center justify-between gap-3 p-3 group-hover:shadow-sm">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className="w-10 h-10 flex-shrink-0 drop-shadow-sm">
                       <JerseyPreview jersey={team.jersey} size="sm" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm truncate text-slate-800 group-hover:text-primary transition-colors font-headline tracking-wide">{team.name}</p>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-wider">{team.members.length} MK</p>
+                      <p className="font-bold text-sm truncate text-card-foreground group-hover:text-primary transition-colors font-headline tracking-wide">{team.name}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{team.members.length} MK</p>
                     </div>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-primary transition-colors transform group-hover:translate-x-1" />
+                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors transform group-hover:translate-x-1" />
                 </div>
               </Link>
             ))}
           </div>
         ) : (
-          <Alert className="text-center py-6 bg-white border border-dashed border-slate-200">
-            <UsersRound className="mx-auto h-6 w-6 mb-2 text-slate-400" />
-            <AlertTitle className="text-sm text-slate-800">Sin Equipos</AlertTitle>
-            <AlertDescription className="text-xs text-slate-500">
+          <Alert className="text-center py-6 bg-card border border-dashed border-border">
+            <UsersRound className="mx-auto h-6 w-6 mb-2 text-muted-foreground" />
+            <AlertTitle className="text-sm text-card-foreground">Sin Equipos</AlertTitle>
+            <AlertDescription className="text-xs text-muted-foreground">
               Creá el primer equipo.
             </AlertDescription>
           </Alert>

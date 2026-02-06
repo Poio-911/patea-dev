@@ -22,7 +22,13 @@ type MatchTeamsDialogProps = {
 
 
 export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
-  const teams = match.teams || [];
+  const teams = (match.teams || []).map(team => ({
+    ...team,
+    players: team.players.map(p => {
+      const mp = match.players.find(mp => mp.uid === p.uid || mp.displayName === p.displayName);
+      return { ...p, photoUrl: mp?.photoURL || (mp as any)?.photoUrl || (p as any).photoURL || (p as any).photoUrl || '' };
+    }),
+  }));
 
   return (
     <Dialog>

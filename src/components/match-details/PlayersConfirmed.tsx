@@ -43,7 +43,7 @@ export const PlayersConfirmed = ({ match }: PlayersConfirmedProps) => {
                 className="flex flex-col items-center gap-1.5 min-w-[60px]"
               >
                 <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
-                  <AvatarImage src={player.photoURL} alt={player.displayName} />
+                  <AvatarImage src={player.photoURL || (player as any).photoUrl} alt={player.displayName} />
                   <AvatarFallback className="text-sm">
                     {player.displayName.charAt(0)}
                   </AvatarFallback>

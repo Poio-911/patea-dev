@@ -82,7 +82,7 @@ function SortablePlayer({ player, matchPlayer }: SortablePlayerProps) {
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
         <Avatar className="h-9 w-9">
-          <AvatarImage src={matchPlayer?.photoUrl} alt={player.displayName} />
+          <AvatarImage src={matchPlayer?.photoURL || (matchPlayer as any)?.photoUrl} alt={player.displayName} />
           <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
         </Avatar>
         <p className="font-medium">{player.displayName}</p>
@@ -225,7 +225,7 @@ export function EditableTeamsDialog({ match, children }: EditableTeamsDialogProp
                       <div>
                         <UiCardTitle className="text-lg">{team.name}</UiCardTitle>
                         <Badge variant="secondary" className="mt-1">
-                          OVR Promedio: {team.averageOVR.toFixed(1)}
+                          OVR Promedio: {(team.averageOVR || 0).toFixed(1)}
                         </Badge>
                       </div>
                     </div>
@@ -239,7 +239,7 @@ export function EditableTeamsDialog({ match, children }: EditableTeamsDialogProp
                   >
                     <div className="space-y-2">
                       {team.players.map(player => {
-                        const matchPlayer = match.players.find(p => p.uid === player.uid);
+                        const matchPlayer = match.players.find(p => p.uid === player.uid || p.displayName === player.displayName);
                         return (
                           <SortablePlayer
                             key={player.uid}

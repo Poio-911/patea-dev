@@ -41,18 +41,31 @@ async function fixMatchTeamUIDs(matchId: string) {
 
     console.log(`📋 Found ${realPlayers.length} real players\n`);
 
-    // Fix UIDs in teams
+    // Build photo map from real players
+    const photoMap = new Map<string, string>();
+    realPlayers.forEach((rp: any) => {
+        photoMap.set(rp.id, rp.photoUrl || rp.photoURL || '');
+    });
+
+    // Fix UIDs and photos in teams
     let fixedCount = 0;
     const updatedTeams = match!.teams.map((team: any) => {
         const updatedPlayers = team.players.map((p: any) => {
             const realPlayer = realPlayers.find((rp: any) =>
                 rp.name === p.displayName && rp.position === p.position
-            );
+            ) || realPlayers.find((rp: any) => rp.name === p.displayName);
 
-            if (realPlayer && p.uid !== realPlayer.id) {
-                console.log(`  ✅ Fixed: ${p.displayName} (${p.uid} → ${realPlayer.id.substring(0, 8)}...)`);
-                fixedCount++;
-                return { ...p, uid: realPlayer.id };
+            if (realPlayer) {
+                const photo = photoMap.get(realPlayer.id) || '';
+                const needsUidFix = p.uid !== realPlayer.id;
+                const needsPhotoFix = !p.photoURL && photo;
+
+                if (needsUidFix || needsPhotoFix) {
+                    if (needsUidFix) console.log(`  ✅ Fixed UID: ${p.displayName} (${p.uid} → ${realPlayer.id.substring(0, 8)}...)`);
+                    if (needsPhotoFix) console.log(`  📷 Added photo: ${p.displayName}`);
+                    fixedCount++;
+                    return { ...p, uid: realPlayer.id, photoURL: photo };
+                }
             }
 
             return p;
@@ -62,11 +75,11 @@ async function fixMatchTeamUIDs(matchId: string) {
     });
 
     if (fixedCount === 0) {
-        console.log('✅ All UIDs are already correct!\n');
+        console.log('✅ All UIDs and photos are already correct!\n');
         return;
     }
 
-    console.log(`\n📝 Fixed ${fixedCount} player UIDs`);
+    console.log(`\n📝 Fixed ${fixedCount} player entries`);
     console.log('💾 Updating match document...\n');
 
     await matchRef.update({ teams: updatedTeams });

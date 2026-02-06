@@ -30,40 +30,40 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
             <div className="space-y-3">
                 {matches.map(match => (
                     <Link key={match.id} href={`/matches`} passHref>
-                        <div className="group relative overflow-hidden bg-white rounded-xl border border-slate-200 hover:border-primary/50 transition-all duration-300 hover:shadow-sm">
+                        <div className="group relative overflow-hidden bg-card rounded-xl border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-sm">
                             {/* Accent Bar */}
                             <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/50 group-hover:bg-primary transition-colors" />
 
                             <div className="p-3 pl-5 flex flex-col gap-2">
                                 <div className="flex justify-between items-start">
-                                    <h3 className="font-headline font-bold text-sm text-slate-800 group-hover:text-primary transition-colors tracking-wide truncate pr-2">
+                                    <h3 className="font-headline font-bold text-sm text-card-foreground group-hover:text-primary transition-colors tracking-wide truncate pr-2">
                                         {match.title}
                                     </h3>
-                                    <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-primary border border-slate-200">
+                                    <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-muted text-primary border border-border">
                                         VS
                                     </span>
                                 </div>
 
                                 <div className="flex items-center gap-3 mt-1">
-                                    <div className="flex flex-col items-center justify-center bg-slate-50 rounded p-1.5 min-w-[3rem] border border-slate-100 group-hover:bg-primary/5 group-hover:border-primary/20 transition-colors">
-                                        <span className="text-[10px] font-bold text-slate-500 uppercase">{format(new Date(match.date), "MMM", { locale: es })}</span>
-                                        <span className="text-lg font-black text-slate-900 leading-none">{format(new Date(match.date), "d", { locale: es })}</span>
+                                    <div className="flex flex-col items-center justify-center bg-muted/50 rounded p-1.5 min-w-[3rem] border border-border group-hover:bg-primary/5 group-hover:border-primary/20 transition-colors">
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">{format(new Date(match.date), "MMM", { locale: es })}</span>
+                                        <span className="text-lg font-black text-card-foreground leading-none">{format(new Date(match.date), "d", { locale: es })}</span>
                                     </div>
 
                                     <div className="flex flex-col gap-1 min-w-0">
-                                        <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                             <Calendar className="h-3 w-3 text-primary/70" />
                                             <span className="truncate capitalize">{format(new Date(match.date), "EEEE HH:mm", { locale: es })}hs</span>
                                         </div>
-                                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                                            <MapPin className="h-3 w-3 text-slate-400" />
+                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                            <MapPin className="h-3 w-3 text-muted-foreground" />
                                             <span className="truncate">{match.location.name}</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 {match.weather && (
-                                    <div className="mt-1 pt-2 border-t border-slate-100">
+                                    <div className="mt-1 pt-2 border-t border-border">
                                         <MatchWeatherForecast match={match} compact />
                                     </div>
                                 )}

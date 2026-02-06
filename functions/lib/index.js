@@ -33,11 +33,13 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetMonthlyCredits = void 0;
+exports.processEvaluationSubmission = exports.resetMonthlyCredits = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 // Export all functions
 var reset_monthly_credits_1 = require("./scheduled/reset-monthly-credits");
 Object.defineProperty(exports, "resetMonthlyCredits", { enumerable: true, get: function () { return reset_monthly_credits_1.resetMonthlyCredits; } });
+var process_evaluation_submission_1 = require("./triggers/process-evaluation-submission");
+Object.defineProperty(exports, "processEvaluationSubmission", { enumerable: true, get: function () { return process_evaluation_submission_1.processEvaluationSubmission; } });
 //# sourceMappingURL=index.js.map

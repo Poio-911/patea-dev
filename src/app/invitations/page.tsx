@@ -80,7 +80,7 @@ export default function InvitationsPage() {
         displayName: playerData.name,
         ovr: playerData.ovr,
         position: playerData.position,
-        photoUrl: playerData.photoUrl || ''
+        photoURL: (playerData as any).photoUrl || playerData.photoURL || ''
       };
 
       batch.update(matchRef, {

@@ -213,7 +213,7 @@ export async function publishMatchPlayedActivity(userId: string, matchId: string
       const playerData = playerSnapshot.data();
       playerDetails = {
         playerName: playerData?.name,
-        playerPhotoUrl: playerData?.photoURL,
+        playerPhotoUrl: playerData?.photoUrl || playerData?.photoURL,
       };
     }
 

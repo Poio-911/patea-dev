@@ -70,11 +70,27 @@ export async function generateTeamsAction(players: Array<Pick<Player, 'id' | 'na
             throw new Error('La respuesta de la IA no contiene equipos.');
         }
 
+        // Fetch photo URLs for all players
+        const playerIds = players.map(p => p.id).filter(Boolean);
+        const photoMap = new Map<string, string>();
+        if (playerIds.length > 0) {
+            const playerRefs = playerIds.map(id => getAdminDb().collection('players').doc(id));
+            const playerDocs = await getAdminDb().getAll(...playerRefs);
+            playerDocs.forEach(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    photoMap.set(doc.id, data?.photoUrl || data?.photoURL || '');
+                }
+            });
+        }
+
         result.teams.forEach(team => {
             team.players.forEach(player => {
-                const originalPlayer = players.find(p => p.name === player.displayName && p.position === player.position);
+                const originalPlayer = players.find(p => p.name === player.displayName && p.position === player.position)
+                    || players.find(p => p.name === player.displayName);
                 if (originalPlayer) {
                     player.uid = originalPlayer.id;
+                    (player as any).photoURL = photoMap.get(originalPlayer.id) || '';
                 }
             });
         });
@@ -2371,7 +2387,7 @@ export async function createCupMatchAction(
                 return {
                     uid: player.id,
                     displayName: player.name || 'Jugador',
-                    photoURL: player.photoURL || '',
+                    photoURL: (player as any).photoUrl || player.photoURL || '',
                     position: player.position || 'MED',
                     ovr: player.ovr || 50,
                     teamId: teamId

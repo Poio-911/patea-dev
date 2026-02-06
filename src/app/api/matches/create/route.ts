@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       const selectedPlayers = playerIds
         .map(id => playersMap.get(id))
         .filter((p): p is Player => !!p);
-      baseData.players = selectedPlayers.map(p => ({ uid: p.id, displayName: p.name, ovr: p.ovr, position: p.position, photoURL: p.photoURL || '' }));
+      baseData.players = selectedPlayers.map(p => ({ uid: p.id, displayName: p.name, ovr: p.ovr, position: p.position, photoURL: (p as any).photoUrl || p.photoURL || '' }));
       baseData.playerUids = selectedPlayers.map(p => p.id);
 
       if (selectedPlayers.length === input.matchSize) {
@@ -121,7 +121,19 @@ export async function POST(request: NextRequest) {
             teamCount: 2,
           } as any);
           if ((teamsResult as any)?.teams) {
-            baseData.teams = (teamsResult as any).teams as Team[];
+            const aiTeams = (teamsResult as any).teams as Team[];
+            // Fix UIDs and enrich with photos (AI returns sequential UIDs)
+            aiTeams.forEach(team => {
+              team.players.forEach(player => {
+                const original = selectedPlayers.find(p => p.name === player.displayName && p.position === player.position)
+                  || selectedPlayers.find(p => p.name === player.displayName);
+                if (original) {
+                  player.uid = original.id;
+                  (player as any).photoURL = (original as any).photoUrl || original.photoURL || '';
+                }
+              });
+            });
+            baseData.teams = aiTeams;
           }
         } catch (e) {
           // leave teams empty on failure
@@ -140,7 +152,7 @@ export async function POST(request: NextRequest) {
             displayName: p?.name || 'Jugador',
             ovr: p?.ovr || 50,
             position: p?.position || 'MED',
-            photoURL: p?.photoURL || '',
+            photoURL: (p as any)?.photoUrl || p?.photoURL || '',
           };
         });
         const totalOVR = teamPlayers.reduce((sum, p) => sum + p.ovr, 0);
@@ -168,7 +180,7 @@ export async function POST(request: NextRequest) {
       userId,
       playerId: userId,
       playerName: organizerData?.name || 'Organizador',
-      playerPhotoUrl: organizerData?.photoURL || '',
+      playerPhotoUrl: organizerData?.photoUrl || organizerData?.photoURL || '',
       timestamp: new Date().toISOString(),
       metadata: {
         matchId: matchRef.id,

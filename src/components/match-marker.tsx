@@ -83,7 +83,7 @@ export function MatchMarker({ match: initialMatch, activeMarker, handleMarkerCli
                 displayName: playerProfile!.name,
                 ovr: playerProfile!.ovr,
                 position: playerProfile!.position,
-                photoUrl: playerProfile!.photoUrl || '',
+                photoURL: (playerProfile as any).photoUrl || playerProfile!.photoURL || '',
               };
 
             batch.update(matchRef, {

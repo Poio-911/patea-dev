@@ -166,7 +166,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, je
                                     </button>
                                 </DialogTrigger>
                                 <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none">
-                                    <img src={player.photoUrl} alt={player.name} className="w-full h-auto rounded-lg" />
+                                    <img src={(player as any).photoUrl || player.photoURL} alt={player.name} className="w-full h-auto rounded-lg" />
                                 </DialogContent>
                             </Dialog>
                             <h3 className="w-full truncate text-center text-sm font-semibold transition-colors">{playerName}</h3>

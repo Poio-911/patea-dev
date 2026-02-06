@@ -39,11 +39,11 @@ export function GroupSummaryCard({ groupId, className }: GroupSummaryCardProps) 
   };
 
   return (
-    <Card className={cn('relative overflow-hidden bg-white hover:bg-white text-slate-800 border-slate-200 shadow-sm transition-all hover:border-primary/40 group', className)}>
+    <Card className={cn('relative overflow-hidden bg-card hover:bg-card text-card-foreground border-border shadow-sm transition-all hover:border-primary/40 group', className)}>
       {/* Animated Gradient Border Effect */}
       <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-      <CardHeader className="pb-3 border-b border-slate-100">
+      <CardHeader className="pb-3 border-b border-border">
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2 font-headline text-lg uppercase tracking-wide text-primary">
             <Sparkles className="h-5 w-5 animate-pulse" />
@@ -52,7 +52,7 @@ export function GroupSummaryCard({ groupId, className }: GroupSummaryCardProps) 
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-primary hover:text-primary hover:bg-slate-50"
+            className="h-8 w-8 text-primary hover:text-primary hover:bg-muted"
             onClick={loadSummary}
             disabled={loading}
             title="Regenerar resumen"
@@ -65,17 +65,17 @@ export function GroupSummaryCard({ groupId, className }: GroupSummaryCardProps) 
       <CardContent className="pt-4">
         {loading ? (
           <div className="space-y-3">
-            <Skeleton className="h-4 w-full bg-slate-100" />
-            <Skeleton className="h-4 w-4/5 bg-slate-100" />
-            <Skeleton className="h-4 w-3/4 bg-slate-100" />
+            <Skeleton className="h-4 w-full bg-muted" />
+            <Skeleton className="h-4 w-4/5 bg-muted" />
+            <Skeleton className="h-4 w-3/4 bg-muted" />
           </div>
         ) : error ? (
-          <div className="flex items-center gap-2 text-sm text-red-500 bg-red-50 p-3 rounded-md border border-red-100">
+          <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
             <AlertCircle className="h-4 w-4" />
             <span>{error}</span>
           </div>
         ) : summary ? (
-          <p className="text-sm text-slate-600 leading-relaxed font-medium">
+          <p className="text-sm text-muted-foreground leading-relaxed font-medium">
             {summary}
           </p>
         ) : (

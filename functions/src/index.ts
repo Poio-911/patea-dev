@@ -5,3 +5,4 @@ admin.initializeApp();
 
 // Export all functions
 export { resetMonthlyCredits } from './scheduled/reset-monthly-credits';
+export { processEvaluationSubmission } from './triggers/process-evaluation-submission';

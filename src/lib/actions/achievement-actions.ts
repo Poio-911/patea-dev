@@ -316,7 +316,7 @@ export async function getRecentAchievementsAction(
           if (playerDoc.exists) {
             const player = playerDoc.data() as Player;
             playerName = player.name;
-            playerPhotoUrl = player.photoURL;
+            playerPhotoUrl = (player as any).photoUrl || player.photoURL;
           }
         } catch (e) {
           // Ignore errors fetching player info

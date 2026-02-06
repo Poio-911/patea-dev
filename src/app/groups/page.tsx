@@ -110,7 +110,7 @@ export default function GroupsPage() {
                 <Shield className="h-5 w-5" />
                 Equipos
               </h3>
-              <Card className="border-slate-200 shadow-sm bg-white">
+              <Card className="border-border shadow-sm bg-card text-card-foreground">
                 <CardContent className="p-4 pt-4">
                   <TeamList groupId={user.activeGroupId} players={groupPlayers || []} currentUserId={user.uid} compact={true} />
                 </CardContent>
@@ -124,7 +124,7 @@ export default function GroupsPage() {
                   <Newspaper className="h-5 w-5" />
                   Próximos Partidos
                 </h3>
-                <Card className="border-slate-200 shadow-sm bg-white">
+                <Card className="border-border shadow-sm bg-card text-card-foreground">
                   <CardContent className="p-4">
                     <UpcomingMatchesFeed matches={upcomingMatches || []} compact={true} />
                   </CardContent>

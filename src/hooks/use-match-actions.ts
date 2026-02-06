@@ -53,13 +53,16 @@ export function useMatchActions({
     const incomingCounts: Record<string, number> = {};
     matchPlayers.forEach(p => incomingCounts[p.id] = 0);
 
-    // Shuffle evaluators to avoid deterministic bias in order
-    const shuffledEvaluators = [...realPlayerUids].sort(() => 0.5 - Math.random());
+    // Fisher-Yates shuffle for unbiased randomization
+    const shuffledEvaluators = [...realPlayerUids];
+    for (let i = shuffledEvaluators.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledEvaluators[i], shuffledEvaluators[j]] = [shuffledEvaluators[j], shuffledEvaluators[i]];
+    }
 
     shuffledEvaluators.forEach(evaluatorId => {
-      if (!match.teams) return;
-
-      const myTeam = match.teams.find(t => t.players.some(p => p.uid === evaluatorId));
+      // myTeam is undefined if no teams → no teammate priority, but assignments still generated
+      const myTeam = match.teams?.find(t => t.players.some(p => p.uid === evaluatorId));
 
       // 1. Define candidates (ALL players except self)
       // We do NOT filter by 'already assigned' here because we want to soft-balance, 
@@ -83,8 +86,8 @@ export function useMatchActions({
         if (aIsTeammate && !bIsTeammate) return -1;
         if (!aIsTeammate && bIsTeammate) return 1;
 
-        // Tertiary: Random
-        return 0.5 - Math.random();
+        // Tertiary: Stable (pre-shuffle handles randomization)
+        return 0;
       });
 
       // 3. Pick top 2
@@ -156,12 +159,13 @@ export function useMatchActions({
 
       batch.update(matchRef, matchUpdateData);
 
-      // Generate evaluation assignments only if teams were successfully formed
-      if (finalTeams && finalTeams.length > 0) {
-        const assignments = generateEvaluationAssignments({ ...freshMatch, teams: finalTeams }, allGroupPlayers);
-        const matchPlayers = allGroupPlayers.filter(p => freshMatch.playerUids.includes(p.id));
-        const realPlayerUids = matchPlayers.filter(isRealUser).map(p => p.id);
+      // Generate evaluation assignments (works with or without teams)
+      const matchForAssignments = finalTeams ? { ...freshMatch, teams: finalTeams } : freshMatch;
+      const assignments = generateEvaluationAssignments(matchForAssignments, allGroupPlayers);
+      const matchPlayers = allGroupPlayers.filter(p => freshMatch.playerUids.includes(p.id));
+      const realPlayerUids = matchPlayers.filter(isRealUser).map(p => p.id);
 
+      if (assignments.length > 0) {
         if (assignments.length < realPlayerUids.length) {
           toast({
             variant: 'default',
@@ -195,16 +199,11 @@ export function useMatchActions({
       });
 
       // Send push notification to players about evaluation availability
-      if (finalTeams && finalTeams.length > 0) {
-        const matchPlayers = allGroupPlayers.filter(p => freshMatch.playerUids.includes(p.id));
-        const realPlayerUids = matchPlayers.filter(isRealUser).map(p => p.id);
-
-        if (realPlayerUids.length > 0) {
-          notifyEvaluationAvailableAction({
-            playerIds: realPlayerUids,
-            matchTitle: freshMatch.title,
-          }).catch(err => logger.error('Failed to send evaluation notification', err));
-        }
+      if (realPlayerUids.length > 0) {
+        notifyEvaluationAvailableAction({
+          playerIds: realPlayerUids,
+          matchTitle: freshMatch.title,
+        }).catch(err => logger.error('Failed to send evaluation notification', err));
       }
 
     } catch (error: any) {
