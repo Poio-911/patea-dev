@@ -9,9 +9,9 @@ runConfig:
 
 # Environment variables for your backend.
 env:
-  # Server-only variables
+  # Server-only variables (stored as Firebase App Hosting secret)
   - variable: GOOGLE_GENAI_API_KEY
-    value: AIzaSyDDN2IFxzPbAHJRpnLUbQ6lnCFs3Ua4O-k
+    secret: GOOGLE_GENAI_API_KEY
     availability:
       - BUILD
       - RUNTIME
