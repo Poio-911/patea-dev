@@ -100,9 +100,13 @@ export async function generateTeamsAction(players: Array<Pick<Player, 'id' | 'na
         });
 
         return result;
-    } catch (error) {
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
         logger.error('Error generating teams', error);
-        return { error: 'La IA no pudo generar los equipos. Inténtalo de nuevo.' };
+        console.error('[generateTeamsAction] Full error:', errorMessage);
+        if (errorStack) console.error('[generateTeamsAction] Stack:', errorStack);
+        return { error: `La IA no pudo generar los equipos: ${errorMessage}` };
     }
 }
 
@@ -724,6 +728,15 @@ export async function updateMatchPlayerContributionAction(
                 assists: Math.max(0, (data.assists || 0) + assistsDelta),
             });
         }
+
+        // --- NEW: Update aggregated Player Stats ---
+        const playerRef = getAdminDb().collection('players').doc(playerId);
+        await playerRef.update({
+            'stats.goals': FieldValue.increment(goalsDelta),
+            'stats.assists': FieldValue.increment(assistsDelta),
+            // matchesPlayed is updated separately when match is completed/finalized
+        });
+
         return { success: true };
     } catch (error) {
         const err = handleServerActionError(error, { action: 'updateMatchPlayerContribution' });

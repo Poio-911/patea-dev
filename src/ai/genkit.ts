@@ -19,15 +19,23 @@ export function getAI(): Genkit {
   if (_ai) return _ai;
 
   const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY;
+  console.log('[Genkit] Initializing - API key present:', !!apiKey, 'length:', apiKey?.length || 0, 'source:', process.env.GOOGLE_GENAI_API_KEY ? 'GOOGLE_GENAI_API_KEY' : process.env.GEMINI_API_KEY ? 'GEMINI_API_KEY' : 'NONE');
   if (!apiKey) {
     throw new Error(
       'Falta la API key de Google Gemini. Configurá GOOGLE_GENAI_API_KEY o GEMINI_API_KEY en .env.local (no se expone al cliente).'
     );
   }
 
-  _ai = genkit({
-    plugins: [googleAI({ apiKey })],
-  });
+  try {
+    _ai = genkit({
+      plugins: [googleAI({ apiKey })],
+    });
+    console.log('[Genkit] Initialized successfully');
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('[Genkit] Failed to initialize:', msg);
+    throw error;
+  }
 
   return _ai;
 }
