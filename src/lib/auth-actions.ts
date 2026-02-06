@@ -57,9 +57,12 @@ export async function createSessionCookie(idToken: string) {
       logger.error('Recent sign-in required - time diff:', timeDiff);
       return { success: false, error: 'Recent sign-in required.' };
     }
-  } catch (error) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error('Error creating session cookie', error);
-    return { success: false, error: 'Failed to create session cookie.' };
+    console.error('[createSessionCookie] Full error:', errorMessage);
+    if (error instanceof Error && error.stack) console.error('[createSessionCookie] Stack:', error.stack);
+    return { success: false, error: `Failed to create session cookie: ${errorMessage}` };
   }
 }
 

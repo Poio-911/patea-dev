@@ -59,15 +59,15 @@ export default function LoginPage() {
                         toast({
                             variant: 'destructive',
                             title: 'Error creando sesión',
-                            description: 'Reintenta iniciar sesión si persiste.',
+                            description: res?.error || 'Reintenta iniciar sesión si persiste.',
                         });
                     }
-                } catch (e) {
+                } catch (e: any) {
                     // Non-blocking failure
                     toast({
                         variant: 'destructive',
                         title: 'Error creando sesión',
-                        description: 'Reintenta iniciar sesión si persiste.',
+                        description: e?.message || 'Reintenta iniciar sesión si persiste.',
                     });
                 }
                 // Let the useUser hook handle the redirect via onAuthStateChanged
