@@ -20,15 +20,15 @@ import { es } from 'date-fns/locale';
 import { celebrationConfetti } from '@/lib/animations';
 import { Badge } from '@/components/ui/badge';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+    ResponsiveAlertDialog as AlertDialog,
+    ResponsiveAlertDialogAction as AlertDialogAction,
+    ResponsiveAlertDialogCancel as AlertDialogCancel,
+    ResponsiveAlertDialogContent as AlertDialogContent,
+    ResponsiveAlertDialogDescription as AlertDialogDescription,
+    ResponsiveAlertDialogFooter as AlertDialogFooter,
+    ResponsiveAlertDialogHeader as AlertDialogHeader,
+    ResponsiveAlertDialogTitle as AlertDialogTitle,
+} from '@/components/ui/responsive-alert-dialog';
 
 export default function ChallengeTeamPage() {
     const params = useParams<{ postId: string }>();

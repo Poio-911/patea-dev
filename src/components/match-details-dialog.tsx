@@ -2,13 +2,13 @@
 
 import { useMemo } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription
-} from '@/components/ui/dialog';
+  ResponsiveDialog as Dialog,
+  ResponsiveDialogContent as DialogContent,
+  ResponsiveDialogHeader as DialogHeader,
+  ResponsiveDialogTitle as DialogTitle,
+  ResponsiveDialogTrigger as DialogTrigger,
+  ResponsiveDialogDescription as DialogDescription,
+} from '@/components/ui/responsive-dialog';
 import { Button } from './ui/button';
 import type { Match } from '@/lib/types';
 import { format } from 'date-fns';

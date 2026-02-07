@@ -7,7 +7,11 @@ import type { Player, AttributeKey, PlayerPosition, Jersey } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { PlayerOvr, AttributesGrid, PlayerPhoto, positionConfig, PlayerPositionBadge } from '@/components/player-styles';
 import { Skeleton } from './ui/skeleton';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import {
+  ResponsiveDialog as Dialog,
+  ResponsiveDialogContent as DialogContent,
+  ResponsiveDialogTrigger as DialogTrigger,
+} from '@/components/ui/responsive-dialog';
 import { Eye, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AnimatedCardWrapper } from '@/components/animated-card-wrapper';

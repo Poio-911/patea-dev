@@ -18,16 +18,16 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+  ResponsiveAlertDialog as AlertDialog,
+  ResponsiveAlertDialogAction as AlertDialogAction,
+  ResponsiveAlertDialogCancel as AlertDialogCancel,
+  ResponsiveAlertDialogContent as AlertDialogContent,
+  ResponsiveAlertDialogDescription as AlertDialogDescription,
+  ResponsiveAlertDialogFooter as AlertDialogFooter,
+  ResponsiveAlertDialogHeader as AlertDialogHeader,
+  ResponsiveAlertDialogTitle as AlertDialogTitle,
+  ResponsiveAlertDialogTrigger as AlertDialogTrigger,
+} from '@/components/ui/responsive-alert-dialog';
 import Link from 'next/link';
 
 interface TeamCardProps {

@@ -12,15 +12,15 @@ import { CupBracket } from '@/components/competitions/cup-bracket';
 import { useToast } from '@/hooks/use-toast';
 import { startCupAction, updateCupStatusAction, deleteCupAction, createCupMatchAction } from '@/lib/actions/server-actions';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+  ResponsiveAlertDialog as AlertDialog,
+  ResponsiveAlertDialogAction as AlertDialogAction,
+  ResponsiveAlertDialogCancel as AlertDialogCancel,
+  ResponsiveAlertDialogContent as AlertDialogContent,
+  ResponsiveAlertDialogDescription as AlertDialogDescription,
+  ResponsiveAlertDialogFooter as AlertDialogFooter,
+  ResponsiveAlertDialogHeader as AlertDialogHeader,
+  ResponsiveAlertDialogTitle as AlertDialogTitle,
+} from '@/components/ui/responsive-alert-dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';

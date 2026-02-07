@@ -3,14 +3,14 @@
 
 import { useState, useRef, useEffect } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogTrigger,
-} from '../components/ui/dialog';
+  ResponsiveDialog as Dialog,
+  ResponsiveDialogContent as DialogContent,
+  ResponsiveDialogDescription as DialogDescription,
+  ResponsiveDialogHeader as DialogHeader,
+  ResponsiveDialogTitle as DialogTitle,
+  ResponsiveDialogFooter as DialogFooter,
+  ResponsiveDialogTrigger as DialogTrigger,
+} from '@/components/ui/responsive-dialog';
 import { Button } from '../components/ui/button';
 import { useUser, useAuth, initializeFirebase } from '../firebase';
 import { useToast } from '../hooks/use-toast';
@@ -343,7 +343,7 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange} handleOnly>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>

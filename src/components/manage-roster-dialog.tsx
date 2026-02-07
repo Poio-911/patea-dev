@@ -3,13 +3,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+  ResponsiveDialog as Dialog,
+  ResponsiveDialogContent as DialogContent,
+  ResponsiveDialogDescription as DialogDescription,
+  ResponsiveDialogHeader as DialogHeader,
+  ResponsiveDialogTitle as DialogTitle,
+  ResponsiveDialogTrigger as DialogTrigger,
+} from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -25,7 +25,7 @@ import { Badge } from '@/components/ui/badge';
 import { UserMinus, Plus } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { ResponsiveAlertDialog as AlertDialog, ResponsiveAlertDialogAction as AlertDialogAction, ResponsiveAlertDialogCancel as AlertDialogCancel, ResponsiveAlertDialogContent as AlertDialogContent, ResponsiveAlertDialogDescription as AlertDialogDescription, ResponsiveAlertDialogFooter as AlertDialogFooter, ResponsiveAlertDialogHeader as AlertDialogHeader, ResponsiveAlertDialogTitle as AlertDialogTitle } from '@/components/ui/responsive-alert-dialog';
 
 interface ManageRosterDialogProps {
   team: GroupTeam;

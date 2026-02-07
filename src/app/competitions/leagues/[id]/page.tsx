@@ -20,15 +20,15 @@ import { updateLeagueStatusAction, deleteLeagueAction } from '@/lib/actions/serv
 import { ApplicationsManager } from '@/components/competitions/applications-manager';
 import { useToast } from '@/hooks/use-toast';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+  ResponsiveAlertDialog as AlertDialog,
+  ResponsiveAlertDialogAction as AlertDialogAction,
+  ResponsiveAlertDialogCancel as AlertDialogCancel,
+  ResponsiveAlertDialogContent as AlertDialogContent,
+  ResponsiveAlertDialogDescription as AlertDialogDescription,
+  ResponsiveAlertDialogFooter as AlertDialogFooter,
+  ResponsiveAlertDialogHeader as AlertDialogHeader,
+  ResponsiveAlertDialogTitle as AlertDialogTitle,
+} from '@/components/ui/responsive-alert-dialog';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BackButton } from '@/components/navigation/back-button';

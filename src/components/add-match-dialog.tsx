@@ -4,14 +4,14 @@
 
 import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
+    ResponsiveDialog as Dialog,
+    ResponsiveDialogContent as DialogContent,
+    ResponsiveDialogDescription as DialogDescription,
+    ResponsiveDialogFooter as DialogFooter,
+    ResponsiveDialogHeader as DialogHeader,
+    ResponsiveDialogTitle as DialogTitle,
+    ResponsiveDialogTrigger as DialogTrigger,
+} from '@/components/ui/responsive-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -46,7 +46,12 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { JerseyPreview } from './team-builder/jersey-preview';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { createSessionCookie } from '@/lib/auth-actions';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import {
+  ResponsiveTooltip as Tooltip,
+  ResponsiveTooltipContent as TooltipContent,
+  ResponsiveTooltipProvider as TooltipProvider,
+  ResponsiveTooltipTrigger as TooltipTrigger,
+} from '@/components/ui/responsive-tooltip';
 // Removed local position badge in favor of shared PlayerPositionBadge via PlayerSelectItem
 
 const matchLocationSchema = z.object({

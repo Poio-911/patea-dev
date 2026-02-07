@@ -11,7 +11,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import type { HealthConnection } from '@/lib/types';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { ResponsiveAlertDialog as AlertDialog, ResponsiveAlertDialogAction as AlertDialogAction, ResponsiveAlertDialogCancel as AlertDialogCancel, ResponsiveAlertDialogContent as AlertDialogContent, ResponsiveAlertDialogDescription as AlertDialogDescription, ResponsiveAlertDialogFooter as AlertDialogFooter, ResponsiveAlertDialogHeader as AlertDialogHeader, ResponsiveAlertDialogTitle as AlertDialogTitle, ResponsiveAlertDialogTrigger as AlertDialogTrigger } from '@/components/ui/responsive-alert-dialog';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 

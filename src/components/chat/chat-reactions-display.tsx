@@ -3,11 +3,11 @@
 import { cn } from '@/lib/utils';
 import type { MessageReaction } from '@/lib/types';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+  ResponsiveTooltip as Tooltip,
+  ResponsiveTooltipContent as TooltipContent,
+  ResponsiveTooltipProvider as TooltipProvider,
+  ResponsiveTooltipTrigger as TooltipTrigger,
+} from '@/components/ui/responsive-tooltip';
 
 interface ChatReactionsDisplayProps {
   reactions: MessageReaction[];

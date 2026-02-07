@@ -6,12 +6,12 @@ import { db } from '@/firebase/index';
 import type { CreditPackage } from '@/lib/types';
 import { createCreditPurchaseAction } from '@/lib/actions/payment-actions';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+  ResponsiveDialog as Dialog,
+  ResponsiveDialogContent as DialogContent,
+  ResponsiveDialogHeader as DialogHeader,
+  ResponsiveDialogTitle as DialogTitle,
+  ResponsiveDialogDescription as DialogDescription,
+} from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, CreditCard, Loader2, Star } from 'lucide-react';

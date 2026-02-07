@@ -5,16 +5,16 @@ import React from 'react';
 import type { Match, Player } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+  ResponsiveAlertDialog as AlertDialog,
+  ResponsiveAlertDialogAction as AlertDialogAction,
+  ResponsiveAlertDialogCancel as AlertDialogCancel,
+  ResponsiveAlertDialogContent as AlertDialogContent,
+  ResponsiveAlertDialogDescription as AlertDialogDescription,
+  ResponsiveAlertDialogFooter as AlertDialogFooter,
+  ResponsiveAlertDialogHeader as AlertDialogHeader,
+  ResponsiveAlertDialogTitle as AlertDialogTitle,
+  ResponsiveAlertDialogTrigger as AlertDialogTrigger,
+} from '@/components/ui/responsive-alert-dialog';
 import { InvitePlayerDialog } from '../invite-player-dialog';
 import { EditableTeamsDialog } from '../editable-teams-dialog';
 import { Loader2, CheckCircle, Trash2, UserPlus, FileSignature, Shuffle } from 'lucide-react';

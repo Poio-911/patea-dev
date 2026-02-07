@@ -12,7 +12,12 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { requestIdentityRevelation } from '@/lib/actions/evaluation-actions';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  ResponsiveTooltip as Tooltip,
+  ResponsiveTooltipContent as TooltipContent,
+  ResponsiveTooltipProvider as TooltipProvider,
+  ResponsiveTooltipTrigger as TooltipTrigger,
+} from '@/components/ui/responsive-tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';

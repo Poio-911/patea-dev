@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
 import { Button } from './ui/button';
 import { Sparkles, Loader2, Scissors, Share2, ShoppingCart } from 'lucide-react';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { ResponsiveAlertDialog as AlertDialog, ResponsiveAlertDialogAction as AlertDialogAction, ResponsiveAlertDialogCancel as AlertDialogCancel, ResponsiveAlertDialogContent as AlertDialogContent, ResponsiveAlertDialogDescription as AlertDialogDescription, ResponsiveAlertDialogFooter as AlertDialogFooter, ResponsiveAlertDialogHeader as AlertDialogHeader, ResponsiveAlertDialogTitle as AlertDialogTitle, ResponsiveAlertDialogTrigger as AlertDialogTrigger } from '@/components/ui/responsive-alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/lib/logger';
 import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';

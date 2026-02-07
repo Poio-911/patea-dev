@@ -1,7 +1,12 @@
 
 'use client';
 
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  ResponsiveTooltip as Tooltip,
+  ResponsiveTooltipContent as TooltipContent,
+  ResponsiveTooltipProvider as TooltipProvider,
+  ResponsiveTooltipTrigger as TooltipTrigger,
+} from '@/components/ui/responsive-tooltip';
 import { HelpCircle } from 'lucide-react';
 import { attributeDescriptions } from '@/lib/data';
 import type { AttributeKey } from '@/lib/types';

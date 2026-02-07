@@ -2,7 +2,12 @@
 
 import { cn } from '@/lib/utils';
 import type { Achievement } from '@/lib/types';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  ResponsiveTooltip as Tooltip,
+  ResponsiveTooltipContent as TooltipContent,
+  ResponsiveTooltipProvider as TooltipProvider,
+  ResponsiveTooltipTrigger as TooltipTrigger,
+} from '@/components/ui/responsive-tooltip';
 import { Progress } from '@/components/ui/progress';
 import { motion } from 'framer-motion';
 import {

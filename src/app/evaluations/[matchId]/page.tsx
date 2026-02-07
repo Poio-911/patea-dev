@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
@@ -38,7 +37,17 @@ import { PerformanceTag, performanceTagsDb } from '@/lib/performance-tags'
 import { cn } from '@/lib/utils'
 import type { Player, EvaluationAssignment, PlayerEvaluationFormData, Match } from '@/lib/types'
 import { BackButton } from '@/components/navigation/back-button'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  ResponsiveDialog as Dialog,
+  ResponsiveDialogContent as DialogContent,
+  ResponsiveDialogDescription as DialogDescription,
+  ResponsiveDialogFooter as DialogFooter,
+  ResponsiveDialogHeader as DialogHeader,
+  ResponsiveDialogTitle as DialogTitle,
+} from '@/components/ui/responsive-dialog'
+import { CounterDial } from '@/components/ui/gamer/counter-dial';
+import { PlayerCarousel } from '@/components/ui/gamer/player-carousel';
+import { AiScanOverlay } from '@/components/ui/gamer/ai-scan-overlay';
 
 // --- Zod Validation (CORREGIDO Y REFORZADO) ---
 const pointsEvaluationSchema = z.object({
@@ -218,23 +227,25 @@ const TagCheckbox = ({
     <div
       className={cn(
         'flex items-start gap-3 rounded-lg border p-3 transition-colors',
-        isChecked ? 'bg-primary/10 border-primary' : 'hover:bg-accent/50'
+        isChecked ? 'bg-primary/10 border-primary' : 'hover:bg-accent/50',
+        "game:border-primary/20",
+        isChecked ? "game:bg-primary/20 game:border-primary game:shadow-[0_0_10px_rgba(170,254,72,0.3)]" : "game:hover:bg-primary/5 game:hover:border-primary/30"
       )}
     >
       <Checkbox checked={isChecked} onCheckedChange={onCheckedChange} id={uniqueId} className="mt-1" />
       <label htmlFor={uniqueId} className="w-full cursor-pointer space-y-2">
         <div>
-          <p className="font-semibold">{tag.name}</p>
-          <p className="text-xs text-muted-foreground">{tag.description}</p>
+          <p className="font-semibold game:text-white">{tag.name}</p>
+          <p className="text-xs text-muted-foreground game:text-slate-400">{tag.description}</p>
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-1">
           {positiveEffects.map((effect) => (
-            <div key={effect.attribute} className="flex items-center gap-1 text-xs font-medium text-green-600">
+            <div key={effect.attribute} className="flex items-center gap-1 text-xs font-medium text-green-600 game:text-green-400">
               <Plus size={12} /> {effect.attribute.toUpperCase()}: +{effect.change}
             </div>
           ))}
           {negativeEffects.map((effect) => (
-            <div key={effect.attribute} className="flex items-center gap-1 text-xs font-medium text-red-600">
+            <div key={effect.attribute} className="flex items-center gap-1 text-xs font-medium text-red-600 game:text-red-400">
               <Minus size={12} /> {effect.attribute.toUpperCase()}: {effect.change}
             </div>
           ))}
@@ -476,14 +487,15 @@ export default function PerformEvaluationPage() {
     form.handleSubmit(onSubmit)()
   }
 
-  if (isPageLoading || assignmentsLoading || playersLoading)
+  if (isPageLoading || assignmentsLoading || playersLoading) {
     return (
       <div className="flex justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
-    )
+    );
+  }
 
-  if (!user || !matchId || typeof matchId !== 'string') return <div>Datos no encontrados.</div>
+  if (!user || !matchId || typeof matchId !== 'string') return <div>Datos no encontrados.</div>;
 
   if (submissionIsPending) {
     return (
@@ -501,7 +513,7 @@ export default function PerformEvaluationPage() {
           </AlertDescription>
         </Alert>
       </div>
-    )
+    );
   }
 
   if (fields.length === 0) {
@@ -530,25 +542,35 @@ export default function PerformEvaluationPage() {
 
       <Form {...form}>
         <form onSubmit={handleSmartSubmit} className="space-y-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Tu Rendimiento</CardTitle>
-              <CardDescription>Antes de evaluar a tus compañeros, registra tu propia actuación.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          {/* Tu Rendimiento - GAMER REDESIGN */}
+          <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm game:bg-[#0b1e3b]/80 game:border-primary/30 game:shadow-[0_0_20px_rgba(170,254,72,0.1)]">
+            {/* Background glow - Game Mode Only */}
+            <div className="absolute top-0 right-0 h-[200px] w-[200px] bg-primary/10 blur-[80px] hidden game:block" />
+
+            <div className="relative space-y-6  p-6">
+              <div className="relative flex items-center gap-3 mb-6">
+                <div className="rounded-lg bg-slate-50 border border-slate-100 p-2 text-slate-700 ring-1 ring-slate-100 game:bg-primary/10 game:text-primary game:ring-primary/20 game:border-none">
+                  <ShieldCheck className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight text-slate-900 game:text-white">Tu Rendimiento</h3>
+                  <p className="text-sm text-slate-500 game:text-primary/60">Registrá tus estadísticas personales del partido.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="evaluatorGoals"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>¿Cuántos goles marcaste?</FormLabel>
-                      <div className="flex items-center gap-2">
-                        <Goal className="h-5 w-5 text-muted-foreground" />
-                        <FormControl>
-                          <Input type="number" min="0" {...field} />
-                        </FormControl>
-                      </div>
+                    <FormItem className="flex flex-col items-center justify-center space-y-4 rounded-xl border border-slate-200 bg-slate-50/30 p-6 backdrop-blur-sm game:border-white/10 game:bg-[#051329]">
+                      <CounterDial
+                        value={field.value}
+                        onChange={field.onChange}
+                        label="GOLES MARCADOS"
+                        icon={<Goal className="h-8 w-8" />}
+                      />
                       <FormMessage />
                     </FormItem>
                   )}
@@ -558,46 +580,44 @@ export default function PerformEvaluationPage() {
                   control={form.control}
                   name="evaluatorAssists"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>¿Cuántas asistencias diste?</FormLabel>
-                      <div className="flex items-center gap-2">
-                        <Award className="h-5 w-5 text-muted-foreground" />
-                        <FormControl>
-                          <Input type="number" min="0" {...field} />
-                        </FormControl>
-                      </div>
+                    <FormItem className="flex flex-col items-center justify-center space-y-4 rounded-xl border border-slate-200 bg-slate-50/30 p-6 backdrop-blur-sm game:border-white/10 game:bg-[#051329]">
+                      <CounterDial
+                        value={field.value}
+                        onChange={field.onChange}
+                        label="ASISTENCIAS"
+                        icon={<Award className="h-8 w-8" />}
+                      />
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
 
+              {/* MVP Selection - Placeholder for Carousel, using Styled Select for now */}
               <FormField
                 control={form.control}
                 name="mvpVote"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>¿Quién fue el MVP del partido?</FormLabel>
-                    <div className="flex items-center gap-2">
-                      <Award className="h-5 w-5 text-yellow-500" />
-                      <FormControl>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecciona un jugador" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {currentMatch?.players
-                              .filter((p, idx, arr) => arr.findIndex(x => x.uid === p.uid) === idx)
-                              .map((p) => (
-                              <SelectItem key={p.uid} value={p.uid}>
-                                {p.displayName}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
+                  <FormItem className="space-y-4 pt-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 ring-1 ring-slate-200 game:bg-primary/20 game:text-primary game:ring-primary/50">
+                        <Award className="h-5 w-5 animate-pulse" />
+                      </div>
+                      <FormLabel className="text-lg font-bold text-slate-800 game:text-primary tracking-wide">VOTO MVP</FormLabel>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 game:bg-[#051329] game:border-primary/20">
+                      <PlayerCarousel
+                        players={currentMatch?.players
+                          .filter((p, idx, arr) => arr.findIndex(x => x.uid === p.uid) === idx)
+                          .map(p => ({
+                            id: p.uid,
+                            name: p.displayName,
+                            photoURL: p.photoURL,
+                            position: p.position // Assuming player object has position, if not might need to fetch or map
+                          })) || []}
+                        selectedId={field.value}
+                        onSelect={field.onChange}
+                      />
                     </div>
                     <FormMessage />
                   </FormItem>
@@ -609,13 +629,13 @@ export default function PerformEvaluationPage() {
                 name="personalChronicle"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tu Crónica Personal</FormLabel>
-                    <div className="flex items-start gap-2">
-                      <MessageSquare className="h-5 w-5 mt-2 text-muted-foreground" />
+                    <FormLabel className="text-zinc-700 game:text-cyan-200/80">Crónica Personal (Opcional)</FormLabel>
+                    <div className="relative group">
+                      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-600/20 opacity-0 transition-opacity group-focus-within:opacity-100 blur-sm hidden game:block" />
                       <FormControl>
                         <Textarea
-                          placeholder="Escribe un breve resumen de cómo te sentiste en el campo hoy..."
-                          className="resize-none h-24"
+                          placeholder="¿Cómo te sentiste en la cancha? Contanos..."
+                          className="relative resize-none h-24 border-zinc-200 bg-white text-zinc-900 placeholder:text-zinc-400 focus:border-slate-400 game:border-white/10 game:bg-[#051329] game:text-white game:placeholder:text-white/30"
                           {...field}
                         />
                       </FormControl>
@@ -624,24 +644,24 @@ export default function PerformEvaluationPage() {
                   </FormItem>
                 )}
               />
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card>
+          <Card className="border-slate-200 bg-white shadow-sm game:bg-[#0b1e3b]/80 game:border-primary/30 game:shadow-[0_0_20px_rgba(170,254,72,0.1)]">
             <CardHeader>
-              <CardTitle>Jugadores a Evaluar</CardTitle>
+              <CardTitle className="text-zinc-900 game:text-white">Jugadores a Evaluar</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {fields.map((field, index) => (
-                <div key={field.id} className="border rounded-lg p-6 bg-card shadow-sm hover:shadow-md transition-shadow">
+                <div key={field.id} className="rounded-lg border border-slate-200 bg-slate-50/50 p-6 shadow-sm transition-all hover:bg-white hover:shadow-md game:border-white/10 game:bg-[#051329] game:shadow-none game:hover:bg-[#0b1e3b] game:hover:border-primary/30">
                   <div className="flex items-center gap-4 mb-6">
-                    <Avatar className="h-16 w-16 border-2 border-muted">
+                    <Avatar className="h-16 w-16 border-2 border-slate-100 game:border-primary/50">
                       <AvatarImage src={field.photoURL} alt={field.displayName} className="object-cover" />
-                      <AvatarFallback className="text-lg font-bold">{field.displayName.charAt(0)}</AvatarFallback>
+                      <AvatarFallback className="text-lg font-bold text-slate-700 bg-slate-200 game:bg-[#0b1e3b] game:text-primary">{field.displayName.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <h3 className="font-bold text-xl text-foreground">{field.displayName}</h3>
-                      <p className="text-sm text-muted-foreground font-medium">{field.position}</p>
+                      <h3 className="font-bold text-xl text-zinc-900 game:text-white">{field.displayName}</h3>
+                      <p className="text-sm text-zinc-500 font-medium font-mono uppercase tracking-wider game:text-primary/80">{field.position}</p>
                     </div>
                   </div>
 
@@ -652,23 +672,24 @@ export default function PerformEvaluationPage() {
                       <Tabs value={typeField.value} onValueChange={(value) => {
                         form.setValue(`evaluations.${index}.evaluationType`, value as 'points' | 'tags' | 'text', { shouldValidate: true });
                       }} className="w-full">
-                        <TabsList className="grid w-full grid-cols-3">
-                          <TabsTrigger value="points" className="text-xs">Puntos</TabsTrigger>
-                          <TabsTrigger value="tags" className="text-xs">Etiquetas</TabsTrigger>
-                          <TabsTrigger value="text" className="text-xs">Descripción</TabsTrigger>
+                        <TabsList className="grid w-full grid-cols-3 bg-slate-100 game:bg-[#051329] game:border game:border-white/10">
+                          <TabsTrigger value="points" className="text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm game:data-[state=active]:bg-primary game:data-[state=active]:text-[#0b1e3b]">Puntos</TabsTrigger>
+                          <TabsTrigger value="tags" className="text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm game:data-[state=active]:bg-primary game:data-[state=active]:text-[#0b1e3b]">Etiquetas</TabsTrigger>
+                          <TabsTrigger value="text" className="text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm game:data-[state=active]:bg-primary game:data-[state=active]:text-[#0b1e3b]">Descripción</TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="points" className="p-6 bg-background border rounded-lg">
+                        <TabsContent value="points" className="p-6 bg-white border border-slate-200 rounded-lg mt-2 game:bg-white/5 game:border-white/10">
                           <FormField
                             control={form.control}
                             name={`evaluations.${index}.rating`}
                             render={({ field: ratingField }) => (
                               <FormItem className="space-y-6">
-                                <FormLabel className="text-base font-medium">Calificación</FormLabel>
+                                <FormLabel className="text-base font-medium text-slate-900 game:text-white">Calificación</FormLabel>
                                 <FormControl>
                                   <RatingPills
                                     value={ratingField.value ?? 5}
                                     onChange={(n) => ratingField.onChange(n)}
+                                  // Use default (colors) for rating pills as it's functional
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -677,13 +698,13 @@ export default function PerformEvaluationPage() {
                           />
                         </TabsContent>
 
-                        <TabsContent value="tags" className="p-6 bg-background border rounded-lg">
+                        <TabsContent value="tags" className="p-6 bg-white border border-slate-200 rounded-lg mt-2 game:bg-white/5 game:border-white/10">
                           <Controller
                             name={`evaluations.${index}.performanceTags`}
                             control={form.control}
                             render={({ field: tagsField, fieldState }) => (
                               <FormItem className="space-y-4">
-                                <FormLabel className="text-base font-medium">Selecciona etiquetas de rendimiento</FormLabel>
+                                <FormLabel className="text-base font-medium text-slate-900 game:text-white">Selecciona etiquetas de rendimiento</FormLabel>
                                 <TagSelector
                                   tags={randomTags[field.subjectId] || []}
                                   selectedTagIds={(tagsField.value || []).map((t: any) => t.id)}
@@ -702,13 +723,13 @@ export default function PerformEvaluationPage() {
                           />
                         </TabsContent>
 
-                        <TabsContent value="text" className="p-6 bg-background border rounded-lg space-y-6">
+                        <TabsContent value="text" className="p-6 bg-white border border-slate-200 rounded-lg mt-2 space-y-6 game:bg-white/5 game:border-white/10">
                           <FormField
                             control={form.control}
                             name={`evaluations.${index}.textDescription`}
                             render={({ field: textField, fieldState }) => (
                               <FormItem className="space-y-3">
-                                <FormLabel className="text-base">Descripción</FormLabel>
+                                <FormLabel className="text-base text-slate-900 game:text-white">Descripción</FormLabel>
                                 <FormControl>
                                   <Textarea
                                     placeholder="Ejemplo: Estuvo muy activo en defensa, recuperó varias pelotas importantes y distribuyó bien el juego. Sus pases fueron precisos pero le faltó más protagonismo en ataque..."
@@ -716,10 +737,10 @@ export default function PerformEvaluationPage() {
                                     onChange={textField.onChange}
                                     rows={5}
                                     maxLength={500}
-                                    className="resize-none text-sm"
+                                    className="resize-none text-sm border-slate-200 text-slate-800 placeholder:text-slate-400 focus:border-slate-400 game:bg-[#051329] game:text-white game:border-white/10 game:placeholder:text-white/30"
                                   />
                                 </FormControl>
-                                <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                <div className="flex justify-between items-center text-xs text-muted-foreground game:text-slate-400">
                                   <span>{(textField.value || '').length}/500 caracteres</span>
                                   <span>Mínimo 10 caracteres para analizar</span>
                                 </div>
@@ -738,75 +759,56 @@ export default function PerformEvaluationPage() {
                                 analyzingText[field.subjectId]
                               }
                               size="lg"
-                              className="w-full"
+                              className={cn(
+                                "w-full transition-all duration-300 relative overflow-hidden",
+                                analyzingText[field.subjectId]
+                                  ? "bg-zinc-800 text-emerald-400 border-emerald-500/50"
+                                  : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+                              )}
                             >
                               {analyzingText[field.subjectId] ? (
                                 <>
                                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                  Evaluando...
+                                  <span className="animate-pulse">Sincronizando con IA...</span>
                                 </>
                               ) : (
                                 <>
-                                  <Sparkles className="mr-2 h-5 w-5" />
-                                  Evaluar
+                                  <Sparkles className="mr-2 h-5 w-5 fill-white" />
+                                  ANÁLISIS TÁCTICO (IA)
                                 </>
                               )}
-                            </Button>
-
-                            {aiResults[field.subjectId] && (
-                              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 space-y-3">
-                                <div className="flex items-center gap-2 text-emerald-800">
-                                  <Check className="h-5 w-5" />
-                                  <span className="font-semibold">Impacto en Atributos</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                  {aiResults[field.subjectId].attributeChanges.map((change) => (
-                                    <div
-                                      key={change.attribute}
-                                      className={cn(
-                                        'flex items-center justify-between p-2 rounded-md border',
-                                        change.change > 0
-                                          ? 'bg-green-50 border-green-200'
-                                          : 'bg-red-50 border-red-200'
-                                      )}
-                                    >
-                                      <span className="font-semibold text-sm uppercase">{change.attribute}</span>
-                                      <span className={cn(
-                                        'font-bold text-sm',
-                                        change.change > 0 ? 'text-green-600' : 'text-red-600'
-                                      )}>
-                                        {change.change > 0 ? '+' : ''}{change.change}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                                <div className="text-sm space-y-1">
-                                  <p className="text-emerald-800 italic">{aiResults[field.subjectId].summary}</p>
-                                  <p className="text-xs text-emerald-600">
-                                    Confianza: {Math.round(aiResults[field.subjectId].confidence * 100)}%
+                              {/* Results Text (Simple, no overlay) */}
+                              {analyzingText[field.subjectId] && aiResults[field.subjectId] && (
+                                <div className="mt-4 rounded-lg bg-zinc-50 dark:bg-white/5 p-4 border border-zinc-200 dark:border-white/10">
+                                  <div className="flex items-center gap-2 mb-2 text-emerald-600 dark:text-emerald-400">
+                                    <Sparkles className="h-4 w-4" />
+                                    <span className="text-xs font-bold uppercase">Análisis Completado</span>
+                                  </div>
+                                  <p className="text-sm text-zinc-700 dark:text-zinc-300 italic">
+                                    "{aiResults[field.subjectId].summary}"
                                   </p>
                                 </div>
-                              </div>
-                            )}
+                              )}
+                            </Button>
                           </div>
                         </TabsContent>
                       </Tabs>
                     )}
                   />
-                  <FormMessage>{form.formState.errors.evaluations?.[index]?.root?.message}</FormMessage>
+                  <FormMessage />
                 </div>
               ))}
             </CardContent>
           </Card>
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="game:bg-primary game:text-[#0b1e3b] game:hover:bg-primary/90 game:font-bold">
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               {isSubmitting ? 'Enviando...' : 'Enviar Evaluaciones'}
             </Button>
           </div>
         </form>
-      </Form>
+      </Form >
       <Dialog open={confirmOverrideOpen} onOpenChange={setConfirmOverrideOpen}>
         <DialogContent>
           <DialogHeader>
@@ -821,6 +823,6 @@ export default function PerformEvaluationPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   )
 }
