@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
-import { Calendar, Search, Trophy } from 'lucide-react';
+import { Calendar, Search, Trophy, UserSearch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
@@ -44,7 +44,7 @@ export function MobileNav() {
         return () => document.removeEventListener('mousedown', handleClick);
     }, [matchesMenuOpen]);
 
-    const isMatchesActive = pathname.startsWith('/matches') || pathname.startsWith('/competitions') || pathname.startsWith('/find-match');
+    const isMatchesActive = pathname.startsWith('/matches') || pathname.startsWith('/competitions') || pathname.startsWith('/find-match') || pathname.startsWith('/find-players');
 
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-[2147483647] border-t bg-card/80 backdrop-blur-lg shadow-lg md:hidden pb-[env(safe-area-inset-bottom)]">
@@ -137,6 +137,7 @@ const BottomSheetMenu = React.forwardRef<HTMLDivElement, { pathname: string, onC
             <div className="px-6 space-y-2">
                 <MenuLink href="/matches" icon={Calendar} label="Mis Partidos" pathname={pathname} onClose={onClose} matchExact={false} exclude="/find-match" />
                 <MenuLink href="/find-match" icon={Search} label="Buscar Partido" pathname={pathname} onClose={onClose} />
+                <MenuLink href="/find-players" icon={UserSearch} label="Buscar Jugadores" pathname={pathname} onClose={onClose} />
                 <MenuLink href="/competitions" icon={Trophy} label="Competiciones" pathname={pathname} onClose={onClose} />
             </div>
         </div>

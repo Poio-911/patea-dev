@@ -96,23 +96,26 @@ const TagCheckbox = ({
     <div
       className={cn(
         'flex items-start gap-3 rounded-lg border p-3 transition-colors',
-        isChecked ? 'bg-primary/10 border-primary' : 'hover:bg-accent/50'
+        isChecked ? 'bg-primary/10 border-primary' : 'hover:bg-accent/50',
+        // Game Mode Specifics
+        "game:border-white/10",
+        isChecked ? "game:bg-primary/20 game:border-primary game:shadow-[0_0_10px_rgba(170,254,72,0.3)]" : "game:hover:bg-primary/5 game:hover:border-primary/30"
       )}
     >
       <Checkbox checked={isChecked} onCheckedChange={onCheckedChange} id={uniqueId} className="mt-1" />
       <label htmlFor={uniqueId} className="w-full cursor-pointer space-y-2">
         <div>
-          <p className="font-semibold">{tag.name}</p>
-          <p className="text-xs text-muted-foreground">{tag.description}</p>
+          <p className="font-semibold game:text-white">{tag.name}</p>
+          <p className="text-xs text-muted-foreground game:text-slate-400">{tag.description}</p>
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-1">
           {positiveEffects.map((effect) => (
-            <div key={effect.attribute} className="flex items-center gap-1 text-xs font-medium text-green-600">
+            <div key={effect.attribute} className="flex items-center gap-1 text-xs font-medium text-green-600 game:text-green-400">
               <Plus size={12} /> {effect.attribute.toUpperCase()}: +{effect.change}
             </div>
           ))}
           {negativeEffects.map((effect) => (
-            <div key={effect.attribute} className="flex items-center gap-1 text-xs font-medium text-red-600">
+            <div key={effect.attribute} className="flex items-center gap-1 text-xs font-medium text-red-600 game:text-red-400">
               <Minus size={12} /> {effect.attribute.toUpperCase()}: {effect.change}
             </div>
           ))}
@@ -301,10 +304,11 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <Card>
+          {/* Strict Game Mode Card */}
+          <Card className="game:border-primary/30 game:bg-[#0b1e3b]/80 game:backdrop-blur-md game:shadow-[0_0_20px_rgba(170,254,72,0.1)]">
             <CardHeader>
-              <CardTitle>Tu Rendimiento</CardTitle>
-              <CardDescription>Antes de evaluar a tus compañeros, registra tu propia actuación.</CardDescription>
+              <CardTitle className="game:text-white">Tu Rendimiento</CardTitle>
+              <CardDescription className="game:text-slate-400">Antes de evaluar a tus compañeros, registra tu propia actuación.</CardDescription>
             </CardHeader>
             <CardContent>
               <FormField
@@ -312,11 +316,11 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
                 name="evaluatorGoals"
                 render={({ field }) => (
                   <FormItem className="max-w-xs">
-                    <FormLabel>¿Cuántos goles marcaste en este partido?</FormLabel>
+                    <FormLabel className="game:text-white">¿Cuántos goles marcaste en este partido?</FormLabel>
                     <div className="flex items-center gap-2">
-                      <Goal className="h-5 w-5 text-muted-foreground" />
+                      <Goal className="h-5 w-5 text-muted-foreground game:text-primary" />
                       <FormControl>
-                        <Input type="number" min="0" {...field} />
+                        <Input type="number" min="0" {...field} className="game:bg-[#051329] game:border-white/10 game:text-white" />
                       </FormControl>
                     </div>
                     <FormMessage />
@@ -326,19 +330,19 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="game:border-primary/30 game:bg-[#0b1e3b]/80 game:backdrop-blur-md game:shadow-[0_0_20px_rgba(170,254,72,0.1)]">
             <CardHeader>
-              <CardTitle>Jugadores a Evaluar</CardTitle>
+              <CardTitle className="game:text-white">Jugadores a Evaluar</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {fields.map((field, index) => (
-                <div key={field.id} className="border-b pb-6 last:border-b-0 last:pb-0">
+                <div key={field.id} className="border-b pb-6 last:border-b-0 last:pb-0 game:border-white/10">
                   <div className="flex items-center gap-4 mb-4">
-                    <Avatar className="h-12 w-12">
+                    <Avatar className="h-12 w-12 game:ring-2 game:ring-primary game:ring-offset-2 game:ring-offset-[#0b1e3b]">
                       <AvatarImage src={field.photoURL} alt={field.displayName} />
-                      <AvatarFallback>{field.displayName.charAt(0)}</AvatarFallback>
+                      <AvatarFallback className="game:bg-[#051329] game:text-primary">{field.displayName.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <p className="font-semibold text-lg">{field.displayName}</p>
+                    <p className="font-semibold text-lg game:text-white">{field.displayName}</p>
                   </div>
 
                   <Controller
@@ -348,29 +352,30 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
                       <Tabs value={typeField.value} onValueChange={(value) => {
                         form.setValue(`evaluations.${index}.evaluationType`, value as 'points' | 'tags', { shouldValidate: true });
                       }} className="w-full">
-                        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
-                          <TabsTrigger value="points">Evaluar por Puntos</TabsTrigger>
-                          <TabsTrigger value="tags">Evaluar por Etiquetas</TabsTrigger>
+                        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 game:bg-[#051329]">
+                          <TabsTrigger value="points" className="game:data-[state=active]:bg-primary game:data-[state=active]:text-[#0b1e3b]">Evaluar por Puntos</TabsTrigger>
+                          <TabsTrigger value="tags" className="game:data-[state=active]:bg-primary game:data-[state=active]:text-[#0b1e3b]">Evaluar por Etiquetas</TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="points" className="p-4 bg-muted/30 rounded-b-md">
+                        <TabsContent value="points" className="p-4 bg-muted/30 rounded-b-md game:bg-white/5">
                           <FormField
                             control={form.control}
                             name={`evaluations.${index}.rating`}
                             render={({ field: ratingField }) => (
                               <FormItem>
-                                <FormLabel>Rating: {ratingField.value || 5}</FormLabel>
+                                <FormLabel className="game:text-white">Rating: {ratingField.value || 5}</FormLabel>
                                 <FormControl>
                                   <div className="flex items-center gap-2 pt-2">
-                                    <span className="text-xs text-muted-foreground">1</span>
+                                    <span className="text-xs text-muted-foreground game:text-slate-400">1</span>
                                     <Slider
                                       min={1}
                                       max={10}
                                       step={1}
                                       value={[ratingField.value || 5]}
                                       onValueChange={(value) => ratingField.onChange(value[0])}
+                                      className="game:text-primary"
                                     />
-                                    <span className="text-xs text-muted-foreground">10</span>
+                                    <span className="text-xs text-muted-foreground game:text-slate-400">10</span>
                                   </div>
                                 </FormControl>
                                 <FormMessage />
@@ -379,13 +384,13 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
                           />
                         </TabsContent>
 
-                        <TabsContent value="tags" className="p-4 bg-muted/30 rounded-b-md">
+                        <TabsContent value="tags" className="p-4 bg-muted/30 rounded-b-md game:bg-white/5">
                           <Controller
                             name={`evaluations.${index}.performanceTags`}
                             control={form.control}
                             render={({ field: tagsField, fieldState }) => (
                               <FormItem>
-                                <FormLabel>Elige exactamente 3 etiquetas</FormLabel>
+                                <FormLabel className="game:text-white">Elige exactamente 3 etiquetas</FormLabel>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2 max-h-96 overflow-y-auto">
                                   {randomTags[field.subjectId]?.map((tag) => (
                                     <TagCheckbox
@@ -419,7 +424,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
           </Card>
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="game:bg-primary game:text-[#0b1e3b] game:hover:bg-primary/90 game:font-bold">
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               {isSubmitting ? 'Enviando...' : 'Enviar Evaluaciones'}
             </Button>

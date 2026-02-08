@@ -27,7 +27,7 @@ export type PlayerPositionBadgeProps = {
   position: PlayerPosition;
   className?: string;
   showIcon?: boolean;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   neutral?: boolean; // when true, keep grayscale tokens (for player-cards)
   showFullName?: boolean; // when true, show full name (e.g., "Delantero" instead of "DEL")
   textOnly?: boolean; // when true, render only colored text without badge/background/border
@@ -38,18 +38,21 @@ export function PlayerPositionBadge({ position, className, showIcon = false, siz
   const Icon = config.Icon;
 
   const sizeClasses = {
+    xs: 'text-[9px] px-1 py-0 h-4',
     sm: 'text-[10px] px-1.5 py-0.5 h-5',
     md: 'text-xs px-2.5 py-1 h-7',
     lg: 'text-sm px-3 py-1.5 h-8'
   };
 
   const textSizeClasses = {
+    xs: 'text-[9px]',
     sm: 'text-[10px]',
     md: 'text-xs',
     lg: 'text-sm'
   };
 
   const iconSizes = {
+    xs: 'w-2.5 h-2.5',
     sm: 'w-3 h-3',
     md: 'w-3.5 h-3.5',
     lg: 'w-4 h-4'

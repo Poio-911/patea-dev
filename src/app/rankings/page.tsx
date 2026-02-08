@@ -1,4 +1,5 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useMemo } from 'react';
 import { useUser } from '@/firebase';
@@ -21,7 +22,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import {
-  getLeaderboardAction,
+  getLeaderboardActionV2,
   getPlayerRankAction,
 } from '@/lib/actions/leaderboard-actions';
 import type { LeaderboardCategory, LeaderboardEntry } from '@/lib/types';
@@ -36,12 +37,12 @@ const CATEGORIES: {
   icon: React.ReactNode;
   unit: string;
 }[] = [
-  { value: 'ovr', label: 'OVR', icon: <Trophy className="h-4 w-4" />, unit: '' },
-  { value: 'goals', label: 'Goles', icon: <Target className="h-4 w-4" />, unit: '' },
-  { value: 'assists', label: 'Asistencias', icon: <Footprints className="h-4 w-4" />, unit: '' },
-  { value: 'matches', label: 'Partidos', icon: <Calendar className="h-4 w-4" />, unit: '' },
-  { value: 'rating', label: 'Rating', icon: <Star className="h-4 w-4" />, unit: '' },
-];
+    { value: 'ovr', label: 'OVR', icon: <Trophy className="h-4 w-4" />, unit: '' },
+    { value: 'goals', label: 'Goles', icon: <Target className="h-4 w-4" />, unit: ' Goles' },
+    { value: 'assists', label: 'Asistencias', icon: <Footprints className="h-4 w-4" />, unit: ' Asist.' },
+    { value: 'matches', label: 'Partidos', icon: <Calendar className="h-4 w-4" />, unit: ' PJ' },
+    { value: 'rating', label: 'Rating', icon: <Star className="h-4 w-4" />, unit: '' },
+  ];
 
 function getRankIcon(rank: number) {
   switch (rank) {
@@ -150,7 +151,9 @@ function LeaderboardTable({ entries, currentUserId, category, loading }: Leaderb
                       entry.rank <= 3 ? 'text-primary' : 'text-foreground'
                     )}
                   >
-                    {category === 'rating' ? entry.value.toFixed(1) : entry.value}
+                    {category === 'rating'
+                      ? entry.value.toFixed(1)
+                      : `${entry.value}${CATEGORIES.find(c => c.value === category)?.unit || ''}`}
                   </p>
                 </div>
               </div>
@@ -180,7 +183,7 @@ export default function RankingsPage() {
       try {
         // Get leaderboard - using group context if available
         const groupId = user?.activeGroupId || null;
-        const result = await getLeaderboardAction(selectedCategory, groupId, 10);
+        const result = await getLeaderboardActionV2(selectedCategory, groupId, 10);
 
         if (!result.error) {
           setLeaderboard(result.leaderboard);

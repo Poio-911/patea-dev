@@ -60,11 +60,23 @@ All server-side mutations are organized in `src/lib/actions/`:
 - **`server-actions.ts`**: Core actions (players, matches, groups, team challenges)
 - **`image-generation.ts`**: AI image generation (uses credits)
 - **`social-actions.ts`**: Follow system, activity feed
+- **`social-feed-actions.ts`**: Social feed queries
+- **`social-likes-actions.ts`**: Like system for social feed
 - **`google-fit-actions.ts`**: Health data integration
 - **`notification-actions.ts`**: Push notifications
 - **`payment-actions.ts`**: Mercadopago integration, credit purchases
 - **`venue-actions.ts`**: Venue/location management, ratings
 - **`match-invitation-actions.ts`**: RSVP system for matches
+- **`match-voting-actions.ts`**: Match voting system
+- **`evaluation-actions.ts`**: Player evaluation after matches
+- **`player-stats-actions.ts`**: Player statistics calculations
+- **`leaderboard-actions.ts`**: Rankings and leaderboards by category
+- **`ai-actions.ts`**: AI-related server actions
+- **`achievement-actions.ts`**: Achievement/badge system
+- **`group-role-actions.ts`**: Group role management
+- **`league-completion-actions.ts`**: League completion logic
+- **`location-actions.ts`**: Location services
+- **`upload-competition-logo.ts`**: Competition logo uploads
 
 **Important:** Server actions must be marked with `'use server'` directive.
 
@@ -88,12 +100,14 @@ All server-side mutations are organized in `src/lib/actions/`:
 All AI flows are in `src/ai/flows/`. **Critical constraint:**
 
 - Genkit is configured for **production mode only** (`GENKIT_ENV=prod`)
+- Genkit uses **lazy initialization via Proxy** (`getAI()` creates instance on first use)
 - Genkit cannot run client-side - webpack excludes it from client bundle
 - Flows must be called from server actions only
 - Never import `ai` object in client components
+- Most flows use `gemini-2.0-flash`; image generation flows use `gemini-2.5-flash-image-preview`
 
-**12 Available flows:**
-- Player analysis: `suggest-player-improvements`, `analyze-player-progression`, `detect-player-patterns`
+**13 Available flows:**
+- Player analysis: `suggest-player-improvements`, `analyze-player-progression`, `detect-player-patterns`, `analyze-text-performance`
 - Match support: `generate-balanced-teams`, `get-match-day-forecast`, `generate-match-chronicle`
 - Image generation: `generate-player-card-image`, `generate-duo-image`
 - Assistance: `coach-conversation`, `get-app-help`, `find-best-fit-player`, `generate-group-summary`
@@ -118,6 +132,8 @@ All AI flows are in `src/ai/flows/`. **Critical constraint:**
 - `Match`: Has discriminated union for `type` and `size`
 - `MatchStatus`: Lifecycle states (`upcoming` → `active` → `completed` → `evaluated`)
 - `Jersey`: Team jersey configuration with colors and patterns
+- `LeaderboardCategory`: Rankings categories (`ovr`, `goals`, `assists`, `matches`, `rating`)
+- `LeaderboardEntry`: Leaderboard row with rank, player data, and value
 
 ### 7. UI Animation System
 
@@ -178,6 +194,11 @@ groups/{groupId}
 
 leagues/{leagueId}
 cups/{cupId}
+venues/{venueId}
+  - name, address, location (GeoPoint)
+  - ratings, averageRating
+  - groupId
+
 socialActivities/{activityId}
 follows/{followId}
 notifications/{notificationId}
@@ -222,8 +243,8 @@ await updateDoc(playerRef, { ovr: newOvr });
 **Always consult `/docs/` before editing major features:**
 
 - `/docs/README.md` - Master index
-- `/docs/sections/*.md` - 8 functional sections (players, matches, competitions, etc.)
-- `/docs/ai-flows/*.md` - 12 AI flow specifications with schemas
+- `/docs/sections/*.md` - 12 functional sections (players, matches, competitions, etc.)
+- `/docs/ai-flows/*.md` - 13 AI flow specifications with schemas
 
 **Most critical:** `/docs/sections/02-players.md` (400+ lines covering player system)
 

@@ -1,19 +1,18 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import type { Match, AvailablePlayer } from '@/lib/types';
-import { useCollection, useFirestore } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Input } from './ui/input';
+import { useMemo, useState, useEffect, useTransition } from 'react';
+import type { Match, AvailablePlayer, PlayerPosition } from '@/lib/types';
+import { useFirestore } from '@/firebase'; // Keep for other hooks if needed, but not for search
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { InvitePlayerDialog } from './invite-player-dialog';
-import { FindBestFitDialog } from './find-best-fit-dialog';
-import { Sparkles, Search, Send, UserPlus, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import { Sparkles, Send, UserPlus, Loader2, MapPin, Filter, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Badge } from './ui/badge';
+import Link from 'next/link';
+import { searchPlayersAction } from '@/lib/actions/search-actions';
+import { PlayerPositionBadge } from './player-styles';
 
 interface AvailablePlayersSectionProps {
   match: Match;
@@ -21,165 +20,189 @@ interface AvailablePlayersSectionProps {
 }
 
 export function AvailablePlayersSection({ match, isOwner }: AvailablePlayersSectionProps) {
-  const firestore = useFirestore();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [positionFilter, setPositionFilter] = useState<string>('all');
-  const [isOpen, setIsOpen] = useState(false);
+  const [recommendations, setRecommendations] = useState<(AvailablePlayer & { distance: number })[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Query all available players
-  const availablePlayersQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'availablePlayers'));
-  }, [firestore]);
+  useEffect(() => {
+    async function fetchRecommendations() {
+      setIsLoading(true);
+      setError(null);
 
-  const { data: allAvailablePlayers, loading } = useCollection<AvailablePlayer>(availablePlayersQuery);
+      try {
+        if (!match.location?.lat || !match.location?.lng) {
+          // Fallback if match has no location (shouldn't happen often)
+          setIsLoading(false);
+          return;
+        }
 
-  // Filter out players already in the match
-  const filteredPlayers = useMemo(() => {
-    if (!allAvailablePlayers) return [];
+        // Calculate Average OVR of current players to guide recommendation
+        const currentPlayersOvr = match.players?.map(p => p.ovr) || [];
+        const avgOvr = currentPlayersOvr.length > 0
+          ? Math.round(currentPlayersOvr.reduce((a, b) => a + b, 0) / currentPlayersOvr.length)
+          : 0;
 
-    const playerUidsInMatch = new Set(match.playerUids || []);
+        // Determining needed positions could be complex, for now we search 'all' but prioritizing balance would be next step.
+        // Or we could pass 'all' and let user filter in full view.
 
-    return allAvailablePlayers.filter(player => {
-      if (playerUidsInMatch.has(player.uid)) return false;
-      if (searchTerm && !player.displayName.toLowerCase().includes(searchTerm.toLowerCase())) {
-        return false;
+        const result = await searchPlayersAction({
+          lat: match.location.lat,
+          lng: match.location.lng,
+          radiusInKm: 15, // A bit wider to ensure we get results
+          excludeIds: match.playerUids || [],
+          minOvr: avgOvr > 0 ? Math.max(0, avgOvr - 15) : 0, // Wide range around average
+          maxOvr: avgOvr > 0 ? Math.min(99, avgOvr + 15) : 99,
+          limit: 5 // Only top 5 for this view
+        });
+
+        if (result.success && result.data) {
+          setRecommendations(result.data.players);
+        } else {
+          console.error("Search failed:", result.error);
+          setError("No pudimos cargar recomendaciones.");
+        }
+      } catch (err) {
+        console.error("Error fetching recommendations:", err);
+        setError("Error de conexión.");
+      } finally {
+        setIsLoading(false);
       }
-      if (positionFilter !== 'all' && player.position !== positionFilter) {
-        return false;
-      }
-      return true;
-    });
-  }, [allAvailablePlayers, match.playerUids, searchTerm, positionFilter]);
+    }
+
+    fetchRecommendations();
+  }, [match.id, match.playerUids, match.location]); // Re-fetch if players change (to exclude new ones) or match data changes
 
   const spotsLeft = match.matchSize - (match.players?.length || 0);
 
   if (!isOwner) return null;
 
+  // Build URL for "View More"
+  const findPlayersUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    if (match.location?.lat && match.location?.lng) {
+      params.set('lat', match.location.lat.toString());
+      params.set('lng', match.location.lng.toString());
+      params.set('radius', '15');
+    }
+    return `/find-players?${params.toString()}`;
+  }, [match.location]);
+
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card>
-        <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors rounded-t-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <UserPlus className="h-5 w-5 text-primary" />
+    <Card className="overflow-hidden border-primary/20 shadow-sm">
+      <CardHeader className="bg-muted/30 pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-full bg-primary/10">
+              <Sparkles className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Recomendados para tu partido</CardTitle>
+              <CardDescription className="text-xs">
+                Jugadores cercanos y de nivel similar. Faltan {spotsLeft}.
+              </CardDescription>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" asChild className="text-xs h-8">
+            <Link href={findPlayersUrl}>
+              Ver todos
+              <ArrowRight className="ml-1.5 h-3 w-3" />
+            </Link>
+          </Button>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-0">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center p-8 gap-2 text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <p className="text-xs">Buscando cracks...</p>
+          </div>
+        ) : error ? (
+          <div className="p-6 text-center text-sm text-destructive">
+            {error}
+            <Button variant="link" size="sm" onClick={() => window.location.reload()}>Reintentar</Button>
+          </div>
+        ) : recommendations.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-8 text-center">
+            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-3">
+              <UserSearch className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <p className="text-sm font-medium">No encontramos jugadores cercanos</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
+              Intentá ampliar la búsqueda en el mapa global.
+            </p>
+            <Button variant="outline" size="sm" className="mt-4" asChild>
+              <Link href={findPlayersUrl}>Ir al Buscador Global</Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="divide-y">
+            {recommendations.map(player => (
+              <div key={player.uid} className="flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors">
+                <Avatar className="h-10 w-10 border border-border">
+                  <AvatarImage src={player.photoUrl} alt={player.displayName} />
+                  <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
+                </Avatar>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="font-medium text-sm truncate block">{player.displayName}</span>
+                    {player.distance < 2 && (
+                      <Badge variant="secondary" className="px-1 py-0 h-4 text-[10px] font-normal gap-0.5 text-muted-foreground">
+                        <MapPin className="h-2 w-2" />
+                        Mucha
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <PlayerPositionBadge position={player.position} size="xs" showIcon={false} />
+                    <span className="font-semibold text-foreground">{player.ovr} OVR</span>
+                    <span>• {player.distance.toFixed(1)} km</span>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-base">Invitar Jugadores</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Faltan {spotsLeft} para completar
-                  </p>
-                </div>
+
+                <InvitePlayerDialog
+                  playerToInvite={player}
+                  userMatches={[match]} // Should pass array, but we are inside specific match context so this is redundant if dialog was smarter, but it works.
+                  match={match}
+                >
+                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-full hover:bg-primary/10 hover:text-primary">
+                    <UserPlus className="h-4 w-4" />
+                  </Button>
+                </InvitePlayerDialog>
               </div>
-              <Button variant="ghost" size="icon" className="shrink-0">
-                {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+            ))}
+
+            <div className="p-2">
+              <Button variant="ghost" className="w-full text-xs text-muted-foreground h-8" asChild>
+                <Link href={findPlayersUrl}>
+                  Buscar con filtros avanzados
+                </Link>
               </Button>
             </div>
-          </CardHeader>
-        </CollapsibleTrigger>
-
-        <CollapsibleContent>
-          <CardContent className="pt-0 space-y-4">
-            {/* AI Assistant CTA */}
-            <FindBestFitDialog
-              userMatches={[match]}
-              availablePlayers={allAvailablePlayers || []}
-              selectedMatchId={match.id}
-            >
-              <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 hover:from-primary/10 hover:to-primary/15 transition-colors text-left">
-                <div className="h-9 w-9 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">Asistente IA</p>
-                  <p className="text-xs text-muted-foreground">Encontra el jugador ideal</p>
-                </div>
-              </button>
-            </FindBestFitDialog>
-
-            {/* Search & Filter */}
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 h-9"
-                />
-              </div>
-              <Select value={positionFilter} onValueChange={setPositionFilter}>
-                <SelectTrigger className="w-24 h-9">
-                  <SelectValue placeholder="Pos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="POR">POR</SelectItem>
-                  <SelectItem value="DEF">DEF</SelectItem>
-                  <SelectItem value="MED">MED</SelectItem>
-                  <SelectItem value="DEL">DEL</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Player List */}
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : filteredPlayers.length > 0 ? (
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                {filteredPlayers.map(player => (
-                  <div
-                    key={player.uid}
-                    className="flex items-center gap-3 p-2 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
-                  >
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={player.photoUrl} alt={player.displayName} />
-                      <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{player.displayName}</p>
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className={cn(
-                          "font-bold uppercase",
-                          player.position === 'DEL' && "text-pos-del",
-                          player.position === 'MED' && "text-pos-med",
-                          player.position === 'DEF' && "text-pos-def",
-                          player.position === 'POR' && "text-pos-por",
-                        )}>
-                          {player.position}
-                        </span>
-                        <span className="text-muted-foreground">{player.ovr}</span>
-                      </div>
-                    </div>
-                    <InvitePlayerDialog
-                      playerToInvite={player}
-                      userMatches={[match]}
-                      match={match}
-                    >
-                      <Button size="sm" variant="ghost" className="h-8 px-2">
-                        <Send className="h-4 w-4" />
-                      </Button>
-                    </InvitePlayerDialog>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <UserPlus className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">
-                  {searchTerm || positionFilter !== 'all'
-                    ? 'Sin resultados'
-                    : 'No hay jugadores disponibles'}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
+
+function UserSearch({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <circle cx="10" cy="10" r="7" />
+      <path d="M21 21l-6-6" />
+      <circle cx="10" cy="10" r="3" />
+    </svg>
+  )
+}
+

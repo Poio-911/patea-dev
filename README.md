@@ -11,9 +11,10 @@ Pateá es una aplicación Next.js que permite a grupos de amigos organizar parti
 - **Equipos Balanceados con IA**: Generación automática de equipos equilibrados usando Gemini AI
 - **Evaluación Post-Partido**: Sistema de evaluación con 150+ tags de rendimiento
 - **Progresión de Jugadores**: Atributos que evolucionan basados en evaluaciones reales
-- **12 Flujos de IA**: Asistente virtual, análisis de progresión, generación de imágenes, crónicas de partidos
+- **13 Flujos de IA**: Asistente virtual, análisis de progresión, generación de imágenes, crónicas de partidos
 - **Competiciones**: Sistema completo de ligas y copas con brackets
 - **Google Fit Integration**: Tracking de actividad física vinculado a rendimiento
+- **Rankings/Leaderboard**: Tablas de clasificación por OVR, goles, asistencias, partidos y rating
 - **Red Social Deportiva**: Feed de actividades, seguimiento entre usuarios
 - **PWA**: Instalable como app nativa con soporte offline
 
@@ -22,7 +23,7 @@ Pateá es una aplicación Next.js que permite a grupos de amigos organizar parti
 - **Framework**: Next.js 14 (App Router)
 - **Frontend**: React 18, TypeScript, Tailwind CSS, shadcn/ui
 - **Backend**: Firebase (Firestore, Auth, Storage, Cloud Functions)
-- **AI**: Google Gemini 2.5 Flash (via Firebase Genkit)
+- **AI**: Google Gemini 2.0 Flash (via Firebase Genkit)
 - **Health**: Google Fit API
 - **Maps**: Google Maps API
 - **Payments**: MercadoPago
@@ -177,7 +178,7 @@ patea/
 │   │   ├── types.ts       # TypeScript types
 │   │   └── utils/         # Utilidades helper
 │   ├── ai/                # Integraciones IA (Genkit)
-│   │   ├── flows/         # 12 flujos de IA
+│   │   ├── flows/         # 13 flujos de IA
 │   │   └── genkit.ts      # Configuración de Genkit
 │   ├── firebase/          # Firebase SDK y configuración
 │   │   ├── firestore/     # Hooks de Firestore
@@ -196,7 +197,7 @@ La documentación completa del proyecto se encuentra en la carpeta `/docs/`:
 
 - **[docs/README.md](./docs/README.md)** - Índice maestro con overview completo
 - **[docs/sections/](./docs/sections/)** - 12 secciones funcionales detalladas
-- **[docs/ai-flows/](./docs/ai-flows/)** - Documentación de los 12 flujos de IA
+- **[docs/ai-flows/](./docs/ai-flows/)** - Documentación de los 13 flujos de IA
 - **[CLAUDE.md](./CLAUDE.md)** - Guía para Claude Code (desarrollo asistido por IA)
 
 ### Documentación por Sección:
@@ -216,7 +217,7 @@ La documentación completa del proyecto se encuentra en la carpeta `/docs/`:
 
 ## 🤖 AI Flows
 
-Pateá integra 12 flujos de inteligencia artificial usando Google Gemini:
+Pateá integra 13 flujos de inteligencia artificial usando Google Gemini:
 
 **Gestión de Equipos:**
 - `generate-balanced-teams` - Genera equipos equilibrados
@@ -225,6 +226,7 @@ Pateá integra 12 flujos de inteligencia artificial usando Google Gemini:
 - `suggest-player-improvements` - Sugerencias de mejora
 - `analyze-player-progression` - Análisis de progresión
 - `detect-player-patterns` - Detección de patrones
+- `analyze-text-performance` - Análisis de texto libre para extraer cambios de atributos
 
 **Búsqueda:**
 - `find-best-fit-player` - Encuentra jugadores compatibles

@@ -4,6 +4,7 @@ import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getServerSession } from '@/lib/auth-helpers';
 import type { SavedLocation } from '@/lib/types';
+import * as geohash from 'ngeohash';
 
 // Initialize Firebase Admin
 if (getApps().length === 0) {
@@ -34,17 +35,46 @@ export async function saveUserLocationAction(
       return { success: false, error: 'No autenticado' };
     }
 
-    const savedLocation: SavedLocation = {
+    const hash = geohash.encode(lat, lng);
+
+    const savedLocation: SavedLocation & { geohash?: string } = {
       lat,
       lng,
       label,
       savedAt: new Date().toISOString(),
+      geohash: hash,
     };
 
-    await db.collection('users').doc(session.user.uid).set(
-      { savedLocation },
-      { merge: true }
-    );
+    const batch = db.batch();
+
+    // 1. Update User Profile
+    const userRef = db.collection('users').doc(session.user.uid);
+    batch.set(userRef, { savedLocation }, { merge: true });
+
+    // 2. Update AvailablePlayer (if exists) implementation of "Unified Location"
+    // We assume the user might be in 'availablePlayers' collection.
+    // Ideally this logic should be in a separate trigger, but for now we do it here to ensure consistency.
+    const availablePlayerRef = db.collection('availablePlayers').doc(session.user.uid);
+    // We use set with merge: true to avoid overwriting other fields if it exists, 
+    // but we only want to update if the player IS already available. 
+    // Checking existence inside a batch is not possible directly without a transaction.
+    // For simplicity/performance in this action, we can try to update it blindly 
+    // OR we just update the user profile and let a Cloud Function sync it.
+    // However, since we don't have Cloud Functions here, we should try to update it if it exists.
+
+    // Let's do a transactional update to be safe and correct.
+    await db.runTransaction(async (t) => {
+      t.set(userRef, { savedLocation }, { merge: true });
+
+      const apDoc = await t.get(availablePlayerRef);
+      if (apDoc.exists) {
+        t.update(availablePlayerRef, {
+          'location.lat': lat,
+          'location.lng': lng,
+          'location.geohash': hash
+        });
+      }
+    });
 
     return { success: true };
   } catch (error) {

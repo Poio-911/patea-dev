@@ -8,7 +8,7 @@ La aplicación integra múltiples funcionalidades:
 - Gestión de jugadores con sistema de atributos y evaluaciones
 - Organización de partidos (amistosos, ligas, copas)
 - Equipos/grupos colaborativos con sistema de desafíos
-- 12 flujos de IA para asistencia inteligente
+- 13 flujos de IA para asistencia inteligente
 - Integración con Google Fit para tracking de rendimiento
 - Red social deportiva con feed y seguimientos
 - Sistema de venues con ratings y Google Maps
@@ -45,7 +45,7 @@ La aplicación integra múltiples funcionalidades:
 
 ### 🤖 Flujos de IA
 
-La aplicación utiliza 12 flujos de AI basados en Google Gemini:
+La aplicación utiliza 13 flujos de AI basados en Google Gemini:
 
 **Gestión de Equipos:**
 - [generate-balanced-teams](./ai-flows/generate-balanced-teams.md) - Genera equipos equilibrados
@@ -54,6 +54,7 @@ La aplicación utiliza 12 flujos de AI basados en Google Gemini:
 - [suggest-player-improvements](./ai-flows/suggest-player-improvements.md) - Sugerencias de mejora
 - [analyze-player-progression](./ai-flows/analyze-player-progression.md) - Análisis de progresión
 - [detect-player-patterns](./ai-flows/detect-player-patterns.md) - Detección de patrones
+- [analyze-text-performance](./ai-flows/analyze-text-performance.md) - Análisis de texto libre para extraer cambios de atributos
 
 **Búsqueda y Recomendaciones:**
 - [find-best-fit-player](./ai-flows/find-best-fit-player.md) - Encuentra jugadores compatibles
@@ -100,6 +101,7 @@ matches/
 
 leagues/
 cups/
+venues/
 socialActivities/
 follows/
 notifications/
@@ -138,13 +140,25 @@ src/
 Los server actions están organizados en:
 
 - **`server-actions.ts`**: Actions generales (jugadores, partidos, grupos, team challenges, etc.)
-- **`google-fit-actions.ts`**: Actions específicas de Google Fit
-- **`social-actions.ts`**: Actions de funcionalidad social
 - **`image-generation.ts`**: Generación de imágenes con IA
-- **`venue-actions.ts`**: Gestión de lugares y canchas
-- **`payment-actions.ts`**: Procesamiento de pagos y créditos
-- **`match-invitation-actions.ts`**: Sistema de invitaciones RSVP
+- **`social-actions.ts`**: Actions de funcionalidad social
+- **`social-feed-actions.ts`**: Consultas del feed social
+- **`social-likes-actions.ts`**: Sistema de likes del feed social
+- **`google-fit-actions.ts`**: Actions específicas de Google Fit
 - **`notification-actions.ts`**: Push notifications y alertas
+- **`payment-actions.ts`**: Procesamiento de pagos y créditos
+- **`venue-actions.ts`**: Gestión de lugares y canchas
+- **`match-invitation-actions.ts`**: Sistema de invitaciones RSVP
+- **`match-voting-actions.ts`**: Sistema de votación en partidos
+- **`evaluation-actions.ts`**: Evaluación de jugadores post-partido
+- **`player-stats-actions.ts`**: Cálculos de estadísticas de jugadores
+- **`leaderboard-actions.ts`**: Rankings y leaderboards por categoría
+- **`ai-actions.ts`**: Server actions relacionadas con IA
+- **`achievement-actions.ts`**: Sistema de logros/badges
+- **`group-role-actions.ts`**: Gestión de roles en grupos
+- **`league-completion-actions.ts`**: Lógica de finalización de ligas
+- **`location-actions.ts`**: Servicios de ubicación
+- **`upload-competition-logo.ts`**: Subida de logos de competiciones
 
 ## Características Destacadas
 
@@ -243,6 +257,7 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
 - `/competitions/challenges` - Feed de team challenges
 - `/competitions/my-teams` - Gestión de mis equipos
 - `/groups/[id]` - Vista de grupo
+- `/rankings` - Rankings y leaderboards
 - `/social` - Feed social
 
 ## Contacto y Soporte

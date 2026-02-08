@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Trophy, Crown, Medal, ChevronRight } from 'lucide-react';
-import { getLeaderboardAction } from '@/lib/actions/leaderboard-actions';
+import { getLeaderboardActionV2 } from '@/lib/actions/leaderboard-actions';
 import type { LeaderboardCategory, LeaderboardEntry } from '@/lib/types';
 import { PlayerPositionBadge } from '@/components/player-styles';
 import { motion } from 'framer-motion';
@@ -68,7 +68,7 @@ export function LeaderboardWidget({
     async function loadData() {
       setLoading(true);
       try {
-        const result = await getLeaderboardAction(category, groupId, limit);
+        const result = await getLeaderboardActionV2(category, groupId, limit);
         if (!result.error) {
           setEntries(result.leaderboard);
         }
@@ -88,6 +88,14 @@ export function LeaderboardWidget({
     assists: 'Asistidores',
     matches: 'Más Partidos',
     rating: 'Mejor Rating',
+  };
+
+  const categoryUnits: Record<LeaderboardCategory, string> = {
+    ovr: '',
+    goals: ' G',
+    assists: ' A',
+    matches: ' PJ',
+    rating: '',
   };
 
   return (
@@ -170,7 +178,9 @@ export function LeaderboardWidget({
                             entry.rank <= 3 ? 'text-primary' : 'text-foreground'
                           )}
                         >
-                          {category === 'rating' ? entry.value.toFixed(1) : entry.value}
+                          {category === 'rating'
+                            ? entry.value.toFixed(1)
+                            : `${entry.value}${categoryUnits[category]}`}
                         </span>
                       </div>
                     </div>

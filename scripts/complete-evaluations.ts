@@ -332,6 +332,17 @@ async function completeEvaluations(matchId: string, dryRun: boolean) {
                 reportedAt: new Date().toISOString(),
             });
             addOp();
+
+            // Update global player stats
+            if (!dryRun && (stats.goals > 0 || stats.assists > 0)) {
+                const playerRef = db.doc(`players/${evaluatorId}`);
+                currentBatch.update(playerRef, {
+                    'stats.goals': FieldValue.increment(stats.goals),
+                    'stats.assists': FieldValue.increment(stats.assists)
+                });
+                addOp();
+            }
+
             selfEvalCount++;
             evaluatorsWithSelfEval.add(evaluatorId);
         }

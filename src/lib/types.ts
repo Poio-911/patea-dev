@@ -71,6 +71,7 @@ export type AvailablePlayer = {
   location: {
     lat: number;
     lng: number;
+    geohash: string; // Added for geospatial querying
   };
   availability: Availability;
 } & DocumentData;
