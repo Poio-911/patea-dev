@@ -33,18 +33,38 @@ interface ImageCropperDialogProps {
 async function getCroppedImg(
   image: HTMLImageElement,
   pixelCrop: PixelCrop,
+  maxWidth = 500, // Límite de resolución para avatares
+  maxHeight = 500
 ): Promise<Blob | null> {
   const canvas = document.createElement('canvas');
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
 
-  canvas.width = pixelCrop.width * scaleX;
-  canvas.height = pixelCrop.height * scaleY;
+  // Dimensiones originales del recorte
+  const actualWidth = pixelCrop.width * scaleX;
+  const actualHeight = pixelCrop.height * scaleY;
+
+  // Calcular dimensiones finales (manteniendo aspect ratio, pero limitadas)
+  let targetWidth = actualWidth;
+  let targetHeight = actualHeight;
+
+  if (targetWidth > maxWidth || targetHeight > maxHeight) {
+    const ratio = Math.min(maxWidth / targetWidth, maxHeight / targetHeight);
+    targetWidth *= ratio;
+    targetHeight *= ratio;
+  }
+
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
 
   const ctx = canvas.getContext('2d');
   if (!ctx) {
     return null;
   }
+
+  // Activar suavizado para mejor calidad al redimensionar
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'medium';
 
   ctx.drawImage(
     image,
@@ -54,14 +74,15 @@ async function getCroppedImg(
     pixelCrop.height * scaleY,
     0,
     0,
-    canvas.width,
-    canvas.height
+    targetWidth,
+    targetHeight
   );
 
   return new Promise((resolve) => {
+    // Compresión WebP al 80%
     canvas.toBlob((blob) => {
       resolve(blob);
-    }, 'image/jpeg');
+    }, 'image/webp', 0.8);
   });
 }
 
@@ -69,12 +90,12 @@ async function getCroppedImg(
 function normalizeFirebaseStorageUrl(url: string): string {
   try {
     const urlObj = new URL(url);
-    
+
     // If it's already a proper Firebase Storage URL, return as-is
     if (urlObj.hostname === 'firebasestorage.googleapis.com' && urlObj.pathname.includes('/o/')) {
       return url;
     }
-    
+
     // If it's a Firebase App domain, try to extract the file path and convert
     if (urlObj.hostname.includes('firebasestorage.app')) {
       // Extract the file path and reconstruct the URL
@@ -84,7 +105,7 @@ function normalizeFirebaseStorageUrl(url: string): string {
         return `https://firebasestorage.googleapis.com/v0/b/${urlObj.hostname.split('.')[0]}.appspot.com/o/${filePath}?alt=media`;
       }
     }
-    
+
     return url;
   } catch {
     return url; // Return original if URL parsing fails
@@ -113,7 +134,7 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
       reader.readAsDataURL(e.target.files[0]);
     }
   };
-  
+
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     if (!isOpen) {
@@ -237,10 +258,10 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
 
   const handleSaveCrop = async () => {
     if (!completedCrop || !imgRef.current) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Por favor, recortá la imagen primero.' });
-        return;
+      toast({ variant: 'destructive', title: 'Error', description: 'Por favor, recortá la imagen primero.' });
+      return;
     }
-    
+
     setIsUploading(true);
 
     try {
@@ -248,15 +269,15 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
       if (!croppedImageBlob) {
         throw new Error('No se pudo recortar la imagen.');
       }
-      
+
       if (!user || !auth?.currentUser) {
         // If not logged in (e.g., during registration), just pass the data URI back
         const reader = new FileReader();
         reader.onloadend = () => {
-            if (onSaveComplete) {
-                onSaveComplete(reader.result as string);
-            }
-            setOpen(false);
+          if (onSaveComplete) {
+            onSaveComplete(reader.result as string);
+          }
+          setOpen(false);
         };
         reader.readAsDataURL(croppedImageBlob);
         setIsUploading(false);
@@ -266,14 +287,17 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
       // Logged-in user flow
       const { firebaseApp, firestore } = initializeFirebase();
       const storage = getStorage(firebaseApp);
-      const filePath = `profile-images/${user.uid}/profile_${Date.now()}.jpg`;
+      // Usar extensión .webp
+      const filePath = `profile-images/${user.uid}/profile_${Date.now()}.webp`;
       const storageRef = ref(storage, filePath);
 
       console.log('Uploading to path:', filePath);
 
-      const uploadResult = await uploadBytes(storageRef, croppedImageBlob);
+      const uploadResult = await uploadBytes(storageRef, croppedImageBlob, {
+        contentType: 'image/webp', // Metadatos explícitos
+      });
       console.log('Upload completed:', uploadResult.metadata.fullPath);
-      
+
       const newPhotoURL = await getDownloadURL(uploadResult.ref);
       console.log('Download URL obtained:', newPhotoURL);
 
@@ -307,8 +331,8 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
       // ✅ FIX: Force update the auth user profile to propagate changes globally
       await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
       console.log('Auth profile updated');
-      
-      if(onSaveComplete) {
+
+      if (onSaveComplete) {
         onSaveComplete(newPhotoURL);
       }
 
@@ -317,9 +341,9 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
 
     } catch (error: any) {
       console.error("Error saving cropped image:", error);
-      
+
       let errorMessage = 'No se pudo guardar la imagen.';
-      
+
       if (error.code === 'storage/unauthorized') {
         errorMessage = 'No tienes permisos para subir la imagen. Verifica que estés autenticado.';
       } else if (error.code === 'storage/quota-exceeded') {
@@ -331,11 +355,11 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
-      toast({ 
-        variant: 'destructive', 
-        title: 'Error', 
-        description: errorMessage 
+
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: errorMessage
       });
     } finally {
       setIsUploading(false);
@@ -381,30 +405,30 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
           )}
         </div>
         <DialogFooter className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                accept="image/png, image/jpeg, image/gif"
-            />
-            <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading || isLoadingImage}
-            >
-                <Upload className="mr-2 h-4 w-4" />
-                Subir Nueva Foto
-            </Button>
-            <Button
-                type="button"
-                onClick={handleSaveCrop}
-                disabled={!completedCrop || isUploading || isLoadingImage}
-            >
-                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Scissors className="mr-2 h-4 w-4" />}
-                {isUploading ? 'Guardando...' : 'Guardar Recorte'}
-            </Button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+            accept="image/png, image/jpeg, image/gif"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading || isLoadingImage}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Subir Nueva Foto
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSaveCrop}
+            disabled={!completedCrop || isUploading || isLoadingImage}
+          >
+            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Scissors className="mr-2 h-4 w-4" />}
+            {isUploading ? 'Guardando...' : 'Guardar Recorte'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

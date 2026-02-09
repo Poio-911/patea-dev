@@ -26,23 +26,40 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer"
 
+// NEW: Context to share the isMobile state from the Root to all children
+const ResponsiveAlertDialogContext = React.createContext<{ isMobile: boolean }>({
+  isMobile: false,
+})
+
+const useResponsiveAlertDialogContext = () => {
+  const context = React.useContext(ResponsiveAlertDialogContext)
+  // We don't throw an error here to allow loose usage if strictly necessary, 
+  // but logically it should be used within the Root.
+  return context
+}
+
 const ResponsiveAlertDialog = ({
+  children,
   ...props
 }: React.ComponentProps<typeof AlertDialog>) => {
   const isMobile = useIsMobile()
 
-  if (isMobile) {
-    return <Drawer {...props} />
-  }
-
-  return <AlertDialog {...props} />
+  return (
+    <ResponsiveAlertDialogContext.Provider value={{ isMobile }}>
+      {isMobile ? (
+        <Drawer {...props}>{children}</Drawer>
+      ) : (
+        <AlertDialog {...props}>{children}</AlertDialog>
+      )}
+    </ResponsiveAlertDialogContext.Provider>
+  )
 }
 ResponsiveAlertDialog.displayName = "ResponsiveAlertDialog"
 
 const ResponsiveAlertDialogTrigger = ({
   ...props
 }: React.ComponentProps<typeof AlertDialogTrigger>) => {
-  const isMobile = useIsMobile()
+  const { isMobile } = useResponsiveAlertDialogContext()
 
   if (isMobile) {
     return <DrawerTrigger {...props} />
@@ -57,7 +74,7 @@ const ResponsiveAlertDialogContent = ({
   children,
   ...props
 }: React.ComponentProps<typeof AlertDialogContent>) => {
-  const isMobile = useIsMobile()
+  const { isMobile } = useResponsiveAlertDialogContext()
 
   if (isMobile) {
     return (
@@ -78,7 +95,7 @@ ResponsiveAlertDialogContent.displayName = "ResponsiveAlertDialogContent"
 const ResponsiveAlertDialogHeader = ({
   ...props
 }: React.ComponentProps<typeof AlertDialogHeader>) => {
-  const isMobile = useIsMobile()
+  const { isMobile } = useResponsiveAlertDialogContext()
 
   if (isMobile) {
     return <DrawerHeader {...props} />
@@ -91,7 +108,7 @@ ResponsiveAlertDialogHeader.displayName = "ResponsiveAlertDialogHeader"
 const ResponsiveAlertDialogFooter = ({
   ...props
 }: React.ComponentProps<typeof AlertDialogFooter>) => {
-  const isMobile = useIsMobile()
+  const { isMobile } = useResponsiveAlertDialogContext()
 
   if (isMobile) {
     return <DrawerFooter {...props} />
@@ -104,7 +121,7 @@ ResponsiveAlertDialogFooter.displayName = "ResponsiveAlertDialogFooter"
 const ResponsiveAlertDialogTitle = ({
   ...props
 }: React.ComponentProps<typeof AlertDialogTitle>) => {
-  const isMobile = useIsMobile()
+  const { isMobile } = useResponsiveAlertDialogContext()
 
   if (isMobile) {
     return <DrawerTitle {...props} />
@@ -117,7 +134,7 @@ ResponsiveAlertDialogTitle.displayName = "ResponsiveAlertDialogTitle"
 const ResponsiveAlertDialogDescription = ({
   ...props
 }: React.ComponentProps<typeof AlertDialogDescription>) => {
-  const isMobile = useIsMobile()
+  const { isMobile } = useResponsiveAlertDialogContext()
 
   if (isMobile) {
     return <DrawerDescription {...props} />
@@ -130,7 +147,7 @@ ResponsiveAlertDialogDescription.displayName = "ResponsiveAlertDialogDescription
 const ResponsiveAlertDialogAction = ({
   ...props
 }: React.ComponentProps<typeof AlertDialogAction>) => {
-  const isMobile = useIsMobile()
+  const { isMobile } = useResponsiveAlertDialogContext()
 
   if (isMobile) {
     return (
@@ -147,7 +164,7 @@ ResponsiveAlertDialogAction.displayName = "ResponsiveAlertDialogAction"
 const ResponsiveAlertDialogCancel = ({
   ...props
 }: React.ComponentProps<typeof AlertDialogCancel>) => {
-  const isMobile = useIsMobile()
+  const { isMobile } = useResponsiveAlertDialogContext()
 
   if (isMobile) {
     return (

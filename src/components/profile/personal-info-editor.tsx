@@ -2,15 +2,16 @@
 
 import { useState } from 'react';
 import {
-  ResponsiveDialog as Dialog,
-  ResponsiveDialogContent as DialogContent,
-  ResponsiveDialogDescription as DialogDescription,
-  ResponsiveDialogHeader as DialogHeader,
-  ResponsiveDialogTitle as DialogTitle,
-  ResponsiveDialogTrigger as DialogTrigger,
+    ResponsiveDialog as Dialog,
+    ResponsiveDialogContent as DialogContent,
+    ResponsiveDialogDescription as DialogDescription,
+    ResponsiveDialogHeader as DialogHeader,
+    ResponsiveDialogTitle as DialogTitle,
+    ResponsiveDialogTrigger as DialogTrigger,
 } from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ImageCropperDialog } from '@/components/image-cropper-dialog';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, Mail, Phone, Loader2, Check, Upload, Settings } from 'lucide-react';
@@ -130,11 +131,22 @@ export function PersonalInfoEditor({ user }: PersonalInfoEditorProps) {
                         </Avatar>
                         <div className="flex-1">
                             <p className="text-sm text-muted-foreground mb-2">Foto de perfil</p>
-                            <Button variant="outline" size="sm" disabled>
-                                <Upload className="h-4 w-4 mr-2" />
-                                Cambiar foto
-                            </Button>
-                            <p className="text-xs text-muted-foreground mt-1">Próximamente disponible</p>
+                            <ImageCropperDialog
+                                player={{ photoURL: user.photoURL || undefined }}
+                                onSaveComplete={(newUrl) => {
+                                    // Actualizar estado local para reflejar el cambio inmediato
+                                    // (aunque el componente ImageCropperDialog ya actualiza Auth/Firestore,
+                                    // esto fuerza el re-render visual del avatar en este diálogo)
+                                    // Nota: PersonalInfoEditor usa 'user' prop, que viene de un hook upper-level.
+                                    // Idealmente el hook useUser detectará el cambio, pero podemos forzar un refresh si es necesario.
+                                    toast({ title: 'Imagen actualizada', description: 'Tu perfil se ha actualizado correctamente.' });
+                                }}
+                            >
+                                <Button variant="outline" size="sm">
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Cambiar foto
+                                </Button>
+                            </ImageCropperDialog>
                         </div>
                     </div>
 

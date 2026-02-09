@@ -68,13 +68,43 @@ export default function RegisterPage() {
         if (!auth || !firestore) return;
         setIsSubmitting(true);
 
-        // Use the generated/uploaded photo URL if available, otherwise fallback to null.
-        const photoURL = generatedPhotoUrl;
-
         try {
             // Step 1: Create user in Auth
             const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
             const newUser = userCredential.user;
+
+            // Step 1b: Upload Photo to Storage (if selected)
+            let finalPhotoURL = null;
+            if (generatedPhotoUrl && generatedPhotoUrl.startsWith('data:image')) {
+                try {
+                    // Convert Data URL to Blob
+                    const response = await fetch(generatedPhotoUrl);
+                    const blob = await response.blob();
+
+                    // Initialize Storage
+                    const { firebaseApp } = initializeFirebase();
+                    const storage = getStorage(firebaseApp);
+                    // Use webp extension as we are compressing to webp
+                    const storagePath = `profile-images/${newUser.uid}/profile_${Date.now()}.webp`;
+                    const storageRef = ref(storage, storagePath);
+
+                    // Upload
+                    const uploadResult = await uploadBytes(storageRef, blob, {
+                        contentType: 'image/webp',
+                    });
+
+                    // Get URL
+                    finalPhotoURL = await getDownloadURL(uploadResult.ref);
+                } catch (uploadError) {
+                    console.error("Error uploading profile photo during register:", uploadError);
+                    // Continue without photo if upload fails, to not block registration
+                    toast({
+                        variant: "default",
+                        title: "Advertencia",
+                        description: "No se pudo subir la foto de perfil, pero tu cuenta se ha creado."
+                    });
+                }
+            }
 
             // Create server-side session cookie so API routes see auth
             try {
@@ -88,17 +118,13 @@ export default function RegisterPage() {
                     });
                 }
             } catch (e) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Error creando sesión',
-                    description: 'Reintenta registrarte si persiste.',
-                });
+                console.error("Session cookie error:", e);
             }
 
-            // Step 2: Update Auth profile with display name and final photoURL
+            // Step 2: Update Auth profile with display name and final photoURL (Storage URL, not Base64)
             await updateProfile(newUser, {
                 displayName: data.displayName,
-                photoURL: photoURL,
+                photoURL: finalPhotoURL,
             });
 
             // Step 3: Create Firestore documents in a batch for atomicity
@@ -110,7 +136,7 @@ export default function RegisterPage() {
                 uid: newUser.uid,
                 email: newUser.email,
                 displayName: data.displayName,
-                photoURL: photoURL,
+                photoURL: finalPhotoURL,
                 groups: [],
                 activeGroupId: null,
             };
@@ -129,7 +155,7 @@ export default function RegisterPage() {
                 def: baseStat,
                 phy: baseStat,
                 ovr: baseStat,
-                photoUrl: photoURL || '',
+                photoUrl: finalPhotoURL || '',
                 stats: { matchesPlayed: 0, goals: 0, assists: 0, averageRating: 0 },
                 ownerUid: newUser.uid,
                 groupId: null,
@@ -148,7 +174,7 @@ export default function RegisterPage() {
                     userId: newUser.uid,
                     playerId: newUser.uid,
                     playerName: data.displayName,
-                    playerPhotoUrl: photoURL || undefined,
+                    playerPhotoUrl: finalPhotoURL || undefined,
                     timestamp: new Date().toISOString(),
                 });
             } catch (activityError) {
