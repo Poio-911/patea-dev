@@ -47,7 +47,7 @@ export function MobileNav() {
     const isMatchesActive = pathname.startsWith('/matches') || pathname.startsWith('/competitions') || pathname.startsWith('/find-match') || pathname.startsWith('/find-players');
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-[2147483647] border-t bg-card/80 backdrop-blur-lg shadow-lg md:hidden pb-[env(safe-area-inset-bottom)]">
+        <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/80 backdrop-blur-lg shadow-lg md:hidden pb-[env(safe-area-inset-bottom)]">
             <div className="relative w-full px-2">
                 <div className="flex h-14 w-full items-center justify-around font-medium">
                     {/* Left: Panel & Jugadores */}
@@ -127,7 +127,7 @@ const BottomSheetMenu = React.forwardRef<HTMLDivElement, { pathname: string, onC
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="fixed inset-x-0 bottom-0 z-[2147483647]"
+        className="fixed inset-x-0 bottom-0 z-50"
     >
         <div
             ref={ref}
