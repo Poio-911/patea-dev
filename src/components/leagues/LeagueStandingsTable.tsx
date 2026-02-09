@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import type { LeagueStanding } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,7 @@ type LeagueStandingsTableProps = {
   highlightTeamId?: string;
 };
 
-export function LeagueStandingsTable({ standings, highlightTeamId }: LeagueStandingsTableProps) {
+export const LeagueStandingsTable = React.memo(function LeagueStandingsTable({ standings, highlightTeamId }: LeagueStandingsTableProps) {
   const sortedStandings = useMemo(() => {
     return [...standings].sort((a, b) => a.position - b.position);
   }, [standings]);
@@ -162,4 +162,4 @@ export function LeagueStandingsTable({ standings, highlightTeamId }: LeagueStand
       </CardContent>
     </Card>
   );
-}
+});

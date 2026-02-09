@@ -15,7 +15,7 @@ import { logger } from '@/lib/logger';
 import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
 import { PlayerOvr, AttributesGrid, PlayerPhoto, positionConfig, PlayerPositionBadge } from '@/components/player-styles';
 import { ImageCropperDialog } from './image-cropper-dialog';
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from './ui/dialog';
+import { ResponsiveDialog as Dialog, ResponsiveDialogContent as DialogContent, ResponsiveDialogTitle as DialogTitle, ResponsiveDialogTrigger as DialogTrigger } from './ui/responsive-dialog';
 import { FollowButton } from './social/follow-button';
 import { ShareButton } from './social/share-button';
 import { CreditPackagesDialog } from './payments/credit-packages-dialog';

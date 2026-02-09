@@ -122,7 +122,6 @@ export default function TeamDetailPage() {
     }, [team, groupPlayers, loading]);
 
     const handlePlayerUpdate = () => {
-        console.log("Player updated, parent should refresh if needed.");
     }
 
     if (loading) {

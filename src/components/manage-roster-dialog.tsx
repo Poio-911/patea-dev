@@ -23,7 +23,7 @@ import { PlayerPositionBadge } from '@/components/player-styles';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { UserMinus, Plus } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ResponsivePopover as Popover, ResponsivePopoverContent as PopoverContent, ResponsivePopoverTrigger as PopoverTrigger } from '@/components/ui/responsive-popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { ResponsiveAlertDialog as AlertDialog, ResponsiveAlertDialogAction as AlertDialogAction, ResponsiveAlertDialogCancel as AlertDialogCancel, ResponsiveAlertDialogContent as AlertDialogContent, ResponsiveAlertDialogDescription as AlertDialogDescription, ResponsiveAlertDialogFooter as AlertDialogFooter, ResponsiveAlertDialogHeader as AlertDialogHeader, ResponsiveAlertDialogTitle as AlertDialogTitle } from '@/components/ui/responsive-alert-dialog';
 
@@ -174,7 +174,7 @@ export function ManageRosterDialog({ team, players, allGroupPlayers, children }:
                   <Plus className="h-4 w-4 mr-1" /> Agregar jugador
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[320px] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+              <PopoverContent className="w-[320px] max-w-[calc(100vw-2rem)] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
                 <Command>
                   <CommandInput placeholder="Buscar jugador..." />
                   <CommandList>

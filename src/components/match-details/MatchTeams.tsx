@@ -1,13 +1,13 @@
 
 'use client';
 
+import React, { useMemo } from 'react';
 import type { Match, Player, PlayerPosition } from '@/lib/types';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-import { useMemo } from 'react';
 import { TeamRosterPlayer } from '../team-roster-player';
 
 
@@ -18,7 +18,7 @@ interface MatchTeamsProps {
 
 // ... (styles remain same)
 
-export const MatchTeams = ({ match, isOwner }: MatchTeamsProps) => {
+export const MatchTeams = React.memo(function MatchTeams({ match, isOwner }: MatchTeamsProps) {
     const whatsAppTeamsText = useMemo(() => {
         if (!match || !match.teams || match.teams.length < 2) return '';
         let message = `*Equipos para el partido "${match.title}"*:\n\n`;
@@ -109,4 +109,4 @@ export const MatchTeams = ({ match, isOwner }: MatchTeamsProps) => {
             </div>
         </div>
     );
-};
+});

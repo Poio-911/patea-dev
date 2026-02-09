@@ -10,13 +10,22 @@ body.standalone nav.fixed {
 }
 
 /* CONTRASTE MEJORADO PARA GAME Y NIKE */
+/* Theme-specific override variables */
+:root {
+  --game-btn-primary: #1e90ff;
+  --game-accent-neon: #aafe48;
+  --nike-btn-primary: #fff;
+  --nike-btn-foreground: #222;
+  --theme-card-text: #fff;
+}
+
 .game .player-card .text-muted-foreground,
 .game .player-card h3,
 .game .player-card .ovr-value,
 .nike .player-card .text-muted-foreground,
 .nike .player-card h3,
 .nike .player-card .ovr-value {
-  color: #fff !important;
+  color: var(--theme-card-text) !important;
   opacity: 0.92;
 }
 
@@ -27,26 +36,26 @@ body.standalone nav.fixed {
 
 .game .player-card .badge,
 .nike .player-card .badge {
-  border: 1px solid #fff !important;
-  box-shadow: 0 0 4px #fff2;
+  border: 1px solid var(--theme-card-text) !important;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.13);
 }
 
 .game .btn-add-player {
-  background: #1e90ff !important;
-  color: #fff !important;
-  box-shadow: 0 2px 8px #0004;
+  background: var(--game-btn-primary) !important;
+  color: var(--theme-card-text) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.27);
 }
 
 .nike .btn-add-player {
-  background: #fff !important;
-  color: #222 !important;
-  box-shadow: 0 2px 8px #0004;
+  background: var(--nike-btn-primary) !important;
+  color: var(--nike-btn-foreground) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.27);
 }
 
 .game .player-card,
 .nike .player-card {
-  box-shadow: 0 2px 12px #0006 !important;
-  border: 1px solid #fff2 !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
 }
 
 @layer base {
@@ -291,7 +300,7 @@ body.standalone nav.fixed {
   }
 
   .game body {
-    background: #041c47;
+    background: hsl(var(--background));
   }
 
   .nike body {
@@ -454,12 +463,12 @@ body.standalone nav.fixed {
   /* PlayerCard redesign - IMPROVED CONTRAST */
   .player-card .ovr-value,
   .player-card [class*="text-5xl"] {
-    font-weight: 900 !important;
+    font-weight: 900;
   }
 
   .game .player-card .ovr-value,
   .game .player-card [class*="text-5xl"] {
-    color: #aafe48 !important;
+    color: var(--game-accent-neon) !important;
     text-shadow: 0 2px 8px rgba(170, 254, 72, 0.4),
       0 0 20px rgba(170, 254, 72, 0.2) !important;
   }

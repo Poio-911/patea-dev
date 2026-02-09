@@ -2,7 +2,6 @@
 'use client';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { PageHeader } from '@/components/page-header';
-import { } from '@/components/ui/card';
 import { PlayerCard } from '@/components/player-card';
 import { AddPlayerDialog } from '@/components/add-player-dialog';
 import { collection, query, where } from 'firebase/firestore';

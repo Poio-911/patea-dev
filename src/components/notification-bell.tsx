@@ -6,10 +6,10 @@ import Link from 'next/link';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { collection, query, where, orderBy, limit, writeBatch, doc } from 'firebase/firestore';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+  ResponsivePopover as Popover,
+  ResponsivePopoverContent as PopoverContent,
+  ResponsivePopoverTrigger as PopoverTrigger,
+} from "@/components/ui/responsive-popover"
 import { Button } from './ui/button';
 import { Bell, CheckCheck, FileSignature, UserPlus, Info, Swords, CheckCircle2, XCircle, FileText, Users, CalendarClock, TrendingUp, Award } from 'lucide-react';
 import type { Notification, NotificationType } from '@/lib/types';
@@ -138,7 +138,7 @@ export function NotificationBell({ isPopoverContent = false }: NotificationBellP
                     <span className="sr-only">Ver notificaciones</span>
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80 p-0" align="end">
+            <PopoverContent className="w-80 max-w-[calc(100vw-2rem)] p-0" align="end">
                 <div className="flex items-center justify-between p-4 border-b">
                     <h3 className="font-semibold text-lg">Notificaciones</h3>
                     {unreadCount > 0 && (
