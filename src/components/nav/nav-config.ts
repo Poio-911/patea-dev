@@ -8,8 +8,6 @@ export const mainNavItems = [
 
 export const matchesNavItems = [
   { href: '/matches', label: 'Partidos', icon: Trophy, sub: 'Tus encuentros', mobileIcon: Calendar },
-  { href: '/find-match', label: 'Buscar Partido', icon: Search, sub: 'Encontrar partido' },
-  { href: '/find-players', label: 'Buscar Jugadores', icon: UserSearch, sub: 'Encontrar jugadores' },
   { href: '/competitions', label: 'Competiciones', icon: Trophy, sub: 'Torneos y ligas' },
 ];
 
@@ -19,4 +17,4 @@ export const extraNavItems = [
 
 // Compatibility exports for existing components
 export const baseNavItems = [...mainNavItems, matchesNavItems[0]];
-export const secondaryNavItems = [matchesNavItems[3], matchesNavItems[1], matchesNavItems[2], extraNavItems[0]];
+export const secondaryNavItems = [matchesNavItems[1], extraNavItems[0]];

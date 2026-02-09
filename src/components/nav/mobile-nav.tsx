@@ -47,7 +47,7 @@ export function MobileNav() {
     const isMatchesActive = pathname.startsWith('/matches') || pathname.startsWith('/competitions') || pathname.startsWith('/find-match') || pathname.startsWith('/find-players');
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-[2147483647] border-t bg-card/80 backdrop-blur-lg shadow-lg md:hidden pb-[env(safe-area-inset-bottom)]">
+        <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/80 backdrop-blur-lg shadow-lg md:hidden pb-[env(safe-area-inset-bottom)]">
             <div className="relative w-full px-2">
                 <div className="flex h-14 w-full items-center justify-around font-medium">
                     {/* Left: Panel & Jugadores */}
@@ -79,7 +79,7 @@ export function MobileNav() {
                                             animate={{ opacity: 1 }}
                                             exit={{ opacity: 0 }}
                                             transition={{ duration: 0.2 }}
-                                            className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-md"
+                                            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md"
                                             onClick={() => setMatchesMenuOpen(false)}
                                         />,
                                         document.body
@@ -127,7 +127,7 @@ const BottomSheetMenu = React.forwardRef<HTMLDivElement, { pathname: string, onC
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="fixed inset-x-0 bottom-0 z-[2147483647]"
+        className="fixed inset-x-0 bottom-0 z-[60]"
     >
         <div
             ref={ref}
@@ -135,9 +135,7 @@ const BottomSheetMenu = React.forwardRef<HTMLDivElement, { pathname: string, onC
         >
             <div className="mx-auto h-1.5 w-12 rounded-full bg-muted/40 mb-6" />
             <div className="px-6 space-y-2">
-                <MenuLink href="/matches" icon={Calendar} label="Mis Partidos" pathname={pathname} onClose={onClose} matchExact={false} exclude="/find-match" />
-                <MenuLink href="/find-match" icon={Search} label="Buscar Partido" pathname={pathname} onClose={onClose} />
-                <MenuLink href="/find-players" icon={UserSearch} label="Buscar Jugadores" pathname={pathname} onClose={onClose} />
+                <MenuLink href="/matches" icon={Calendar} label="Mis Partidos" pathname={pathname} onClose={onClose} matchExact={false} />
                 <MenuLink href="/competitions" icon={Trophy} label="Competiciones" pathname={pathname} onClose={onClose} />
             </div>
         </div>

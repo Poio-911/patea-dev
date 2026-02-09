@@ -188,7 +188,7 @@ export function CreateCupDialog({ open, onOpenChange, groupId, userId, teams }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col">
+      <DialogContent className="md:max-w-xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3"><Trophy className="h-5 w-5 text-primary" aria-hidden="true" /> Crear Nueva Copa</DialogTitle>
           <DialogDescription>

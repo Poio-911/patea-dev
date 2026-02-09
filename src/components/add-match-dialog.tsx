@@ -47,10 +47,10 @@ import { JerseyPreview } from './team-builder/jersey-preview';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { createSessionCookie } from '@/lib/auth-actions';
 import {
-  ResponsiveTooltip as Tooltip,
-  ResponsiveTooltipContent as TooltipContent,
-  ResponsiveTooltipProvider as TooltipProvider,
-  ResponsiveTooltipTrigger as TooltipTrigger,
+    ResponsiveTooltip as Tooltip,
+    ResponsiveTooltipContent as TooltipContent,
+    ResponsiveTooltipProvider as TooltipProvider,
+    ResponsiveTooltipTrigger as TooltipTrigger,
 } from '@/components/ui/responsive-tooltip';
 // Removed local position badge in favor of shared PlayerPositionBadge via PlayerSelectItem
 
@@ -110,7 +110,6 @@ interface LocationInputProps {
 
 const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = false }: LocationInputProps) => {
     const [value, setValue] = useState('');
-    const [manualName, setManualName] = useState('');
     const [osmSuggestions, setOsmSuggestions] = useState<Array<{ label: string; lat: number; lng: number; placeId: string }>>([]);
     const [googleSuggestions, setGoogleSuggestions] = useState<Array<{ description: string; placeId: string }>>([]);
     const [geoLoading, setGeoLoading] = useState(false);
@@ -238,7 +237,7 @@ const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = fal
             const json = await resp.json();
             if (!json?.success) throw new Error(json?.error || 'No se pudo geocodificar');
             onSelectLocation({
-                name: manualName || json.name || 'Cancha',
+                name: json.name || 'Cancha',
                 address: addr,
                 lat: json.lat,
                 lng: json.lng,
@@ -312,7 +311,6 @@ const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = fal
                     <Popover open={isOpen} onOpenChange={setIsOpen}>
                         <PopoverTrigger asChild>
                             <div className="space-y-2">
-                                <Input value={manualName} onChange={e => setManualName(e.target.value)} placeholder="Nombre del lugar (opcional)" />
                                 <div className="relative">
                                     <Input
                                         ref={setInputEl}
@@ -353,7 +351,7 @@ const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = fal
                                                             const lat = place.geometry.location.lat();
                                                             const lng = place.geometry.location.lng();
                                                             onSelectLocation({
-                                                                name: (manualName || place.name || 'Cancha'),
+                                                                name: (place.name || 'Cancha'),
                                                                 address: place.formatted_address || s.description,
                                                                 lat,
                                                                 lng,

@@ -62,7 +62,7 @@ const ResponsiveDialogContent = ({
 
   if (isMobile) {
     return (
-      <DrawerContent className={className} {...(props as React.ComponentProps<typeof DrawerContent>)}>
+      <DrawerContent className={cn(className, "!max-w-none !w-full")} {...(props as React.ComponentProps<typeof DrawerContent>)}>
         <div className="overflow-y-auto px-4 pb-4">{children}</div>
       </DrawerContent>
     )
