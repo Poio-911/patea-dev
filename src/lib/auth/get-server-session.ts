@@ -13,22 +13,18 @@ export async function getServerSession() {
     const allCookies = cookies();
     const sessionCookie = allCookies.get('session')?.value;
 
-    console.log('[getServerSession] Debug info:', {
-      hasSessionCookie: !!sessionCookie,
-      cookieNames: Array.from(allCookies.getAll().map(c => c.name)),
-      sessionCookieLength: sessionCookie?.length || 0
-    });
+
 
     if (!sessionCookie) {
-      console.log('[getServerSession] No session cookie found');
+
       return null;
     }
 
     const adminAuth = getAdminAuth();
     const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
 
-    console.log('[getServerSession] Session verified for user:', decodedClaims.uid);
-    
+
+
     return {
       user: {
         uid: decodedClaims.uid,

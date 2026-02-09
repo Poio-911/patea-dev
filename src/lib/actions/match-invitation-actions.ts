@@ -107,7 +107,7 @@ export async function respondToMatchInvitationAction(
           // Don't increment confirmedCount if going to waitlist
           delete counterUpdates.confirmedCount;
 
-          console.log(`[Waitlist] User ${userId} added to waitlist. Current confirmed: ${currentConfirmed}/${maxPlayers}`);
+
         }
       }
 

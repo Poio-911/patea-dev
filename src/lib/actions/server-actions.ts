@@ -1346,7 +1346,7 @@ export async function generateLeagueFixtureAction(leagueId: string): Promise<{ s
             .get();
 
         if (!matchesSnapshot.empty) {
-            console.log('Fixture already exists for league', leagueId);
+
             return { success: true };
         }
 
@@ -2346,28 +2346,23 @@ export async function createCupMatchAction(
         }
 
         // Fetch full team data from Firestore
-        console.log('[createCupMatchAction] Cup groupId:', cup.groupId);
-        console.log('[createCupMatchAction] Fetching team1 from teams collection:', bracketMatch.team1Id);
-        console.log('[createCupMatchAction] Fetching team2 from teams collection:', bracketMatch.team2Id);
+
 
         const team1Ref = getAdminDb().collection('teams').doc(bracketMatch.team1Id!);
         const team2Ref = getAdminDb().collection('teams').doc(bracketMatch.team2Id!);
 
         const [team1Snap, team2Snap] = await Promise.all([team1Ref.get(), team2Ref.get()]);
 
-        console.log('[createCupMatchAction] Team1 exists:', team1Snap.exists);
-        console.log('[createCupMatchAction] Team2 exists:', team2Snap.exists);
+
 
         if (team1Snap.exists) {
             const team1Data = team1Snap.data();
-            console.log('[createCupMatchAction] Team1 data keys:', Object.keys(team1Data || {}));
-            console.log('[createCupMatchAction] Team1 members field:', team1Data?.members);
+
         }
 
         if (team2Snap.exists) {
             const team2Data = team2Snap.data();
-            console.log('[createCupMatchAction] Team2 data keys:', Object.keys(team2Data || {}));
-            console.log('[createCupMatchAction] Team2 members field:', team2Data?.members);
+
         }
 
         const team1 = team1Snap.exists ? { id: team1Snap.id, ...team1Snap.data() } as GroupTeam : null;
@@ -2414,11 +2409,7 @@ export async function createCupMatchAction(
         const allPlayers = [...team1Players, ...team2Players];
 
         // Log for debugging
-        console.log('[createCupMatchAction] Team1 members:', team1?.members?.length || 0);
-        console.log('[createCupMatchAction] Team2 members:', team2?.members?.length || 0);
-        console.log('[createCupMatchAction] Total players mapped:', allPlayers.length);
-        console.log('[createCupMatchAction] Team1Id:', bracketMatch.team1Id);
-        console.log('[createCupMatchAction] Team2Id:', bracketMatch.team2Id);
+
 
         // Create the match document
         const matchRef = getAdminDb().collection('matches').doc();
@@ -2491,7 +2482,7 @@ export async function advanceCupWinnerAction(
     winnerId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        console.log('[advanceCupWinnerAction] Starting', { cupId, matchId, winnerId });
+
 
         const db = getAdminDb();
         const cupRef = db.collection('cups').doc(cupId);

@@ -88,7 +88,7 @@ export async function updatePlayerStatsFromMatch(matchId: string): Promise<{
         'stats.redCards': FieldValue.increment(redCardsReceived),
       });
 
-      console.log(`[Player Stats] Updating player ${playerId}: +1 match, +${goalsScored} goals, +${yellowCardsReceived} yellow, +${redCardsReceived} red`);
+
     }
 
     // Commit all updates atomically

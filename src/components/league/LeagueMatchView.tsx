@@ -66,17 +66,11 @@ export function LeagueMatchView({ match, leagueId, userId }: LeagueMatchViewProp
         setIsSubmitting(true);
 
         try {
-            console.log('[LeagueMatchView] Starting match finalization', {
-                matchId: match.id,
-                leagueId,
-                score1,
-                score2,
-                matchType: match.type,
-            });
+
 
             // Update match score & finalize
             const scoreResult = await updateMatchFinalScoreAction(match.id, score1, score2, userId);
-            console.log('[LeagueMatchView] Score update result:', scoreResult);
+
 
             if (!scoreResult.success) {
                 throw new Error(scoreResult.error || 'Error al actualizar el resultado');

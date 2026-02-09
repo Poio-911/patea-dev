@@ -12,7 +12,7 @@ let adminApp: App | undefined;
 
 function initializeAdminApp(): App {
     if (getApps().some(app => app.name === '[DEFAULT]')) {
-        console.log('[Firebase Admin] App already initialized');
+
         return getApps().find(app => app.name === '[DEFAULT]')!;
     }
 
@@ -21,7 +21,7 @@ function initializeAdminApp(): App {
     delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
     delete process.env.FIREBASE_STORAGE_EMULATOR_HOST;
 
-    console.log('[Firebase Admin] Initializing...');
+
     const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
     const storageBucketEnv = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
     const firebaseConfigEnv = process.env.FIREBASE_CONFIG ? JSON.parse(process.env.FIREBASE_CONFIG) : undefined as any;
@@ -39,25 +39,24 @@ function initializeAdminApp(): App {
     try {
         if (rawServiceAccount) {
             const serviceAccountJson = JSON.parse(rawServiceAccount);
-            console.log('[Firebase Admin] Service account parsed. Project ID:', serviceAccountJson.project_id);
-            console.log('[Firebase Admin] Storage bucket:', resolvedStorageBucket);
+
 
             const app = initializeApp({
                 credential: cert(serviceAccountJson as ServiceAccount),
                 projectId: resolvedProjectId,
                 storageBucket: resolvedStorageBucket,
             });
-            console.log('[Firebase Admin] Initialized successfully (explicit credentials)');
+
             return app;
         }
 
         // Fallback: initialize using default application credentials (Cloud Functions/Hosting runtime)
-        console.log('[Firebase Admin] No service account provided. Initializing with default credentials.');
+
         const app = initializeApp({
             projectId: resolvedProjectId,
             storageBucket: resolvedStorageBucket,
         });
-        console.log('[Firebase Admin] Initialized successfully (default credentials)');
+
         return app;
 
     } catch (e: any) {

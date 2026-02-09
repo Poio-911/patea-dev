@@ -15,20 +15,20 @@ export async function processGoogleFitCallbackAction(
     state: string
 ): Promise<{ success: boolean; tokens?: any; userId?: string; error?: string }> {
     try {
-        console.log('[processGoogleFitCallback] Starting...');
+
 
         // Decode and validate state
         const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
         const userId = stateData.userId;
 
-        console.log('[processGoogleFitCallback] User ID:', userId);
+
 
         if (!userId) {
             throw new Error('Invalid state parameter');
         }
 
         // Exchange code for tokens
-        console.log('[processGoogleFitCallback] Exchanging code for tokens...');
+
         const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
             method: 'POST',
             headers: {
@@ -50,13 +50,13 @@ export async function processGoogleFitCallbackAction(
             throw new Error(tokens.error_description || 'Failed to exchange code for tokens');
         }
 
-        console.log('[processGoogleFitCallback] Tokens received successfully');
+
 
         // Calculate expiry
         const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
 
         // Save connection to Firestore
-        console.log('[processGoogleFitCallback] Saving connection to Firestore...');
+
         await getAdminDb()
             .collection('users')
             .doc(userId)
@@ -76,7 +76,7 @@ export async function processGoogleFitCallbackAction(
                 }
             });
 
-        console.log('[processGoogleFitCallback] Connection saved successfully');
+
 
         return {
             success: true,

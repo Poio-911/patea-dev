@@ -73,19 +73,11 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
         setIsSubmitting(true);
 
         try {
-            console.log('[CupMatchView] Starting match finalization', {
-                matchId: match.id,
-                cupId,
-                score1,
-                score2,
-                participantTeamIds: match.participantTeamIds,
-                team1Id: team1.id,
-                team2Id: team2.id,
-            });
+
 
             // Update match score & finalize (this now handles standings and cup advancement on the server)
             const scoreResult = await updateMatchFinalScoreAction(match.id, score1, score2, userId);
-            console.log('[CupMatchView] Score update result:', scoreResult);
+
 
             if (!scoreResult.success) {
                 throw new Error(scoreResult.error || 'Error al actualizar el resultado');
