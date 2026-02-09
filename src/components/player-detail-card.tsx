@@ -106,77 +106,79 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
 
         <div className="shimmer-effect absolute inset-0 pointer-events-none game:hidden"></div>
 
-      <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center">
-        <div className="absolute -bottom-2 -right-2 h-2/5 w-2/5 text-muted-foreground/5 game:text-primary/5">
-          {PositionIcon && <PositionIcon className="w-full h-full" />}
-        </div>
-        <div className="relative z-10 flex flex-col h-full justify-between">
-          <div className="flex items-start justify-between mb-2">
-            <PlayerPositionBadge position={player.position} showIcon={false} textOnly={true} />
-            <PlayerOvr value={player.ovr} />
+        <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center">
+          <div className="absolute -bottom-2 -right-2 h-2/5 w-2/5 text-muted-foreground/5 game:text-primary/5">
+            {PositionIcon && <PositionIcon className="w-full h-full" />}
           </div>
-
-          <div className="flex flex-col items-center gap-2 mb-2">
-            {/* NEW: 3D hover effect on photo */}
-            <motion.div
-              whileHover={{
-                scale: 1.08,
-                rotateY: 5,
-                rotateZ: 2,
-                transition: { type: 'spring', stiffness: 300 },
-              }}
-              style={{ transformStyle: 'preserve-3d' }}
-            >
-              <Dialog>
-                <DialogTrigger asChild>
-                  <button
-                    aria-label="Ampliar imagen de perfil"
-                    className={cn(
-                      "cursor-pointer",
-                      // NEW: Ring effects for Elite/Gold
-                      ovrLevel === 'elite' && "ring-4 ring-purple-500/50 rounded-full",
-                      ovrLevel === 'gold' && "ring-4 ring-yellow-500/50 rounded-full",
-                    )}
-                  >
-                    <div className="relative">
-                      <PlayerPhoto player={player as any} size="profile" />
-                      {isGeneratingAI && (
-                        <div className="absolute inset-0 bg-background/70 rounded-full flex flex-col items-center justify-center text-foreground">
-                          <Loader2 className="h-8 w-8 animate-spin" />
-                          <span className="text-xs mt-2">Generando...</span>
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                </DialogTrigger>
-                <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none">
-                  <DialogTitle className="sr-only">Imagen de perfil de {playerName}</DialogTitle>
-                  <img src={player.photoUrl} alt={player.name} className="w-full h-auto rounded-lg" />
-                </DialogContent>
-              </Dialog>
-            </motion.div>
-            <h3 className="w-full truncate text-center text-xl font-semibold">{playerName}</h3>
-          </div>
-
-          {/* Social actions for other users' profiles */}
-          {!isCurrentUserProfile && (
-            <div className="flex items-center justify-center gap-2 my-3">
-              <FollowButton targetUserId={player.id} variant="default" size="sm" />
-              <ShareButton
-                title={`${player.name} - OVR ${player.ovr}`}
-                text={`Mirá el perfil de ${player.name} en Pateá!`}
-                url={typeof window !== 'undefined' ? window.location.href : ''}
-                imageUrl={player.photoUrl}
-                variant="outline"
-                size="sm"
-                showLabel={false}
-              />
+          <div className="relative z-10 flex flex-col h-full justify-between">
+            <div className="flex items-start justify-between mb-2">
+              <PlayerPositionBadge position={player.position} showIcon={false} textOnly={true} />
+              <PlayerOvr value={player.ovr} />
             </div>
-          )}
 
-          {isCurrentUserProfile && (
-            <div className="flex flex-col gap-2 w-full my-4">
-              <div className="grid grid-cols-2 gap-2 w-full">
+            <div className="flex flex-col items-center gap-2 mb-2">
+              {/* NEW: 3D hover effect on photo */}
+              <motion.div
+                whileHover={{
+                  scale: 1.08,
+                  rotateY: 5,
+                  rotateZ: 2,
+                  transition: { type: 'spring', stiffness: 300 },
+                }}
+                style={{ transformStyle: 'preserve-3d' }}
+              >
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button
+                      aria-label="Ampliar imagen de perfil"
+                      className={cn(
+                        "cursor-pointer",
+                        // NEW: Ring effects for Elite/Gold
+                        ovrLevel === 'elite' && "ring-4 ring-purple-500/50 rounded-full",
+                        ovrLevel === 'gold' && "ring-4 ring-yellow-500/50 rounded-full",
+                      )}
+                    >
+                      <div className="relative">
+                        <PlayerPhoto player={player as any} size="profile" />
+                        {isGeneratingAI && (
+                          <div className="absolute inset-0 bg-background/70 rounded-full flex flex-col items-center justify-center text-foreground">
+                            <Loader2 className="h-8 w-8 animate-spin" />
+                            <span className="text-xs mt-2">Generando...</span>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none">
+                    <DialogTitle className="sr-only">Imagen de perfil de {playerName}</DialogTitle>
+                    <img src={player.photoUrl} alt={player.name} className="w-full h-auto rounded-lg" />
+                  </DialogContent>
+                </Dialog>
+              </motion.div>
+              <h3 className="w-full truncate text-center text-xl font-semibold">{playerName}</h3>
+            </div>
+
+            {/* Social actions for other users' profiles */}
+            {!isCurrentUserProfile && (
+              <div className="flex items-center justify-center gap-2 my-3">
+                <FollowButton targetUserId={player.id} variant="default" size="sm" />
+                <ShareButton
+                  title={`${player.name} - OVR ${player.ovr}`}
+                  text={`Mirá el perfil de ${player.name} en Pateá!`}
+                  url={typeof window !== 'undefined' ? window.location.href : ''}
+                  imageUrl={player.photoUrl}
+                  variant="outline"
+                  size="sm"
+                  showLabel={false}
+                />
+              </div>
+            )}
+
+            {isCurrentUserProfile && (
+              <div className="flex flex-col gap-2 w-full my-4">
+                <div className="grid grid-cols-2 gap-2 w-full">
+                  {/* 
+                // OCULTADO POR SOLICITUD DEL USUARIO (BRANCH MAIN)
                 {player.cardGenerationCredits && player.cardGenerationCredits > 0 ? (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -212,34 +214,37 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
                     <ShoppingCart className="mr-2 h-4 w-4" />
                     Comprar Créditos
                   </Button>
-                )}
-                <ImageCropperDialog player={player} onSaveComplete={onPhotoUpdate}>
-                  <Button variant="secondary" size="sm" disabled={isGeneratingAI}>
-                    <Scissors className="mr-2 h-4 w-4" />
-                    Cambiar Foto
-                  </Button>
-                </ImageCropperDialog>
-              </div>
+                )} 
+                */}
+                  <ImageCropperDialog player={player} onSaveComplete={onPhotoUpdate}>
+                    <Button variant="secondary" size="sm" disabled={isGeneratingAI} className="w-full">
+                      <Scissors className="mr-2 h-4 w-4" />
+                      Cambiar Foto
+                    </Button>
+                  </ImageCropperDialog>
+                </div>
 
-              {/* Mensaje cuando no hay créditos */}
+                {/* 
+              // OCULTADO POR SOLICITUD DEL USUARIO (BRANCH MAIN)
               {player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0 && (
                 <p className="text-xs text-center text-muted-foreground">
                   Sin créditos. Compra un paquete para generar fotos con IA.
                 </p>
-              )}
-            </div>
-          )}
+              )} 
+              */}
+              </div>
+            )}
 
-          {/* Dialog de paquetes de créditos */}
-          <CreditPackagesDialog
-            open={showCreditPackages}
-            onOpenChange={setShowCreditPackages}
-          />
+            {/* Dialog de paquetes de créditos */}
+            <CreditPackagesDialog
+              open={showCreditPackages}
+              onOpenChange={setShowCreditPackages}
+            />
 
-          <AttributesGrid player={player} />
-        </div>
-      </CardContent>
-    </Card>
+            <AttributesGrid player={player} />
+          </div>
+        </CardContent>
+      </Card>
     </AnimatedCardWrapper>
   );
 }
