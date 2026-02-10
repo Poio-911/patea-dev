@@ -1,6 +1,9 @@
+"use client";
+import { useState } from 'react';
+import Image from 'next/image';
 import { Player } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Check, ShieldAlert } from 'lucide-react';
 import { PlayerPositionBadge } from '@/components/player-styles';
@@ -14,6 +17,7 @@ interface PlayerSelectionCardProps {
 }
 
 export function PlayerSelectionCard({ player, isSelected, isMaxedOut, teamCount, onToggle }: PlayerSelectionCardProps) {
+    const [isLoaded, setIsLoaded] = useState(false);
     return (
         <div
             onClick={() => (!isMaxedOut || isSelected ? onToggle(player.id) : null)}
@@ -58,9 +62,24 @@ export function PlayerSelectionCard({ player, isSelected, isMaxedOut, teamCount,
                         "absolute inset-0 rounded-full blur-md opacity-0 transition-opacity duration-500",
                         isSelected && "bg-primary opacity-60"
                     )} />
-                    <Avatar className="h-16 w-16 border-2 border-white/10 relative z-10">
-                        <AvatarImage src={player.photoUrl} alt={player.name} className="object-cover" />
-                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                    <Avatar className="h-16 w-16 border-2 border-white/10 relative z-10 overflow-hidden bg-muted">
+                        {player.photoUrl && (
+                            <Image
+                                src={player.photoUrl}
+                                alt={player.name}
+                                width={64}
+                                height={64}
+                                className={cn(
+                                    "h-full w-full object-cover transition-opacity duration-300",
+                                    isLoaded ? "opacity-100" : "opacity-0"
+                                )}
+                                onLoad={() => setIsLoaded(true)}
+                                loading="lazy"
+                            />
+                        )}
+                        {!isLoaded && (
+                            <AvatarFallback className="absolute inset-0">{player.name.charAt(0)}</AvatarFallback>
+                        )}
                     </Avatar>
                 </div>
 

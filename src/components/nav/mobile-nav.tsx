@@ -44,10 +44,10 @@ export function MobileNav() {
         return () => document.removeEventListener('mousedown', handleClick);
     }, [matchesMenuOpen]);
 
-    const isMatchesActive = pathname.startsWith('/matches') || pathname.startsWith('/competitions') || pathname.startsWith('/find-match') || pathname.startsWith('/find-players');
+    const isMatchesActive = pathname.startsWith('/matches') || pathname.startsWith('/competitions') || pathname.startsWith('/explore');
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/80 backdrop-blur-lg shadow-lg md:hidden pb-[env(safe-area-inset-bottom)]">
+        <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/90 backdrop-blur-lg shadow-lg md:hidden pb-[env(safe-area-inset-bottom)]">
             <div className="relative w-full px-2">
                 <div className="flex h-14 w-full items-center justify-around font-medium">
                     {/* Left: Panel & Jugadores */}
@@ -79,7 +79,7 @@ export function MobileNav() {
                                             animate={{ opacity: 1 }}
                                             exit={{ opacity: 0 }}
                                             transition={{ duration: 0.2 }}
-                                            className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-md"
+                                            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md"
                                             onClick={() => setMatchesMenuOpen(false)}
                                         />,
                                         document.body
@@ -127,17 +127,16 @@ const BottomSheetMenu = React.forwardRef<HTMLDivElement, { pathname: string, onC
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="fixed inset-x-0 bottom-0 z-50"
+        className="fixed inset-x-0 bottom-0 z-[60]"
     >
         <div
             ref={ref}
-            className="rounded-t-[2.5rem] bg-card/60 backdrop-blur-2xl border-t border-border shadow-[0_-8px_32px_rgba(0,0,0,0.2)] pt-3 pb-[calc(env(safe-area-inset-bottom)+20px)] sm:px-4"
+            className="rounded-t-[2.5rem] bg-card/95 backdrop-blur-2xl border-t border-border shadow-[0_-8px_32px_rgba(0,0,0,0.4)] pt-3 pb-[calc(env(safe-area-inset-bottom)+20px)] sm:px-4"
         >
-            <div className="mx-auto h-1.5 w-12 rounded-full bg-muted/40 mb-6" />
+            <div className="mx-auto h-1.5 w-12 rounded-full bg-muted-foreground/20 mb-6" />
             <div className="px-6 space-y-2">
-                <MenuLink href="/matches" icon={Calendar} label="Mis Partidos" pathname={pathname} onClose={onClose} matchExact={false} exclude="/find-match" />
-                <MenuLink href="/find-match" icon={Search} label="Buscar Partido" pathname={pathname} onClose={onClose} />
-                <MenuLink href="/find-players" icon={UserSearch} label="Buscar Jugadores" pathname={pathname} onClose={onClose} />
+                <MenuLink href="/matches" icon={Calendar} label="Mis Partidos" pathname={pathname} onClose={onClose} matchExact={false} exclude="/explore" />
+                <MenuLink href="/explore" icon={Search} label="Explorar" pathname={pathname} onClose={onClose} />
                 <MenuLink href="/competitions" icon={Trophy} label="Competiciones" pathname={pathname} onClose={onClose} />
             </div>
         </div>
@@ -153,16 +152,21 @@ function MenuLink({ href, icon: Icon, label, pathname, onClose, matchExact = fal
             onClick={onClose}
             className={cn(
                 'flex items-center gap-4 p-4 rounded-2xl transition-all duration-200',
-                isActive ? 'bg-primary/10 text-primary' : 'hover:bg-muted/50 active:scale-95'
+                isActive ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-muted/50 active:scale-95'
             )}
         >
             <div className={cn(
-                "w-10 h-10 grid place-items-center rounded-xl",
-                isActive ? "bg-primary/20" : "bg-muted/30"
+                "w-10 h-10 grid place-items-center rounded-xl transition-colors",
+                isActive ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-muted/50 text-muted-foreground"
             )}>
                 <Icon className={cn("h-5 w-5", isActive && "stroke-[2.5px]")} />
             </div>
-            <span className="text-base font-semibold tracking-tight">{label}</span>
+            <span className={cn(
+                "text-base font-semibold tracking-tight",
+                isActive ? "text-primary" : "text-foreground"
+            )}>
+                {label}
+            </span>
         </Link>
     );
 }

@@ -6,13 +6,13 @@ importScripts("https://www.gstatic.com/firebasejs/11.1.0/firebase-messaging-comp
 
 // IMPORTANT: Replace this with your project's web app config object.
 const firebaseConfig = {
-    apiKey: "AIzaSyAes7EVn8hQswS8XgvDMJfN6U4IT_ZL_WY",
-    authDomain: "mil-disculpis.firebaseapp.com",
-    projectId: "mil-disculpis",
-    storageBucket: "mil-disculpis.appspot.com",
-    messagingSenderId: "5614567933",
-    appId: "1:5614567933:web:6d7b7dde5f994c36861994",
-    measurementId: "G-56F70EMSVB"
+  apiKey: "AIzaSyAes7EVn8hQswS8XgvDMJfN6U4IT_ZL_WY",
+  authDomain: "mil-disculpis.firebaseapp.com",
+  projectId: "mil-disculpis",
+  storageBucket: "mil-disculpis.firebasestorage.app",
+  messagingSenderId: "5614567933",
+  appId: "1:5614567933:web:6d7b7dde5f994c36861994",
+  measurementId: "G-56F70EMSVB"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -24,7 +24,7 @@ messaging.onBackgroundMessage((payload) => {
     "[firebase-messaging-sw.js] Received background message ",
     payload
   );
-  
+
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
@@ -34,4 +34,3 @@ messaging.onBackgroundMessage((payload) => {
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-    

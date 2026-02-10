@@ -1,8 +1,9 @@
 'use server';
 
 import { getAdminDb } from '../../firebase/admin-init';
-import { AvailablePlayer } from '../types';
+import { AvailablePlayer, Match } from '../types';
 import * as geohash from 'ngeohash';
+import { isSameDay, parseISO } from 'date-fns';
 
 export type SearchPlayersParams = {
     lat: number;
@@ -18,6 +19,19 @@ export type SearchPlayersParams = {
 export type SearchPlayersResult = {
     players: (AvailablePlayer & { distance: number })[];
     nextPageToken?: string; // For future pagination
+};
+
+export type SearchMatchesParams = {
+    lat: number;
+    lng: number;
+    radiusInKm: number;
+    date?: string; // 'YYYY-MM-DD'
+    matchSize?: number;
+    limit?: number;
+};
+
+export type SearchMatchesResult = {
+    matches: (Match & { distance: number })[];
 };
 
 export async function searchPlayersAction(params: SearchPlayersParams): Promise<{ success: boolean; data?: SearchPlayersResult; error?: string }> {
@@ -48,14 +62,7 @@ export async function searchPlayersAction(params: SearchPlayersParams): Promise<
         // precision 5 ~= 4.9km x 4.9km
         // precision 6 ~= 1.2km x 0.6km
 
-        let precision = 4;
-        if (radiusInKm <= 5) precision = 6;
-        else if (radiusInKm <= 20) precision = 5;
-        else precision = 4;
-
-        const centerHash = geohash.encode(lat, lng, precision);
-        const neighbors = geohash.neighbors(centerHash);
-        const hashesToQuery = [centerHash, ...neighbors];
+        const { hashesToQuery } = getGeohashRange(lat, lng, radiusInKm);
 
         // We need to query Firestore for each hash prefix.
         // Firestore `in` query supports up to 10/30 items.
@@ -125,6 +132,75 @@ export async function searchPlayersAction(params: SearchPlayersParams): Promise<
         console.error('Error searching players:', error);
         return { success: false, error: 'Error interno al buscar jugadores.' };
     }
+}
+
+export async function searchMatchesAction(params: SearchMatchesParams): Promise<{ success: boolean; data?: SearchMatchesResult; error?: string }> {
+    try {
+        const { lat, lng, radiusInKm = 10, date, matchSize, limit = 50 } = params;
+
+        const { hashesToQuery } = getGeohashRange(lat, lng, radiusInKm);
+
+        const db = getAdminDb();
+        const matchesRef = db.collection('matches');
+
+        // Query public upcoming matches
+        const promises = hashesToQuery.map(hash => {
+            const end = hash + '~';
+            return matchesRef
+                .where('isPublic', '==', true)
+                .where('status', '==', 'upcoming')
+                .where('location.geohash', '>=', hash)
+                .where('location.geohash', '<=', end)
+                .get();
+        });
+
+        const snapshots = await Promise.all(promises);
+        const distinctMatches = new Map<string, Match & { distance: number }>();
+
+        snapshots.forEach(snap => {
+            snap.forEach(doc => {
+                const data = { id: doc.id, ...doc.data() } as Match;
+
+                // Date Filter
+                if (date && !isSameDay(new Date(data.date), parseISO(date))) return;
+
+                // Match Size Filter
+                if (matchSize && data.matchSize !== matchSize) return;
+
+                // Exact Distance Check
+                const dist = getDistanceFromLatLonInKm(lat, lng, data.location.lat, data.location.lng);
+                if (dist <= radiusInKm) {
+                    distinctMatches.set(data.id, { ...data, distance: dist });
+                }
+            });
+        });
+
+        const sortedMatches = Array.from(distinctMatches.values()).sort((a, b) => a.distance - b.distance);
+
+        return {
+            success: true,
+            data: {
+                matches: sortedMatches.slice(0, limit)
+            }
+        };
+
+    } catch (error: any) {
+        console.error('Error searching matches:', error);
+        return { success: false, error: 'Error interno al buscar partidos.' };
+    }
+}
+
+function getGeohashRange(lat: number, lng: number, radiusInKm: number) {
+    let precision = 4;
+    if (radiusInKm <= 5) precision = 6;
+    else if (radiusInKm <= 20) precision = 5;
+    else precision = 4;
+
+    const centerHash = geohash.encode(lat, lng, precision);
+    const neighbors = geohash.neighbors(centerHash);
+    const hashesToQuery = [centerHash, ...neighbors];
+
+    return { hashesToQuery, precision };
 }
 
 function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {

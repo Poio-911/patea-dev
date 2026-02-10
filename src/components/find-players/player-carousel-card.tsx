@@ -4,7 +4,7 @@ import { AvailablePlayer } from '@/lib/types';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { PlayerPositionBadge, PlayerOvr, positionConfig } from '@/components/player-styles';
 import { Button } from '@/components/ui/button';
-import { MapPin } from 'lucide-react';
+import { MapPin, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistance } from '@/lib/geo-utils';
 import { getOvrLevel } from '@/lib/player-utils';
@@ -32,62 +32,74 @@ export function PlayerCarouselCard({
         <div
             onClick={() => onSelect(player.uid)}
             className={cn(
-                'w-[280px] sm:w-[320px] flex flex-col gap-2 p-3 rounded-xl border bg-card shadow-lg transition-all duration-200 cursor-pointer select-none',
+                'relative overflow-hidden w-[280px] sm:w-[320px] flex flex-col gap-3 p-4 rounded-2xl border transition-all duration-300 cursor-pointer select-none group',
                 isActive
-                    ? `border-primary ring-2 ring-primary/20 transform -translate-y-1`
-                    : 'border-border/80'
+                    ? `border-primary bg-primary/10 ring-2 ring-primary/20 -translate-y-1 shadow-[0_0_20px_rgba(var(--primary),0.2)]`
+                    : 'border-border/60 bg-card/60 backdrop-blur-md hover:bg-card/80 hover:border-border shadow-sm'
             )}
         >
+            {/* Glow Effect Top Left */}
+            <div className={cn(
+                "absolute -top-12 -left-12 w-24 h-24 blur-[40px] rounded-full pointer-events-none opacity-40 transition-opacity",
+                isActive ? `bg-glow-${level} opacity-60` : "bg-primary/5"
+            )} />
+
             {/* Header: Avatar + Info */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
                 <div className="relative shrink-0">
                     <div className={cn(
-                        "rounded-full p-0.5 border-2",
-                        isActive ? `border-glow-${level}` : "border-border/50"
+                        "rounded-full p-0.5 border-2 transition-colors duration-300",
+                        isActive ? `border-glow-${level}` : "border-border/30"
                     )}>
-                        <Avatar className="h-12 w-12">
+                        <Avatar className="h-14 w-14 border border-border/10">
                             <AvatarImage src={photoUrl} alt={player.displayName} className="object-cover" />
-                            <AvatarFallback className="text-sm font-bold bg-muted">
+                            <AvatarFallback className="text-lg font-bold bg-muted/80 backdrop-blur-sm">
                                 {(player.displayName || '?').charAt(0)}
                             </AvatarFallback>
                         </Avatar>
                     </div>
-                    <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5 shadow-sm border border-border/50">
-                        <PlayerOvr value={player.ovr} size="compact" className="scale-75" />
+                    <div className="absolute -bottom-1 -right-1 bg-background/90 backdrop-blur-sm rounded-full p-1 shadow-md border border-border/20">
+                        <PlayerOvr value={player.ovr} size="compact" className="scale-90" />
                     </div>
                 </div>
 
                 <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="font-semibold text-sm truncate leading-none">
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-base truncate leading-none group-hover:text-primary transition-colors">
                             {player.displayName}
                         </span>
                         <PlayerPositionBadge position={player.position} size="xs" />
                     </div>
 
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
                         {isFinite(distanceKm) && (
-                            <span className="flex items-center gap-0.5">
-                                <MapPin className="h-3 w-3" />
+                            <span className="flex items-center gap-1 text-primary">
+                                <MapPin className="h-3.5 w-3.5" />
                                 {formatDistance(distanceKm)}
                             </span>
                         )}
-                        <span>·</span>
+                        <span className="opacity-30">•</span>
                         <span className="truncate">{posConfig.name}</span>
                     </div>
                 </div>
             </div>
 
-            {/* Footer: Action Button (Full Width) */}
-            <div className="pt-1">
+            {/* Footer Action */}
+            <div className="pt-2 border-t border-border/40 flex items-center justify-between gap-3">
                 {actionSlot ? (
                     <div onClick={(e) => e.stopPropagation()} className="w-full">
                         {actionSlot}
                     </div>
                 ) : (
-                    <Button size="sm" variant="outline" className="w-full h-8 text-xs">
-                        Ver Perfil
-                    </Button>
+                    <>
+                        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                            Perfil Jugador
+                        </span>
+                        <Button size="sm" variant={isActive ? "default" : "secondary"} className="h-8 text-xs font-bold rounded-full group-hover:scale-105 transition-transform">
+                            Ver Detalles
+                            <ChevronRight className="ml-1 h-3 w-3" />
+                        </Button>
+                    </>
                 )}
             </div>
         </div>

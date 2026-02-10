@@ -27,10 +27,7 @@ function initializeAdminApp(): App {
     const firebaseConfigEnv = process.env.FIREBASE_CONFIG ? JSON.parse(process.env.FIREBASE_CONFIG) : undefined as any;
 
     const resolvedProjectId = firebaseConfigEnv?.projectId || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'mil-disculpis';
-    let resolvedStorageBucket = storageBucketEnv || firebaseConfigEnv?.storageBucket;
-    if (resolvedStorageBucket && resolvedStorageBucket.includes('firebasestorage.app')) {
-        resolvedStorageBucket = resolvedStorageBucket.replace('firebasestorage.app', 'appspot.com');
-    }
+    const resolvedStorageBucket = storageBucketEnv || firebaseConfigEnv?.storageBucket;
 
     if (!resolvedStorageBucket) {
         throw new Error("Storage bucket not configured. Set NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET or ensure FIREBASE_CONFIG.storageBucket is present.");
@@ -95,11 +92,10 @@ export function getAdminAuth() {
 
 export function getAdminStorage() {
     if (!_adminStorage) {
-        const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-        if (!storageBucket) {
-            throw new Error("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET environment variable is not set.");
-        }
-        _adminStorage = getStorage(getAdminApp()).bucket(storageBucket);
+        const app = getAdminApp();
+        const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+        // Explicitly pass the bucket name to avoid defaulting issues
+        _adminStorage = getStorage(app).bucket(bucketName);
     }
     return _adminStorage;
 }

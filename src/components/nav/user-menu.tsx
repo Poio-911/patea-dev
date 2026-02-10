@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
     LogOut,
     User,
@@ -11,6 +12,7 @@ import {
     BellRing
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     DropdownMenu,
@@ -36,23 +38,36 @@ type UserMenuProps = {
 
 export function UserMenu({ user, player, onLogout, onRequestPermission }: UserMenuProps) {
     const { setTheme } = useTheme();
+    const [isLoaded, setIsLoaded] = useState(false);
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 sm:h-12 sm:w-12 rounded-full p-0">
-                    <Avatar className="h-10 w-10 sm:h-12 sm:w-12 border overflow-hidden">
-                        <AvatarImage
-                            src={user?.photoURL || ''}
-                            alt={user?.displayName || 'User'}
-                            style={{
-                                objectFit: 'cover',
-                                objectPosition: `${player?.cropPosition?.x || 50}% ${player?.cropPosition?.y || 50}%`,
-                                transform: `scale(${player?.cropZoom || 1})`,
-                                transformOrigin: 'center center',
-                            }}
-                        />
-                        <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                    <Avatar className="h-10 w-10 sm:h-12 sm:w-12 border overflow-hidden bg-muted">
+                        {user?.photoURL && (
+                            <Image
+                                src={user.photoURL}
+                                alt={user.displayName || 'User'}
+                                width={48} // Use larger size for sm:h-12
+                                height={48}
+                                className={cn(
+                                    "h-full w-full object-cover transition-opacity duration-300",
+                                    isLoaded ? "opacity-100" : "opacity-0"
+                                )}
+                                style={{
+                                    objectPosition: `${player?.cropPosition?.x || 50}% ${player?.cropPosition?.y || 50}%`,
+                                    transform: `scale(${player?.cropZoom || 1})`,
+                                    transformOrigin: 'center center',
+                                }}
+                                onLoad={() => setIsLoaded(true)}
+                                loading="eager" // Header avatar should load fast
+                                priority // High priority for LCP
+                            />
+                        )}
+                        {!isLoaded && (
+                            <AvatarFallback className="absolute inset-0">{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                        )}
                     </Avatar>
                 </Button>
             </DropdownMenuTrigger>

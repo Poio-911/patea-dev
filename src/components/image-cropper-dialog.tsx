@@ -91,18 +91,30 @@ function normalizeFirebaseStorageUrl(url: string): string {
   try {
     const urlObj = new URL(url);
 
-    // If it's already a proper Firebase Storage URL, return as-is
-    if (urlObj.hostname === 'firebasestorage.googleapis.com' && urlObj.pathname.includes('/o/')) {
+    // If it's already a proper Firebase Storage URL with the correct bucket, return as-is
+    if (urlObj.hostname === 'firebasestorage.googleapis.com' &&
+      urlObj.pathname.includes('/v0/b/mil-disculpis.firebasestorage.app/o/')) {
       return url;
     }
 
-    // If it's a Firebase App domain, try to extract the file path and convert
-    if (urlObj.hostname.includes('firebasestorage.app')) {
-      // Extract the file path and reconstruct the URL
-      const pathMatch = url.match(/\/v0\/b\/[^/]+\/o\/(.+?)(\?|$)/);
-      if (pathMatch) {
-        const filePath = pathMatch[1];
-        return `https://firebasestorage.googleapis.com/v0/b/${urlObj.hostname.split('.')[0]}.appspot.com/o/${filePath}?alt=media`;
+    // Handle any variant of the bucket URL (storage.googleapis.com or old appspot/firebasestorage.app domains)
+    if (url.includes('mil-disculpis.appspot.com') || url.includes('mil-disculpis.firebasestorage.app')) {
+      // Extract the file path regardless of the URL format
+      let filePath = '';
+
+      const oMatch = url.match(/\/o\/(.+?)(\?|$)/);
+      if (oMatch) {
+        filePath = oMatch[1];
+      } else {
+        // Handle storage.googleapis.com style: /bucket/path/to/file
+        const parts = urlObj.pathname.split('/').filter(Boolean);
+        if (parts.length >= 2) {
+          filePath = encodeURIComponent(parts.slice(1).join('/'));
+        }
+      }
+
+      if (filePath) {
+        return `https://firebasestorage.googleapis.com/v0/b/mil-disculpis.firebasestorage.app/o/${filePath}?alt=media`;
       }
     }
 

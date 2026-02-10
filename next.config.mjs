@@ -24,6 +24,14 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'storage.googleapis.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.app',
+      },
     ],
   },
 
@@ -53,8 +61,8 @@ const nextConfig = {
 
   // Webpack config to ensure clean paths
   webpack: (config, { isServer }) => {
-    // Override default devtool to not include absolute paths
-    if (!isServer) {
+    // Override default devtool to not include absolute paths (only in production)
+    if (!isServer && process.env.NODE_ENV === 'production') {
       config.devtool = false;
     }
 

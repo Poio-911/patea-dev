@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import type { Player } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
+import { cn } from '@/lib/utils';
 import { useFcm } from '@/hooks/use-fcm';
 import { WelcomeDialog } from '@/components/welcome-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -87,8 +88,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const isFullscreenLayout = pathname === '/explore';
+
   return (
-    <div className="relative h-screen w-full">
+    <div className="relative h-screen w-full overflow-hidden">
       <Header
         user={user}
         player={player || null}
@@ -96,8 +99,14 @@ export function MainNav({ children }: { children: React.ReactNode }) {
         onRequestPermission={requestPermission}
       />
 
-      <main className="h-screen overflow-y-auto pt-16 pb-[env(safe-area-inset-bottom)]">
-        <div className="p-4 md:p-6 pb-20">
+      <main className={cn(
+        "h-screen pt-16 pb-[env(safe-area-inset-bottom)]",
+        !isFullscreenLayout && "overflow-y-auto"
+      )}>
+        <div className={cn(
+          "h-full",
+          !isFullscreenLayout ? "p-4 md:p-6 pb-20" : "p-0"
+        )}>
           {children}
         </div>
       </main>
