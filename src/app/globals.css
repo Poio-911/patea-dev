@@ -173,10 +173,10 @@ body.standalone nav.fixed {
     /* Brighter neon red for better visibility */
     --destructive-foreground: 0 0% 100%;
     /* White on red */
-    --border: 220 20% 30%;
-    /* More visible for defining inputs and cards */
-    --input: 220 20% 25%;
-    /* Input background slightly differentiated from border */
+    --border: 220 20% 35%;
+    /* More visible borders - improved from 30% */
+    --input: 220 20% 28%;
+    /* Input background better differentiated - improved from 25% */
     --ring: 75 100% 60%;
     /* Focus ring matches primary (Volt) */
     --chart-1: 75 100% 60%;

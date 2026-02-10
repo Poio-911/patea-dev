@@ -91,7 +91,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const isFullscreenLayout = pathname === '/explore';
 
   return (
-    <div className="relative h-screen w-full overflow-hidden">
+    <div className="relative min-h-screen w-full">
       <Header
         user={user}
         player={player || null}
@@ -100,11 +100,11 @@ export function MainNav({ children }: { children: React.ReactNode }) {
       />
 
       <main className={cn(
-        "h-screen pt-16 pb-[env(safe-area-inset-bottom)]",
+        "min-h-screen pt-16 pb-[env(safe-area-inset-bottom)]",
         !isFullscreenLayout && "overflow-y-auto"
       )}>
         <div className={cn(
-          "h-full",
+          "min-h-full",
           !isFullscreenLayout ? "p-4 md:p-6 pb-20" : "p-0"
         )}>
           {children}

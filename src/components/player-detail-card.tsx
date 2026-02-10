@@ -99,11 +99,12 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
       )}>
         <div className={cn("absolute inset-0 z-0", selectedAuraClass)} />
 
-        {/* NEW: Jersey watermark - larger and more visible for profile (only on dark theme) */}
-        <div className="hidden game:block">
-          <JerseyWatermark jersey={jersey || player.jersey} position="center" opacity={0.1} />
-          {!jersey && !player.jersey && <JerseySilhouette className="bottom-0 right-0 h-64 w-64" />}
-        </div>
+        {/* Jersey watermark - only show when explicitly provided (team context) */}
+        {jersey && (
+          <div className="hidden game:block">
+            <JerseyWatermark jersey={jersey} position="center" opacity={0.1} />
+          </div>
+        )}
 
         <div className="shimmer-effect absolute inset-0 pointer-events-none game:hidden"></div>
 
@@ -186,6 +187,8 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
             {isCurrentUserProfile && (
               <div className="flex flex-col gap-2 w-full my-4">
                 <div className="grid grid-cols-2 gap-2 w-full">
+                  {/* 
+                  // OCULTADO POR SOLICITUD DEL USUARIO (BRANCH MAIN)
                   {player.cardGenerationCredits && player.cardGenerationCredits > 0 ? (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -221,21 +224,24 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
                       <ShoppingCart className="mr-2 h-4 w-4" />
                       Comprar Créditos
                     </Button>
-                  )}
+                  )} 
+                  */}
                   <ImageCropperDialog player={player} onSaveComplete={onPhotoUpdate}>
-                    <Button variant="secondary" size="sm" disabled={isGeneratingAI}>
+                    <Button variant="secondary" size="sm" disabled={isGeneratingAI} className="w-full">
                       <Scissors className="mr-2 h-4 w-4" />
                       Cambiar Foto
                     </Button>
                   </ImageCropperDialog>
                 </div>
 
-                {/* Mensaje cuando no hay créditos */}
-                {player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0 && (
-                  <p className="text-xs text-center text-muted-foreground">
-                    Sin créditos. Compra un paquete para generar fotos con IA.
-                  </p>
-                )}
+                {/* 
+              // OCULTADO POR SOLICITUD DEL USUARIO (BRANCH MAIN)
+              {player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0 && (
+                <p className="text-xs text-center text-muted-foreground">
+                  Sin créditos. Compra un paquete para generar fotos con IA.
+                </p>
+              )} 
+              */}
               </div>
             )}
 
