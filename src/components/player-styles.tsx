@@ -1,6 +1,6 @@
-
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
+import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import type { Player, AttributeKey, PlayerPosition } from '@/lib/types';
@@ -191,20 +191,40 @@ export function AttributesGrid({ player, className }: AttributesGridProps) {
 
 export type PlayerPhotoProps = { player: Player; size?: 'compact' | 'standard' | 'profile'; className?: string };
 export function PlayerPhoto({ player, size = 'standard', className }: PlayerPhotoProps) {
+  const [isLoaded, setIsLoaded] = useState(false);
   const sizeMap = { compact: 'h-16 w-16', standard: 'h-24 w-24', profile: 'h-32 w-32' };
+  const pixelSizeMap = { compact: 64, standard: 96, profile: 128 };
+
+  const src = player.photoURL || (player as any).photoUrl;
+  const name = player.name || 'Jugador';
+
   return (
-    <Avatar className={cn(sizeMap[size], 'border-4 shadow-sm object-cover', className)}>
-      <AvatarImage
-        src={player.photoURL || (player as any).photoUrl}
-        alt={player.name || 'Jugador'}
-        style={{
-          objectFit: 'cover',
-          objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`,
-          transform: `scale(${player.cropZoom || 1})`,
-          transformOrigin: 'center center'
-        }}
-      />
-      <AvatarFallback className="font-black text-xl">{(player.name || 'J').charAt(0)}</AvatarFallback>
+    <Avatar className={cn(sizeMap[size], 'border-4 shadow-sm overflow-hidden bg-muted', className)}>
+      {src && (
+        <Image
+          src={src}
+          alt={name}
+          width={pixelSizeMap[size]}
+          height={pixelSizeMap[size]}
+          className={cn(
+            "h-full w-full transition-opacity duration-300",
+            isLoaded ? "opacity-100" : "opacity-0"
+          )}
+          style={{
+            objectFit: 'cover',
+            objectPosition: `${player.cropPosition?.x || 50}% ${player.cropPosition?.y || 50}%`,
+            transform: `scale(${player.cropZoom || 1})`,
+            transformOrigin: 'center center'
+          }}
+          onLoad={() => setIsLoaded(true)}
+          loading="lazy"
+        />
+      )}
+      {!isLoaded && (
+        <AvatarFallback className="font-black text-xl absolute inset-0">
+          {name.charAt(0)}
+        </AvatarFallback>
+      )}
     </Avatar>
   );
 }

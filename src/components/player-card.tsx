@@ -2,15 +2,16 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Player, AttributeKey, PlayerPosition, Jersey } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { PlayerOvr, AttributesGrid, PlayerPhoto, positionConfig, PlayerPositionBadge } from '@/components/player-styles';
 import { Skeleton } from './ui/skeleton';
 import {
-  ResponsiveDialog as Dialog,
-  ResponsiveDialogContent as DialogContent,
-  ResponsiveDialogTrigger as DialogTrigger,
+    ResponsiveDialog as Dialog,
+    ResponsiveDialogContent as DialogContent,
+    ResponsiveDialogTrigger as DialogTrigger,
 } from '@/components/ui/responsive-dialog';
 import { Eye, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -169,8 +170,16 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, je
                                         <PlayerPhoto player={player} />
                                     </button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none">
-                                    <img src={(player as any).photoUrl || player.photoURL} alt={player.name} className="w-full h-auto rounded-lg" />
+                                <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none overflow-hidden">
+                                    <div className="relative w-full aspect-square">
+                                        <Image
+                                            src={(player as any).photoUrl || player.photoURL}
+                                            alt={player.name}
+                                            fill
+                                            className="object-contain rounded-lg"
+                                            sizes="(max-width: 768px) 100vw, 400px"
+                                        />
+                                    </div>
                                 </DialogContent>
                             </Dialog>
                             <h3 className="w-full truncate text-center text-sm font-semibold transition-colors">{playerName}</h3>

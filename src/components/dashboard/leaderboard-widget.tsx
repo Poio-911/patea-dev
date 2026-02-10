@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -151,11 +152,23 @@ export function LeaderboardWidget({
                       <div className="w-6 flex justify-center">{getRankIcon(entry.rank)}</div>
 
                       {/* Avatar */}
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={entry.playerPhotoUrl} alt={entry.playerName} />
-                        <AvatarFallback className="text-xs">
-                          {entry.playerName.charAt(0)}
-                        </AvatarFallback>
+                      <Avatar className="h-8 w-8 overflow-hidden bg-muted">
+                        {entry.playerPhotoUrl ? (
+                          <div className="relative w-full h-full">
+                            <Image
+                              src={entry.playerPhotoUrl}
+                              alt={entry.playerName}
+                              width={32}
+                              height={32}
+                              className="object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                        ) : (
+                          <AvatarFallback className="text-xs">
+                            {entry.playerName.charAt(0)}
+                          </AvatarFallback>
+                        )}
                       </Avatar>
 
                       {/* Name */}

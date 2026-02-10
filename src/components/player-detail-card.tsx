@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { Player, Jersey } from '@/lib/types';
@@ -15,7 +16,7 @@ import { logger } from '@/lib/logger';
 import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
 import { PlayerOvr, AttributesGrid, PlayerPhoto, positionConfig, PlayerPositionBadge } from '@/components/player-styles';
 import { ImageCropperDialog } from './image-cropper-dialog';
-import { ResponsiveDialog as Dialog, ResponsiveDialogContent as DialogContent, ResponsiveDialogTitle as DialogTitle, ResponsiveDialogTrigger as DialogTrigger } from './ui/responsive-dialog';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from './ui/dialog';
 import { FollowButton } from './social/follow-button';
 import { ShareButton } from './social/share-button';
 import { CreditPackagesDialog } from './payments/credit-packages-dialog';
@@ -149,9 +150,17 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
                       </div>
                     </button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none">
+                  <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none overflow-hidden">
                     <DialogTitle className="sr-only">Imagen de perfil de {playerName}</DialogTitle>
-                    <img src={player.photoUrl} alt={player.name} className="w-full h-auto rounded-lg" />
+                    <div className="relative w-full aspect-square">
+                      <Image
+                        src={player.photoUrl}
+                        alt={player.name}
+                        fill
+                        className="object-contain rounded-lg"
+                        sizes="(max-width: 768px) 100vw, 400px"
+                      />
+                    </div>
                   </DialogContent>
                 </Dialog>
               </motion.div>
@@ -177,61 +186,56 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
             {isCurrentUserProfile && (
               <div className="flex flex-col gap-2 w-full my-4">
                 <div className="grid grid-cols-2 gap-2 w-full">
-                  {/* 
-                // OCULTADO POR SOLICITUD DEL USUARIO (BRANCH MAIN)
-                {player.cardGenerationCredits && player.cardGenerationCredits > 0 ? (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="default" size="sm" disabled={isGeneratingAI}>
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="h-4 w-4" />
-                          <span>Generar IA</span>
-                          <Badge className="bg-primary-foreground/20 text-primary-foreground">{player.cardGenerationCredits || 0}</Badge>
-                        </div>
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>¿Confirmar generación de imagen?</AlertDialogTitle>
-                        <AlertDialogDescription>Esto usará 1 de tus {player.cardGenerationCredits} créditos. Esta acción no se puede deshacer.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleGenerateAIPhoto} disabled={isGeneratingAI}>
-                          {isGeneratingAI ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                          Confirmar y Usar Crédito
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                ) : (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => setShowCreditPackages(true)}
-                    className="bg-gradient-to-r from-warning to-[hsl(var(--warning)/0.9)] hover:from-[hsl(var(--warning)/0.95)] hover:to-[hsl(var(--warning)/0.85)] text-warning-foreground"
-                  >
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    Comprar Créditos
-                  </Button>
-                )} 
-                */}
+                  {player.cardGenerationCredits && player.cardGenerationCredits > 0 ? (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="default" size="sm" disabled={isGeneratingAI}>
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4" />
+                            <span>Generar IA</span>
+                            <Badge className="bg-primary-foreground/20 text-primary-foreground">{player.cardGenerationCredits || 0}</Badge>
+                          </div>
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Confirmar generación de imagen?</AlertDialogTitle>
+                          <AlertDialogDescription>Esto usará 1 de tus {player.cardGenerationCredits} créditos. Esta acción no se puede deshacer.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleGenerateAIPhoto} disabled={isGeneratingAI}>
+                            {isGeneratingAI ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Confirmar y Usar Crédito
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  ) : (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => setShowCreditPackages(true)}
+                      className="bg-gradient-to-r from-warning to-[hsl(var(--warning)/0.9)] hover:from-[hsl(var(--warning)/0.95)] hover:to-[hsl(var(--warning)/0.85)] text-warning-foreground"
+                    >
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      Comprar Créditos
+                    </Button>
+                  )}
                   <ImageCropperDialog player={player} onSaveComplete={onPhotoUpdate}>
-                    <Button variant="secondary" size="sm" disabled={isGeneratingAI} className="w-full">
+                    <Button variant="secondary" size="sm" disabled={isGeneratingAI}>
                       <Scissors className="mr-2 h-4 w-4" />
                       Cambiar Foto
                     </Button>
                   </ImageCropperDialog>
                 </div>
 
-                {/* 
-              // OCULTADO POR SOLICITUD DEL USUARIO (BRANCH MAIN)
-              {player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0 && (
-                <p className="text-xs text-center text-muted-foreground">
-                  Sin créditos. Compra un paquete para generar fotos con IA.
-                </p>
-              )} 
-              */}
+                {/* Mensaje cuando no hay créditos */}
+                {player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0 && (
+                  <p className="text-xs text-center text-muted-foreground">
+                    Sin créditos. Compra un paquete para generar fotos con IA.
+                  </p>
+                )}
               </div>
             )}
 

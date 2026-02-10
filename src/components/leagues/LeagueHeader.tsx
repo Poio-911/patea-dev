@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import type { League, CompetitionStatus } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -60,8 +61,26 @@ export function LeagueHeader({
             <Badge variant={status.variant as any}>{status.label}</Badge>
           </div>
           {organizer && (
-            <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-              <span>Organizado por {organizer.displayName || 'Usuario'}</span>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-sm text-muted-foreground">Organizado por</span>
+              <div className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded-full">
+                {organizer.photoURL || organizer.photoUrl ? (
+                  <div className="relative w-4 h-4 rounded-full overflow-hidden">
+                    <Image
+                      src={organizer.photoURL || organizer.photoUrl}
+                      alt={organizer.displayName || 'Organizador'}
+                      fill
+                      className="object-cover"
+                      sizes="16px"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-4 h-4 rounded-full bg-muted flex items-center justify-center">
+                    <span className="text-[9px] font-bold">{organizer.displayName?.charAt(0) || '?'}</span>
+                  </div>
+                )}
+                <span className="text-sm font-medium truncate max-w-[120px]">{organizer.displayName || 'Usuario'}</span>
+              </div>
             </div>
           )}
         </div>

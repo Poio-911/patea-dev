@@ -4,6 +4,7 @@ import { getAdminDb } from '@/firebase/admin-init';
 import { requireAuth } from '@/lib/auth/get-server-session';
 import type { Player, GroupTeam, Team, MatchType, MatchLocation, Notification } from '@/lib/types';
 import { createActivityAction } from '@/lib/actions/server-actions';
+import * as geohash from 'ngeohash';
 
 const LocationSchema = z.object({
   name: z.string().min(1),
@@ -89,7 +90,10 @@ export async function POST(request: NextRequest) {
       title: input.title,
       date: input.date,
       time: input.time,
-      location: input.location,
+      location: {
+        ...input.location,
+        geohash: geohash.encode(input.location.lat, input.location.lng, 10),
+      },
       type: input.type as MatchType,
       matchSize: input.matchSize,
       isPublic: !!input.isPublic,

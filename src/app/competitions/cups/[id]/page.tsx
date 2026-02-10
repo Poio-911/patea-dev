@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import Image from 'next/image';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
 import { doc, collection, query, where } from 'firebase/firestore';
 import type { Cup, GroupTeam, BracketMatch, CupSeedingType } from '@/lib/types';
@@ -212,8 +213,14 @@ export default function CupDetailPage() {
           <div className="flex flex-col md:flex-row items-start justify-between gap-4 md:gap-8">
             <div className="flex flex-col md:flex-row items-start gap-4 flex-1">
               {cup.logoUrl && (
-                <div className="w-20 h-20 md:w-24 md:h-24 rounded-lg overflow-hidden border shrink-0 bg-muted/30 mx-auto md:mx-0">
-                  <img src={cup.logoUrl} alt={cup.name} className="w-full h-full object-contain" />
+                <div className="w-20 h-20 md:w-24 md:h-24 rounded-lg overflow-hidden border shrink-0 bg-muted/30 mx-auto md:mx-0 relative">
+                  <Image
+                    src={cup.logoUrl}
+                    alt={cup.name}
+                    fill
+                    className="object-contain transition-opacity duration-300"
+                    sizes="(max-width: 768px) 80px, 96px"
+                  />
                 </div>
               )}
               <div className="flex-1 space-y-3">
@@ -250,8 +257,16 @@ export default function CupDetailPage() {
                   <div className="flex items-center gap-2 pt-1">
                     <span className="text-sm text-muted-foreground">Organizado por</span>
                     <div className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded-full">
-                      {organizer.photoUrl ? (
-                        <img src={organizer.photoUrl} alt={organizer.displayName} className="w-4 h-4 rounded-full object-cover" />
+                      {organizer.photoURL || organizer.photoUrl ? (
+                        <div className="relative w-4 h-4 rounded-full overflow-hidden">
+                          <Image
+                            src={organizer.photoURL || organizer.photoUrl}
+                            alt={organizer.displayName || 'Organizador'}
+                            fill
+                            className="object-cover"
+                            sizes="16px"
+                          />
+                        </div>
                       ) : (
                         <div className="w-4 h-4 rounded-full bg-muted flex items-center justify-center">
                           <span className="text-[9px] font-bold">{organizer.displayName?.charAt(0) || '?'}</span>

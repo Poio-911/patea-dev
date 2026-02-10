@@ -33,18 +33,38 @@ interface ImageCropperDialogProps {
 async function getCroppedImg(
   image: HTMLImageElement,
   pixelCrop: PixelCrop,
+  maxWidth = 500, // Límite de resolución para avatares
+  maxHeight = 500
 ): Promise<Blob | null> {
   const canvas = document.createElement('canvas');
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
 
-  canvas.width = pixelCrop.width * scaleX;
-  canvas.height = pixelCrop.height * scaleY;
+  // Dimensiones originales del recorte
+  const actualWidth = pixelCrop.width * scaleX;
+  const actualHeight = pixelCrop.height * scaleY;
+
+  // Calcular dimensiones finales (manteniendo aspect ratio, pero limitadas)
+  let targetWidth = actualWidth;
+  let targetHeight = actualHeight;
+
+  if (targetWidth > maxWidth || targetHeight > maxHeight) {
+    const ratio = Math.min(maxWidth / targetWidth, maxHeight / targetHeight);
+    targetWidth *= ratio;
+    targetHeight *= ratio;
+  }
+
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
 
   const ctx = canvas.getContext('2d');
   if (!ctx) {
     return null;
   }
+
+  // Activar suavizado para mejor calidad al redimensionar
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'medium';
 
   ctx.drawImage(
     image,
@@ -54,14 +74,15 @@ async function getCroppedImg(
     pixelCrop.height * scaleY,
     0,
     0,
-    canvas.width,
-    canvas.height
+    targetWidth,
+    targetHeight
   );
 
   return new Promise((resolve) => {
+    // Compresión WebP al 80%
     canvas.toBlob((blob) => {
       resolve(blob);
-    }, 'image/jpeg');
+    }, 'image/webp', 0.8);
   });
 }
 
@@ -70,18 +91,30 @@ function normalizeFirebaseStorageUrl(url: string): string {
   try {
     const urlObj = new URL(url);
 
-    // If it's already a proper Firebase Storage URL, return as-is
-    if (urlObj.hostname === 'firebasestorage.googleapis.com' && urlObj.pathname.includes('/o/')) {
+    // If it's already a proper Firebase Storage URL with the correct bucket, return as-is
+    if (urlObj.hostname === 'firebasestorage.googleapis.com' &&
+      urlObj.pathname.includes('/v0/b/mil-disculpis.firebasestorage.app/o/')) {
       return url;
     }
 
-    // If it's a Firebase App domain, try to extract the file path and convert
-    if (urlObj.hostname.includes('firebasestorage.app')) {
-      // Extract the file path and reconstruct the URL
-      const pathMatch = url.match(/\/v0\/b\/[^/]+\/o\/(.+?)(\?|$)/);
-      if (pathMatch) {
-        const filePath = pathMatch[1];
-        return `https://firebasestorage.googleapis.com/v0/b/${urlObj.hostname.split('.')[0]}.appspot.com/o/${filePath}?alt=media`;
+    // Handle any variant of the bucket URL (storage.googleapis.com or old appspot/firebasestorage.app domains)
+    if (url.includes('mil-disculpis.appspot.com') || url.includes('mil-disculpis.firebasestorage.app')) {
+      // Extract the file path regardless of the URL format
+      let filePath = '';
+
+      const oMatch = url.match(/\/o\/(.+?)(\?|$)/);
+      if (oMatch) {
+        filePath = oMatch[1];
+      } else {
+        // Handle storage.googleapis.com style: /bucket/path/to/file
+        const parts = urlObj.pathname.split('/').filter(Boolean);
+        if (parts.length >= 2) {
+          filePath = encodeURIComponent(parts.slice(1).join('/'));
+        }
+      }
+
+      if (filePath) {
+        return `https://firebasestorage.googleapis.com/v0/b/mil-disculpis.firebasestorage.app/o/${filePath}?alt=media`;
       }
     }
 
@@ -266,16 +299,19 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
       // Logged-in user flow
       const { firebaseApp, firestore } = initializeFirebase();
       const storage = getStorage(firebaseApp);
-      const filePath = `profile-images/${user.uid}/profile_${Date.now()}.jpg`;
+      // Usar extensión .webp
+      const filePath = `profile-images/${user.uid}/profile_${Date.now()}.webp`;
       const storageRef = ref(storage, filePath);
 
+      console.log('Uploading to path:', filePath);
 
-
-      const uploadResult = await uploadBytes(storageRef, croppedImageBlob);
-
+      const uploadResult = await uploadBytes(storageRef, croppedImageBlob, {
+        contentType: 'image/webp', // Metadatos explícitos
+      });
+      console.log('Upload completed:', uploadResult.metadata.fullPath);
 
       const newPhotoURL = await getDownloadURL(uploadResult.ref);
-
+      console.log('Download URL obtained:', newPhotoURL);
 
       // ✅ FIX: Update user, player, and availablePlayers documents in a single batch
       const userDocRef = doc(firestore, 'users', user.uid);
@@ -302,11 +338,11 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
       }
 
       await batch.commit();
-
+      console.log('Firestore batch update completed (including availablePlayers if exists)');
 
       // ✅ FIX: Force update the auth user profile to propagate changes globally
       await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
-
+      console.log('Auth profile updated');
 
       if (onSaveComplete) {
         onSaveComplete(newPhotoURL);

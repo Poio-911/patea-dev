@@ -37,7 +37,7 @@ env:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    value: mil-disculpis.appspot.com
+    value: mil-disculpis.firebasestorage.app
     availability:
       - BUILD
       - RUNTIME

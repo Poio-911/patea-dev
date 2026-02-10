@@ -5,7 +5,8 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Reply } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import Image from 'next/image';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import type { ChatMessage, MessageStatus } from '@/lib/types';
 import { ChatMessageTail } from './chat-message-tail';
 import { ChatMessageStatus } from './chat-message-status';
@@ -95,9 +96,21 @@ export function ChatMessageBubble({
     >
       {/* Avatar for incoming messages */}
       {!isCurrentUser && showAvatar && (
-        <Avatar className="h-8 w-8 flex-shrink-0">
-          <AvatarImage src={message.senderPhotoUrl} alt={message.senderName} />
-          <AvatarFallback>{message.senderName.charAt(0).toUpperCase()}</AvatarFallback>
+        <Avatar className="h-8 w-8 flex-shrink-0 overflow-hidden bg-muted">
+          {message.senderPhotoUrl ? (
+            <div className="relative w-full h-full">
+              <Image
+                src={message.senderPhotoUrl}
+                alt={message.senderName}
+                width={32}
+                height={32}
+                className="object-cover"
+                loading="lazy"
+              />
+            </div>
+          ) : (
+            <AvatarFallback>{message.senderName.charAt(0).toUpperCase()}</AvatarFallback>
+          )}
         </Avatar>
       )}
 
@@ -189,9 +202,21 @@ export function ChatMessageBubble({
 
       {/* Avatar for outgoing messages */}
       {isCurrentUser && showAvatar && (
-        <Avatar className="h-8 w-8 flex-shrink-0">
-          <AvatarImage src={message.senderPhotoUrl} alt={message.senderName} />
-          <AvatarFallback>{message.senderName.charAt(0).toUpperCase()}</AvatarFallback>
+        <Avatar className="h-8 w-8 flex-shrink-0 overflow-hidden bg-muted">
+          {message.senderPhotoUrl ? (
+            <div className="relative w-full h-full">
+              <Image
+                src={message.senderPhotoUrl}
+                alt={message.senderName}
+                width={32}
+                height={32}
+                className="object-cover"
+                loading="lazy"
+              />
+            </div>
+          ) : (
+            <AvatarFallback>{message.senderName.charAt(0).toUpperCase()}</AvatarFallback>
+          )}
         </Avatar>
       )}
     </div>
