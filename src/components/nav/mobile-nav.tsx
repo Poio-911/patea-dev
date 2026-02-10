@@ -44,7 +44,7 @@ export function MobileNav() {
         return () => document.removeEventListener('mousedown', handleClick);
     }, [matchesMenuOpen]);
 
-    const isMatchesActive = pathname.startsWith('/matches') || pathname.startsWith('/competitions') || pathname.startsWith('/explore');
+    const isMatchesActive = pathname.startsWith('/matches') || pathname.startsWith('/competitions');
 
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/90 backdrop-blur-lg shadow-lg md:hidden pb-[env(safe-area-inset-bottom)]">
@@ -135,8 +135,7 @@ const BottomSheetMenu = React.forwardRef<HTMLDivElement, { pathname: string, onC
         >
             <div className="mx-auto h-1.5 w-12 rounded-full bg-muted-foreground/20 mb-6" />
             <div className="px-6 space-y-2">
-                <MenuLink href="/matches" icon={Calendar} label="Mis Partidos" pathname={pathname} onClose={onClose} matchExact={false} exclude="/explore" />
-                <MenuLink href="/explore" icon={Search} label="Explorar" pathname={pathname} onClose={onClose} />
+                <MenuLink href="/matches" icon={Calendar} label="Mis Partidos" pathname={pathname} onClose={onClose} matchExact={false} />
                 <MenuLink href="/competitions" icon={Trophy} label="Competiciones" pathname={pathname} onClose={onClose} />
             </div>
         </div>
