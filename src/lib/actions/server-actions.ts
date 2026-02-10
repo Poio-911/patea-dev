@@ -111,19 +111,42 @@ export async function generateTeamsAction(players: Array<Pick<Player, 'id' | 'na
 }
 
 export async function getPlayerEvaluationsAction(playerId: string, groupId: string): Promise<Partial<Evaluation>[]> {
-    const evalsSnapshot = await getAdminDb().collection('evaluations').where('playerId', '==', playerId).orderBy('evaluatedAt', 'desc').get();
-    const matchesSnapshot = await getAdminDb().collection('matches').where('groupId', '==', groupId).get();
-    const groupMatchIds = new Set(matchesSnapshot.docs.map(doc => doc.id));
+    // 1. Fetch recent evaluations for the player (Limit 50 to avoid reading thousands)
+    const evalsSnapshot = await getAdminDb()
+        .collection('evaluations')
+        .where('playerId', '==', playerId)
+        .orderBy('evaluatedAt', 'desc')
+        .limit(50)
+        .get();
 
-    const evaluations: Partial<Evaluation>[] = [];
-    evalsSnapshot.forEach(doc => {
-        const evaluation = doc.data() as Evaluation;
-        if (groupMatchIds.has(evaluation.matchId)) {
-            evaluations.push(evaluation);
+    if (evalsSnapshot.empty) {
+        return [];
+    }
+
+    const evaluations = evalsSnapshot.docs.map(doc => doc.data() as Evaluation);
+    const matchIds = [...new Set(evaluations.map(e => e.matchId).filter(Boolean))];
+
+    if (matchIds.length === 0) {
+        return [];
+    }
+
+    // 2. Fetch only the relevant matches to check groupId
+    // Firestore 'in' limit is 30 (or 10 depending on usage), getAll is better for IDs.
+    const matchRefs = matchIds.map(id => getAdminDb().collection('matches').doc(id));
+    const matchSnapshots = await getAdminDb().getAll(...matchRefs);
+
+    const validMatchIds = new Set<string>();
+    matchSnapshots.forEach(snap => {
+        if (snap.exists) {
+            const matchData = snap.data() as Match;
+            if (matchData.groupId === groupId) {
+                validMatchIds.add(snap.id);
+            }
         }
     });
 
-    return evaluations;
+    // 3. Filter evaluations that belong to the group
+    return evaluations.filter(e => validMatchIds.has(e.matchId));
 }
 
 

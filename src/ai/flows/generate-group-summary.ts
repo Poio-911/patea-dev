@@ -8,8 +8,9 @@
  * - GenerateGroupSummaryOutput - The return type for the generateGroupSummary function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
+import { getCachedOrGenerate, generateCacheKey } from '@/lib/ai-cache';
 
 const GenerateGroupSummaryInputSchema = z.object({
   groupName: z.string().describe('El nombre del grupo'),
@@ -40,8 +41,8 @@ export async function generateGroupSummary(input: GenerateGroupSummaryInput): Pr
 
 const prompt = ai.definePrompt({
   name: 'generateGroupSummaryPrompt',
-  input: {schema: GenerateGroupSummaryInputSchema},
-  output: {schema: GenerateGroupSummaryOutputSchema},
+  input: { schema: GenerateGroupSummaryInputSchema },
+  output: { schema: GenerateGroupSummaryOutputSchema },
   prompt: `Sos un redactor deportivo que escribe resúmenes de grupos de fútbol amateur. Habla en español rioplatense.
 Genera un párrafo breve y atractivo (2-3 oraciones) que describa al grupo.
 
@@ -79,7 +80,15 @@ const generateGroupSummaryFlow = ai.defineFlow(
     outputSchema: GenerateGroupSummaryOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input, {model: 'googleai/gemini-2.5-flash'});
-    return output!;
+    const cacheKey = generateCacheKey(input);
+    const output = await getCachedOrGenerate(
+      cacheKey,
+      async () => {
+        const { output } = await prompt(input, { model: 'googleai/gemini-2.5-flash' });
+        return output!;
+      },
+      { ttlHours: 24 * 7, category: 'group-summary' }
+    );
+    return output;
   }
 );

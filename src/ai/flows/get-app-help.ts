@@ -10,6 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { getCachedOrGenerate, generateCacheKey } from '@/lib/ai-cache';
 
 const AppHelpInputSchema = z.object({
   userMessage: z.string().describe('The user\'s question about the application.'),
@@ -112,7 +113,19 @@ const appHelpFlow = ai.defineFlow(
     outputSchema: AppHelpOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
-    return output!;
+    // Generate cache key from input (questions are deterministic)
+    const cacheKey = generateCacheKey(input);
+
+    // Use cache with 30-day TTL (app help content is static)
+    const output = await getCachedOrGenerate(
+      cacheKey,
+      async () => {
+        const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
+        return output!;
+      },
+      { ttlHours: 24 * 30, category: 'app-help' }
+    );
+
+    return output;
   }
 );

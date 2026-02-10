@@ -11,19 +11,20 @@
 import { ai } from '@/ai/genkit';
 import { GenerateDuoImageInputSchema, type GenerateDuoImageInput } from '@/lib/types';
 import { z } from 'genkit';
+import { getCachedOrGenerate, generateCacheKey } from '@/lib/ai-cache';
 
 
 export async function generateDuoImage(player1DataUri: string, player2DataUri: string, player1Name: string, player2Name: string, prompt: string): Promise<string> {
   const isIndividualImage = !player2DataUri || player1DataUri === player2DataUri;
-  
-  const mediaPrompts = isIndividualImage 
+
+  const mediaPrompts = isIndividualImage
     ? [{ media: { url: player1DataUri, contentType: 'image/jpeg' } }]
     : [
-        { media: { url: player1DataUri, contentType: 'image/jpeg' } },
-        { media: { url: player2DataUri, contentType: 'image/jpeg' } }
-      ];
-      
-  const instructionText = isIndividualImage 
+      { media: { url: player1DataUri, contentType: 'image/jpeg' } },
+      { media: { url: player2DataUri, contentType: 'image/jpeg' } }
+    ];
+
+  const instructionText = isIndividualImage
     ? `
         INSTRUCCIONES PARA IMAGEN INDIVIDUAL:
         1. Identifica a la persona en la imagen de referencia (${player1Name}).
@@ -46,21 +47,33 @@ export async function generateDuoImage(player1DataUri: string, player2DataUri: s
         7. La calidad de la imagen debe ser alta y realista.
         8. No incluyas texto, logos ni marcas de agua en la imagen.
       `;
-      
-  const { media } = await ai.generate({
-    model: 'googleai/gemini-2.5-flash-image-preview',
-    prompt: [
-      ...mediaPrompts,
-      { text: instructionText },
-    ],
-    config: {
-      responseModalities: ['IMAGE'],
+
+  // Generate cache key from input parameters
+  const cacheKey = generateCacheKey({ player1Name, player2Name, prompt });
+
+  // Use cache with 24-hour TTL (image generation is expensive)
+  const imageUrl = await getCachedOrGenerate(
+    cacheKey,
+    async () => {
+      const { media } = await ai.generate({
+        model: 'googleai/gemini-2.5-flash-image-preview',
+        prompt: [
+          ...mediaPrompts,
+          { text: instructionText },
+        ],
+        config: {
+          responseModalities: ['IMAGE'],
+        },
+      });
+
+      if (!media?.url) {
+        throw new Error('La IA no pudo generar la imagen.');
+      }
+
+      return media.url;
     },
-  });
+    { ttlHours: 24, category: 'image-generation' }
+  );
 
-  if (!media?.url) {
-    throw new Error('La IA no pudo generar la imagen.');
-  }
-
-  return media.url;
+  return imageUrl;
 }

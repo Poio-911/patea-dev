@@ -9,6 +9,7 @@
 
 import { ai } from '@/ai/genkit';
 import { GenerateMatchChronicleInputSchema, GenerateMatchChronicleOutputSchema, type GenerateMatchChronicleInput } from '@/lib/types';
+import { getCachedOrGenerate, generateCacheKey } from '@/lib/ai-cache';
 
 const prompt = ai.definePrompt({
   name: 'generateMatchChroniclePrompt',
@@ -89,10 +90,22 @@ export const generateMatchChronicleFlow = ai.defineFlow(
     outputSchema: GenerateMatchChronicleOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
-    if (!output) {
-      throw new Error('La IA no pudo generar la crónica del partido.');
-    }
+    // Generate cache key from match data
+    const cacheKey = generateCacheKey(input);
+
+    // Use cache with 24-hour TTL (chronicles are static after match completion)
+    const output = await getCachedOrGenerate(
+      cacheKey,
+      async () => {
+        const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
+        if (!output) {
+          throw new Error('La IA no pudo generar la crónica del partido.');
+        }
+        return output;
+      },
+      { ttlHours: 24, category: 'match-chronicle' }
+    );
+
     return output;
   }
 );

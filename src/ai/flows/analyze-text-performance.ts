@@ -10,6 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { getCachedOrGenerate, generateCacheKey } from '@/lib/ai-cache';
 
 const AnalyzeTextPerformanceInputSchema = z.object({
   text: z.string().min(10).max(500).describe('Free-form text describing player performance'),
@@ -86,11 +87,19 @@ const analyzeTextPerformanceFlow = ai.defineFlow(
     outputSchema: AnalyzeTextPerformanceOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
+    const cacheKey = generateCacheKey(input);
+    const output = await getCachedOrGenerate(
+      cacheKey,
+      async () => {
+        const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
 
-    if (!output || !output.attributeChanges || output.attributeChanges.length === 0) {
-      throw new Error('La IA no pudo extraer cambios de atributos del texto.');
-    }
+        if (!output || !output.attributeChanges || output.attributeChanges.length === 0) {
+          throw new Error('La IA no pudo extraer cambios de atributos del texto.');
+        }
+        return output;
+      },
+      { ttlHours: 24, category: 'text-analysis' }
+    );
 
     // Clamp changes to valid range and deduplicate by attribute
     const seenAttributes = new Set<string>();

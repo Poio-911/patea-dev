@@ -107,10 +107,15 @@ service cloud.firestore {
 
     // Colección de Partidos
     match /matches/{matchId} {
-      // ✅ REGLA ABIERTA: Cualquier usuario autenticado puede leer/escribir.
-      // La lógica de negocio y permisos se maneja en las Server Actions.
-      // Esto simplifica enormemente las reglas y evita errores de permisos en el cliente.
-      allow read, write: if isAuthenticated();
+      // ✅ REGLA MEJORADA: 
+      // - Create: Bloqueado (se hace vía Server Action / API)
+      // - Delete: Solo el dueño del partido puede eliminar
+      // - Update: Abierto por ahora (necesario para Join/Leave desde cliente)
+      //   TODO: Refactorizar Join/Leave a Server Actions para restringir esto.
+      allow read: if isAuthenticated();
+      allow create: if false; 
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
 
       // Subcolecciones de partido (invitations, dateProposals, etc.)
       // - invitations: Respuestas de jugadores (confirmed/declined/maybe/pending)
@@ -135,6 +140,13 @@ service cloud.firestore {
                      request.auth.uid == resource.data.userId;
       // Solo server-side puede crear/actualizar
       allow write: if false;
+    }
+
+    // Colección de Caché de IA
+    match /ai_cache/{cacheId} {
+      // Solo accesible desde Server Actions (Cloud Functions)
+      // Los clientes no deben leer ni escribir directamente
+      allow read, write: if false;
     }
 
     // Social Activities - Public read for authenticated users

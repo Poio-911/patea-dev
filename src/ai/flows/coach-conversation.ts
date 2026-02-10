@@ -10,6 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { getCachedOrGenerate, generateCacheKey } from '@/lib/ai-cache';
 
 const CoachConversationInputSchema = z.object({
   userMessage: z.string().describe('El mensaje del usuario al entrenador.'),
@@ -116,7 +117,15 @@ const coachConversationFlow = ai.defineFlow(
     outputSchema: CoachConversationOutputSchema,
   },
   async input => {
-    const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
-    return output!;
+    const cacheKey = generateCacheKey(input);
+    const output = await getCachedOrGenerate(
+      cacheKey,
+      async () => {
+        const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
+        return output!;
+      },
+      { ttlHours: 0.5, category: 'coach-conversation' }
+    );
+    return output;
   }
 );

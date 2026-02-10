@@ -11,19 +11,20 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { getCachedOrGenerate, generateCacheKey } from '@/lib/ai-cache';
 
 const PlayerSchema = z.object({
-    uid: z.string(),
-    displayName: z.string(),
-    ovr: z.number(),
-    position: z.string(),
+  uid: z.string(),
+  displayName: z.string(),
+  ovr: z.number(),
+  position: z.string(),
 });
 
 const MatchSchema = z.object({
-    id: z.string(),
-    title: z.string(),
-    matchSize: z.number(),
-    players: z.array(PlayerSchema),
+  id: z.string(),
+  title: z.string(),
+  matchSize: z.number(),
+  players: z.array(PlayerSchema),
 });
 
 const FindBestFitPlayerInputSchema = z.object({
@@ -34,8 +35,8 @@ const FindBestFitPlayerInputSchema = z.object({
 export type FindBestFitPlayerInput = z.infer<typeof FindBestFitPlayerInputSchema>;
 
 const RecommendedPlayerSchema = z.object({
-    playerId: z.string().describe("El UID del jugador recomendado."),
-    reason: z.string().describe("Una justificación corta, en español y en tono de 'manager', de por qué este jugador es un fichaje ideal."),
+  playerId: z.string().describe("El UID del jugador recomendado."),
+  reason: z.string().describe("Una justificación corta, en español y en tono de 'manager', de por qué este jugador es un fichaje ideal."),
 });
 
 const FindBestFitPlayerOutputSchema = z.object({
@@ -45,9 +46,9 @@ export type FindBestFitPlayerOutput = z.infer<typeof FindBestFitPlayerOutputSche
 
 
 export async function findBestFitPlayer(input: Omit<FindBestFitPlayerInput, 'spotsToFill'>): Promise<FindBestFitPlayerOutput> {
-    const spotsToFill = input.match.matchSize - input.match.players.length;
-    const fullInput = { ...input, spotsToFill };
-    return findBestFitPlayerFlow(fullInput);
+  const spotsToFill = input.match.matchSize - input.match.players.length;
+  const fullInput = { ...input, spotsToFill };
+  return findBestFitPlayerFlow(fullInput);
 }
 
 
@@ -96,9 +97,17 @@ const findBestFitPlayerFlow = ai.defineFlow(
   },
   async (input) => {
     if (input.availablePlayers.length === 0 || input.spotsToFill <= 0) {
-        return { recommendations: [] };
+      return { recommendations: [] };
     }
-    const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
-    return output!;
+    const cacheKey = generateCacheKey(input);
+    const output = await getCachedOrGenerate(
+      cacheKey,
+      async () => {
+        const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
+        return output!;
+      },
+      { ttlHours: 1, category: 'player-matching' }
+    );
+    return output;
   }
 );

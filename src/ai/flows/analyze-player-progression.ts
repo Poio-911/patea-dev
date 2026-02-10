@@ -11,6 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { getCachedOrGenerate, generateCacheKey } from '@/lib/ai-cache';
 
 const OvrHistoryEntrySchema = z.object({
   date: z.string().describe('Fecha del cambio de OVR.'),
@@ -95,10 +96,22 @@ const analyzePlayerProgressionFlow = ai.defineFlow(
     outputSchema: AnalyzePlayerProgressionOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
-    if (!output) {
-      throw new Error('La IA no pudo generar el análisis de progresión.');
-    }
+    // Generate cache key from player data
+    const cacheKey = generateCacheKey(input);
+
+    // Use cache with 7-day TTL (player progression changes slowly)
+    const output = await getCachedOrGenerate(
+      cacheKey,
+      async () => {
+        const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
+        if (!output) {
+          throw new Error('La IA no pudo generar el análisis de progresión.');
+        }
+        return output;
+      },
+      { ttlHours: 24 * 7, category: 'player-analysis' }
+    );
+
     return output;
   }
 );

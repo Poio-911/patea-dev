@@ -1,7 +1,8 @@
 'use server';
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
+import { getCachedOrGenerate, generateCacheKey } from '@/lib/ai-cache';
 
 // ── SCHEMA DE INPUT ──────────────────────────────────────────
 const DetectPlayerPatternsInputSchema = z.object({
@@ -160,8 +161,16 @@ const detectPlayerPatternsFlow = ai.defineFlow(
     outputSchema: DetectPlayerPatternsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
-    return output!;
+    const cacheKey = generateCacheKey(input);
+    const output = await getCachedOrGenerate(
+      cacheKey,
+      async () => {
+        const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
+        return output!;
+      },
+      { ttlHours: 24 * 7, category: 'player-patterns' }
+    );
+    return output;
   }
 );
 
