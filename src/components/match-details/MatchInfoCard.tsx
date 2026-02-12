@@ -84,7 +84,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
         )} />
       </div>
 
-      <CardContent className="relative z-10 p-8 pt-8 space-y-6 bg-transparent text-foreground transition-all duration-300">
+      <CardContent className="relative z-10 p-8 pt-8 space-y-6 bg-transparent transition-all duration-300">
         {/* Special header for league_final */}
         {match.type === 'league_final' && (
           <div className="-mx-8 -mt-8 mb-6 p-6 bg-gradient-to-r from-warning via-warning to-warning text-center">
@@ -134,7 +134,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
                   <AvatarImage src={ownerProfile.photoURL || ''} alt={ownerProfile.displayName || ''} />
                   <AvatarFallback className="text-xs">{ownerProfile.displayName?.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <p className="text-sm text-foreground/90">{`Organizado por ${ownerProfile.displayName}`}</p>
+                <p className="text-sm text-white/90">{`Organizado por ${ownerProfile.displayName}`}</p>
               </div>
             )}
           </div>
@@ -145,14 +145,14 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
               <Clock className="h-5 w-5 icon-with-circle" aria-hidden="true" />
               <span className="font-semibold">{match.time} hs</span>
               {WeatherIcon && match.weather && (
-                <span className="flex items-center gap-1.5 text-sm text-foreground/90">
-                  <WeatherIcon className="h-4 w-4 text-info" aria-hidden="true" />
+                <span className="flex items-center gap-1.5 text-sm text-white/90">
+                  <WeatherIcon className="h-4 w-4 text-white" aria-hidden="true" />
                   <span>({match.weather.temperature}°C)</span>
                 </span>
               )}
             </div>
             <div className="flex justify-start sm:justify-end">
-              <Badge variant="outline" className="capitalize text-sm bg-foreground/10 border-foreground/30 text-foreground badge">
+              <Badge variant="outline" className="capitalize text-sm bg-foreground/10 border-foreground/30 text-white badge">
                 {match.type === 'by_teams' ? 'Por Equipos' : match.type}
               </Badge>
             </div>

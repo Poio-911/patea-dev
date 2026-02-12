@@ -19,6 +19,36 @@ body.standalone nav.fixed {
 }
 
 /* ============================================
+   DEFAULT / SHARED BANNER STYLES
+   Ensures legibility on video backgrounds (Light Theme fix)
+   ============================================ */
+.next-match-banner,
+.hero-match-banner {
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.next-match-banner a:not(.game-theme-button),
+.hero-match-banner a:not(.game-theme-button) {
+  color: #ffffff;
+}
+
+/* ============================================
+   DEFAULT / SHARED BANNER STYLES
+   Ensures legibility on video backgrounds (Light Theme fix)
+   ============================================ */
+.next-match-banner,
+.hero-match-banner {
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.next-match-banner a:not(.game-theme-button),
+.hero-match-banner a:not(.game-theme-button) {
+  color: #ffffff;
+}
+
+/* ============================================
    GAME THEME - BANNER STYLES
    Scoped to .next-match-banner and .hero-match-banner
    ============================================ */

@@ -125,6 +125,12 @@ export function InvitePlayerDialog({
           link: `/matches`,
           isRead: false,
           createdAt: new Date().toISOString(),
+          metadata: {
+            fromUserId: user.uid,
+            fromUserName: user.displayName || 'Jugador',
+            fromUserPhoto: user.photoURL || '',
+            matchId: selectedMatchData.id,
+          },
         };
         batch.set(notificationRef, notification);
         invitesSent++;

@@ -8,7 +8,6 @@ import {
     User,
     Users2,
     Sun,
-    Moon,
     BellRing
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -94,21 +93,35 @@ export function UserMenu({ user, player, onLogout, onRequestPermission }: UserMe
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
-                        <Sun className="mr-2 h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                        <Moon className="absolute mr-2 h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                        <span>Cambiar Tema</span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuPortal>
-                        <DropdownMenuSubContent>
-                            <DropdownMenuItem onClick={() => setTheme("light")}>Claro</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setTheme("game")}>Game</DropdownMenuItem>
-                            {/* Nike theme hidden for now */}
-                            {/* <DropdownMenuItem onClick={() => setTheme("nike")}>Nike</DropdownMenuItem> */}
-                        </DropdownMenuSubContent>
-                    </DropdownMenuPortal>
-                </DropdownMenuSub>
+                <div className="px-2 py-1.5">
+                    <p className="px-2 text-xs font-semibold text-muted-foreground mb-2">Tema</p>
+                    <div className="flex gap-2 bg-muted/50 p-1 rounded-lg">
+                        <Button
+                            variant={typeof document !== 'undefined' && document.documentElement.classList.contains('game') ? 'ghost' : 'secondary'}
+                            size="sm"
+                            className={cn(
+                                "flex-1 h-8 text-xs font-medium",
+                                typeof document !== 'undefined' && !document.documentElement.classList.contains('game') && "bg-background shadow-sm"
+                            )}
+                            onClick={() => setTheme("light")}
+                        >
+                            <Sun className="mr-2 h-3 w-3" />
+                            Claro
+                        </Button>
+                        <Button
+                            variant={typeof document !== 'undefined' && document.documentElement.classList.contains('game') ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className={cn(
+                                "flex-1 h-8 text-xs font-medium",
+                                typeof document !== 'undefined' && document.documentElement.classList.contains('game') && "bg-background shadow-sm"
+                            )}
+                            onClick={() => setTheme("game")}
+                        >
+                            <span className="mr-2 text-xs">🎮</span>
+                            Game
+                        </Button>
+                    </div>
+                </div>
                 <DropdownMenuItem onClick={onRequestPermission}>
                     <BellRing className="mr-2 h-4 w-4" />
                     <span>Activar Notificaciones</span>

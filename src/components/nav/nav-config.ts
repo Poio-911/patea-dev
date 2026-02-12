@@ -1,8 +1,9 @@
-import { LayoutDashboard, Users2, User, ClipboardCheck, Trophy, Search, Calendar, UserSearch } from 'lucide-react';
+import { LayoutDashboard, Users2, User, ClipboardCheck, Trophy, Search, Calendar, UserSearch, Globe } from 'lucide-react';
 
 export const mainNavItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
   { href: '/players', label: 'Jugadores', icon: User },
+  { href: '/social', label: 'Explorar', icon: Globe },
   { href: '/groups', label: 'Grupos', icon: Users2 },
 ];
 

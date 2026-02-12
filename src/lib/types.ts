@@ -955,6 +955,7 @@ export type SuggestedUser = {
   followerCount: number;
   matchesPlayed?: number;
   reason: SuggestedUserReason;
+  isFollowing?: boolean;
 };
 
 // Social activity for the feed
