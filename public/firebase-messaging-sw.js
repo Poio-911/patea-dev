@@ -25,12 +25,38 @@ messaging.onBackgroundMessage((payload) => {
     payload
   );
 
-  const notificationTitle = payload.notification.title;
+  const notificationTitle = payload.notification?.title || "Pateá";
+  const link = payload.fcmOptions?.link || payload.data?.link || "/";
   const notificationOptions = {
-    body: payload.notification.body,
-    icon: payload.notification.icon || "/icons/icon-192x192.png", // Ensure you have this icon
+    body: payload.notification?.body,
+    icon: payload.notification?.icon || "/icons/icon-192x192.png",
+    badge: "/icons/icon-48x48.png",
+    data: { link, ...payload.data },
+    tag: payload.data?.type || "default",
+    vibrate: [100, 50, 100],
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Handle notification click — open/focus the app and navigate to the deep link
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const link = event.notification.data?.link || "/";
+  const urlToOpen = new URL(link, self.location.origin).href;
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+      // Try to focus an existing tab
+      for (const client of windowClients) {
+        if (client.url.startsWith(self.location.origin) && "focus" in client) {
+          client.navigate(urlToOpen);
+          return client.focus();
+        }
+      }
+      // No existing tab — open a new one
+      return clients.openWindow(urlToOpen);
+    })
+  );
 });
 

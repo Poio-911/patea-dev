@@ -12,6 +12,8 @@ import { ThemeProvider } from 'next-themes';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { ThemeBackground } from '@/components/theme-background';
 import { AchievementToastProvider } from '@/components/achievement-toast';
+import { InstallPrompt } from '@/components/pwa/install-prompt';
+import { UpdateNotification } from '@/components/pwa/update-notification';
 
 
 type FirebaseClientProviderProps = {
@@ -79,7 +81,8 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
         <UserProvider>
           <AchievementToastProvider>
             <MainNav>{children}</MainNav>
-
+            <InstallPrompt />
+            <UpdateNotification />
           </AchievementToastProvider>
         </UserProvider>
       </FirebaseProvider>

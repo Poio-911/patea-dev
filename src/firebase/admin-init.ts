@@ -2,6 +2,7 @@ import { initializeApp, cert, getApps, App, ServiceAccount } from 'firebase-admi
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
+import { getMessaging, Messaging } from 'firebase-admin/messaging';
 import { logger } from '../lib/logger';
 
 // --- Firebase Admin SDK Initialization ---
@@ -74,6 +75,7 @@ function getAdminApp(): App {
 let _adminDb: ReturnType<typeof getFirestore> | undefined;
 let _adminAuth: ReturnType<typeof getAuth> | undefined;
 let _adminStorage: ReturnType<ReturnType<typeof getStorage>['bucket']> | undefined;
+let _adminMessaging: Messaging | undefined;
 
 export function getAdminDb() {
     if (!_adminDb) {
@@ -97,4 +99,11 @@ export function getAdminStorage() {
         _adminStorage = getStorage(app).bucket(bucketName);
     }
     return _adminStorage;
+}
+
+export function getAdminMessaging() {
+    if (!_adminMessaging) {
+        _adminMessaging = getMessaging(getAdminApp());
+    }
+    return _adminMessaging;
 }

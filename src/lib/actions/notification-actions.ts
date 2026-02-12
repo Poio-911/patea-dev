@@ -1,6 +1,6 @@
 'use server';
 
-import { getAdminDb } from '@/firebase/admin-init';
+import { getAdminDb, getAdminMessaging } from '@/firebase/admin-init';
 import { FieldValue } from 'firebase-admin/firestore';
 import { logger } from '@/lib/logger';
 
@@ -105,22 +105,62 @@ export async function sendNotificationToUsersAction(params: {
       return { success: false, error: 'No tokens found' };
     }
 
-    // In a real implementation, you would call Firebase Admin SDK here
-    // For now, we'll use the Web API approach (requires a backend endpoint)
+    const messaging = getAdminMessaging();
 
-    // TODO: Implement actual FCM sending logic
-    // This would typically be done via Firebase Cloud Functions or a backend API
-    // For the client-side demo, we can show how it would work
+    const response = await messaging.sendEachForMulticast({
+      tokens,
+      notification: {
+        title,
+        body,
+        ...(imageUrl ? { imageUrl } : {}),
+      },
+      webpush: {
+        fcmOptions: {
+          link: data?.link || '/',
+        },
+        notification: {
+          icon: '/icons/icon-192x192.png',
+          badge: '/icons/icon-48x48.png',
+        },
+      },
+      ...(data ? { data } : {}),
+    });
 
-    logger.info('Notification queued for sending', {
+    // Cleanup invalid/expired tokens
+    const tokensToRemove: string[] = [];
+    response.responses.forEach((resp, idx) => {
+      if (!resp.success && resp.error) {
+        const errorCode = resp.error.code;
+        if (
+          errorCode === 'messaging/invalid-registration-token' ||
+          errorCode === 'messaging/registration-token-not-registered'
+        ) {
+          tokensToRemove.push(tokens[idx]);
+        }
+      }
+    });
+
+    if (tokensToRemove.length > 0) {
+      logger.info('Removing stale FCM tokens', { count: tokensToRemove.length });
+      // Remove stale tokens from all target users
+      for (const userId of userIds) {
+        const userRef = db.collection('users').doc(userId);
+        await userRef.update({
+          fcmTokens: FieldValue.arrayRemove(...tokensToRemove),
+        });
+      }
+    }
+
+    logger.info('Push notifications sent', {
       userIds,
       title,
-      tokenCount: tokens.length,
+      successCount: response.successCount,
+      failureCount: response.failureCount,
     });
 
     return {
       success: true,
-      message: `Notification queued for ${tokens.length} devices`,
+      message: `Notification sent to ${response.successCount}/${tokens.length} devices`,
     };
   } catch (error: any) {
     logger.error('Error sending notification', { userIds, error: error.message });
@@ -133,11 +173,12 @@ export async function sendNotificationToUsersAction(params: {
  */
 export async function notifyPlayerAddedToMatchAction(params: {
   playerId: string;
+  matchId?: string;
   matchTitle: string;
   matchDate: string;
   matchLocation: string;
 }) {
-  const { playerId, matchTitle, matchDate, matchLocation } = params;
+  const { playerId, matchId, matchTitle, matchDate, matchLocation } = params;
 
   return sendNotificationToUsersAction({
     userIds: [playerId],
@@ -147,6 +188,7 @@ export async function notifyPlayerAddedToMatchAction(params: {
       type: 'match_invite',
       matchTitle,
       matchDate,
+      ...(matchId ? { link: `/matches/${matchId}` } : {}),
     },
   });
 }
