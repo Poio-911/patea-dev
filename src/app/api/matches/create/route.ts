@@ -4,6 +4,7 @@ import { getAdminDb } from '@/firebase/admin-init';
 import { requireAuth } from '@/lib/auth/get-server-session';
 import type { Player, GroupTeam, Team, MatchType, MatchLocation, Notification } from '@/lib/types';
 import { createActivityAction } from '@/lib/actions/server-actions';
+import { sendNotificationToUsersAction } from '@/lib/actions/notification-actions';
 import * as geohash from 'ngeohash';
 
 const LocationSchema = z.object({
@@ -201,23 +202,35 @@ export async function POST(request: NextRequest) {
     }
 
     // Notifications for participants (manual|by_teams)
-    if (baseData.playerUids?.length) {
+    const participantIds = (baseData.playerUids || []).filter((pid: string) => pid !== userId);
+    if (participantIds.length > 0) {
+      // In-app notifications (Firestore)
       await Promise.all(
-        baseData.playerUids
-          .filter((pid: string) => pid !== userId)
-          .map(async (pid: string) => {
-            const notif: Omit<Notification, 'id'> = {
-              type: 'match_invite',
-              title: '¡Te convocaron!',
-              message: `Te sumaron al partido "${baseData.title}"`,
-              link: `/matches`,
-              isRead: false,
-              createdAt: new Date().toISOString(),
-              metadata: { fromUserId: userId, matchId: matchRef.id },
-            } as any;
-            await db.collection(`users/${pid}/notifications`).add(notif);
-          })
+        participantIds.map(async (pid: string) => {
+          const notif: Omit<Notification, 'id'> = {
+            type: 'match_invite',
+            title: '¡Te convocaron!',
+            message: `Te sumaron al partido "${baseData.title}"`,
+            link: `/matches/${matchRef.id}`,
+            isRead: false,
+            createdAt: new Date().toISOString(),
+            metadata: { fromUserId: userId, matchId: matchRef.id },
+          } as any;
+          await db.collection(`users/${pid}/notifications`).add(notif);
+        })
       );
+
+      // Push notifications (real FCM)
+      sendNotificationToUsersAction({
+        userIds: participantIds,
+        title: '⚽ ¡Te convocaron!',
+        body: `Te sumaron al partido "${baseData.title}"`,
+        data: {
+          type: 'match_invite',
+          link: `/matches/${matchRef.id}`,
+          matchTitle: baseData.title,
+        },
+      }).catch(err => console.warn('Push notification failed:', err));
     }
 
     return NextResponse.json({ success: true, matchId: matchRef.id });
