@@ -48,7 +48,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
 
   return (
     <Card className={cn(
-      "group relative overflow-hidden border-2 rounded-xl shadow-md glass hover:shadow-lg transition-all duration-300 text-foreground",
+      "group relative overflow-hidden border-2 rounded-xl shadow-md glass hover:shadow-lg transition-all duration-300 text-foreground hero-match-banner",
       // Type-specific top border
       match.type === 'manual' && "border-t-4 border-t-blue-500",
       match.type === 'collaborative' && "border-t-4 border-t-violet-500",
@@ -72,7 +72,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
           <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
         </video>
         <div className={cn(
-          "absolute inset-0",
+          "absolute inset-0 game-banner-overlay",
           // Type-specific gradient overlay
           match.type === 'manual' && "bg-gradient-to-br from-primary/40 via-primary/30 to-background/50",
           match.type === 'collaborative' && "bg-gradient-to-br from-accent/40 via-accent/30 to-background/50",
@@ -84,7 +84,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
         )} />
       </div>
 
-      <CardContent className="relative z-10 p-8 pt-8 space-y-6 bg-transparent text-foreground [text-shadow:0_2px_4px_rgb(0_0_0_/_0.6)] transition-all duration-300">
+      <CardContent className="relative z-10 p-8 pt-8 space-y-6 bg-transparent text-foreground transition-all duration-300">
         {/* Special header for league_final */}
         {match.type === 'league_final' && (
           <div className="-mx-8 -mt-8 mb-6 p-6 bg-gradient-to-r from-warning via-warning to-warning text-center">
@@ -120,11 +120,11 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
         )}
 
         {/* Fecha y organizador */}
-        <div className="flex flex-col sm:flex-row gap-6 justify-between text-primary-foreground">
+        <div className="flex flex-col sm:flex-row gap-6 justify-between">
           <div className="space-y-4">
             <div className="flex items-center gap-3 text-lg">
-              <Calendar className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
-              <span className="font-semibold text-primary-foreground">
+              <Calendar className="h-5 w-5 icon-with-circle" aria-hidden="true" />
+              <span className="font-semibold">
                 {format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es })}
               </span>
             </div>
@@ -134,25 +134,25 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
                   <AvatarImage src={ownerProfile.photoURL || ''} alt={ownerProfile.displayName || ''} />
                   <AvatarFallback className="text-xs">{ownerProfile.displayName?.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <p className="text-sm text-primary-foreground/90">{`Organizado por ${ownerProfile.displayName}`}</p>
+                <p className="text-sm text-foreground/90">{`Organizado por ${ownerProfile.displayName}`}</p>
               </div>
             )}
           </div>
 
           {/* Hora y clima */}
-          <div className="space-y-4 text-left sm:text-right text-primary-foreground">
+          <div className="space-y-4 text-left sm:text-right">
             <div className="flex items-center gap-3 text-lg justify-start sm:justify-end">
-              <Clock className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
-              <span className="font-semibold text-primary-foreground">{match.time} hs</span>
+              <Clock className="h-5 w-5 icon-with-circle" aria-hidden="true" />
+              <span className="font-semibold">{match.time} hs</span>
               {WeatherIcon && match.weather && (
-                <span className="flex items-center gap-1.5 text-sm text-primary-foreground/90">
+                <span className="flex items-center gap-1.5 text-sm text-foreground/90">
                   <WeatherIcon className="h-4 w-4 text-info" aria-hidden="true" />
                   <span>({match.weather.temperature}°C)</span>
                 </span>
               )}
             </div>
             <div className="flex justify-start sm:justify-end">
-              <Badge variant="outline" className="capitalize text-sm bg-primary-foreground/10 border-primary-foreground/30 text-primary-foreground">
+              <Badge variant="outline" className="capitalize text-sm bg-foreground/10 border-foreground/30 text-foreground badge">
                 {match.type === 'by_teams' ? 'Por Equipos' : match.type}
               </Badge>
             </div>
@@ -162,13 +162,13 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
         <Separator className="bg-foreground/20" />
 
         {/* Ubicación y acciones */}
-        <div className="flex flex-col sm:flex-row gap-6 items-center justify-between text-primary-foreground">
+        <div className="flex flex-col sm:flex-row gap-6 items-center justify-between">
           <div className="flex items-start gap-3 flex-1 min-w-0">
-            <MapPin className="h-5 w-5 mt-0.5 flex-shrink-0 text-primary-foreground" aria-hidden="true" />
-            <p className="font-semibold text-primary-foreground">{match.location.name}</p>
+            <MapPin className="h-5 w-5 mt-0.5 flex-shrink-0 icon-with-circle" aria-hidden="true" />
+            <p className="font-semibold">{match.location.name}</p>
           </div>
           <div className="flex gap-3 flex-shrink-0">
-            <Button asChild variant="default" size="sm" className="text-primary-foreground">
+            <Button asChild variant="default" size="sm" className="game-theme-button">
               <a
                 href={googleMapsUrl}
                 target="_blank"

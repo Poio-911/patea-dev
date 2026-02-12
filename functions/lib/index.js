@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.processEvaluationSubmission = exports.resetMonthlyCredits = void 0;
+exports.cleanupAiCache = exports.processEvaluationSubmission = exports.resetMonthlyCredits = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin SDK
 admin.initializeApp();
@@ -42,4 +42,6 @@ var reset_monthly_credits_1 = require("./scheduled/reset-monthly-credits");
 Object.defineProperty(exports, "resetMonthlyCredits", { enumerable: true, get: function () { return reset_monthly_credits_1.resetMonthlyCredits; } });
 var process_evaluation_submission_1 = require("./triggers/process-evaluation-submission");
 Object.defineProperty(exports, "processEvaluationSubmission", { enumerable: true, get: function () { return process_evaluation_submission_1.processEvaluationSubmission; } });
+var cleanup_ai_cache_1 = require("./cleanup-ai-cache");
+Object.defineProperty(exports, "cleanupAiCache", { enumerable: true, get: function () { return cleanup_ai_cache_1.cleanupAiCache; } });
 //# sourceMappingURL=index.js.map

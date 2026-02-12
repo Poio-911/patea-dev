@@ -15,24 +15,27 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
+// Create a context to share the mobile state across all tooltip components
+const ResponsiveTooltipContext = React.createContext<{ isMobile: boolean }>({ isMobile: false })
+
 const ResponsiveTooltipProvider = ({
   children,
   ...props
 }: React.ComponentProps<typeof TooltipProvider>) => {
   const isMobile = useIsMobile()
 
-  if (isMobile) {
-    return <>{children}</>
-  }
-
-  return <TooltipProvider {...props}>{children}</TooltipProvider>
+  return (
+    <ResponsiveTooltipContext.Provider value={{ isMobile }}>
+      <TooltipProvider {...props}>{children}</TooltipProvider>
+    </ResponsiveTooltipContext.Provider>
+  )
 }
 ResponsiveTooltipProvider.displayName = "ResponsiveTooltipProvider"
 
 const ResponsiveTooltip = ({
   ...props
 }: React.ComponentProps<typeof Tooltip>) => {
-  const isMobile = useIsMobile()
+  const { isMobile } = React.useContext(ResponsiveTooltipContext)
 
   if (isMobile) {
     return <Popover {...(props as React.ComponentProps<typeof Popover>)} />
@@ -45,7 +48,7 @@ ResponsiveTooltip.displayName = "ResponsiveTooltip"
 const ResponsiveTooltipTrigger = ({
   ...props
 }: React.ComponentProps<typeof TooltipTrigger>) => {
-  const isMobile = useIsMobile()
+  const { isMobile } = React.useContext(ResponsiveTooltipContext)
 
   if (isMobile) {
     return <PopoverTrigger {...(props as React.ComponentProps<typeof PopoverTrigger>)} />
@@ -59,7 +62,7 @@ const ResponsiveTooltipContent = ({
   className,
   ...props
 }: React.ComponentProps<typeof TooltipContent>) => {
-  const isMobile = useIsMobile()
+  const { isMobile } = React.useContext(ResponsiveTooltipContext)
 
   if (isMobile) {
     return (

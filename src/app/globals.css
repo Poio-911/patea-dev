@@ -9,7 +9,6 @@ body.standalone nav.fixed {
   bottom: 0 !important;
 }
 
-/* CONTRASTE MEJORADO PARA GAME Y NIKE */
 /* Theme-specific override variables */
 :root {
   --game-btn-primary: #1e90ff;
@@ -17,6 +16,81 @@ body.standalone nav.fixed {
   --nike-btn-primary: #fff;
   --nike-btn-foreground: #222;
   --theme-card-text: #fff;
+}
+
+/* ============================================
+   GAME THEME - BANNER STYLES
+   Scoped to .next-match-banner and .hero-match-banner
+   ============================================ */
+
+/* 1. Banner overlay: Semitransparent green-yellow */
+.game .game-banner-overlay {
+  background: hsl(75, 100%, 60%, 0.35) !important;
+  mix-blend-mode: normal !important;
+}
+
+/* 2. Banner text: white with shadow for readability on video */
+.game .next-match-banner,
+.game .hero-match-banner {
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* 3. Banner links: white */
+.game .next-match-banner a:not(.game-theme-button),
+.game .hero-match-banner a:not(.game-theme-button) {
+  color: #ffffff !important;
+}
+
+/* 4. Buttons: Yellow bg, BLACK text, no shadow */
+.game .game-theme-button,
+.game .game-theme-button *,
+.game a.game-theme-button,
+.game a.game-theme-button * {
+  background-color: hsl(75, 100%, 60%) !important;
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  border: none !important;
+  font-weight: 700 !important;
+}
+
+/* 4b. Button SVG icons: black, no circle */
+.game .game-theme-button svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+  fill: none !important;
+  background-color: transparent !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+
+/* 5. Icons with white circle (Calendar, Clock, Navigation, MapPin) */
+.game .next-match-banner svg.icon-with-circle,
+.game .hero-match-banner svg.icon-with-circle {
+  color: #000000 !important;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  padding: 6px;
+  width: 28px !important;
+  height: 28px !important;
+}
+
+/* 6. Badges: Dark bg, white text, no shadow */
+.game .next-match-banner .badge,
+.game .hero-match-banner .badge {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  text-shadow: none !important;
+}
+
+/* 7. General: No text-shadow on buttons/badges anywhere in Game theme */
+.game button,
+.game .badge {
+  text-shadow: none !important;
 }
 
 .game .player-card .text-muted-foreground,
@@ -156,7 +230,7 @@ body.standalone nav.fixed {
     --primary: 75 100% 60%;
     /* Volt Yellow - vibrant but readable */
     --primary-foreground: 230 25% 10%;
-    /* Dark text on neon yellow */
+    /* Dark text on neon yellow with shadow for contrast */
     --secondary: 220 20% 20%;
     /* Brighter for visible secondary buttons */
     --secondary-foreground: 210 40% 96%;

@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import { getAdminDb } from '@/firebase/admin-init';
 import { createHash } from 'crypto';
 
 export interface CacheEntry<T> {
@@ -60,19 +60,19 @@ export async function getCachedOrGenerate<T>(
     generator: () => Promise<T>,
     config: CacheConfig
 ): Promise<T> {
-    const firestore = getFirestore();
-    const cacheRef = doc(firestore, 'ai_cache', cacheKey);
+    const db = getAdminDb();
+    const cacheRef = db.collection('ai_cache').doc(cacheKey);
 
     try {
         // Try to get from cache
-        const cached = await getDoc(cacheRef);
+        const cached = await cacheRef.get();
 
-        if (cached.exists()) {
+        if (cached.exists) {
             const entry = cached.data() as CacheEntry<T>;
 
             if (isValidCache(entry, config.ttlHours)) {
                 // Cache hit - increment counter and return
-                await setDoc(cacheRef, {
+                await cacheRef.set({
                     ...entry,
                     hitCount: (entry.hitCount || 0) + 1
                 }, { merge: true });
@@ -89,7 +89,7 @@ export async function getCachedOrGenerate<T>(
         const result = await generator();
 
         // Store in cache
-        await setDoc(cacheRef, {
+        await cacheRef.set({
             result,
             timestamp: Date.now(),
             category: config.category,
@@ -108,11 +108,11 @@ export async function getCachedOrGenerate<T>(
  * Invalidate a specific cache entry
  */
 export async function invalidateCache(cacheKey: string): Promise<void> {
-    const firestore = getFirestore();
-    const cacheRef = doc(firestore, 'ai_cache', cacheKey);
+    const db = getAdminDb();
+    const cacheRef = db.collection('ai_cache').doc(cacheKey);
 
     try {
-        await setDoc(cacheRef, {
+        await cacheRef.set({
             timestamp: 0 // Set to 0 to force expiration
         }, { merge: true });
         console.log(`[AI Cache] Invalidated key: ${cacheKey.substring(0, 8)}...`);
