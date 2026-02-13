@@ -9,11 +9,14 @@ import { GroupSwitcher } from '@/components/group-switcher';
 import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
+import { cn } from '@/lib/utils';
+
 interface GroupHeroCardProps {
     group: Group;
+    compact?: boolean;
 }
 
-export function GroupHeroCard({ group }: GroupHeroCardProps) {
+export function GroupHeroCard({ group, compact }: GroupHeroCardProps) {
 
     const handleCopyCode = () => {
         navigator.clipboard.writeText(group.inviteCode);
@@ -27,7 +30,10 @@ export function GroupHeroCard({ group }: GroupHeroCardProps) {
     }, [group]);
 
     return (
-        <div className="relative w-full h-[280px] md:h-[320px] rounded-xl overflow-hidden shadow-2xl border-2 border-border/50 group isolate">
+        <div className={cn(
+            "relative w-full rounded-xl overflow-hidden shadow-2xl border-2 border-border/50 group isolate",
+            compact ? "h-[180px] sm:h-[240px]" : "h-[280px] md:h-[320px]"
+        )}>
             {/* Video Background */}
             <div className="absolute inset-0 z-0">
                 <video
@@ -45,7 +51,10 @@ export function GroupHeroCard({ group }: GroupHeroCardProps) {
             </div>
 
             {/* Content Layer */}
-            <div className="absolute inset-0 z-10 p-6 flex flex-col justify-end">
+            <div className={cn(
+                "absolute inset-0 z-10 flex flex-col justify-end",
+                compact ? "p-4 sm:p-5" : "p-6"
+            )}>
 
                 {/* Top Right: Group Switcher & Actions */}
                 <div className="absolute top-4 right-4 flex items-center gap-2">
@@ -63,7 +72,10 @@ export function GroupHeroCard({ group }: GroupHeroCardProps) {
                             <Users2 className="h-4 w-4 text-primary" />
                             <span>Grupo Activo</span>
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight font-headline drop-shadow-xl">
+                        <h1 className={cn(
+                            "font-black text-white tracking-tight leading-tight font-headline drop-shadow-xl",
+                            compact ? "text-2xl sm:text-3xl" : "text-4xl md:text-5xl"
+                        )}>
                             {group.name}
                         </h1>
                     </div>
@@ -76,7 +88,10 @@ export function GroupHeroCard({ group }: GroupHeroCardProps) {
                             </div>
                             <button
                                 onClick={handleCopyCode}
-                                className="flex items-center gap-2 px-4 py-2 font-mono text-xl font-bold text-white tracking-widest hover:text-primary transition-colors"
+                                className={cn(
+                                    "flex items-center gap-2 px-4 py-2 font-mono font-bold text-white tracking-widest hover:text-primary transition-colors",
+                                    compact ? "text-base" : "text-xl"
+                                )}
                             >
                                 {group.inviteCode}
                                 <Copy className="h-4 w-4 opacity-50 group-hover/code:opacity-100" />

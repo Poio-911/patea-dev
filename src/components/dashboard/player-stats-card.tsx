@@ -55,7 +55,7 @@ export function PlayerStatsCard({ player }: PlayerStatsCardProps) {
       value: stats.totalMatches,
       icon: Calendar,
       color: 'text-foreground',
-      bgColor: 'bg-card/80 border border-border',
+      bgColor: 'bg-muted/50',
       valueColor: 'text-foreground',
     },
     {
@@ -63,7 +63,7 @@ export function PlayerStatsCard({ player }: PlayerStatsCardProps) {
       value: stats.totalGoals,
       icon: Target,
       color: 'text-foreground',
-      bgColor: 'bg-card/80 border border-border',
+      bgColor: 'bg-muted/50',
       valueColor: 'text-foreground',
     },
     {
@@ -71,7 +71,7 @@ export function PlayerStatsCard({ player }: PlayerStatsCardProps) {
       value: stats.avgGoalsPerMatch,
       icon: Trophy,
       color: 'text-foreground',
-      bgColor: 'bg-card/80 border border-border',
+      bgColor: 'bg-muted/50',
       valueColor: 'text-foreground',
     },
     {
@@ -79,7 +79,7 @@ export function PlayerStatsCard({ player }: PlayerStatsCardProps) {
       value: stats.ovrTrend > 0 ? `+${stats.ovrTrend}` : stats.ovrTrend || '0',
       icon: TrendingUp,
       color: 'text-foreground',
-      bgColor: 'bg-card/80 border border-border',
+      bgColor: 'bg-muted/50',
       valueColor: 'text-foreground',
     },
   ];

@@ -68,39 +68,33 @@ function LiveMatchRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
 
 export function ResumenTab({ nextMatch, liveMatches, liveLoading, top5Players, playerStats, onOpenLiveMatch }: ResumenTabProps) {
     return (
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
             <motion.div
-                className="lg:col-span-2 space-y-6"
+                className="lg:col-span-2 space-y-4 sm:space-y-6"
                 variants={listVariants}
                 initial="hidden"
                 animate="visible"
             >
                 {nextMatch && (
-                    <motion.div variants={cardVariants}>
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Calendar className="h-5 w-5 text-primary" />
-                                    Próximo Partido
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <NextMatchCard match={nextMatch} />
-                            </CardContent>
-                        </Card>
+                    <motion.div variants={cardVariants} className="space-y-3">
+                        <h3 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                            <Calendar className="h-4 w-4 text-primary" />
+                            Próximo Partido
+                        </h3>
+                        <NextMatchCard match={nextMatch} />
                     </motion.div>
                 )}
 
                 <motion.div variants={cardVariants}>
                     <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
+                        <CardHeader className="pb-3 px-4 pt-4 sm:px-6 sm:pt-6">
+                            <CardTitle className="flex items-center gap-2 text-base">
                                 <PlayCircle className="h-5 w-5 text-primary" />
                                 Partidos en Vivo
                             </CardTitle>
                             <CardDescription>Partidos de tu grupo que están en curso.</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-3">
+                        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0 space-y-3">
                             {liveLoading ? (
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Cargando…</div>
                             ) : liveMatches.length === 0 ? (
@@ -114,44 +108,40 @@ export function ResumenTab({ nextMatch, liveMatches, liveLoading, top5Players, p
                     </Card>
                 </motion.div>
 
-                <motion.div variants={cardVariants}>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Mis Estadísticas</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="flex flex-col items-center p-4 rounded-lg bg-card/80 border border-border">
-                                    <p className="text-3xl font-bold text-foreground">{playerStats.totalMatches}</p>
-                                    <p className="text-xs text-muted-foreground">Partidos Jugados</p>
-                                </div>
-                                <div className="flex flex-col items-center p-4 rounded-lg bg-card/80 border border-border">
-                                    <p className="text-3xl font-bold text-foreground">{playerStats.totalGoals}</p>
-                                    <p className="text-xs text-muted-foreground">Goles</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                <motion.div variants={cardVariants} className="space-y-3">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                        Mis Estadísticas
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                        <div className="flex flex-col items-center p-4 rounded-xl bg-card border border-border shadow-sm">
+                            <p className="text-3xl font-bold text-foreground">{playerStats.totalMatches}</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Partidos</p>
+                        </div>
+                        <div className="flex flex-col items-center p-4 rounded-xl bg-card border border-border shadow-sm">
+                            <p className="text-3xl font-bold text-foreground">{playerStats.totalGoals}</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Goles</p>
+                        </div>
+                    </div>
                 </motion.div>
             </motion.div>
 
             <motion.div
-                className="lg:col-span-1 space-y-6"
+                className="lg:col-span-1 space-y-4 sm:space-y-6"
                 variants={listVariants}
                 initial="hidden"
                 animate="visible"
             >
                 <motion.div variants={cardVariants}>
                     <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
+                        <CardHeader className="pb-3 px-4 pt-4 sm:px-6 sm:pt-6">
+                            <CardTitle className="flex items-center gap-2 text-base">
                                 <Star className="h-5 w-5 text-primary" />
                                 Los Cracks del Grupo
-                                <Badge variant="outline" className="text-xs font-normal">Por OVR</Badge>
+                                <Badge variant="outline" className="text-xs font-normal ml-auto">Por OVR</Badge>
                             </CardTitle>
                             <CardDescription>El Top 5 de jugadores por OVR.</CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0 space-y-3">
                             <motion.div
                                 className="space-y-4"
                                 variants={listVariants}
