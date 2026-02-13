@@ -335,7 +335,7 @@ const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = fal
                                 </div>
                             </div>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-[2147483646]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-[9999]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
                             <Command>
                                 <CommandList>
                                     <CommandGroup>

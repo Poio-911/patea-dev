@@ -35,13 +35,13 @@ export function MobileNav() {
 
     // Click outside to close
     React.useEffect(() => {
-        function handleClick(e: MouseEvent) {
+        function handleClick(e: PointerEvent) {
             if (matchesMenuOpen && matchesMenuRef.current && !matchesMenuRef.current.contains(e.target as Node)) {
                 setMatchesMenuOpen(false);
             }
         }
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
+        document.addEventListener('pointerdown', handleClick);
+        return () => document.removeEventListener('pointerdown', handleClick);
     }, [matchesMenuOpen]);
 
     const isMatchesActive = pathname.startsWith('/matches') || pathname.startsWith('/competitions');

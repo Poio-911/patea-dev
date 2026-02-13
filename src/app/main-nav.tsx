@@ -99,13 +99,10 @@ export function MainNav({ children }: { children: React.ReactNode }) {
         onRequestPermission={requestPermission}
       />
 
-      <main className={cn(
-        "min-h-screen pt-16 pb-[env(safe-area-inset-bottom)]",
-        !isFullscreenLayout && "overflow-y-auto"
-      )}>
+      <main className="min-h-screen pt-16 pb-[env(safe-area-inset-bottom)]">
         <div className={cn(
           "min-h-full",
-          !isFullscreenLayout ? "p-4 md:p-6 pb-20" : "p-0"
+          !isFullscreenLayout ? "p-4 md:p-6 pb-[calc(5rem+env(safe-area-inset-bottom))]" : "p-0"
         )}>
           {children}
         </div>
