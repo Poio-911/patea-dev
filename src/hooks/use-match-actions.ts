@@ -227,14 +227,14 @@ export function useMatchActions({
     try {
       if (isUserInMatch) {
         const result = await leaveMatchAction(match.id, userId);
-        if (result.success) {
+        if ('success' in result) {
           toast({ title: 'Te has dado de baja', description: `Ya no estás apuntado a "${match.title}".` });
         } else {
           throw new Error(result.error);
         }
       } else {
         const result = await joinMatchAction(match.id, userId, userDisplayName || 'Jugador');
-        if (result.success) {
+        if ('success' in result) {
           miniConfetti();
           toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${match.title}".` });
         } else {
