@@ -956,6 +956,7 @@ export type SuggestedUser = {
   matchesPlayed?: number;
   reason: SuggestedUserReason;
   isFollowing?: boolean;
+  location?: { lat: number; lng: number };
 };
 
 // Social activity for the feed

@@ -384,14 +384,30 @@ export async function getSuggestedUsersAction(
     const suggestedUsers: SuggestedUser[] = [];
     const addedUserIds = new Set<string>([userId]); // Exclude current user
 
-    // Get list of users already followed
-    const followsSnapshot = await db.collection('follows')
-      .where('followerId', '==', userId)
-      .get();
+    // Get list of users already followed + visible player IDs in parallel
+    const [followsSnapshot, availablePlayersSnapshot] = await Promise.all([
+      db.collection('follows')
+        .where('followerId', '==', userId)
+        .get(),
+      // Get visible player IDs and their locations
+      db.collection('availablePlayers').select('location').get(),
+    ]);
 
     followsSnapshot.docs.forEach((doc) => {
       addedUserIds.add(doc.data().followingId);
     });
+
+    const availablePlayerIds = new Set(availablePlayersSnapshot.docs.map(d => d.id));
+    // Build location map from availablePlayers
+    const availablePlayerLocations = new Map<string, { lat: number; lng: number }>();
+    for (const apDoc of availablePlayersSnapshot.docs) {
+      const loc = apDoc.data().location;
+      if (loc?.lat && loc?.lng) {
+        availablePlayerLocations.set(apDoc.id, { lat: loc.lat, lng: loc.lng });
+      }
+    }
+    // Track group member IDs so sections 2 & 3 can skip visibility check for them
+    const groupMemberIds = new Set<string>();
 
     // 1. Same group users (if activeGroupId provided)
     if (activeGroupId) {
@@ -399,6 +415,11 @@ export async function getSuggestedUsersAction(
       if (groupDoc.exists) {
         const groupData = groupDoc.data();
         const members = groupData?.members || [];
+
+        // Track all group members for visibility checks in sections 2 & 3
+        for (const memberId of members) {
+          groupMemberIds.add(memberId);
+        }
 
         for (const memberId of members) {
           if (addedUserIds.has(memberId) || suggestedUsers.length >= 5) continue;
@@ -428,6 +449,7 @@ export async function getSuggestedUsersAction(
             followerCount: followerCount.data().count,
             matchesPlayed: playerData?.stats?.matchesPlayed,
             reason: 'same_group',
+            location: availablePlayerLocations.get(memberId),
           });
           addedUserIds.add(memberId);
         }
@@ -454,6 +476,8 @@ export async function getSuggestedUsersAction(
     for (const [memberId, count] of sortedByFollowers) {
       if (suggestedUsers.length >= 15) break;
       if (addedUserIds.has(memberId)) continue;
+      // Visibility: skip users outside the group who aren't in availablePlayers
+      if (!groupMemberIds.has(memberId) && !availablePlayerIds.has(memberId)) continue;
 
       const userDoc = await db.collection('users').doc(memberId).get();
       if (!userDoc.exists) continue;
@@ -471,6 +495,7 @@ export async function getSuggestedUsersAction(
         followerCount: count,
         matchesPlayed: playerData?.stats?.matchesPlayed,
         reason: 'most_followed',
+        location: availablePlayerLocations.get(memberId),
       });
       addedUserIds.add(memberId);
     }
@@ -492,6 +517,8 @@ export async function getSuggestedUsersAction(
     for (const memberId of recentUserIds) {
       if (suggestedUsers.length >= 20) break;
       if (addedUserIds.has(memberId)) continue;
+      // Visibility: skip users outside the group who aren't in availablePlayers
+      if (!groupMemberIds.has(memberId) && !availablePlayerIds.has(memberId)) continue;
 
       const userDoc = await db.collection('users').doc(memberId).get();
       if (!userDoc.exists) continue;
@@ -514,6 +541,7 @@ export async function getSuggestedUsersAction(
         followerCount: followerCount.data().count,
         matchesPlayed: playerData?.stats?.matchesPlayed,
         reason: 'recently_active',
+        location: availablePlayerLocations.get(memberId),
       });
       addedUserIds.add(memberId);
     }

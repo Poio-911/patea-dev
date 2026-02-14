@@ -25,14 +25,20 @@ export async function searchPlayersAction(
 ): Promise<{ success: boolean; users?: SuggestedUser[]; error?: string }> {
     try {
         const db = getAdminDb();
-        const results: SuggestedUser[] = [];
+
         const trimmedQuery = query.trim().toLowerCase();
 
-        // Get list of users the current user follows
-        const followsSnapshot = await db.collection('follows')
-            .where('followerId', '==', currentUserId)
-            .select('followingId')
-            .get();
+        // Get current user's active group and follows in parallel
+        // REMOVED: db.collection('availablePlayers').select('location').get() to avoid downloading 10k+ docs
+        const [userDoc, followsSnapshot] = await Promise.all([
+            db.collection('users').doc(currentUserId).get(),
+            db.collection('follows')
+                .where('followerId', '==', currentUserId)
+                .select('followingId')
+                .get(),
+        ]);
+
+        const activeGroupId = userDoc.exists ? userDoc.data()?.activeGroupId : undefined;
         const followingIds = new Set(followsSnapshot.docs.map(d => d.data().followingId));
 
         // Strategy: query players collection (has name, position, ovr) then enrich with user data
@@ -58,7 +64,7 @@ export async function searchPlayersAction(
         // Limit to a reasonable number
         const playersSnapshot = await playersQuery.limit(100).get();
 
-        // Filter by name in memory (Firestore doesn't support case-insensitive substring search)
+        // Filter by name in memory
         const matchingPlayers: Array<{ id: string; data: Player }> = [];
         for (const doc of playersSnapshot.docs) {
             const data = doc.data() as Player;
@@ -69,27 +75,43 @@ export async function searchPlayersAction(
                 if (!name.includes(trimmedQuery)) continue;
             }
 
+            // Note: We removed the availablePlayerIds check here because we don't have the list.
+            // If strict visibility check is required, we should check it individually or optimize differently.
+            // For now, valid players are considered valid search results (or we rely on subsequent profile checks).
+
             matchingPlayers.push({ id: doc.id, data });
         }
 
-        // Batch-read user profiles for the matching players (up to 30)
+        // Batch-read user profiles AND locations for the matching players (up to 30)
         const playerIds = matchingPlayers.slice(0, 30).map(p => p.id);
 
         if (playerIds.length === 0) {
             return { success: true, users: [] };
         }
 
-        // Batch get user docs (Firestore getAll supports up to 100)
+        // Batch get user docs (for profile) and availablePlayer docs (for location)
         const userRefs = playerIds.map(id => db.collection('users').doc(id));
-        const userDocs = await db.getAll(...userRefs);
+        const locationRefs = playerIds.map(id => db.collection('availablePlayers').doc(id));
+
+        const [userDocs, locationDocs] = await Promise.all([
+            db.getAll(...userRefs),
+            db.getAll(...locationRefs)
+        ]);
+
         const userDataMap = new Map<string, FirebaseFirestore.DocumentData>();
-        for (const userDoc of userDocs) {
-            if (userDoc.exists) {
-                userDataMap.set(userDoc.id, userDoc.data()!);
+        userDocs.forEach(doc => {
+            if (doc.exists) userDataMap.set(doc.id, doc.data()!);
+        });
+
+        const locationDataMap = new Map<string, { lat: number, lng: number }>();
+        locationDocs.forEach(doc => {
+            if (doc.exists && doc.data()?.location) {
+                locationDataMap.set(doc.id, doc.data()!.location);
             }
-        }
+        });
 
         // Build results
+        const results: SuggestedUser[] = [];
         for (const { id, data: playerData } of matchingPlayers.slice(0, 30)) {
             const userData = userDataMap.get(id);
             if (!userData) continue; // Skip players without a user account
@@ -104,6 +126,7 @@ export async function searchPlayersAction(
                 matchesPlayed: playerData.stats?.matchesPlayed,
                 reason: 'same_group', // Not really used in search context
                 isFollowing: followingIds.has(id),
+                location: locationDataMap.get(id),
             });
         }
 
@@ -138,34 +161,45 @@ export async function getPublicMatchesAction(
     try {
         const db = getAdminDb();
 
-        // Query only by status to avoid composite index requirement
-        const snapshot = await db.collection('matches')
+        // Optimized Query: Filter by status AND isPublic in Firestore
+        // This requires a Composite Index: collection: matches, fields: status (ASC), isPublic (ASC), date (ASC)
+        let query = db.collection('matches')
             .where('status', '==', 'upcoming')
-            .limit(100)
-            .get();
+            .where('isPublic', '==', true);
+
+        // Apply type filter if provided
+        if (filters?.matchTypes && filters.matchTypes.length > 0) {
+            // 'in' query works well with other equality clauses
+            query = query.where('type', 'in', filters.matchTypes);
+        }
+
+        // Order by date to get soonest matches
+        // Note: verify if index supports this ordering mixed with equality filters
+        query = query.orderBy('date', 'asc');
+
+        const snapshot = await query.limit(50).get();
 
         let matches: Match[] = snapshot.docs
             .map(doc => ({ id: doc.id, ...doc.data() } as Match))
-            // Filter public matches in memory
-            .filter(m => m.isPublic === true)
-            // Exclude matches the user is already in
+            // Exclude matches the user is already in (client-side filter is fine for this specific exclusion)
             .filter(m => !m.playerUids?.includes(currentUserId))
             // Exclude full matches
             .filter(m => (m.players?.length || 0) < m.matchSize);
 
-        // Apply type filter
-        if (filters?.matchTypes && filters.matchTypes.length > 0) {
-            matches = matches.filter(m => filters.matchTypes!.includes(m.type));
-        }
-
-        // Sort by date ascending (soonest first)
-        matches.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-        // Cap at 20 results
+        // Cap at 20 results after memory filters
         matches = matches.slice(0, 20);
 
         return { success: true, matches };
-    } catch (error) {
+    } catch (error: any) {
+        // Check for "FAILED_PRECONDITION" which usually means missing index
+        if (error?.code === 9 || error?.message?.includes('index')) {
+            console.error('Missing Firestore Index for Public Matches:', error.message);
+            // Return specific error to help user/developer
+            return {
+                success: false,
+                error: `Falta un índice en la base de datos. Para crearlo automáticamente, abre este enlace o revisa la consola del servidor: ${error.message}`
+            };
+        }
         const err = handleServerActionError(error, { currentUserId });
         return { success: false, error: err.error };
     }

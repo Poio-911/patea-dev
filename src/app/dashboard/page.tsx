@@ -12,7 +12,7 @@ import { collection, query, where, orderBy, limit, doc } from 'firebase/firestor
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import type { Player, Match, AvailablePlayer, UserProfile } from '@/lib/types';
+import type { Player, Match, AvailablePlayer, UserProfile, Group } from '@/lib/types';
 import { MatchVisualizer } from '@/components/match/match-visualizer';
 import { NextMatchCard } from '@/components/next-match-card';
 import { Badge } from '@/components/ui/badge';
@@ -114,6 +114,37 @@ function DashboardContent() {
   }, [firestore, user?.activeGroupId]);
   const { data: allPlayersInGroup, loading: allPlayersLoading } = useCollection<Player>(allPlayersInGroupQuery);
 
+  // Active group document for grupo tab
+  const activeGroupRef = useMemo(() => {
+    if (!firestore || !user?.activeGroupId) return null;
+    return doc(firestore, 'groups', user.activeGroupId);
+  }, [firestore, user?.activeGroupId]);
+  const { data: activeGroup, loading: activeGroupLoading } = useDoc<Group>(activeGroupRef);
+
+  // Upcoming matches for grupo tab
+  const upcomingMatchesQuery = useMemo(() => {
+    if (!firestore || !user?.activeGroupId) return null;
+    return query(
+      collection(firestore, 'matches'),
+      where('groupId', '==', user.activeGroupId),
+      where('status', '==', 'upcoming'),
+      orderBy('date', 'asc'),
+      limit(5)
+    );
+  }, [firestore, user?.activeGroupId]);
+  const { data: upcomingMatchesData, loading: upcomingMatchesLoading } = useCollection<Match>(upcomingMatchesQuery);
+
+  // Friendly matches for grupo tab
+  const friendlyMatchesQuery = useMemo(() => {
+    if (!firestore || !user?.activeGroupId) return null;
+    return query(
+      collection(firestore, 'matches'),
+      where('type', '==', 'intergroup_friendly'),
+      where('groupId', '==', user.activeGroupId)
+    );
+  }, [firestore, user?.activeGroupId]);
+  const { data: friendlyMatchesData, loading: friendlyMatchesLoading } = useCollection<Match>(friendlyMatchesQuery);
+
   const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(groupMatchesQuery);
   const { data: joinedMatches, loading: joinedMatchesLoading } = useCollection<Match>(joinedMatchesQuery);
 
@@ -146,7 +177,7 @@ function DashboardContent() {
   const [showVisualizer, setShowVisualizer] = useState(false);
   const [selectedLive, setSelectedLive] = useState<Match | null>(null);
 
-  const loading = top5PlayersLoading || allPlayersLoading || groupMatchesLoading || joinedMatchesLoading || playerLoading || availablePlayerLoading;
+  const loading = top5PlayersLoading || allPlayersLoading || groupMatchesLoading || joinedMatchesLoading || playerLoading || availablePlayerLoading || activeGroupLoading || upcomingMatchesLoading || friendlyMatchesLoading;
 
   const matches = useMemo(() => {
     if (!groupMatches && !joinedMatches) return null;
@@ -254,6 +285,10 @@ function DashboardContent() {
         onOpenLiveMatch={(match) => { setSelectedLive(match); setShowVisualizer(true); }}
         groupId={user?.activeGroupId}
         userId={user?.uid}
+        activeGroup={activeGroup}
+        allPlayersInGroup={allPlayersInGroup || []}
+        upcomingMatches={upcomingMatchesData || []}
+        friendlyMatches={friendlyMatchesData || []}
       />
 
       {/* Visualizador modal desde dashboard */}

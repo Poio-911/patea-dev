@@ -11,6 +11,7 @@ import {
   notifyTeamsShuffledAction,
   notifyEvaluationAvailableAction
 } from '@/lib/actions/notification-actions';
+import { joinMatchAction, leaveMatchAction } from '@/lib/actions/match-actions';
 
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
@@ -186,6 +187,7 @@ export function useMatchActions({
             link: `/evaluations/${freshMatch.id}`,
             isRead: false,
             createdAt: new Date().toISOString(),
+            metadata: { fromUserId: userId },
           };
           batch.set(notificationRef, notification);
         });
@@ -219,87 +221,33 @@ export function useMatchActions({
   }, [firestore, userId, match, allGroupPlayers, generateEvaluationAssignments, toast]);
 
   const handleJoinOrLeave = useCallback(async () => {
-    if (!firestore || !userId || !match) return;
+    if (!userId || !match) return;
     setIsJoining(true);
-
-    const batch = writeBatch(firestore);
-    const matchRef = doc(firestore, 'matches', match.id);
 
     try {
       if (isUserInMatch) {
-        const playerToRemove = match.players.find(p => p.uid === userId);
-        if (playerToRemove) {
-          batch.update(matchRef, {
-            players: arrayRemove(playerToRemove),
-            playerUids: arrayRemove(userId)
-          });
+        const result = await leaveMatchAction(match.id, userId);
+        if (result.success) {
+          toast({ title: 'Te has dado de baja', description: `Ya no estás apuntado a "${match.title}".` });
+        } else {
+          throw new Error(result.error);
         }
-        toast({ title: 'Te has dado de baja', description: `Ya no estás apuntado a "${match.title}".` });
       } else {
-        if (match.players.length >= match.matchSize) {
-          toast({ variant: 'destructive', title: 'Partido Lleno', description: 'No quedan plazas disponibles en este partido.' });
-          setIsJoining(false);
-          return;
+        const result = await joinMatchAction(match.id, userId, userDisplayName || 'Jugador');
+        if (result.success) {
+          miniConfetti();
+          toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${match.title}".` });
+        } else {
+          throw new Error(result.error);
         }
-
-        const playerProfileRef = doc(firestore, 'players', userId);
-        const playerSnap = await getDoc(playerProfileRef);
-
-        if (!playerSnap.exists()) {
-          toast({ variant: 'destructive', title: 'Error', description: 'No se encontró tu perfil de jugador.' });
-          setIsJoining(false);
-          return;
-        }
-
-        const playerProfile = playerSnap.data() as Player;
-
-        const playerPayload = {
-          uid: userId,
-          displayName: playerProfile.name,
-          ovr: playerProfile.ovr,
-          position: playerProfile.position,
-          photoUrl: playerProfile.photoUrl || ''
-        };
-
-        batch.update(matchRef, {
-          players: arrayUnion(playerPayload),
-          playerUids: arrayUnion(userId)
-        });
-
-        if (match.ownerUid !== userId) {
-          const notificationRef = doc(collection(firestore, `users/${match.ownerUid}/notifications`));
-          const notification: Omit<Notification, 'id'> = {
-            type: 'new_joiner',
-            title: '¡Nuevo Jugador!',
-            message: `${userDisplayName} se ha apuntado a tu partido "${match.title}".`,
-            link: `/matches`,
-            isRead: false,
-            createdAt: new Date().toISOString(),
-          };
-          batch.set(notificationRef, notification);
-        }
-
-        miniConfetti();
-        toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${match.title}".` });
       }
-      await batch.commit();
-
-      // Send push notification to new player (after commit)
-      if (!isUserInMatch) {
-        notifyPlayerAddedToMatchAction({
-          playerId: userId,
-          matchTitle: match.title,
-          matchDate: match.date,
-          matchLocation: match.location.name,
-        }).catch(err => logger.error('Failed to send join notification', err));
-      }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error joining/leaving match: ", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo completar la operación.' });
+      toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudo completar la operación.' });
     } finally {
       setIsJoining(false);
     }
-  }, [firestore, userId, match, isUserInMatch, userDisplayName, toast]);
+  }, [userId, match, isUserInMatch, userDisplayName, toast]);
 
   const handleDelete = useCallback(async () => {
     if (!firestore || !match) return;

@@ -41,7 +41,9 @@ export function useMatchPresence({ matchId, track, staleMs = 5 * 60 * 1000, opti
 
   // Write presence heartbeat when tracking is enabled
   useEffect(() => {
-    if (!firestore || !matchId || !track || !viewerId) return;
+    // Only track presence if we have firestore, matchId, tracking is on, we have a viewerId, AND we have a logged-in user.
+    // Unauthenticated users (guests) cannot write to 'presence' collection due to security rules.
+    if (!firestore || !matchId || !track || !viewerId || !user) return;
 
     const ref = doc(firestore, 'matches', matchId, 'presence', viewerId);
 
@@ -52,7 +54,7 @@ export function useMatchPresence({ matchId, track, staleMs = 5 * 60 * 1000, opti
       photoURL: user?.photoURL ?? null,
       lastSeen: serverTimestamp(),
       lastSeenAt: Date.now(),
-    }, { merge: true }).catch(() => {});
+    }, { merge: true }).catch(() => { });
 
     // Optimistic self add
     if (optimisticSelf) {
@@ -71,12 +73,12 @@ export function useMatchPresence({ matchId, track, staleMs = 5 * 60 * 1000, opti
       setDoc(ref, {
         lastSeen: serverTimestamp(),
         lastSeenAt: Date.now(),
-      }, { merge: true }).catch(() => {});
+      }, { merge: true }).catch(() => { });
     }, 25000);
 
     // Update on visibility changes (minimize/back/return)
     const onVis = () => {
-      setDoc(ref, { lastSeen: serverTimestamp(), lastSeenAt: Date.now() }, { merge: true }).catch(() => {});
+      setDoc(ref, { lastSeen: serverTimestamp(), lastSeenAt: Date.now() }, { merge: true }).catch(() => { });
     };
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', onVis);
@@ -92,7 +94,7 @@ export function useMatchPresence({ matchId, track, staleMs = 5 * 60 * 1000, opti
       setDoc(ref, {
         lastSeen: serverTimestamp(),
         lastSeenAt: Date.now(),
-      }, { merge: true }).catch(() => {});
+      }, { merge: true }).catch(() => { });
       if (typeof document !== 'undefined') {
         document.removeEventListener('visibilitychange', onVis);
         window.removeEventListener('focus', onVis);

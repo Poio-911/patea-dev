@@ -44,9 +44,10 @@ const statusConfig: Record<MatchStatus, { label: string; className: string; neon
 interface CompactMatchCardProps {
   match: Match;
   className?: string;
+  distance?: string;
 }
 
-export function CompactMatchCard({ match, className }: CompactMatchCardProps) {
+export function CompactMatchCard({ match, className, distance }: CompactMatchCardProps) {
   const typeLabel = typeLabels[match.type] || match.type;
   const matchTheme = getMatchTheme(match.type);
   const dateObj = new Date(match.date);
@@ -148,6 +149,7 @@ export function CompactMatchCard({ match, className }: CompactMatchCardProps) {
                 <span className="flex items-center gap-1 truncate max-w-full">
                   <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
                   <span className="truncate">{locationName}</span>
+                  {distance && <span className="shrink-0 text-primary font-medium">· {distance}</span>}
                 </span>
               </div>
             </div>
@@ -172,6 +174,7 @@ export function CompactMatchCard({ match, className }: CompactMatchCardProps) {
                 <span className="flex items-center gap-1 truncate max-w-full">
                   <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
                   <span className="truncate">{locationName}</span>
+                  {distance && <span className="shrink-0 text-primary font-medium">· {distance}</span>}
                 </span>
               </div>
             </div>
