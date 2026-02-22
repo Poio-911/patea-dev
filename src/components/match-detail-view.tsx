@@ -32,6 +32,7 @@ import { MatchWeatherAlert } from './match-details/MatchWeatherAlert';
 import { logger } from '@/lib/logger';
 import { LocationVoting } from './match-details/location-voting';
 import { DateVoting } from './match-details/date-voting';
+import { MatchResultCard } from './match-details/MatchResultCard';
 
 interface MatchDetailViewProps {
   matchId: string;
@@ -263,6 +264,8 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 isOwner={permissions.isOwner}
               />
             )}
+
+            {match.status === 'evaluated' && <MatchResultCard match={match} />}
 
             {match.status === 'evaluated' && <MatchChronicleCard match={match} />}
 
