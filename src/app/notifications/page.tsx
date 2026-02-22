@@ -9,7 +9,8 @@ import type { Notification, NotificationType } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Bell, CheckCheck, FileSignature, UserPlus, Info, Swords, CheckCircle2, XCircle, FileText, Users, Calendar, TrendingUp, Trophy } from 'lucide-react';
+import { Bell, CheckCheck, FileSignature, UserPlus, Info, Swords, CheckCircle2, XCircle, FileText, Users, Calendar, TrendingUp, Trophy } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { format, formatDistanceToNow, isToday, isYesterday, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -79,7 +80,7 @@ export default function NotificationsPage() {
             return acc;
         }, {} as Record<string, Notification[]>);
     }, [notifications]);
-    
+
     const unreadCount = useMemo(() => {
         if (!notifications) return 0;
         return notifications.filter(n => !n.isRead).length;
@@ -111,7 +112,22 @@ export default function NotificationsPage() {
     };
 
     if (userLoading || notificationsLoading) {
-        return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+        return (
+            <div className="flex flex-col gap-6">
+                <PageHeader title="Notificaciones" description="Acá están todas tus notificaciones." />
+                <div className="space-y-2">
+                    {[...Array(6)].map((_, i) => (
+                        <div key={i} className="flex items-start gap-4 p-4 rounded-lg border">
+                            <Skeleton className="h-9 w-9 rounded-full flex-shrink-0" />
+                            <div className="flex-1 space-y-1.5">
+                                <Skeleton className="h-3.5 w-36" />
+                                <Skeleton className="h-3 w-56" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
     }
 
     if (!user) {
@@ -122,7 +138,7 @@ export default function NotificationsPage() {
             </Alert>
         );
     }
-    
+
     return (
         <div className="flex flex-col gap-6">
             <PageHeader

@@ -20,6 +20,7 @@ import {
   Crown,
   Loader2,
   TrendingUp,
+  Award,
 } from 'lucide-react';
 import {
   getLeaderboardActionV2,
@@ -42,6 +43,7 @@ const CATEGORIES: {
     { value: 'assists', label: 'Asistencias', icon: <Footprints className="h-4 w-4" />, unit: ' Asist.' },
     { value: 'matches', label: 'Partidos', icon: <Calendar className="h-4 w-4" />, unit: ' PJ' },
     { value: 'rating', label: 'Rating', icon: <Star className="h-4 w-4" />, unit: '' },
+    { value: 'mvp', label: 'MVPs', icon: <Award className="h-4 w-4" />, unit: ' 🏆' },
   ];
 
 function getRankIcon(rank: number) {
@@ -170,6 +172,7 @@ export default function RankingsPage() {
   const [selectedCategory, setSelectedCategory] = useState<LeaderboardCategory>('ovr');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [playerRank, setPlayerRank] = useState<{
     rank: number | null;
     total: number;
@@ -180,6 +183,7 @@ export default function RankingsPage() {
   useEffect(() => {
     async function loadData() {
       setLoading(true);
+      setErrorMsg(null);
       try {
         // Get leaderboard - using group context if available
         const groupId = user?.activeGroupId || null;
@@ -187,10 +191,13 @@ export default function RankingsPage() {
 
         if (!result.error) {
           setLeaderboard(result.leaderboard);
+        } else {
+          setLeaderboard([]);
+          setErrorMsg('Error al cargar este ranking. (Falta índice en la base de datos)');
         }
 
         // Get current user's rank if logged in
-        if (user?.uid) {
+        if (user?.uid && !result.error) {
           const rankResult = await getPlayerRankAction(user.uid, selectedCategory, groupId);
           if (!rankResult.error) {
             setPlayerRank({
@@ -198,10 +205,17 @@ export default function RankingsPage() {
               total: rankResult.total,
               value: rankResult.value,
             });
+          } else {
+            setPlayerRank(null);
           }
+        } else {
+          setPlayerRank(null);
         }
       } catch (error) {
         console.error('Error loading leaderboard:', error);
+        setLeaderboard([]);
+        setPlayerRank(null);
+        setErrorMsg('Error de conexión.');
       } finally {
         setLoading(false);
       }
@@ -282,12 +296,19 @@ export default function RankingsPage() {
           </CardHeader>
           <CardContent>
             <TabsContent value={selectedCategory} className="mt-0">
-              <LeaderboardTable
-                entries={leaderboard}
-                currentUserId={user?.uid}
-                category={selectedCategory}
-                loading={loading}
-              />
+              {errorMsg ? (
+                <div className="text-center py-8 text-destructive border border-destructive/20 rounded-lg bg-destructive/5 mt-4">
+                  <Target className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="font-semibold">{errorMsg}</p>
+                </div>
+              ) : (
+                <LeaderboardTable
+                  entries={leaderboard}
+                  currentUserId={user?.uid}
+                  category={selectedCategory}
+                  loading={loading}
+                />
+              )}
             </TabsContent>
           </CardContent>
         </Card>

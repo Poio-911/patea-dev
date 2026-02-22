@@ -6,6 +6,7 @@ import type { Player, GroupTeam, Team, MatchType, MatchLocation, Notification } 
 import { createActivityAction } from '@/lib/actions/server-actions';
 import { sendNotificationToUsersAction } from '@/lib/actions/notification-actions';
 import * as geohash from 'ngeohash';
+import { rateLimiter } from '@/lib/rate-limiter';
 
 const LocationSchema = z.object({
   name: z.string().min(1),
@@ -17,12 +18,13 @@ const LocationSchema = z.object({
 
 const BaseMatchSchema = z.object({
   title: z.string().min(3),
-  date: z.string().min(10), // ISO string
-  time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+  date: z.string().optional().or(z.literal('')),
+  time: z.string().optional().or(z.literal('')),
   location: LocationSchema,
   type: z.enum(['manual', 'collaborative', 'by_teams']),
   matchSize: z.number().int().min(2),
   isPublic: z.boolean().optional(),
+  isPlanning: z.boolean().optional(),
   weather: z
     .object({
       description: z.string(),
@@ -75,6 +77,17 @@ async function fetchPlayersChunked(ids: string[]): Promise<Map<string, Player>> 
 export async function POST(request: NextRequest) {
   try {
     const userId = await requireAuth();
+
+    // Rate limiting: max 5 match creations per user per minute
+    const rl = rateLimiter.check(`match:${userId}`, 5, 60_000);
+    if (!rl.allowed) {
+      const retryAfterSecs = Math.ceil((rl.resetAt - Date.now()) / 1000);
+      return NextResponse.json(
+        { success: false, error: 'Demasiadas solicitudes. Intentá de nuevo en un momento.' },
+        { status: 429, headers: { 'Retry-After': String(retryAfterSecs) } }
+      );
+    }
+
     const body = await request.json();
     const parse = CreateMatchSchema.safeParse(body);
     if (!parse.success) {
@@ -87,10 +100,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'No active group' }, { status: 400 });
     }
 
+    const isPlanning = input.isPlanning || !input.date || !input.time;
+
     const baseData: any = {
       title: input.title,
-      date: input.date,
-      time: input.time,
+      date: input.date || '',
+      time: input.time || '',
       location: {
         ...input.location,
         geohash: geohash.encode(input.location.lat, input.location.lng, 10),
@@ -98,12 +113,13 @@ export async function POST(request: NextRequest) {
       type: input.type as MatchType,
       matchSize: input.matchSize,
       isPublic: !!input.isPublic,
-      status: 'upcoming' as const,
+      status: isPlanning ? 'planning' : 'upcoming',
       ownerUid: userId,
       groupId,
       players: [],
       playerUids: [],
       teams: [],
+      ...(isPlanning ? { isVotingOpen: true, dateProposals: [] } : {}),
     };
     if (input.weather) baseData.weather = input.weather;
 
@@ -125,7 +141,7 @@ export async function POST(request: NextRequest) {
             players: selectedPlayers.map(p => ({ uid: p.id, displayName: p.name, position: p.position, ovr: p.ovr })),
             teamCount: 2,
           } as any);
-          if ((teamsResult as any)?.teams) {
+          if ((teamsResult as any)?.teams && (teamsResult as any).teams.length === 2) {
             const aiTeams = (teamsResult as any).teams as Team[];
             // Fix UIDs and enrich with photos (AI returns sequential UIDs)
             aiTeams.forEach(team => {
@@ -139,9 +155,41 @@ export async function POST(request: NextRequest) {
               });
             });
             baseData.teams = aiTeams;
+          } else {
+            throw new Error("AI returned invalid or empty teams");
           }
         } catch (e) {
-          // leave teams empty on failure
+          // Fallback manual: Dividir alfabéticamente si la IA falla
+          console.warn("AI team generation failed, using alphabet fallback", e);
+          const sortedPlayers = [...selectedPlayers].sort((a, b) => a.name.localeCompare(b.name));
+          const mid = Math.ceil(sortedPlayers.length / 2);
+          const team1Players = sortedPlayers.slice(0, mid);
+          const team2Players = sortedPlayers.slice(mid);
+
+          const mapToTeamPlayer = (p: Player) => ({
+            uid: p.id,
+            displayName: p.name,
+            ovr: p.ovr || 50,
+            position: p.position || 'MED',
+            photoURL: (p as any).photoUrl || p.photoURL || ''
+          });
+
+          baseData.teams = [
+            {
+              name: "Equipo 1 (Fallback)",
+              jersey: "blanca",
+              players: team1Players.map(mapToTeamPlayer),
+              totalOVR: team1Players.reduce((acc, p) => acc + (p.ovr || 50), 0),
+              averageOVR: team1Players.length ? team1Players.reduce((acc, p) => acc + (p.ovr || 50), 0) / team1Players.length : 0
+            },
+            {
+              name: "Equipo 2 (Fallback)",
+              jersey: "negra",
+              players: team2Players.map(mapToTeamPlayer),
+              totalOVR: team2Players.reduce((acc, p) => acc + (p.ovr || 50), 0),
+              averageOVR: team2Players.length ? team2Players.reduce((acc, p) => acc + (p.ovr || 50), 0) / team2Players.length : 0
+            }
+          ];
         }
       }
     } else if (input.type === 'by_teams') {
@@ -179,19 +227,23 @@ export async function POST(request: NextRequest) {
     const organizerSnap = await db.collection('players').doc(userId).get();
     const organizerData = organizerSnap.data();
 
-    // Create social activity
-    await createActivityAction({
-      type: 'match_organized',
-      userId,
-      playerId: userId,
-      playerName: organizerData?.name || 'Organizador',
-      playerPhotoUrl: organizerData?.photoUrl || organizerData?.photoURL || '',
-      timestamp: new Date().toISOString(),
-      metadata: {
-        matchId: matchRef.id,
-        matchTitle: baseData.title,
-      },
-    } as any);
+    // Create social activity (Non-critical, wrapped in try-catch to avoid throwing 500 on failure)
+    try {
+      await createActivityAction({
+        type: 'match_organized',
+        userId,
+        playerId: userId,
+        playerName: organizerData?.name || 'Organizador',
+        playerPhotoUrl: organizerData?.photoUrl || organizerData?.photoURL || '',
+        timestamp: new Date().toISOString(),
+        metadata: {
+          matchId: matchRef.id,
+          matchTitle: baseData.title,
+        },
+      } as any);
+    } catch (activityError) {
+      console.warn('Failed to create match social activity:', activityError);
+    }
 
     // Check achievements for organizer
     try {
@@ -199,38 +251,6 @@ export async function POST(request: NextRequest) {
       await checkAndUnlockAchievementsAction(userId, userId);
     } catch (achievementError) {
       console.warn('Failed to check achievements after match creation', achievementError);
-    }
-
-    // Notifications for participants (manual|by_teams)
-    const participantIds = (baseData.playerUids || []).filter((pid: string) => pid !== userId);
-    if (participantIds.length > 0) {
-      // In-app notifications (Firestore)
-      await Promise.all(
-        participantIds.map(async (pid: string) => {
-          const notif: Omit<Notification, 'id'> = {
-            type: 'match_invite',
-            title: '¡Te convocaron!',
-            message: `Te sumaron al partido "${baseData.title}"`,
-            link: `/matches/${matchRef.id}`,
-            isRead: false,
-            createdAt: new Date().toISOString(),
-            metadata: { fromUserId: userId, matchId: matchRef.id },
-          } as any;
-          await db.collection(`users/${pid}/notifications`).add(notif);
-        })
-      );
-
-      // Push notifications (real FCM)
-      sendNotificationToUsersAction({
-        userIds: participantIds,
-        title: '⚽ ¡Te convocaron!',
-        body: `Te sumaron al partido "${baseData.title}"`,
-        data: {
-          type: 'match_invite',
-          link: `/matches/${matchRef.id}`,
-          matchTitle: baseData.title,
-        },
-      }).catch(err => console.warn('Push notification failed:', err));
     }
 
     return NextResponse.json({ success: true, matchId: matchRef.id });

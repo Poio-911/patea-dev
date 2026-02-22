@@ -15,6 +15,7 @@ import {
   doc,
 } from 'firebase/firestore'
 import { Loader2, Save, ShieldCheck, Goal, Plus, Minus, FileClock, Check, Award, MessageSquare } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 import { useFirestore, useUser, useCollection, useDoc } from '@/firebase'
 import { PageHeader } from '@/components/page-header'
@@ -162,7 +163,6 @@ const getRatingLabel = (rating: number) => {
   return 'Malo'
 }
 
-// Thumb color classes for slider selector
 const getRatingThumbClasses = (rating: number) => {
   if (rating >= 9) return 'bg-green-600 border-green-700'
   if (rating >= 7) return 'bg-green-500 border-green-600'
@@ -171,42 +171,7 @@ const getRatingThumbClasses = (rating: number) => {
   return 'bg-red-600 border-red-700'
 }
 
-// Palette for rating pills by number
-const getRatingPillPalette = (n: number) => {
-  if (n >= 9) return { bg: 'bg-green-600', text: 'text-white', tint: 'bg-green-600/10 text-green-700 border-green-600/20' }
-  if (n >= 7) return { bg: 'bg-green-500', text: 'text-white', tint: 'bg-green-500/10 text-green-700 border-green-500/20' }
-  if (n >= 5) return { bg: 'bg-yellow-500', text: 'text-white', tint: 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20' }
-  if (n >= 3) return { bg: 'bg-orange-500', text: 'text-white', tint: 'bg-orange-500/10 text-orange-700 border-orange-500/20' }
-  return { bg: 'bg-red-600', text: 'text-white', tint: 'bg-red-600/10 text-red-700 border-red-600/20' }
-}
-
-function RatingPills({ value, onChange }: { value: number; onChange: (n: number) => void }) {
-  const current = value ?? 5
-  const nums = Array.from({ length: 10 }, (_, i) => i + 1)
-  return (
-    <div className="grid grid-cols-10 gap-1 sm:gap-2">
-      {nums.map((n) => {
-        const palette = getRatingPillPalette(n)
-        const selected = current === n
-        return (
-          <Button
-            key={n}
-            type="button"
-            size="sm"
-            variant={selected ? 'default' : 'outline'}
-            className={cn(
-              'rounded-full h-8 px-0 text-xs',
-              selected ? `${palette.bg} ${palette.text} border-transparent` : `${palette.tint}`
-            )}
-            onClick={() => onChange(n)}
-          >
-            {n}
-          </Button>
-        )
-      })}
-    </div>
-  )
-}
+// Old Rating Pills Removed
 
 const TagCheckbox = ({
   tag,
@@ -682,19 +647,49 @@ export default function PerformEvaluationPage() {
                           <FormField
                             control={form.control}
                             name={`evaluations.${index}.rating`}
-                            render={({ field: ratingField }) => (
-                              <FormItem className="space-y-6">
-                                <FormLabel className="text-base font-medium text-slate-900 game:text-white">Calificación</FormLabel>
-                                <FormControl>
-                                  <RatingPills
-                                    value={ratingField.value ?? 5}
-                                    onChange={(n) => ratingField.onChange(n)}
-                                  // Use default (colors) for rating pills as it's functional
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
+                            render={({ field: ratingField }) => {
+                              const val = ratingField.value || 5;
+                              const isBad = val < 5;
+                              const isGood = val >= 7;
+                              const colorClass = isBad ? "text-rose-500" : isGood ? "text-emerald-500" : "text-amber-500";
+                              const bgClass = isBad ? "bg-rose-500" : isGood ? "bg-emerald-500" : "bg-amber-500";
+
+                              return (
+                                <FormItem className="space-y-6 flex flex-col items-center pb-4 pt-2">
+                                  <div className="text-center">
+                                    <p className="text-sm rounded-full bg-background border px-4 py-1.5 font-bold uppercase tracking-widest text-muted-foreground mb-4">Rating del Partido</p>
+                                    <motion.div
+                                      key={val}
+                                      initial={{ scale: 0.8, y: -10 }}
+                                      animate={{ scale: 1, y: 0 }}
+                                      className={cn("text-7xl font-black drop-shadow-sm transition-colors duration-300", colorClass)}
+                                    >
+                                      {val}
+                                    </motion.div>
+                                  </div>
+                                  <FormControl className="w-full max-w-sm px-4">
+                                    <div className="flex items-center gap-4 w-full">
+                                      <span className="text-sm font-bold text-muted-foreground bg-muted h-8 w-8 flex items-center justify-center rounded-full">1</span>
+                                      <div className="flex-1 relative">
+                                        {/* Custom slider track color based on value */}
+                                        <Slider
+                                          min={1}
+                                          max={10}
+                                          step={1}
+                                          value={[val]}
+                                          onValueChange={(value) => ratingField.onChange(value[0])}
+                                          className={cn("w-full cursor-pointer [&_[role=slider]]:h-6 [&_[role=slider]]:w-6 [&_[role=slider]]:border-4 [&_[role=slider]]:shadow-lg transition-colors",
+                                            isBad ? "[&_[role=slider]]:border-rose-500" : isGood ? "[&_[role=slider]]:border-emerald-500" : "[&_[role=slider]]:border-amber-500"
+                                          )}
+                                        />
+                                      </div>
+                                      <span className="text-sm font-bold text-muted-foreground bg-muted h-8 w-8 flex items-center justify-center rounded-full">10</span>
+                                    </div>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )
+                            }}
                           />
                         </TabsContent>
 
@@ -763,33 +758,59 @@ export default function PerformEvaluationPage() {
                                 "w-full transition-all duration-300 relative overflow-hidden",
                                 analyzingText[field.subjectId]
                                   ? "bg-zinc-800 text-emerald-400 border-emerald-500/50"
-                                  : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+                                  : aiResults[field.subjectId]
+                                    ? "bg-emerald-700 hover:bg-emerald-600 text-white"
+                                    : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]"
                               )}
                             >
                               {analyzingText[field.subjectId] ? (
                                 <>
                                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                  <span className="animate-pulse">Sincronizando con IA...</span>
+                                  <span className="animate-pulse">Analizando jugada...</span>
+                                </>
+                              ) : aiResults[field.subjectId] ? (
+                                <>
+                                  <Check className="mr-2 h-5 w-5" />
+                                  Analizado — Re-evaluar
                                 </>
                               ) : (
                                 <>
                                   <Sparkles className="mr-2 h-5 w-5 fill-white" />
-                                  ANÁLISIS TÁCTICO (IA)
+                                  ANÁLISIS TÁCTICO
                                 </>
                               )}
-                              {/* Results Text (Simple, no overlay) */}
-                              {analyzingText[field.subjectId] && aiResults[field.subjectId] && (
-                                <div className="mt-4 rounded-lg bg-zinc-50 dark:bg-white/5 p-4 border border-zinc-200 dark:border-white/10">
-                                  <div className="flex items-center gap-2 mb-2 text-emerald-600 dark:text-emerald-400">
-                                    <Sparkles className="h-4 w-4" />
-                                    <span className="text-xs font-bold uppercase">Análisis Completado</span>
-                                  </div>
-                                  <p className="text-sm text-zinc-700 dark:text-zinc-300 italic">
-                                    "{aiResults[field.subjectId].summary}"
-                                  </p>
-                                </div>
-                              )}
                             </Button>
+
+                            {/* AI Results Panel — shown AFTER analysis completes */}
+                            {!analyzingText[field.subjectId] && aiResults[field.subjectId] && (
+                              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-3 game:bg-emerald-950/30 game:border-emerald-500/30">
+                                <div className="flex items-center gap-2 text-emerald-700 game:text-emerald-400">
+                                  <Sparkles className="h-4 w-4" />
+                                  <span className="text-xs font-bold uppercase tracking-wide">Análisis Completado</span>
+                                  <span className="ml-auto text-xs text-emerald-600/70 game:text-emerald-500/70">Confianza: {Math.round(aiResults[field.subjectId].confidence * 100)}%</span>
+                                </div>
+                                <p className="text-sm text-emerald-800 italic game:text-emerald-300">
+                                  &ldquo;{aiResults[field.subjectId].summary}&rdquo;
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {aiResults[field.subjectId].attributeChanges.map((change) => (
+                                    <div
+                                      key={change.attribute}
+                                      title={change.reason}
+                                      className={cn(
+                                        "flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold uppercase border",
+                                        change.change > 0
+                                          ? "bg-green-100 text-green-700 border-green-300 game:bg-green-950/40 game:text-green-400 game:border-green-600/40"
+                                          : "bg-red-100 text-red-700 border-red-300 game:bg-red-950/40 game:text-red-400 game:border-red-600/40"
+                                      )}
+                                    >
+                                      {change.change > 0 ? <Plus size={10} /> : <Minus size={10} />}
+                                      {change.attribute} {change.change > 0 ? `+${change.change}` : change.change}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </TabsContent>
                       </Tabs>

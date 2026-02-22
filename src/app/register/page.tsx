@@ -164,7 +164,14 @@ export default function RegisterPage() {
             };
             batch.set(playerRef, newPlayer);
 
-            await batch.commit();
+            try {
+                await batch.commit();
+            } catch (batchError) {
+                console.error("Firestore batch error, rolling back user creation:", batchError);
+                // Si falla Firestore, eliminamos la criatura de Firebase Auth para no dejar cuentas huérfanas
+                await newUser.delete();
+                throw new Error("No pudimos inicializar tu cuenta en la base de datos (Error de red o permisos). Intenta de nuevo.");
+            }
 
             // Create social activity for player creation
             try {

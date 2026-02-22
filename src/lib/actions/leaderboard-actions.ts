@@ -28,6 +28,7 @@ export async function getLeaderboardActionV2(
       assists: 'stats.assists',
       matches: 'stats.matchesPlayed',
       rating: 'stats.averageRating',
+      mvp: 'stats.mvpVotes',
     };
 
     const orderField = fieldMap[category];
@@ -74,6 +75,9 @@ export async function getLeaderboardActionV2(
           break;
         case 'rating':
           value = player.stats?.averageRating || 0;
+          break;
+        case 'mvp':
+          value = player.stats?.mvpVotes || 0;
           break;
         default:
           value = 0;
@@ -137,6 +141,9 @@ export async function getPlayerRankAction(
       case 'rating':
         playerValue = player.stats?.averageRating || 0;
         break;
+      case 'mvp':
+        playerValue = player.stats?.mvpVotes || 0;
+        break;
       default:
         playerValue = 0;
     }
@@ -148,6 +155,7 @@ export async function getPlayerRankAction(
       assists: 'stats.assists',
       matches: 'stats.matchesPlayed',
       rating: 'stats.averageRating',
+      mvp: 'stats.mvpVotes',
     };
 
     const orderField = fieldMap[category];
@@ -199,7 +207,7 @@ export async function getMultipleLeaderboardsAction(
   error?: string;
 }> {
   try {
-    const categories: LeaderboardCategory[] = ['ovr', 'goals', 'assists', 'matches', 'rating'];
+    const categories: LeaderboardCategory[] = ['ovr', 'goals', 'assists', 'matches', 'rating', 'mvp'];
 
     const results = await Promise.all(
       categories.map(cat => getLeaderboardActionV2(cat, groupId, limitCount))
@@ -211,6 +219,7 @@ export async function getMultipleLeaderboardsAction(
       assists: [],
       matches: [],
       rating: [],
+      mvp: [],
     };
 
     categories.forEach((cat, index) => {
@@ -221,7 +230,7 @@ export async function getMultipleLeaderboardsAction(
   } catch (error: any) {
     logger.error('Error getting multiple leaderboards', error);
     return {
-      leaderboards: { ovr: [], goals: [], assists: [], matches: [], rating: [] },
+      leaderboards: { ovr: [], goals: [], assists: [], matches: [], rating: [], mvp: [] },
       error: error.message,
     };
   }
@@ -238,7 +247,7 @@ export async function getPlayerAllRanksAction(
   error?: string;
 }> {
   try {
-    const categories: LeaderboardCategory[] = ['ovr', 'goals', 'assists', 'matches', 'rating'];
+    const categories: LeaderboardCategory[] = ['ovr', 'goals', 'assists', 'matches', 'rating', 'mvp'];
 
     const results = await Promise.all(
       categories.map(cat => getPlayerRankAction(playerId, cat, groupId))
@@ -250,6 +259,7 @@ export async function getPlayerAllRanksAction(
       assists: { rank: null, total: 0, value: 0 },
       matches: { rank: null, total: 0, value: 0 },
       rating: { rank: null, total: 0, value: 0 },
+      mvp: { rank: null, total: 0, value: 0 },
     };
 
     categories.forEach((cat, index) => {
@@ -270,6 +280,7 @@ export async function getPlayerAllRanksAction(
         assists: { rank: null, total: 0, value: 0 },
         matches: { rank: null, total: 0, value: 0 },
         rating: { rank: null, total: 0, value: 0 },
+        mvp: { rank: null, total: 0, value: 0 },
       },
       error: error.message,
     };

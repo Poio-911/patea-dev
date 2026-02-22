@@ -9,11 +9,12 @@ import { cn } from '@/lib/utils';
 import { PlayerOvr, AttributesGrid, PlayerPhoto, positionConfig, PlayerPositionBadge } from '@/components/player-styles';
 import { Skeleton } from './ui/skeleton';
 import {
-    ResponsiveDialog as Dialog,
-    ResponsiveDialogContent as DialogContent,
-    ResponsiveDialogTrigger as DialogTrigger,
-} from '@/components/ui/responsive-dialog';
-import { Eye, ArrowRight } from 'lucide-react';
+    Dialog,
+    DialogContent,
+    DialogTrigger,
+    DialogClose,
+} from '@/components/ui/dialog';
+import { Eye, ArrowRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AnimatedCardWrapper } from '@/components/animated-card-wrapper';
 import { getAnimationByRarity, getStaggerDelay } from '@/lib/animation-utils';
@@ -170,8 +171,12 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, je
                                         <PlayerPhoto player={player} />
                                     </button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none overflow-hidden">
+                                <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none overflow-hidden [&>button]:hidden">
                                     <div className="relative w-full aspect-square">
+                                        <DialogClose className="absolute top-4 right-4 z-50 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full transition-colors backdrop-blur-sm">
+                                            <X className="h-6 w-6" />
+                                            <span className="sr-only">Cerrar</span>
+                                        </DialogClose>
                                         <Image
                                             src={(player as any).photoUrl || player.photoURL}
                                             alt={player.name}

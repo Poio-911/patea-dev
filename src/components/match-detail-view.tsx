@@ -31,6 +31,7 @@ import { useToast } from '@/hooks/use-toast';
 import { MatchWeatherAlert } from './match-details/MatchWeatherAlert';
 import { logger } from '@/lib/logger';
 import { LocationVoting } from './match-details/location-voting';
+import { DateVoting } from './match-details/date-voting';
 
 interface MatchDetailViewProps {
   matchId: string;
@@ -200,6 +201,11 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           <div className="lg:col-span-3 space-y-6">
+
+            {/* Votación de Fecha (Para Partidos en estado Planning) */}
+            {(match.status === 'planning' || match.isVotingOpen) && (
+              <DateVoting match={match} userId={user?.uid || ''} />
+            )}
 
             {/* Votación de Cancha (Inter-Group) */}
             {match.type === 'intergroup_friendly' && (

@@ -16,6 +16,7 @@ export type PlayerStats = {
   averageRating: number;
   yellowCards?: number;
   redCards?: number;
+  mvpVotes?: number; // Total de veces que fue elegido MVP por sus compañeros
 };
 
 export type OvrHistory = {
@@ -77,7 +78,7 @@ export type AvailablePlayer = {
 } & DocumentData;
 
 
-export type MatchStatus = 'upcoming' | 'active' | 'completed' | 'evaluated';
+export type MatchStatus = 'planning' | 'upcoming' | 'active' | 'completed' | 'evaluated';
 export type MatchType = 'manual' | 'collaborative' | 'by_teams' | 'intergroup_friendly' | 'league' | 'cup' | 'league_final';
 export type MatchSize = 10 | 14 | 22;
 
@@ -151,6 +152,7 @@ export type Match = {
   participantTeamIds?: string[];
   captains?: string[]; // [uid1, uid2]
   locationProposals?: LocationProposal[];
+  dateProposals?: MatchDateProposal[]; // For 'planning' phase date voting
   isVotingOpen?: boolean;
 
   // Game Data
@@ -1100,7 +1102,7 @@ export type PlayerAchievement = {
 } & DocumentData;
 
 // Leaderboard categories
-export type LeaderboardCategory = 'ovr' | 'goals' | 'assists' | 'matches' | 'rating';
+export type LeaderboardCategory = 'ovr' | 'goals' | 'assists' | 'matches' | 'rating' | 'mvp';
 
 // Leaderboard entry
 export type LeaderboardEntry = {

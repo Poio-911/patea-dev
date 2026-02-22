@@ -19,23 +19,28 @@ const typeLabels: Record<string, string> = {
 };
 
 const statusConfig: Record<MatchStatus, { label: string; className: string; neonClass: string }> = {
-  upcoming: { 
-    label: 'Próximo', 
+  planning: {
+    label: 'A Confirmar',
+    className: 'bg-primary/5 text-primary border-primary/20 backdrop-blur-sm',
+    neonClass: 'text-shadow-[0_0_6px_hsl(var(--primary))]'
+  },
+  upcoming: {
+    label: 'Próximo',
     className: 'bg-primary/10 text-primary border-primary/30 backdrop-blur-sm',
     neonClass: 'text-shadow-[0_0_6px_hsl(var(--primary))]'
   },
-  active: { 
-    label: 'En Vivo', 
+  active: {
+    label: 'En Vivo',
     className: 'bg-green-500/10 text-green-600 border-green-500/30 backdrop-blur-sm',
     neonClass: 'text-shadow-[0_0_6px_rgb(34_197_94)]'
   },
-  completed: { 
-    label: 'Finalizado', 
+  completed: {
+    label: 'Finalizado',
     className: 'bg-muted/40 text-muted-foreground border-muted/50 backdrop-blur-sm',
     neonClass: 'text-shadow-[0_0_4px_hsl(var(--muted-foreground))]'
   },
-  evaluated: { 
-    label: 'Evaluado', 
+  evaluated: {
+    label: 'Evaluado',
     className: 'bg-card/60 text-foreground border-border backdrop-blur-sm',
     neonClass: 'text-shadow-[0_0_6px_hsl(var(--chart-2))]'
   },
@@ -91,7 +96,7 @@ export function CompactMatchCard({ match, className, distance }: CompactMatchCar
               {matchTheme.icon === 'Handshake' && <Handshake className="mr-0.5 h-2.5 w-2.5" />}
               <span className="hidden sm:inline">{typeLabel}</span>
             </div>
-            
+
             {/* Status Badge */}
             <span
               className={cn(
@@ -122,7 +127,7 @@ export function CompactMatchCard({ match, className, distance }: CompactMatchCar
                 </div>
                 <JerseyPreview jersey={team2.jersey} size="sm" />
               </div>
-              
+
               {/* Team names row */}
               <div className="flex justify-between items-center gap-2">
                 <span className={cn("font-semibold text-xs truncate text-center flex-1", statusInfo.neonClass)}>

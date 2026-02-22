@@ -10,7 +10,8 @@ import { PageHeader } from '@/components/page-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ShieldQuestion, Calendar, Edit, Eye, FileClock, Users, MapPin, UsersRound, Check } from 'lucide-react';
+import { ShieldQuestion, Calendar, Edit, Eye, FileClock, Users, MapPin, UsersRound, Check } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { format, subDays, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Progress } from '@/components/ui/progress';
@@ -61,14 +62,27 @@ export default function EvaluationsPage() {
 
         const processItems = async () => {
             const userPendingAssignments = userAssignments || [];
-            const pendingMatchIds = new Set(userPendingAssignments.map(a => a.matchId));
 
+            // 1. Fetch completed assignments to know which past matches we evaluated
+            const completedAssignmentsQuery = query(
+                collectionGroup(firestore, 'assignments'),
+                where('evaluatorId', '==', user.uid),
+                where('status', '==', 'completed')
+            );
+            const completedAssignmentsSnapshot = await getDocs(completedAssignmentsQuery);
+            const userCompletedAssignments = completedAssignmentsSnapshot.docs.map(d => d.data() as EvaluationAssignment);
+
+            const pendingMatchIds = new Set(userPendingAssignments.map(a => a.matchId));
+            const completedMatchIds = new Set(userCompletedAssignments.map(a => a.matchId));
+
+            // 2. Fetch pending submissions
             const submissionsQuery = query(collection(firestore, 'evaluationSubmissions'), where('evaluatorId', '==', user.uid));
             const submissionsSnapshot = await getDocs(submissionsQuery);
             const submissionMatchIds = new Set(submissionsSnapshot.docs.map(doc => doc.data().matchId));
-            const submissionsMap = new Map(submissionsSnapshot.docs.map(doc => [doc.data().matchId, doc.data() as EvaluationSubmission]));
+            const submissionsMap = new Map<string, EvaluationSubmission>();
+            submissionsSnapshot.docs.forEach(doc => submissionsMap.set(doc.data().matchId, doc.data() as EvaluationSubmission));
 
-            // NEW: Also find matches where the user was a player to ensure self-evaluation appears
+            // 3. Find matches where the user was a player to ensure self-evaluation appears
             const participatedMatchesQuery = query(
                 collection(firestore, 'matches'),
                 where('playerUids', 'array-contains', user.uid),
@@ -77,7 +91,7 @@ export default function EvaluationsPage() {
             const participatedSnapshot = await getDocs(participatedMatchesQuery);
             const participatedMatchIds = new Set(participatedSnapshot.docs.map(doc => doc.id));
 
-            const allRelevantMatchIds = [...new Set([...pendingMatchIds, ...submissionMatchIds, ...participatedMatchIds])];
+            const allRelevantMatchIds = [...new Set([...pendingMatchIds, ...completedMatchIds, ...submissionMatchIds, ...participatedMatchIds])];
 
             if (allRelevantMatchIds.length === 0) {
                 setPendingItems([]);
@@ -85,16 +99,32 @@ export default function EvaluationsPage() {
                 return;
             }
 
+            // 4. Fetch processed submissions for these matches (the cloud function moves them here)
+            const processedPromises = allRelevantMatchIds.map(matchId =>
+                getDocs(query(collection(firestore, `matches/${matchId}/processedSubmissions`), where('evaluatorId', '==', user.uid)))
+            );
+            const processedSnapshots = await Promise.all(processedPromises);
+
+            processedSnapshots.forEach(snap => {
+                snap.docs.forEach(doc => {
+                    const data = doc.data() as EvaluationSubmission;
+                    submissionsMap.set(data.matchId, data);
+                });
+            });
+
+            // 5. Fetch the actual matches
             const matchesQuery = query(collection(firestore, 'matches'), where('__name__', 'in', allRelevantMatchIds));
             const matchesSnapshot = await getDocs(matchesQuery);
             const matchesMap = new Map(matchesSnapshot.docs.map(doc => [doc.id, { id: doc.id, ...doc.data() } as Match]));
 
             const initialItems: (PendingItem | null)[] = allRelevantMatchIds.map(matchId => {
                 const match = matchesMap.get(matchId);
-                if (!match || match.status === 'evaluated') return null;
+                const isSubmitted = submissionsMap.has(matchId);
+
+                // Ignore matches that are fully evaluated UNLESS the user submitted an evaluation for it
+                if (!match || (match.status === 'evaluated' && !isSubmitted)) return null;
 
                 const userAssignmentCount = userPendingAssignments.filter(a => a.matchId === matchId).length;
-                const isSubmitted = submissionsMap.has(matchId);
 
                 // If no assignments and not submitted, check if it's too old (e.g., > 7 days)
                 // This prevents old matches where the user never self-evaluated from showing up forever
@@ -249,7 +279,26 @@ export default function EvaluationsPage() {
     const loading = userLoading || isLoadingItems;
 
     if (loading) {
-        return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+        return (
+            <div className="flex flex-col gap-8">
+                <PageHeader title="Mis Evaluaciones" description="Aquí encontrarás los partidos que tienes pendientes por evaluar." />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[...Array(3)].map((_, i) => (
+                        <div key={i} className="rounded-xl border border-slate-200 p-5 space-y-4">
+                            <div className="flex items-center gap-3">
+                                <Skeleton className="h-12 w-10 rounded-lg" />
+                                <div className="space-y-1 flex-1">
+                                    <Skeleton className="h-3 w-12" />
+                                    <Skeleton className="h-4 w-40" />
+                                </div>
+                            </div>
+                            <Skeleton className="h-2 w-full rounded-full" />
+                            <Skeleton className="h-9 w-full rounded-md" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
     }
 
     if (!user) {
@@ -306,8 +355,8 @@ export default function EvaluationsPage() {
                 <TabsContent value="history" className="mt-6">
                     {pendingItems.filter(item => {
                         if (!item.submission) return false;
-                        // Mantener en historial solo por 2 días
-                        const archiveThreshold = subDays(new Date(), 2);
+                        // Mantener en historial por 14 días
+                        const archiveThreshold = subDays(new Date(), 14);
                         return !isBefore(new Date(item.submission.submittedAt), archiveThreshold);
                     }).length === 0 ? (
                         <Alert>
@@ -322,7 +371,7 @@ export default function EvaluationsPage() {
                             {pendingItems
                                 .filter(item => {
                                     if (!item.submission) return false;
-                                    const archiveThreshold = subDays(new Date(), 2);
+                                    const archiveThreshold = subDays(new Date(), 14);
                                     return !isBefore(new Date(item.submission.submittedAt), archiveThreshold);
                                 })
                                 .map((item) => renderCard(item))}

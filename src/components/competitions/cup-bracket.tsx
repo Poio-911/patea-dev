@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Clock, Medal } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 interface CupBracketProps {
   bracket: BracketMatch[];
@@ -124,7 +125,7 @@ export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentR
               match.winnerId === userTeamId;
 
             return (
-              <path
+              <motion.path
                 key={`conn-${match.id}-${nextMatch.id}`}
                 d={path}
                 fill="none"
@@ -132,7 +133,10 @@ export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentR
                 strokeWidth={isUserPath ? 3 : isCompleted ? 2 : 1.5}
                 strokeOpacity={isUserPath ? 0.8 : isCompleted ? 0.6 : 0.3}
                 strokeDasharray={isCompleted || isUserPath ? "0" : "6 4"}
-                className="transition-all duration-700 ease-in-out"
+                className="transition-colors duration-700 ease-in-out"
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={{ pathLength: 1, opacity: 1 }}
+                transition={{ duration: 1.2, ease: "easeInOut" }}
               />
             );
           })}
@@ -225,9 +229,10 @@ function BracketMatchCard({ match, onClick, isHighlighted, isFinal, canCreate, u
           )}
           <span className={cn(
             "text-sm truncate",
-            isUser && "text-purple-600 dark:text-purple-400 font-medium"
+            isUser && "text-purple-600 dark:text-purple-400 font-medium",
+            !name && "italic text-xs opacity-70"
           )}>
-            {name || "Esperando..."}
+            {name || "Por definir..."}
           </span>
         </div>
         {name && (
@@ -281,8 +286,14 @@ function BracketMatchCard({ match, onClick, isHighlighted, isFinal, canCreate, u
             </Badge>
           ) : isCompleted ? (
             <Badge variant="outline" className="h-4 px-1 text-[9px] border-0 bg-muted/50">Finalizado</Badge>
-          ) : canCreate ? (
-            <Badge variant="default" className="h-4 px-1 text-[9px] animate-pulse">Jugar</Badge>
+          ) : hasTeams ? (
+            match.matchId ? (
+              <Badge variant="default" className="h-4 px-1 text-[9px]">Jugar</Badge>
+            ) : canCreate ? (
+              <Badge variant="default" className="h-4 px-1 text-[9px] bg-green-600 hover:bg-green-700 animate-pulse border-0">Generar Partido</Badge>
+            ) : (
+              <Badge variant="outline" className="h-4 px-1 text-[9px] border-0 bg-muted/50">Pendiente</Badge>
+            )
           ) : null}
         </div>
       )}

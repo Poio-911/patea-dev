@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { PlayerRecentActivity } from './player-recent-activity';
 import { PlayerSuggestionsCard } from './player-suggestions-card';
 import { PlayerTeamsList } from './player-teams-list';
+import { PlayerAchievementsPanel } from './player-achievements-panel';
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -80,6 +81,9 @@ export default function PlayerProfileView({ playerId, player, jersey }: PlayerPr
           )}
         </>
       )}
+
+      {/* NEW: Achievements Showcase */}
+      <PlayerAchievementsPanel playerId={playerId} />
 
       <PlayerRecentActivity playerId={playerId} />
     </div>

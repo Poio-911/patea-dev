@@ -9,7 +9,7 @@ import type { Player, Jersey } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
 import { Button } from './ui/button';
-import { Sparkles, Loader2, Scissors, Share2, ShoppingCart } from 'lucide-react';
+import { Sparkles, Loader2, Scissors, Share2, ShoppingCart, Trophy } from 'lucide-react';
 import { ResponsiveAlertDialog as AlertDialog, ResponsiveAlertDialogAction as AlertDialogAction, ResponsiveAlertDialogCancel as AlertDialogCancel, ResponsiveAlertDialogContent as AlertDialogContent, ResponsiveAlertDialogDescription as AlertDialogDescription, ResponsiveAlertDialogFooter as AlertDialogFooter, ResponsiveAlertDialogHeader as AlertDialogHeader, ResponsiveAlertDialogTitle as AlertDialogTitle, ResponsiveAlertDialogTrigger as AlertDialogTrigger } from '@/components/ui/responsive-alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/lib/logger';
@@ -166,6 +166,20 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
                 </Dialog>
               </motion.div>
               <h3 className="w-full truncate text-center text-xl font-semibold">{playerName}</h3>
+
+              {/* MVP Badge: show only if has votes */}
+              {(player.stats?.mvpVotes ?? 0) > 0 && (
+                <div className="flex items-center justify-center gap-1.5 mt-1">
+                  <span className={cn(
+                    "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold",
+                    "bg-yellow-100 text-yellow-800 border border-yellow-300",
+                    "game:bg-yellow-500/20 game:text-yellow-300 game:border-yellow-500/40"
+                  )}>
+                    <Trophy className="h-3 w-3" />
+                    MVP x{player.stats.mvpVotes}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Social actions for other users' profiles */}

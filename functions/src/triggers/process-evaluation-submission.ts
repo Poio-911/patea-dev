@@ -37,15 +37,35 @@ export const processEvaluationSubmission = onDocumentCreated({
 
     try {
         await db.runTransaction(async (transaction) => {
-            // 1. Self-evaluation (goals/assists reported by the evaluator)
-            if (formData.evaluatorGoals > 0 || (formData.evaluatorAssists && formData.evaluatorAssists > 0)) {
+            // 1. Self-evaluation (goals/assists/personal chronicle/mvp vote reported by the evaluator)
+            if (
+                formData.evaluatorGoals > 0 ||
+                (formData.evaluatorAssists && formData.evaluatorAssists > 0) ||
+                formData.personalChronicle ||
+                formData.mvpVote
+            ) {
                 const selfEvalRef = db.collection(`matches/${matchId}/selfEvaluations`).doc();
-                transaction.set(selfEvalRef, {
+                const selfEvalData: Record<string, unknown> = {
                     playerId: evaluatorId,
                     matchId,
                     goals: formData.evaluatorGoals || 0,
                     assists: formData.evaluatorAssists || 0,
                     reportedAt: submissionData.submittedAt || new Date().toISOString(),
+                };
+                if (formData.personalChronicle) {
+                    selfEvalData.personalChronicle = formData.personalChronicle;
+                }
+                if (formData.mvpVote) {
+                    selfEvalData.mvpVote = formData.mvpVote;
+                }
+                transaction.set(selfEvalRef, selfEvalData);
+            }
+
+            // 1b. Increment MVP vote counter on the voted player
+            if (formData.mvpVote && typeof formData.mvpVote === 'string') {
+                const votedPlayerRef = db.collection('players').doc(formData.mvpVote);
+                transaction.update(votedPlayerRef, {
+                    'stats.mvpVotes': admin.firestore.FieldValue.increment(1),
                 });
             }
 

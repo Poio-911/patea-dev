@@ -64,28 +64,35 @@ const matchLocationSchema = z.object({
 
 const matchSchema = z.object({
     title: z.string().min(3, 'El título debe tener al menos 3 caracteres.'),
-    date: z.date({
-        required_error: "La fecha del partido es obligatoria.",
-    }),
-    time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:MM).'),
+    isPlanning: z.boolean().default(false),
+    date: z.date().optional(),
+    time: z.string().optional(),
     location: matchLocationSchema,
     type: z.enum(['manual', 'collaborative', 'by_teams'], { required_error: 'El tipo es obligatorio.' }),
     matchSize: z.enum(['10', '14', '22'], { required_error: 'El tamaño es obligatorio.' }),
     players: z.array(z.string()),
     selectedTeams: z.array(z.string()).optional(),
     isPublic: z.boolean().optional(),
-}).refine(data => {
+}).superRefine((data, ctx) => {
     if (data.type === 'manual') {
         const minPlayers = Math.ceil(parseInt(data.matchSize) / 2);
-        return data.players.length >= minPlayers;
+        if (data.players.length < minPlayers) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Debes seleccionar suficientes jugadores.", path: ['players'] });
+        }
     }
-    if (data.type === 'by_teams') {
-        return data.selectedTeams?.length === 2;
+    if (data.type === 'by_teams' && data.selectedTeams?.length !== 2) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Debes seleccionar exactamente 2 equipos.", path: ['players'] });
     }
-    return true;
-}, {
-    message: "Para partidos 'manuales', debes seleccionar al menos la mitad de los jugadores. Para partidos 'por equipos', debes seleccionar exactamente 2 equipos.",
-    path: ['players'],
+    if (!data.isPlanning) {
+        if (!data.date) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "La fecha es obligatoria.", path: ['date'] });
+        }
+        if (!data.time) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "La hora es obligatoria.", path: ['time'] });
+        } else if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(data.time)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Formato de hora inválido.", path: ['time'] });
+        }
+    }
 });
 
 
@@ -423,6 +430,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         mode: 'onChange',
         defaultValues: {
             title: 'Partido Amistoso',
+            isPlanning: false,
             date: new Date(),
             time: '21:00',
             type: 'manual',
@@ -434,6 +442,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     });
 
     const { formState, trigger, watch, setValue, getValues, control } = form;
+    const watchedIsPlanning = watch('isPlanning');
     const watchedDate = watch('date');
     const watchedLocation = watch('location');
     const watchedTime = watch('time');
@@ -449,6 +458,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
             setTimeout(() => {
                 form.reset({
                     title: 'Partido Amistoso',
+                    isPlanning: false,
                     date: new Date(),
                     time: '21:00',
                     type: 'manual',
@@ -506,7 +516,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 setWeather(null);
                 try {
                     const dateObj = watchedDate;
-                    const [hours, minutes] = watchedTime.split(':').map(Number);
+                    const [hours, minutes] = (watchedTime || '00:00').split(':').map(Number);
                     const matchDateTime = new Date(dateObj);
                     matchDateTime.setHours(hours, minutes);
 
@@ -690,8 +700,8 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
 
         const newMatchData: any = {
             title: data.title,
-            date: data.date.toISOString(),
-            time: data.time,
+            date: data.date ? data.date.toISOString() : '',
+            time: data.time || '',
             location: data.location,
             type: 'by_teams' as MatchType,
             matchSize: finalTeams[0].players.length + finalTeams[1].players.length,
@@ -715,13 +725,14 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
             credentials: 'include', // Ensure cookies are sent
             body: JSON.stringify({
                 title: data.title,
-                date: new Date(`${data.date.toDateString()} ${data.time}`).toISOString(),
-                time: data.time,
+                date: data.isPlanning || !data.date ? '' : new Date(`${data.date.toDateString()} ${data.time || '00:00'}`).toISOString(),
+                time: data.isPlanning || !data.time ? '' : data.time,
+                isPlanning: data.isPlanning,
                 location: data.location,
                 type: 'by_teams',
                 matchSize: finalTeams[0].players.length + finalTeams[1].players.length,
                 isPublic: false,
-                weather,
+                weather: data.isPlanning ? undefined : weather,
                 selectedTeams: data.selectedTeams,
             }),
         });
@@ -762,13 +773,14 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
             credentials: 'include',
             body: JSON.stringify({
                 title: data.title,
-                date: data.date.toISOString(),
-                time: data.time,
+                date: data.isPlanning || !data.date ? '' : data.date.toISOString(),
+                time: data.isPlanning || !data.time ? '' : data.time,
+                isPlanning: data.isPlanning,
                 location: data.location,
                 type: 'manual',
                 matchSize: selectedMatchSize,
                 isPublic: false,
-                weather,
+                weather: data.isPlanning ? undefined : weather,
                 players: selectedPlayersData.map(p => p.id),
             }),
         });
@@ -780,7 +792,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
         if (!user?.uid || !user.activeGroupId) throw new Error("User not authenticated");
         const newMatch: any = {
             ...data,
-            date: data.date.toISOString(),
+            date: data.date ? data.date.toISOString() : '',
             isPublic: data.isPublic,
             matchSize: selectedMatchSize,
             status: 'upcoming' as const,
@@ -801,13 +813,14 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
             credentials: 'include',
             body: JSON.stringify({
                 title: data.title,
-                date: data.date.toISOString(),
-                time: data.time,
+                date: data.isPlanning || !data.date ? '' : data.date.toISOString(),
+                time: data.isPlanning || !data.time ? '' : data.time,
+                isPlanning: data.isPlanning,
                 location: data.location,
                 type: 'collaborative',
                 matchSize: selectedMatchSize,
                 isPublic: data.isPublic,
-                weather,
+                weather: data.isPlanning ? undefined : weather,
             }),
         });
         const json = await resp.json();
@@ -857,62 +870,80 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                     {formState.errors.location && <p className="text-xs text-destructive mt-1">{formState.errors.location.address?.message}</p>}
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <Label>Fecha</Label>
-                                        <Controller
-                                            name="date"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <Popover>
-                                                    <PopoverTrigger asChild>
-                                                        <Button
-                                                            variant={"outline"}
-                                                            className={cn(
-                                                                "w-full justify-start text-left font-normal",
-                                                                !field.value && "text-muted-foreground"
-                                                            )}
-                                                        >
-                                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                                            {field.value ? format(field.value, "PPP", { locale: es }) : <span>Elegí una fecha</span>}
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0" align="start">
-                                                        <Calendar
-                                                            mode="single"
-                                                            selected={field.value}
-                                                            onSelect={field.onChange}
-                                                            initialFocus
-                                                        />
-                                                    </PopoverContent>
-                                                </Popover>
-                                            )}
-                                        />
-                                        {formState.errors.date && <p className="text-xs text-destructive mt-1">{formState.errors.date.message}</p>}
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="time">Hora</Label>
-                                        <Input id="time" {...form.register('time')} />
-                                        {formState.errors.time && <p className="text-xs text-destructive mt-1">{formState.errors.time.message}</p>}
-                                    </div>
-                                </div>
-
-                                <div className="p-3 bg-muted/50 rounded-lg min-h-[60px] flex items-center justify-center">
-                                    {isFetchingWeather ? (
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                            <span>Viendo el pronóstico...</span>
-                                        </div>
-                                    ) : weather && WeatherIcon ? (
-                                        <div className="flex items-center justify-center gap-4 text-sm w-full">
-                                            <div className="flex items-center gap-2">
-                                                <WeatherIcon className="h-6 w-6 text-primary" />
-                                                <p className="font-bold text-lg">{weather.temperature}°C</p>
+                                <div className="space-y-4">
+                                    <Controller
+                                        name="isPlanning"
+                                        control={form.control}
+                                        render={({ field }) => (
+                                            <div className="flex items-center justify-between space-x-2 rounded-md border border-primary/20 bg-primary/5 p-3">
+                                                <div className="flex-1 space-y-1">
+                                                    <Label htmlFor="isPlanning" className="font-semibold cursor-pointer text-sm">Definir horario por votación</Label>
+                                                    <p className="text-xs text-muted-foreground">Elegí esta opción si todavía no saben la fecha u hora.</p>
+                                                </div>
+                                                <Switch id="isPlanning" checked={field.value} onCheckedChange={field.onChange} />
                                             </div>
-                                            <p className="font-medium text-muted-foreground">{weather.description}</p>
+                                        )}
+                                    />
+
+                                    <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-4 transition-opacity", watchedIsPlanning && "opacity-50 pointer-events-none")}>
+                                        <div>
+                                            <Label>Fecha</Label>
+                                            <Controller
+                                                name="date"
+                                                control={control}
+                                                render={({ field }) => (
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <Button
+                                                                variant={"outline"}
+                                                                className={cn(
+                                                                    "w-full justify-start text-left font-normal",
+                                                                    !field.value && "text-muted-foreground"
+                                                                )}
+                                                            >
+                                                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                                                {field.value ? format(field.value, "PPP", { locale: es }) : <span>Elegí una fecha</span>}
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-auto p-0" align="start">
+                                                            <Calendar
+                                                                mode="single"
+                                                                selected={field.value}
+                                                                onSelect={field.onChange}
+                                                                initialFocus
+                                                            />
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                )}
+                                            />
+                                            {formState.errors.date && <p className="text-xs text-destructive mt-1">{formState.errors.date.message}</p>}
                                         </div>
-                                    ) : (
-                                        <p className="text-sm text-muted-foreground text-center">Poné fecha y lugar para ver el pronóstico.</p>
+                                        <div>
+                                            <Label htmlFor="time">Hora</Label>
+                                            <Input id="time" {...form.register('time')} />
+                                            {formState.errors.time && <p className="text-xs text-destructive mt-1">{formState.errors.time.message}</p>}
+                                        </div>
+                                    </div>
+
+                                    {!watchedIsPlanning && (
+                                        <div className="p-3 bg-muted/50 rounded-lg min-h-[60px] flex items-center justify-center">
+                                            {isFetchingWeather ? (
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                    <span>Viendo el pronóstico...</span>
+                                                </div>
+                                            ) : weather && WeatherIcon ? (
+                                                <div className="flex items-center justify-center gap-4 text-sm w-full">
+                                                    <div className="flex items-center gap-2">
+                                                        <WeatherIcon className="h-6 w-6 text-primary" />
+                                                        <p className="font-bold text-lg">{weather.temperature}°C</p>
+                                                    </div>
+                                                    <p className="font-medium text-muted-foreground">{weather.description}</p>
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground text-center">Poné fecha y lugar para ver el pronóstico.</p>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>

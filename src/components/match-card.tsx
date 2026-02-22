@@ -54,6 +54,12 @@ type MatchCardProps = {
 };
 
 const statusConfig: Record<Match['status'], { label: string; className: string; neonClass: string; gradientClass: string }> = {
+    planning: {
+        label: 'A Confirmar',
+        className: 'bg-primary/5 text-primary border border-primary/20 rounded-full backdrop-blur-sm',
+        neonClass: 'text-shadow-[0_0_6px_hsl(var(--primary))]',
+        gradientClass: 'from-primary/10'
+    },
     upcoming: {
         label: 'Próximo',
         className: 'bg-primary/10 text-foreground border border-primary/30 rounded-full backdrop-blur-sm',
