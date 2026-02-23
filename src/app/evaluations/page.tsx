@@ -63,16 +63,12 @@ export default function EvaluationsPage() {
         const processItems = async () => {
             const userPendingAssignments = userAssignments || [];
 
-            // 1. Fetch completed assignments AND processed submissions in parallel
-            const [completedAssignmentsSnapshot, processedSubmissionsSnapshot, submissionsSnapshot] = await Promise.all([
+            // 1. Fetch completed assignments AND evaluation submissions in parallel
+            const [completedAssignmentsSnapshot, submissionsSnapshot] = await Promise.all([
                 getDocs(query(
                     collectionGroup(firestore, 'assignments'),
                     where('evaluatorId', '==', user.uid),
                     where('status', '==', 'completed')
-                )),
-                getDocs(query(
-                    collectionGroup(firestore, 'processedSubmissions'),
-                    where('evaluatorId', '==', user.uid)
                 )),
                 getDocs(query(
                     collection(firestore, 'evaluationSubmissions'),
@@ -84,10 +80,6 @@ export default function EvaluationsPage() {
 
             const submissionsMap = new Map<string, EvaluationSubmission>();
             submissionsSnapshot.docs.forEach(doc => submissionsMap.set(doc.data().matchId, doc.data() as EvaluationSubmission));
-            processedSubmissionsSnapshot.docs.forEach(doc => {
-                const data = doc.data() as EvaluationSubmission;
-                submissionsMap.set(data.matchId, data);
-            });
 
             const pendingMatchIds = new Set(userPendingAssignments.map(a => a.matchId));
             const completedMatchIds = new Set(userCompletedAssignments.map(a => a.matchId));
@@ -103,7 +95,7 @@ export default function EvaluationsPage() {
                 return;
             }
 
-            // 2. Fetch the actual matches (with chunking for the 30-item limit)
+            // 2. Fetch the actual matches AND processed submissions in parallel
             const matchesMap = new Map<string, Match>();
             const chunks = [];
             for (let i = 0; i < allRelevantMatchIds.length; i += 30) {
@@ -113,9 +105,27 @@ export default function EvaluationsPage() {
             const matchPromises = chunks.map(chunk =>
                 getDocs(query(collection(firestore, 'matches'), where('__name__', 'in', chunk)))
             );
-            const matchSnapshots = await Promise.all(matchPromises);
+
+            // Reverted back to individual queries because collectionGroup required a missing index.
+            // Since we removed participatedMatchIds, this array is very small now, making this fast.
+            const processedPromises = allRelevantMatchIds.map(matchId =>
+                getDocs(query(collection(firestore, `matches/${matchId}/processedSubmissions`), where('evaluatorId', '==', user.uid)))
+            );
+
+            const [matchSnapshots, processedSnapshots] = await Promise.all([
+                Promise.all(matchPromises),
+                Promise.all(processedPromises)
+            ]);
+
             matchSnapshots.forEach(snap => {
                 snap.docs.forEach(doc => matchesMap.set(doc.id, { id: doc.id, ...doc.data() } as Match));
+            });
+
+            processedSnapshots.forEach(snap => {
+                snap.docs.forEach(doc => {
+                    const data = doc.data() as EvaluationSubmission;
+                    submissionsMap.set(data.matchId, data);
+                });
             });
 
             const initialItems: (PendingItem | null)[] = allRelevantMatchIds.map(matchId => {
