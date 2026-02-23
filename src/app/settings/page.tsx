@@ -8,9 +8,37 @@ import { LinkGoogleFitButton } from '@/components/health/link-google-fit-button'
 import { User, Settings as SettingsIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { NotificationSettings } from '@/components/notifications/notification-permission-prompt';
+import { EditProfileDialog } from '@/components/settings/edit-profile-dialog';
+import { useFirestore } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import type { Player } from '@/lib/types';
+import { useEffect, useState } from 'react';
 
 export default function SettingsPage() {
   const { user, loading } = useUser();
+  const firestore = useFirestore();
+  const [player, setPlayer] = useState<Player | null>(null);
+  const [playerLoading, setPlayerLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchPlayer() {
+      if (!user || !firestore) {
+        setPlayerLoading(false);
+        return;
+      }
+      try {
+        const snap = await getDoc(doc(firestore, 'players', user.uid));
+        if (snap.exists()) {
+          setPlayer(snap.data() as Player);
+        }
+      } catch (err) {
+        console.error('Error fetching player in settings:', err);
+      } finally {
+        setPlayerLoading(false);
+      }
+    }
+    fetchPlayer();
+  }, [user, firestore]);
 
   if (loading) {
     return (
@@ -68,17 +96,29 @@ export default function SettingsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'Usuario'} />
-              <AvatarFallback>
-                {user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="space-y-1">
-              <p className="text-lg font-medium">{user.displayName || 'Usuario'}</p>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
+          <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'Usuario'} />
+                <AvatarFallback>
+                  {user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="space-y-1">
+                <p className="text-lg font-medium">{user.displayName || 'Usuario'}</p>
+                <p className="text-sm text-muted-foreground">{user.email}</p>
+                {player?.position && (
+                  <p className="text-xs font-medium text-primary bg-primary/10 inline-block px-2 py-0.5 rounded">
+                    Posición: {player.position}
+                  </p>
+                )}
+              </div>
             </div>
+
+            {/* Edit Profile Button */}
+            {!playerLoading && (
+              <EditProfileDialog user={user} playerData={player || null} />
+            )}
           </div>
         </CardContent>
       </Card>

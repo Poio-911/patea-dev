@@ -18,7 +18,7 @@ import type { AnalyzePlayerProgressionInput } from '../../ai/flows/analyze-playe
 import { type GenerateMatchChronicleOutput, type GenerateMatchChronicleInput, MatchLocation } from '../../lib/types';
 // Note: AI flow functions are imported dynamically within each action to avoid
 // loading Genkit during build when API key is not available
-import { Player, Evaluation, OvrHistory, EvaluationAssignment, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, GroupTeamMember, TeamAvailabilityPost, Match, GenerateDuoImageInput, League, LeagueFormat, CompetitionStatus, Cup, CupFormat, CupSeedingType, BracketMatch, CompetitionApplication, CompetitionFormat, HealthConnection, PlayerPerformance, GoogleFitAuthUrl, GoogleFitSession, SocialActivity, Follow, NotificationType } from '../types';
+import { Player, Evaluation, OvrHistory, EvaluationAssignment, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, GroupTeamMember, TeamAvailabilityPost, Match, GenerateDuoImageInput, League, LeagueFormat, CompetitionStatus, Cup, CupFormat, CupSeedingType, BracketMatch, CompetitionApplication, CompetitionFormat, HealthConnection, PlayerPerformance, GoogleFitAuthUrl, GoogleFitSession, SocialActivity, Follow, NotificationType, PlayerPosition } from '../types';
 import { logger } from '../logger';
 import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse, type ErrorResponse } from '../errors';
 import { addDays, format } from 'date-fns';
@@ -3532,5 +3532,56 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
     } catch (error: any) {
         logger.error('Error finalizing match evaluation', error, { matchId });
         return { success: false, error: error.message || 'Error finalizing match evaluation' };
+    }
+}
+
+export async function updateProfileAction(uid: string, data: { displayName?: string; photoURL?: string; position?: PlayerPosition }) {
+    try {
+        const { getAuth } = await import('firebase-admin/auth');
+        const db = getAdminDb();
+        const auth = getAuth();
+
+        const batch = db.batch();
+
+        // 1. Update users collection
+        const userRef = db.collection('users').doc(uid);
+        const userUpdates: any = {};
+        if (data.displayName !== undefined) userUpdates.displayName = data.displayName;
+        if (data.photoURL !== undefined) userUpdates.photoURL = data.photoURL;
+
+        if (Object.keys(userUpdates).length > 0) {
+            batch.update(userRef, userUpdates);
+        }
+
+        // 2. Update players collection
+        const playerRef = db.collection('players').doc(uid);
+        const playerUpdates: any = {};
+        if (data.displayName !== undefined) playerUpdates.name = data.displayName;
+        if (data.photoURL !== undefined) {
+            playerUpdates.photoUrl = data.photoURL;
+            playerUpdates.photoURL = data.photoURL; // update both to be safe due to legacy code
+        }
+        if (data.position !== undefined) playerUpdates.position = data.position;
+
+        if (Object.keys(playerUpdates).length > 0) {
+            batch.update(playerRef, playerUpdates);
+        }
+
+        // 3. Update Auth Profile
+        const authUpdates: any = {};
+        if (data.displayName !== undefined) authUpdates.displayName = data.displayName;
+        if (data.photoURL !== undefined) authUpdates.photoURL = data.photoURL;
+
+        if (Object.keys(authUpdates).length > 0) {
+            await auth.updateUser(uid, authUpdates);
+        }
+
+        // 4. Commit Firestore batch
+        await batch.commit();
+
+        return { success: true };
+    } catch (error: any) {
+        logger.error('Failed to update profile:', error);
+        return handleServerActionError(error, ErrorCodes.SYS_INTERNAL_ERROR as any);
     }
 }

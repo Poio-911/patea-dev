@@ -29,6 +29,7 @@ import { PlayerPositionBadge } from '@/components/player-styles';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { NotificationPermissionPrompt } from '@/components/notifications/notification-permission-prompt';
 import { DashboardTabs } from '@/components/dashboard/dashboard-tabs';
+import { WelcomeDialog } from '@/components/welcome-dialog';
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
   planning: { label: 'A Confirmar', className: 'bg-primary/5 text-primary border border-primary/20 rounded-full backdrop-blur-sm' },
