@@ -19,6 +19,7 @@ import confetti from 'canvas-confetti';
 import { logger } from '@/lib/logger';
 import { publishMatchPlayedActivity, publishOvrChangeActivity } from '@/lib/actions/social-actions';
 import { updateLeagueStandingsAction, advanceCupWinnerAction } from '@/lib/actions/server-actions';
+import { isErrorResponse } from '@/lib/errors';
 import { BackButton } from '@/components/navigation/back-button';
 import { cn } from '@/lib/utils';
 
@@ -220,8 +221,8 @@ export default function EvaluateMatchPage() {
             const { finalizeMatchEvaluationAction } = await import('@/lib/actions/server-actions');
             const result = await finalizeMatchEvaluationAction(match.id);
 
-            if (!result || !result.success) {
-                throw new Error(result?.error || 'Ocurrió un error inesperado al finalizar el partido.');
+            if (!result || isErrorResponse(result) || !result.success) {
+                throw new Error(isErrorResponse(result) ? result.error : ((result as any)?.error || 'Ocurrió un error inesperado al finalizar el partido.'));
             }
 
             // 🎉 Confetti celebration on successful finalization

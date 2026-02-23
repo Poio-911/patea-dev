@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Camera, Edit2 } from 'lucide-react';
 import { updateProfileAction } from '@/lib/actions/server-actions';
+import { isErrorResponse } from '@/lib/errors';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImageCropperDialog } from '@/components/image-cropper-dialog';
@@ -70,7 +71,7 @@ export function EditProfileDialog({ user, playerData }: EditProfileDialogProps) 
                 ...(finalPhotoURL && finalPhotoURL !== user.photoURL ? { photoURL: finalPhotoURL } : {})
             });
 
-            if (!res.success) throw new Error('Error al actualizar en el servidor');
+            if (isErrorResponse(res)) throw new Error(res.error || 'Error al actualizar en el servidor');
 
             // 2. Update Client Side Auth (so UI updates immediately without reload)
             await updateProfile(user, {
@@ -121,17 +122,17 @@ export function EditProfileDialog({ user, playerData }: EditProfileDialogProps) 
                                 </AvatarFallback>
                             </Avatar>
                             <ImageCropperDialog
-                                onImageCropped={(dataUrl) => {
-                                    setImagePreview(dataUrl);
-                                    setGeneratedPhotoUrl(dataUrl);
+                                player={{ photoURL: imagePreview || user.photoURL || undefined }}
+                                onSaveComplete={(newUrl: string) => {
+                                    setImagePreview(newUrl);
+                                    setGeneratedPhotoUrl(newUrl);
                                 }}
-                                triggerButton={
-                                    <Button type="button" variant="outline" size="sm">
-                                        <Camera className="w-4 h-4 mr-2" />
-                                        Cambiar Foto
-                                    </Button>
-                                }
-                            />
+                            >
+                                <Button type="button" variant="outline" size="sm">
+                                    <Camera className="w-4 h-4 mr-2" />
+                                    Cambiar Foto
+                                </Button>
+                            </ImageCropperDialog>
                         </div>
 
                         <FormField
