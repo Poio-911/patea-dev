@@ -233,9 +233,16 @@ export default function EvaluateMatchPage() {
 
             toast({
                 title: "¡Evaluación Finalizada!",
-                description: "Los OVRs y estadísticas de los jugadores han sido actualizados de forma segura."
+                description: "Los resultados, estadísticas y avances han sido guardados."
             });
-            router.push('/matches');
+
+            if ((match.type === 'cup' || match.type === 'league_final') && match.leagueInfo?.leagueId) {
+                router.push(`/competitions/${match.leagueInfo.leagueId}?celebrate=true`);
+            } else if (match.type === 'league' && match.leagueInfo?.leagueId) {
+                router.push(`/competitions/${match.leagueInfo.leagueId}`);
+            } else {
+                router.push('/matches');
+            }
 
         } catch (error: any) {
             console.error("Error finalizing evaluation:", error);

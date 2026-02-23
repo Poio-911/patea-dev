@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -9,10 +9,15 @@ import { User, Settings as SettingsIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { NotificationSettings } from '@/components/notifications/notification-permission-prompt';
 import { EditProfileDialog } from '@/components/settings/edit-profile-dialog';
-import { useFirestore } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import type { Player } from '@/lib/types';
 import { useEffect, useState } from 'react';
+import { ShieldAlert } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { getAuth } from 'firebase/auth';
+
+const ADMIN_EMAILS = ['lopeztoma.santiago@gmail.com', 'admin@patea.app'];
 
 export default function SettingsPage() {
   const { user, loading } = useUser();
@@ -117,7 +122,7 @@ export default function SettingsPage() {
 
             {/* Edit Profile Button */}
             {!playerLoading && (
-              <EditProfileDialog user={user} playerData={player || null} />
+              <EditProfileDialog user={user as any} playerData={player || null} />
             )}
           </div>
         </CardContent>
@@ -145,11 +150,42 @@ export default function SettingsPage() {
         <NotificationSettings />
       </div>
 
+      {/* Super Admin Section */}
+      {(
+        (user.email && ADMIN_EMAILS.includes(user.email.toLowerCase())) ||
+        (getAuth().currentUser?.email && ADMIN_EMAILS.includes(getAuth().currentUser!.email!.toLowerCase()))
+      ) && (
+          <div className="space-y-4 pt-4">
+            <div>
+              <h2 className="text-xl font-semibold mb-1 flex items-center gap-2">
+                <ShieldAlert className="h-5 w-5 text-destructive" />
+                Administración
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Herramientas globales y métricas de la plataforma
+              </p>
+            </div>
+            <Card className="border-destructive/30 bg-destructive/5">
+              <CardHeader>
+                <CardTitle className="text-destructive">Panel Super Admin</CardTitle>
+                <CardDescription>Acceso restringido a administradores del sistema</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild variant="destructive" className="w-full sm:w-auto">
+                  <Link href="/admin">
+                    Ingresar al Dashboard de Control
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
       {/* Future Sections Placeholder */}
       <Card className="border-dashed">
         <CardContent className="pt-6">
-          <p className="text-center text-sm text-muted-foreground">
-            Más opciones de configuración próximamente
+          <p className="text-center text-muted-foreground text-sm">
+            Más opciones de configuración estarán disponibles pronto.
           </p>
         </CardContent>
       </Card>

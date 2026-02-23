@@ -1,7 +1,8 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useMemo, useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
 import Image from 'next/image';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
 import { doc, collection, query, where } from 'firebase/firestore';
@@ -36,9 +37,25 @@ export default function CupDetailPage() {
   const params = useParams<{ id: string }>();
   const cupId = params?.id;
   const router = useRouter();
+  const searchParams = useSearchParams();
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
+
+  // 🎉 Trigger confetti if entering with ?celebrate=true
+  useEffect(() => {
+    if (searchParams?.get('celebrate') === 'true') {
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+      // Optionally remove the param from URL to prevent re-triggering on refresh
+      const url = new URL(window.location.href);
+      url.searchParams.delete('celebrate');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams]);
 
   const [activeTab, setActiveTab] = useState<CupTab>('bracket');
   const [showStartDialog, setShowStartDialog] = useState(false);
