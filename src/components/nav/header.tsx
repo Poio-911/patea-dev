@@ -21,7 +21,7 @@ type HeaderProps = {
 
 export function Header({ user, player, onLogout, onRequestPermission }: HeaderProps) {
     return (
-        <header className="fixed top-0 left-0 right-0 z-20 h-16 shrink-0 border-b bg-card/80 backdrop-blur-lg transition-all">
+        <header className="fixed-header fixed top-0 left-0 right-0 z-20 h-16 shrink-0 border-b bg-card/80 backdrop-blur-lg transition-all">
             <div className="max-w-7xl mx-auto h-full px-2 sm:px-6 flex items-center justify-between">
                 {/* Left section: Logo + Desktop Nav */}
                 <div className="flex items-center gap-2 md:gap-4 lg:gap-8">

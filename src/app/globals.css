@@ -10,18 +10,49 @@ body.standalone nav.fixed {
 }
 
 /* =============================================
-   PWA / MOBILE TOUCH FIX
-   Eliminates 300ms tap delay and fixes touch
-   events on Radix portals in standalone PWA mode
+   PWA / MOBILE TOUCH + SCROLL FIX
    ============================================= */
 
 /* Global: faster tap response everywhere */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   -webkit-tap-highlight-color: transparent;
 }
 
 html {
   touch-action: manipulation;
+  /* Prevent iOS elastic/bounce scroll on the root */
+  overscroll-behavior-y: none;
+}
+
+body {
+  /* Prevent bounce on body; scrollable children contain their own overscroll */
+  overscroll-behavior-y: none;
+}
+
+/* Standalone (installed PWA) — add top padding for the status bar
+   on iPhone notch / Dynamic Island when the header is fixed */
+body.standalone header.fixed-header {
+  padding-top: env(safe-area-inset-top);
+  height: calc(4rem + env(safe-area-inset-top));
+}
+
+/* When the body has class 'standalone', offset the main content
+   so it doesn't slide under the dynamically-taller header */
+body.standalone main {
+  padding-top: calc(4rem + env(safe-area-inset-top)) !important;
+}
+
+/* Scroll containers inside Drawers / Sheets should contain their
+   own overscroll so a swipe-down inside doesn't close the drawer
+   or trigger the system "pull to refresh" / "go back" gesture */
+[vaul-drawer] [data-vaul-no-drag],
+[data-radix-scroll-area-viewport],
+.overflow-y-auto,
+.overflow-auto {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Radix portals: ensure they receive touch events in PWA standalone */
@@ -35,6 +66,8 @@ html {
   /* Force a new stacking context so iOS doesn't clip pointer events */
   will-change: transform;
 }
+
+
 
 
 

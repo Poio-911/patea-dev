@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cleanupAiCache = exports.onMatchCreate = exports.processEvaluationSubmission = exports.resetMonthlyCredits = void 0;
+exports.cleanupAiCache = exports.onInvitationCreate = exports.onMatchCreate = exports.processEvaluationSubmission = exports.resetMonthlyCredits = void 0;
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin SDK
 admin.initializeApp();
@@ -44,6 +44,8 @@ var process_evaluation_submission_1 = require("./triggers/process-evaluation-sub
 Object.defineProperty(exports, "processEvaluationSubmission", { enumerable: true, get: function () { return process_evaluation_submission_1.processEvaluationSubmission; } });
 var on_match_create_1 = require("./triggers/on-match-create");
 Object.defineProperty(exports, "onMatchCreate", { enumerable: true, get: function () { return on_match_create_1.onMatchCreate; } });
+var on_invitation_create_1 = require("./triggers/on-invitation-create");
+Object.defineProperty(exports, "onInvitationCreate", { enumerable: true, get: function () { return on_invitation_create_1.onInvitationCreate; } });
 var cleanup_ai_cache_1 = require("./cleanup-ai-cache");
 Object.defineProperty(exports, "cleanupAiCache", { enumerable: true, get: function () { return cleanup_ai_cache_1.cleanupAiCache; } });
 // NOTE: onUserCreate requires GCIP (paid plan). Client-side rollback in register/page.tsx is used instead.
