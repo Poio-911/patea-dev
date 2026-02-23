@@ -67,7 +67,7 @@ export function EditProfileDialog({ user, playerData }: EditProfileDialogProps) 
             const res = await updateProfileAction(user.uid, {
                 displayName: data.displayName,
                 position: data.position,
-                ...(finalPhotoURL !== user.photoURL ? { photoURL: finalPhotoURL } : {})
+                ...(finalPhotoURL && finalPhotoURL !== user.photoURL ? { photoURL: finalPhotoURL } : {})
             });
 
             if (!res.success) throw new Error('Error al actualizar en el servidor');
