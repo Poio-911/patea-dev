@@ -100,12 +100,35 @@
   ],
   "theme_color": "#3B82F6",
   "background_color": "#ffffff",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "display": "standalone",
   "orientation": "portrait",
   "categories": [
     "sports",
     "social"
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/dashboard.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Dashboard de Pateá"
+    },
+    {
+      "src": "/screenshots/matches.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Partidos y equipos"
+    },
+    {
+      "src": "/screenshots/profile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Perfil del jugador"
+    }
   ],
   "prefer_related_applications": false,
   "lang": "es-419"
