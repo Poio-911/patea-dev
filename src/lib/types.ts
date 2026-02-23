@@ -635,6 +635,7 @@ const KeyEventSchema = z.object({
 
 export const GenerateMatchChronicleInputSchema = z.object({
   matchTitle: z.string().describe("Título del partido."),
+  matchLocation: z.string().optional().describe("Nombre de la cancha o ubicación donde se jugó el partido."),
   team1Name: z.string().describe("Nombre del Equipo 1."),
   team1Score: z.number().describe("Goles del Equipo 1."),
   team2Name: z.string().describe("Nombre del Equipo 2."),

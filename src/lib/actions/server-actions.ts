@@ -782,6 +782,7 @@ export async function generateMatchChronicleAction(matchId: string): Promise<{ d
 
         const input: GenerateMatchChronicleInput = {
             matchTitle: match.title,
+            matchLocation: match.location?.name,
             team1Name: match.teams[0].name,
             team1Score,
             team2Name: match.teams[1].name,
