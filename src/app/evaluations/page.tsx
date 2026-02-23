@@ -63,35 +63,39 @@ export default function EvaluationsPage() {
         const processItems = async () => {
             const userPendingAssignments = userAssignments || [];
 
-            // 1. Fetch completed assignments to know which past matches we evaluated
-            const completedAssignmentsQuery = query(
-                collectionGroup(firestore, 'assignments'),
-                where('evaluatorId', '==', user.uid),
-                where('status', '==', 'completed')
-            );
-            const completedAssignmentsSnapshot = await getDocs(completedAssignmentsQuery);
+            // 1. Fetch completed assignments AND processed submissions in parallel
+            const [completedAssignmentsSnapshot, processedSubmissionsSnapshot, submissionsSnapshot] = await Promise.all([
+                getDocs(query(
+                    collectionGroup(firestore, 'assignments'),
+                    where('evaluatorId', '==', user.uid),
+                    where('status', '==', 'completed')
+                )),
+                getDocs(query(
+                    collectionGroup(firestore, 'processedSubmissions'),
+                    where('evaluatorId', '==', user.uid)
+                )),
+                getDocs(query(
+                    collection(firestore, 'evaluationSubmissions'),
+                    where('evaluatorId', '==', user.uid)
+                ))
+            ]);
+
             const userCompletedAssignments = completedAssignmentsSnapshot.docs.map(d => d.data() as EvaluationAssignment);
+
+            const submissionsMap = new Map<string, EvaluationSubmission>();
+            submissionsSnapshot.docs.forEach(doc => submissionsMap.set(doc.data().matchId, doc.data() as EvaluationSubmission));
+            processedSubmissionsSnapshot.docs.forEach(doc => {
+                const data = doc.data() as EvaluationSubmission;
+                submissionsMap.set(data.matchId, data);
+            });
 
             const pendingMatchIds = new Set(userPendingAssignments.map(a => a.matchId));
             const completedMatchIds = new Set(userCompletedAssignments.map(a => a.matchId));
+            const submissionMatchIds = new Set([...submissionsMap.keys()]);
 
-            // 2. Fetch pending submissions
-            const submissionsQuery = query(collection(firestore, 'evaluationSubmissions'), where('evaluatorId', '==', user.uid));
-            const submissionsSnapshot = await getDocs(submissionsQuery);
-            const submissionMatchIds = new Set(submissionsSnapshot.docs.map(doc => doc.data().matchId));
-            const submissionsMap = new Map<string, EvaluationSubmission>();
-            submissionsSnapshot.docs.forEach(doc => submissionsMap.set(doc.data().matchId, doc.data() as EvaluationSubmission));
-
-            // 3. Find matches where the user was a player to ensure self-evaluation appears
-            const participatedMatchesQuery = query(
-                collection(firestore, 'matches'),
-                where('playerUids', 'array-contains', user.uid),
-                where('status', '==', 'completed')
-            );
-            const participatedSnapshot = await getDocs(participatedMatchesQuery);
-            const participatedMatchIds = new Set(participatedSnapshot.docs.map(doc => doc.id));
-
-            const allRelevantMatchIds = [...new Set([...pendingMatchIds, ...completedMatchIds, ...submissionMatchIds, ...participatedMatchIds])];
+            // Fix "Ghost Matches": Only include matches where the user HAS assignments or submissions
+            // We NO LONGER include all participated matches by default to avoid showing 0/0 items
+            const allRelevantMatchIds = [...new Set([...pendingMatchIds, ...completedMatchIds, ...submissionMatchIds])];
 
             if (allRelevantMatchIds.length === 0) {
                 setPendingItems([]);
@@ -99,71 +103,66 @@ export default function EvaluationsPage() {
                 return;
             }
 
-            // 4. Fetch processed submissions for these matches (the cloud function moves them here)
-            const processedPromises = allRelevantMatchIds.map(matchId =>
-                getDocs(query(collection(firestore, `matches/${matchId}/processedSubmissions`), where('evaluatorId', '==', user.uid)))
+            // 2. Fetch the actual matches (with chunking for the 30-item limit)
+            const matchesMap = new Map<string, Match>();
+            const chunks = [];
+            for (let i = 0; i < allRelevantMatchIds.length; i += 30) {
+                chunks.push(allRelevantMatchIds.slice(i, i + 30));
+            }
+
+            const matchPromises = chunks.map(chunk =>
+                getDocs(query(collection(firestore, 'matches'), where('__name__', 'in', chunk)))
             );
-            const processedSnapshots = await Promise.all(processedPromises);
-
-            processedSnapshots.forEach(snap => {
-                snap.docs.forEach(doc => {
-                    const data = doc.data() as EvaluationSubmission;
-                    submissionsMap.set(data.matchId, data);
-                });
+            const matchSnapshots = await Promise.all(matchPromises);
+            matchSnapshots.forEach(snap => {
+                snap.docs.forEach(doc => matchesMap.set(doc.id, { id: doc.id, ...doc.data() } as Match));
             });
-
-            // 5. Fetch the actual matches
-            const matchesQuery = query(collection(firestore, 'matches'), where('__name__', 'in', allRelevantMatchIds));
-            const matchesSnapshot = await getDocs(matchesQuery);
-            const matchesMap = new Map(matchesSnapshot.docs.map(doc => [doc.id, { id: doc.id, ...doc.data() } as Match]));
 
             const initialItems: (PendingItem | null)[] = allRelevantMatchIds.map(matchId => {
                 const match = matchesMap.get(matchId);
                 const isSubmitted = submissionsMap.has(matchId);
 
-                // Ignore matches that are fully evaluated UNLESS the user submitted an evaluation for it
                 if (!match || (match.status === 'evaluated' && !isSubmitted)) return null;
 
                 const userAssignmentCount = userPendingAssignments.filter(a => a.matchId === matchId).length;
 
-                // If no assignments and not submitted, check if it's too old (e.g., > 7 days)
-                // This prevents old matches where the user never self-evaluated from showing up forever
+                // If no assignments and not submitted, avoid showing unless it's recent and we are expecting something
                 if (userAssignmentCount === 0 && !isSubmitted) {
-                    const matchDate = new Date(match.date);
-                    const sevenDaysAgo = subDays(new Date(), 7);
-                    if (isBefore(matchDate, sevenDaysAgo)) {
-                        return null;
-                    }
+                    // Check if there are any assignments at all for this match for THIS user in completed state
+                    const hasCompleted = userCompletedAssignments.some(a => a.matchId === matchId);
+                    if (!hasCompleted) return null;
                 }
 
-                const item: PendingItem = {
+                return {
                     match,
                     submission: submissionsMap.get(matchId),
                     userAssignmentCount,
                     totalAssignments: 0,
                     completedAssignments: 0,
                 };
-                return item;
             });
 
             const validItems = initialItems.filter((item): item is PendingItem => item !== null);
             setPendingItems(validItems.sort((a, b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime()));
             setIsLoadingItems(false);
 
-            const unsubscribers: Unsubscribe[] = validItems.map(item => {
-                const assignmentsCollectionRef = collection(firestore, 'matches', item.match.id, 'assignments');
-                return onSnapshot(assignmentsCollectionRef, (snapshot) => {
-                    const total = snapshot.size;
-                    const completed = snapshot.docs.filter(d => d.data().status === 'completed').length;
-                    setPendingItems(currentItems =>
-                        currentItems.map(currentItem =>
-                            currentItem.match.id === item.match.id
-                                ? { ...currentItem, totalAssignments: total, completedAssignments: completed }
-                                : currentItem
-                        )
-                    );
+            // 3. Optimize listeners: Only listen to assignments if match is not yet fully evaluated/submitted
+            const unsubscribers: Unsubscribe[] = validItems
+                .filter(item => !item.submission)
+                .map(item => {
+                    const assignmentsCollectionRef = collection(firestore, 'matches', item.match.id, 'assignments');
+                    return onSnapshot(assignmentsCollectionRef, (snapshot) => {
+                        const total = snapshot.size;
+                        const completed = snapshot.docs.filter(d => d.data().status === 'completed').length;
+                        setPendingItems(currentItems =>
+                            currentItems.map(currentItem =>
+                                currentItem.match.id === item.match.id
+                                    ? { ...currentItem, totalAssignments: total, completedAssignments: completed }
+                                    : currentItem
+                            )
+                        );
+                    });
                 });
-            });
 
             return () => unsubscribers.forEach(unsub => unsub());
         };
