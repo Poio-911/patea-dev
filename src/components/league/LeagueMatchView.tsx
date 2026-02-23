@@ -168,6 +168,8 @@ export function LeagueMatchView({ match, leagueId, userId }: LeagueMatchViewProp
                                 <Label className="truncate block font-bold text-base">{team1.name}</Label>
                                 <Input
                                     type="number"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                     min="0"
                                     value={team1Score}
                                     onChange={(e) => setTeam1Score(e.target.value)}
@@ -180,6 +182,8 @@ export function LeagueMatchView({ match, leagueId, userId }: LeagueMatchViewProp
                                 <Label className="truncate block font-bold text-base">{team2.name}</Label>
                                 <Input
                                     type="number"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                     min="0"
                                     value={team2Score}
                                     onChange={(e) => setTeam2Score(e.target.value)}

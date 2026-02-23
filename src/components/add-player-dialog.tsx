@@ -34,7 +34,7 @@ import { publishActivityAction } from '@/lib/actions/social-actions';
 
 const playerSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio'),
-  position: z.enum(['DEL', 'MED', 'DEF', 'POR'], { required_error: 'La posición es obligatoria.'}),
+  position: z.enum(['DEL', 'MED', 'DEF', 'POR'], { required_error: 'La posición es obligatoria.' }),
   pac: z.coerce.number().min(1).max(99),
   sho: z.coerce.number().min(1).max(99),
   pas: z.coerce.number().min(1).max(99),
@@ -46,10 +46,10 @@ const playerSchema = z.object({
 type PlayerFormData = z.infer<typeof playerSchema>;
 
 const AttributeInput = ({ label, attributeKey, register }: { label: string, attributeKey: string, register: any }) => (
-    <div className="grid grid-cols-2 items-center gap-2">
-        <Label htmlFor={attributeKey.toLowerCase()}>{label}</Label>
-        <Input id={attributeKey.toLowerCase()} type="number" {...register(attributeKey.toLowerCase())} />
-    </div>
+  <div className="grid grid-cols-2 items-center gap-2">
+    <Label htmlFor={attributeKey.toLowerCase()}>{label}</Label>
+    <Input id={attributeKey.toLowerCase()} type="number" inputMode="numeric" pattern="[0-9]*" {...register(attributeKey.toLowerCase())} />
+  </div>
 );
 
 
@@ -142,66 +142,66 @@ export function AddPlayerDialog() {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         {!user?.activeGroupId ? (
-            <Alert variant="destructive">
-                <AlertTitle>No hay grupo activo</AlertTitle>
-                <AlertDescription>
-                    Por favor, seleccioná o creá un grupo antes de agregar un jugador.
-                </AlertDescription>
-            </Alert>
+          <Alert variant="destructive">
+            <AlertTitle>No hay grupo activo</AlertTitle>
+            <AlertDescription>
+              Por favor, seleccioná o creá un grupo antes de agregar un jugador.
+            </AlertDescription>
+          </Alert>
         ) : (
-            <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
-                <DialogTitle>Agregar un Jugador Manual</DialogTitle>
-                <DialogDescription>
+              <DialogTitle>Agregar un Jugador Manual</DialogTitle>
+              <DialogDescription>
                 Meté los datos del nuevo jugador. Hacé clic en guardar cuando termines.
-                </DialogDescription>
+              </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
+              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">
-                    Nombre
+                  Nombre
                 </Label>
                 <Input id="name" {...register('name')} className="col-span-3" />
-                </div>
-                {errors.name && <p className="col-span-4 text-right text-xs text-destructive">{errors.name.message}</p>}
-                
-                <div className="grid grid-cols-4 items-center gap-4">
+              </div>
+              {errors.name && <p className="col-span-4 text-right text-xs text-destructive">{errors.name.message}</p>}
+
+              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="position" className="text-right">
-                    Posición
+                  Posición
                 </Label>
                 <Controller
-                    name="position"
-                    control={control}
-                    render={({ field }) => (
+                  name="position"
+                  control={control}
+                  render={({ field }) => (
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger className="col-span-3">
+                      <SelectTrigger className="col-span-3">
                         <SelectValue placeholder="Seleccioná una posición" />
-                        </SelectTrigger>
-                        <SelectContent>
+                      </SelectTrigger>
+                      <SelectContent>
                         <SelectItem value="DEL">DEL (Delantero)</SelectItem>
                         <SelectItem value="MED">MED (Volante)</SelectItem>
                         <SelectItem value="DEF">DEF (Defensa)</SelectItem>
                         <SelectItem value="POR">POR (Arquero)</SelectItem>
-                        </SelectContent>
+                      </SelectContent>
                     </Select>
-                    )}
+                  )}
                 />
-                </div>
-                {errors.position && <p className="col-span-4 text-right text-xs text-destructive">{errors.position.message}</p>}
+              </div>
+              {errors.position && <p className="col-span-4 text-right text-xs text-destructive">{errors.position.message}</p>}
 
-                <div className="grid grid-cols-2 gap-4">
-                    <AttributeInput label="RIT" attributeKey="pac" register={register} />
-                    <AttributeInput label="TIR" attributeKey="sho" register={register} />
-                    <AttributeInput label="PAS" attributeKey="pas" register={register} />
-                    <AttributeInput label="REG" attributeKey="dri" register={register} />
-                    <AttributeInput label="DEF" attributeKey="def" register={register} />
-                    <AttributeInput label="FIS" attributeKey="phy" register={register} />
-                </div>
+              <div className="grid grid-cols-2 gap-4">
+                <AttributeInput label="RIT" attributeKey="pac" register={register} />
+                <AttributeInput label="TIR" attributeKey="sho" register={register} />
+                <AttributeInput label="PAS" attributeKey="pas" register={register} />
+                <AttributeInput label="REG" attributeKey="dri" register={register} />
+                <AttributeInput label="DEF" attributeKey="def" register={register} />
+                <AttributeInput label="FIS" attributeKey="phy" register={register} />
+              </div>
             </div>
             <DialogFooter>
-                <Button type="submit">Guardar Jugador</Button>
+              <Button type="submit">Guardar Jugador</Button>
             </DialogFooter>
-            </form>
+          </form>
         )}
       </DialogContent>
     </Dialog>

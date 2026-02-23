@@ -389,6 +389,8 @@ export function ImportActivityDialog({ matchId, playerId, matchDate, children }:
                   <Input
                     id="distance"
                     type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     step="0.1"
                     min="0"
                     max="20"
@@ -406,6 +408,8 @@ export function ImportActivityDialog({ matchId, playerId, matchDate, children }:
                   <Input
                     id="duration"
                     type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     step="1"
                     min="0"
                     max="180"

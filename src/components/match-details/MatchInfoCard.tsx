@@ -12,6 +12,9 @@ import { Calendar, Clock, MapPin, UserPlus, LogOut, Loader2 } from 'lucide-react
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Share2 } from 'lucide-react';
+import { useNativeShare } from '@/hooks/use-native-share';
+import { useHaptics } from '@/hooks/use-haptics';
 import { getMatchTheme } from '@/lib/match-theme';
 import { cn } from '@/lib/utils';
 
@@ -45,6 +48,19 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
   onJoinOrLeave,
 }: MatchInfoCardProps) {
   const matchTheme = getMatchTheme(match.type);
+  const { share } = useNativeShare();
+  const { tap } = useHaptics();
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.preventDefault();
+    tap();
+    const matchUrl = `${window.location.origin}/matches/${match.id}`;
+    share({
+      title: `⚽ Partido: ${match.title}`,
+      text: decodeURIComponent(whatsAppShareText),
+      url: matchUrl,
+    });
+  };
 
   return (
     <Card className={cn(
@@ -181,18 +197,12 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
             {isOwner && match.status === 'upcoming' && (
               <Button
                 size="sm"
-                asChild
+                onClick={handleShare}
                 className="bg-[hsl(var(--whatsapp-green))] hover:bg-[hsl(var(--whatsapp-green))]/90 text-[hsl(var(--whatsapp-foreground))] border-0"
+                aria-label="Compartir partido"
               >
-                <a
-                  href={`https://wa.me/?text=${whatsAppShareText}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Compartir partido por WhatsApp"
-                >
-                  <WhatsAppIcon className="mr-2 h-4 w-4" />
-                  Compartir
-                </a>
+                <Share2 className="mr-2 h-4 w-4" />
+                Compartir
               </Button>
             )}
           </div>

@@ -213,6 +213,8 @@ export function ManageRosterDialog({ team, players, allGroupPlayers, children }:
               <div className="flex items-center gap-2">
                 <Input
                   type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   className={`w-16 ${duplicateNumbers.includes(p.number || 0) && p.number ? 'border-destructive' : ''}`}
                   value={p.number || ''}
                   min={0}

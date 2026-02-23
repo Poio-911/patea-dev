@@ -38,6 +38,7 @@ import { PerformanceTag, performanceTagsDb } from '@/lib/performance-tags'
 import { cn } from '@/lib/utils'
 import type { Player, EvaluationAssignment, PlayerEvaluationFormData, Match } from '@/lib/types'
 import { BackButton } from '@/components/navigation/back-button'
+import { useHaptics } from '@/hooks/use-haptics'
 import {
   ResponsiveDialog as Dialog,
   ResponsiveDialogContent as DialogContent,
@@ -228,6 +229,7 @@ export default function PerformEvaluationPage() {
   const { user } = useUser()
   const router = useRouter()
   const { toast } = useToast()
+  const { success: hapticSuccess } = useHaptics()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isPageLoading, setIsPageLoading] = useState(true)
@@ -401,6 +403,7 @@ export default function PerformEvaluationPage() {
 
       await addDoc(collection(firestore, 'evaluationSubmissions'), submissionData);
 
+      hapticSuccess();
       toast({
         title: '¡Evaluaciones en camino!',
         description: 'Tus evaluaciones se han enviado y se procesarán en segundo plano.',

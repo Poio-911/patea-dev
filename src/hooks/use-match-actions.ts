@@ -12,6 +12,7 @@ import {
   notifyEvaluationAvailableAction
 } from '@/lib/actions/notification-actions';
 import { joinMatchAction, leaveMatchAction } from '@/lib/actions/match-actions';
+import { useHaptics } from '@/hooks/use-haptics';
 
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
@@ -42,6 +43,7 @@ export function useMatchActions({
   const [isJoining, setIsJoining] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
+  const { success: hapticSuccess } = useHaptics();
 
   const generateEvaluationAssignments = useCallback((match: Match, allPlayers: Player[]): Omit<EvaluationAssignment, 'id'>[] => {
     const assignments: Omit<EvaluationAssignment, 'id'>[] = [];
@@ -195,6 +197,7 @@ export function useMatchActions({
 
       await batch.commit();
 
+      hapticSuccess();
       toast({
         title: 'Partido Finalizado',
         description: `El partido "${freshMatch.title}" ha sido marcado como finalizado.`
@@ -236,6 +239,7 @@ export function useMatchActions({
         const result = await joinMatchAction(match.id, userId, userDisplayName || 'Jugador');
         if ('success' in result) {
           miniConfetti();
+          hapticSuccess();
           toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${match.title}".` });
         } else {
           throw new Error(result.error);
@@ -285,6 +289,7 @@ export function useMatchActions({
       });
 
       celebrationConfetti();
+      hapticSuccess();
       toast({ title: "¡Equipos Sorteados!", description: "La IA ha generado nuevas formaciones." });
 
       // Send push notification to all players about team change
