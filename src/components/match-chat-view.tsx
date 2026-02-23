@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MessageCircle } from 'lucide-react';
+import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import {
   ChatMessageBubble,
   ChatInput,
@@ -173,17 +174,25 @@ export function MatchChatView({ match }: MatchChatViewProps) {
       {/* Floating circular button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-20 right-6 w-14 h-14 rounded-full bg-[hsl(var(--whatsapp-green))] hover:bg-[hsl(var(--whatsapp-green))]/90 text-[hsl(var(--whatsapp-foreground))] shadow-lg flex items-center justify-center z-[100] transition-transform hover:scale-110 pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]"
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
+        className={cn(
+          "fixed right-6 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center z-[100] transition-all",
+          "bg-gradient-to-br from-[#25D366] to-[#128C7E] text-white",
+          "border border-white/20 active:scale-95",
+          "bottom-[calc(5rem+env(safe-area-inset-bottom))]"
+        )}
+        whileHover={{
+          scale: 1.1,
+          boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)"
+        }}
+        whileTap={{ scale: 0.9 }}
         aria-label="Abrir chat del partido"
       >
-        <MessageCircle className="h-6 w-6" />
+        <WhatsAppIcon className="h-8 w-8 ml-[1px]" />
         {unreadCount > 0 && (
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center"
+            className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border-2 border-background shadow-lg"
           >
             {unreadCount > 9 ? '9+' : unreadCount}
           </motion.div>
