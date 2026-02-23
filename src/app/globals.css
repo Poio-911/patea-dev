@@ -9,6 +9,35 @@ body.standalone nav.fixed {
   bottom: 0 !important;
 }
 
+/* =============================================
+   PWA / MOBILE TOUCH FIX
+   Eliminates 300ms tap delay and fixes touch
+   events on Radix portals in standalone PWA mode
+   ============================================= */
+
+/* Global: faster tap response everywhere */
+*, *::before, *::after {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  touch-action: manipulation;
+}
+
+/* Radix portals: ensure they receive touch events in PWA standalone */
+[data-radix-popper-content-wrapper],
+[data-radix-select-content],
+[data-radix-dropdown-menu-content],
+[data-radix-popover-content] {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Force a new stacking context so iOS doesn't clip pointer events */
+  will-change: transform;
+}
+
+
+
 /* Theme-specific override variables */
 :root {
   --game-btn-primary: #1e90ff;

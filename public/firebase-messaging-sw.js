@@ -34,7 +34,16 @@ messaging.onBackgroundMessage((payload) => {
     data: { link, ...payload.data },
     tag: payload.data?.type || "default",
     vibrate: [100, 50, 100],
+    actions: [
+      { action: "open", title: "Ver" },
+      { action: "close", title: "Cerrar" },
+    ],
   };
+
+  // Increment badge count on the app icon
+  if (navigator.setAppBadge) {
+    navigator.setAppBadge().catch(() => { });
+  }
 
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
@@ -42,6 +51,15 @@ messaging.onBackgroundMessage((payload) => {
 // Handle notification click — open/focus the app and navigate to the deep link
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+
+  // Clear badge when user interacts with any notification
+  if (navigator.clearAppBadge) {
+    navigator.clearAppBadge().catch(() => { });
+  }
+
+  // "close" action just dismisses — no navigation
+  if (event.action === "close") return;
+
   const link = event.notification.data?.link || "/";
   const urlToOpen = new URL(link, self.location.origin).href;
 
@@ -59,4 +77,12 @@ self.addEventListener("notificationclick", (event) => {
     })
   );
 });
+
+// Clear badge when the app window is focused
+self.addEventListener("focus", () => {
+  if (navigator.clearAppBadge) {
+    navigator.clearAppBadge().catch(() => { });
+  }
+});
+
 

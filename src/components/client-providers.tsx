@@ -14,6 +14,8 @@ import { ThemeBackground } from '@/components/theme-background';
 import { AchievementToastProvider } from '@/components/achievement-toast';
 import { InstallPrompt } from '@/components/pwa/install-prompt';
 import { UpdateNotification } from '@/components/pwa/update-notification';
+import { PushNotificationPrompt } from '@/components/pwa/push-notification-prompt';
+import { OfflineBanner } from '@/components/pwa/offline-banner';
 
 
 type FirebaseClientProviderProps = {
@@ -39,7 +41,7 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
     if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(regs => {
         regs.forEach(r => r.unregister());
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }, []);
 
@@ -83,6 +85,8 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
             <MainNav>{children}</MainNav>
             <InstallPrompt />
             <UpdateNotification />
+            <PushNotificationPrompt />
+            <OfflineBanner />
           </AchievementToastProvider>
         </UserProvider>
       </FirebaseProvider>

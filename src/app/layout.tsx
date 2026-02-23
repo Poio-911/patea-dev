@@ -15,7 +15,18 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     title: 'Pateá',
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
+    capable: true,
+    startupImage: [
+      // iPhone SE (4th gen) 1334x750
+      { url: '/icons/icon-512x512.png', media: '(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)' },
+      // iPhone 13/14 1170x2532
+      { url: '/icons/icon-512x512.png', media: '(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)' },
+      // iPhone 15 Pro 1179x2556
+      { url: '/icons/icon-512x512.png', media: '(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)' },
+      // iPhone 15 Pro Max 1290x2796
+      { url: '/icons/icon-512x512.png', media: '(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)' },
+    ],
   },
   other: {
     'mobile-web-app-capable': 'yes',
@@ -28,7 +39,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  // maximumScale intentionally omitted: setting it to 1 triggers a known iOS PWA bug
+  // that blocks pointer-events on position:fixed portals (Radix Select/Popover/DropdownMenu)
   viewportFit: 'cover',
   themeColor: '#3B82F6',
 };
