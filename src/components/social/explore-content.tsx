@@ -2,28 +2,253 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, AlertCircle, MapPin, Send, Trophy, Calendar, Search } from 'lucide-react';
+import { Users, AlertCircle, MapPin, UserPlus, Calendar, Search, Sparkles, Filter, Check } from 'lucide-react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { getAvailableLocalPlayersAction } from '@/lib/actions/recruitment-actions';
-import type { AvailablePlayer, Match, DayOfWeek, TimeOfDay } from '@/lib/types';
-import { collection, query, where } from 'firebase/firestore';
+import { findBestFitPlayerAction } from '@/lib/actions/ai-scouting-actions';
+import type { AvailablePlayer, Match, DayOfWeek, TimeOfDay, Player } from '@/lib/types';
+import { collection, query, where, getDoc, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { InvitePlayerDialog } from '@/components/invite-player-dialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PlayerPositionBadge } from '@/components/player-styles';
-import { parseISO, getDay } from 'date-fns';
-import { doc } from 'firebase/firestore';
-import { useDoc } from '@/firebase';
-import type { Player, UserProfile } from '@/lib/types';
-import { AvailabilityCard } from '@/components/availability/availability-card';
+import { PlayerPhoto } from '@/components/player-styles';
+import { getOvrLevel, getOvrColorClass } from '@/lib/player-utils';
+import { motion, AnimatePresence } from 'framer-motion';
+import { parseISO, getDay, format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+
+function FreeAgentCard({
+  player,
+  selectedMatch,
+  incompleteMatches,
+  aiRecommendation
+}: {
+  player: AvailablePlayer & { matchScore?: number; isCurrentUser?: boolean };
+  selectedMatch: Match;
+  incompleteMatches: Match[];
+  aiRecommendation?: { reason: string };
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [playerInfo, setPlayerInfo] = useState<Player | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const firestore = useFirestore();
+
+  const ovrLevel = getOvrLevel(player.ovr || 0);
+  const ovrColor = getOvrColorClass(player.ovr || 0);
+
+  const handleToggle = async () => {
+    if (!isExpanded && !playerInfo && !isLoadingStats && firestore) {
+      setIsLoadingStats(true);
+      try {
+        const playerRef = doc(firestore, 'players', player.uid);
+        const playerSnap = await getDoc(playerRef);
+        if (playerSnap.exists()) {
+          setPlayerInfo({ id: playerSnap.id, ...playerSnap.data() } as Player);
+        }
+      } catch (e) {
+        console.error('Error loading player stats:', e);
+      } finally {
+        setIsLoadingStats(false);
+      }
+    }
+    setIsExpanded(!isExpanded);
+  };
+
+  return (
+    <motion.div
+      layout
+      initial={false}
+      className={cn(
+        "relative overflow-hidden cursor-pointer transition-all duration-300 rounded-2xl border bg-card flex flex-col",
+        `aura-${ovrLevel}`,
+        isExpanded ? "shadow-xl border-primary/40 ring-1 ring-primary/20" : "shadow-sm border-border hover:border-primary/30",
+        aiRecommendation && !isExpanded && "border-primary/30 bg-gradient-to-br from-primary/5 via-card to-card shadow-[0_0_15px_rgba(var(--primary),0.05)]"
+      )}
+      onClick={handleToggle}
+    >
+      {/* AI Recommendation Badge (Option 1: Sutil & Integrado) */}
+      {aiRecommendation && (
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[7px] font-black px-2.5 py-0.5 rounded-b-md shadow-sm z-10 uppercase tracking-widest flex items-center gap-1">
+          <Sparkles className="w-2.5 h-2.5 fill-current" />
+          Recomendado
+        </div>
+      )}
+      {/* Top Banner (Position + OVR) */}
+      <div className="flex justify-between items-start p-3 w-full">
+        <div className="flex flex-col items-center">
+          <span className={cn("text-3xl font-headline font-black leading-none", ovrColor)}>
+            {player.ovr}
+          </span>
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
+            {player.position}
+          </span>
+        </div>
+
+        {/* Availability Dot Indicator */}
+        <div className="flex flex-col items-end">
+          {player.matchScore === 2 && <div className="w-2.5 h-2.5 rounded-full bg-success shadow-[0_0_8px_hsl(var(--success))]" title="Compatible" />}
+          {player.matchScore === 1 && <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_hsl(var(--warning))]" title="Día diferente" />}
+          {player.matchScore === 0 && <div className="w-2.5 h-2.5 rounded-full bg-destructive shadow-[0_0_8px_hsl(var(--destructive))]" title="Horario incompatible" />}
+        </div>
+      </div>
+
+      {/* Center - Photo */}
+      <div className="flex justify-center -mt-2 mb-2">
+        <PlayerPhoto
+          player={player as unknown as Player}
+          size="standard"
+          className={cn(
+            "ring-4 ring-background shadow-lg transition-transform",
+            isExpanded ? "scale-110" : "hover:scale-105"
+          )}
+        />
+      </div>
+
+      {/* Bottom - Name & Info */}
+      <div className="px-3 pb-4 text-center">
+        <h4 className="font-bold text-sm truncate uppercase tracking-tight">{player.displayName}</h4>
+        {!isExpanded && (
+          <p className="text-[10px] text-muted-foreground mt-0.5 font-medium uppercase opacity-70"> Ver ficha completa </p>
+        )}
+      </div>
+
+      {/* Expanded Content */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="overflow-hidden bg-muted/30 border-t border-border/50"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 space-y-4">
+              {/* Stats Row */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-col items-center p-2 rounded-lg bg-background/50 border border-border/40">
+                  <span className="text-xs text-muted-foreground uppercase font-semibold scale-90">Partidos</span>
+                  <span className="text-lg font-headline font-black">
+                    {isLoadingStats ? <Skeleton className="h-6 w-8 mt-1" /> : playerInfo?.stats?.matchesPlayed ?? 0}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center p-2 rounded-lg bg-background/50 border border-border/40">
+                  <span className="text-xs text-muted-foreground uppercase font-semibold scale-90">Goles</span>
+                  <span className="text-lg font-headline font-black">
+                    {isLoadingStats ? <Skeleton className="h-6 w-8 mt-1" /> : playerInfo?.stats?.goals ?? 0}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center p-2 rounded-lg bg-background/50 border border-border/40">
+                  <span className="text-xs text-muted-foreground uppercase font-semibold scale-90">Nota</span>
+                  <span className="text-lg font-headline font-black">
+                    {isLoadingStats ? <Skeleton className="h-6 w-8 mt-1" /> : (playerInfo?.stats?.averageRating?.toFixed(1) ?? '—')}
+                  </span>
+                </div>
+              </div>
+
+              {/* AI Reasoning (Sutil & Integrado Style) */}
+              {aiRecommendation && (
+                <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl flex items-start gap-2">
+                  <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <p className="text-xs font-semibold text-foreground/80 leading-snug">"{aiRecommendation.reason}"</p>
+                </div>
+              )}
+
+              {/* Recruitment Message / Badge */}
+              {!player.isCurrentUser && !aiRecommendation && (
+                <div className="text-center">
+                  {player.matchScore === 0 && (
+                    <p className="text-[10px] text-destructive font-bold uppercase mb-2">⚠️ Horario no coincide</p>
+                  )}
+                  {player.matchScore === 1 && (
+                    <p className="text-[10px] text-amber-600 font-bold uppercase mb-2">⚠️ Juega otros días</p>
+                  )}
+                </div>
+              )}
+
+              {/* Action Button */}
+              {player.isCurrentUser ? (
+                <div className="w-full text-center py-2.5 text-[10px] text-muted-foreground border border-dashed rounded-xl uppercase font-bold tracking-wider">
+                  Tu Perfil de Pase Libre
+                </div>
+              ) : (
+                <InvitePlayerDialog
+                  playerToInvite={player}
+                  userMatches={incompleteMatches}
+                  match={selectedMatch}
+                >
+                  <Button className="w-full font-black gap-2 uppercase text-xs h-10 shadow-lg" variant="default">
+                    <UserPlus className="w-4 h-4" />
+                    Invitar
+                  </Button>
+                </InvitePlayerDialog>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
 
 export function ExploreContent() {
   const { user } = useUser();
   const firestore = useFirestore();
-  const [availablePlayers, setAvailablePlayers] = useState<(AvailablePlayer & { matchScore?: number })[]>([]);
+  const { toast } = useToast();
+  const [availablePlayers, setAvailablePlayers] = useState<(AvailablePlayer & { matchScore?: number; isCurrentUser?: boolean })[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMatchId, setSelectedMatchId] = useState<string>('');
+
+  // New States: Filters & AI
+  const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
+  const [isAiScouting, setIsAiScouting] = useState(false);
+  const [recommendations, setRecommendations] = useState<Record<string, { reason: string }>>({});
+
+  const positions = ['POR', 'DEF', 'MED', 'DEL'];
+
+  const handleAiScouting = async () => {
+    if (!selectedMatch || availablePlayers.length === 0) return;
+
+    setIsAiScouting(true);
+    try {
+      const result = await findBestFitPlayerAction({
+        match: selectedMatch,
+        availablePlayers: availablePlayers.filter(p => !p.isCurrentUser)
+      });
+
+      if (result.success && result.recommendations) {
+        const recMap: Record<string, { reason: string }> = {};
+        result.recommendations.forEach(r => {
+          recMap[r.playerId] = { reason: r.reason };
+        });
+        setRecommendations(recMap);
+        toast({
+          title: "Analizado por el DT",
+          description: "Ya tenés las mejores opciones resaltadas.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.error || "No se pudo realizar el scouting."
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsAiScouting(false);
+    }
+  };
+
+  const filteredPlayers = useMemo(() => {
+    let list = availablePlayers;
+    if (selectedPosition) {
+      list = list.filter(p => p.position === selectedPosition);
+    }
+    return list;
+  }, [availablePlayers, selectedPosition]);
 
   // Get ALL user's upcoming matches (owned OR participating) that have open spots
   const matchesQuery = useMemo(() => {
@@ -68,6 +293,17 @@ export function ExploreContent() {
       setIsLoading(true);
 
       try {
+        const matchLat = selectedMatch.location?.lat;
+        const matchLng = selectedMatch.location?.lng;
+
+        // Guard: match must have valid coordinates
+        if (!matchLat || !matchLng) {
+          console.warn('[Mercado] El partido no tiene coordenadas GPS válidas. location:', selectedMatch.location);
+          setAvailablePlayers([]);
+          setIsLoading(false);
+          return;
+        }
+
         // Parse date for Availability matching
         const d = parseISO(selectedMatch.date);
         const dayNum = getDay(d);
@@ -80,21 +316,27 @@ export function ExploreContent() {
         if (hour < 12) timeOfDay = 'mañana';
         else if (hour >= 18) timeOfDay = 'noche';
 
+        console.log('[Mercado] Buscando jugadores para partido en', { lat: matchLat, lng: matchLng, dayOfWeek, timeOfDay });
+
         const result = await getAvailableLocalPlayersAction({
-          lat: selectedMatch.location.lat,
-          lng: selectedMatch.location.lng,
-          radiusInKm: 15, // A generous radius for local recruitment
+          lat: matchLat,
+          lng: matchLng,
+          radiusInKm: 50, // Radio amplio para cubrir toda el área metropolitana
           dayOfWeek,
-          timeOfDay
+          timeOfDay,
+          matchPlayerUids: selectedMatch.playerUids ?? [],
         });
+
+        console.log('[Mercado] Resultado:', result);
 
         if (result.success && result.players) {
           setAvailablePlayers(result.players);
         } else {
+          console.error('[Mercado] Error del servidor:', result.error);
           setAvailablePlayers([]);
         }
       } catch (e) {
-        console.error("Failed to load free agents", e);
+        console.error('[Mercado] Error inesperado al cargar agentes libres:', e);
         setAvailablePlayers([]);
       } finally {
         setIsLoading(false);
@@ -131,11 +373,11 @@ export function ExploreContent() {
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
               <div className="space-y-1">
                 <h2 className="text-xl font-bold flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-primary" />
-                  Mercado de Fichajes
+                  <Users className="w-5 h-5 text-primary" />
+                  Pase Libre
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Buscando agentes libres disponibles para tu partido.
+                  Buscando refuerzos para tu partido.
                 </p>
               </div>
               <Select value={selectedMatchId} onValueChange={setSelectedMatchId}>
@@ -156,12 +398,12 @@ export function ExploreContent() {
             </div>
 
             {selectedMatch && (
-              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground bg-background/50 p-3 rounded-lg border border-border/50">
-                <div className="flex items-center gap-1.5 font-medium text-foreground">
-                  <Calendar className="w-3.5 h-3.5" />
-                  {selectedMatch.date} a las {selectedMatch.time}
+              <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground bg-background/50 p-3 rounded-lg border border-border/50 mt-1">
+                <div className="flex items-center gap-1.5 font-bold text-foreground capitalize">
+                  <Calendar className="w-3.5 h-3.5 text-primary" />
+                  {format(parseISO(selectedMatch.date), "EEEE d 'de' MMMM", { locale: es })} • {selectedMatch.time} hs
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 truncate max-w-[200px]" title={selectedMatch.location.address}>
                   <MapPin className="w-3.5 h-3.5" />
                   {selectedMatch.location.name}
                 </div>
@@ -170,12 +412,59 @@ export function ExploreContent() {
           </div>
 
           {/* Free Agents Grid */}
-          <div className="space-y-3">
+          {/* Filters & AI Scouting Button */}
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+              {/* Position Chips */}
+              <div className="flex gap-2 w-full overflow-x-auto pb-1 no-scrollbar">
+                <button
+                  onClick={() => setSelectedPosition(null)}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-xs font-bold transition-all border whitespace-nowrap",
+                    !selectedPosition ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                  )}
+                >
+                  Todos
+                </button>
+                {positions.map(pos => (
+                  <button
+                    key={pos}
+                    onClick={() => setSelectedPosition(pos === selectedPosition ? null : pos)}
+                    className={cn(
+                      "px-4 py-1.5 rounded-full text-xs font-bold transition-all border whitespace-nowrap",
+                      selectedPosition === pos ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                    )}
+                  >
+                    {pos}
+                  </button>
+                ))}
+              </div>
+
+              {/* AI Scouting Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAiScouting}
+                disabled={isAiScouting || isLoading || availablePlayers.length === 0}
+                className={cn(
+                  "gap-2 font-bold text-xs h-9 rounded-full shrink-0 border-primary/20 hover:bg-primary/5",
+                  Object.keys(recommendations).length > 0 && "bg-primary/10 border-primary/50 text-primary"
+                )}
+              >
+                {isAiScouting ? (
+                  <div className="w-4 h-4 border-2 border-primary border-t-transparent animate-spin rounded-full" />
+                ) : (
+                  <Sparkles className="w-4 h-4 text-primary" />
+                )}
+                Sugerencia del DT
+              </Button>
+            </div>
+
             <h3 className="font-semibold text-lg flex items-center gap-2">
-              Agentes Libres Disponibles
-              {availablePlayers.length > 0 && !isLoading && (
+              Jugadores Disponibles
+              {filteredPlayers.length > 0 && !isLoading && (
                 <span className="text-sm font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                  {availablePlayers.length} encontrados
+                  {filteredPlayers.length}
                 </span>
               )}
             </h3>
@@ -201,52 +490,15 @@ export function ExploreContent() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {availablePlayers.map(player => (
-                  <div key={player.uid} className="flex flex-col p-4 border bg-card rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-start gap-4 mb-4">
-                      <Avatar className="w-14 h-14 ring-2 ring-primary/10">
-                        <AvatarImage src={player.photoURL || undefined} />
-                        <AvatarFallback className="text-lg">{(player.displayName || 'U')[0].toUpperCase()}</AvatarFallback>
-                      </Avatar>
-
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-base truncate">{player.displayName}</h4>
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                          {player.position && <PlayerPositionBadge position={player.position} size="sm" />}
-                          {player.ovr && (
-                            <span className="flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md">
-                              <Trophy className="w-3 h-3" />
-                              {player.ovr} OVR
-                            </span>
-                          )}
-                          {player.matchScore === 0 && (
-                            <span className="flex items-center gap-1 text-xs font-medium text-destructive dark:text-red-400 bg-destructive/10 px-2 py-0.5 rounded-md">
-                              <AlertCircle className="w-3 h-3" />
-                              Horario Incompatible
-                            </span>
-                          )}
-                          {player.matchScore === 1 && (
-                            <span className="flex items-center gap-1 text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-md">
-                              <AlertCircle className="w-3 h-3" />
-                              Día Diferente
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <InvitePlayerDialog
-                      playerToInvite={player}
-                      userMatches={incompleteMatches}
-                      match={selectedMatch!}
-                    >
-                      <Button className="w-full font-semibold gap-2" variant="default">
-                        <Send className="w-4 h-4" />
-                        Convocar para el partido
-                      </Button>
-                    </InvitePlayerDialog>
-                  </div>
+              <div className="grid grid-cols-2 md:grid-cols-2 gap-3 sm:gap-4">
+                {filteredPlayers.map(player => (
+                  <FreeAgentCard
+                    key={player.uid}
+                    player={player}
+                    selectedMatch={selectedMatch!}
+                    incompleteMatches={incompleteMatches}
+                    aiRecommendation={recommendations[player.uid]}
+                  />
                 ))}
               </div>
             )}

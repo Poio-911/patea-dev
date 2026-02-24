@@ -1,9 +1,29 @@
 'use server';
 
-import { getServerSession } from '@/lib/auth-helpers';
+import { getServerSession } from '@/lib/auth/get-server-session';
 import type { AvailablePlayer, DayOfWeek, TimeOfDay } from '@/lib/types';
-import ngeohash from 'ngeohash';
 import { getAdminDb } from '@/firebase/admin-init';
+import { Timestamp, GeoPoint } from 'firebase-admin/firestore';
+
+// Recursively converts Firestore-specific types (Timestamp, GeoPoint) to plain JS values
+// so Next.js can serialize the result from server action to client
+function serializeFirestore(value: unknown): unknown {
+    if (value instanceof Timestamp) {
+        return value.toDate().toISOString();
+    }
+    if (value instanceof GeoPoint) {
+        return { lat: value.latitude, lng: value.longitude };
+    }
+    if (Array.isArray(value)) {
+        return value.map(serializeFirestore);
+    }
+    if (value !== null && typeof value === 'object') {
+        return Object.fromEntries(
+            Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, serializeFirestore(v)])
+        );
+    }
+    return value;
+}
 
 const db = getAdminDb();
 
@@ -21,91 +41,127 @@ function calculateDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: n
     return d;
 }
 
-// Function to calculate exact bounding box of a distance
-function getBoundingBox(lat: number, lon: number, radiusInKm: number) {
-    const R = 6371;
-    const maxLat = lat + (radiusInKm / R) * (180 / Math.PI);
-    const minLat = lat - (radiusInKm / R) * (180 / Math.PI);
-    const maxLon = lon + (radiusInKm / R) * (180 / Math.PI) / Math.cos(lat * Math.PI / 180);
-    const minLon = lon - (radiusInKm / R) * (180 / Math.PI) / Math.cos(lat * Math.PI / 180);
-    return { minLat, minLon, maxLat, maxLon };
+/**
+ * Returns the set of UIDs that belong to any group the current user is part of.
+ * These players can already be invited from within the match itself, so they
+ * should not appear in the Mercado de Fichajes.
+ */
+async function getGroupMateUids(currentUserId: string): Promise<Set<string>> {
+    // Find all player docs owned by the current user → get their groupIds
+    const myPlayersSnap = await db.collection('players')
+        .where('ownerUid', '==', currentUserId)
+        .get();
+
+    const groupIds = [...new Set(
+        myPlayersSnap.docs
+            .map(d => d.data().groupId as string | null)
+            .filter((id): id is string => !!id)
+    )];
+
+    if (groupIds.length === 0) return new Set();
+
+    // For each group, find all players in that group and collect their ownerUids
+    const uidSet = new Set<string>();
+    for (const groupId of groupIds) {
+        const groupPlayersSnap = await db.collection('players')
+            .where('groupId', '==', groupId)
+            .get();
+        groupPlayersSnap.docs.forEach(d => {
+            const ownerUid = d.data().ownerUid as string | undefined;
+            if (ownerUid) uidSet.add(ownerUid);
+        });
+    }
+
+    return uidSet;
 }
 
 /**
- * Busca jugadores disponibles cercanos utilizando geohash en memoria (versión optimizada con bounding box)
+ * Busca jugadores disponibles cercanos dentro de un radio dado,
+ * excluyendo compañeros de grupo del usuario y jugadores ya en el partido.
  */
 export async function getAvailableLocalPlayersAction({
     lat,
     lng,
     radiusInKm = 10,
     dayOfWeek,
-    timeOfDay
+    timeOfDay,
+    matchPlayerUids = [],
 }: {
     lat: number;
     lng: number;
     radiusInKm?: number;
     dayOfWeek?: DayOfWeek;
     timeOfDay?: TimeOfDay;
-}): Promise<{ success: boolean; players?: (AvailablePlayer & { matchScore?: number })[]; error?: string }> {
+    matchPlayerUids?: string[];
+}): Promise<{ success: boolean; players?: (AvailablePlayer & { matchScore?: number; isCurrentUser?: boolean })[]; error?: string }> {
     try {
         const session = await getServerSession();
         if (!session?.user?.uid) {
             return { success: false, error: 'No autenticado' };
         }
 
-        // Calcula el bounding box
-        const { minLat, minLon, maxLat, maxLon } = getBoundingBox(lat, lng, radiusInKm);
+        const currentUserId = session.user.uid;
 
-        // Obtenemos los hashes a nivel 5 de precisión (aproximadamente cajas de ~5x5 km)
-        const geohashesToQuery = ngeohash.bboxes(minLat, minLon, maxLat, maxLon, 5);
+        // Guard against invalid coordinates
+        if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
+            console.error('[recruitment] Coordenadas inválidas recibidas:', { lat, lng });
+            return { success: false, error: 'El partido no tiene coordenadas de ubicación válidas.' };
+        }
 
-        // Obtenemos todos los jugadores en memoria ya que la colección principal no debería ser gigantesca inicialmente.
-        // Si la plataforma escala, debe usarse un enfoque como geofire-common
+        // Build exclusion set: group mates + players already in the match
+        const groupMateUids = await getGroupMateUids(currentUserId);
+        const excludedUids = new Set([...groupMateUids, ...matchPlayerUids]);
+
+        console.log(`[recruitment] UIDs excluidos (grupo + partido): ${excludedUids.size}`);
+
+        // Fetch all available players
         const snapshot = await db.collection('availablePlayers').get();
 
-        let players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as AvailablePlayer));
+        let players = snapshot.docs.map(doc =>
+            serializeFirestore({ id: doc.id, ...doc.data() }) as unknown as AvailablePlayer
+        );
 
-        // Filtrar por distancia circular real (ya que la BB es cuadrada) y excluir al usuario actual
+        console.log(`[recruitment] Total de jugadores en availablePlayers: ${players.length}`);
+        console.log(`[recruitment] Buscando a ${radiusInKm}km de (${lat}, ${lng})`);
+
+        // Filtrar por distancia circular real
         players = players.filter(p => {
-            if (p.uid === session.user.uid) return false;
-            if (!p.location) return false;
+            if (!p.location?.lat || !p.location?.lng) {
+                console.log(`[recruitment] Jugador ${p.uid} (${p.displayName}) sin coordenadas de ubicación - excluido`);
+                return false;
+            }
 
             const dist = calculateDistanceInKm(lat, lng, p.location.lat, p.location.lng);
+            console.log(`[recruitment] Jugador ${p.uid} (${p.displayName}): ${dist.toFixed(1)}km`);
             return dist <= radiusInKm;
         });
 
-        // Ordenar por disponibilidad si se proporciona el día y la hora
-        // En vez de filtrar estrictamente, puntuamos y ordenamos para no vaciar el mercado
-        let scoredPlayers = players.map(p => {
-            let score = 1; // Neutral
+        // Excluir compañeros de grupo y jugadores ya en el partido
+        players = players.filter(p => !excludedUids.has(p.uid));
 
+        console.log(`[recruitment] Jugadores tras excluir grupo/partido: ${players.length}`);
+
+        // Calcular score de compatibilidad por disponibilidad (sin filtrar, solo rankear)
+        let scoredPlayers = players.map(p => {
+            let score = 1;
             if (dayOfWeek || timeOfDay) {
-                if (p.availability) {
+                if (p.availability && Object.keys(p.availability).length > 0) {
                     let matchDay = true;
                     let matchTime = true;
-
                     if (dayOfWeek && p.availability[dayOfWeek] !== undefined) {
                         const timesForDay = p.availability[dayOfWeek] || [];
-                        if (timeOfDay) {
-                            matchTime = timesForDay.includes(timeOfDay);
-                        }
+                        if (timeOfDay) matchTime = timesForDay.includes(timeOfDay);
                     } else if (dayOfWeek) {
                         matchDay = false;
                     }
-
-                    if (matchDay && matchTime) score = 2; // Perfect match
-                    else if (!matchDay && !matchTime) score = 0; // Conflicto total
-                    else score = 1; // Match parcial
+                    if (matchDay && matchTime) score = 2;
+                    else if (!matchDay && !matchTime) score = 0;
+                    else score = 1;
                 }
+                // availability vacío = disponible siempre → score neutro (1)
             }
-
-            return {
-                ...p,
-                matchScore: score
-            };
+            return { ...p, matchScore: score, isCurrentUser: p.uid === currentUserId };
         });
-
-        // Ordenar de mayor a menor score
         scoredPlayers.sort((a, b) => b.matchScore - a.matchScore);
 
         return { success: true, players: scoredPlayers };

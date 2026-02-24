@@ -30,6 +30,15 @@ export async function joinMatchAction(matchId: string, userId: string, userDispl
                 return;
             }
 
+            // Also check invitations subcollection — a confirmed/pending invite means
+            // the user is already committed to this match (prevents double-join via Partidos Abiertos)
+            const invitationRef = db.collection(`matches/${matchId}/invitations`).doc(userId);
+            const invitationSnap = await transaction.get(invitationRef);
+            if (invitationSnap.exists && invitationSnap.data()?.status !== 'declined') {
+                // Already invited or confirmed — idempotent exit to avoid duplicate entry
+                return;
+            }
+
             if ((match.players?.length || 0) >= match.matchSize) {
                 throw new Error("El partido está lleno.");
             }

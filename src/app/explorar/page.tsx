@@ -12,7 +12,7 @@ import { doc } from 'firebase/firestore';
 import type { Player, UserProfile, AvailablePlayer } from '@/lib/types';
 import { AvailabilityCard } from '@/components/availability/availability-card';
 
-export default function SocialPage() {
+export default function ExplorarPage() {
   const [activeTab, setActiveTab] = useState('players');
   const { user } = useUser();
   const firestore = useFirestore();
@@ -31,7 +31,7 @@ export default function SocialPage() {
   const isFreeAgent = currentAvailability !== null;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6 px-4 pb-12">
       <div>
         <h1 className="text-3xl font-bold mb-2">Explorar</h1>
         <p className="text-muted-foreground">

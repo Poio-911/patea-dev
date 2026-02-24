@@ -180,7 +180,7 @@ export async function getPublicMatchesAction(
         const snapshot = await query.limit(50).get();
 
         let matches: Match[] = snapshot.docs
-            .map(doc => ({ id: doc.id, ...doc.data() } as Match))
+            .map(doc => ({ ...doc.data(), id: doc.id } as Match))
             // Exclude matches the user is already in (client-side filter is fine for this specific exclusion)
             .filter(m => !m.playerUids?.includes(currentUserId))
             // Exclude full matches

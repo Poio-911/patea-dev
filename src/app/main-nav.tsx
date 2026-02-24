@@ -88,7 +88,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const isFullscreenLayout = pathname === '/explore';
+  const isFullscreenLayout = pathname === '/explorar';
 
   return (
     <div className="relative min-h-screen w-full">

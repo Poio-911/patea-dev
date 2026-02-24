@@ -58,33 +58,27 @@ const prompt = ai.definePrompt({
   output: { schema: FindBestFitPlayerOutputSchema },
   model: 'googleai/gemini-2.0-flash',
   prompt: `
-    Eres un director deportivo experto en fútbol amateur del Río de la Plata, con un ojo clínico para fichajes.
-    Tu tarea es analizar un partido incompleto y una lista de jugadores libres para recomendar los mejores fichajes posibles.
+    Eres un DT experimentado del fútbol uruguayo/rioplatense. Tu ojo no falla.
+    Analizá el partido y recomendá los mejores refuerzos de la lista.
 
-    DATOS DEL PARTIDO INCOMPLETO:
-    - Título: {{match.title}}
-    - Jugadores necesarios: {{match.matchSize}}
-    - Jugadores actuales: {{match.players.length}}
-    - Plazas a cubrir: {{spotsToFill}}
-    - Plantilla actual: {{#each match.players}} {{this.displayName}} ({{this.position}}, OVR {{this.ovr}}){{/each}}
+    PARTIDO:
+    - {{match.title}}
+    - Faltan: {{spotsToFill}} jugadores.
+    - Equipo actual: {{#each match.players}} {{this.displayName}} ({{this.position}}){{/each}}
 
-    JUGADORES LIBRES PARA FICHAR:
+    JUGADORES DISPONIBLES:
     {{#each availablePlayers}}
-    - UID: {{this.uid}}, Nombre: {{this.displayName}}, Posición: {{this.position}}, OVR: {{this.ovr}}
+    - UID: {{this.uid}}, {{this.displayName}} ({{this.position}}, OVR {{this.ovr}})
     {{/each}}
 
-    Basado en esto, tu objetivo es elegir hasta {{spotsToFill}} jugadores de la lista de disponibles para recomendar.
-    Tus criterios principales deben ser:
-    1.  **Cubrir Posiciones Faltantes:** Si al equipo le falta un defensa, un delantero, o sobre todo un portero ('POR'), prioriza fichar jugadores en esas posiciones.
-    2.  **Equilibrio de OVR:** Los jugadores elegidos deben mejorar al equipo pero sin desbalancear drásticamente el OVR promedio del equipo actual. Evita recomendar jugadores con un OVR muy por encima o muy por debajo del promedio del equipo actual.
-    3.  **Calidad sobre Cantidad:** Es mejor recomendar menos jugadores pero que sean los correctos, a rellenar por rellenar.
-    4.  **Si no hay jugadores disponibles o ninguno encaja, devuelve una lista de recomendaciones vacía.**
+    REGLAS:
+    1. Recomendá hasta {{spotsToFill}} jugadores. 
+    2. Priorizá posiciones que faltan (especialmente 'POR' si no hay golero).
+    3. El texto de justificación ('reason') debe ser MUY CORTO y al pie (ej: "Te falta un golero y este es un muro", "Necesitás marca en el medio").
+    4. Usá jerga futbolera rioplatense coherente pero breve.
+    5. Si no hay nada que sirva, devolvé lista vacía.
 
-    Para cada jugador que recomiendes, devuelve su UID y una razón corta, ingeniosa y en tono de manager, explicando por qué es la elección correcta.
-    Ejemplo de razón: "Necesitábamos garra en el medio y este jugador es un tractorcito. Va a equilibrar el mediocampo."
-    Otro ejemplo: "Es un delantero rápido que nos puede dar la chispa que falta arriba sin romper la armonía del equipo."
-
-    Asegúrate de que la respuesta sea un JSON válido y que el 'playerId' corresponda a uno de los UIDs de la lista de disponibles.
+    Importante: 'playerId' debe coincidir exacto.
   `,
 });
 

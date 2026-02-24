@@ -3,7 +3,7 @@ import { LayoutDashboard, User, ClipboardCheck, Trophy, Calendar, Globe } from '
 export const mainNavItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
   { href: '/players', label: 'Jugadores', icon: User },
-  { href: '/social', label: 'Explorar', icon: Globe },
+  { href: '/explorar', label: 'Explorar', icon: Globe },
 ];
 
 export const matchesNavItems = [
