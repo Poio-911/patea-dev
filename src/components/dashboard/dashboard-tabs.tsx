@@ -139,11 +139,7 @@ export function DashboardTabs({
             </TabsContent>
 
             <TabsContent value="social" className="mt-0">
-                <SocialTab
-                    player={player}
-                    availablePlayerData={availablePlayerData}
-                    savedLocation={savedLocation}
-                />
+                <SocialTab />
             </TabsContent>
 
             <TabsContent value="grupo" className="mt-0">

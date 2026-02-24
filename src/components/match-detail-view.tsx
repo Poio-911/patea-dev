@@ -32,7 +32,7 @@ import { MatchWeatherAlert } from './match-details/MatchWeatherAlert';
 import { logger } from '@/lib/logger';
 import { LocationVoting } from './match-details/location-voting';
 import { DateVoting } from './match-details/date-voting';
-import { MatchResultCard } from './match-details/MatchResultCard';
+import { IntegratedMatchStory } from './match-details/IntegratedMatchStory';
 
 interface MatchDetailViewProps {
   matchId: string;
@@ -213,13 +213,15 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
               <LocationVoting match={match} userId={user?.uid || ''} />
             )}
 
-            {match.teams && match.teams.length > 0 ? (
-              <MatchTeams
-                match={match}
-                isOwner={permissions.isOwner}
-              />
-            ) : (
-              <PlayersConfirmed match={match} />
+            {match.status !== 'evaluated' && (
+              match.teams && match.teams.length > 0 ? (
+                <MatchTeams
+                  match={match}
+                  isOwner={permissions.isOwner}
+                />
+              ) : (
+                <PlayersConfirmed match={match} />
+              )
             )}
 
             {/* Live Broadcast Controls for League Matches (parity with cup) */}
@@ -265,9 +267,24 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
               />
             )}
 
-            {match.status === 'evaluated' && <MatchResultCard match={match} />}
+            {/* --- NUEVO FLUJO INTEGRADO (Match Story) --- */}
+            {match.status === 'evaluated' && (
+              <IntegratedMatchStory match={match} />
+            )}
 
-            {match.status === 'evaluated' && <MatchChronicleCard match={match} />}
+            {/* RESULTADO (Legacy fallback si no está evaluado pero hay score, ej. partidos históricos sin evaluación) */}
+            {match.status !== 'evaluated' && match.finalScore && (
+              <div className="bg-card border shadow-sm rounded-3xl p-6 text-center">
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-4">Resultado Final</h3>
+                <div className="flex items-center justify-center gap-6">
+                  <span className="text-xl font-bold">{match.teams?.[0]?.name || 'Equipo 1'}</span>
+                  <div className="px-6 py-2 bg-foreground text-background rounded-full text-3xl font-black">
+                    {match.finalScore.team1} - {match.finalScore.team2}
+                  </div>
+                  <span className="text-xl font-bold">{match.teams?.[1]?.name || 'Equipo 2'}</span>
+                </div>
+              </div>
+            )}
 
             {/* Physical Metrics Section - Only for players who participated */}
             {userPlayerInMatch && userPlayer && (match.status === 'completed' || match.status === 'evaluated') && (

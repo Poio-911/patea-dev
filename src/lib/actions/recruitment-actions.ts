@@ -46,7 +46,7 @@ export async function getAvailableLocalPlayersAction({
     radiusInKm?: number;
     dayOfWeek?: DayOfWeek;
     timeOfDay?: TimeOfDay;
-}): Promise<{ success: boolean; players?: AvailablePlayer[]; error?: string }> {
+}): Promise<{ success: boolean; players?: (AvailablePlayer & { matchScore?: number })[]; error?: string }> {
     try {
         const session = await getServerSession();
         if (!session?.user?.uid) {
@@ -74,29 +74,41 @@ export async function getAvailableLocalPlayersAction({
             return dist <= radiusInKm;
         });
 
-        // Filtrar por disponibilidad si se proporciona el día y la hora
-        if (dayOfWeek || timeOfDay) {
-            players = players.filter(p => {
-                if (!p.availability) return true; // Si no declaró nada, asumimos siempre disponible u omitimos (decidiremos ser permissivos por la demo)
+        // Ordenar por disponibilidad si se proporciona el día y la hora
+        // En vez de filtrar estrictamente, puntuamos y ordenamos para no vaciar el mercado
+        let scoredPlayers = players.map(p => {
+            let score = 1; // Neutral
 
-                let matchDay = true;
-                let matchTime = true;
+            if (dayOfWeek || timeOfDay) {
+                if (p.availability) {
+                    let matchDay = true;
+                    let matchTime = true;
 
-                if (dayOfWeek && p.availability[dayOfWeek] !== undefined) {
-                    const timesForDay = p.availability[dayOfWeek] || [];
-                    if (timeOfDay) {
-                        matchTime = timesForDay.includes(timeOfDay);
+                    if (dayOfWeek && p.availability[dayOfWeek] !== undefined) {
+                        const timesForDay = p.availability[dayOfWeek] || [];
+                        if (timeOfDay) {
+                            matchTime = timesForDay.includes(timeOfDay);
+                        }
+                    } else if (dayOfWeek) {
+                        matchDay = false;
                     }
-                } else if (dayOfWeek) {
-                    // Si especifico dia y no esta en su availability object, no match
-                    matchDay = false;
+
+                    if (matchDay && matchTime) score = 2; // Perfect match
+                    else if (!matchDay && !matchTime) score = 0; // Conflicto total
+                    else score = 1; // Match parcial
                 }
+            }
 
-                return matchDay && matchTime;
-            });
-        }
+            return {
+                ...p,
+                matchScore: score
+            };
+        });
 
-        return { success: true, players };
+        // Ordenar de mayor a menor score
+        scoredPlayers.sort((a, b) => b.matchScore - a.matchScore);
+
+        return { success: true, players: scoredPlayers };
     } catch (error: any) {
         console.error('Error fetching available local players:', error);
         return { success: false, error: error.message || 'Error al buscar jugadores' };

@@ -290,24 +290,26 @@ async function completeEvaluations(matchId: string, dryRun: boolean) {
 
         // Generate Chronicle
         const winTemplates = [
-            "¡Qué partido ganamos! Dejé el alma.",
-            "Partido durísimo pero nos llevamos los 3 puntos.",
-            "Jugué bien, aunque terminé muerto.",
-            "Gran equipo, tocamos bien.",
-            "Ganamos a lo Peñarol, sufriendo."
+            "¡Qué partido ganamos! Dejé el alma corriendo por la banda.",
+            "Partido durísimo, mucha pierna fuerte, pero nos llevamos los 3 puntos con garra.",
+            "Jugué bien, aunque a los 20 minutos estaba pidiendo oxígeno al borde del alambre.",
+            "Gran equipo. Tocamos bien de primera y dominamos el medio.",
+            "Ganamos a lo Peñarol, sufriendo hasta el final y metiendo con todo.",
+            "Un triunfo táctico. Supimos aguantar cuando se nos vinieron y liquidamos de contra."
         ];
         const goalTemplates = [
-            "¡Mojé! Qué lindo hacer goles.",
-            "El arco se me abrió hoy, por suerte.",
-            "Gol y victoria, noche redonda.",
-            "La mandé a guardar."
+            "¡Mojé! Qué lindo hacer goles cuando las papas queman.",
+            "El arco se me abrió hoy. Por fin entró una después de pegarle a 3 palos.",
+            "Gol y victoria, noche redonda. Esa pelota me pedía que le pegara de volea.",
+            "La mandé a guardar y a cobrar. Importante para sumar confianza."
         ];
         const genericTemplates = [
-            "Partido parejo, se corrió mucho.",
-            "Me faltó aire pero cumplí.",
-            "Buen picado, divertido.",
-            "Terminé con los gemelos cargados.",
-            "Hay que mejorar la defensa."
+            "Partido muy friccionado, se corrió demasiado ida y vuelta sin pausa.",
+            "Me faltó aire para terminar bien las jugadas, pero cumplí con la marca.",
+            "Picado hermoso. Hubo patadas de cárcel pero todo quedó en la cancha.",
+            "Terminé con los gemelos cargados, los rivales eran unos aviones.",
+            "Hay que mejorar el retroceso para la próxima, quedamos muy regalados atrás.",
+            "No me salió una hoy. Estuve con los botines cruzados."
         ];
 
         let chronicle = "";
@@ -381,11 +383,12 @@ async function completeEvaluations(matchId: string, dryRun: boolean) {
             } else {
                 // TEXT (simulated AI analysis)
                 const descriptions = [
-                    `${subject.name} tuvo un buen partido, se movió bien y participó en varias jugadas.`,
-                    `Partido irregular de ${subject.name}, momentos buenos y malos.`,
-                    `${subject.name} fue determinante en el mediocampo, siempre pidió la pelota.`,
-                    `Cumplió su función sin destacar demasiado pero sin errores graves.`,
-                    `Se lo vio muy activo, corrió mucho y generó espacios para los compañeros.`,
+                    `${subject.name} tuvo un primer tiempo brillante y se apagó, pero igual rindió en la marca.`,
+                    `Un partido de esos que te marcan: ${subject.name} metió, corrió y demostró jerarquía pura.`,
+                    `${subject.name} fue el eje central; cuando él/ella la tocó, el equipo jugó a otra cosa.`,
+                    `Jornada discreta de ${subject.name}. No estuvo preciso con los pases pero colaboró defensivamente.`,
+                    `Físicamente impecable. ${subject.name} corrió a todos los rivales como si tuviera tres pulmones.`,
+                    `Puro talento intermitente. Generó un par de jugadas de otro partido que casi terminan en gol de ${subject.name}.`
                 ];
                 evalData.textDescription = descriptions[Math.floor(Math.random() * descriptions.length)];
                 evalData.aiSummary = `Rendimiento general correcto de ${subject.name}.`;
