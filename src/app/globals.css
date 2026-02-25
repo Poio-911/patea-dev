@@ -2101,15 +2101,11 @@ body.standalone main {
 
   .game-banner-overlay {
     transition: all 0.5s ease;
-    mix-blend-mode: multiply;
-  }
-
-  .game .game-banner-overlay {
-    mix-blend-mode: hard-light;
   }
 
   .game-theme-button {
     box-shadow: none !important;
+    border: none !important;
     @apply transition-all duration-200;
   }
 

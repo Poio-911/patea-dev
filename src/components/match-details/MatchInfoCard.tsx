@@ -64,7 +64,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
 
   return (
     <Card className={cn(
-      "group relative overflow-hidden border-2 border-t-4 rounded-xl shadow-md glass hover:shadow-lg transition-all duration-300 text-foreground hero-match-banner",
+      "group relative overflow-hidden border-2 border-t-4 rounded-xl transition-all duration-300 text-foreground hero-match-banner bg-transparent border-white/10 shadow-none hover:shadow-none",
       matchTheme.topAccent
     )}>
       {/* Background video - visible en AMBOS temas */}
@@ -81,7 +81,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
           <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
         </video>
         <div className={cn(
-          "absolute inset-0 game-banner-overlay z-0",
+          "absolute inset-0 game-banner-overlay z-0 opacity-90",
           matchTheme.bannerOverlay
         )} />
       </div>
@@ -158,11 +158,11 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
             </div>
             <div className="flex justify-start sm:justify-end">
               <div className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider border bg-black/50 backdrop-blur-md shadow-xl",
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider border bg-black/60 backdrop-blur-md shadow-none",
                 matchTheme.border,
-                "text-white border-white/40"
+                "text-white border-white/20"
               )}>
-                <div className={cn("w-2 h-2 rounded-full shadow-sm", matchTheme.badgeColor)} />
+                <div className={cn("w-2 h-2 rounded-full", matchTheme.badgeColor)} />
                 <span>{matchTheme.label}</span>
               </div>
             </div>
