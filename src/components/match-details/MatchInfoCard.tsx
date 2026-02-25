@@ -16,7 +16,7 @@ import { Share2 } from 'lucide-react';
 import { useNativeShare } from '@/hooks/use-native-share';
 import { useHaptics } from '@/hooks/use-haptics';
 import { getMatchTheme } from '@/lib/match-theme';
-import { cn } from '@/lib/utils';
+import { cn, formatVenueName } from '@/lib/utils';
 
 interface MatchInfoCardProps {
   match: Match;
@@ -81,8 +81,8 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
           <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
         </video>
         <div className={cn(
-          "absolute inset-0 game-banner-overlay opacity-60",
-          `bg-gradient-to-br from-${matchTheme.brandColor}/40 via-${matchTheme.brandColor}/20 to-background/60`
+          "absolute inset-0 game-banner-overlay opacity-80 z-0",
+          matchTheme.bannerOverlay
         )} />
       </div>
 
@@ -135,9 +135,9 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
             </div>
             {ownerProfile && (
               <div className="flex items-center gap-2">
-                <Avatar className="h-6 w-6">
+                <Avatar className="h-6 w-6 border border-white/20">
                   <AvatarImage src={ownerProfile.photoURL || ''} alt={ownerProfile.displayName || ''} />
-                  <AvatarFallback className="text-xs">{ownerProfile.displayName?.charAt(0)}</AvatarFallback>
+                  <AvatarFallback className="text-[10px] bg-white/20 text-white">{ownerProfile.displayName?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <p className="text-sm text-white/90">{`Organizado por ${ownerProfile.displayName}`}</p>
               </div>
@@ -157,9 +157,14 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
               )}
             </div>
             <div className="flex justify-start sm:justify-end">
-              <Badge variant="outline" className={cn("capitalize text-sm border-none text-white badge", matchTheme.badge)}>
-                {matchTheme.label}
-              </Badge>
+              <div className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider border bg-black/50 backdrop-blur-md shadow-xl",
+                matchTheme.border,
+                "text-white border-white/40"
+              )}>
+                <div className={cn("w-2 h-2 rounded-full shadow-sm", matchTheme.badgeColor)} />
+                <span>{matchTheme.label}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -170,10 +175,10 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
         <div className="flex flex-col sm:flex-row gap-6 items-center justify-between">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <MapPin className="h-5 w-5 mt-0.5 flex-shrink-0 icon-with-circle" aria-hidden="true" />
-            <p className="font-semibold">{match.location.name}</p>
+            <p className="font-semibold">{formatVenueName(match.location.name, match.location.address)}</p>
           </div>
           <div className="flex gap-3 flex-shrink-0">
-            <Button asChild variant="default" size="sm" className="game-theme-button">
+            <Button asChild variant="default" size="sm" className="game-theme-button shadow-none">
               <a
                 href={googleMapsUrl}
                 target="_blank"

@@ -29,6 +29,10 @@ export interface MatchTheme {
     brandColor: string;
     // Solid top border class
     topAccent: string;
+    // Gradient overlay for banner
+    bannerOverlay: string;
+    // Badge color class (full bg-xxx)
+    badgeColor: string;
 }
 
 const matchThemes: Record<MatchType, MatchTheme> = {
@@ -44,6 +48,8 @@ const matchThemes: Record<MatchType, MatchTheme> = {
         priority: 'casual',
         brandColor: 'blue-500',
         topAccent: 'border-t-blue-500',
+        bannerOverlay: 'bg-gradient-to-br from-blue-500/40 via-blue-500/20 to-background/60',
+        badgeColor: 'bg-blue-500',
     },
     collaborative: {
         gradient: 'from-teal-500/10 via-teal-500/5 to-transparent dark:from-teal-600/20 dark:via-teal-600/10',
@@ -57,6 +63,8 @@ const matchThemes: Record<MatchType, MatchTheme> = {
         priority: 'casual',
         brandColor: 'teal-500',
         topAccent: 'border-t-teal-500',
+        bannerOverlay: 'bg-gradient-to-br from-teal-500/40 via-teal-500/20 to-background/60',
+        badgeColor: 'bg-teal-500',
     },
     by_teams: {
         gradient: 'from-indigo-500/10 via-indigo-500/5 to-transparent dark:from-indigo-600/20 dark:via-indigo-600/10',
@@ -70,6 +78,8 @@ const matchThemes: Record<MatchType, MatchTheme> = {
         priority: 'casual',
         brandColor: 'indigo-500',
         topAccent: 'border-t-indigo-500',
+        bannerOverlay: 'bg-gradient-to-br from-indigo-500/40 via-indigo-500/20 to-background/60',
+        badgeColor: 'bg-indigo-500',
     },
     league: {
         gradient: 'from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-600/20 dark:via-amber-600/10',
@@ -83,6 +93,8 @@ const matchThemes: Record<MatchType, MatchTheme> = {
         priority: 'competitive',
         brandColor: 'amber-500',
         topAccent: 'border-t-amber-500',
+        bannerOverlay: 'bg-gradient-to-br from-amber-500/40 via-amber-500/20 to-background/60',
+        badgeColor: 'bg-amber-500',
     },
     cup: {
         gradient: 'from-red-500/10 via-red-500/5 to-transparent dark:from-red-600/20 dark:via-red-600/10',
@@ -96,6 +108,8 @@ const matchThemes: Record<MatchType, MatchTheme> = {
         priority: 'competitive',
         brandColor: 'red-500',
         topAccent: 'border-t-red-500',
+        bannerOverlay: 'bg-gradient-to-br from-red-500/40 via-red-500/20 to-background/60',
+        badgeColor: 'bg-red-500',
     },
     league_final: {
         gradient: 'from-yellow-500/20 via-red-500/20 to-transparent dark:from-yellow-500/30 dark:via-red-500/30',
@@ -110,6 +124,8 @@ const matchThemes: Record<MatchType, MatchTheme> = {
         priority: 'competitive',
         brandColor: 'amber-400',
         topAccent: 'border-t-amber-400 shadow-2xl shadow-amber-500/50',
+        bannerOverlay: 'bg-gradient-to-br from-amber-400/50 via-orange-500/30 to-background/60',
+        badgeColor: 'bg-amber-400',
     },
     intergroup_friendly: {
         gradient: 'from-green-500/10 via-green-500/5 to-transparent dark:from-green-600/20 dark:via-green-600/10',
@@ -123,6 +139,8 @@ const matchThemes: Record<MatchType, MatchTheme> = {
         priority: 'social',
         brandColor: 'green-500',
         topAccent: 'border-t-green-500',
+        bannerOverlay: 'bg-gradient-to-br from-green-500/40 via-green-500/20 to-background/60',
+        badgeColor: 'bg-green-500',
     },
 };
 
