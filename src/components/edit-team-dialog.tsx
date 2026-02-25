@@ -73,7 +73,7 @@ export function EditTeamDialog({ open, onOpenChange, team }: EditTeamDialogProps
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-lg w-full flex flex-col p-0 gap-0 max-h-[92dvh] md:max-h-[80vh] bg-background/95 dark:bg-black/85 backdrop-blur-xl border-border/50 dark:border-white/10 overflow-hidden shadow-2xl">
+      <DialogContent className="sm:max-w-lg w-full flex flex-col p-0 gap-0 max-h-[85dvh] md:max-h-[80vh] bg-background/95 dark:bg-black/85 backdrop-blur-xl border-border/50 dark:border-white/10 overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="px-4 sm:px-6 py-3 border-b border-border/10 dark:border-white/5 flex items-center gap-3 shrink-0">
           <Pencil className="w-4 h-4 text-primary" />
