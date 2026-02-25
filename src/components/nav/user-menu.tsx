@@ -12,7 +12,8 @@ import {
     Trophy,
     Award,
     Settings,
-    Rss
+    Rss,
+    ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -46,8 +47,8 @@ export function UserMenu({ user, player, onLogout, onRequestPermission }: UserMe
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 sm:h-12 sm:w-12 rounded-full p-0">
-                    <Avatar className="h-10 w-10 sm:h-12 sm:w-12 border overflow-hidden bg-muted">
+                <Button variant="ghost" className="relative h-10 w-fit sm:h-12 rounded-full p-0 flex items-center gap-1.5 px-1 hover:bg-muted/50 transition-colors">
+                    <Avatar className="h-10 w-10 sm:h-12 sm:w-12 border overflow-hidden bg-muted flex-shrink-0">
                         {user?.photoURL && (
                             <Image
                                 src={user.photoURL}
@@ -72,6 +73,7 @@ export function UserMenu({ user, player, onLogout, onRequestPermission }: UserMe
                             <AvatarFallback className="absolute inset-0">{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
                         )}
                     </Avatar>
+                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/60" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-64" align="end" forceMount>

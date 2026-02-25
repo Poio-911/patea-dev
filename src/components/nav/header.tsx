@@ -38,10 +38,8 @@ export function Header({ user, player, onLogout, onRequestPermission }: HeaderPr
                 {/* Right section: Actions + User Info */}
                 <div className="flex items-center gap-1 sm:gap-3 lg:gap-4">
                     {/* Actions: Help + Invitations + Notifications */}
-                    <div className="flex items-center gap-1 sm:gap-2">
-                        <div className="hidden md:block">
-                            <HelpDialog />
-                        </div>
+                    <div className="flex items-center gap-0.5 sm:gap-2">
+                        <HelpDialog />
                         <InvitationsBell />
                         <NotificationBell />
                     </div>
