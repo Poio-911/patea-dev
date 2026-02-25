@@ -85,7 +85,7 @@ export function NextMatchCard({ match, organizerName, variant = 'default' }: Nex
 
     return (
         <div className={cn(
-            "relative overflow-hidden rounded-xl border-2 shadow-md isolate next-match-banner",
+            "relative overflow-hidden rounded-xl border-2 shadow-none isolate next-match-banner bg-transparent border-white/10",
             matchTheme.border
         )}>
             {/* Background video with soft overlay */}
@@ -95,9 +95,8 @@ export function NextMatchCard({ match, organizerName, variant = 'default' }: Nex
                 </video>
                 <div
                     className={cn(
-                        "absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent",
-                        "after:absolute after:inset-0 after:bg-gradient-to-br after:opacity-30",
-                        matchTheme.gradient.replace('from-', 'after:from-').replace('via-', 'after:via-').replace('to-', 'after:to-')
+                        "absolute inset-0 z-0 opacity-90 game-banner-overlay",
+                        matchTheme.bannerOverlay
                     )}
                 />
             </div>
@@ -164,7 +163,7 @@ export function NextMatchCard({ match, organizerName, variant = 'default' }: Nex
                     <Button
                         asChild
                         size={isCompact ? 'default' : 'lg'}
-                        className={cn("font-bold shadow-md", matchTheme.button)}
+                        className={cn("font-bold !shadow-none game-theme-button", matchTheme.button)}
                     >
                         <Link href={`/matches/${currentMatch.id}`}>
                             Ver Detalles

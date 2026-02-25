@@ -221,7 +221,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
                 size="lg"
                 onClick={onJoinOrLeave}
                 disabled={isJoining}
-                className="w-full min-h-[48px] font-semibold"
+                className="w-full min-h-[48px] font-semibold !shadow-none game-theme-button"
                 aria-label={isUserInMatch ? 'Darse de baja del partido' : 'Apuntarse al partido'}
               >
                 {isJoining ? (

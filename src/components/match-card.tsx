@@ -201,9 +201,8 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     return (
         <Card
             className={cn(
-                "flex flex-col shadow-xl relative",
+                "flex flex-col shadow-none hover:shadow-none relative",
                 "transition-all duration-300",
-                "hover:shadow-2xl hover:scale-[1.01]",
                 "bg-gradient-to-br",
                 matchTheme.gradient,
                 matchTheme.border,
@@ -396,7 +395,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 <div className="flex gap-2">
                     <Button
                         asChild
-                        className={cn("w-full font-semibold", matchTheme.button)}
+                        className={cn("w-full font-semibold !shadow-none game-theme-button", matchTheme.button)}
                     >
                         <Link href={`/matches/${match.id}`}>
                             <Eye className="mr-2 h-4 w-4" /> Ver Detalles
@@ -404,7 +403,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     </Button>
                     {match.teams && match.teams.length > 0 && (
                         <MatchTeamsDialog match={match}>
-                            <Button variant="outline" className="w-full">
+                            <Button variant="outline" className="w-full !shadow-none">
                                 <UsersRound className="mr-2 h-4 w-4" /> Equipos
                             </Button>
                         </MatchTeamsDialog>
