@@ -16,7 +16,7 @@ const POSITION_WEIGHTS = {
 };
 const DEFAULT_WEIGHTS = { pac: 0.166, sho: 0.166, pas: 0.166, dric: 0.166, def: 0.166, phy: 0.166 };
 
-function getMultiplier(val) {
+function getMultiplier(val: number) {
     if (val >= 92) return 0.1;
     if (val >= 85) return 0.2;
     if (val >= 75) return 0.4;
@@ -24,7 +24,7 @@ function getMultiplier(val) {
     return 1.0;
 }
 
-function calculateOvrChange(currentOvr, avgRating) {
+function calculateOvrChange(currentOvr: number, avgRating: number) {
     if (avgRating === OVR_PROGRESSION.BASELINE_RATING) return 0;
     const ratingDelta = avgRating - OVR_PROGRESSION.BASELINE_RATING;
     let scale = 0.30;
@@ -38,11 +38,11 @@ function calculateOvrChange(currentOvr, avgRating) {
     return Math.max(-OVR_PROGRESSION.MAX_STEP, Math.min(OVR_PROGRESSION.MAX_STEP, rawDelta));
 }
 
-function calculateAttributeChangesFromPoints(currentAttrs, ovrChange, position) {
+function calculateAttributeChangesFromPoints(currentAttrs: any, ovrChange: number, position: string) {
     if (ovrChange === 0) return { ...currentAttrs };
     const newAttributes = { ...currentAttrs };
     const attributes = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'];
-    const weights = POSITION_WEIGHTS[position] || DEFAULT_WEIGHTS;
+    const weights = (POSITION_WEIGHTS as any)[position] || DEFAULT_WEIGHTS;
     const totalPointsToAdd = ovrChange * 6;
     let accumulatedError = 0;
 
@@ -61,11 +61,11 @@ function calculateAttributeChangesFromPoints(currentAttrs, ovrChange, position) 
     return newAttributes;
 }
 
-function calculateAttributeChangesFromTags(currentAttrs, tags = []) {
+function calculateAttributeChangesFromTags(currentAttrs: any, tags: any[] = []) {
     const newAttributes = { ...currentAttrs };
     tags.forEach(tag => {
         if (!tag.effects) return;
-        tag.effects.forEach(effect => {
+        tag.effects.forEach((effect: any) => {
             const key = effect.attribute;
             const currentVal = newAttributes[key];
             let multiplier = getMultiplier(currentVal);
@@ -76,7 +76,7 @@ function calculateAttributeChangesFromTags(currentAttrs, tags = []) {
     return newAttributes;
 }
 
-function calculateAttributeChangesFromAI(currentAttrs, aiChanges = []) {
+function calculateAttributeChangesFromAI(currentAttrs: any, aiChanges: any[] = []) {
     const newAttributes = { ...currentAttrs };
     aiChanges.forEach(change => {
         const key = change.attribute;
@@ -88,12 +88,12 @@ function calculateAttributeChangesFromAI(currentAttrs, aiChanges = []) {
     return newAttributes;
 }
 
-function getOVR(attrs) {
+function getOVR(attrs: any) {
     const sum = attrs.pac + attrs.sho + attrs.pas + attrs.dri + attrs.def + attrs.phy;
     return Math.round(sum / 6);
 }
 
-function simulate(label, player, rating, tags, aiChanges) {
+function simulate(label: string, player: any, rating: number, tags: any[], aiChanges: any[]) {
     console.log(`--- Scenario: ${label} ---`);
     console.log(`Initial: OVR ${player.ovr} [PAC:${player.pac} SHO:${player.sho} PAS:${player.pas} DRI:${player.dri} DEF:${player.def} PHY:${player.phy}]`);
 
