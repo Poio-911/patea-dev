@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import {
   collection, query, where, orderBy, getDocs,
   doc, getDoc, limit,
@@ -19,7 +19,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { requestIdentityRevelation } from '@/lib/actions/evaluation-actions';
+import { requestIdentityRevelation, getPlayerEvaluationsAction } from '@/lib/actions/evaluation-actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
@@ -170,10 +170,12 @@ function PeerEvalList({
   peerEvals,
   playerId,
   onRequestIdentity,
+  isOwner,
 }: {
   peerEvals: Evaluation[];
   playerId: string;
   onRequestIdentity: (id: string) => void;
+  isOwner: boolean;
 }) {
   if (peerEvals.length === 0) {
     return (
@@ -201,18 +203,18 @@ function PeerEvalList({
         // Compute per-eval tag effects for display
         const evalTagDeltas = evalType === 'tags'
           ? (ev.performanceTags ?? []).reduce((acc, tag) => {
-              for (const effect of (tag.effects ?? [])) {
-                acc[effect.attribute] = (acc[effect.attribute] ?? 0) + effect.change;
-              }
-              return acc;
-            }, {} as Record<string, number>)
+            for (const effect of (tag.effects ?? [])) {
+              acc[effect.attribute] = (acc[effect.attribute] ?? 0) + effect.change;
+            }
+            return acc;
+          }, {} as Record<string, number>)
           : null;
 
         const typeBadge = evalType === 'points'
           ? <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-1.5 py-0.5 rounded bg-muted/50">Puntos</span>
           : evalType === 'tags'
-          ? <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-1.5 py-0.5 rounded bg-muted/50">Tags</span>
-          : <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-1.5 py-0.5 rounded bg-muted/50">Texto</span>;
+            ? <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-1.5 py-0.5 rounded bg-muted/50">Tags</span>
+            : <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-1.5 py-0.5 rounded bg-muted/50">Texto</span>;
 
         return (
           <div key={ev.id} className={cn('py-3 flex items-start gap-3', idx < peerEvals.length - 1 && 'border-b border-border/50')}>
@@ -251,13 +253,13 @@ function PeerEvalList({
                     <span className={cn(
                       'text-sm font-bold tabular-nums px-2 py-0.5 rounded-full',
                       ev.rating >= 8 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
-                      ev.rating >= 6 ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' :
-                      'bg-slate-500/10 text-slate-500',
+                        ev.rating >= 6 ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' :
+                          'bg-slate-500/10 text-slate-500',
                     )}>
                       {ev.rating.toFixed(1)}
                     </span>
                   )}
-                  {!ev.identityRevealed && ev.evaluatorId !== 'AI' && (
+                  {isOwner && !ev.identityRevealed && ev.evaluatorId !== 'AI' && (
                     ev.identityRequestStatus === 'pending' ? (
                       <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                         <Clock className="h-3 w-3" /> Enviada
@@ -324,11 +326,13 @@ function MatchCard({
   playerId,
   isFirst,
   onRequestIdentity,
+  isOwner,
 }: {
   ctx: MatchFeedbackContext;
   playerId: string;
   isFirst: boolean;
   onRequestIdentity: (id: string) => void;
+  isOwner: boolean;
 }) {
   const matchDate = parseMatchDate(ctx.match, ctx.selfEvaluation, ctx.peerEvaluations);
   const formattedDate = matchDate
@@ -404,6 +408,7 @@ function MatchCard({
               peerEvals={ctx.peerEvaluations}
               playerId={playerId}
               onRequestIdentity={onRequestIdentity}
+              isOwner={isOwner}
             />
           </div>
         </>
@@ -481,13 +486,16 @@ function CompactSkeleton() {
 
 export function PlayerMatchDebriefView({ playerId, compact }: PlayerMatchDebriefViewProps) {
   const firestore = useFirestore();
+  const { user } = useUser();
   const { toast } = useToast();
   const [activities, setActivities] = useState<MatchFeedbackContext[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const isOwner = user?.uid === playerId;
+
   const handleRequestIdentity = async (evaluationId: string) => {
     try {
-      const result = await requestIdentityRevelation(evaluationId, playerId);
+      const result = await requestIdentityRevelation(evaluationId);
       if (result.success) {
         toast({ title: 'Solicitud Enviada', description: 'Se notificó al compañero que querés saber su identidad.' });
         setActivities(prev => prev.map(activity => ({
@@ -509,15 +517,10 @@ export function PlayerMatchDebriefView({ playerId, compact }: PlayerMatchDebrief
       if (!firestore || !playerId) { setIsLoading(false); return; }
       setIsLoading(true);
       try {
-        // 1. Query all evaluations for this player
-        const evalsQuery = query(
-          collection(firestore, 'evaluations'),
-          where('playerId', '==', playerId),
-          orderBy('evaluatedAt', 'desc'),
-          limit(20),
-        );
-        const evalsSnapshot = await getDocs(evalsQuery);
-        const allEvals = evalsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Evaluation));
+        // 1. Fetch evaluations via Secure Server Action
+        const { evaluations: allEvals, error: fetchError } = await getPlayerEvaluationsAction(playerId, user?.uid);
+
+        if (fetchError) throw new Error(fetchError);
 
         if (allEvals.length === 0) { setActivities([]); setIsLoading(false); return; }
 
@@ -580,7 +583,7 @@ export function PlayerMatchDebriefView({ playerId, compact }: PlayerMatchDebrief
           if (!match) continue;
 
           const evals = evalsByMatchId[matchId];
-          const peerEvaluations = evals.filter(e => e.evaluatorId !== playerId);
+          const peerEvaluations = evals.filter((e: any) => e.evaluatorId !== playerId);
 
           // Use selfEvaluations subcollection for accurate goals/assists
           const selfEval = selfEvalMap.get(matchId);
@@ -672,6 +675,7 @@ export function PlayerMatchDebriefView({ playerId, compact }: PlayerMatchDebrief
           playerId={playerId}
           isFirst
           onRequestIdentity={handleRequestIdentity}
+          isOwner={isOwner}
         />
 
         {/* Link al historial completo */}
@@ -734,6 +738,7 @@ export function PlayerMatchDebriefView({ playerId, compact }: PlayerMatchDebrief
         playerId={playerId}
         isFirst
         onRequestIdentity={handleRequestIdentity}
+        isOwner={isOwner}
       />
 
       {/* ── Previous Matches ─────────────────────────────────────────────────── */}
@@ -750,6 +755,7 @@ export function PlayerMatchDebriefView({ playerId, compact }: PlayerMatchDebrief
                 playerId={playerId}
                 isFirst={false}
                 onRequestIdentity={handleRequestIdentity}
+                isOwner={isOwner}
               />
             ))}
           </div>
