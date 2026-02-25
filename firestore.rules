@@ -175,6 +175,23 @@ service cloud.firestore {
       }
     }
 
+    // --- PRIVACY & EVALUATIONS ---
+
+    // Colección de Evaluaciones
+    match /evaluations/{evaluationId} {
+      // ✅ REGLA DE PRIVACIDAD: Solo pueden leer la evaluación:
+      // 1. El evaluador.
+      // 2. El jugador evaluado (sujeto).
+      // 3. Cualquier usuario SI la identidad ya fue revelada explícitamente.
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.evaluatorId ||
+        request.auth.uid == resource.data.playerId ||
+        (resource.data.identityRevealed == true)
+      );
+      // Las evaluaciones las crea el servidor (Admin SDK) o el sistema de transacciones.
+      allow write: if false;
+    }
+
     // Regla de comodín final: solo lectura para autenticados.
     // Escriben solo las colecciones con reglas explícitas.
     match /{document=**} {
