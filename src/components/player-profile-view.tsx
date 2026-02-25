@@ -4,10 +4,9 @@ import React from 'react';
 import { useUser } from '@/firebase';
 import type { Player, Jersey } from '@/lib/types';
 import { PlayerDetailCard } from '@/components/player-detail-card';
-import { LineChart, BrainCircuit } from 'lucide-react';
+import { LineChart, BrainCircuit, History } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import { PlayerRecentActivity } from './player-recent-activity';
 import { PlayerSuggestionsCard } from './player-suggestions-card';
 import { PlayerTeamsList } from './player-teams-list';
 import { PlayerAchievementsPanel } from './player-achievements-panel';
@@ -82,10 +81,23 @@ export default function PlayerProfileView({ playerId, player, jersey }: PlayerPr
         </>
       )}
 
+      {/* Historial de Partidos — visible para cualquier perfil */}
+      <Link href={`/players/${playerId}/historial`}>
+        <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Historial de Partidos</CardTitle>
+            <History className="h-5 w-5 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground">
+              Revisá evaluaciones, goles y cómo evolucionaron los atributos.
+            </p>
+          </CardContent>
+        </Card>
+      </Link>
+
       {/* NEW: Achievements Showcase */}
       <PlayerAchievementsPanel playerId={playerId} />
-
-      <PlayerRecentActivity playerId={playerId} />
     </div>
   );
 }
