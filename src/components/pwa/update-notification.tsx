@@ -74,7 +74,7 @@ export function UpdateNotification() {
   }
 
   return (
-    <div className="fixed top-[calc(1rem+env(safe-area-inset-top))] left-4 right-4 z-50 md:left-auto md:right-4 md:max-w-md">
+    <div className="fixed top-[var(--safe-area-top)] left-4 right-4 z-50 md:left-auto md:right-4 md:max-w-md">
       <Card className="p-4 shadow-lg border-primary/20 bg-card/95 backdrop-blur-sm">
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 w-10 h-10 rounded-full bg-success/10 flex items-center justify-center">

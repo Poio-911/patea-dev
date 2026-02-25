@@ -7,6 +7,7 @@
 /* Ajuste para menú en modo PWA standalone - pegado al borde inferior */
 body.standalone nav.fixed {
   bottom: 0 !important;
+  padding-bottom: var(--safe-area-bottom, env(safe-area-inset-bottom));
 }
 
 /* =============================================
@@ -31,17 +32,23 @@ body {
   overscroll-behavior-y: none;
 }
 
+:root {
+  /* Safe Area Variables with persistent fallbacks for modern mobile browsers */
+  --safe-area-top: max(1.25rem, env(safe-area-inset-top));
+  --safe-area-bottom: env(safe-area-inset-bottom);
+}
+
 /* Standalone (installed PWA) — add top padding for the status bar
    on iPhone notch / Dynamic Island when the header is fixed */
 body.standalone header.fixed-header {
-  padding-top: env(safe-area-inset-top);
-  height: calc(4rem + env(safe-area-inset-top));
+  padding-top: var(--safe-area-top);
+  height: calc(4rem + var(--safe-area-top));
 }
 
 /* When the body has class 'standalone', offset the main content
    so it doesn't slide under the dynamically-taller header */
 body.standalone main {
-  padding-top: calc(4rem + env(safe-area-inset-top)) !important;
+  padding-top: calc(4rem + var(--safe-area-top)) !important;
 }
 
 /* Scroll containers inside Drawers / Sheets should contain their
