@@ -43,6 +43,7 @@ export const viewport: Viewport = {
   // that blocks pointer-events on position:fixed portals (Radix Select/Popover/DropdownMenu)
   viewportFit: 'cover',
   themeColor: '#3B82F6',
+  interactiveWidget: 'resizes-content',
 };
 
 export default function RootLayout({

@@ -297,7 +297,7 @@ export function CreateTeamDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-4xl w-full flex flex-col p-0 gap-0 max-h-[92dvh] md:max-h-[85vh] md:h-[800px] bg-background/95 dark:bg-black/85 backdrop-blur-xl border-border/50 dark:border-white/10 overflow-hidden shadow-2xl transition-all duration-300">
+      <DialogContent className="sm:max-w-4xl w-full flex flex-col p-0 gap-0 max-h-[85dvh] md:max-h-[85vh] md:h-[800px] bg-background/95 dark:bg-black/85 backdrop-blur-xl border-border/50 dark:border-white/10 overflow-hidden shadow-2xl transition-all duration-300">
 
         {/* Header - Locker Room Style */}
         <div className="relative px-4 sm:px-6 py-3 border-b border-border/10 dark:border-white/5 bg-gradient-to-r from-muted/20 dark:from-background/50 to-transparent z-20 flex items-center justify-between shrink-0">
