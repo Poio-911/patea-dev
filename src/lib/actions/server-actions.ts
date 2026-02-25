@@ -79,10 +79,11 @@ const calculateAttributeChangesFromPoints = (currentAttrs: Player, ovrChange: nu
 
         const effectiveShare = targetShare > 0 ? targetShare * multiplier : targetShare;
         const pointWithDecimal = effectiveShare + accumulatedError;
-        const pointRounded = Math.round(pointWithDecimal);
+        // Use Math.ceil for positive gains to favor the player, Math.floor for losses
+        const pointRounded = effectiveShare > 0 ? Math.ceil(pointWithDecimal) : Math.floor(pointWithDecimal);
         accumulatedError = pointWithDecimal - pointRounded;
 
-        newAttributes[attr] = Math.round(Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, currentVal + pointRounded)));
+        newAttributes[attr] = Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, currentVal + pointRounded));
     });
     return newAttributes;
 };
@@ -102,9 +103,12 @@ const calculateAttributeChanges = (currentAttrs: Player, tags: PerformanceTag[] 
                     else if (currentVal >= 75) multiplier = 0.4;
                     else if (currentVal >= 60) multiplier = 0.7;
 
-                    let newVal = currentVal + (effect.change * multiplier);
-                    newVal = Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, newVal));
-                    newAttributes[key] = newVal;
+                    let rawChange = effect.change * multiplier;
+                    // Enforce integer change (favoring the player)
+                    let integerChange = rawChange > 0 ? Math.ceil(rawChange) : Math.floor(rawChange);
+
+                    let newVal = currentVal + integerChange;
+                    newAttributes[key] = Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, newVal));
                 }
             });
         });
@@ -125,8 +129,12 @@ const calculateAttributeChangesFromAI = (currentAttrs: Player, aiChanges: { attr
                 else if (currentVal >= 75) multiplier = 0.4;
                 else if (currentVal >= 60) multiplier = 0.7;
 
-                const newVal = currentVal + (change.change * multiplier);
-                newAttributes[key] = Math.round(Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, newVal)));
+                let rawChange = change.change * multiplier;
+                // Enforce integer change (favoring the player)
+                let integerChange = rawChange > 0 ? Math.ceil(rawChange) : Math.floor(rawChange);
+
+                const newVal = currentVal + integerChange;
+                newAttributes[key] = Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, newVal));
             }
         });
     }
@@ -506,36 +514,106 @@ export async function detectPlayerPatternsAction(playerId: string, groupId: stri
 
 export async function analyzePlayerProgressionAction(playerId: string, groupId: string) {
     try {
-        const playerDocRef = getAdminDb().doc(`players/${playerId}`);
+        const db = getAdminDb();
+        const playerDocRef = db.doc(`players/${playerId}`);
         const playerDocSnap = await playerDocRef.get();
         if (!playerDocSnap.exists) {
             return { error: 'No se pudo encontrar al jugador.' };
         }
         const player = playerDocSnap.data() as Player;
 
+        // Fallback for name to avoid Zod validation errors in AI flow
+        const playerName = player.name || player.displayName || 'Jugador';
+
         const evaluations = await getPlayerEvaluationsAction(playerId, groupId) as Evaluation[];
 
-        const ovrHistorySnapshot = await getAdminDb().collection(`players/${playerId}/ovrHistory`).orderBy('date', 'desc').limit(10).get();
+        // Group peer evaluations by matchId
+        const evalsByMatch = new Map<string, Evaluation[]>();
+        evaluations.forEach(e => {
+            if (e.matchId) {
+                const existing = evalsByMatch.get(e.matchId) || [];
+                evalsByMatch.set(e.matchId, [...existing, e]);
+            }
+        });
+
+        // Get match IDs to fetch selfEvaluations
+        const matchIds = Array.from(evalsByMatch.keys()).slice(0, 10);
+
+        // Fetch self-evaluations to get goals, assists and chronicles
+        const selfEvalsPromises = matchIds.map(mId =>
+            db.collection(`matches/${mId}/selfEvaluations`)
+                .where('playerId', '==', playerId)
+                .get()
+        );
+        const selfEvalsSnaps = await Promise.all(selfEvalsPromises);
+        const selfEvalsMap = new Map<string, any>();
+        selfEvalsSnaps.forEach((snap, i) => {
+            if (!snap.empty) {
+                selfEvalsMap.set(matchIds[i], snap.docs[0].data());
+            }
+        });
+
+        const ovrHistorySnapshot = await db.collection(`players/${playerId}/ovrHistory`).orderBy('date', 'desc').limit(10).get();
         const ovrHistory = ovrHistorySnapshot.docs.map(doc => doc.data() as OvrHistory).reverse();
 
-        const recentEvaluationsForAI = evaluations.slice(0, 10).map(e => ({
-            matchDate: e.evaluatedAt,
-            rating: e.rating,
-            performanceTags: e.performanceTags?.map(t => t.name) || [],
-        }));
+        // Build consolidated evaluations for AI
+        const recentEvaluationsForAI = matchIds.map(mId => {
+            const peerEvals = evalsByMatch.get(mId) || [];
+            const selfEval = selfEvalsMap.get(mId);
+
+            // Average rating from peers
+            let avgRating: number | undefined = undefined;
+            if (peerEvals.length > 0) {
+                const total = peerEvals.reduce((acc, curr) => acc + (curr.rating || 0), 0);
+                avgRating = total / peerEvals.length;
+                if (isNaN(avgRating)) avgRating = undefined;
+            }
+
+            // Flatten performance tags
+            const tags = new Set<string>();
+            peerEvals.forEach(e => {
+                e.performanceTags?.forEach(t => {
+                    if (typeof t === 'string') tags.add(t);
+                    else if (t && typeof t === 'object' && 'name' in t && typeof t.name === 'string') tags.add(t.name);
+                });
+            });
+
+            // Combine peer text feedback
+            const peerFeedback = peerEvals
+                .map(e => e.textEvaluation)
+                .filter(val => typeof val === 'string' && val.trim().length > 0)
+                .join(' | ');
+
+            return {
+                matchDate: peerEvals[0]?.evaluatedAt || selfEval?.reportedAt || new Date().toISOString(),
+                rating: avgRating,
+                performanceTags: Array.from(tags),
+                goals: typeof selfEval?.goals === 'number' ? selfEval.goals : 0,
+                assists: typeof selfEval?.assists === 'number' ? selfEval.assists : 0,
+                personalChronicle: (typeof selfEval?.personalChronicle === 'string' && selfEval.personalChronicle.trim().length > 0)
+                    ? selfEval.personalChronicle
+                    : undefined,
+                peerFeedbackSummary: peerFeedback.length > 0 ? peerFeedback : undefined,
+            };
+        });
 
         const input: AnalyzePlayerProgressionInput = {
-            playerName: player.name,
-            ovrHistory: ovrHistory.map(h => ({
-                date: h.date,
-                newOVR: h.newOVR,
-                change: h.change
+            playerName,
+            ovrHistory: (ovrHistory || []).map(h => ({
+                date: (h && typeof h.date === 'string') ? h.date : new Date().toISOString(),
+                newOVR: (h && typeof h.newOVR === 'number') ? h.newOVR : 0,
+                change: (h && typeof h.change === 'number') ? h.change : 0
             })),
             recentEvaluations: recentEvaluationsForAI,
         };
 
         const { analyzePlayerProgression } = await import('../../ai/flows/analyze-player-progression');
-        return await analyzePlayerProgression(input);
+        try {
+            return await analyzePlayerProgression(input);
+        } catch (aiError) {
+            logger.error('AI Flow execution failed', aiError, { input });
+            throw aiError;
+        }
     } catch (error: any) {
         logger.error('Error in analyzePlayerProgressionAction', error, { playerId });
         return { error: 'No se pudo generar el análisis de progresión.' };
@@ -3327,6 +3405,23 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
             const matchSelfEvals = selfEvalsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as SelfEvaluation));
             const selfEvalsByPlayerId = new Map(matchSelfEvals.map(ev => [ev.playerId, ev]));
 
+            // Count MVP votes from selfEvals
+            const mvpVoteCount = new Map<string, number>();
+            for (const ev of matchSelfEvals) {
+                if (ev.mvpVote) {
+                    mvpVoteCount.set(ev.mvpVote, (mvpVoteCount.get(ev.mvpVote) || 0) + 1);
+                }
+            }
+
+            let matchMvpId: string | null = null;
+            let maxMatchVotes = 0;
+            for (const [uid, count] of mvpVoteCount.entries()) {
+                if (count > maxMatchVotes) {
+                    maxMatchVotes = count;
+                    matchMvpId = uid;
+                }
+            }
+
             const peerEvalsByPlayer = matchPeerEvals.reduce((acc, ev) => {
                 acc[ev.playerId] = acc[ev.playerId] || [];
                 acc[ev.playerId].push(ev);
@@ -3443,8 +3538,19 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
                         goals: newTotalGoals,
                         assists: newTotalAssists,
                         averageRating: newAvgRating,
+                        mvpVotes: (player.stats.mvpVotes || 0) + (playerId === matchMvpId ? 1 : 0),
                     },
                 });
+
+                // Calculate Certera Attribute Variation
+                const attributeDeltas: Partial<Pick<Player, 'pac' | 'sho' | 'pas' | 'dri' | 'def' | 'phy'>> = {
+                    pac: updatedAttributes.pac - player.pac,
+                    sho: updatedAttributes.sho - player.sho,
+                    pas: updatedAttributes.pas - player.pas,
+                    dri: updatedAttributes.dri - player.dri,
+                    def: updatedAttributes.def - player.def,
+                    phy: updatedAttributes.phy - player.phy,
+                };
 
                 const historyRef = db.collection(`players/${playerId}/ovrHistory`).doc();
                 const historyEntry: Omit<OvrHistory, 'id'> = {
@@ -3453,6 +3559,7 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
                     newOVR: newOvr,
                     change: newOvr - player.ovr,
                     matchId: match.id,
+                    attributeChanges: attributeDeltas,
                 };
                 transaction.set(historyRef, historyEntry);
 

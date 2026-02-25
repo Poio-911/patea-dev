@@ -89,14 +89,15 @@ export default function EvaluateMatchPage() {
 
                     const { evaluatorId, submission: formData } = submissionData;
 
-                    // Create self-evaluation if player contributed (goals or assists)
-                    if (formData.evaluatorGoals > 0 || (formData.evaluatorAssists && formData.evaluatorAssists > 0)) {
+                    // Create self-evaluation if player contributed (goals, assists OR MVP vote)
+                    if (formData.evaluatorGoals > 0 || (formData.evaluatorAssists && formData.evaluatorAssists > 0) || formData.mvpVote) {
                         const selfEvalRef = doc(collection(firestore, `matches/${matchId}/selfEvaluations`));
                         transaction.set(selfEvalRef, {
                             playerId: evaluatorId,
                             matchId,
-                            goals: formData.evaluatorGoals,
+                            goals: formData.evaluatorGoals || 0,
                             assists: formData.evaluatorAssists || 0,
+                            mvpVote: formData.mvpVote || null,
                             reportedAt: submissionData.submittedAt,
                         });
                     }

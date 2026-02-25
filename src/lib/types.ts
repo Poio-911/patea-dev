@@ -668,7 +668,7 @@ export const GenerateMatchChronicleOutputSchema = z.object({
   playerVoices: z.array(z.object({
     playerName: z.string().describe("Nombre del jugador."),
     quote: z.string().describe("Cita destacada del jugador."),
-  })).optional().describe("Citas destacadas de jugadores (1-2 máximo)."),
+  })).optional().describe("Citas destacadas de todos los jugadores que dejaron un testimonio (incluir a todos los disponibles)."),
 });
 export type GenerateMatchChronicleOutput = z.infer<typeof GenerateMatchChronicleOutputSchema>;
 
