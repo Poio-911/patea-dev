@@ -122,13 +122,7 @@ body.standalone main {
    Scoped to .next-match-banner and .hero-match-banner
    ============================================ */
 
-/* 1. Banner overlay: Semitransparent green-yellow */
-.game .game-banner-overlay {
-  background: hsl(75, 100%, 60%, 0.35) !important;
-  mix-blend-mode: normal !important;
-}
-
-/* 2. Banner text: white with shadow for readability on video */
+/* 1. Banner text: white with shadow for readability on video */
 .game .next-match-banner,
 .game .hero-match-banner {
   color: #ffffff;
@@ -143,54 +137,8 @@ body.standalone main {
 
 /* 4. Buttons: Yellow bg, BLACK text, no shadow */
 .game .game-theme-button,
-.game .game-theme-button *,
-.game a.game-theme-button,
-.game a.game-theme-button * {
-  background-color: hsl(75, 100%, 60%) !important;
-  color: #000000 !important;
-  -webkit-text-fill-color: #000000 !important;
-  text-shadow: none !important;
-  box-shadow: none !important;
-  filter: none !important;
-  border: none !important;
-  font-weight: 700 !important;
-}
-
-/* 4b. Button SVG icons: black, no circle */
-.game .game-theme-button svg {
-  color: #000000 !important;
-  stroke: #000000 !important;
-  fill: none !important;
-  background-color: transparent !important;
-  border-radius: 0 !important;
-  padding: 0 !important;
-}
-
-/* 5. Icons with white circle (Calendar, Clock, Navigation, MapPin) */
-.game .next-match-banner svg.icon-with-circle,
-.game .hero-match-banner svg.icon-with-circle {
-  color: #000000 !important;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  padding: 6px;
-  width: 28px !important;
-  height: 28px !important;
-}
-
-/* 6. Badges: Dark bg, white text, no shadow */
-.game .next-match-banner .badge,
-.game .hero-match-banner .badge {
-  background-color: rgba(0, 0, 0, 0.7) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  text-shadow: none !important;
-}
-
-/* 7. General: No text-shadow on buttons/badges anywhere in Game theme */
-.game button,
-.game .badge {
-  text-shadow: none !important;
-}
+/* Game theme overrides for banners and buttons are now handled by adaptive Tailwind classes (v4)
+   Individual component overrides below this line are preserved for other sections */
 
 .game .player-card .text-muted-foreground,
 .game .player-card h3,
@@ -1041,6 +989,15 @@ body.standalone main {
 
   .gradient-neutral {
     @apply bg-gradient-to-r from-muted to-background;
+  }
+
+  /* Football pitch stripe texture overlay — always white stripes since cards are always dark */
+  .pitch-texture {
+    background-image: repeating-linear-gradient(180deg,
+        transparent 0px,
+        transparent 28px,
+        rgba(255, 255, 255, 0.05) 28px,
+        rgba(255, 255, 255, 0.05) 56px);
   }
 
   /* Surface Utilities */

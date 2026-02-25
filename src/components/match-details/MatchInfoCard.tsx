@@ -64,15 +64,8 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
 
   return (
     <Card className={cn(
-      "group relative overflow-hidden border-2 rounded-xl shadow-md glass hover:shadow-lg transition-all duration-300 text-foreground hero-match-banner",
-      // Type-specific top border
-      match.type === 'manual' && "border-t-4 border-t-blue-500",
-      match.type === 'collaborative' && "border-t-4 border-t-violet-500",
-      match.type === 'by_teams' && "border-t-4 border-t-emerald-500",
-      match.type === 'league' && "border-t-4 border-t-amber-500",
-      match.type === 'cup' && "border-t-4 border-t-red-500",
-      match.type === 'league_final' && "border-t-4 border-t-amber-400 shadow-2xl shadow-amber-500/50",
-      match.type === 'intergroup_friendly' && "border-t-4 border-t-teal-500"
+      "group relative overflow-hidden border-2 border-t-4 rounded-xl shadow-md glass hover:shadow-lg transition-all duration-300 text-foreground hero-match-banner",
+      matchTheme.topAccent
     )}>
       {/* Background video - visible en AMBOS temas */}
       <div className="absolute inset-0 -z-10 rounded-lg overflow-hidden">
@@ -88,15 +81,8 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
           <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
         </video>
         <div className={cn(
-          "absolute inset-0 game-banner-overlay",
-          // Type-specific gradient overlay
-          match.type === 'manual' && "bg-gradient-to-br from-primary/40 via-primary/30 to-background/50",
-          match.type === 'collaborative' && "bg-gradient-to-br from-accent/40 via-accent/30 to-background/50",
-          match.type === 'by_teams' && "bg-gradient-to-br from-success/40 via-success/30 to-background/50",
-          match.type === 'league' && "bg-gradient-to-br from-warning/50 via-warning/40 to-background/50",
-          match.type === 'cup' && "bg-gradient-to-br from-destructive/50 via-destructive/40 to-background/50",
-          match.type === 'league_final' && "bg-gradient-to-br from-amber-400/60 via-orange-500/50 to-red-500/40",
-          match.type === 'intergroup_friendly' && "bg-gradient-to-br from-info/40 via-info/30 to-background/50"
+          "absolute inset-0 game-banner-overlay opacity-60",
+          `bg-gradient-to-br from-${matchTheme.brandColor}/40 via-${matchTheme.brandColor}/20 to-background/60`
         )} />
       </div>
 
@@ -117,7 +103,10 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
         {(match.type === 'league' || match.type === 'cup') && match.leagueInfo && (
           <div className="-mx-8 -mt-8 mb-6 p-4 bg-background/30 border-b border-border">
             <div className="flex items-center justify-center gap-2">
-              <span className="text-lg font-bold text-amber-400">
+              <span className={cn(
+                "text-lg font-bold",
+                match.type === 'league' ? 'text-amber-400' : 'text-red-500'
+              )}>
                 {match.type === 'league' ? '🏆 Liga' : '🏆 Copa'}
               </span>
               {match.type === 'league' && (
@@ -168,8 +157,8 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
               )}
             </div>
             <div className="flex justify-start sm:justify-end">
-              <Badge variant="outline" className="capitalize text-sm bg-foreground/10 border-foreground/30 text-white badge">
-                {match.type === 'by_teams' ? 'Por Equipos' : match.type}
+              <Badge variant="outline" className={cn("capitalize text-sm border-none text-white badge", matchTheme.badge)}>
+                {matchTheme.label}
               </Badge>
             </div>
           </div>
@@ -243,6 +232,6 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
           </div>
         )}
       </CardContent>
-    </Card>
+    </Card >
   );
 });
