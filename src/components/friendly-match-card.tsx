@@ -10,6 +10,9 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
 import { MatchWeatherForecast } from './matches/match-weather-forecast';
+import { formatVenueName } from '@/lib/utils';
+import { getMatchTheme } from '@/lib/match-theme';
+import { cn } from '@/lib/utils';
 
 interface FriendlyMatchCardProps {
     match: Match;
@@ -20,6 +23,8 @@ export function FriendlyMatchCard({ match }: FriendlyMatchCardProps) {
     const team2 = match.teams?.[1];
 
     if (!team1 || !team2) return null;
+
+    const matchTheme = getMatchTheme(match.type);
 
     return (
         <Card className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -56,7 +61,7 @@ export function FriendlyMatchCard({ match }: FriendlyMatchCardProps) {
                 <div className="flex items-start gap-2 text-muted-foreground">
                     <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
                     <div>
-                        <p className="font-medium text-foreground">{match.location.name}</p>
+                        <p className="font-medium text-foreground">{formatVenueName(match.location.name, match.location.address)}</p>
                     </div>
                 </div>
                 {match.weather && (

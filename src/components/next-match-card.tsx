@@ -18,6 +18,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { JerseyPreview } from './team-builder/jersey-preview';
 import { MatchWeatherForecast } from './matches/match-weather-forecast';
+import { formatVenueName } from '@/lib/utils';
 
 interface NextMatchCardProps {
     match: Match | null;

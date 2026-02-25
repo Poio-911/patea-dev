@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Calendar, Clock, MapPin, ChevronRight, Trophy, UserCheck, Users, UsersRound, Handshake } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatVenueName } from '@/lib/utils';
 import type { Match, MatchStatus } from '@/lib/types';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { getMatchTheme } from '@/lib/match-theme';
@@ -58,7 +58,7 @@ export function CompactMatchCard({ match, className, distance }: CompactMatchCar
   const dateObj = new Date(match.date);
   const fecha = dateObj.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' });
   const hora = (match.time || '').replace(' hs', '').replace('hs', '').trim();
-  const locationName = match.location.name || match.location.address;
+  const locationName = formatVenueName(match.location.name, match.location.address);
   const statusInfo = statusConfig[match.status];
 
   const isByTeams = match.type === 'by_teams' && match.teams?.length === 2;

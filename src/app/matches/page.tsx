@@ -21,6 +21,12 @@ import { PendingFinalizationDialog } from '@/components/matches/pending-finaliza
 import { AddMatchDialog } from '@/components/add-match-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserPreferencesAction, getUserPreferencesAction } from '@/lib/actions/server-actions';
+import {
+    ResponsivePopover,
+    ResponsivePopoverContent,
+    ResponsivePopoverTrigger,
+} from "@/components/ui/responsive-popover";
+import { UserCheck, Shirt, Globe, HelpCircle, Users } from 'lucide-react';
 
 const listVariants = {
     hidden: { opacity: 0 },
@@ -331,7 +337,72 @@ export default function MatchesPage() {
                 <div className="space-y-6">
                     {/* Page Header */}
                     <PageHeader title="Partidos" description="Organizá y gestioná todos tus partidos">
-                        <AddMatchDialog allPlayers={sortedPlayers} disabled={!user?.activeGroupId} />
+                        <div className="flex items-center gap-2">
+                            <ResponsivePopover>
+                                <ResponsivePopoverTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-9 px-3 gap-2 text-muted-foreground hover:text-foreground">
+                                        <HelpCircle className="h-4 w-4" />
+                                        <span className="hidden xs:inline">Tipos de partido</span>
+                                    </Button>
+                                </ResponsivePopoverTrigger>
+                                <ResponsivePopoverContent className="w-80 p-0" align="end">
+                                    <div className="p-4 border-b bg-muted/50">
+                                        <h3 className="font-bold">Tipos de Amistosos</h3>
+                                        <p className="text-xs text-muted-foreground">Elegí el formato que mejor se adapte</p>
+                                    </div>
+                                    <div className="p-2 space-y-1">
+                                        <div className="p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                                            <div className="flex items-center gap-3 mb-1">
+                                                <div className="p-1.5 bg-blue-500/10 rounded-md">
+                                                    <UserCheck className="h-4 w-4 text-blue-500" />
+                                                </div>
+                                                <span className="font-semibold text-sm">Manual</span>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground leading-relaxed pl-10">
+                                                El organizador invita y asigna directamente a cada jugador. Ideal para listas ya confirmadas.
+                                            </p>
+                                        </div>
+
+                                        <div className="p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                                            <div className="flex items-center gap-3 mb-1">
+                                                <div className="p-1.5 bg-green-500/10 rounded-md">
+                                                    <Users className="h-4 w-4 text-green-500" />
+                                                </div>
+                                                <span className="font-semibold text-sm">Colaborativo</span>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground leading-relaxed pl-10">
+                                                Inscripción abierta al grupo. Podés hacerlo **Público** para que aparezca en el Mercado de Fichajes.
+                                            </p>
+                                        </div>
+
+                                        <div className="p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                                            <div className="flex items-center gap-3 mb-1">
+                                                <div className="p-1.5 bg-orange-500/10 rounded-md">
+                                                    <Shirt className="h-4 w-4 text-orange-500" />
+                                                </div>
+                                                <span className="font-semibold text-sm">Por Equipos</span>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground leading-relaxed pl-10">
+                                                Enfrentá a dos de tus equipos del Locker Room. Las plantillas se cargan automáticamente.
+                                            </p>
+                                        </div>
+
+                                        <div className="p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                                            <div className="flex items-center gap-3 mb-1">
+                                                <div className="p-1.5 bg-purple-500/10 rounded-md">
+                                                    <Globe className="h-4 w-4 text-purple-500" />
+                                                </div>
+                                                <span className="font-semibold text-sm">Intergrupal</span>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground leading-relaxed pl-10">
+                                                Desafiá a otro grupo de la comunidad. Medí el nivel de tu club contra otros barrios.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </ResponsivePopoverContent>
+                            </ResponsivePopover>
+                            <AddMatchDialog allPlayers={sortedPlayers} disabled={!user?.activeGroupId} />
+                        </div>
                     </PageHeader>
 
                     {/* Featured Match - Full width header */}

@@ -8,7 +8,7 @@ import { useFirestore, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { cn, formatVenueName } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -213,7 +213,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
                     <div>
                         <p className="text-xs text-muted-foreground">Lugar</p>
-                        <p className="font-bold text-sm">{match.location.name || match.location.address}</p>
+                        <p className="font-bold text-sm">{formatVenueName(match.location.name, match.location.address)}</p>
                     </div>
                 </div>
 
