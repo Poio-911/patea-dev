@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { mainNavItems, matchesNavItems, extraNavItems } from './nav-config';
+import { useHaptics } from '@/hooks/use-haptics';
 
 export function MobileNav() {
     // Detectar modo standalone (PWA instalado)
@@ -27,6 +28,7 @@ export function MobileNav() {
     const pathname = usePathname() ?? '';
     const [matchesMenuOpen, setMatchesMenuOpen] = React.useState(false);
     const matchesMenuRef = React.useRef<HTMLDivElement | null>(null);
+    const { tap } = useHaptics();
 
     // Close menu on route change
     React.useEffect(() => {
@@ -58,7 +60,7 @@ export function MobileNav() {
                     <div className="relative flex items-center justify-center">
                         <button
                             type="button"
-                            onClick={() => setMatchesMenuOpen(o => !o)}
+                            onClick={() => { tap(); setMatchesMenuOpen(o => !o); }}
                             className={cn(
                                 'group relative inline-flex flex-col items-center justify-center gap-1 px-1 transition-all duration-200',
                                 isMatchesActive ? 'text-primary scale-110' : 'text-muted-foreground hover:text-foreground'
@@ -106,9 +108,11 @@ export function MobileNav() {
 function MobileNavItem({ item, pathname }: { item: any, pathname: string }) {
     const isActive = pathname.startsWith(item.href);
     const Icon = item.icon;
+    const { tap } = useHaptics();
     return (
         <Link
             href={item.href}
+            onClick={tap}
             className={cn(
                 'group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-foreground',
                 isActive && 'text-primary font-bold'

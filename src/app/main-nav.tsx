@@ -8,7 +8,7 @@ import type { Player } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { cn } from '@/lib/utils';
-import { useFcm } from '@/hooks/use-fcm';
+import { useNotifications } from '@/hooks/use-notifications';
 import { WelcomeDialog } from '@/components/welcome-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { isToday, parseISO } from 'date-fns';
@@ -23,7 +23,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { toast } = useToast();
 
-  const { requestPermission } = useFcm();
+  const { requestPermission } = useNotifications();
 
   const playerRef = React.useMemo(() => {
     if (!firestore || !user?.uid) return null;
@@ -88,7 +88,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const isFullscreenLayout = pathname === '/explore';
+  const isFullscreenLayout = pathname === '/explorar';
 
   return (
     <div className="relative min-h-screen w-full">

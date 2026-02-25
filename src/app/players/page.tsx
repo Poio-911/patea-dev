@@ -7,7 +7,8 @@ import { AddPlayerDialog } from '@/components/add-player-dialog';
 import { collection, query, where } from 'firebase/firestore';
 import { useMemo, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Users2, Users, Loader2, Filter } from 'lucide-react';
+import { Users2, Users, Filter } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import type { Player, UserProfile } from '@/lib/types';
@@ -116,9 +117,12 @@ export default function PlayersPage() {
       </div>
 
       {loading && (
-        <div className="flex items-center justify-center p-8">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="ml-4 text-muted-foreground">Cargando jugadores...</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="rounded-2xl overflow-hidden">
+              <Skeleton className="h-64 w-full" />
+            </div>
+          ))}
         </div>
       )}
 

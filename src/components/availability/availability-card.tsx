@@ -13,6 +13,7 @@ import { Loader2, Search, MapPin, RefreshCw, AlertCircle, CheckCircle } from 'lu
 import { useToast } from '@/hooks/use-toast';
 import { saveUserLocationAction, reverseGeocodeAction } from '@/lib/actions/location-actions';
 import { cn } from '@/lib/utils';
+import ngeohash from 'ngeohash';
 
 const daysOfWeek: { id: DayOfWeek; label: string; short: string }[] = [
   { id: 'lunes', label: 'Lunes', short: 'Lun' },
@@ -152,6 +153,7 @@ export function AvailabilityCard({ player, availablePlayerData, savedLocation }:
           position: player.position,
           ovr: player.ovr,
           location: { lat: location.lat, lng: location.lng },
+          geohash: ngeohash.encode(location.lat, location.lng),
           availability,
         };
 
@@ -183,7 +185,8 @@ export function AvailabilityCard({ player, availablePlayerData, savedLocation }:
       // If visible, update the availablePlayers document
       if (isVisible && firestore && user) {
         const availablePlayerRef = doc(firestore, 'availablePlayers', user.uid);
-        await setDoc(availablePlayerRef, { location: { lat: location.lat, lng: location.lng } }, { merge: true });
+        const geohash = ngeohash.encode(location.lat, location.lng);
+        await setDoc(availablePlayerRef, { location: { lat: location.lat, lng: location.lng }, geohash }, { merge: true });
       }
 
       toast({ title: 'Ubicación actualizada' });

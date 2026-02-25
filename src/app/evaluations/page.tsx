@@ -1,16 +1,17 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, collectionGroup, getDocs, onSnapshot, Unsubscribe } from 'firebase/firestore';
-import type { Match, Player, EvaluationAssignment, EvaluationSubmission } from '@/lib/types';
+import { collection, query, where, collectionGroup, getDocs, onSnapshot, Unsubscribe, doc, getDoc } from 'firebase/firestore';
+import type { Match, Player, EvaluationAssignment, EvaluationSubmission, Evaluation } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/page-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ShieldQuestion, Calendar, Edit, Eye, FileClock, Users, MapPin, UsersRound, Check } from 'lucide-react';
+import { ShieldQuestion, Calendar, Edit, Eye, FileClock, Users, MapPin, UsersRound, Check, EyeOff, Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { format, subDays, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Progress } from '@/components/ui/progress';
@@ -21,6 +22,10 @@ import { ViewSubmissionDialog } from '@/components/view-submission-dialog';
 import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
 import { MatchEventCard } from '@/components/ui/gamer/match-event-card';
 import { GamerProgress } from '@/components/ui/gamer/gamer-progress';
+import { respondToIdentityRevealAction } from '@/lib/actions/evaluation-actions';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 
 type PendingItem = {
     match: Match;
@@ -33,12 +38,105 @@ type PendingItem = {
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
 
+type IdentityRevealRequest = {
+  evaluation: Evaluation;
+  fromPlayerName: string;
+  fromPlayerPhotoUrl: string;
+  matchTitle: string;
+};
+
+function IdentityRevealRequestCard({
+  request,
+  onResponded,
+}: {
+  request: IdentityRevealRequest;
+  onResponded: (evaluationId: string) => void;
+}) {
+  const { user } = useUser();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState<'accepted' | 'rejected' | null>(null);
+
+  const handleRespond = async (response: 'accepted' | 'rejected') => {
+    if (!user) return;
+    setLoading(response);
+    try {
+      const result = await respondToIdentityRevealAction(request.evaluation.id, user.uid, response);
+      if (result.success) {
+        toast({
+          title: response === 'accepted' ? '✅ Identidad revelada' : '🔒 Identidad mantenida',
+          description: response === 'accepted'
+            ? `${request.fromPlayerName} ya sabe que fuiste vos.`
+            : 'Tu anonimato fue preservado.',
+        });
+        onResponded(request.evaluation.id);
+      } else {
+        toast({ variant: 'destructive', description: result.error || 'Error al responder.' });
+        setLoading(null);
+      }
+    } catch {
+      toast({ variant: 'destructive', description: 'Error de conexión.' });
+      setLoading(null);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm game:border-primary/30 game:bg-[#0b1e3b]/80 flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <Avatar className="h-12 w-12 ring-2 ring-background shadow-md">
+          {request.fromPlayerPhotoUrl ? (
+            <AvatarImage src={request.fromPlayerPhotoUrl} />
+          ) : (
+            <AvatarFallback className="bg-primary/20 text-primary font-bold">
+              {request.fromPlayerName.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          )}
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-sm truncate">{request.fromPlayerName}</p>
+          <p className="text-xs text-muted-foreground truncate">{request.matchTitle}</p>
+        </div>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        <span className="font-semibold text-foreground">{request.fromPlayerName}</span> quiere saber que fuiste vos quien lo evaluó.
+      </p>
+      <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100 game:border-white/5">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={loading !== null}
+          onClick={() => handleRespond('rejected')}
+          className="text-xs"
+        >
+          {loading === 'rejected' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <EyeOff className="h-3 w-3 mr-1" />}
+          Mantener anonimato
+        </Button>
+        <Button
+          size="sm"
+          disabled={loading !== null}
+          onClick={() => handleRespond('accepted')}
+          className="text-xs"
+        >
+          {loading === 'accepted' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
+          Revelar identidad
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function EvaluationsPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
+    const { toast } = useToast();
 
     const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
     const [isLoadingItems, setIsLoadingItems] = useState(true);
+    const [identityRequests, setIdentityRequests] = useState<IdentityRevealRequest[]>([]);
+    const [isLoadingRequests, setIsLoadingRequests] = useState(true);
+
+    const handleRequestResponded = useCallback((evaluationId: string) => {
+        setIdentityRequests(prev => prev.filter(r => r.evaluation.id !== evaluationId));
+    }, []);
 
     const userAssignmentsQuery = useMemo(() => {
         if (!firestore || !user?.uid) return null;
@@ -61,23 +159,32 @@ export default function EvaluationsPage() {
 
         const processItems = async () => {
             const userPendingAssignments = userAssignments || [];
+
+            // 1. Fetch completed assignments AND evaluation submissions in parallel
+            const [completedAssignmentsSnapshot, submissionsSnapshot] = await Promise.all([
+                getDocs(query(
+                    collectionGroup(firestore, 'assignments'),
+                    where('evaluatorId', '==', user.uid),
+                    where('status', '==', 'completed')
+                )),
+                getDocs(query(
+                    collection(firestore, 'evaluationSubmissions'),
+                    where('evaluatorId', '==', user.uid)
+                ))
+            ]);
+
+            const userCompletedAssignments = completedAssignmentsSnapshot.docs.map(d => d.data() as EvaluationAssignment);
+
+            const submissionsMap = new Map<string, EvaluationSubmission>();
+            submissionsSnapshot.docs.forEach(doc => submissionsMap.set(doc.data().matchId, doc.data() as EvaluationSubmission));
+
             const pendingMatchIds = new Set(userPendingAssignments.map(a => a.matchId));
+            const completedMatchIds = new Set(userCompletedAssignments.map(a => a.matchId));
+            const submissionMatchIds = new Set([...submissionsMap.keys()]);
 
-            const submissionsQuery = query(collection(firestore, 'evaluationSubmissions'), where('evaluatorId', '==', user.uid));
-            const submissionsSnapshot = await getDocs(submissionsQuery);
-            const submissionMatchIds = new Set(submissionsSnapshot.docs.map(doc => doc.data().matchId));
-            const submissionsMap = new Map(submissionsSnapshot.docs.map(doc => [doc.data().matchId, doc.data() as EvaluationSubmission]));
-
-            // NEW: Also find matches where the user was a player to ensure self-evaluation appears
-            const participatedMatchesQuery = query(
-                collection(firestore, 'matches'),
-                where('playerUids', 'array-contains', user.uid),
-                where('status', '==', 'completed')
-            );
-            const participatedSnapshot = await getDocs(participatedMatchesQuery);
-            const participatedMatchIds = new Set(participatedSnapshot.docs.map(doc => doc.id));
-
-            const allRelevantMatchIds = [...new Set([...pendingMatchIds, ...submissionMatchIds, ...participatedMatchIds])];
+            // Fix "Ghost Matches": Only include matches where the user HAS assignments or submissions
+            // We NO LONGER include all participated matches by default to avoid showing 0/0 items
+            const allRelevantMatchIds = [...new Set([...pendingMatchIds, ...completedMatchIds, ...submissionMatchIds])];
 
             if (allRelevantMatchIds.length === 0) {
                 setPendingItems([]);
@@ -85,55 +192,84 @@ export default function EvaluationsPage() {
                 return;
             }
 
-            const matchesQuery = query(collection(firestore, 'matches'), where('__name__', 'in', allRelevantMatchIds));
-            const matchesSnapshot = await getDocs(matchesQuery);
-            const matchesMap = new Map(matchesSnapshot.docs.map(doc => [doc.id, { id: doc.id, ...doc.data() } as Match]));
+            // 2. Fetch the actual matches AND processed submissions in parallel
+            const matchesMap = new Map<string, Match>();
+            const chunks = [];
+            for (let i = 0; i < allRelevantMatchIds.length; i += 30) {
+                chunks.push(allRelevantMatchIds.slice(i, i + 30));
+            }
+
+            const matchPromises = chunks.map(chunk =>
+                getDocs(query(collection(firestore, 'matches'), where('__name__', 'in', chunk)))
+            );
+
+            // Reverted back to individual queries because collectionGroup required a missing index.
+            // Since we removed participatedMatchIds, this array is very small now, making this fast.
+            const processedPromises = allRelevantMatchIds.map(matchId =>
+                getDocs(query(collection(firestore, `matches/${matchId}/processedSubmissions`), where('evaluatorId', '==', user.uid)))
+            );
+
+            const [matchSnapshots, processedSnapshots] = await Promise.all([
+                Promise.all(matchPromises),
+                Promise.all(processedPromises)
+            ]);
+
+            matchSnapshots.forEach(snap => {
+                snap.docs.forEach(doc => matchesMap.set(doc.id, { id: doc.id, ...doc.data() } as Match));
+            });
+
+            processedSnapshots.forEach(snap => {
+                snap.docs.forEach(doc => {
+                    const data = doc.data() as EvaluationSubmission;
+                    submissionsMap.set(data.matchId, data);
+                });
+            });
 
             const initialItems: (PendingItem | null)[] = allRelevantMatchIds.map(matchId => {
                 const match = matchesMap.get(matchId);
-                if (!match || match.status === 'evaluated') return null;
-
-                const userAssignmentCount = userPendingAssignments.filter(a => a.matchId === matchId).length;
                 const isSubmitted = submissionsMap.has(matchId);
 
-                // If no assignments and not submitted, check if it's too old (e.g., > 7 days)
-                // This prevents old matches where the user never self-evaluated from showing up forever
+                if (!match || (match.status === 'evaluated' && !isSubmitted)) return null;
+
+                const userAssignmentCount = userPendingAssignments.filter(a => a.matchId === matchId).length;
+
+                // If no assignments and not submitted, avoid showing unless it's recent and we are expecting something
                 if (userAssignmentCount === 0 && !isSubmitted) {
-                    const matchDate = new Date(match.date);
-                    const sevenDaysAgo = subDays(new Date(), 7);
-                    if (isBefore(matchDate, sevenDaysAgo)) {
-                        return null;
-                    }
+                    // Check if there are any assignments at all for this match for THIS user in completed state
+                    const hasCompleted = userCompletedAssignments.some(a => a.matchId === matchId);
+                    if (!hasCompleted) return null;
                 }
 
-                const item: PendingItem = {
+                return {
                     match,
                     submission: submissionsMap.get(matchId),
                     userAssignmentCount,
                     totalAssignments: 0,
                     completedAssignments: 0,
                 };
-                return item;
             });
 
             const validItems = initialItems.filter((item): item is PendingItem => item !== null);
             setPendingItems(validItems.sort((a, b) => new Date(b.match.date).getTime() - new Date(a.match.date).getTime()));
             setIsLoadingItems(false);
 
-            const unsubscribers: Unsubscribe[] = validItems.map(item => {
-                const assignmentsCollectionRef = collection(firestore, 'matches', item.match.id, 'assignments');
-                return onSnapshot(assignmentsCollectionRef, (snapshot) => {
-                    const total = snapshot.size;
-                    const completed = snapshot.docs.filter(d => d.data().status === 'completed').length;
-                    setPendingItems(currentItems =>
-                        currentItems.map(currentItem =>
-                            currentItem.match.id === item.match.id
-                                ? { ...currentItem, totalAssignments: total, completedAssignments: completed }
-                                : currentItem
-                        )
-                    );
+            // 3. Optimize listeners: Only listen to assignments if match is not yet fully evaluated/submitted
+            const unsubscribers: Unsubscribe[] = validItems
+                .filter(item => !item.submission)
+                .map(item => {
+                    const assignmentsCollectionRef = collection(firestore, 'matches', item.match.id, 'assignments');
+                    return onSnapshot(assignmentsCollectionRef, (snapshot) => {
+                        const total = snapshot.size;
+                        const completed = snapshot.docs.filter(d => d.data().status === 'completed').length;
+                        setPendingItems(currentItems =>
+                            currentItems.map(currentItem =>
+                                currentItem.match.id === item.match.id
+                                    ? { ...currentItem, totalAssignments: total, completedAssignments: completed }
+                                    : currentItem
+                            )
+                        );
+                    });
                 });
-            });
 
             return () => unsubscribers.forEach(unsub => unsub());
         };
@@ -150,6 +286,52 @@ export default function EvaluationsPage() {
         };
 
     }, [userAssignments, firestore, user, assignmentsLoading, userLoading]);
+
+    // Load pending identity reveal requests (evaluations where this user is the evaluator)
+    useEffect(() => {
+        if (!user || !firestore) {
+            setIsLoadingRequests(false);
+            return;
+        }
+
+        setIsLoadingRequests(true);
+
+        const fetchRequests = async () => {
+            try {
+                const snap = await getDocs(query(
+                    collection(firestore, 'evaluations'),
+                    where('evaluatorId', '==', user.uid),
+                    where('identityRequestStatus', '==', 'pending')
+                ));
+
+                const evaluations = snap.docs.map(d => ({ id: d.id, ...d.data() } as Evaluation));
+
+                // Enrich with player and match info
+                const enriched = await Promise.all(evaluations.map(async (ev) => {
+                    const [playerSnap, matchSnap] = await Promise.all([
+                        getDoc(doc(firestore, 'players', ev.playerId)),
+                        getDoc(doc(firestore, 'matches', ev.matchId)),
+                    ]);
+                    const playerData = playerSnap.data() as any;
+                    const matchData = matchSnap.data() as any;
+                    return {
+                        evaluation: ev,
+                        fromPlayerName: playerData?.name || 'Jugador',
+                        fromPlayerPhotoUrl: playerData?.photoUrl || playerData?.photoURL || '',
+                        matchTitle: matchData?.title || 'Partido',
+                    } as IdentityRevealRequest;
+                }));
+
+                setIdentityRequests(enriched);
+            } catch (err) {
+                console.error('Error fetching identity requests:', err);
+            } finally {
+                setIsLoadingRequests(false);
+            }
+        };
+
+        fetchRequests();
+    }, [user, firestore]);
 
     const renderCard = (item: PendingItem) => {
         const isEvaluationSent = !!item.submission;
@@ -249,7 +431,26 @@ export default function EvaluationsPage() {
     const loading = userLoading || isLoadingItems;
 
     if (loading) {
-        return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+        return (
+            <div className="flex flex-col gap-8">
+                <PageHeader title="Mis Evaluaciones" description="Aquí encontrarás los partidos que tienes pendientes por evaluar." />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[...Array(3)].map((_, i) => (
+                        <div key={i} className="rounded-xl border border-slate-200 p-5 space-y-4">
+                            <div className="flex items-center gap-3">
+                                <Skeleton className="h-12 w-10 rounded-lg" />
+                                <div className="space-y-1 flex-1">
+                                    <Skeleton className="h-3 w-12" />
+                                    <Skeleton className="h-4 w-40" />
+                                </div>
+                            </div>
+                            <Skeleton className="h-2 w-full rounded-full" />
+                            <Skeleton className="h-9 w-full rounded-md" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
     }
 
     if (!user) {
@@ -280,9 +481,17 @@ export default function EvaluationsPage() {
             </AttributesHelpDialog>
 
             <Tabs defaultValue="pending" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 max-w-md">
+                <TabsList className="grid w-full grid-cols-3 max-w-md">
                     <TabsTrigger value="pending">Pendientes</TabsTrigger>
                     <TabsTrigger value="history">Historial</TabsTrigger>
+                    <TabsTrigger value="requests" className="relative">
+                        Solicitudes
+                        {identityRequests.length > 0 && (
+                            <Badge className="ml-1.5 h-4 min-w-[1rem] px-1 text-[10px] bg-primary text-primary-foreground">
+                                {identityRequests.length}
+                            </Badge>
+                        )}
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="pending" className="mt-6">
@@ -306,8 +515,8 @@ export default function EvaluationsPage() {
                 <TabsContent value="history" className="mt-6">
                     {pendingItems.filter(item => {
                         if (!item.submission) return false;
-                        // Mantener en historial solo por 2 días
-                        const archiveThreshold = subDays(new Date(), 2);
+                        // Mantener en historial por 14 días
+                        const archiveThreshold = subDays(new Date(), 14);
                         return !isBefore(new Date(item.submission.submittedAt), archiveThreshold);
                     }).length === 0 ? (
                         <Alert>
@@ -322,10 +531,51 @@ export default function EvaluationsPage() {
                             {pendingItems
                                 .filter(item => {
                                     if (!item.submission) return false;
-                                    const archiveThreshold = subDays(new Date(), 2);
+                                    const archiveThreshold = subDays(new Date(), 14);
                                     return !isBefore(new Date(item.submission.submittedAt), archiveThreshold);
                                 })
                                 .map((item) => renderCard(item))}
+                        </div>
+                    )}
+                </TabsContent>
+
+                <TabsContent value="requests" className="mt-6">
+                    {isLoadingRequests ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {[...Array(2)].map((_, i) => (
+                                <div key={i} className="rounded-xl border border-slate-200 p-5 space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <Skeleton className="h-12 w-12 rounded-full" />
+                                        <div className="space-y-1 flex-1">
+                                            <Skeleton className="h-3 w-24" />
+                                            <Skeleton className="h-3 w-32" />
+                                        </div>
+                                    </div>
+                                    <Skeleton className="h-4 w-full" />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Skeleton className="h-9 rounded-md" />
+                                        <Skeleton className="h-9 rounded-md" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : identityRequests.length === 0 ? (
+                        <Alert>
+                            <ShieldQuestion className="h-4 w-4" />
+                            <AlertTitle>Sin solicitudes</AlertTitle>
+                            <AlertDescription>
+                                Cuando alguien quiera saber que fuiste vos quien lo evaluó, aparecerá aquí.
+                            </AlertDescription>
+                        </Alert>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {identityRequests.map(request => (
+                                <IdentityRevealRequestCard
+                                    key={request.evaluation.id}
+                                    request={request}
+                                    onResponded={handleRequestResponded}
+                                />
+                            ))}
                         </div>
                     )}
                 </TabsContent>

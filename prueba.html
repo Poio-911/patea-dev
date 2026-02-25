@@ -1,0 +1,202 @@
+!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Propuestas de Rediseño de Equipos - Pateá</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; padding: 2rem; }
+        h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; }
+        .proposal-container { margin-bottom: 4rem; padding: 2rem; background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+        .ovr-badge { background: #f1f5f9; border-radius: 0.5rem; padding: 2px 8px; font-weight: 700; font-size: 0.75rem; }
+        .avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: #e2e8f0; border: 2px solid white; }
+    </style>
+</head>
+<body>
+    <header class="text-center mb-12">
+        <h1 class="text-4xl font-bold mb-2">Propuestas de Rediseño: Equipos</h1>
+        <p class="text-slate-500">Eliminando contenedores anidados y simplificando la jerarquía visual.</p>
+    </header>
+    <!-- PROPUESTA 1: SEAMLESS FIELD -->
+    <section class="proposal-container">
+        <h2 class="text-2xl font-bold mb-6 text-blue-600">Opción 1: "Seamless Flow" (Sin Cajas)</h2>
+        <p class="mb-8 text-slate-600 italic">Se eliminan los bordes y las tarjetas individuales. La identidad del equipo se da por una barra de color lateral sutil y el icono de la camiseta.</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <!-- Team A -->
+            <div class="border-l-4 border-blue-600 pl-6">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-12 h-12 bg-blue-100 flex items-center justify-center rounded-xl">👕</div>
+                    <div>
+                        <h3 class="text-xl font-bold">Sin Chaleco</h3>
+                        <span class="text-sm text-slate-400 font-bold uppercase tracking-wider">OVR 63.4</span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- Player Item -->
+                    <div class="flex items-center gap-3">
+                        <div class="avatar"></div>
+                        <div>
+                            <p class="font-bold text-sm">Aurelio</p>
+                            <div class="flex gap-2">
+                                <span class="ovr-badge">68</span>
+                                <span class="text-[10px] text-red-500 font-bold uppercase">DEL</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="avatar"></div>
+                        <div>
+                            <p class="font-bold text-sm">Liroy</p>
+                            <div class="flex gap-2">
+                                <span class="ovr-badge">66</span>
+                                <span class="text-[10px] text-purple-500 font-bold uppercase">MED</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="avatar"></div>
+                        <div>
+                            <p class="font-bold text-sm">Fiorenzo</p>
+                            <div class="flex gap-2">
+                                <span class="ovr-badge">65</span>
+                                <span class="text-[10px] text-orange-400 font-bold uppercase">POR</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Team B -->
+            <div class="border-l-4 border-orange-500 pl-6">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-12 h-12 bg-orange-100 flex items-center justify-center rounded-xl">👕</div>
+                    <div>
+                        <h3 class="text-xl font-bold">Con Chaleco</h3>
+                        <span class="text-sm text-slate-400 font-bold uppercase tracking-wider">OVR 60.8</span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="flex items-center gap-3">
+                        <div class="avatar"></div>
+                        <div>
+                            <p class="font-bold text-sm">Santiago</p>
+                            <div class="flex gap-2">
+                                <span class="ovr-badge">65</span>
+                                <span class="text-[10px] text-purple-500 font-bold uppercase">MED</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="avatar"></div>
+                        <div>
+                            <p class="font-bold text-sm">Alvaro M.</p>
+                            <div class="flex gap-2">
+                                <span class="ovr-badge">65</span>
+                                <span class="text-[10px] text-red-500 font-bold uppercase">DEL</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- PROPUESTA 2: MAGAZINE LIST -->
+    <section class="proposal-container">
+        <h2 class="text-2xl font-bold mb-6 text-purple-600">Opción 2: "Editorial Mosaic" (Estilo Mosaico)</h2>
+        <p class="mb-8 text-slate-600 italic">Un diseño más audaz basado en tipografía y espacios. Los jugadores se presentan en una lista limpia agrupada por posición.</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Team A -->
+            <div class="space-y-4">
+                <h3 class="text-3xl font-black uppercase text-blue-900 opacity-20">SIN CHALECO</h3>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between p-2 hover:bg-blue-50 transition-colors rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-blue-600 w-6">68</span>
+                            <span class="avatar w-8 h-8"></span>
+                            <span class="font-bold">Aurelio</span>
+                        </div>
+                        <span class="text-xs font-mono text-slate-400">DEL</span>
+                    </div>
+                    <div class="flex items-center justify-between p-2 hover:bg-blue-50 transition-colors rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-blue-600 w-6">66</span>
+                            <span class="avatar w-8 h-8"></span>
+                            <span class="font-bold">Liroy</span>
+                        </div>
+                        <span class="text-xs font-mono text-slate-400">MED</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Team B -->
+            <div class="space-y-4">
+                <h3 class="text-3xl font-black uppercase text-orange-900 opacity-20">CON CHALECO</h3>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between p-2 hover:bg-orange-50 transition-colors rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-orange-600 w-6">65</span>
+                            <span class="avatar w-8 h-8"></span>
+                            <span class="font-bold">Santiago</span>
+                        </div>
+                        <span class="text-xs font-mono text-slate-400">MED</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- PROPUESTA 3: FOCUS CARDS -->
+    <section class="proposal-container">
+        <h2 class="text-2xl font-bold mb-6 text-emerald-600">Opción 3: "Unified Cards" (Tarjeta Única)</h2>
+        <p class="mb-8 text-slate-600 italic">Mantenemos el concepto de tarjetas pero eliminamos el contenedor exterior del equipo. Los jugadores flotan sobre el fondo con indicadores de color sutiles.</p>
+        <div class="space-y-8">
+            <div class="flex items-center justify-between">
+                <span class="h-px flex-grow bg-blue-200"></span>
+                <span class="mx-4 font-bold text-slate-400 flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-blue-600"></span> SIN CHALECO (OVR 63.4)
+                </span>
+                <span class="h-px flex-grow bg-blue-200"></span>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <!-- Player Card -->
+                <div class="bg-white border rounded-2xl p-4 flex flex-col items-center gap-2 hover:shadow-xl transition-shadow border-b-4 border-b-blue-600">
+                    <div class="avatar w-16 h-16"></div>
+                    <p class="font-bold text-sm">Aurelio</p>
+                    <div class="flex gap-2">
+                        <span class="font-black text-blue-600">68</span>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold self-center">DEL</span>
+                    </div>
+                </div>
+                <div class="bg-white border rounded-2xl p-4 flex flex-col items-center gap-2 hover:shadow-xl transition-shadow border-b-4 border-b-blue-600">
+                    <div class="avatar w-16 h-16"></div>
+                    <p class="font-bold text-sm">Liroy</p>
+                    <div class="flex gap-2">
+                        <span class="font-black text-blue-600">66</span>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold self-center">MED</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center justify-between mt-12">
+                <span class="h-px flex-grow bg-orange-200"></span>
+                <span class="mx-4 font-bold text-slate-400 flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-orange-500"></span> CON CHALECO (OVR 60.8)
+                </span>
+                <span class="h-px flex-grow bg-orange-200"></span>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <div class="bg-white border rounded-2xl p-4 flex flex-col items-center gap-2 hover:shadow-xl transition-shadow border-b-4 border-b-orange-500">
+                    <div class="avatar w-16 h-16"></div>
+                    <p class="font-bold text-sm">Santiago</p>
+                    <div class="flex gap-2">
+                        <span class="font-black text-orange-500">65</span>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold self-center">MED</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>

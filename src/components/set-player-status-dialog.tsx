@@ -19,7 +19,7 @@ import type { GroupTeam, GroupTeamMember, PlayerStatus, DetailedTeamPlayer } fro
 
 const playerStatusSchema = z.object({
   number: z.coerce.number().min(1, "El dorsal debe ser mayor a 0").max(99, "El dorsal no puede ser mayor a 99"),
-  status: z.enum(['titular', 'suplente'], { required_error: 'Debes seleccionar un estado.'}),
+  status: z.enum(['titular', 'suplente'], { required_error: 'Debes seleccionar un estado.' }),
 });
 
 type PlayerStatusFormData = z.infer<typeof playerStatusSchema>;
@@ -111,7 +111,7 @@ export function SetPlayerStatusDialog({ player, team, onPlayerUpdate, children }
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="dorsal">Dorsal</Label>
-            <Input id="dorsal" type="number" min={1} max={99} {...form.register('number', { valueAsNumber: true })} />
+            <Input id="dorsal" type="number" inputMode="numeric" pattern="[0-9]*" min={1} max={99} {...form.register('number', { valueAsNumber: true })} />
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span>Próximo disponible:</span>
               <Button
@@ -131,26 +131,26 @@ export function SetPlayerStatusDialog({ player, team, onPlayerUpdate, children }
           <div className="space-y-2">
             <Label>Estado</Label>
             <Controller
-                name="status"
-                control={form.control}
-                render={({ field }) => (
-                    <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-2 gap-4">
-                        <div>
-                            <RadioGroupItem value="titular" id="titular" className="sr-only" />
-                            <Label htmlFor="titular" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
-                                Titular
-                            </Label>
-                        </div>
-                        <div>
-                            <RadioGroupItem value="suplente" id="suplente" className="sr-only" />
-                            <Label htmlFor="suplente" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
-                                Suplente
-                            </Label>
-                        </div>
-                    </RadioGroup>
-                )}
+              name="status"
+              control={form.control}
+              render={({ field }) => (
+                <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-2 gap-4">
+                  <div>
+                    <RadioGroupItem value="titular" id="titular" className="sr-only" />
+                    <Label htmlFor="titular" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
+                      Titular
+                    </Label>
+                  </div>
+                  <div>
+                    <RadioGroupItem value="suplente" id="suplente" className="sr-only" />
+                    <Label htmlFor="suplente" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
+                      Suplente
+                    </Label>
+                  </div>
+                </RadioGroup>
+              )}
             />
-             {form.formState.errors.status && (
+            {form.formState.errors.status && (
               <p className="text-xs text-destructive">{form.formState.errors.status.message}</p>
             )}
           </div>

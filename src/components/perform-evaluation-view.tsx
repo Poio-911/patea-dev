@@ -13,7 +13,8 @@ import {
   addDoc,
   getDocs,
 } from 'firebase/firestore'
-import { Loader2, Save, ShieldCheck, Goal, Plus, Minus, FileClock } from 'lucide-react'
+import { Loader2, Save, ShieldCheck, Goal, Plus, Minus, FileClock, ChevronLeft, ChevronRight, Zap } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 import { useFirestore, useUser, useCollection } from '@/firebase'
 import { PageHeader } from '@/components/page-header'
@@ -90,38 +91,59 @@ const TagCheckbox = ({
 }) => {
   const positiveEffects = tag.effects.filter((e) => e.change > 0)
   const negativeEffects = tag.effects.filter((e) => e.change < 0)
-  const uniqueId = `tag-${tag.id}-${subjectId}`;
+  const isPositiveImpact = tag.impact === 'positive';
 
   return (
-    <div
+    <motion.button
+      type="button"
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={() => onCheckedChange(!isChecked)}
       className={cn(
-        'flex items-start gap-3 rounded-lg border p-3 transition-colors',
-        isChecked ? 'bg-primary/10 border-primary' : 'hover:bg-accent/50',
-        // Game Mode Specifics
-        "game:border-white/10",
-        isChecked ? "game:bg-primary/20 game:border-primary game:shadow-[0_0_10px_rgba(170,254,72,0.3)]" : "game:hover:bg-primary/5 game:hover:border-primary/30"
+        'relative flex flex-col gap-2 rounded-xl border-2 p-4 text-left transition-all duration-300 overflow-hidden',
+        isChecked
+          ? isPositiveImpact
+            ? 'bg-emerald-500/10 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+            : 'bg-rose-500/10 border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.2)]'
+          : 'bg-card border-border hover:border-border/80 hover:bg-accent/50',
+        "game:bg-[#0b1e3b]/50 game:border-white/10"
       )}
     >
-      <Checkbox checked={isChecked} onCheckedChange={onCheckedChange} id={uniqueId} className="mt-1" />
-      <label htmlFor={uniqueId} className="w-full cursor-pointer space-y-2">
+      {/* Background Glow when checked */}
+      {isChecked && (
+        <div className={cn(
+          "absolute inset-0 opacity-20 blur-xl pointer-events-none",
+          isPositiveImpact ? "bg-emerald-400" : "bg-rose-400"
+        )} />
+      )}
+
+      <div className="flex items-start justify-between w-full relative z-10">
         <div>
-          <p className="font-semibold game:text-white">{tag.name}</p>
-          <p className="text-xs text-muted-foreground game:text-slate-400">{tag.description}</p>
+          <p className={cn("font-bold text-base", isChecked ? (isPositiveImpact ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400") : "text-foreground game:text-white")}>
+            {tag.name}
+          </p>
+          <p className="text-xs text-muted-foreground game:text-slate-400 mt-0.5">{tag.description}</p>
         </div>
-        <div className="flex flex-wrap gap-x-3 gap-y-1">
-          {positiveEffects.map((effect) => (
-            <div key={effect.attribute} className="flex items-center gap-1 text-xs font-medium text-green-600 game:text-green-400">
-              <Plus size={12} /> {effect.attribute.toUpperCase()}: +{effect.change}
-            </div>
-          ))}
-          {negativeEffects.map((effect) => (
-            <div key={effect.attribute} className="flex items-center gap-1 text-xs font-medium text-red-600 game:text-red-400">
-              <Minus size={12} /> {effect.attribute.toUpperCase()}: {effect.change}
-            </div>
-          ))}
-        </div>
-      </label>
-    </div>
+        {isChecked && (
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className={cn("p-1 rounded-full", isPositiveImpact ? "bg-emerald-500/20 text-emerald-500" : "bg-rose-500/20 text-rose-500")}>
+            <Zap size={14} className="fill-current" />
+          </motion.div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 relative z-10 w-full pt-2 border-t border-border/50">
+        {positiveEffects.map((effect) => (
+          <div key={effect.attribute} className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-1.5 py-0.5 rounded">
+            + {effect.change} {effect.attribute}
+          </div>
+        ))}
+        {negativeEffects.map((effect) => (
+          <div key={effect.attribute} className="flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest bg-rose-500/10 px-1.5 py-0.5 rounded">
+            {effect.change} {effect.attribute}
+          </div>
+        ))}
+      </div>
+    </motion.button>
   )
 }
 
@@ -315,15 +337,33 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
                 control={form.control}
                 name="evaluatorGoals"
                 render={({ field }) => (
-                  <FormItem className="max-w-xs">
-                    <FormLabel className="game:text-white">¿Cuántos goles marcaste en este partido?</FormLabel>
-                    <div className="flex items-center gap-2">
-                      <Goal className="h-5 w-5 text-muted-foreground game:text-primary" />
-                      <FormControl>
-                        <Input type="number" min="0" {...field} className="game:bg-[#051329] game:border-white/10 game:text-white" />
-                      </FormControl>
+                  <FormItem className="flex flex-col items-center justify-center p-6 bg-card/50 rounded-2xl border border-border/50">
+                    <FormLabel className="text-lg font-bold game:text-white mb-4">¿Cuántos goles marcaste?</FormLabel>
+                    <div className="flex items-center gap-6">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-14 w-14 rounded-full border-2 border-primary/20 hover:border-primary hover:bg-primary/10 text-primary transition-all active:scale-95"
+                        onClick={() => field.onChange(Math.max(0, (field.value || 0) - 1))}
+                      >
+                        <Minus className="h-6 w-6" />
+                      </Button>
+                      <div className="flex items-center justify-center w-24 h-24 rounded-3xl bg-background border-2 border-primary shadow-[0_0_30px_rgba(var(--primary),0.15)] relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent"></div>
+                        <span className="text-5xl font-black text-foreground relative z-10">{field.value}</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-14 w-14 rounded-full border-2 border-primary/20 hover:border-primary hover:bg-primary/10 text-primary transition-all active:scale-95"
+                        onClick={() => field.onChange(Math.min(20, (field.value || 0) + 1))}
+                      >
+                        <Plus className="h-6 w-6" />
+                      </Button>
                     </div>
-                    <FormMessage />
+                    <FormMessage className="mt-4" />
                   </FormItem>
                 )}
               />
@@ -361,26 +401,49 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
                           <FormField
                             control={form.control}
                             name={`evaluations.${index}.rating`}
-                            render={({ field: ratingField }) => (
-                              <FormItem>
-                                <FormLabel className="game:text-white">Rating: {ratingField.value || 5}</FormLabel>
-                                <FormControl>
-                                  <div className="flex items-center gap-2 pt-2">
-                                    <span className="text-xs text-muted-foreground game:text-slate-400">1</span>
-                                    <Slider
-                                      min={1}
-                                      max={10}
-                                      step={1}
-                                      value={[ratingField.value || 5]}
-                                      onValueChange={(value) => ratingField.onChange(value[0])}
-                                      className="game:text-primary"
-                                    />
-                                    <span className="text-xs text-muted-foreground game:text-slate-400">10</span>
+                            render={({ field: ratingField }) => {
+                              const val = ratingField.value || 5;
+                              const isBad = val < 5;
+                              const isGood = val >= 7;
+                              const colorClass = isBad ? "text-rose-500" : isGood ? "text-emerald-500" : "text-amber-500";
+                              const bgClass = isBad ? "bg-rose-500" : isGood ? "bg-emerald-500" : "bg-amber-500";
+
+                              return (
+                                <FormItem className="space-y-6 flex flex-col items-center pb-4 pt-2">
+                                  <div className="text-center">
+                                    <p className="text-sm rounded-full bg-background border px-4 py-1.5 font-bold uppercase tracking-widest text-muted-foreground mb-4">Rating de Partido</p>
+                                    <motion.div
+                                      key={val}
+                                      initial={{ scale: 0.8, y: -10 }}
+                                      animate={{ scale: 1, y: 0 }}
+                                      className={cn("text-7xl font-black drop-shadow-sm transition-colors duration-300", colorClass)}
+                                    >
+                                      {val}
+                                    </motion.div>
                                   </div>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
+                                  <FormControl className="w-full max-w-sm px-4">
+                                    <div className="flex items-center gap-4 w-full">
+                                      <span className="text-sm font-bold text-muted-foreground bg-muted h-8 w-8 flex items-center justify-center rounded-full">1</span>
+                                      <div className="flex-1 relative">
+                                        {/* Custom slider track color based on value */}
+                                        <Slider
+                                          min={1}
+                                          max={10}
+                                          step={1}
+                                          value={[val]}
+                                          onValueChange={(value) => ratingField.onChange(value[0])}
+                                          className={cn("w-full cursor-pointer [&_[role=slider]]:h-6 [&_[role=slider]]:w-6 [&_[role=slider]]:border-4 [&_[role=slider]]:shadow-lg transition-colors",
+                                            isBad ? "[&_[role=slider]]:border-rose-500" : isGood ? "[&_[role=slider]]:border-emerald-500" : "[&_[role=slider]]:border-amber-500"
+                                          )}
+                                        />
+                                      </div>
+                                      <span className="text-sm font-bold text-muted-foreground bg-muted h-8 w-8 flex items-center justify-center rounded-full">10</span>
+                                    </div>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )
+                            }}
                           />
                         </TabsContent>
 

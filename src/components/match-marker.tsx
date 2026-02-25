@@ -100,6 +100,7 @@ export function MatchMarker({ match: initialMatch, activeMarker, handleMarkerCli
                     link: `/matches`,
                     isRead: false,
                     createdAt: new Date().toISOString(),
+                    metadata: { fromUserId: user.uid },
                 };
                 batch.set(notificationRef, notification);
             }

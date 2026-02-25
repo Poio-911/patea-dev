@@ -1,7 +1,6 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
-import { getMessaging, Messaging } from 'firebase/messaging';
+import { getFirestore, Firestore, enableMultiTabIndexedDbPersistence } from 'firebase/firestore';
 import { firebaseConfig } from './config';
 import { FirebaseProvider, useFirebase, useFirebaseApp, useAuth, useFirestore } from './provider';
 import { FirebaseClientProvider } from './client-provider';
@@ -14,18 +13,19 @@ export function initializeFirebase() {
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const firestore = getFirestore(app);
-  let messaging: Messaging | null = null;
 
-  // ✅ FIX: Only initialize messaging on the client-side where 'window' is available.
-  if (typeof window !== 'undefined') {
-    try {
-      messaging = getMessaging(app);
-    } catch (error) {
-      console.warn("Firebase Messaging is not supported in this browser:", error);
-    }
+  // Enable offline persistence for Firestore (client-side only, once per app instance)
+  if (typeof window !== 'undefined' && !getApps().length) {
+    enableMultiTabIndexedDbPersistence(firestore).catch((err) => {
+      if (err.code === 'failed-precondition') {
+        // Multiple tabs open — only one tab can have persistence at a time
+        console.warn('[Firestore] Offline persistence unavailable: multiple tabs open.');
+      } else if (err.code === 'unimplemented') {
+        console.warn('[Firestore] Offline persistence not supported in this browser.');
+      }
+    });
   }
-
-  return { firebaseApp: app, auth, firestore, messaging };
+  return { firebaseApp: app, auth, firestore };
 }
 
 // Initialize and export instances for direct use

@@ -7,16 +7,16 @@ interface TeamTacticalAnalysisProps {
 }
 
 export function TeamTacticalAnalysis({ selectedPlayers }: TeamTacticalAnalysisProps) {
-    const hasGK = selectedPlayers.some(p => p.position === 'POR');
-    const hasDEF = selectedPlayers.some(p => p.position === 'DEF');
-    const hasMED = selectedPlayers.some(p => p.position === 'MED');
-    const hasFWD = selectedPlayers.some(p => p.position === 'DEL');
+    const countGK = selectedPlayers.filter(p => p.position === 'POR').length;
+    const countDEF = selectedPlayers.filter(p => p.position === 'DEF').length;
+    const countMED = selectedPlayers.filter(p => p.position === 'MED').length;
+    const countFWD = selectedPlayers.filter(p => p.position === 'DEL').length;
 
     const positions = [
-        { id: 'POR', label: 'Portería', icon: Shield, covered: hasGK, color: 'text-yellow-400', bg: 'bg-yellow-400/20', border: 'border-yellow-400/50' },
-        { id: 'DEF', label: 'Defensa', icon: Anchor, covered: hasDEF, color: 'text-blue-400', bg: 'bg-blue-400/20', border: 'border-blue-400/50' },
-        { id: 'MED', label: 'Medio', icon: Target, covered: hasMED, color: 'text-green-400', bg: 'bg-green-400/20', border: 'border-green-400/50' },
-        { id: 'DEL', label: 'Ataque', icon: Footprints, covered: hasFWD, color: 'text-red-400', bg: 'bg-red-400/20', border: 'border-red-400/50' },
+        { id: 'POR', label: 'Portería', icon: Shield, covered: countGK > 0, count: countGK, color: 'text-yellow-400', bg: 'bg-yellow-400/20', border: 'border-yellow-400/50' },
+        { id: 'DEF', label: 'Defensa', icon: Anchor, covered: countDEF > 0, count: countDEF, color: 'text-blue-400', bg: 'bg-blue-400/20', border: 'border-blue-400/50' },
+        { id: 'MED', label: 'Medio', icon: Target, covered: countMED > 0, count: countMED, color: 'text-green-400', bg: 'bg-green-400/20', border: 'border-green-400/50' },
+        { id: 'DEL', label: 'Ataque', icon: Footprints, covered: countFWD > 0, count: countFWD, color: 'text-red-400', bg: 'bg-red-400/20', border: 'border-red-400/50' },
     ];
 
     const allCovered = positions.every(p => p.covered);
@@ -56,11 +56,13 @@ export function TeamTacticalAnalysis({ selectedPlayers }: TeamTacticalAnalysisPr
                                 : "bg-muted/20 border-border/10 dark:border-white/5 opacity-50 grayscale"
                         )}
                     >
-                        <pos.icon className={cn("w-5 h-5 mb-1.5 transition-colors", pos.covered ? pos.color : "text-muted-foreground")} />
+                        <pos.icon className={cn("w-5 h-5 mb-1 transition-colors", pos.covered ? pos.color : "text-muted-foreground")} />
                         <span className={cn("text-[10px] font-bold uppercase tracking-tight", pos.covered ? "text-foreground" : "text-muted-foreground")}>
                             {pos.label}
                         </span>
-                        <div className={cn("w-1.5 h-1.5 rounded-full mt-1.5", pos.covered ? cn("bg-current", pos.color) : "bg-muted-foreground/30")} />
+                        <span className={cn("text-[11px] font-black mt-0.5", pos.covered ? pos.color : "text-muted-foreground/40")}>
+                            {pos.count > 0 ? pos.count : '—'}
+                        </span>
                     </div>
                 ))}
             </div>

@@ -25,6 +25,7 @@ const matchTypeLabels: Record<MatchType, string> = {
 };
 
 const matchStatusLabels: Record<MatchStatus, string> = {
+  planning: 'A Confirmar',
   upcoming: 'Proximo',
   active: 'Activo',
   completed: 'Finalizado',

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase/index';
 import type { FirebaseApp } from 'firebase/app';
@@ -12,6 +12,10 @@ import { ThemeProvider } from 'next-themes';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { ThemeBackground } from '@/components/theme-background';
 import { AchievementToastProvider } from '@/components/achievement-toast';
+import { InstallPrompt } from '@/components/pwa/install-prompt';
+import { UpdateNotification } from '@/components/pwa/update-notification';
+import { PushNotificationPrompt } from '@/components/pwa/push-notification-prompt';
+import { OfflineBanner } from '@/components/pwa/offline-banner';
 
 
 type FirebaseClientProviderProps = {
@@ -37,8 +41,44 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
     if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(regs => {
         regs.forEach(r => r.unregister());
-      }).catch(() => {});
+      }).catch(() => { });
     }
+  }, []);
+
+  // Clear PWA badge counter whenever the user focuses the app
+  useEffect(() => {
+    const clearBadge = () => {
+      if ('clearAppBadge' in navigator) {
+        (navigator as Navigator & { clearAppBadge: () => Promise<void> }).clearAppBadge().catch(() => { });
+      }
+    };
+    window.addEventListener('focus', clearBadge);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') clearBadge();
+    });
+    clearBadge(); // also clear on first mount
+    return () => window.removeEventListener('focus', clearBadge);
+  }, []);
+
+  // Dynamic theme-color meta tag — keeps Android status/nav bar in sync
+  useEffect(() => {
+    const updateThemeColor = () => {
+      const isDark = document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'game';
+      const color = isDark ? '#0f172a' : '#3B82F6';
+      let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'theme-color';
+        document.head.appendChild(meta);
+      }
+      meta.content = color;
+    };
+    updateThemeColor();
+    // Observe class/attribute changes on <html>
+    const observer = new MutationObserver(updateThemeColor);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+    return () => observer.disconnect();
   }, []);
 
   // No Google Maps loading; avoid related errors entirely.
@@ -79,7 +119,10 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
         <UserProvider>
           <AchievementToastProvider>
             <MainNav>{children}</MainNav>
-
+            <InstallPrompt />
+            <UpdateNotification />
+            <PushNotificationPrompt />
+            <OfflineBanner />
           </AchievementToastProvider>
         </UserProvider>
       </FirebaseProvider>

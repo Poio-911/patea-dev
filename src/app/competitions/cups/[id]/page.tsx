@@ -1,7 +1,8 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useMemo, useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
 import Image from 'next/image';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
 import { doc, collection, query, where } from 'firebase/firestore';
@@ -12,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CupBracket } from '@/components/competitions/cup-bracket';
 import { useToast } from '@/hooks/use-toast';
 import { startCupAction, updateCupStatusAction, deleteCupAction, createCupMatchAction } from '@/lib/actions/server-actions';
+import { isErrorResponse } from '@/lib/errors';
 import {
   ResponsiveAlertDialog as AlertDialog,
   ResponsiveAlertDialogAction as AlertDialogAction,
@@ -36,9 +38,25 @@ export default function CupDetailPage() {
   const params = useParams<{ id: string }>();
   const cupId = params?.id;
   const router = useRouter();
+  const searchParams = useSearchParams();
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
+
+  // 🎉 Trigger confetti if entering with ?celebrate=true
+  useEffect(() => {
+    if (searchParams?.get('celebrate') === 'true') {
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+      // Optionally remove the param from URL to prevent re-triggering on refresh
+      const url = new URL(window.location.href);
+      url.searchParams.delete('celebrate');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams]);
 
   const [activeTab, setActiveTab] = useState<CupTab>('bracket');
   const [showStartDialog, setShowStartDialog] = useState(false);
@@ -83,14 +101,14 @@ export default function CupDetailPage() {
     setIsStarting(true);
     try {
       const result = await startCupAction(cup.id, seedingType);
-      if (result.success) {
+      if (!isErrorResponse(result) && result.success) {
         toast({
           title: 'Copa iniciada',
           description: `El bracket ha sido generado con sorteo ${seedingType === 'random' ? 'aleatorio' : 'por OVR'}.`,
         });
         setShowStartDialog(false);
       } else {
-        throw new Error(result.error);
+        throw new Error(isErrorResponse(result) ? result.error : (result as any).error);
       }
     } catch (error: any) {
       toast({
@@ -109,14 +127,14 @@ export default function CupDetailPage() {
     setIsDeleting(true);
     try {
       const result = await deleteCupAction(cup.id);
-      if (result.success) {
+      if (!isErrorResponse(result) && result.success) {
         toast({
           title: 'Copa eliminada',
           description: 'La copa ha sido eliminada correctamente.',
         });
         router.push('/competitions');
       } else {
-        throw new Error(result.error);
+        throw new Error(isErrorResponse(result) ? result.error : (result as any).error);
       }
     } catch (error: any) {
       toast({
@@ -158,14 +176,14 @@ export default function CupDetailPage() {
 
         try {
           const result = await createCupMatchAction(cup.id, match.id);
-          if (result.success && result.matchId) {
+          if (!isErrorResponse(result) && result.success && result.matchId) {
             loadingToast.dismiss();
             router.push(`/matches/${result.matchId}`);
           } else {
             toast({
               variant: 'destructive',
               title: 'Error',
-              description: result.error || 'No se pudo crear el partido.',
+              description: isErrorResponse(result) ? result.error : ((result as any).error || 'No se pudo crear el partido.'),
             });
           }
         } catch (error) {

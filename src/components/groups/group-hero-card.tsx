@@ -9,11 +9,14 @@ import { GroupSwitcher } from '@/components/group-switcher';
 import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
+import { cn } from '@/lib/utils';
+
 interface GroupHeroCardProps {
     group: Group;
+    compact?: boolean;
 }
 
-export function GroupHeroCard({ group }: GroupHeroCardProps) {
+export function GroupHeroCard({ group, compact }: GroupHeroCardProps) {
 
     const handleCopyCode = () => {
         navigator.clipboard.writeText(group.inviteCode);
@@ -27,7 +30,10 @@ export function GroupHeroCard({ group }: GroupHeroCardProps) {
     }, [group]);
 
     return (
-        <div className="relative w-full h-[280px] md:h-[320px] rounded-xl overflow-hidden shadow-2xl border-2 border-border/50 group isolate">
+        <div className={cn(
+            "relative w-full rounded-xl overflow-hidden shadow-2xl border-2 border-border/50 group isolate",
+            compact ? "min-h-[200px] h-auto" : "h-[280px] md:h-[320px]"
+        )}>
             {/* Video Background */}
             <div className="absolute inset-0 z-0">
                 <video
@@ -45,7 +51,10 @@ export function GroupHeroCard({ group }: GroupHeroCardProps) {
             </div>
 
             {/* Content Layer */}
-            <div className="absolute inset-0 z-10 p-6 flex flex-col justify-end">
+            <div className={cn(
+                "relative z-10 flex flex-col justify-end h-full",
+                compact ? "p-4 sm:p-5" : "absolute inset-0 p-6"
+            )}>
 
                 {/* Top Right: Group Switcher & Actions */}
                 <div className="absolute top-4 right-4 flex items-center gap-2">
@@ -55,39 +64,47 @@ export function GroupHeroCard({ group }: GroupHeroCardProps) {
                 </div>
 
                 {/* Main Hero Content */}
-                <div className="space-y-4 max-w-3xl">
+                <div className="space-y-3 sm:space-y-4 max-w-3xl mt-16 sm:mt-0">
 
                     {/* Badge & Title */}
                     <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-white/80 text-xs font-bold uppercase tracking-widest mb-2">
-                            <Users2 className="h-4 w-4 text-primary" />
+                        <div className="flex items-center gap-2 text-white/80 text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-1 sm:mb-2">
+                            <Users2 className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
                             <span>Grupo Activo</span>
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight font-headline drop-shadow-xl">
+                        <h1 className={cn(
+                            "font-black text-white tracking-tight leading-tight font-headline drop-shadow-xl break-words line-clamp-2 sm:line-clamp-3",
+                            compact ? "text-lg sm:text-3xl" : "text-4xl md:text-5xl"
+                        )}
+                            title={group.name} // Show full name on hover
+                        >
                             {group.name}
                         </h1>
                     </div>
 
                     {/* Invitation Code Ticket */}
-                    <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                         <div className="flex items-center gap-0 bg-white/10 backdrop-blur-md border border-white/20 rounded-md overflow-hidden group/code transition-all hover:bg-white/20">
-                            <div className="px-3 py-2 border-r border-white/10">
-                                <span className="text-xs text-white/70 font-semibold uppercase tracking-wider">Código</span>
+                            <div className="px-2 sm:px-3 py-1.5 sm:py-2 border-r border-white/10">
+                                <span className="text-[10px] sm:text-xs text-white/70 font-semibold uppercase tracking-wider">Código</span>
                             </div>
                             <button
                                 onClick={handleCopyCode}
-                                className="flex items-center gap-2 px-4 py-2 font-mono text-xl font-bold text-white tracking-widest hover:text-primary transition-colors"
+                                className={cn(
+                                    "flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 font-mono font-bold text-white tracking-widest hover:text-primary transition-colors",
+                                    compact ? "text-sm sm:text-base" : "text-xl"
+                                )}
                             >
                                 {group.inviteCode}
-                                <Copy className="h-4 w-4 opacity-50 group-hover/code:opacity-100" />
+                                <Copy className="h-3 w-3 sm:h-4 sm:w-4 opacity-50 group-hover/code:opacity-100" />
                             </button>
                         </div>
 
                         {/* Actions */}
-                        <Button asChild className="bg-[#25D366] hover:bg-[#25D366]/90 text-white font-bold border-0 shadow-lg shadow-green-900/20">
+                        <Button asChild size={compact ? "sm" : "default"} className="bg-[#25D366] hover:bg-[#25D366]/90 text-white font-bold border-0 shadow-lg shadow-green-900/20">
                             <a href={`https://wa.me/?text=${whatsAppShareText}`} target="_blank" rel="noopener noreferrer">
-                                <WhatsAppIcon className="mr-2 h-5 w-5" />
-                                Invitar Amigos
+                                <WhatsAppIcon className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                                {compact ? "Invitar" : "Invitar Amigos"}
                             </a>
                         </Button>
                     </div>

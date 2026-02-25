@@ -327,8 +327,12 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
                                 {/* Avatar Section */}
                                 <div className="flex flex-col items-center gap-2 min-w-[3.5rem]">
                                   <Avatar className="h-12 w-12 ring-2 ring-background shadow-md">
-                                    {evalItem.identityRevealed ? (
-                                      <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${evalItem.evaluatorId}`} />
+                                    {evalItem.identityRevealed && evalItem.evaluatorPhotoUrl ? (
+                                      <AvatarImage src={evalItem.evaluatorPhotoUrl} />
+                                    ) : evalItem.identityRevealed ? (
+                                      <AvatarFallback className="bg-primary/20 text-primary font-bold">
+                                        {evalItem.evaluatorDisplayName?.charAt(0).toUpperCase() || '?'}
+                                      </AvatarFallback>
                                     ) : (
                                       <AvatarFallback className="bg-muted text-muted-foreground"><Lock className="h-4 w-4" /></AvatarFallback>
                                     )}
@@ -340,16 +344,31 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
 
                                 {/* Content Section */}
                                 <div className="flex-1 min-w-0 space-y-3">
-                                  {/* Header with Request Identity */}
-                                  <div className="flex justify-between items-start h-6">
-                                    <div className="flex-1"></div> {/* Spacer */}
-                                    {(!evalItem.identityRevealed && evalItem.evaluatorId !== 'AI') && (
-                                      <button
-                                        onClick={() => handleRequestIdentity(evalItem.id)}
-                                        className="text-[10px] font-semibold text-primary/80 hover:text-primary hover:underline flex items-center gap-1 transition-colors bg-primary/5 px-2 py-1 rounded-full"
-                                      >
-                                        <Lock className="h-3 w-3" /> Solicitar ID
-                                      </button>
+                                  {/* Header: evaluator name when revealed, or request button */}
+                                  <div className="flex justify-between items-center min-h-[1.5rem]">
+                                    {evalItem.identityRevealed ? (
+                                      <span className="text-xs font-semibold text-primary flex items-center gap-1.5">
+                                        <CheckCircle2 className="h-3.5 w-3.5" />
+                                        {evalItem.evaluatorDisplayName || 'Identidad revelada'}
+                                      </span>
+                                    ) : (
+                                      <div className="flex-1" />
+                                    )}
+                                    {!evalItem.identityRevealed && evalItem.evaluatorId !== 'AI' && (
+                                      evalItem.identityRequestStatus === 'pending' ? (
+                                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                          <Clock className="h-3 w-3" /> Solicitud enviada
+                                        </span>
+                                      ) : evalItem.identityRequestStatus === 'rejected' ? (
+                                        <span className="text-[10px] text-muted-foreground/60 italic">Rechazada</span>
+                                      ) : (
+                                        <button
+                                          onClick={() => handleRequestIdentity(evalItem.id)}
+                                          className="text-[10px] font-semibold text-primary/80 hover:text-primary hover:underline flex items-center gap-1 transition-colors bg-primary/5 px-2 py-1 rounded-full"
+                                        >
+                                          <Lock className="h-3 w-3" /> Solicitar ID
+                                        </button>
+                                      )
                                     )}
                                   </div>
 

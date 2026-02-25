@@ -33,15 +33,15 @@ import {
 } from '@/components/ui/popover';
 import { Check, ChevronsUpDown, Target, AlertTriangle, RotateCcw, Megaphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { 
-  Match, 
-  MatchEvent, 
-  MatchEventType, 
-  GoalType, 
-  BodyPart, 
-  CardType, 
+import type {
+  Match,
+  MatchEvent,
+  MatchEventType,
+  GoalType,
+  BodyPart,
+  CardType,
   CardReason,
-  SubstitutionReason 
+  SubstitutionReason
 } from '@/lib/types';
 import { useFirestore, useCollection } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
@@ -69,13 +69,13 @@ export function EventLogger({
   const [selectedTeam, setSelectedTeam] = useState('');
   const [minute, setMinute] = useState(currentMinute.toString());
   const [description, setDescription] = useState('');
-  
+
   // Goal-specific fields
   const [assistPlayer, setAssistPlayer] = useState('');
   const [assistPlayerName, setAssistPlayerName] = useState('');
   const [goalType, setGoalType] = useState<GoalType>('regular');
   const [bodyPart, setBodyPart] = useState<BodyPart>('right_foot');
-  
+
   // Card-specific fields
   const [cardType, setCardType] = useState<CardType>('yellow');
   const [cardReason, setCardReason] = useState<CardReason>('foul');
@@ -85,10 +85,10 @@ export function EventLogger({
   const [playerIn, setPlayerIn] = useState('');
   const [playerInName, setPlayerInName] = useState('');
   const [substitutionReason, setSubstitutionReason] = useState<SubstitutionReason>('tactical');
-  
+
   const [openPlayerSelect, setOpenPlayerSelect] = useState(false);
   const [openAssistSelect, setOpenAssistSelect] = useState(false);
-  
+
   // Team roster fallback for league/cup: load group teams and players
   const teamIds = useMemo(() => match.participantTeamIds?.filter(Boolean) || [], [match.participantTeamIds]);
   const teamsQuery = useMemo(() => {
@@ -168,7 +168,7 @@ export function EventLogger({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedPlayer || !selectedPlayerName) {
       alert('Por favor selecciona un jugador');
       return;
@@ -197,7 +197,7 @@ export function EventLogger({
           bodyPart,
         };
         break;
-      
+
       case 'card':
         eventData = {
           ...eventData,
@@ -205,7 +205,7 @@ export function EventLogger({
           cardReason,
         };
         break;
-      
+
       case 'substitution':
         if (!playerOut || !playerIn) {
           alert('Por favor selecciona ambos jugadores para el cambio');
@@ -267,6 +267,8 @@ export function EventLogger({
             <Input
               id="minute"
               type="number"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={minute}
               onChange={(e) => setMinute(e.target.value)}
               min="0"

@@ -16,6 +16,7 @@ export type PlayerStats = {
   averageRating: number;
   yellowCards?: number;
   redCards?: number;
+  mvpVotes?: number; // Total de veces que fue elegido MVP por sus compañeros
 };
 
 export type OvrHistory = {
@@ -77,7 +78,7 @@ export type AvailablePlayer = {
 } & DocumentData;
 
 
-export type MatchStatus = 'upcoming' | 'active' | 'completed' | 'evaluated';
+export type MatchStatus = 'planning' | 'upcoming' | 'active' | 'completed' | 'evaluated';
 export type MatchType = 'manual' | 'collaborative' | 'by_teams' | 'intergroup_friendly' | 'league' | 'cup' | 'league_final';
 export type MatchSize = 10 | 14 | 22;
 
@@ -151,6 +152,7 @@ export type Match = {
   participantTeamIds?: string[];
   captains?: string[]; // [uid1, uid2]
   locationProposals?: LocationProposal[];
+  dateProposals?: MatchDateProposal[]; // For 'planning' phase date voting
   isVotingOpen?: boolean;
 
   // Game Data
@@ -393,7 +395,8 @@ export type NotificationType =
   | 'match_invitation'
   | 'match_reminder'
   | 'ovr_milestone'
-  | 'achievement_unlocked';
+  | 'achievement_unlocked'
+  | 'identity_reveal_requested';
 
 export type Notification = {
   id: string;
@@ -485,6 +488,8 @@ export type Evaluation = {
   // Identity Reveal Feature
   identityRequestStatus?: 'none' | 'pending' | 'accepted' | 'rejected';
   identityRevealed?: boolean;
+  evaluatorDisplayName?: string;
+  evaluatorPhotoUrl?: string;
 } & DocumentData;
 
 
@@ -633,6 +638,7 @@ const KeyEventSchema = z.object({
 
 export const GenerateMatchChronicleInputSchema = z.object({
   matchTitle: z.string().describe("Título del partido."),
+  matchLocation: z.string().optional().describe("Nombre de la cancha o ubicación donde se jugó el partido."),
   team1Name: z.string().describe("Nombre del Equipo 1."),
   team1Score: z.number().describe("Goles del Equipo 1."),
   team2Name: z.string().describe("Nombre del Equipo 2."),
@@ -662,7 +668,7 @@ export const GenerateMatchChronicleOutputSchema = z.object({
   playerVoices: z.array(z.object({
     playerName: z.string().describe("Nombre del jugador."),
     quote: z.string().describe("Cita destacada del jugador."),
-  })).optional().describe("Citas destacadas de jugadores (1-2 máximo)."),
+  })).optional().describe("Citas destacadas de todos los jugadores que dejaron un testimonio (incluir a todos los disponibles)."),
 });
 export type GenerateMatchChronicleOutput = z.infer<typeof GenerateMatchChronicleOutputSchema>;
 
@@ -956,6 +962,7 @@ export type SuggestedUser = {
   matchesPlayed?: number;
   reason: SuggestedUserReason;
   isFollowing?: boolean;
+  location?: { lat: number; lng: number };
 };
 
 // Social activity for the feed
@@ -1099,7 +1106,7 @@ export type PlayerAchievement = {
 } & DocumentData;
 
 // Leaderboard categories
-export type LeaderboardCategory = 'ovr' | 'goals' | 'assists' | 'matches' | 'rating';
+export type LeaderboardCategory = 'ovr' | 'goals' | 'assists' | 'matches' | 'rating' | 'mvp';
 
 // Leaderboard entry
 export type LeaderboardEntry = {

@@ -111,7 +111,7 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
             Finalizar
           </Button>
         )}
-        {!isCompetitive && match.status === 'completed' && (
+        {match.status === 'completed' && (
           <Button asChild size="sm" variant="outline">
             <Link href={`/matches/${match.id}/evaluate`}>
               <FileSignature className="mr-2 h-4 w-4" />

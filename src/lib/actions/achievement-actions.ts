@@ -3,7 +3,8 @@
 import { getAdminDb } from '@/firebase/admin-init';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { PlayerAchievement, Player, Achievement, AchievementRequirementType } from '@/lib/types';
-import { ACHIEVEMENTS, getAchievementById } from '@/lib/achievements-config';
+import { ACHIEVEMENTS } from '@/lib/achievements-config';
+import { getAchievementById } from '@/lib/achievements-config';
 import { logger } from '@/lib/logger';
 
 const db = getAdminDb();

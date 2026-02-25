@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import type { Match, GenerateMatchChronicleOutput } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
-import { Loader2, Sparkles, Newspaper } from 'lucide-react';
+import { Loader2, Sparkles, Newspaper, RefreshCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateMatchChronicleAction } from '@/lib/actions/server-actions';
 import { Separator } from './ui/separator';
+import { motion } from 'framer-motion';
+import { useUser } from '@/firebase';
 
 interface MatchChronicleCardProps {
   match: Match;
@@ -17,6 +19,8 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
   const [chronicle, setChronicle] = useState<GenerateMatchChronicleOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useUser();
+  const isOrganizer = user?.uid === match.ownerUid;
 
   // ✅ Load saved chronicle from match document
   useEffect(() => {
@@ -25,9 +29,9 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
     }
   }, [match.chronicle]);
 
-  const handleGenerateChronicle = async () => {
-    // ✅ Prevent regeneration if chronicle already exists
-    if (match.chronicle) {
+  const handleGenerateChronicle = async (isRegenerating = false) => {
+    // Prevent regeneration if not regenerating and chronicle already exists
+    if (!isRegenerating && match.chronicle) {
       toast({
         title: 'Crónica ya generada',
         description: 'Este partido ya tiene una crónica guardada.',
@@ -86,45 +90,85 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
             </div>
           </div>
         ) : chronicle ? (
-          <div className="space-y-6">
+          <div className="space-y-12 pb-6">
             {/* Título Evocativo */}
-            <div className="text-center space-y-2">
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">
-                {chronicle.headline}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="text-center space-y-4 pt-4"
+            >
+              <h2 className="text-4xl md:text-5xl font-black text-foreground leading-tight font-serif tracking-tight px-4" style={{ fontFamily: "Georgia, serif" }}>
+                "{chronicle.headline}"
               </h2>
-              <div className="w-24 h-1 bg-gradient-to-r from-transparent via-primary to-transparent mx-auto"></div>
-            </div>
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground font-medium uppercase tracking-widest">
+                <Sparkles size={14} className="text-primary animate-pulse" />
+                <span>Escrito por Genkit IA</span>
+                <Sparkles size={14} className="text-primary animate-pulse" />
+              </div>
+              <div className="w-32 h-1 bg-gradient-to-r from-transparent via-primary to-transparent mx-auto mt-4 opacity-50"></div>
+            </motion.div>
 
             {/* Relato Fluido */}
-            <div className="prose prose-lg dark:prose-invert max-w-none">
-              <div className="text-foreground/90 leading-relaxed whitespace-pre-line text-base md:text-lg">
-                {chronicle.story}
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1, delay: 0.3 }}
+              className="relative px-2 md:px-8"
+            >
+              <div className="absolute -left-2 top-0 text-9xl text-primary/10 font-serif leading-none select-none pointer-events-none">"</div>
+
+              <div className="prose prose-lg dark:prose-invert max-w-none">
+                <p className="text-foreground/90 leading-loose whitespace-pre-line text-lg font-serif first-letter:float-left first-letter:text-6xl first-letter:font-black first-letter:text-primary first-letter:mr-3 first-letter:mt-[-0.1em] first-letter:font-serif shadow-sm p-6 rounded-2xl bg-card border border-border/50">
+                  {chronicle.story}
+                </p>
               </div>
-            </div>
+            </motion.div>
 
             {/* Voces de los Jugadores */}
             {chronicle.playerVoices && chronicle.playerVoices.length > 0 && (
-              <>
-                <Separator className="my-8" />
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-primary text-center">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.6 }}
+              >
+                <Separator className="my-8 w-1/2 mx-auto bg-primary/20" />
+                <div className="space-y-6">
+                  <h3 className="text-2xl font-bold font-serif text-center uppercase tracking-widest text-primary/80">
                     Voces del Vestuario
                   </h3>
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-4">
                     {chronicle.playerVoices.map((voice, index) => (
-                      <div key={index} className="relative pl-6 py-3">
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary/50 to-primary/10 rounded-full"></div>
-                        <p className="text-base italic text-muted-foreground leading-relaxed mb-2">
+                      <div key={index} className="relative p-6 rounded-xl bg-muted/30 border border-muted-foreground/10 hover:bg-muted/50 transition-colors">
+                        <p className="text-lg italic text-foreground/80 leading-relaxed font-serif">
                           &ldquo;{voice.quote}&rdquo;
                         </p>
-                        <p className="text-sm font-medium text-primary">
+                        <p className="text-sm font-bold text-primary mt-4 uppercase tracking-wider">
                           — {voice.playerName}
                         </p>
                       </div>
                     ))}
                   </div>
                 </div>
-              </>
+              </motion.div>
+            )}
+
+            {/* Regenerate Button for Organizers */}
+            {isOrganizer && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                className="flex justify-center pt-8"
+              >
+                <Button variant="outline" size="sm" onClick={() => handleGenerateChronicle(true)} disabled={isLoading} className="text-muted-foreground hover:text-primary transition-colors">
+                  <RefreshCcw className="mr-2 h-4 w-4" />
+                  Regenerar Crónica (Solo Organizador)
+                </Button>
+              </motion.div>
             )}
           </div>
         ) : (
@@ -142,7 +186,7 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
                 </p>
               </div>
               <Button
-                onClick={handleGenerateChronicle}
+                onClick={() => handleGenerateChronicle(false)}
                 className="font-medium"
               >
                 <Sparkles className="mr-2 h-4 w-4" />

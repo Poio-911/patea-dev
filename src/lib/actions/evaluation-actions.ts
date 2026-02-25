@@ -65,12 +65,128 @@ export async function requestIdentityRevelation(evaluationId: string, requesting
       identityRequestDate: new Date().toISOString()
     });
 
-    // 3. TODO: Send Notification to Evaluator (evaluation.evaluatorId)
-    // We would insert into 'notifications' collection here.
+    // 3. Fetch the evaluated player's info to personalize the notification
+    const playerSnap = await getAdminDb().collection('players').doc(evaluation.playerId).get();
+    const playerData = playerSnap.data() as any;
+    const playerName: string = playerData?.name || 'Un compañero';
+    const playerPhotoUrl: string = playerData?.photoUrl || playerData?.photoURL || '';
+
+    // 4. Write notification to the evaluator's subcollection
+    const evaluatorId: string = evaluation.evaluatorId;
+    await getAdminDb()
+      .collection('users')
+      .doc(evaluatorId)
+      .collection('notifications')
+      .add({
+        type: 'identity_reveal_requested',
+        title: '🕵️ ¡Quieren saber quién sos!',
+        message: `${playerName} quiere saber que fuiste vos quien lo evaluó.`,
+        link: '/evaluations?tab=requests',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        metadata: {
+          evaluationId,
+          matchId: evaluation.matchId,
+          fromPlayerId: evaluation.playerId,
+          fromPlayerName: playerName,
+          fromPlayerPhotoUrl: playerPhotoUrl,
+        },
+      });
+
+    // 5. Send FCM push notification to evaluator
+    const { sendNotificationToUsersAction } = await import('./notification-actions');
+    await sendNotificationToUsersAction({
+      userIds: [evaluatorId],
+      title: '🕵️ ¡Quieren saber quién sos!',
+      body: `${playerName} quiere saber que fuiste vos quien lo evaluó.`,
+      data: { type: 'identity_reveal_requested', link: '/evaluations?tab=requests' },
+    });
 
     return { success: true };
   } catch (error: any) {
     console.error('Error requesting identity revelation:', error);
     return { success: false, error: error.message || 'Error al procesar la solicitud.' };
+  }
+}
+
+export async function respondToIdentityRevealAction(
+  evaluationId: string,
+  evaluatorId: string,
+  response: 'accepted' | 'rejected'
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { getAdminDb } = await import('@/firebase/admin-init');
+
+    const evalRef = getAdminDb().collection('evaluations').doc(evaluationId);
+    const evalSnap = await evalRef.get();
+
+    if (!evalSnap.exists) {
+      return { success: false, error: 'Evaluación no encontrada.' };
+    }
+
+    const evaluation = evalSnap.data() as any;
+
+    // Verify the responder is the evaluator
+    if (evaluation.evaluatorId !== evaluatorId) {
+      return { success: false, error: 'No tienes permiso para responder esta solicitud.' };
+    }
+
+    // Idempotent: already processed
+    if (evaluation.identityRequestStatus !== 'pending') {
+      return { success: true };
+    }
+
+    if (response === 'accepted') {
+      // Fetch evaluator's display info from users collection
+      const userSnap = await getAdminDb().collection('users').doc(evaluatorId).get();
+      const userData = userSnap.data() as any;
+      const evaluatorDisplayName: string = userData?.displayName || 'Un compañero';
+      const evaluatorPhotoUrl: string = userData?.photoURL || userData?.photoUrl || '';
+
+      await evalRef.update({
+        identityRequestStatus: 'accepted',
+        identityRevealed: true,
+        identityRevealedAt: new Date().toISOString(),
+        evaluatorDisplayName,
+        evaluatorPhotoUrl,
+      });
+
+      // Notify the evaluated player
+      await getAdminDb()
+        .collection('users')
+        .doc(evaluation.playerId)
+        .collection('notifications')
+        .add({
+          type: 'identity_reveal_requested',
+          title: '✅ ¡Identidad revelada!',
+          message: `${evaluatorDisplayName} aceptó revelar su identidad.`,
+          link: `/players/${evaluation.playerId}`,
+          isRead: false,
+          createdAt: new Date().toISOString(),
+          metadata: {
+            evaluationId,
+            evaluatorName: evaluatorDisplayName,
+          },
+        });
+
+      const { sendNotificationToUsersAction } = await import('./notification-actions');
+      await sendNotificationToUsersAction({
+        userIds: [evaluation.playerId],
+        title: '✅ ¡Identidad revelada!',
+        body: `${evaluatorDisplayName} aceptó revelar su identidad.`,
+        data: { type: 'identity_reveal_requested', link: `/players/${evaluation.playerId}` },
+      });
+    } else {
+      // rejected: silent, no notification to evaluated player
+      await evalRef.update({
+        identityRequestStatus: 'rejected',
+        identityRejectedAt: new Date().toISOString(),
+      });
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error responding to identity reveal:', error);
+    return { success: false, error: error.message || 'Error al procesar la respuesta.' };
   }
 }

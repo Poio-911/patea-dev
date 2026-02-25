@@ -89,6 +89,7 @@ export function LeaderboardWidget({
     assists: 'Asistidores',
     matches: 'Más Partidos',
     rating: 'Mejor Rating',
+    mvp: 'MVPs',
   };
 
   const categoryUnits: Record<LeaderboardCategory, string> = {
@@ -97,6 +98,7 @@ export function LeaderboardWidget({
     assists: ' A',
     matches: ' PJ',
     rating: '',
+    mvp: ' 🏆',
   };
 
   return (

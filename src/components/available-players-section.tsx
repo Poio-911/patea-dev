@@ -5,7 +5,8 @@ import type { Match } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { InvitePlayerDialog } from './invite-player-dialog';
-import { UserPlus, Users } from 'lucide-react';
+import { RecruitmentDialog } from './match-details/recruitment-dialog';
+import { UserPlus, Users, Search } from 'lucide-react';
 
 interface AvailablePlayersSectionProps {
   match: Match;
@@ -36,17 +37,26 @@ export function AvailablePlayersSection({ match, isOwner }: AvailablePlayersSect
       <CardContent className="p-4">
         <div className="flex flex-col items-center justify-center p-4 text-center gap-3">
           <p className="text-sm text-muted-foreground">
-            Invitá a tus amigos o compañeros de grupo directamente.
+            Invitá a tus amigos o buscá jugadores libres en la zona.
           </p>
-          <InvitePlayerDialog
-            userMatches={[match]}
-            match={match}
-          >
-            <Button size="sm" className="w-full sm:w-auto">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Invitar Jugador
-            </Button>
-          </InvitePlayerDialog>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <InvitePlayerDialog
+              userMatches={[match]}
+              match={match}
+            >
+              <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Invitar Amigo
+              </Button>
+            </InvitePlayerDialog>
+
+            <RecruitmentDialog match={match}>
+              <Button size="sm" className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90">
+                <Search className="mr-2 h-4 w-4" />
+                Nos falta uno
+              </Button>
+            </RecruitmentDialog>
+          </div>
         </div>
       </CardContent>
     </Card>

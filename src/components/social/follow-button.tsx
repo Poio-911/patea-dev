@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { UserPlus, UserCheck, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, getDoc, collection, getCountFromServer, writeBatch, setDoc, deleteDoc, serverTimestamp, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getCountFromServer, query, where, getDocs } from 'firebase/firestore';
+import { followUserAction, unfollowUserAction } from '@/lib/actions/social-actions';
 
 interface FollowButtonProps {
   targetUserId: string; // UID of the user to follow/unfollow
@@ -90,7 +91,7 @@ export function FollowButton({
   }, [firestore, showCounts, targetUserId, isFollowing]); // Reload when isFollowing changes
 
   const handleFollow = async () => {
-    if (!firestore || !user) {
+    if (!user) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -107,51 +108,41 @@ export function FollowButton({
 
     try {
       if (isFollowing) {
-        // Unfollow: Delete from /follows/ collection
-        // First, find the follow document
-        const followsQuery = query(
-          collection(firestore, 'follows'),
-          where('followerId', '==', user.uid),
-          where('followingId', '==', targetUserId)
-        );
-        const followsSnapshot = await getDocs(followsQuery);
+        // Unfollow using Server Action
+        const result = await unfollowUserAction(user.uid, targetUserId);
 
-        if (!followsSnapshot.empty) {
-          // Delete all matching documents (should only be one)
-          const batch = writeBatch(firestore);
-          followsSnapshot.docs.forEach(doc => {
-            batch.delete(doc.ref);
+        if (result.success) {
+          setIsFollowing(false);
+          setFollowersCount((prev) => Math.max(0, prev - 1));
+          toast({
+            title: 'Dejaste de seguir',
+            description: 'Ya no seguís a este usuario.',
           });
-          await batch.commit();
+        } else {
+          throw new Error(result.error || 'Error al dejar de seguir.');
         }
 
-        setIsFollowing(false);
-        setFollowersCount((prev) => Math.max(0, prev - 1));
-        toast({
-          title: 'Dejaste de seguir',
-          description: 'Ya no seguís a este usuario.',
-        });
       } else {
-        // Follow: Add to /follows/ collection
-        await addDoc(collection(firestore, 'follows'), {
-          followerId: user.uid,
-          followingId: targetUserId,
-          createdAt: new Date().toISOString(),
-        });
+        // Follow using Server Action
+        const result = await followUserAction(user.uid, targetUserId);
 
-        setIsFollowing(true);
-        setFollowersCount((prev) => prev + 1);
-        toast({
-          title: '¡Seguido!',
-          description: 'Ahora seguís a este usuario.',
-        });
+        if (result.success) {
+          setIsFollowing(true);
+          setFollowersCount((prev) => prev + 1);
+          toast({
+            title: '¡Seguido!',
+            description: 'Ahora seguís a este usuario.',
+          });
+        } else {
+          throw new Error(result.error || 'Error al seguir.');
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error toggling follow:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Ocurrió un error. Intentá de nuevo.',
+        description: error.message || 'Ocurrió un error. Intentá de nuevo.',
       });
     } finally {
       setIsLoading(false);

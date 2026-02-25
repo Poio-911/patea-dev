@@ -35,6 +35,7 @@ const listVariants = {
 };
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
+    planning: { label: 'A Confirmar', className: 'bg-primary/5 text-primary border border-primary/20 rounded-full backdrop-blur-sm' },
     upcoming: { label: 'Próximo', className: 'bg-primary/10 text-foreground border border-primary/30 rounded-full backdrop-blur-sm' },
     active: { label: 'Activo', className: 'bg-foreground/10 text-foreground border border-foreground/30 rounded-full backdrop-blur-sm' },
     completed: { label: 'Finalizado', className: 'bg-muted/40 text-muted-foreground border border-muted/50 rounded-full backdrop-blur-sm' },
@@ -50,7 +51,7 @@ interface ProgresoTabProps {
 
 export function ProgresoTab({ player, recentMatches, groupId, userId }: ProgresoTabProps) {
     return (
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
             <motion.div
                 className="lg:col-span-2 space-y-6"
                 variants={listVariants}

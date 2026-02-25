@@ -2,7 +2,7 @@
 
 import { getAdminDb } from '../../firebase/admin-init';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { SocialActivity, Follow, Player, OvrHistory } from '../../lib/types';
+import type { SocialActivity, Follow, Player, OvrHistory, Achievement } from '../../lib/types';
 import { handleServerActionError, createError, ErrorCodes } from '../../lib/errors';
 
 // Generic publisher for social activities with fan-out system
@@ -193,11 +193,36 @@ export async function publishOvrChangeActivity(player: Player, history: OvrHisto
   // Check OVR milestone achievements when OVR increases
   if (delta > 0) {
     try {
-      const { checkAndUnlockAchievementsAction } = await import('./achievement-actions');
-      await checkAndUnlockAchievementsAction(player.id, player.ownerUid);
+      const { checkAchievementsAction } = await import('../achievements');
+      await checkAchievementsAction(player.id);
     } catch (achievementError) {
       console.warn('Failed to check achievements after OVR change', achievementError);
     }
+  }
+}
+
+// Publish an achievement unlocked activity
+export async function publishAchievementActivity(player: Player, achievement: Achievement) {
+  try {
+    const db = getAdminDb();
+    let playerPhotoUrl = player.photoUrl || player.photoURL;
+
+    await publishActivityAction({
+      type: 'achievement_unlocked',
+      userId: player.ownerUid,
+      playerId: player.id,
+      playerName: player.displayName || player.name,
+      playerPhotoUrl,
+      timestamp: FieldValue.serverTimestamp() as any,
+      metadata: {
+        achievementId: achievement.id,
+        achievementName: achievement.name,
+        achievementIcon: achievement.icon
+      },
+      // Optionally use the achievement icon as the activity's main image if no photo
+    });
+  } catch (error) {
+    console.error('[publishAchievementActivity] Error publishing activity', error);
   }
 }
 

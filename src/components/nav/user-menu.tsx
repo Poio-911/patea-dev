@@ -8,7 +8,11 @@ import {
     User,
     Users2,
     Sun,
-    BellRing
+    BellRing,
+    Trophy,
+    Award,
+    Settings,
+    Rss
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -86,6 +90,32 @@ export function UserMenu({ user, player, onLogout, onRequestPermission }: UserMe
                         <span>Mi Perfil</span>
                     </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href="/achievements">
+                        <Award className="mr-2 h-4 w-4" />
+                        <span>Logros</span>
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href="/settings">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Configuración</span>
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link href="/feed">
+                        <Rss className="mr-2 h-4 w-4" />
+                        <span>Feed</span>
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href="/rankings">
+                        <Trophy className="mr-2 h-4 w-4" />
+                        <span>Rankings</span>
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                     <Link href="/groups">
                         <Users2 className="mr-2 h-4 w-4" />

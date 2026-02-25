@@ -2,7 +2,7 @@
 
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { getServerSession } from '@/lib/auth-helpers';
+import { getServerSession } from '@/lib/auth/get-server-session';
 import type { GroupMember, Group } from '@/lib/types';
 import type { GroupRole } from '@/lib/group-permissions';
 import { hasPermission, canAssignRole, canRemoveMember } from '@/lib/group-permissions';

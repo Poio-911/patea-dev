@@ -217,7 +217,13 @@ export function InvitePlayerDialog({
             </>
           ) : (
             // UI for inviting external player
-            userMatches.length > 0 ? (
+            match ? (
+              // Match already pre-selected — show confirmation only, no extra selector
+              <div className="p-3 bg-muted rounded-lg space-y-1">
+                <p className="text-sm font-medium">Invitar a <strong>{match.title}</strong></p>
+                <p className="text-xs text-muted-foreground">{match.date} · {match.location.name}</p>
+              </div>
+            ) : userMatches.length > 0 ? (
               <div className="space-y-2">
                 <Label htmlFor='match-select'>Tus Partidos Incompletos</Label>
                 <Select onValueChange={setSelectedMatchId} value={selectedMatchId || ''}>

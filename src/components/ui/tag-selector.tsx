@@ -1,9 +1,9 @@
 'use client';
 
-import { Plus, Minus } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Plus, Minus, Zap, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { PerformanceTag } from '@/lib/performance-tags';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TagSelectorProps {
   tags: PerformanceTag[];
@@ -91,44 +91,63 @@ function TagCheckboxItem({
 }) {
   const positiveEffects = tag.effects.filter((e) => e.change > 0);
   const negativeEffects = tag.effects.filter((e) => e.change < 0);
-  const uniqueId = `tag-selector-${tag.id}`;
+  const isPositiveImpact = tag.impact === 'positive';
 
   return (
-    <div
+    <motion.button
+      type="button"
+      whileHover={!disabled ? { scale: 1.02 } : {}}
+      whileTap={!disabled ? { scale: 0.98 } : {}}
+      onClick={() => {
+        if (!disabled) onCheckedChange(!isChecked);
+      }}
       className={cn(
-        'flex items-start gap-3 rounded-lg border p-3 transition-colors',
-        isChecked ? 'bg-primary/10 border-primary' : 'hover:bg-accent/50',
-        disabled && !isChecked && 'opacity-50 cursor-not-allowed'
+        'relative flex w-full flex-col gap-2 rounded-xl border-2 p-4 text-left transition-all duration-300 overflow-hidden',
+        isChecked
+          ? isPositiveImpact
+            ? 'bg-emerald-500/10 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+            : 'bg-rose-500/10 border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.2)]'
+          : 'bg-card border-border hover:border-border/80 hover:bg-accent/50',
+        "game:bg-[#0b1e3b]/50 game:border-white/10",
+        disabled && !isChecked && 'opacity-50 cursor-not-allowed filter grayscale'
       )}
     >
-      <Checkbox
-        checked={isChecked}
-        onCheckedChange={(checked) => onCheckedChange(checked === true)}
-        id={uniqueId}
-        className="mt-1"
-        disabled={disabled}
-      />
-      <label
-        htmlFor={uniqueId}
-        className={cn('w-full space-y-2', disabled && !isChecked ? 'cursor-not-allowed' : 'cursor-pointer')}
-      >
+      {/* Background Glow when checked */}
+      {isChecked && (
+        <div className={cn(
+          "absolute inset-0 opacity-20 blur-xl pointer-events-none",
+          isPositiveImpact ? "bg-emerald-400" : "bg-rose-400"
+        )} />
+      )}
+
+      <div className="flex items-start justify-between w-full relative z-10">
         <div>
-          <p className="font-semibold">{tag.name}</p>
-          <p className="text-xs text-muted-foreground">{tag.description}</p>
+          <p className={cn("font-bold text-base", isChecked ? (isPositiveImpact ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400") : "text-foreground game:text-white")}>
+            {tag.name}
+          </p>
+          <p className="text-xs text-muted-foreground game:text-slate-400 mt-0.5">{tag.description}</p>
         </div>
-        <div className="flex flex-wrap gap-x-3 gap-y-1">
-          {positiveEffects.map((effect) => (
-            <div key={effect.attribute} className="flex items-center gap-1 text-xs font-medium text-green-600">
-              <Plus size={12} /> {effect.attribute.toUpperCase()}: +{effect.change}
-            </div>
-          ))}
-          {negativeEffects.map((effect) => (
-            <div key={effect.attribute} className="flex items-center gap-1 text-xs font-medium text-red-600">
-              <Minus size={12} /> {effect.attribute.toUpperCase()}: {effect.change}
-            </div>
-          ))}
-        </div>
-      </label>
-    </div>
+        <AnimatePresence>
+          {isChecked && (
+            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className={cn("p-1 rounded-full shrink-0", isPositiveImpact ? "bg-emerald-500/20 text-emerald-500" : "bg-rose-500/20 text-rose-500")}>
+              <Zap size={14} className="fill-current" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 relative z-10 w-full pt-2 border-t border-border/50">
+        {positiveEffects.map((effect) => (
+          <div key={effect.attribute} className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-1.5 py-0.5 rounded">
+            + {effect.change} {effect.attribute}
+          </div>
+        ))}
+        {negativeEffects.map((effect) => (
+          <div key={effect.attribute} className="flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest bg-rose-500/10 px-1.5 py-0.5 rounded">
+            {effect.change} {effect.attribute}
+          </div>
+        ))}
+      </div>
+    </motion.button>
   );
 }

@@ -19,8 +19,8 @@ export function WelcomeDialog() {
 
   const handleClose = () => {
     setShowWelcome(false);
-    // Navigate to the groups page after the tutorial
-    router.replace('/groups');
+    // Navigate to the dashboard after the tutorial
+    router.replace('/dashboard');
   };
   
   if (!showWelcome) {

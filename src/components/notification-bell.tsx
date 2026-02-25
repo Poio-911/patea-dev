@@ -11,7 +11,7 @@ import {
   ResponsivePopoverTrigger as PopoverTrigger,
 } from "@/components/ui/responsive-popover"
 import { Button } from './ui/button';
-import { Bell, CheckCheck, FileSignature, UserPlus, Info, Swords, CheckCircle2, XCircle, FileText, Users, CalendarClock, TrendingUp, Award } from 'lucide-react';
+import { Bell, CheckCheck, FileSignature, UserPlus, Info, Swords, CheckCircle2, XCircle, FileText, Users, CalendarClock, TrendingUp, Award, ShieldQuestion } from 'lucide-react';
 import type { Notification, NotificationType } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -38,6 +38,7 @@ const notificationIcons: Record<NotificationType, React.ElementType> = {
     match_reminder: CalendarClock,
     ovr_milestone: TrendingUp,
     achievement_unlocked: Award,
+    identity_reveal_requested: ShieldQuestion,
 };
 
 const IconWrapper = ({ type, className, ...props }: { type: Notification['type'], className?: string }) => {

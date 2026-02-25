@@ -17,7 +17,6 @@ import { useFirestore, useCollection } from '@/firebase';
 import { collection, addDoc, query, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { celebrationConfetti } from '@/lib/animations';
-import { ScrollArea } from './ui/scroll-area';
 import { assignSmartDorsal } from '@/lib/utils/dorsal-logic';
 import { TeamTacticalAnalysis } from './team-builder/team-tactical-analysis';
 import { PlayerSelectionCard } from './team-builder/player-selection-card';
@@ -33,6 +32,7 @@ interface CreateTeamDialogProps {
 const createTeamSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
   playerIds: z.array(z.string()).min(1, 'Debes seleccionar al menos un jugador.'),
+  playerStatuses: z.record(z.enum(['titular', 'suplente'])).optional(),
   jersey: z.object({
     type: z.custom<Jersey['type']>(),
     primaryColor: z.string(),
@@ -50,7 +50,7 @@ const TeamStepIndicator = ({ currentStep }: { currentStep: number }) => {
   ];
 
   return (
-    <div className="flex items-center justify-center gap-4 py-4 relative z-10">
+    <div className="flex items-center justify-center gap-4 py-2 sm:py-4 relative z-10">
       {steps.map((step, idx) => (
         <div key={step.id} className="flex items-center">
           <div className={cn(
@@ -81,6 +81,7 @@ const TeamStepIndicator = ({ currentStep }: { currentStep: number }) => {
 const MemberManager = ({ groupPlayers, existingTeams }: { groupPlayers: Player[], existingTeams: GroupTeam[] }) => {
   const { setValue, getValues, watch } = useFormContext<CreateTeamFormData>();
   const [searchTerm, setSearchTerm] = useState('');
+  const [playerStatuses, setPlayerStatuses] = useState<Record<string, 'titular' | 'suplente'>>({});
   const { toast } = useToast();
 
   const selectedPlayerIds = new Set(watch('playerIds') || []);
@@ -106,6 +107,10 @@ const MemberManager = ({ groupPlayers, existingTeams }: { groupPlayers: Player[]
     if (isSelected) {
       const newIds = currentIds.filter(id => id !== playerId);
       setValue('playerIds', newIds, { shouldValidate: true });
+      const newStatuses = { ...playerStatuses };
+      delete newStatuses[playerId];
+      setPlayerStatuses(newStatuses);
+      setValue('playerStatuses', newStatuses);
     } else {
       const currentTeamCount = playerTeamCounts[playerId] || 0;
       if (currentTeamCount >= 3) {
@@ -118,11 +123,21 @@ const MemberManager = ({ groupPlayers, existingTeams }: { groupPlayers: Player[]
       }
       const newIds = [...currentIds, playerId];
       setValue('playerIds', newIds, { shouldValidate: true });
+      const newStatuses = { ...playerStatuses, [playerId]: 'titular' as const };
+      setPlayerStatuses(newStatuses);
+      setValue('playerStatuses', newStatuses);
     }
   };
 
+  const handleStatusToggle = (playerId: string) => {
+    const current = playerStatuses[playerId] || 'titular';
+    const newStatuses = { ...playerStatuses, [playerId]: current === 'titular' ? 'suplente' as const : 'titular' as const };
+    setPlayerStatuses(newStatuses);
+    setValue('playerStatuses', newStatuses);
+  };
+
   return (
-    <div className="space-y-4 h-full flex flex-col">
+    <div className="space-y-4">
       {/* Search Bar with Glass effect */}
       <div className="relative z-10">
         <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
@@ -136,25 +151,25 @@ const MemberManager = ({ groupPlayers, existingTeams }: { groupPlayers: Player[]
         />
       </div>
 
-      <ScrollArea className="flex-1 -mx-2 px-2">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 pb-4">
-          {filteredPlayers.length > 0 ? filteredPlayers.map(player => (
-            <PlayerSelectionCard
-              key={player.id}
-              player={player}
-              isSelected={selectedPlayerIds.has(player.id)}
-              isMaxedOut={(playerTeamCounts[player.id] || 0) >= 3}
-              teamCount={playerTeamCounts[player.id] || 0}
-              onToggle={handlePlayerToggle}
-            />
-          )) : (
-            <div className="col-span-full py-12 text-center text-muted-foreground flex flex-col items-center">
-              <Search className="h-8 w-8 mb-2 opacity-50" />
-              <p>No se encontraron jugadores.</p>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 pb-4">
+        {filteredPlayers.length > 0 ? filteredPlayers.map(player => (
+          <PlayerSelectionCard
+            key={player.id}
+            player={player}
+            isSelected={selectedPlayerIds.has(player.id)}
+            isMaxedOut={(playerTeamCounts[player.id] || 0) >= 3}
+            teamCount={playerTeamCounts[player.id] || 0}
+            onToggle={handlePlayerToggle}
+            status={selectedPlayerIds.has(player.id) ? (playerStatuses[player.id] || 'titular') : undefined}
+            onStatusToggle={selectedPlayerIds.has(player.id) ? () => handleStatusToggle(player.id) : undefined}
+          />
+        )) : (
+          <div className="col-span-full py-12 text-center text-muted-foreground flex flex-col items-center">
+            <Search className="h-8 w-8 mb-2 opacity-50" />
+            <p>No se encontraron jugadores.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -233,7 +248,7 @@ export function CreateTeamDialog({
         return {
           playerId,
           number: dorsal,
-          status: 'titular',
+          status: data.playerStatuses?.[playerId] ?? 'titular',
         };
       });
 
@@ -282,10 +297,10 @@ export function CreateTeamDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-4xl w-full h-[100dvh] md:max-h-[85vh] md:h-[800px] flex flex-col p-0 gap-0 bg-background/95 dark:bg-black/85 backdrop-blur-xl border-border/50 dark:border-white/10 overflow-hidden shadow-2xl transition-all duration-300">
+      <DialogContent className="sm:max-w-4xl w-full flex flex-col p-0 gap-0 max-h-[92dvh] md:max-h-[85vh] md:h-[800px] bg-background/95 dark:bg-black/85 backdrop-blur-xl border-border/50 dark:border-white/10 overflow-hidden shadow-2xl transition-all duration-300">
 
         {/* Header - Locker Room Style */}
-        <div className="relative px-4 sm:px-6 py-4 border-b border-border/10 dark:border-white/5 bg-gradient-to-r from-muted/20 dark:from-background/50 to-transparent z-20 flex items-center justify-between shrink-0">
+        <div className="relative px-4 sm:px-6 py-3 border-b border-border/10 dark:border-white/5 bg-gradient-to-r from-muted/20 dark:from-background/50 to-transparent z-20 flex items-center justify-between shrink-0">
           <div>
             <h2 className="text-xl md:text-2xl font-black italic tracking-tighter uppercase text-foreground dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-white dark:to-white/60">
               Locker Room
@@ -306,10 +321,10 @@ export function CreateTeamDialog({
             <TeamStepIndicator currentStep={step} />
 
             {/* Content Area */}
-            <div className="flex-grow overflow-hidden relative px-6 md:px-8 pb-4">
+            <div className="flex-grow overflow-y-auto relative px-6 md:px-8 pb-4">
 
               {step === 1 && (
-                <div className="h-full grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 animate-in fade-in slide-in-from-right-4 duration-500">
                   {/* Left Column: Input + Preview (Mobile Order) */}
                   <div className="md:col-span-5 flex flex-col gap-6 justify-center">
                     <div className="space-y-4">
@@ -335,8 +350,8 @@ export function CreateTeamDialog({
                   </div>
 
                   {/* Right Column: Jersey Editor (Hero) */}
-                  <div className="md:col-span-7 h-full overflow-y-auto pr-2">
-                    <div className="bg-muted/10 dark:bg-black/40 border border-border/10 dark:border-white/5 rounded-2xl p-6 h-full backdrop-blur-md">
+                  <div className="md:col-span-7 overflow-y-auto pr-2">
+                    <div className="bg-muted/10 dark:bg-black/40 border border-border/10 dark:border-white/5 rounded-2xl p-6 backdrop-blur-md">
                       <Controller
                         control={control}
                         name="jersey"
@@ -353,11 +368,11 @@ export function CreateTeamDialog({
               )}
 
               {step === 2 && (
-                <div className="h-full flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-500">
+                <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-500">
                   <div className="flex-shrink-0">
                     <TeamTacticalAnalysis selectedPlayers={selectedPlayersList} />
                   </div>
-                  <div className="flex-grow min-h-0 relative">
+                  <div className="relative">
                     <MemberManager
                       groupPlayers={players}
                       existingTeams={existingTeams || []}
@@ -368,7 +383,7 @@ export function CreateTeamDialog({
             </div>
 
             {/* Footer */}
-            <div className="mt-auto px-6 py-4 pb-8 sm:pb-4 border-t border-border/10 dark:border-white/10 bg-background/80 dark:bg-black/60 backdrop-blur-xl flex justify-between items-center shrink-0 z-20">
+            <div className="mt-auto px-6 py-4 border-t border-border/10 dark:border-white/10 bg-background/80 dark:bg-black/60 backdrop-blur-xl flex justify-between items-center shrink-0 z-20" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
               <Button
                 type="button"
                 variant="ghost"
