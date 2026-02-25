@@ -215,6 +215,7 @@ export async function POST(request: NextRequest) {
       baseData.players = finalTeams.flatMap(t => t.players);
       baseData.playerUids = finalTeams.flatMap(t => t.players.map(p => p.uid));
       baseData.teams = finalTeams;
+      baseData.participantTeamIds = input.selectedTeams;
       baseData.matchSize = finalTeams.reduce((sum, t) => sum + t.players.length, 0);
       baseData.isPublic = false;
     } else if (input.type === 'collaborative') {

@@ -14,9 +14,11 @@ interface PlayerSelectionCardProps {
     isMaxedOut: boolean; // If player is already in max teams
     teamCount: number;
     onToggle: (id: string) => void;
+    status?: 'titular' | 'suplente';
+    onStatusToggle?: () => void;
 }
 
-export function PlayerSelectionCard({ player, isSelected, isMaxedOut, teamCount, onToggle }: PlayerSelectionCardProps) {
+export function PlayerSelectionCard({ player, isSelected, isMaxedOut, teamCount, onToggle, status, onStatusToggle }: PlayerSelectionCardProps) {
     const [isLoaded, setIsLoaded] = useState(false);
     return (
         <div
@@ -104,6 +106,21 @@ export function PlayerSelectionCard({ player, isSelected, isMaxedOut, teamCount,
                     </div>
                 </div>
             </div>
+
+            {/* TIT/SUP Status Badge */}
+            {isSelected && status && onStatusToggle && (
+                <button
+                    onClick={(e) => { e.stopPropagation(); onStatusToggle(); }}
+                    className={cn(
+                        "absolute bottom-1 left-1 text-[9px] font-black px-1.5 py-0.5 rounded leading-tight z-20 transition-colors",
+                        status === 'titular'
+                            ? "bg-primary/80 text-primary-foreground"
+                            : "bg-black/70 text-white/70"
+                    )}
+                >
+                    {status === 'titular' ? 'TIT' : 'SUP'}
+                </button>
+            )}
 
             {/* Decoratve Corner Lines */}
             {isSelected && (

@@ -36,13 +36,13 @@ export function JerseyDesigner({ value, onChange }: JerseyDesignerProps) {
   const activeColorValue = activeColorSelection === 'primary' ? value.primaryColor : value.secondaryColor;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
         {/* Vista Previa */}
         <div className="space-y-2">
             <Label className="text-sm font-medium">Vista Previa</Label>
-            <Card className="p-4 bg-muted/30">
+            <Card className="p-2 sm:p-4 bg-muted/30">
                 <div className="flex flex-col items-center justify-center gap-2">
-                    <div className="relative bg-background/50 rounded-lg w-full max-w-[150px]">
+                    <div className="relative bg-background/50 rounded-lg w-full max-w-[120px] sm:max-w-[150px]">
                         <JerseyPreview jersey={value} size="lg" className="mx-auto" />
                     </div>
                 </div>
@@ -55,7 +55,7 @@ export function JerseyDesigner({ value, onChange }: JerseyDesignerProps) {
                 <ShirtIcon className="h-4 w-4" />
                 Diseño
             </Label>
-             <div className="grid grid-cols-5 gap-2">
+             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
               {templates.map(template => {
                 const isSelected = value.type === template.type;
                 return (
@@ -111,7 +111,7 @@ export function JerseyDesigner({ value, onChange }: JerseyDesignerProps) {
                   type="button"
                   onClick={() => handleColorChange(color.hex)}
                   className={cn(
-                    'h-8 w-8 rounded-full border-2 transition-all hover:scale-110',
+                    'h-9 w-9 sm:h-8 sm:w-8 rounded-full border-2 transition-all hover:scale-110',
                     activeColorValue.toUpperCase() === color.hex.toUpperCase()
                       ? 'border-primary ring-2 ring-primary/50'
                       : 'border-border'

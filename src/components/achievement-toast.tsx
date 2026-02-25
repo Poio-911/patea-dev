@@ -82,7 +82,7 @@ export function AchievementToast({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -50, scale: 0.8 }}
           transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-          className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] pointer-events-auto"
+          className="fixed top-[calc(1rem+env(safe-area-inset-top))] left-1/2 -translate-x-1/2 z-[100] pointer-events-auto"
         >
           <div className="relative bg-card border border-border rounded-xl shadow-2xl overflow-hidden min-w-[300px] max-w-[400px]">
             {/* Gradient background */}

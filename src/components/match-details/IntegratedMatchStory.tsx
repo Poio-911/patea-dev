@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Goal, Zap, Award, FileText, ChevronLeft, ChevronRight, Loader2, RefreshCcw } from 'lucide-react';
+import { Star, Goal, Zap, Award, FileText, ChevronLeft, ChevronRight, Loader2, RefreshCcw, Quote } from 'lucide-react';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -98,102 +99,6 @@ export function IntegratedMatchStory({ match }: IntegratedMatchStoryProps) {
 
     return (
         <div className="space-y-6">
-            {/* --- SECCION SIEMPRE VISIBLE: ROSTER INTERACTIVO --- */}
-            {match.teams && match.teams.length === 2 && match.players && (
-                <div className="bg-card border shadow-sm rounded-3xl py-8 px-4 sm:px-8">
-                    <h3 className="text-center font-bold font-serif text-slate-400 uppercase tracking-widest text-sm mb-8">
-                        — Los Protagonistas —
-                    </h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                        {match.teams.map((team, index) => {
-                            const teamPlayers = match.players?.filter(p => team.players?.some(tp => tp.uid === p.uid)) || [];
-
-                            return (
-                                <div key={team.id || team.name || `team-${index}`} className="flex flex-col rounded-2xl border bg-white dark:bg-slate-800 shadow-sm overflow-hidden">
-                                    <div className="bg-muted px-6 py-4 border-b flex items-center justify-center">
-                                        <h4 className="font-bold font-serif text-lg">{team.name}</h4>
-                                    </div>
-                                    <div className="p-4 flex flex-wrap justify-center gap-3 sm:gap-4">
-                                        {teamPlayers.map((player) => {
-                                            const quoteObj = chronicle?.playerVoices?.find(v =>
-                                                v.playerName.toLowerCase() === player.displayName.toLowerCase() ||
-                                                player.displayName.toLowerCase().includes(v.playerName.toLowerCase())
-                                            );
-                                            const hasQuote = !!quoteObj;
-                                            const isSelected = selectedPlayerUid === player.uid;
-                                            const ovrLevel = getOvrLevel(player.ovr);
-
-                                            return (
-                                                <div key={player.uid} className="relative w-[130px] sm:w-[140px] flex-shrink-0">
-                                                    <AnimatePresence>
-                                                        {isSelected && hasQuote && (
-                                                            // Wrapper to hold both the shifting bubble and the fixed arrow
-                                                            <div className="absolute bottom-[110%] left-1/2 -translate-x-1/2 z-[100] pointer-events-none flex flex-col items-center">
-                                                                <motion.div
-                                                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                                    className="w-[280px] sm:w-[320px] bg-slate-800 text-white p-4 rounded-3xl shadow-xl origin-bottom"
-                                                                    style={{
-                                                                        transform: "translateX(clamp(calc(-100% + 70px), 0%, calc(100% - 70px)))"
-                                                                    }}
-                                                                >
-                                                                    <p className="text-sm font-serif italic text-center leading-relaxed">"{quoteObj.quote}"</p>
-                                                                </motion.div>
-                                                                <motion.div
-                                                                    initial={{ opacity: 0, y: 10 }}
-                                                                    animate={{ opacity: 1, y: 0 }}
-                                                                    exit={{ opacity: 0, y: 10 }}
-                                                                    className="w-0 h-0 border-l-[8px] border-l-transparent border-t-[10px] border-t-slate-800 border-r-[8px] border-r-transparent -mt-[1px]"
-                                                                />
-                                                            </div>
-                                                        )}
-                                                    </AnimatePresence>
-
-                                                    <button
-                                                        onClick={() => hasQuote && togglePlayerQuote(player.uid)}
-                                                        className={cn(
-                                                            "w-full flex flex-col items-center text-center p-3 gap-2 rounded-xl transition-all relative border bg-card",
-                                                            // Holographic effect style logic (borrowed from TeamRosterPlayer)
-                                                            "game:holo-effect hover:shadow-md",
-                                                            ovrLevel === 'elite' && "game:hover:border-purple-500/50 game:hover:shadow-lg game:hover:shadow-purple-500/30",
-                                                            ovrLevel === 'gold' && "game:hover:border-yellow-500/50 game:hover:shadow-lg game:hover:shadow-yellow-500/30",
-                                                            ovrLevel === 'silver' && "game:hover:border-gray-400/50 game:hover:shadow-lg game:hover:shadow-gray-400/30",
-                                                            ovrLevel === 'bronze' && "game:hover:border-amber-700/50 game:hover:shadow-lg game:hover:shadow-amber-700/30",
-                                                            hasQuote ? "cursor-pointer" : "opacity-80 cursor-default",
-                                                            isSelected ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "border-transparent"
-                                                        )}
-                                                    >
-                                                        <div className="relative mt-2">
-                                                            <PlayerPhoto player={player as any} size="compact" />
-                                                            {hasQuote && (
-                                                                <div className="absolute -top-3 -right-3 bg-yellow-400 p-1.5 rounded-full shadow-md animate-bounce z-10">
-                                                                    <FileText className="w-4 h-4 text-yellow-900" />
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        <div className="flex flex-col items-center mt-2 w-full">
-                                                            <div className="flex items-center gap-2">
-                                                                <p className="font-bold truncate w-24 text-base">{player.displayName}</p>
-                                                            </div>
-                                                            <div className="flex items-center justify-center gap-2 mt-1">
-                                                                <PlayerOvr value={player.ovr} size="compact" />
-                                                                <PlayerPositionBadge position={player.position as PlayerPosition} size="sm" showIcon={false} textOnly={true} />
-                                                            </div>
-                                                        </div>
-                                                    </button>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
 
             {/* --- SECCION CONDICIONAL: RELATO DE LA IA --- */}
             {(!chronicle && !isGenerating) ? (
@@ -293,6 +198,70 @@ export function IntegratedMatchStory({ match }: IntegratedMatchStoryProps) {
                                 {chronicle?.story}
                             </p>
                         </div>
+
+                        {/* --- VOCES DEL VESTUARIO (CARRUSEL) --- */}
+                        {chronicle?.playerVoices && chronicle.playerVoices.length > 0 && (
+                            <div className="mt-20 pt-12 border-t border-slate-100 dark:border-slate-800">
+                                <h3 className="text-center font-bold font-serif text-slate-400 uppercase tracking-widest text-sm mb-12 flex items-center justify-center gap-3">
+                                    <Quote className="w-4 h-4" /> Voces del Vestuario <Quote className="w-4 h-4 rotate-180" />
+                                </h3>
+
+                                <div className="max-w-4xl mx-auto px-12">
+                                    <Carousel
+                                        opts={{
+                                            align: "start",
+                                            loop: true,
+                                        }}
+                                        className="w-full"
+                                    >
+                                        <CarouselContent className="-ml-4">
+                                            {chronicle.playerVoices.map((voice, idx) => {
+                                                const player = match.players?.find(p =>
+                                                    p.displayName.toLowerCase() === voice.playerName.toLowerCase() ||
+                                                    p.displayName.toLowerCase().includes(voice.playerName.toLowerCase()) ||
+                                                    voice.playerName.toLowerCase().includes(p.displayName.toLowerCase())
+                                                );
+
+                                                return (
+                                                    <CarouselItem key={idx} className="pl-4 md:basis-1/2 lg:basis-1/2">
+                                                        <div className="p-1 h-full">
+                                                            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 h-full flex flex-col gap-4 relative overflow-hidden group hover:shadow-lg transition-all duration-300">
+                                                                <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+                                                                    <Quote className="w-20 h-20 rotate-180" />
+                                                                </div>
+
+                                                                <p className="text-base font-serif italic leading-relaxed text-slate-700 dark:text-slate-300 relative z-10 flex-grow">
+                                                                    "{voice.quote}"
+                                                                </p>
+
+                                                                <div className="flex items-center gap-3 mt-2 relative z-10">
+                                                                    <Avatar className="h-10 w-10 border-2 border-slate-100 dark:border-slate-800">
+                                                                        <AvatarImage src={player?.photoURL} />
+                                                                        <AvatarFallback className="text-xs font-bold">{voice.playerName[0]}</AvatarFallback>
+                                                                    </Avatar>
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-sm font-bold font-serif">{voice.playerName}</span>
+                                                                        {player && (
+                                                                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
+                                                                                {player.position}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </CarouselItem>
+                                                );
+                                            })}
+                                        </CarouselContent>
+                                        <div className="hidden sm:block">
+                                            <CarouselPrevious className="-left-12" />
+                                            <CarouselNext className="-right-12" />
+                                        </div>
+                                    </Carousel>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Footer / Regenerar */}

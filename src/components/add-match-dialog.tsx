@@ -81,7 +81,7 @@ const matchSchema = z.object({
         }
     }
     if (data.type === 'by_teams' && data.selectedTeams?.length !== 2) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Debes seleccionar exactamente 2 equipos.", path: ['players'] });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Debes seleccionar exactamente 2 equipos.", path: ['selectedTeams'] });
     }
     if (!data.isPlanning) {
         if (!data.date) {
@@ -653,76 +653,13 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     };
 
     const createByTeamsMatch = async (data: MatchFormData) => {
-        if (!firestore || !user?.uid || !user.activeGroupId || !groupTeams) throw new Error("Datos insuficientes para crear partido por equipos.");
+        if (!user?.uid || !user.activeGroupId) throw new Error("Datos insuficientes para crear partido por equipos.");
         if (!data.selectedTeams || data.selectedTeams.length !== 2) throw new Error("Debes seleccionar exactamente 2 equipos.");
 
-        const selectedTeamsData = data.selectedTeams.map(id => groupTeams.find(t => t.id === id)).filter((t): t is GroupTeam => !!t);
-
-        const allTeamMembers = selectedTeamsData.flatMap(t => t.members);
-        const allPlayerIds = [...new Set(allTeamMembers.map(m => m.playerId))];
-
-        // Firestore 'in' operator accepts max 10 values; chunk requests safely
-        const chunkSize = 10;
-        const chunks: string[][] = [];
-        for (let i = 0; i < allPlayerIds.length; i += chunkSize) {
-            chunks.push(allPlayerIds.slice(i, i + chunkSize));
-        }
-        const snapshots = await Promise.all(
-            chunks.map(ids => getDocs(query(collection(firestore, 'players'), where('__name__', 'in', ids))))
-        );
-        const playersMap = new Map<string, Player>();
-        snapshots.forEach(snap => {
-            snap.docs.forEach(d => playersMap.set(d.id, { id: d.id, ...d.data() } as Player));
-        });
-
-        const finalTeams: Team[] = selectedTeamsData.map(teamData => {
-            const teamPlayers = teamData.members.map(member => {
-                const playerDetails = playersMap.get(member.playerId);
-                return {
-                    uid: member.playerId,
-                    displayName: playerDetails?.name || 'Jugador',
-                    ovr: playerDetails?.ovr || 50,
-                    position: playerDetails?.position || 'MED'
-                };
-            });
-
-            const totalOVR = teamPlayers.reduce((sum, p) => sum + p.ovr, 0);
-            const averageOVR = totalOVR / teamPlayers.length;
-
-            return {
-                name: teamData.name,
-                jersey: teamData.jersey,
-                players: teamPlayers,
-                totalOVR,
-                averageOVR,
-            };
-        });
-
-        const newMatchData: any = {
-            title: data.title,
-            date: data.date ? data.date.toISOString() : '',
-            time: data.time || '',
-            location: data.location,
-            type: 'by_teams' as MatchType,
-            matchSize: finalTeams[0].players.length + finalTeams[1].players.length,
-            isPublic: false,
-            status: 'upcoming' as const,
-            ownerUid: user.uid,
-            groupId: user.activeGroupId,
-            players: finalTeams.flatMap(t => t.players),
-            playerUids: finalTeams.flatMap(t => t.players.map(p => p.uid)),
-            teams: finalTeams,
-        };
-
-        if (weather) {
-            newMatchData.weather = weather;
-        }
-
-        // Use server API for creation
         const resp = await fetch('/api/matches/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include', // Ensure cookies are sent
+            credentials: 'include',
             body: JSON.stringify({
                 title: data.title,
                 date: data.isPlanning || !data.date ? '' : new Date(`${data.date.toDateString()} ${data.time || '00:00'}`).toISOString(),
@@ -730,7 +667,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 isPlanning: data.isPlanning,
                 location: data.location,
                 type: 'by_teams',
-                matchSize: finalTeams[0].players.length + finalTeams[1].players.length,
+                matchSize: parseInt(data.matchSize),
                 isPublic: false,
                 weather: data.isPlanning ? undefined : weather,
                 selectedTeams: data.selectedTeams,
@@ -1118,12 +1055,16 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                     <div className="space-y-4">
                                         <Label>Seleccioná dos equipos para el partido</Label>
                                         {teamsLoading && <Loader2 className="mx-auto h-6 w-6 animate-spin" />}
+                                        {!teamsLoading && (!groupTeams || groupTeams.length === 0) && (
+                                            <Alert><AlertDescription>Tu grupo no tiene equipos creados. Creá un equipo desde la sección "Mis Equipos" para usar este modo.</AlertDescription></Alert>
+                                        )}
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-96 overflow-y-auto p-1">
                                             {groupTeams?.map(team => (
-                                                <div key={team.id} onClick={() => handleTeamSelect(team.id)} className={cn("rounded-lg border-2 cursor-pointer transition-all", getValues('selectedTeams')?.includes(team.id) ? 'border-primary ring-2 ring-primary/50' : 'hover:border-primary/50')}>
+                                                <div key={team.id} onClick={() => handleTeamSelect(team.id)} className={cn("relative rounded-lg border-2 cursor-pointer transition-all", getValues('selectedTeams')?.includes(team.id) ? 'border-primary ring-2 ring-primary/50' : 'hover:border-primary/50')}>
                                                     <div className="flex flex-col items-center p-4 gap-2">
                                                         <JerseyPreview jersey={team.jersey} size="md" />
                                                         <p className="font-bold text-center text-sm">{team.name}</p>
+                                                        <p className="text-xs text-muted-foreground">{team.members?.length ?? 0} jugadores</p>
                                                     </div>
                                                     {getValues('selectedTeams')?.includes(team.id) && (
                                                         <div className="absolute top-2 right-2 h-5 w-5 bg-primary rounded-full flex items-center justify-center text-primary-foreground">
@@ -1158,7 +1099,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                             </Button>
                         )}
                         {step === 3 && (
-                            <Button type="submit" className="w-full sm:w-auto" disabled={isPending || (watchedType === 'manual' && watchedPlayers.length < selectedMatchSize / 2)}>
+                            <Button type="submit" className="w-full sm:w-auto" disabled={isPending || (watchedType === 'manual' && watchedPlayers.length < selectedMatchSize / 2) || (watchedType === 'by_teams' && (form.watch('selectedTeams')?.length ?? 0) < 2)}>
                                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {isPending ? 'Armando...' : 'Armar Partido'}
                             </Button>

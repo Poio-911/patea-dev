@@ -12,13 +12,13 @@ if (fs.existsSync(envPath)) {
 
 import { getAdminDb } from '../src/firebase/admin-init';
 
-async function checkSubmissions(matchId: string) {
+async function checkAssignments(matchId: string) {
     const db = getAdminDb();
-    const snapshot = await db.collection('evaluationSubmissions')
+    const snapshot = await db.collection('evaluationAssignments')
         .where('matchId', '==', matchId)
         .get();
 
-    console.log(`Submissions for match ${matchId}: ${snapshot.size}`);
+    console.log(`Assignments for match ${matchId}: ${snapshot.size}`);
     snapshot.docs.forEach(doc => {
         console.log(`Document ID: ${doc.id}`);
         console.log(JSON.stringify(doc.data(), null, 2));
@@ -26,4 +26,4 @@ async function checkSubmissions(matchId: string) {
 }
 
 const matchId = process.argv[2] || 'I3OjfKZv3hoRFSP5q0ce';
-checkSubmissions(matchId).catch(console.error);
+checkAssignments(matchId).catch(console.error);

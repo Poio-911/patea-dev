@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useFirestore, useCollection } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { PlayerAchievement } from '@/lib/types';
 import { ACHIEVEMENTS } from '@/lib/achievements-config';
 import { AchievementGrid } from './achievement-badge';
@@ -19,8 +19,8 @@ export function PlayerAchievementsPanel({ playerId }: PlayerAchievementsPanelPro
     const achievementsQuery = useMemo(() => {
         if (!firestore) return null;
         return query(
-            collection(firestore, `players/${playerId}/achievements`),
-            orderBy('unlockedAt', 'desc')
+            collection(firestore, 'playerAchievements'),
+            where('playerId', '==', playerId)
         );
     }, [firestore, playerId]);
 

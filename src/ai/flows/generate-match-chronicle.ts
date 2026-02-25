@@ -65,7 +65,7 @@ const prompt = ai.definePrompt({
        - **INTEGRÁ LOS TESTIMONIOS (CRUCIAL)**: No tires las citas de los jugadores al final. **Metelas en el medio de la narración**. Si un jugador dijo "Estaba ahogado a los 5 minutos", escribí algo como: *"El vértigo inicial rompió el mediocampo; tanto así que, como confesaría exhausto [Nombre del jugador] al costado del tejido: '[Cita textual o parafraseada]'."*
 
     4. **Voces del Vestuario (playerVoices)**:
-       - Dejá esta sección solo para las declaraciones más divertidas, exageradas o auto-críticas (si sobran testimonios que no entraron en el cuerpo del texto). Si usaste todas en la historia, podés extraer la mejor frase y repetirla acá como destacada, o inventar una frase de un "hincha anónimo" que vio el partido desde la tribuna imaginaria.
+       - Es OBLIGATORIO que incluyas una cita para cada uno de los jugadores que dejaron su testimonio en la sección "TESTIMONIOS REALES". El usuario quiere verlos a TODOS. Si ya usaste un testimonio en el cuerpo del texto, repetí la frase más picante o representativa acá.
 
     REGLAS ESTILÍSTICAS DE ORO:
     - ❌ **CERO "BO"**. La IA que escriba "bo" será enviada a jugar a la B.
@@ -76,7 +76,7 @@ const prompt = ai.definePrompt({
     FORMATO DE SALIDA JSON (Estricto):
     - headline: string
     - story: string (Un relato fluido de unos 4 o 5 párrafos bien armados)
-    - playerVoices: array de strings (Citas sueltas destacadas, ej: ["'Frase', tiró [Nombre] mientras elongaba."])
+    - playerVoices: array de objetos { playerName: string, quote: string }
   `,
 });
 

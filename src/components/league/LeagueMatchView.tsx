@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Trophy, Loader2, ArrowLeft } from 'lucide-react';
+import { Trophy, Loader2, ArrowLeft, FileSignature } from 'lucide-react';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { updateMatchFinalScoreAction, logMatchEventAction, updateLiveStateAction, updateLeagueStandingsAction } from '@/lib/actions/server-actions';
 import { checkAndCompleteLeague, resolveTiebreakerFinal } from '@/lib/actions/league-completion-actions';
@@ -215,8 +215,14 @@ export function LeagueMatchView({ match, leagueId, userId }: LeagueMatchViewProp
                         )}
 
                         {isCompleted && (
-                            <div className="text-center py-2">
+                            <div className="text-center py-2 space-y-4">
                                 <p className="text-sm text-muted-foreground">✓ Partido finalizado</p>
+                                <Button asChild variant="outline" className="w-full">
+                                    <Link href={`/matches/${match.id}/evaluate`}>
+                                        <FileSignature className="mr-2 h-4 w-4" />
+                                        Evaluaciones
+                                    </Link>
+                                </Button>
                             </div>
                         )}
                     </CardContent>

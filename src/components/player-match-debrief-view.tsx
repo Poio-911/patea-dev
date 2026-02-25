@@ -11,8 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Loader2, Goal, Star, Calendar, Quote, Lock, MessageSquare,
   ChevronDown, CheckCircle2, Clock, Brain, Zap, Target,
-  TrendingUp, TrendingDown,
+  TrendingUp, TrendingDown, ChevronRight,
 } from 'lucide-react';
+import Link from 'next/link';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,7 @@ import {
 
 type PlayerMatchDebriefViewProps = {
   playerId: string;
+  compact?: boolean;
 };
 
 type MatchFeedbackContext = {
@@ -462,9 +464,22 @@ function MatchCard({
   );
 }
 
+// ─── Compact Skeleton ─────────────────────────────────────────────────────────
+
+function CompactSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="grid grid-cols-3 gap-4 px-1">
+        {[1, 2, 3].map(i => <div key={i} className="h-10 rounded bg-muted" />)}
+      </div>
+      <div className="h-32 rounded-xl bg-muted" />
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function PlayerMatchDebriefView({ playerId }: PlayerMatchDebriefViewProps) {
+export function PlayerMatchDebriefView({ playerId, compact }: PlayerMatchDebriefViewProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [activities, setActivities] = useState<MatchFeedbackContext[]>([]);
@@ -621,6 +636,54 @@ export function PlayerMatchDebriefView({ playerId }: PlayerMatchDebriefViewProps
       matchCount: activities.length,
     };
   }, [activities]);
+
+  // ── Compact mode ──────────────────────────────────────────────────────────────
+  if (compact) {
+    if (isLoading) return <CompactSkeleton />;
+    if (activities.length === 0) return null;
+
+    const [latestMatch] = activities;
+    return (
+      <div className="space-y-4">
+        {/* Hero stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-1">
+          <HeroStat label="Rating Promedio" value={heroStats.avgRating > 0 ? heroStats.avgRating.toFixed(1) : '─'} icon={Star} />
+          <HeroStat label="Goles Totales" value={heroStats.totalGoals} icon={Goal} />
+          <HeroStat label="Partidos" value={heroStats.matchCount} icon={Calendar} />
+          {heroStats.totalOvrChange !== 0 && (
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium flex items-center gap-1">
+                {heroStats.totalOvrChange > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                Tendencia OVR
+              </span>
+              <span className={cn(
+                'text-2xl font-black font-mono tabular-nums leading-none',
+                heroStats.totalOvrChange > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500',
+              )}>
+                {heroStats.totalOvrChange > 0 ? '+' : ''}{heroStats.totalOvrChange.toFixed(1)}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Último partido */}
+        <MatchCard
+          ctx={latestMatch}
+          playerId={playerId}
+          isFirst
+          onRequestIdentity={handleRequestIdentity}
+        />
+
+        {/* Link al historial completo */}
+        <Link
+          href={`/players/${playerId}/historial`}
+          className="flex items-center justify-center gap-1 text-sm text-primary hover:underline"
+        >
+          Ver historial completo <ChevronRight className="h-3.5 w-3.5" />
+        </Link>
+      </div>
+    );
+  }
 
   // ── Loading / Empty ───────────────────────────────────────────────────────────
   if (isLoading) {

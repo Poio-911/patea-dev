@@ -4,10 +4,10 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
-import { doc, collection, query, where, updateDoc } from 'firebase/firestore';
+import { doc, collection, query, where, updateDoc, deleteDoc } from 'firebase/firestore';
 import type { GroupTeam, Player, DetailedTeamPlayer, Match } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
-import { Loader2, ArrowLeft, ShieldCheck, UserCheck, History, Globe, Swords } from 'lucide-react';
+import { Loader2, ArrowLeft, ShieldCheck, UserCheck, History, Globe, Swords, Pencil, Trash2 } from 'lucide-react';
 import { GroupTeamRosterPlayer } from '@/components/group-team-roster-player';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,18 @@ import { getUserRoleInGroupAction } from '@/lib/actions/group-role-actions';
 import type { GroupRole } from '@/lib/group-permissions';
 import { hasPermission } from '@/lib/group-permissions';
 import { ManageRosterDialog } from '@/components/manage-roster-dialog';
+import { EditTeamDialog } from '@/components/edit-team-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export default function TeamDetailPage() {
     const params = useParams<{ id: string }>();
@@ -36,6 +48,8 @@ export default function TeamDetailPage() {
     const { toast } = useToast();
     const [isUpdating, setIsUpdating] = useState(false);
     const [currentUserRole, setCurrentUserRole] = useState<GroupRole | null>(null);
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const teamRef = useMemo(() => {
         if (!firestore || !teamId) return null;
@@ -124,6 +138,20 @@ export default function TeamDetailPage() {
     const handlePlayerUpdate = () => {
     }
 
+    const handleDeleteTeam = async () => {
+        if (!firestore || !teamId) return;
+        setIsDeleting(true);
+        try {
+            await deleteDoc(doc(firestore, 'teams', teamId as string));
+            toast({ title: 'Equipo eliminado', description: `"${team?.name}" fue eliminado correctamente.` });
+            router.push('/groups');
+        } catch (error) {
+            console.error('Error deleting team:', error);
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el equipo.' });
+            setIsDeleting(false);
+        }
+    };
+
     if (loading) {
         return <div className="flex justify-center items-center h-full"><Loader2 className="h-12 w-12 animate-spin" /></div>;
     }
@@ -168,6 +196,41 @@ export default function TeamDetailPage() {
                     </Badge>
                 </div>
             </div>
+
+            {canEditTeam && (
+                <div className="flex gap-2 justify-center flex-wrap">
+                    <Button variant="outline" size="sm" onClick={() => setIsEditOpen(true)}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Editar Equipo
+                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm" disabled={isDeleting}>
+                                {isDeleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                                Eliminar Equipo
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar "{team.name}"?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta acción no se puede deshacer. El equipo y su configuración se eliminarán permanentemente.
+                                    Los partidos anteriores no se verán afectados.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                    onClick={handleDeleteTeam}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                    Eliminar
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            )}
 
             {isOwner && (
                 <Card className="bg-gradient-to-r from-primary/10 to-transparent border-primary/20">
@@ -294,6 +357,9 @@ export default function TeamDetailPage() {
                 </CardContent>
             </Card>
 
+            {canEditTeam && (
+                <EditTeamDialog open={isEditOpen} onOpenChange={setIsEditOpen} team={team} />
+            )}
         </div>
     );
 }
