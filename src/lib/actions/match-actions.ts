@@ -83,6 +83,14 @@ export async function joinMatchAction(matchId: string, userId: string, userDispl
             }
         });
 
+        // Trigger full sequence checks (outside transaction)
+        try {
+            const { triggerMatchFullSequence } = await import('../match-logic');
+            await triggerMatchFullSequence(matchId);
+        } catch (e) {
+            console.error('[joinMatchAction] Error triggering completion sequence:', e);
+        }
+
         // Revalidate the match page to reflect changes immediately in RSC
         revalidatePath(`/matches/${matchId}`);
         revalidatePath('/dashboard');

@@ -57,12 +57,16 @@ export async function respondToMatchInvitationAction(
     }
 
     const invitationRef = matchRef.collection('invitations').doc(userId);
+    let shouldTriggerCompletion = false;
 
     // Execute ALL logic inside transaction to prevent race conditions
     await db.runTransaction(async (transaction) => {
       // Read current state atomically
-      const matchSnap = await transaction.get(matchRef);
-      const invitationSnap = await transaction.get(invitationRef);
+      const [matchSnap, invitationSnap, playerSnap] = await Promise.all([
+        transaction.get(matchRef),
+        transaction.get(invitationRef),
+        transaction.get(db.collection('players').doc(userId))
+      ]);
 
       if (!matchSnap.exists) {
         throw new Error('Partido no encontrado');
@@ -94,20 +98,47 @@ export async function respondToMatchInvitationAction(
         counterUpdates.maybeCount = FieldValue.increment(1);
       }
 
+      // Roster Synchronizations (Add/Remove from players array)
+      if (response === 'confirmed' && previousResponse !== 'confirmed') {
+        // Add to roster
+        const playerData = playerSnap.exists ? playerSnap.data() : null;
+        const playerPayload = {
+          uid: userId,
+          displayName: playerData?.name || 'Jugador',
+          ovr: playerData?.ovr || 50,
+          position: playerData?.position || 'MED',
+          photoUrl: playerData?.photoUrl || playerData?.photoURL || ''
+        };
+        counterUpdates.players = FieldValue.arrayUnion(playerPayload);
+        counterUpdates.playerUids = FieldValue.arrayUnion(userId);
+        shouldTriggerCompletion = true;
+      } else if (response !== 'confirmed' && previousResponse === 'confirmed') {
+        // Remove from roster
+        // Note: arrayRemove on objects is tricky if OVR changed, so we might need a safer removal logic
+        // But for now, let's look for the player in the existing match data
+        const playerToRemove = matchData?.players?.find((p: any) => p.uid === userId);
+        if (playerToRemove) {
+          counterUpdates.players = FieldValue.arrayRemove(playerToRemove);
+          counterUpdates.playerUids = FieldValue.arrayRemove(userId);
+        }
+      }
+
       // Handle waitlist logic with ATOMIC data
-      const maxPlayers = matchData?.maxPlayers;
+      const maxPlayers = matchData?.maxPlayers || (matchData?.matchSize ? matchData.matchSize * 2 : 10);
       const currentConfirmed = matchData?.confirmedCount || 0;
       const waitlist = matchData?.waitlist || [];
 
-      if (maxPlayers && response === 'confirmed') {
+      if (maxPlayers && response === 'confirmed' && previousResponse !== 'confirmed') {
         // Check if match is full based on ATOMIC confirmed count
         if (currentConfirmed >= maxPlayers && !waitlist.includes(userId)) {
           // Match is full, add to waitlist instead
           counterUpdates.waitlist = FieldValue.arrayUnion(userId);
           // Don't increment confirmedCount if going to waitlist
           delete counterUpdates.confirmedCount;
-
-
+          // Don't add to players array if going to waitlist
+          delete counterUpdates.players;
+          delete counterUpdates.playerUids;
+          shouldTriggerCompletion = false;
         }
       }
 
@@ -133,6 +164,12 @@ export async function respondToMatchInvitationAction(
         transaction.update(matchRef, counterUpdates);
       }
     });
+
+    // Trigger full sequence (outside transaction for cleaner async handling)
+    if (shouldTriggerCompletion) {
+      const { triggerMatchFullSequence } = await import('../match-logic');
+      await triggerMatchFullSequence(matchId);
+    }
 
     return { success: true };
   } catch (error: any) {

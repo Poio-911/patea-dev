@@ -9,7 +9,7 @@ import type { Notification, NotificationType } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Bell, CheckCheck, FileSignature, UserPlus, Info, Swords, CheckCircle2, XCircle, FileText, Users, Calendar, TrendingUp, Trophy } from 'lucide-react';
+import { Bell, CheckCheck, FileSignature, UserPlus, Info, Swords, CheckCircle2, XCircle, FileText, Users, Calendar, TrendingUp, Trophy, ShieldQuestion } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, formatDistanceToNow, isToday, isYesterday, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -31,6 +31,7 @@ const notificationIcons: Record<NotificationType, React.ElementType> = {
     match_reminder: Bell,
     ovr_milestone: TrendingUp,
     achievement_unlocked: Trophy,
+    identity_reveal_requested: ShieldQuestion,
 };
 
 const IconWrapper = ({ type, className, ...props }: { type: Notification['type'], className?: string }) => {

@@ -1,7 +1,6 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore, enableMultiTabIndexedDbPersistence } from 'firebase/firestore';
-import { getMessaging, Messaging } from 'firebase/messaging';
 import { firebaseConfig } from './config';
 import { FirebaseProvider, useFirebase, useFirebaseApp, useAuth, useFirestore } from './provider';
 import { FirebaseClientProvider } from './client-provider';
@@ -26,18 +25,7 @@ export function initializeFirebase() {
       }
     });
   }
-  let messaging: Messaging | null = null;
-
-  // ✅ FIX: Only initialize messaging on the client-side where 'window' is available.
-  if (typeof window !== 'undefined') {
-    try {
-      messaging = getMessaging(app);
-    } catch (error) {
-      console.warn("Firebase Messaging is not supported in this browser:", error);
-    }
-  }
-
-  return { firebaseApp: app, auth, firestore, messaging };
+  return { firebaseApp: app, auth, firestore };
 }
 
 // Initialize and export instances for direct use

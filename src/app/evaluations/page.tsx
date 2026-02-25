@@ -1,16 +1,16 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, collectionGroup, getDocs, onSnapshot, Unsubscribe } from 'firebase/firestore';
-import type { Match, Player, EvaluationAssignment, EvaluationSubmission } from '@/lib/types';
+import { collection, query, where, collectionGroup, getDocs, onSnapshot, Unsubscribe, doc, getDoc } from 'firebase/firestore';
+import type { Match, Player, EvaluationAssignment, EvaluationSubmission, Evaluation } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/page-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShieldQuestion, Calendar, Edit, Eye, FileClock, Users, MapPin, UsersRound, Check } from 'lucide-react';
+import { ShieldQuestion, Calendar, Edit, Eye, FileClock, Users, MapPin, UsersRound, Check, EyeOff, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, subDays, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -22,6 +22,10 @@ import { ViewSubmissionDialog } from '@/components/view-submission-dialog';
 import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
 import { MatchEventCard } from '@/components/ui/gamer/match-event-card';
 import { GamerProgress } from '@/components/ui/gamer/gamer-progress';
+import { respondToIdentityRevealAction } from '@/lib/actions/evaluation-actions';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 
 type PendingItem = {
     match: Match;
@@ -34,12 +38,105 @@ type PendingItem = {
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
 
+type IdentityRevealRequest = {
+  evaluation: Evaluation;
+  fromPlayerName: string;
+  fromPlayerPhotoUrl: string;
+  matchTitle: string;
+};
+
+function IdentityRevealRequestCard({
+  request,
+  onResponded,
+}: {
+  request: IdentityRevealRequest;
+  onResponded: (evaluationId: string) => void;
+}) {
+  const { user } = useUser();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState<'accepted' | 'rejected' | null>(null);
+
+  const handleRespond = async (response: 'accepted' | 'rejected') => {
+    if (!user) return;
+    setLoading(response);
+    try {
+      const result = await respondToIdentityRevealAction(request.evaluation.id, user.uid, response);
+      if (result.success) {
+        toast({
+          title: response === 'accepted' ? '✅ Identidad revelada' : '🔒 Identidad mantenida',
+          description: response === 'accepted'
+            ? `${request.fromPlayerName} ya sabe que fuiste vos.`
+            : 'Tu anonimato fue preservado.',
+        });
+        onResponded(request.evaluation.id);
+      } else {
+        toast({ variant: 'destructive', description: result.error || 'Error al responder.' });
+        setLoading(null);
+      }
+    } catch {
+      toast({ variant: 'destructive', description: 'Error de conexión.' });
+      setLoading(null);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm game:border-primary/30 game:bg-[#0b1e3b]/80 flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <Avatar className="h-12 w-12 ring-2 ring-background shadow-md">
+          {request.fromPlayerPhotoUrl ? (
+            <AvatarImage src={request.fromPlayerPhotoUrl} />
+          ) : (
+            <AvatarFallback className="bg-primary/20 text-primary font-bold">
+              {request.fromPlayerName.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          )}
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-sm truncate">{request.fromPlayerName}</p>
+          <p className="text-xs text-muted-foreground truncate">{request.matchTitle}</p>
+        </div>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        <span className="font-semibold text-foreground">{request.fromPlayerName}</span> quiere saber que fuiste vos quien lo evaluó.
+      </p>
+      <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100 game:border-white/5">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={loading !== null}
+          onClick={() => handleRespond('rejected')}
+          className="text-xs"
+        >
+          {loading === 'rejected' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <EyeOff className="h-3 w-3 mr-1" />}
+          Mantener anonimato
+        </Button>
+        <Button
+          size="sm"
+          disabled={loading !== null}
+          onClick={() => handleRespond('accepted')}
+          className="text-xs"
+        >
+          {loading === 'accepted' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
+          Revelar identidad
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function EvaluationsPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
+    const { toast } = useToast();
 
     const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
     const [isLoadingItems, setIsLoadingItems] = useState(true);
+    const [identityRequests, setIdentityRequests] = useState<IdentityRevealRequest[]>([]);
+    const [isLoadingRequests, setIsLoadingRequests] = useState(true);
+
+    const handleRequestResponded = useCallback((evaluationId: string) => {
+        setIdentityRequests(prev => prev.filter(r => r.evaluation.id !== evaluationId));
+    }, []);
 
     const userAssignmentsQuery = useMemo(() => {
         if (!firestore || !user?.uid) return null;
@@ -190,6 +287,52 @@ export default function EvaluationsPage() {
 
     }, [userAssignments, firestore, user, assignmentsLoading, userLoading]);
 
+    // Load pending identity reveal requests (evaluations where this user is the evaluator)
+    useEffect(() => {
+        if (!user || !firestore) {
+            setIsLoadingRequests(false);
+            return;
+        }
+
+        setIsLoadingRequests(true);
+
+        const fetchRequests = async () => {
+            try {
+                const snap = await getDocs(query(
+                    collection(firestore, 'evaluations'),
+                    where('evaluatorId', '==', user.uid),
+                    where('identityRequestStatus', '==', 'pending')
+                ));
+
+                const evaluations = snap.docs.map(d => ({ id: d.id, ...d.data() } as Evaluation));
+
+                // Enrich with player and match info
+                const enriched = await Promise.all(evaluations.map(async (ev) => {
+                    const [playerSnap, matchSnap] = await Promise.all([
+                        getDoc(doc(firestore, 'players', ev.playerId)),
+                        getDoc(doc(firestore, 'matches', ev.matchId)),
+                    ]);
+                    const playerData = playerSnap.data() as any;
+                    const matchData = matchSnap.data() as any;
+                    return {
+                        evaluation: ev,
+                        fromPlayerName: playerData?.name || 'Jugador',
+                        fromPlayerPhotoUrl: playerData?.photoUrl || playerData?.photoURL || '',
+                        matchTitle: matchData?.title || 'Partido',
+                    } as IdentityRevealRequest;
+                }));
+
+                setIdentityRequests(enriched);
+            } catch (err) {
+                console.error('Error fetching identity requests:', err);
+            } finally {
+                setIsLoadingRequests(false);
+            }
+        };
+
+        fetchRequests();
+    }, [user, firestore]);
+
     const renderCard = (item: PendingItem) => {
         const isEvaluationSent = !!item.submission;
         const evaluationProgress = item.totalAssignments > 0 ? (item.completedAssignments / item.totalAssignments) * 100 : 0;
@@ -338,9 +481,17 @@ export default function EvaluationsPage() {
             </AttributesHelpDialog>
 
             <Tabs defaultValue="pending" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 max-w-md">
+                <TabsList className="grid w-full grid-cols-3 max-w-md">
                     <TabsTrigger value="pending">Pendientes</TabsTrigger>
                     <TabsTrigger value="history">Historial</TabsTrigger>
+                    <TabsTrigger value="requests" className="relative">
+                        Solicitudes
+                        {identityRequests.length > 0 && (
+                            <Badge className="ml-1.5 h-4 min-w-[1rem] px-1 text-[10px] bg-primary text-primary-foreground">
+                                {identityRequests.length}
+                            </Badge>
+                        )}
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="pending" className="mt-6">
@@ -384,6 +535,47 @@ export default function EvaluationsPage() {
                                     return !isBefore(new Date(item.submission.submittedAt), archiveThreshold);
                                 })
                                 .map((item) => renderCard(item))}
+                        </div>
+                    )}
+                </TabsContent>
+
+                <TabsContent value="requests" className="mt-6">
+                    {isLoadingRequests ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {[...Array(2)].map((_, i) => (
+                                <div key={i} className="rounded-xl border border-slate-200 p-5 space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <Skeleton className="h-12 w-12 rounded-full" />
+                                        <div className="space-y-1 flex-1">
+                                            <Skeleton className="h-3 w-24" />
+                                            <Skeleton className="h-3 w-32" />
+                                        </div>
+                                    </div>
+                                    <Skeleton className="h-4 w-full" />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Skeleton className="h-9 rounded-md" />
+                                        <Skeleton className="h-9 rounded-md" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : identityRequests.length === 0 ? (
+                        <Alert>
+                            <ShieldQuestion className="h-4 w-4" />
+                            <AlertTitle>Sin solicitudes</AlertTitle>
+                            <AlertDescription>
+                                Cuando alguien quiera saber que fuiste vos quien lo evaluó, aparecerá aquí.
+                            </AlertDescription>
+                        </Alert>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {identityRequests.map(request => (
+                                <IdentityRevealRequestCard
+                                    key={request.evaluation.id}
+                                    request={request}
+                                    onResponded={handleRequestResponded}
+                                />
+                            ))}
                         </div>
                     )}
                 </TabsContent>

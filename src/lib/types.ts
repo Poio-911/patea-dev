@@ -395,7 +395,8 @@ export type NotificationType =
   | 'match_invitation'
   | 'match_reminder'
   | 'ovr_milestone'
-  | 'achievement_unlocked';
+  | 'achievement_unlocked'
+  | 'identity_reveal_requested';
 
 export type Notification = {
   id: string;
@@ -487,6 +488,8 @@ export type Evaluation = {
   // Identity Reveal Feature
   identityRequestStatus?: 'none' | 'pending' | 'accepted' | 'rejected';
   identityRevealed?: boolean;
+  evaluatorDisplayName?: string;
+  evaluatorPhotoUrl?: string;
 } & DocumentData;
 
 
