@@ -81,7 +81,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
           <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
         </video>
         <div className={cn(
-          "absolute inset-0 game-banner-overlay opacity-80 z-0",
+          "absolute inset-0 game-banner-overlay z-0",
           matchTheme.bannerOverlay
         )} />
       </div>
@@ -178,7 +178,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
             <p className="font-semibold">{formatVenueName(match.location.name, match.location.address)}</p>
           </div>
           <div className="flex gap-3 flex-shrink-0">
-            <Button asChild variant="default" size="sm" className="game-theme-button shadow-none">
+            <Button asChild variant="default" size="sm" className="game-theme-button !shadow-none">
               <a
                 href={googleMapsUrl}
                 target="_blank"
@@ -192,7 +192,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
               <Button
                 size="sm"
                 onClick={handleShare}
-                className="bg-[hsl(var(--whatsapp-green))] hover:bg-[hsl(var(--whatsapp-green))]/90 text-[hsl(var(--whatsapp-foreground))] border-0"
+                className="bg-[hsl(var(--whatsapp-green))] hover:bg-[hsl(var(--whatsapp-green))]/90 text-[hsl(var(--whatsapp-foreground))] border-0 !shadow-none"
                 aria-label="Compartir partido"
               >
                 <Share2 className="mr-2 h-4 w-4" />
