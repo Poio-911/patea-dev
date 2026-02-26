@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import type { Match, Player } from '@/lib/types';
+import type { Match, Player, MatchLocation } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -17,7 +17,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { InvitePlayerDialog } from '../invite-player-dialog';
 import { EditableTeamsDialog } from '../editable-teams-dialog';
-import { Loader2, CheckCircle, Trash2, UserPlus, FileSignature, Shuffle } from 'lucide-react';
+import { RescheduleMatchDialog } from './RescheduleMatchDialog';
+import { ChangeVenueDialog } from './ChangeVenueDialog';
+import { Loader2, CheckCircle, Trash2, UserPlus, FileSignature, Shuffle, CalendarClock, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
 interface MatchManagementActionsProps {
@@ -32,6 +34,11 @@ interface MatchManagementActionsProps {
   // Acciones de equipos consolidadas
   onShuffle?: () => void;
   isShuffling?: boolean;
+  // Reprogramar y cambiar cancha
+  onReschedule?: (date: string, time: string) => Promise<void>;
+  isRescheduling?: boolean;
+  onChangeLocation?: (location: MatchLocation) => Promise<void>;
+  isChangingLocation?: boolean;
 }
 
 /**
@@ -49,6 +56,10 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
   isCompetitionMatch = false,
   onShuffle,
   isShuffling = false,
+  onReschedule,
+  isRescheduling = false,
+  onChangeLocation,
+  isChangingLocation = false,
 }: MatchManagementActionsProps) {
   const isManual = match.type === 'manual';
   const isCollaborative = match.type === 'collaborative';
@@ -119,6 +130,24 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
             </Link>
           </Button>
         )}
+        {/* Reprogramar: solo upcoming, no competition */}
+        {match.status === 'upcoming' && !isCompetitionMatch && onReschedule && (
+          <RescheduleMatchDialog match={match} onReschedule={onReschedule} isSubmitting={isRescheduling}>
+            <Button size="sm" variant="outline" aria-label="Reprogramar partido">
+              <CalendarClock className="mr-2 h-4 w-4" aria-hidden="true" />
+              Reprogramar
+            </Button>
+          </RescheduleMatchDialog>
+        )}
+        {/* Cambiar Cancha: solo upcoming, no competition */}
+        {match.status === 'upcoming' && !isCompetitionMatch && onChangeLocation && (
+          <ChangeVenueDialog match={match} onChangeLocation={onChangeLocation} isSubmitting={isChangingLocation}>
+            <Button size="sm" variant="outline" aria-label="Cambiar cancha">
+              <MapPin className="mr-2 h-4 w-4" aria-hidden="true" />
+              Cambiar Cancha
+            </Button>
+          </ChangeVenueDialog>
+        )}
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
@@ -136,7 +165,7 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
             <AlertDialogHeader>
               <AlertDialogTitle>¿Borrar este partido?</AlertDialogTitle>
               <AlertDialogDescription>
-                Esta acción es permanente y no se puede deshacer.
+                Esta acción es permanente y no se puede deshacer. Los jugadores inscriptos recibirán una notificación de cancelación.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

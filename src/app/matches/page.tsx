@@ -211,8 +211,9 @@ export default function MatchesPage() {
         // Apply time filter
         switch (timeFilter) {
             case 'upcoming':
-                // Show all matches with date >= today OR status active
+                // Show all matches with date >= today OR status active OR status planning (no confirmed date yet)
                 return matches.filter(m => {
+                    if (m.status === 'planning') return true;
                     const matchDate = new Date(m.date);
                     const matchDay = new Date(matchDate.getFullYear(), matchDate.getMonth(), matchDate.getDate());
                     return matchDay >= today || m.status === 'active';
@@ -268,6 +269,7 @@ export default function MatchesPage() {
         const weekEnd = new Date(today.getTime() + 7 * 86400000);
         return {
             upcoming: amistososMatches.filter(m => {
+                if (m.status === 'planning') return true;
                 const matchDate = new Date(m.date);
                 const matchDay = new Date(matchDate.getFullYear(), matchDate.getMonth(), matchDate.getDate());
                 return matchDay >= today || m.status === 'active';

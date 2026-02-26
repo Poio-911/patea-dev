@@ -46,14 +46,24 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
 
                                 <div className="flex items-center gap-3 mt-1">
                                     <div className="flex flex-col items-center justify-center bg-muted/50 rounded p-1.5 min-w-[3rem] border border-border group-hover:bg-primary/5 group-hover:border-primary/20 transition-colors">
-                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">{format(new Date(match.date), "MMM", { locale: es })}</span>
-                                        <span className="text-lg font-black text-card-foreground leading-none">{format(new Date(match.date), "d", { locale: es })}</span>
+                                        {match.status === 'planning' || !match.date ? (
+                                            <span className="text-[9px] font-bold text-muted-foreground uppercase text-center leading-tight">Por confirmar</span>
+                                        ) : (
+                                            <>
+                                                <span className="text-[10px] font-bold text-muted-foreground uppercase">{format(new Date(match.date), "MMM", { locale: es })}</span>
+                                                <span className="text-lg font-black text-card-foreground leading-none">{format(new Date(match.date), "d", { locale: es })}</span>
+                                            </>
+                                        )}
                                     </div>
 
                                     <div className="flex flex-col gap-1 min-w-0">
                                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                             <Calendar className="h-3 w-3 text-primary/70" />
-                                            <span className="truncate capitalize">{format(new Date(match.date), "EEEE HH:mm", { locale: es })}hs</span>
+                                            <span className="truncate capitalize">
+                                                {match.status === 'planning' || !match.date
+                                                    ? 'Fecha por votar'
+                                                    : `${format(new Date(match.date), "EEEE HH:mm", { locale: es })}hs`}
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                             <MapPin className="h-3 w-3 text-muted-foreground" />
@@ -95,7 +105,11 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
                                     <Card className="h-full hover:bg-muted/50 transition-colors">
                                         <CardHeader>
                                             <CardTitle className="text-base">{match.title}</CardTitle>
-                                            <CardDescription className="text-xs">{format(new Date(match.date), "EEEE, d MMM, yyyy", { locale: es })}</CardDescription>
+                                            <CardDescription className="text-xs">
+                                                {match.status === 'planning' || !match.date
+                                                    ? 'Fecha por confirmar'
+                                                    : format(new Date(match.date), "EEEE, d MMM, yyyy", { locale: es })}
+                                            </CardDescription>
                                         </CardHeader>
                                         <CardContent>
                                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -127,7 +141,11 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
                                             <p className="text-xs font-bold truncate">{opponentTeam.name}</p>
                                         </div>
                                     </div>
-                                    <p className="text-center text-xs text-muted-foreground mt-2">{format(new Date(match.date), "E, d MMM, HH:mm'hs'", { locale: es })}</p>
+                                    <p className="text-center text-xs text-muted-foreground mt-2">
+                        {match.status === 'planning' || !match.date
+                            ? 'Fecha por confirmar'
+                            : format(new Date(match.date), "E, d MMM, HH:mm'hs'", { locale: es })}
+                    </p>
                                     {match.weather && (
                                         <div className="mt-2 border-t pt-2">
                                             <MatchWeatherForecast match={match} compact />
@@ -155,7 +173,11 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
                         <Card className="h-full hover:bg-muted/50 transition-colors">
                             <CardHeader>
                                 <CardTitle className="text-base">{match.title}</CardTitle>
-                                <CardDescription className="text-xs">{format(new Date(match.date), "EEEE, d MMM, yyyy", { locale: es })}</CardDescription>
+                                <CardDescription className="text-xs">
+                                    {match.status === 'planning' || !match.date
+                                        ? 'Fecha por confirmar'
+                                        : format(new Date(match.date), "EEEE, d MMM, yyyy", { locale: es })}
+                                </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -190,6 +190,10 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
             isCompetitionMatch={isCompetitionMatch}
             onShuffle={isCompetitionMatch ? undefined : actions.handleShuffleTeams}
             isShuffling={actions.isShuffling}
+            onReschedule={isCompetitionMatch ? undefined : actions.handleReschedule}
+            isRescheduling={actions.isRescheduling}
+            onChangeLocation={isCompetitionMatch ? undefined : actions.handleChangeLocation}
+            isChangingLocation={actions.isChangingLocation}
           />
         )}
 

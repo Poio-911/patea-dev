@@ -24,6 +24,7 @@ import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, 
 import { addDays, format } from 'date-fns';
 import { generateBracket, advanceWinner, isTournamentComplete, getChampion, getRunnerUp, getNextRound, getCurrentRound } from '../../lib/utils/cup-bracket';
 import { publishMatchPlayedActivity, publishOvrChangeActivity } from './social-actions';
+import { notifyMatchUpdatedAction } from './notification-actions';
 import { CREDITS } from '../constants';
 
 // --- Server Actions ---
@@ -1848,7 +1849,8 @@ export async function updateMatchDateAction(
     matchId: string,
     date: string,
     time: string,
-    location?: MatchLocation
+    location?: MatchLocation,
+    playerIds?: string[]
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const matchRef = getAdminDb().collection('matches').doc(matchId);
@@ -1863,6 +1865,48 @@ export async function updateMatchDateAction(
         }
 
         await matchRef.update(updateData);
+
+        if (playerIds && playerIds.length > 0) {
+            const matchSnap = await matchRef.get();
+            const matchTitle = matchSnap.exists ? (matchSnap.data()?.title ?? 'Partido') : 'Partido';
+            notifyMatchUpdatedAction({
+                playerIds,
+                matchTitle,
+                updateType: 'date',
+                updateDetails: `${date} a las ${time}`,
+            }).catch(err => logger.error('Failed to send date update notification', err));
+        }
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Update match location and notify players
+ */
+export async function updateMatchLocationAction(
+    matchId: string,
+    location: MatchLocation,
+    playerIds: string[]
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const matchRef = getAdminDb().collection('matches').doc(matchId);
+
+        await matchRef.update({ location });
+
+        if (playerIds.length > 0) {
+            const matchSnap = await matchRef.get();
+            const matchTitle = matchSnap.exists ? (matchSnap.data()?.title ?? 'Partido') : 'Partido';
+            notifyMatchUpdatedAction({
+                playerIds,
+                matchTitle,
+                updateType: 'location',
+                updateDetails: location.name,
+            }).catch(err => logger.error('Failed to send location update notification', err));
+        }
 
         return { success: true };
     } catch (error) {

@@ -275,14 +275,20 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                         <Calendar className="h-5 w-5 text-muted-foreground" />
                         <div>
                             <p className="text-xs text-muted-foreground">Fecha</p>
-                            <p className="font-bold text-sm capitalize">{format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es })}</p>
+                            <p className="font-bold text-sm capitalize">
+                                {match.status === 'planning' || !match.date
+                                    ? 'Por confirmar'
+                                    : format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es })}
+                            </p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
                         <Clock className="h-5 w-5 text-muted-foreground" />
                         <div>
                             <p className="text-xs text-muted-foreground">Hora</p>
-                            <p className="font-bold text-sm">{match.time} hs</p>
+                            <p className="font-bold text-sm">
+                                {match.status === 'planning' || !match.time ? 'Por votar' : `${match.time} hs`}
+                            </p>
                         </div>
                     </div>
                 </div>

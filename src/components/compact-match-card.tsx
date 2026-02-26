@@ -81,8 +81,11 @@ export function CompactMatchCard({ match, className, distance }: CompactMatchCar
   const typeLabel = typeLabels[match.type] || match.type;
   const matchTheme = getMatchTheme(match.type);
   const dateObj = new Date(match.date);
-  const fecha = dateObj.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-  const hora = (match.time || '').replace(' hs', '').replace('hs', '').trim();
+  const isPlanning = match.status === 'planning' || !match.date;
+  const fecha = isPlanning
+    ? 'Fecha por confirmar'
+    : dateObj.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  const hora = isPlanning ? 'Por votar' : (match.time || '').replace(' hs', '').replace('hs', '').trim();
   const locationName = formatVenueName(match.location.name, match.location.address);
   const statusInfo = statusConfig[match.status];
 

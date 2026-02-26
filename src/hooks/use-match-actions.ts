@@ -1,15 +1,16 @@
 import { useState, useCallback } from 'react';
-import type { Match, Player, EvaluationAssignment, Notification } from '@/lib/types';
+import type { Match, Player, EvaluationAssignment, Notification, MatchLocation } from '@/lib/types';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, deleteDoc } from 'firebase/firestore';
 import { Firestore } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { generateTeamsAction } from '@/lib/actions/server-actions';
+import { generateTeamsAction, updateMatchDateAction, updateMatchLocationAction } from '@/lib/actions/server-actions';
 import { logger } from '@/lib/logger';
 import { celebrationConfetti, miniConfetti } from '@/lib/animations';
 import {
   notifyPlayerAddedToMatchAction,
   notifyTeamsShuffledAction,
-  notifyEvaluationAvailableAction
+  notifyEvaluationAvailableAction,
+  notifyMatchUpdatedAction
 } from '@/lib/actions/notification-actions';
 import { joinMatchAction, leaveMatchAction } from '@/lib/actions/match-actions';
 import { useHaptics } from '@/hooks/use-haptics';
@@ -43,6 +44,8 @@ export function useMatchActions({
   const [isJoining, setIsJoining] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
+  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [isChangingLocation, setIsChangingLocation] = useState(false);
   const { success: hapticSuccess } = useHaptics();
 
   const generateEvaluationAssignments = useCallback((match: Match, allPlayers: Player[]): Omit<EvaluationAssignment, 'id'>[] => {
@@ -257,6 +260,14 @@ export function useMatchActions({
     if (!firestore || !match) return;
     setIsDeleting(true);
     try {
+      if (match.playerUids && match.playerUids.length > 0) {
+        notifyMatchUpdatedAction({
+          playerIds: match.playerUids,
+          matchTitle: match.title,
+          updateType: 'cancelled',
+          updateDetails: 'El partido fue cancelado por el organizador',
+        }).catch(err => logger.error('Failed to send cancellation notification', err));
+      }
       await deleteDoc(doc(firestore, 'matches', match.id));
       toast({ title: "Partido Eliminado", description: "El partido ha sido eliminado con éxito." });
     } catch (error) {
@@ -265,6 +276,36 @@ export function useMatchActions({
       setIsDeleting(false);
     }
   }, [firestore, match, toast]);
+
+  const handleReschedule = useCallback(async (date: string, time: string) => {
+    if (!match) return;
+    setIsRescheduling(true);
+    try {
+      const result = await updateMatchDateAction(match.id, date, time, undefined, match.playerUids);
+      if (!result.success) throw new Error(result.error);
+      toast({ title: 'Partido reprogramado', description: 'La fecha y hora han sido actualizadas.' });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudo reprogramar el partido.' });
+      throw error;
+    } finally {
+      setIsRescheduling(false);
+    }
+  }, [match, toast]);
+
+  const handleChangeLocation = useCallback(async (location: MatchLocation) => {
+    if (!match) return;
+    setIsChangingLocation(true);
+    try {
+      const result = await updateMatchLocationAction(match.id, location, match.playerUids);
+      if (!result.success) throw new Error(result.error);
+      toast({ title: 'Cancha actualizada', description: 'La ubicación del partido ha sido actualizada.' });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudo actualizar la cancha.' });
+      throw error;
+    } finally {
+      setIsChangingLocation(false);
+    }
+  }, [match, toast]);
 
   const handleShuffleTeams = useCallback(async () => {
     if (!firestore || !match || !allGroupPlayers) return;
@@ -310,9 +351,13 @@ export function useMatchActions({
     isJoining,
     isDeleting,
     isShuffling,
+    isRescheduling,
+    isChangingLocation,
     handleFinish,
     handleJoinOrLeave,
     handleDelete,
     handleShuffleTeams,
+    handleReschedule,
+    handleChangeLocation,
   };
 }

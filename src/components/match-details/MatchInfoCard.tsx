@@ -149,7 +149,9 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
             <div className="flex items-center gap-3 text-lg">
               <Calendar className="h-5 w-5 text-white/65" aria-hidden="true" />
               <span className="font-semibold">
-                {format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es })}
+                {match.status === 'planning' || !match.date
+                  ? "Fecha por definir"
+                  : format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es })}
               </span>
             </div>
             {ownerProfile && (
@@ -167,7 +169,9 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
           <div className="space-y-3 text-left sm:text-right">
             <div className="flex items-center gap-3 text-lg justify-start sm:justify-end">
               <Clock className="h-5 w-5 text-white/65" aria-hidden="true" />
-              <span className="font-semibold">{match.time} hs</span>
+              <span className="font-semibold">
+                {match.status === 'planning' || !match.time ? "Hora por definir" : `${match.time} hs`}
+              </span>
             </div>
             {WeatherIcon && match.weather && (
               <div className="flex items-center gap-1.5 text-sm text-white/90 justify-start sm:justify-end">
