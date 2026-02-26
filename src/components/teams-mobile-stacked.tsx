@@ -38,15 +38,25 @@ export function TeamsMobileStacked({ teams }: TeamsMobileStackedProps) {
   };
   return (
     <Tabs value={tab} onValueChange={setTab} className="w-full">
-      <TabsList className="w-full flex">
+      <TabsList className="w-full flex" data-vaul-no-drag>
         {teams.map((team) => (
-          <TabsTrigger key={team.name} value={team.name} className="flex-1 text-xs">
+          <TabsTrigger
+            key={team.name}
+            value={team.name}
+            className="flex-1 text-xs select-none touch-manipulation"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
             {team.name}
           </TabsTrigger>
         ))}
       </TabsList>
       {teams.map((team) => (
-        <TabsContent key={team.name} value={team.name} className="w-full">
+        <TabsContent
+          key={team.name}
+          value={team.name}
+          className="w-full"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <Card className="rounded-2xl shadow-md border-2 mt-2">
             <CardHeader className="flex flex-col items-center gap-1 pb-1 min-h-0 py-1">
               {team.imageUrl ? (
@@ -74,9 +84,9 @@ export function TeamsMobileStacked({ teams }: TeamsMobileStackedProps) {
                       </span>
                       <span className={`font-bold text-[11px] ${posColor(player.position)}`}>{
                         player.position === 'DEL' ? 'Delantero' :
-                        player.position === 'MED' ? 'Mediocampista' :
-                        player.position === 'DEF' ? 'Defensor' :
-                        player.position === 'POR' ? 'Arquero' : player.position
+                          player.position === 'MED' ? 'Mediocampista' :
+                            player.position === 'DEF' ? 'Defensor' :
+                              player.position === 'POR' ? 'Arquero' : player.position
                       }</span>
                     </div>
                   </div>
