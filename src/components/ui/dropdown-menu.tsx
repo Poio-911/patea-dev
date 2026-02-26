@@ -8,7 +8,21 @@ import { cn } from "@/lib/utils"
 
 const DropdownMenu = DropdownMenuPrimitive.Root
 
-const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
+const DropdownMenuTrigger = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Trigger>
+>(({ onPointerDown, ...props }, ref) => (
+  <DropdownMenuPrimitive.Trigger
+    ref={ref}
+    onPointerDown={(e) => {
+      // Prevent Vaul/Drawer from capturing the touch event
+      e.stopPropagation();
+      onPointerDown?.(e);
+    }}
+    {...props}
+  />
+))
+DropdownMenuTrigger.displayName = DropdownMenuPrimitive.Trigger.displayName
 
 const DropdownMenuGroup = DropdownMenuPrimitive.Group
 
