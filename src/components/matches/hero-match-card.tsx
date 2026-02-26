@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar, Clock, MapPin, Eye } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatVenueName } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { LiveStatusBadge } from './live-status-badge';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
@@ -203,8 +203,8 @@ export function HeroMatchCard({ match, allPlayers, className, variant = 'default
         )}
 
         {/* Countdown */}
-        <div className={cn('py-4', variant === 'compact' && 'py-2') }>
-          <div className={cn(variant === 'compact' && 'scale-[0.92] md:scale-100 origin-top') }>
+        <div className={cn('py-4', variant === 'compact' && 'py-2')}>
+          <div className={cn(variant === 'compact' && 'scale-[0.92] md:scale-100 origin-top')}>
             <HeroCountdown matchDate={match.date} matchTime={match.time} />
           </div>
         </div>
@@ -213,7 +213,7 @@ export function HeroMatchCard({ match, allPlayers, className, variant = 'default
         <div className={cn('flex flex-wrap items-center justify-center text-muted-foreground', variant === 'compact' ? 'gap-3 text-xs sm:text-sm' : 'gap-4 sm:gap-6 text-sm')}>
           <div className="flex items-center gap-1.5">
             <MapPin className="h-4 w-4" />
-            <span className="truncate max-w-[150px]">{match.location.name || match.location.address}</span>
+            <span className="truncate max-w-[150px]">{formatVenueName(match.location.name, match.location.address)}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Calendar className="h-4 w-4" />

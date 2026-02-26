@@ -70,15 +70,15 @@ function getBorderByRating(rating: number): string {
   if (rating >= 9) return 'border-l-[hsl(280,85%,60%)]';
   if (rating >= 7) return 'border-l-[hsl(43,96%,50%)]';
   if (rating >= 5) return 'border-l-slate-400';
-  if (rating > 0)  return 'border-l-red-500';
+  if (rating > 0) return 'border-l-red-500';
   return 'border-l-border';
 }
 
 function getPeerCardStyle(rating?: number, hasTags?: boolean): { border: string; badge: string } {
   if (rating !== undefined) {
     if (rating >= 9) return { border: 'border-l-[hsl(280,85%,60%)]', badge: 'bg-[hsl(280,85%,60%)] text-white shadow-lg shadow-purple-500/20' };
-    if (rating >= 7) return { border: 'border-l-[hsl(43,96%,50%)]',  badge: 'bg-[hsl(43,96%,50%)] text-black shadow-lg shadow-amber-500/20' };
-    if (rating < 5)  return { border: 'border-l-red-500',             badge: 'bg-red-500 text-white' };
+    if (rating >= 7) return { border: 'border-l-[hsl(43,96%,50%)]', badge: 'bg-[hsl(43,96%,50%)] text-black shadow-lg shadow-amber-500/20' };
+    if (rating < 5) return { border: 'border-l-red-500', badge: 'bg-red-500 text-white' };
     return { border: 'border-l-slate-400', badge: 'bg-slate-200 text-slate-700 dark:bg-slate-600 dark:text-slate-100' };
   }
   if (hasTags) return { border: 'border-l-primary', badge: '' };
@@ -114,7 +114,7 @@ function RatingBadge({ rating }: { rating: number }) {
     <Badge className={cn(
       'text-sm font-bold px-2.5 py-1 h-8 min-w-[3.2rem] justify-center tabular-nums',
       rating >= 8 ? 'bg-emerald-500 hover:bg-emerald-600' :
-      rating >= 6 ? 'bg-amber-500 hover:bg-amber-600 text-black' : 'bg-slate-500 hover:bg-slate-600',
+        rating >= 6 ? 'bg-amber-500 hover:bg-amber-600 text-black' : 'bg-slate-500 hover:bg-slate-600',
     )}>
       {rating.toFixed(1)}
     </Badge>
@@ -139,7 +139,7 @@ export function PlayerMatchHistory({ playerId, player }: PlayerMatchHistoryProps
 
   const handleRequestIdentity = async (evaluationId: string) => {
     try {
-      const result = await requestIdentityRevelation(evaluationId, playerId);
+      const result = await requestIdentityRevelation(evaluationId);
       if (result.success) {
         toast({ title: 'Solicitud Enviada', description: 'Se ha notificado al compañero que querés saber su identidad.' });
         setActivities(prev => prev.map(activity => ({

@@ -51,7 +51,7 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
   // Helper to handle identity request
   const handleRequestIdentity = async (evaluationId: string) => {
     try {
-      const result = await requestIdentityRevelation(evaluationId, playerId);
+      const result = await requestIdentityRevelation(evaluationId);
       if (result.success) {
         toast({
           title: "Solicitud Enviada",

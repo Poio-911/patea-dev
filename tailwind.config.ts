@@ -8,16 +8,18 @@ export default {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   safelist: [
-    // Match type gradients
-    'from-primary/30', 'via-primary/20', 'from-primary/40',
-    'from-accent/30', 'via-accent/20',
-    'from-secondary/30', 'via-secondary/20',
-    'from-warning/35', 'via-warning/25', 'from-warning/50', 'via-destructive/50', 'to-warning/50',
-    'from-destructive/35', 'via-destructive/25',
-    'from-success/30', 'via-success/20',
-    // Match type borders
-    'border-primary/40', 'border-accent/40', 'border-secondary/40',
-    'border-warning/50', 'border-destructive/50', 'border-success/40',
+    // Match Card Adaptive Themes (v4)
+    { pattern: /^(border|bg|text)-(blue|teal|indigo|amber|red|yellow|green)-(100|200|300|400|500|600|700|800|900)(\/(5|10|20|25|30|35|40|50))?$/, variants: ['dark', 'hover', 'dark:hover'] },
+    // Gradients
+    { pattern: /^(from|via|to)-(blue|teal|indigo|amber|red|yellow|green)-(500|600)(\/(5|10|20|30))?$/, variants: ['dark'] },
+    // Special for league_final
+    'from-yellow-500/20', 'via-red-500/20', 'dark:from-yellow-500/30', 'dark:via-red-500/30',
+    'bg-yellow-400/30', 'dark:bg-yellow-400/50',
+    'bg-gradient-to-r', 'from-yellow-100', 'via-red-100', 'to-yellow-100',
+    'dark:from-yellow-500/30', 'dark:via-red-500/30', 'dark:to-yellow-500/30',
+    'from-yellow-500', 'to-red-500', 'hover:from-yellow-600', 'hover:to-red-600',
+    'dark:from-yellow-500', 'dark:to-red-500', 'dark:hover:from-yellow-400', 'dark:hover:to-red-400',
+    'border-yellow-200', 'dark:border-yellow-400/50',
   ],
   theme: {
     container: {
