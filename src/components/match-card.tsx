@@ -171,25 +171,29 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
     const currentStatus = statusConfig[match.status] || statusConfig.completed;
 
-    const JoinLeaveButton = () => {
+    const JoinLeaveButton = ({ className }: { className?: string }) => {
         if (match.type === 'collaborative' && match.status === 'upcoming') {
             if (isMatchFull && !isUserInMatch) {
                 return (
-                    <Button variant="outline" size="sm" className="w-full bg-white/10 text-white/50 border-white/20" disabled>
-                        Partido Lleno
+                    <Button variant="outline" size="sm" className={cn("w-full bg-white/5 text-white/40 border-white/10 !shadow-none", className)} disabled>
+                        Lleno
                     </Button>
                 );
             }
             return (
                 <Button
-                    variant={isUserInMatch ? 'secondary' : 'default'}
+                    variant={isUserInMatch ? 'outline' : 'default'}
                     size="sm"
                     onClick={handleJoinOrLeave}
                     disabled={isJoining}
-                    className="w-full"
+                    className={cn(
+                        "w-full font-bold !shadow-none",
+                        !isUserInMatch && "!bg-[hsl(var(--accent))] !text-black hover:!bg-[hsl(var(--accent))]/90 border-transparent",
+                        className
+                    )}
                 >
-                    {isJoining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isUserInMatch ? <LogOut className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />)}
-                    {isUserInMatch ? 'Darse de baja' : 'Apuntarse'}
+                    {isJoining ? <Loader2 className="h-4 w-4 animate-spin" /> : (isUserInMatch ? <LogOut className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />)}
+                    {isUserInMatch ? 'Baja' : 'Apuntarse'}
                 </Button>
             );
         }
@@ -395,12 +399,18 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 <div className="flex gap-2">
                     <Button
                         asChild
-                        className={cn("w-full font-semibold !shadow-none game-theme-button", matchTheme.button)}
+                        variant="default"
+                        className={cn("w-full font-semibold !shadow-none", "bg-primary text-primary-foreground hover:bg-primary/90")}
                     >
                         <Link href={`/matches/${match.id}`}>
-                            <Eye className="mr-2 h-4 w-4" /> Ver Detalles
+                            <Eye className="mr-2 h-4 w-4" /> Detalles
                         </Link>
                     </Button>
+
+                    {match.type === 'collaborative' && match.status === 'upcoming' && (
+                        <JoinLeaveButton className="w-full" />
+                    )}
+
                     {match.teams && match.teams.length > 0 && (
                         <MatchTeamsDialog match={match}>
                             <Button variant="outline" className="w-full !shadow-none">
@@ -409,7 +419,8 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                         </MatchTeamsDialog>
                     )}
                 </div>
-                <JoinLeaveButton />
+                {/* Fallback for cases where it might not be in the flex row but we want it visible (though the above covers upcoming collaborative) */}
+                {match.type !== 'collaborative' && <JoinLeaveButton />}
             </CardFooter>
         </Card>
     );

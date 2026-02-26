@@ -255,9 +255,8 @@ export default function MatchesPage() {
         };
         const upcomingMatches = amistososMatches
             .filter(m => {
-                const matchDate = new Date(m.date);
-                const matchDay = new Date(matchDate.getFullYear(), matchDate.getMonth(), matchDate.getDate());
-                return matchDay >= today || m.status === 'active';
+                const matchTs = getTs(m);
+                return (m.status === 'active') || (m.status === 'upcoming' && matchTs >= now.getTime());
             })
             .sort((a, b) => getTs(a) - getTs(b));
         return upcomingMatches[0] || null;

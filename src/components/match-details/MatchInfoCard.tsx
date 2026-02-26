@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -81,54 +80,74 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
           <source src="/videos/match-detail-bg-2.mp4" type="video/mp4" />
         </video>
         <div className={cn(
-          "absolute inset-0 game-banner-overlay z-0 opacity-90",
+          "absolute inset-0 game-banner-overlay z-0 opacity-65",
           matchTheme.bannerOverlay
         )} />
+        {/* Bottom gradient for text readability — doesn't blur/cover the video */}
+        <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/65 via-black/10 to-transparent pointer-events-none" />
       </div>
 
-      <CardContent className="relative z-10 p-8 pt-8 space-y-6 bg-transparent transition-all duration-300">
-        {/* Special header for league_final */}
-        {match.type === 'league_final' && (
-          <div className="-mx-8 -mt-8 mb-6 p-6 bg-gradient-to-r from-warning via-warning to-warning text-center">
-            <h2 className="text-2xl font-black uppercase tracking-wider text-foreground animate-pulse">
-              ⚡ PARTIDO DEFINITORIO ⚡
-            </h2>
-            <p className="text-sm font-semibold text-foreground/90 mt-1">
-              El ganador se corona CAMPEÓN
-            </p>
-          </div>
-        )}
+      {/* League_final ribbon — absolute so it doesn't affect CardContent padding */}
+      {match.type === 'league_final' && (
+        <div className="absolute top-0 left-0 right-0 z-20 p-4 bg-gradient-to-r from-yellow-500 via-orange-500 to-red-600 text-center">
+          <h2 className="text-lg font-black uppercase tracking-wider text-white animate-pulse">
+            ⚡ PARTIDO DEFINITORIO ⚡
+          </h2>
+          <p className="text-xs font-semibold text-white/90 mt-0.5">
+            El ganador se corona CAMPEÓN
+          </p>
+        </div>
+      )}
 
-        {/* League/Cup context */}
-        {(match.type === 'league' || match.type === 'cup') && match.leagueInfo && (
-          <div className="-mx-8 -mt-8 mb-6 p-4 bg-background/30 border-b border-border">
-            <div className="flex items-center justify-center gap-2">
-              <span className={cn(
-                "text-lg font-bold",
-                match.type === 'league' ? 'text-amber-400' : 'text-red-500'
-              )}>
-                {match.type === 'league' ? '🏆 Liga' : '🏆 Copa'}
-              </span>
-              {match.type === 'league' && (
-                <span className="text-sm text-foreground/80">• Fecha {match.leagueInfo.round}</span>
-              )}
-              {match.type === 'cup' && (
-                <span className="text-sm text-foreground/80">
-                  • {match.leagueInfo.round === 1 ? 'FINAL' :
-                    match.leagueInfo.round === 2 ? 'SEMIFINAL' :
-                      match.leagueInfo.round === 3 ? 'CUARTOS' :
-                        `Ronda ${match.leagueInfo.round}`}
-                </span>
-              )}
-            </div>
+      {/* League/Cup context ribbon — absolute ribbon at top */}
+      {(match.type === 'league' || match.type === 'cup') && match.leagueInfo && (
+        <div className="absolute top-0 left-0 right-0 z-20 px-4 py-2 bg-black/50 backdrop-blur-sm border-b border-white/10 flex items-center justify-center gap-2">
+          <span className={cn(
+            "text-sm font-bold",
+            match.type === 'league' ? 'text-amber-400' : 'text-red-400'
+          )}>
+            {match.type === 'league' ? '🏆 Liga' : '🏆 Copa'}
+          </span>
+          {match.type === 'league' && (
+            <span className="text-xs text-white/80">• Fecha {match.leagueInfo.round}</span>
+          )}
+          {match.type === 'cup' && (
+            <span className="text-xs text-white/80">
+              • {match.leagueInfo.round === 1 ? 'FINAL' :
+                match.leagueInfo.round === 2 ? 'SEMIFINAL' :
+                  match.leagueInfo.round === 3 ? 'CUARTOS' :
+                    `Ronda ${match.leagueInfo.round}`}
+            </span>
+          )}
+        </div>
+      )}
+
+      <CardContent className={cn(
+        "relative z-10 p-8 space-y-6 bg-transparent transition-all duration-300",
+        // Add top padding when ribbon is present so content doesn't overlap
+        (match.type === 'league_final') ? 'pt-24' :
+          ((match.type === 'league' || match.type === 'cup') && match.leagueInfo) ? 'pt-14' : 'pt-8'
+      )}>
+
+        {/* Título del partido + badge de tipo */}
+        <div className="flex items-start justify-between gap-4">
+          <h2 className="text-2xl font-black text-white leading-tight flex-1 min-w-0">
+            {match.title}
+          </h2>
+          <div className={cn(
+            "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest border shadow-none flex-shrink-0",
+            "bg-white/15 border-white/25 text-white"
+          )}>
+            <div className={cn("w-2 h-2 rounded-full shrink-0", matchTheme.badgeColor)} />
+            <span>{matchTheme.label}</span>
           </div>
-        )}
+        </div>
 
         {/* Fecha y organizador */}
         <div className="flex flex-col sm:flex-row gap-6 justify-between">
           <div className="space-y-4">
             <div className="flex items-center gap-3 text-lg">
-              <Calendar className="h-5 w-5 icon-with-circle" aria-hidden="true" />
+              <Calendar className="h-5 w-5 text-white/65" aria-hidden="true" />
               <span className="font-semibold">
                 {format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es })}
               </span>
@@ -144,28 +163,18 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
             )}
           </div>
 
-          {/* Hora y clima */}
-          <div className="space-y-4 text-left sm:text-right">
+          {/* Hora y clima en columna separada */}
+          <div className="space-y-3 text-left sm:text-right">
             <div className="flex items-center gap-3 text-lg justify-start sm:justify-end">
-              <Clock className="h-5 w-5 icon-with-circle" aria-hidden="true" />
+              <Clock className="h-5 w-5 text-white/65" aria-hidden="true" />
               <span className="font-semibold">{match.time} hs</span>
-              {WeatherIcon && match.weather && (
-                <span className="flex items-center gap-1.5 text-sm text-white/90">
-                  <WeatherIcon className="h-4 w-4 text-white" aria-hidden="true" />
-                  <span>({match.weather.temperature}°C)</span>
-                </span>
-              )}
             </div>
-            <div className="flex justify-start sm:justify-end">
-              <div className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider border bg-black/60 backdrop-blur-md shadow-none",
-                matchTheme.border,
-                "text-white border-white/20"
-              )}>
-                <div className={cn("w-2 h-2 rounded-full", matchTheme.badgeColor)} />
-                <span>{matchTheme.label}</span>
+            {WeatherIcon && match.weather && (
+              <div className="flex items-center gap-1.5 text-sm text-white/90 justify-start sm:justify-end">
+                <WeatherIcon className="h-4 w-4 text-white" aria-hidden="true" />
+                <span>{match.weather.temperature}°C</span>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -174,11 +183,11 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
         {/* Ubicación y acciones */}
         <div className="flex flex-col sm:flex-row gap-6 items-center justify-between">
           <div className="flex items-start gap-3 flex-1 min-w-0">
-            <MapPin className="h-5 w-5 mt-0.5 flex-shrink-0 icon-with-circle" aria-hidden="true" />
+            <MapPin className="h-5 w-5 mt-0.5 flex-shrink-0 text-white/65" aria-hidden="true" />
             <p className="font-semibold">{formatVenueName(match.location.name, match.location.address)}</p>
           </div>
           <div className="flex gap-3 flex-shrink-0">
-            <Button asChild variant="default" size="sm" className="game-theme-button !shadow-none">
+            <Button asChild size="sm" className={cn("game-theme-button !shadow-none", matchTheme.button)}>
               <a
                 href={googleMapsUrl}
                 target="_blank"
@@ -221,7 +230,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
                 size="lg"
                 onClick={onJoinOrLeave}
                 disabled={isJoining}
-                className="w-full min-h-[48px] font-semibold !shadow-none game-theme-button"
+                className={cn("w-full min-h-[48px] font-semibold !shadow-none game-theme-button", !isUserInMatch && matchTheme.button)}
                 aria-label={isUserInMatch ? 'Darse de baja del partido' : 'Apuntarse al partido'}
               >
                 {isJoining ? (
@@ -237,6 +246,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
           </div>
         )}
       </CardContent>
-    </Card >
+    </Card>
   );
-});
+}
+);

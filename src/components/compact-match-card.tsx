@@ -160,54 +160,52 @@ export function CompactMatchCard({ match, className, distance }: CompactMatchCar
             // Layout para partidos por equipos
             <div className="space-y-2">
               {/* Jerseys row */}
-              <div className="flex items-center justify-center gap-3">
+              <div className="flex items-center justify-around gap-1 min-w-0">
                 <JerseyPreview jersey={team1.jersey} size="sm" />
-                <div className="px-2">
+                <div className="flex-1 flex justify-center px-1">
                   {hasScore ? (
-                    <span className="font-bold text-sm tabular-nums">
+                    <span className="font-bold text-xs tabular-nums whitespace-nowrap bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded">
                       {match.finalScore!.team1} - {match.finalScore!.team2}
                     </span>
                   ) : (
-                    <span className="text-xs text-muted-foreground font-medium">vs</span>
+                    <span className="text-[10px] text-muted-foreground font-semibold uppercase opacity-60">vs</span>
                   )}
                 </div>
                 <JerseyPreview jersey={team2.jersey} size="sm" />
               </div>
 
               {/* Team names row */}
-              <div className="flex justify-between items-center gap-2">
-                <span className="font-semibold text-xs truncate text-center flex-1">
+              <div className="flex items-start justify-between gap-1 w-full overflow-hidden">
+                <span className="text-[10px] font-bold leading-tight truncate text-center flex-1">
                   {team1.name}
                 </span>
-                <span className="font-semibold text-xs truncate text-center flex-1">
+                <span className="text-[10px] font-bold leading-tight truncate text-center flex-1">
                   {team2.name}
                 </span>
               </div>
 
-              {/* Date/Time/Location row */}
-              <div className="flex flex-col items-center gap-1 text-[10px] text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-2.5 w-2.5" />
-                  {fecha}
-                  {hora && (
-                    <>
-                      <span className="mx-1">•</span>
-                      <Clock className="h-2.5 w-2.5" />
-                      {hora}
-                    </>
-                  )}
-                  {/* Inline weather micro-badge */}
+              {/* Date/Time/Location row - Stacked for 2-column mobile layout */}
+              <div className="flex flex-col items-start gap-1 text-[9px] text-muted-foreground w-full">
+                <span className="flex items-center gap-1.5 min-w-0 w-full">
+                  <Calendar className="h-2.5 w-2.5 shrink-0" />
+                  <span className="truncate">{fecha}</span>
+                </span>
+
+                <span className="flex items-center gap-1.5 min-w-0 w-full">
+                  <Clock className="h-2.5 w-2.5 shrink-0" />
+                  <span className="truncate">{hora} hs</span>
                   {match.weather?.temperature !== undefined && (
-                    <span className="ml-1 text-[9px] opacity-80">
+                    <span className="opacity-80 shrink-0">
                       · {match.weather.icon ?? '🌡️'} {match.weather.temperature}°
                     </span>
                   )}
                 </span>
-                <span className="flex items-center gap-1 truncate max-w-full">
-                  <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
+
+                <span className="flex items-center gap-1.5 min-w-0 w-full">
+                  <MapPin className="h-2.5 w-2.5 shrink-0" />
                   <span className="truncate">{locationName}</span>
-                  {distance && <span className="shrink-0 font-medium">· {distance}</span>}
                 </span>
+                {distance && <span className="pl-4 text-[8px] opacity-70 truncate w-full">a {distance}</span>}
               </div>
             </div>
           ) : (
@@ -221,29 +219,28 @@ export function CompactMatchCard({ match, className, distance }: CompactMatchCar
                 <Users className="h-2.5 w-2.5" />
                 <span>{uniquePlayers.length}/{match.matchSize} jugadores</span>
               </div>
-              <div className="flex flex-col items-center gap-1 text-[10px] text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-2.5 w-2.5" />
-                  {fecha}
-                  {hora && (
-                    <>
-                      <span className="mx-1">•</span>
-                      <Clock className="h-2.5 w-2.5" />
-                      {hora}
-                    </>
-                  )}
-                  {/* Inline weather micro-badge */}
+              {/* Date/Time/Location row - Stacked for 2-column mobile layout */}
+              <div className="flex flex-col items-start gap-1 text-[9px] text-muted-foreground w-full">
+                <span className="flex items-center gap-1.5 min-w-0 w-full">
+                  <Calendar className="h-2.5 w-2.5 shrink-0" />
+                  <span className="truncate">{fecha}</span>
+                </span>
+
+                <span className="flex items-center gap-1.5 min-w-0 w-full">
+                  <Clock className="h-2.5 w-2.5 shrink-0" />
+                  <span className="truncate">{hora} hs</span>
                   {match.weather?.temperature !== undefined && (
-                    <span className="ml-1 text-[9px] opacity-80">
+                    <span className="opacity-80 shrink-0">
                       · {match.weather.icon ?? '🌡️'} {match.weather.temperature}°
                     </span>
                   )}
                 </span>
-                <span className="flex items-center gap-1 truncate max-w-full">
-                  <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
+
+                <span className="flex items-center gap-1.5 min-w-0 w-full">
+                  <MapPin className="h-2.5 w-2.5 shrink-0" />
                   <span className="truncate">{locationName}</span>
-                  {distance && <span className="shrink-0 font-medium">· {distance}</span>}
                 </span>
+                {distance && <span className="pl-4 text-[8px] opacity-70 truncate w-full">a {distance}</span>}
               </div>
             </div>
           )}

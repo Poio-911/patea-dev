@@ -94,22 +94,6 @@ body.standalone main {
 .next-match-banner,
 .hero-match-banner {
   color: #ffffff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-}
-
-.next-match-banner a:not(.game-theme-button),
-.hero-match-banner a:not(.game-theme-button) {
-  color: #ffffff;
-}
-
-/* ============================================
-   DEFAULT / SHARED BANNER STYLES
-   Ensures legibility on video backgrounds (Light Theme fix)
-   ============================================ */
-.next-match-banner,
-.hero-match-banner {
-  color: #ffffff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 .next-match-banner a:not(.game-theme-button),
@@ -126,7 +110,6 @@ body.standalone main {
 .game .next-match-banner,
 .game .hero-match-banner {
   color: #ffffff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 /* 3. Banner links: white */
@@ -136,7 +119,10 @@ body.standalone main {
 }
 
 /* 4. Buttons: Yellow bg, BLACK text, no shadow */
-.game .game-theme-button,
+.game .game-theme-button {
+  /* Only applied to specific primary-like actions to maintain contrast */
+}
+
 /* Game theme overrides for banners and buttons are now handled by adaptive Tailwind classes (v4)
    Individual component overrides below this line are preserved for other sections */
 
@@ -2112,6 +2098,7 @@ body.standalone main {
   .game-theme-button:active {
     @apply scale-95;
   }
+
 
   .icon-with-circle {
     @apply p-1 rounded-full bg-white/20 backdrop-blur-sm border border-white/10;
