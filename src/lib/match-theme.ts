@@ -180,3 +180,34 @@ export function isCompetitiveMatch(type: MatchType): boolean {
 export function getMatchTypeLabel(type: MatchType): string {
     return matchThemes[type].label;
 }
+
+/**
+ * Background images for match cards (Tema Game)
+ */
+const MATCH_BACKGROUNDS = [
+    '/images/backgrounds/fondo_1.jpg',
+    '/images/backgrounds/fondo_2.jpg',
+    '/images/backgrounds/fondo_3.jpg',
+    '/images/backgrounds/fondo_4.jpg',
+    '/images/backgrounds/fondo_5.jpg',
+    '/images/backgrounds/fondo_6.jpg',
+    '/images/backgrounds/fondo_7.jpg',
+    '/images/backgrounds/fondo_8.jpg',
+    '/images/backgrounds/fondo_9.jpg',
+];
+
+/**
+ * Get a deterministic background image for a match card based on its ID
+ */
+export function getMatchBackgroundImage(matchId: string): string {
+    if (!matchId) return MATCH_BACKGROUNDS[0];
+
+    // Simple hash to get a consistent index
+    let hash = 0;
+    for (let i = 0; i < matchId.length; i++) {
+        hash = matchId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    const index = Math.abs(hash) % MATCH_BACKGROUNDS.length;
+    return MATCH_BACKGROUNDS[index];
+}

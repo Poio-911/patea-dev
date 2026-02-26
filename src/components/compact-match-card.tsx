@@ -6,7 +6,7 @@ import { Calendar, Clock, MapPin, ChevronRight, Trophy, UserCheck, Users, UsersR
 import { cn, formatVenueName } from '@/lib/utils';
 import type { Match, MatchStatus } from '@/lib/types';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-import { getMatchTheme } from '@/lib/match-theme';
+import { getMatchTheme, getMatchBackgroundImage } from '@/lib/match-theme';
 
 const typeLabels: Record<string, string> = {
   manual: 'Amistoso',
@@ -116,8 +116,17 @@ export function CompactMatchCard({ match, className, distance }: CompactMatchCar
           className
         )}
       >
-        {/* Pitch texture - subtle dark only */}
-        <div className="absolute inset-0 pitch-texture pointer-events-none opacity-0 dark:opacity-[0.03] z-0" />
+        {/* Background Image Overlay (Tema Game) - Hidden in Light mode, visible in Dark/Game */}
+        <div className="absolute inset-0 z-0 overflow-hidden rounded-lg hidden dark:block game:block bg-card/90 backdrop-blur-sm">
+          <img
+            src={getMatchBackgroundImage(match.id)}
+            alt=""
+            className="w-full h-full object-cover opacity-25 grayscale brightness-110 group-hover:scale-105 transition-transform duration-700"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
+        </div>
+        {/* Border accent for match type */}
+        <div className={cn("absolute top-0 left-0 w-1 h-full z-10 opacity-40", `bg-${matchTheme.brandColor}`)} />
         {/* Glow orb */}
         <div
           className={cn(

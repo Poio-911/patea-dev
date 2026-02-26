@@ -407,8 +407,17 @@ export default function MatchesPage() {
                     </PageHeader>
 
                     {/* Featured Match - Full width header */}
-                    {featuredMatch && timeFilter !== 'history' && (
-                        <NextMatchCard match={featuredMatch} variant="compact" />
+                    {amistososMatches.length > 0 && timeFilter !== 'history' && (
+                        <NextMatchCard
+                            matches={amistososMatches.filter(m => {
+                                const d = new Date(m.date);
+                                const clean = (m.time || '').replace(' hs', '').replace('hs', '').trim();
+                                const [hh, mm = '0'] = clean.split(':');
+                                d.setHours(parseInt(hh || '0', 10) || 0, parseInt(mm || '0', 10) || 0, 0, 0);
+                                return (m.status === 'active') || (m.status === 'upcoming' && d.getTime() >= new Date().getTime());
+                            }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())}
+                            allPlayers={sortedPlayers}
+                        />
                     )}
 
                     {/* Matches List */}

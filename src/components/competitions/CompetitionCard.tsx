@@ -1,7 +1,6 @@
 'use client';
 
 import { type LucideIcon } from 'lucide-react';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -15,7 +14,32 @@ interface CompetitionCardProps {
     notificationCount?: number;
     onClick?: () => void;
     className?: string;
+    isActive?: boolean;
 }
+
+const typeConfig = {
+    friendly: {
+        gradient: 'from-emerald-600 via-emerald-500 to-teal-400',
+        darkGradient: 'dark:from-emerald-900 dark:via-emerald-800 dark:to-teal-800',
+        activeRing: 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-background',
+        activeBar: 'bg-emerald-400',
+        shadow: 'shadow-emerald-500/40',
+    },
+    league: {
+        gradient: 'from-blue-600 via-blue-500 to-indigo-500',
+        darkGradient: 'dark:from-blue-900 dark:via-blue-800 dark:to-indigo-900',
+        activeRing: 'ring-2 ring-blue-400 ring-offset-2 ring-offset-background',
+        activeBar: 'bg-blue-400',
+        shadow: 'shadow-blue-500/40',
+    },
+    cup: {
+        gradient: 'from-amber-600 via-amber-500 to-yellow-400',
+        darkGradient: 'dark:from-amber-900 dark:via-amber-800 dark:to-yellow-800',
+        activeRing: 'ring-2 ring-amber-400 ring-offset-2 ring-offset-background',
+        activeBar: 'bg-amber-400',
+        shadow: 'shadow-amber-500/40',
+    },
+} as const;
 
 export function CompetitionCard({
     type,
@@ -25,81 +49,89 @@ export function CompetitionCard({
     notificationCount,
     onClick,
     className,
+    isActive = false,
 }: CompetitionCardProps) {
+    const config = typeConfig[type];
+
     return (
-        <Card
+        <div
             className={cn(
-                'relative overflow-hidden cursor-pointer',
-                'rounded-2xl border',
-                'p-5 flex flex-col gap-3 min-h-[200px]',
+                'relative overflow-hidden cursor-pointer rounded-2xl',
                 'transition-all duration-300 ease-out',
-                'hover:scale-[1.02] hover:-translate-y-1',
-                // Glassmorphism - light for light theme, dark for dark theme
-                'bg-white/50 dark:bg-black/50',
-                'backdrop-blur-xl',
-                'shadow-xl',
-                // Border with accent color hint
-                type === 'friendly' && 'border-emerald-200 dark:border-emerald-500/20 hover:border-emerald-400 dark:hover:border-emerald-500/50 hover:shadow-emerald-500/20',
-                type === 'league' && 'border-blue-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/50 hover:shadow-blue-500/20',
-                type === 'cup' && 'border-amber-200 dark:border-amber-500/20 hover:border-amber-400 dark:hover:border-amber-500/50 hover:shadow-amber-500/20',
+                // Active vs inactive state
+                isActive
+                    ? [config.activeRing, 'scale-[1.03] -translate-y-2', `shadow-2xl ${config.shadow}`]
+                    : ['shadow-lg opacity-80 hover:opacity-100 hover:scale-[1.02] hover:-translate-y-1'],
                 className
             )}
             onClick={onClick}
         >
-            {/* Subtle gradient overlay for depth */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/50 dark:from-white/5 via-transparent to-transparent dark:to-black/20 pointer-events-none" />
+            {/* Active bottom accent bar */}
+            {isActive && (
+                <div className={cn('absolute bottom-0 left-0 right-0 h-1 z-20', config.activeBar)} />
+            )}
+
+            {/* Gradient background */}
+            <div className={cn('absolute inset-0 bg-gradient-to-br', config.gradient, config.darkGradient)} />
+
+            {/* Dot pattern overlay */}
+            <div
+                className="absolute inset-0 opacity-[0.08]"
+                style={{
+                    backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+                    backgroundSize: '20px 20px',
+                }}
+            />
+
+            {/* Top shine */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/25 to-transparent pointer-events-none" />
 
             {/* Notification Badge */}
             {(notificationCount ?? 0) > 0 && (
-                <Badge
-                    className={cn(
-                        'absolute top-3 right-3 font-bold px-2.5 py-0.5 shadow-lg z-10',
-                        type === 'friendly' && 'bg-emerald-500 text-white',
-                        type === 'league' && 'bg-blue-500 text-white',
-                        type === 'cup' && 'bg-amber-500 text-white',
-                    )}
-                    variant="default"
-                >
+                <Badge className="absolute top-3 right-3 font-bold px-2.5 py-0.5 shadow-lg z-10 bg-white/90 text-foreground border-0 backdrop-blur-sm">
                     {notificationCount}
                 </Badge>
             )}
 
-            {/* Icon with accent color */}
-            <div className="flex items-center justify-center relative z-10">
-                <Icon
-                    className={cn(
-                        'w-12 h-12 drop-shadow-lg',
-                        type === 'friendly' && 'text-emerald-600 dark:text-emerald-400',
-                        type === 'league' && 'text-blue-600 dark:text-blue-400',
-                        type === 'cup' && 'text-amber-600 dark:text-amber-400',
-                    )}
-                    strokeWidth={2}
-                />
-            </div>
-
-            {/* Title */}
-            <h3 className="text-xl font-bold text-foreground text-center drop-shadow-sm dark:drop-shadow-md tracking-tight relative z-10">
-                {title}
-            </h3>
-
-            {/* Quick Stats */}
-            {stats.length > 0 && (
-                <div className="flex flex-col gap-2 mt-auto relative z-10">
-                    {stats.map((stat, index) => (
-                        <div
-                            key={index}
-                            className={cn(
-                                'flex items-center justify-between px-3 py-2 rounded-lg border',
-                                'bg-black/5 dark:bg-black/30',
-                                'border-black/10 dark:border-white/10'
-                            )}
-                        >
-                            <span className="text-xs font-medium text-muted-foreground">{stat.label}</span>
-                            <span className="text-sm font-bold text-foreground">{stat.value}</span>
-                        </div>
-                    ))}
+            {/* Content */}
+            <div className="relative z-10 p-5 flex flex-col gap-3 min-h-[200px]">
+                {/* Icon */}
+                <div className="flex items-center justify-center">
+                    <Icon
+                        className="w-12 h-12 text-white drop-shadow-lg"
+                        strokeWidth={1.5}
+                    />
                 </div>
-            )}
-        </Card>
+
+                {/* Title */}
+                <h3 className="text-xl font-bold text-white text-center drop-shadow-md tracking-tight">
+                    {title}
+                </h3>
+
+                {/* Active pill */}
+                {isActive && (
+                    <div className="flex items-center justify-center">
+                        <span className="text-[11px] font-semibold text-white/90 bg-white/25 px-2.5 py-0.5 rounded-full uppercase tracking-widest">
+                            Activo
+                        </span>
+                    </div>
+                )}
+
+                {/* Quick Stats */}
+                {stats.length > 0 && (
+                    <div className="flex flex-col gap-2 mt-auto">
+                        {stats.map((stat, index) => (
+                            <div
+                                key={index}
+                                className="flex items-center justify-between px-3 py-2 rounded-xl bg-black/20 backdrop-blur-sm"
+                            >
+                                <span className="text-xs font-medium text-white/70">{stat.label}</span>
+                                <span className="text-sm font-bold text-white">{stat.value}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
     );
 }

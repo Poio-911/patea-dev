@@ -41,7 +41,7 @@ import {
 import { JerseyPreview } from './team-builder/jersey-preview';
 import { useMatchActions } from '@/hooks/use-match-actions';
 import { useMatchPermissions } from '@/hooks/use-match-permissions';
-import { getMatchTheme, getMatchTypeLabel } from '@/lib/match-theme';
+import { getMatchTheme, getMatchTypeLabel, getMatchBackgroundImage } from '@/lib/match-theme';
 import { Trophy, Handshake } from 'lucide-react';
 import { CountdownTimer } from './ui/countdown-timer';
 import { MatchWeatherForecast } from './matches/match-weather-forecast';
@@ -212,8 +212,16 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 matchTheme.border,
             )}
         >
-            {/* Pitch texture overlay - Subtle and only in Dark/Game mode */}
-            <div className="absolute inset-0 pitch-texture pointer-events-none opacity-0 dark:opacity-5 z-0" />
+            {/* Background Image Overlay (Tema Game) - Hidden in Light mode, visible in Dark/Game */}
+            <div className="absolute inset-0 z-0 overflow-hidden rounded-xl hidden dark:block game:block bg-card/95 backdrop-blur-sm">
+                <img
+                    src={getMatchBackgroundImage(match.id)}
+                    alt=""
+                    className="w-full h-full object-cover opacity-30 grayscale brightness-90 contrast-125"
+                />
+                {/* Subtle vignette for depth without being "pitch black" */}
+                <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-background/30" />
+            </div>
 
 
             <CardHeader className="relative z-10 p-4 pb-3">
