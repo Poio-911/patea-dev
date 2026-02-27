@@ -208,7 +208,7 @@ export function LeaderboardWidget({
 
         <div className="mt-4 pt-3 border-t">
           <Button asChild variant="ghost" className="w-full" size="sm">
-            <Link href="/rankings" className="flex items-center justify-center gap-1">
+            <Link href="/comunidad?tab=rankings" className="flex items-center justify-center gap-1">
               Ver todos los rankings
               <ChevronRight className="h-4 w-4" />
             </Link>

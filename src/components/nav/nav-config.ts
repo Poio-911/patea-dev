@@ -1,9 +1,10 @@
-import { LayoutDashboard, User, ClipboardCheck, Trophy, Calendar, Globe } from 'lucide-react';
+import { LayoutDashboard, User, ClipboardCheck, Trophy, Calendar, Globe, Users2 } from 'lucide-react';
 
 export const mainNavItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
   { href: '/players', label: 'Jugadores', icon: User },
   { href: '/explorar', label: 'Explorar', icon: Globe },
+  { href: '/comunidad', label: 'Comunidad', icon: Users2 },
 ];
 
 export const matchesNavItems = [

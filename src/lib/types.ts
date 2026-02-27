@@ -182,6 +182,9 @@ export type Match = {
 
   mvpId?: string;
   mvpData?: any;
+  chronicle?: GenerateMatchChronicleOutput;
+  chronicleGeneratedAt?: string;
+  bestPlayerId?: string;
 } & DocumentData;
 
 // Enhanced event tracking types

@@ -96,11 +96,11 @@ export function UserMenu({ user, player, onLogout, onRequestPermission }: UserMe
                     <span>Configuración</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push('/feed')}>
+                <DropdownMenuItem onClick={() => router.push('/comunidad')}>
                     <Rss className="mr-2 h-4 w-4" />
                     <span>Feed</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/rankings')}>
+                <DropdownMenuItem onClick={() => router.push('/comunidad?tab=rankings')}>
                     <Trophy className="mr-2 h-4 w-4" />
                     <span>Rankings</span>
                 </DropdownMenuItem>

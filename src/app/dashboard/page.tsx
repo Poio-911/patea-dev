@@ -186,6 +186,18 @@ function DashboardContent() {
     };
   }, [matches]);
 
+  const groupRecentMatches = useMemo(() => {
+    if (!matches) return [];
+    return matches
+      .filter(m => m.status === 'evaluated')
+      .slice(0, 4);
+  }, [matches]);
+
+  const totalGroupMatchesCount = useMemo(() => {
+    if (!matches) return 0;
+    return matches.filter(m => m.status === 'evaluated' || m.status === 'completed' || m.status === 'active').length;
+  }, [matches]);
+
   if (loading) {
     return <DashboardSkeleton />;
   }
@@ -333,6 +345,8 @@ function DashboardContent() {
         allPlayersInGroup={allPlayersInGroup || []}
         upcomingMatches={upcomingMatchesData || []}
         friendlyMatches={friendlyMatchesData || []}
+        groupRecentMatches={groupRecentMatches}
+        totalGroupMatchesCount={totalGroupMatchesCount}
       />
 
       {/* Visualizador modal desde dashboard */}

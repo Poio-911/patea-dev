@@ -13,6 +13,7 @@ interface FollowButtonProps {
   variant?: 'default' | 'outline' | 'ghost';
   size?: 'default' | 'sm' | 'lg';
   showCounts?: boolean; // Show follower/following counts
+  compact?: boolean; // Icon-only, ghost, small — for use in leaderboard rows
 }
 
 export function FollowButton({
@@ -20,6 +21,7 @@ export function FollowButton({
   variant = 'default',
   size = 'default',
   showCounts = false,
+  compact = false,
 }: FollowButtonProps) {
   const { user } = useUser();
   const firestore = useFirestore();
@@ -165,8 +167,29 @@ export function FollowButton({
 
   if (isChecking) {
     return (
-      <Button variant={variant} size={size} disabled>
-        <Loader2 className="h-4 w-4 animate-spin" />
+      <Button variant={compact ? 'ghost' : variant} size={compact ? 'icon' : size} disabled className={compact ? 'h-7 w-7 shrink-0' : ''}>
+        <Loader2 className={compact ? 'h-3.5 w-3.5 animate-spin' : 'h-4 w-4 animate-spin'} />
+      </Button>
+    );
+  }
+
+  if (compact) {
+    return (
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleFollow}
+        disabled={isLoading}
+        className="h-7 w-7 shrink-0"
+        title={isFollowing ? 'Dejando de seguir...' : isLoading ? 'Siguiendo...' : isFollowing ? 'Siguiendo' : 'Seguir'}
+      >
+        {isLoading ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : isFollowing ? (
+          <UserCheck className="h-3.5 w-3.5 text-primary" />
+        ) : (
+          <UserPlus className="h-3.5 w-3.5 text-muted-foreground" />
+        )}
       </Button>
     );
   }

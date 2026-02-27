@@ -23,6 +23,8 @@ interface DashboardTabsProps {
     allPlayersInGroup: Player[];
     upcomingMatches: Match[];
     friendlyMatches: Match[];
+    groupRecentMatches: Match[];
+    totalGroupMatchesCount: number;
 }
 
 export function DashboardTabs({
@@ -40,6 +42,8 @@ export function DashboardTabs({
     allPlayersInGroup,
     upcomingMatches,
     friendlyMatches,
+    groupRecentMatches,
+    totalGroupMatchesCount,
 }: DashboardTabsProps) {
     const [activeTab, setActiveTab] = useState<string>('resumen');
 
@@ -107,6 +111,8 @@ export function DashboardTabs({
                     groupPlayers={allPlayersInGroup}
                     upcomingMatches={upcomingMatches}
                     friendlyMatches={friendlyMatches}
+                    groupRecentMatches={groupRecentMatches}
+                    totalGroupMatchesCount={totalGroupMatchesCount}
                     groupId={groupId}
                     userId={userId}
                 />
