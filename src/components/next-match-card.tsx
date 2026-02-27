@@ -213,7 +213,7 @@ export function NextMatchCard({ matches, allPlayers = [] }: NextMatchCardProps) 
                                 )}
                             </div>
                             <span className="text-[10px] md:text-sm font-black text-white leading-none">
-                                Organiza: <span className="text-primary brightness-150 uppercase tracking-tighter">{ownerName?.split(' ')[0] || 'Club'}</span>
+                                Organiza: <span className="text-primary brightness-150 uppercase tracking-tighter">{ownerName || 'Club'}</span>
                             </span>
                         </motion.div>
                     </AnimatePresence>
@@ -297,7 +297,7 @@ export function NextMatchCard({ matches, allPlayers = [] }: NextMatchCardProps) 
                         className={cn(
                             "group/btn relative overflow-hidden font-black uppercase tracking-[0.25em] px-12 md:px-24 h-11 md:h-14 text-xs md:text-base transition-all hover:scale-105 active:scale-95 z-20",
                             "bg-primary shadow-[0_20px_40px_rgba(0,0,0,0.5)] hover:bg-primary/95",
-                            "text-white game:!text-black game-theme-button"
+                            "text-black game-theme-button"
                         )}
                     >
                         <Link href={`/matches/${currentMatch.id}`}>

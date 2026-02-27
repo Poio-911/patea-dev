@@ -115,7 +115,11 @@ body.standalone main {
 /* 3. Banner links: white */
 .game .next-match-banner a:not(.game-theme-button),
 .game .hero-match-banner a:not(.game-theme-button) {
-  color: #ffffff !important;
+  color: #ffffff;
+}
+
+.game .game-theme-button {
+  color: #000000 !important;
 }
 
 /* 4. Buttons: Yellow bg, BLACK text, no shadow */
