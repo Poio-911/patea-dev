@@ -33,10 +33,7 @@ const TeamMosaicPlayer = ({ player, match, isOwner, index }: { player: any, matc
                         {player.name}
                     </p>
                     <div className="flex items-center gap-2">
-                        <PlayerPositionBadge position={player.position} size="sm" showIcon={false} textOnly={true} />
-                        <span className="text-[10px] text-muted-foreground font-mono opacity-50 uppercase">
-                            #{index + 1}
-                        </span>
+                        <PlayerPositionBadge position={player.position} size="sm" showIcon={false} textOnly={true} showFullName={true} />
                     </div>
                 </div>
 
