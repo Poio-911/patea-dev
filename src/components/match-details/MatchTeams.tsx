@@ -26,11 +26,6 @@ const TeamMosaicPlayer = ({ player, match, isOwner, index }: { player: any, matc
             <div className="flex items-center gap-4 p-2 rounded-xl hover:bg-muted/50 transition-all duration-300 group/player">
                 <div className="relative">
                     <PlayerPhoto player={player} size="compact" />
-                    <div className="absolute -bottom-1 -right-1 bg-card rounded-full p-0.5 shadow-sm border border-border/50">
-                        <Badge variant="secondary" className="px-1 py-0 h-4 text-[9px] font-black">
-                            {player.ovr}
-                        </Badge>
-                    </div>
                 </div>
 
                 <div className="flex-grow min-w-0">
