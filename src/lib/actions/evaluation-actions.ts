@@ -39,10 +39,10 @@ export async function requestIdentityRevelation(evaluationId: string): Promise<{
   try {
     const { getAdminDb, getAdminAuth } = await import('@/firebase/admin-init');
     const { createError, ErrorCodes } = await import('../errors');
+    const { requireAuth } = await import('../auth/get-server-session');
 
-    // In a real Next.js app with full Auth integration, we'd get the UID from session/cookies.
-    // Since we are leveraging Firebase on the client, we need to ensure the action is secure.
-    // TODO: When full server-side session is implemented, get UID from there.
+    // Verify caller is authenticated
+    const callerId = await requireAuth();
 
     // 1. Get Evaluation
     const evalRef = getAdminDb().collection('evaluations').doc(evaluationId);
@@ -52,13 +52,12 @@ export async function requestIdentityRevelation(evaluationId: string): Promise<{
       throw createError(ErrorCodes.DATA_NOT_FOUND, { evaluationId });
     }
 
-    const evaluation = evalSnap.data() as any; // Using any to avoid type check loop if types not fully loaded, or import Evaluation
+    const evaluation = evalSnap.data() as any;
 
-    // For now, we are trusting the caller to be the subject, but we MUST ideally verify 
-    // this with an auth token or session. 
-    // In this specific implementation, we don't have the token here easily without refactoring the whole auth flow,
-    // but we can at least ensure we don't pass around IDs in the client component anymore than necessary.
-    // SECURITY NOTE: This action is still vulnerable if called manually until full session auth is added to Next.js.
+    // Verify the caller is the evaluated player (only the subject can request identity)
+    if (evaluation.playerId !== callerId) {
+      return { success: false, error: 'No tienes permiso para solicitar esta revelación.' };
+    }
 
     if (evaluation.identityRequestStatus === 'pending' || evaluation.identityRequestStatus === 'accepted') {
       return { success: true }; // Already processing

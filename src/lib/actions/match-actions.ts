@@ -4,6 +4,7 @@ import { getAdminDb } from '../../firebase/admin-init';
 import { FieldValue } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
 import { handleServerActionError, createError, ErrorCodes } from '../errors';
+import { requireAuth } from '../auth/get-server-session';
 import type { Match, Player, Notification } from '../types';
 
 /**
@@ -58,7 +59,7 @@ export async function joinMatchAction(matchId: string, userId: string, userDispl
                 displayName: playerProfile.name,
                 ovr: playerProfile.ovr,
                 position: playerProfile.position,
-                photoUrl: playerProfile.photoUrl || ''
+                photoURL: playerProfile.photoURL || (playerProfile as any).photoUrl || ''
             };
 
             // Update match
@@ -107,6 +108,12 @@ export async function joinMatchAction(matchId: string, userId: string, userDispl
  */
 export async function leaveMatchAction(matchId: string, userId: string) {
     try {
+        // Verify the caller is the user being removed
+        const callerId = await requireAuth();
+        if (callerId !== userId) {
+            return { success: false, error: 'No tienes permiso para realizar esta acción.' };
+        }
+
         const db = getAdminDb();
         const matchRef = db.collection('matches').doc(matchId);
 
@@ -119,37 +126,18 @@ export async function leaveMatchAction(matchId: string, userId: string) {
             const match = matchDoc.data() as Match;
 
             if (!match.playerUids || !match.playerUids.includes(userId)) {
-                // User not in match, strictly speaking an error but idempotent
+                // User not in match, idempotent
                 return;
             }
 
-            const playerToRemove = match.players.find(p => p.uid === userId);
+            // Always use filter approach to avoid arrayRemove exact-match pitfall
+            const newPlayers = match.players.filter(p => p.uid !== userId);
+            const newPlayerUids = match.playerUids.filter(uid => uid !== userId);
 
-            // Note: arrayRemove works by exact object equality for objects.
-            // If the object in DB differs slightly (e.g. updated OVR), arrayRemove might fail.
-            // However, since we reconstructed it exactly as it is in the array (we'd need to find it first), it should work?
-            // Actually, we don't have the exact object reference from the DB in a client context usually, 
-            // but here inside transaction we read 'match.players'.
-            // So 'playerToRemove' IS the exact object reference if we used the array from the doc.
-            // But Firestore 'arrayRemove' needs the *exact value*.
-
-            if (playerToRemove) {
-                transaction.update(matchRef, {
-                    players: FieldValue.arrayRemove(playerToRemove),
-                    playerUids: FieldValue.arrayRemove(userId)
-                });
-            } else {
-                // Fallback: If for some reason we can't find the exact object to remove (data desync),
-                // we might need to read -> filter -> Update whole array.
-                // It is safer to filter and set the new array to avoid "zombie" players.
-                const newPlayers = match.players.filter(p => p.uid !== userId);
-                const newPlayerUids = match.playerUids.filter(uid => uid !== userId);
-
-                transaction.update(matchRef, {
-                    players: newPlayers,
-                    playerUids: newPlayerUids
-                });
-            }
+            transaction.update(matchRef, {
+                players: newPlayers,
+                playerUids: newPlayerUids
+            });
         });
 
         revalidatePath(`/matches/${matchId}`);

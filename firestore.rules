@@ -52,7 +52,7 @@ service cloud.firestore {
     match /players/{playerId} {
       allow read: if isAuthenticated();
       // TEMPORAL: Permitir creación para depurar
-      allow create: if true;
+      allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated() && (
         request.auth.uid == playerId || 
         resource.data.ownerUid == request.auth.uid
