@@ -95,7 +95,7 @@ async function sendReminder(messaging, tokens, title, body, matchId, matchTitle)
     console.log(`[MatchReminders] "${title}" sent for "${matchTitle}" (${matchId}) to ${tokens.length} device(s).`);
 }
 exports.sendMatchReminders = (0, scheduler_1.onSchedule)({
-    schedule: 'every 15 minutes',
+    schedule: 'every 5 minutes',
     timeZone: 'America/Argentina/Buenos_Aires',
     region: 'us-central1',
 }, async () => {

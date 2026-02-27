@@ -69,7 +69,7 @@ async function sendReminder(
 }
 
 export const sendMatchReminders = onSchedule({
-    schedule: 'every 15 minutes',
+    schedule: 'every 5 minutes',
     timeZone: 'America/Argentina/Buenos_Aires',
     region: 'us-central1',
 }, async () => {
