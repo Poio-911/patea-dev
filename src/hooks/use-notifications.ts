@@ -109,18 +109,14 @@ export function useNotifications() {
 
         logger.info('FCM token obtained and saved', { userId: user.uid });
 
-        // Listen for foreground messages
+        // Listen for foreground messages.
+        // NOTE: We intentionally do NOT show a native Notification here.
+        // When the app is open (foreground), the Firestore real-time listener
+        // already updates the notification bell instantly. Showing a native
+        // OS notification on top would create a visible duplicate for the user.
+        // Background messages are handled by firebase-messaging-sw.js.
         onMessage(messaging, (payload) => {
-          logger.info('Foreground message received', payload);
-
-          // Show notification
-          if (payload.notification) {
-            new Notification(payload.notification.title || 'Nueva notificación', {
-              body: payload.notification.body,
-              icon: payload.notification.image || '/icons/icon-192x192.png',
-              badge: '/icons/icon-48-48.png',
-            });
-          }
+          logger.info('Foreground FCM message received (suppressed native popup, bell updates via Firestore)', payload);
         });
 
         setIsLoading(false);

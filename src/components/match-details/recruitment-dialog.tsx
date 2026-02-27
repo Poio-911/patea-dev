@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, writeBatch, collection } from 'firebase/firestore';
-import type { AvailablePlayer, Match, Invitation, Notification } from '@/lib/types';
+import type { AvailablePlayer, Match, Invitation } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Search, MapPin, Send, UserCheck, Star } from 'lucide-react';
 import { getAvailableLocalPlayersAction } from '@/lib/actions/recruitment-actions';
@@ -104,23 +104,8 @@ export function RecruitmentDialog({ match, children }: RecruitmentDialogProps) {
                 createdAt: new Date().toISOString()
             };
             batch.set(invitationRef, newInvitation);
-
-            const notificationRef = doc(collection(firestore, `users/${selectedPlayer.uid}/notifications`));
-            const notification: Omit<Notification, 'id'> = {
-                type: 'match_invite',
-                title: '¡Te necesitan en un partido!',
-                message: `${user.displayName} está buscando completarlo y te invitó a "${match.title}".`,
-                link: `/matches`,
-                isRead: false,
-                createdAt: new Date().toISOString(),
-                metadata: {
-                    fromUserId: user.uid,
-                    fromUserName: user.displayName || 'Organizador',
-                    fromUserPhoto: user.photoURL || '',
-                    matchId: match.id,
-                },
-            };
-            batch.set(notificationRef, notification);
+            // NOTE: onInvitationCreate Cloud Function handles the push + in-app notification.
+            // Do NOT create a notification manually here to avoid duplicates.
 
             try {
                 await batch.commit();

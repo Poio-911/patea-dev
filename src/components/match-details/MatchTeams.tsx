@@ -12,6 +12,7 @@ import { ArrowLeftRight } from 'lucide-react';
 import { PlayerPhoto, PlayerPositionBadge } from '@/components/player-styles';
 import { SwapPlayerDialog } from '@/components/swap-player-dialog';
 import { AnimatedCardWrapper } from '@/components/animated-card-wrapper';
+import { cn } from '@/lib/utils';
 
 
 interface MatchTeamsProps {
@@ -26,11 +27,6 @@ const TeamMosaicPlayer = ({ player, match, isOwner, index }: { player: any, matc
             <div className="flex items-center gap-4 p-2 rounded-xl hover:bg-muted/50 transition-all duration-300 group/player">
                 <div className="relative">
                     <PlayerPhoto player={player} size="compact" />
-                    <div className="absolute -bottom-1 -right-1 bg-card rounded-full p-0.5 shadow-sm border border-border/50">
-                        <Badge variant="secondary" className="px-1 py-0 h-4 text-[9px] font-black">
-                            {player.ovr}
-                        </Badge>
-                    </div>
                 </div>
 
                 <div className="flex-grow min-w-0">
@@ -38,10 +34,7 @@ const TeamMosaicPlayer = ({ player, match, isOwner, index }: { player: any, matc
                         {player.name}
                     </p>
                     <div className="flex items-center gap-2">
-                        <PlayerPositionBadge position={player.position} size="sm" showIcon={false} textOnly={true} />
-                        <span className="text-[10px] text-muted-foreground font-mono opacity-50 uppercase">
-                            #{index + 1}
-                        </span>
+                        <PlayerPositionBadge position={player.position} size="sm" showIcon={false} textOnly={true} showFullName={true} />
                     </div>
                 </div>
 
@@ -77,12 +70,35 @@ export const MatchTeams = React.memo(function MatchTeams({ match, isOwner }: Mat
         return encodeURIComponent(message);
     }, [match]);
 
+    const fairnessScore = match.teams && match.teams.length > 0
+        ? match.teams[0].balanceMetrics?.fairnessPercentage || 0
+        : 0;
+
+    let fairnessLabel = null;
+    let fairnessColor = '';
+
+    if (fairnessScore >= 95) {
+        fairnessLabel = 'Súper Equilibrado';
+        fairnessColor = 'bg-green-500/15 text-green-600 dark:text-green-400 border-green-500/30';
+    } else if (fairnessScore >= 85) {
+        fairnessLabel = 'Buen Balance';
+        fairnessColor = 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30';
+    } else if (fairnessScore > 0) {
+        fairnessLabel = 'Desparejo';
+        fairnessColor = 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30';
+    }
+
     return (
         <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 mt-6">
                 <div>
-                    <h2 className="text-xl font-bold text-foreground mb-1">
+                    <h2 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
                         Equipos Generados
+                        {fairnessLabel && (
+                            <Badge variant="outline" className={cn("text-[10px] uppercase font-black tracking-widest h-5 px-1.5", fairnessColor)}>
+                                {fairnessLabel} ({Math.round(fairnessScore)}%)
+                            </Badge>
+                        )}
                     </h2>
                     <p className="text-sm text-muted-foreground">
                         {match.teams?.length || 0} equipos • {match.players?.length || 0} jugadores
@@ -138,20 +154,28 @@ export const MatchTeams = React.memo(function MatchTeams({ match, isOwner }: Mat
                                 </div>
                                 <div className="flex flex-col">
                                     <h3 className="text-2xl font-black uppercase tracking-tight leading-none mb-1">{team.name}</h3>
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted border border-border">
-                                            <span className="text-[10px] font-black uppercase text-slate-500">OVR</span>
-                                            <span className="text-xs font-black">{team.averageOVR.toFixed(1)}</span>
-                                        </div>
-                                        <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-widest">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-widest leading-none">
                                             {team.players.length} JUGADORES
                                         </span>
+                                        {team.tags && team.tags.length > 0 && (
+                                            <>
+                                                <span className="text-muted-foreground/30 text-[10px]">•</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    {team.tags.slice(0, 2).map((tag: string, i: number) => (
+                                                        <span key={i} className="text-[10px] font-black uppercase text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-sm">
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             </div>
 
                             {/* Player List (Mosaic Style) */}
-                            <div className="grid grid-cols-1 xs:grid-cols-2 gap-x-6 gap-y-2 relative z-10">
+                            <div className="grid grid-cols-2 gap-x-6 gap-y-2 relative z-10">
                                 {teamMembersWithDetails.map((player, index) => (
                                     <TeamMosaicPlayer
                                         key={player.id}

@@ -180,11 +180,16 @@ export function useMatchActions({
           });
         }
 
+        // Add assignment docs to batch
         assignments.forEach(assignment => {
           const assignmentRef = doc(collection(firestore, `matches/${freshMatch.id}/assignments`));
           batch.set(assignmentRef, assignment);
+        });
 
-          const notificationRef = doc(collection(firestore, `users/${assignment.evaluatorId}/notifications`));
+        // Create ONE in-app notification per unique evaluator (not one per assignment)
+        const uniqueEvaluatorIds = [...new Set(assignments.map(a => a.evaluatorId))];
+        uniqueEvaluatorIds.forEach(evaluatorId => {
+          const notificationRef = doc(collection(firestore, `users/${evaluatorId}/notifications`));
           const notification: Omit<Notification, 'id'> = {
             type: 'evaluation_pending',
             title: '¡Evaluación pendiente!',
@@ -206,7 +211,7 @@ export function useMatchActions({
         description: `El partido "${freshMatch.title}" ha sido marcado como finalizado.`
       });
 
-      // Send push notification to players about evaluation availability
+      // Send push notification to evaluators (one per person, no duplicates)
       if (realPlayerUids.length > 0) {
         notifyEvaluationAvailableAction({
           playerIds: realPlayerUids,

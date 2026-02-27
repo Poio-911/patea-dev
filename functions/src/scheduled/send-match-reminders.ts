@@ -2,105 +2,139 @@ import * as admin from 'firebase-admin';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 
 /**
- * Cloud Function que envía recordatorios de partido 2 horas antes de que empiecen.
+ * Cloud Function que envía recordatorios de partido:
+ *  - 2 horas antes: "Tu partido empieza en ~2hs"
+ *  - 30 minutos antes: "¡Ya falta poco! Tu partido empieza en 30 min"
  *
- * Corre cada 30 minutos y busca partidos con estado 'upcoming' cuya fecha sea
- * entre 1h50m y 2h10m desde ahora (ventana de 20 min para evitar duplicados).
+ * Corre cada 15 minutos y filtra partidos en memoria combinando
+ * los campos `date` (YYYY-MM-DD) y `time` (HH:MM) para obtener
+ * el datetime real. Esto evita el bug anterior donde la query
+ * comparaba ISO timestamps contra fechas sin hora, devolviendo 0 resultados.
  *
  * Deployment:
  * cd functions && npm run build
  * firebase deploy --only functions:sendMatchReminders
  */
+
+/** Combina "YYYY-MM-DD" + "HH:MM" -> Date en horario de Buenos Aires (UTC-3, sin DST) */
+function buildMatchDateTime(date: string, time: string): Date | null {
+    if (!date || !time) return null;
+    const combined = `${date}T${time}:00-03:00`;
+    const parsed = new Date(combined);
+    return isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/** Recolecta todos los tokens FCM de una lista de UIDs */
+async function getTokensForUsers(db: admin.firestore.Firestore, uids: string[]): Promise<string[]> {
+    const tokens: string[] = [];
+    for (const uid of uids) {
+        const userSnap = await db.collection('users').doc(uid).get();
+        const userTokens: string[] = userSnap.data()?.fcmTokens || [];
+        tokens.push(...userTokens);
+    }
+    return tokens;
+}
+
+/** Envía una notificación FCM multicast */
+async function sendReminder(
+    messaging: admin.messaging.Messaging,
+    tokens: string[],
+    title: string,
+    body: string,
+    matchId: string,
+    matchTitle: string,
+): Promise<void> {
+    if (tokens.length === 0) {
+        console.log(`[MatchReminders] No tokens found for "${matchTitle}" — skipping.`);
+        return;
+    }
+    await messaging.sendEachForMulticast({
+        tokens,
+        notification: { title, body },
+        webpush: {
+            fcmOptions: { link: `/matches/${matchId}` },
+            notification: {
+                icon: '/icons/icon-192x192.png',
+                badge: '/icons/icon-48x48.png',
+            },
+        },
+        data: {
+            type: 'match_reminder',
+            matchId,
+            matchTitle,
+            link: `/matches/${matchId}`,
+        },
+    });
+    console.log(`[MatchReminders] "${title}" sent for "${matchTitle}" (${matchId}) to ${tokens.length} device(s).`);
+}
+
 export const sendMatchReminders = onSchedule({
-    schedule: 'every 30 minutes',
+    schedule: 'every 5 minutes',
     timeZone: 'America/Argentina/Buenos_Aires',
     region: 'us-central1',
 }, async () => {
     const db = admin.firestore();
     const messaging = admin.messaging();
-
     const now = new Date();
-    // 2 hours from now ± 10 minutes window
-    const windowStart = new Date(now.getTime() + (2 * 60 - 10) * 60 * 1000); // 1h50m from now
-    const windowEnd = new Date(now.getTime() + (2 * 60 + 10) * 60 * 1000);   // 2h10m from now
 
-    const windowStartISO = windowStart.toISOString();
-    const windowEndISO = windowEnd.toISOString();
+    console.log(`[MatchReminders] Running at ${now.toISOString()}`);
 
-    console.log(`[MatchReminders] Checking matches between ${windowStartISO} and ${windowEndISO}`);
+    // Traer todos los partidos "upcoming". Filtramos en memoria porque Firestore
+    // no puede consultar sobre un valor combinado (date + time).
+    const matchesSnap = await db.collection('matches')
+        .where('status', '==', 'upcoming')
+        .get();
 
-    try {
-        const matchesSnap = await db.collection('matches')
-            .where('status', '==', 'upcoming')
-            .where('date', '>=', windowStartISO)
-            .where('date', '<=', windowEndISO)
-            .get();
-
-        if (matchesSnap.empty) {
-            console.log('[MatchReminders] No matches to remind about.');
-            return;
-        }
-
-        console.log(`[MatchReminders] Found ${matchesSnap.size} match(es) to send reminders for.`);
-
-        for (const matchDoc of matchesSnap.docs) {
-            const match = matchDoc.data();
-            const matchId = matchDoc.id;
-            const matchTitle = match.title || 'Partido';
-            const matchTime = match.time || '';
-            const matchLocation = match.location?.address || '';
-
-            // Avoid sending duplicate reminders by checking a flag
-            if (match.reminderSent) {
-                console.log(`[MatchReminders] Skipping ${matchId} — reminder already sent.`);
-                continue;
-            }
-
-            const playerUids: string[] = match.playerUids || [];
-            if (playerUids.length === 0) continue;
-
-            // Collect all FCM tokens for players in the match
-            const tokens: string[] = [];
-            for (const uid of playerUids) {
-                const userSnap = await db.collection('users').doc(uid).get();
-                const userTokens: string[] = userSnap.data()?.fcmTokens || [];
-                tokens.push(...userTokens);
-            }
-
-            if (tokens.length > 0) {
-                const body = matchTime
-                    ? `Tu partido "${matchTitle}" empieza en ~2hs, a las ${matchTime} en ${matchLocation}`
-                    : `Tu partido "${matchTitle}" empieza en aproximadamente 2 horas. ¡Preparate!`;
-
-                await messaging.sendEachForMulticast({
-                    tokens,
-                    notification: {
-                        title: '⏰ Recordatorio de partido',
-                        body,
-                    },
-                    webpush: {
-                        fcmOptions: { link: `/matches/${matchId}` },
-                        notification: {
-                            icon: '/icons/icon-192x192.png',
-                            badge: '/icons/icon-48x48.png',
-                        },
-                    },
-                    data: {
-                        type: 'match_reminder',
-                        matchId,
-                        matchTitle,
-                        link: `/matches/${matchId}`,
-                    },
-                });
-
-                console.log(`[MatchReminders] Sent reminder for "${matchTitle}" to ${tokens.length} device(s).`);
-            }
-
-            // Mark as reminded to prevent duplicate sends
-            await matchDoc.ref.update({ reminderSent: true });
-        }
-    } catch (err) {
-        console.error('[MatchReminders] Error sending reminders:', err);
-        throw err;
+    if (matchesSnap.empty) {
+        console.log('[MatchReminders] No upcoming matches found.');
+        return;
     }
+
+    console.log(`[MatchReminders] Evaluating ${matchesSnap.size} upcoming match(es).`);
+
+    for (const matchDoc of matchesSnap.docs) {
+        const match = matchDoc.data();
+        const matchId = matchDoc.id;
+        const matchTitle: string = match.title || 'Partido';
+        const matchDate: string = match.date || '';
+        const matchTime: string = match.time || '';
+        const matchLocation: string = match.location?.address || match.location?.name || '';
+
+        const matchDateTime = buildMatchDateTime(matchDate, matchTime);
+        if (!matchDateTime) {
+            // Partido en modo "planning" sin fecha/hora definida — skip
+            continue;
+        }
+
+        const minutesUntilMatch = (matchDateTime.getTime() - now.getTime()) / 60000;
+        const playerUids: string[] = match.playerUids || [];
+
+        if (playerUids.length === 0) continue;
+
+        // ── RECORDATORIO 2 HORAS ──────────────────────────────────────
+        // Ventana: entre 110 y 130 minutos antes del partido
+        if (minutesUntilMatch >= 110 && minutesUntilMatch <= 130 && !match.reminderSent2h) {
+            const tokens = await getTokensForUsers(db, playerUids);
+            const body = matchTime
+                ? `Tu partido "${matchTitle}" empieza en ~2hs, a las ${matchTime}${matchLocation ? ` en ${matchLocation}` : ''}. ¡Preparate!`
+                : `Tu partido "${matchTitle}" empieza en aproximadamente 2 horas. ¡Preparate!`;
+
+            await sendReminder(messaging, tokens, '⏰ Recordatorio de partido', body, matchId, matchTitle);
+            await matchDoc.ref.update({ reminderSent2h: true });
+        }
+
+        // ── RECORDATORIO 30 MINUTOS ───────────────────────────────────
+        // Ventana: entre 20 y 40 minutos antes del partido
+        if (minutesUntilMatch >= 20 && minutesUntilMatch <= 40 && !match.reminderSent30m) {
+            const tokens = await getTokensForUsers(db, playerUids);
+            const body = matchTime
+                ? `¡Ya falta poco! "${matchTitle}" empieza a las ${matchTime}${matchLocation ? ` en ${matchLocation}` : ''}. ¡No llegues tarde! 🏃`
+                : `¡Ya falta poco! Tu partido "${matchTitle}" empieza en 30 minutos.`;
+
+            await sendReminder(messaging, tokens, '🔥 ¡El partido está por empezar!', body, matchId, matchTitle);
+            await matchDoc.ref.update({ reminderSent30m: true });
+        }
+    }
+
+    console.log('[MatchReminders] Done.');
 });

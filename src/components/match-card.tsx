@@ -14,7 +14,6 @@ import { Card, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { MatchTeamsDialog } from '@/components/match-teams-dialog';
 import { EditableTeamsDialog } from '@/components/editable-teams-dialog';
 import {
     AlertDialog,
@@ -419,14 +418,6 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
 
                     {match.type === 'collaborative' && match.status === 'upcoming' && (
                         <JoinLeaveButton className="w-full" />
-                    )}
-
-                    {match.teams && match.teams.length > 0 && (
-                        <MatchTeamsDialog match={match}>
-                            <Button variant="outline" className="w-full !shadow-none">
-                                <UsersRound className="mr-2 h-4 w-4" /> Equipos
-                            </Button>
-                        </MatchTeamsDialog>
                     )}
                 </div>
                 {/* Fallback for cases where it might not be in the flex row but we want it visible (though the above covers upcoming collaborative) */}

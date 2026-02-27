@@ -13,6 +13,8 @@ import {
   Drawer,
   DrawerContent,
   DrawerTrigger,
+  DrawerTitle,
+  DrawerDescription,
 } from "@/components/ui/drawer"
 
 const ResponsivePopoverContext = React.createContext<boolean>(false)
@@ -58,6 +60,8 @@ const ResponsivePopoverContent = ({
   if (isMobile) {
     return (
       <DrawerContent className={cn(className, "!max-w-none !w-full")} {...(props as React.ComponentProps<typeof DrawerContent>)}>
+        <DrawerTitle className="sr-only">Opciones</DrawerTitle>
+        <DrawerDescription className="sr-only">Menú de opciones disponibles</DrawerDescription>
         <div className="overflow-y-auto px-4 pb-4">{children}</div>
       </DrawerContent>
     )

@@ -59,10 +59,15 @@ export function UpdateNotification() {
   }, []);
 
   const handleUpdate = () => {
-    if (!registration?.waiting) return;
-
-    // Tell the waiting service worker to skip waiting
-    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    if (registration?.waiting) {
+      // Tell the waiting service worker to skip waiting
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    } else {
+      // If there is no waiting worker, it might have already skipped waiting
+      // (because of skipWaiting: true in next-pwa config)
+      // In that case, we just need to reload the page to get the new version
+      window.location.reload();
+    }
   };
 
   const handleDismiss = () => {

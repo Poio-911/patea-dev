@@ -13,8 +13,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { useState, useTransition, useMemo } from 'react';
 import { useFirestore, useUser } from '@/firebase';
-import { doc, writeBatch, collection, getDoc } from 'firebase/firestore';
-import type { AvailablePlayer, Match, Player, Invitation, Notification } from '@/lib/types';
+import { doc, writeBatch, collection } from 'firebase/firestore';
+import type { AvailablePlayer, Match, Player, Invitation } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send, Search } from 'lucide-react';
 import {
@@ -116,23 +116,6 @@ export function InvitePlayerDialog({
           createdAt: new Date().toISOString()
         };
         batch.set(invitationRef, newInvitation);
-
-        const notificationRef = doc(collection(firestore, `users/${player.id}/notifications`));
-        const notification: Omit<Notification, 'id'> = {
-          type: 'match_invite',
-          title: '¡Te han invitado a un partido!',
-          message: `${user.displayName} te invita a unirte a "${selectedMatchData.title}".`,
-          link: `/matches`,
-          isRead: false,
-          createdAt: new Date().toISOString(),
-          metadata: {
-            fromUserId: user.uid,
-            fromUserName: user.displayName || 'Jugador',
-            fromUserPhoto: user.photoURL || '',
-            matchId: selectedMatchData.id,
-          },
-        };
-        batch.set(notificationRef, notification);
         invitesSent++;
       }
 

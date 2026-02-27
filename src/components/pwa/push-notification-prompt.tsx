@@ -13,12 +13,27 @@ const STORAGE_KEY = 'pwa_push_dismissed';
  * Subtle banner that appears after 30s of use to ask for push notification permission.
  * Shows once per session; if dismissed, doesn't show again.
  * Only renders when the user is logged in and hasn't granted/denied permission yet.
+ *
+ * Also silently refreshes the FCM token on mount if permission was already granted,
+ * ensuring the token is always up-to-date in Firestore even after reinstalls or token rotation.
  */
 export function PushNotificationPrompt() {
     const { user } = useUser();
     const { registerPush } = usePushNotifications();
     const [visible, setVisible] = useState(false);
 
+    // Auto-register silently if permission was already granted (e.g. they accepted before
+    // but the token was cleaned up after reinstall, re-login, or token rotation).
+    useEffect(() => {
+        if (!user) return;
+        if (typeof window === 'undefined') return;
+        if (!('Notification' in window)) return;
+        if (Notification.permission === 'granted') {
+            registerPush();
+        }
+    }, [user, registerPush]);
+
+    // Show prompt after 30s if permission hasn't been decided yet
     useEffect(() => {
         if (!user) return;
         if (typeof window === 'undefined') return;
