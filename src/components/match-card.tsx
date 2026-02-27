@@ -41,7 +41,7 @@ import {
 import { JerseyPreview } from './team-builder/jersey-preview';
 import { useMatchActions } from '@/hooks/use-match-actions';
 import { useMatchPermissions } from '@/hooks/use-match-permissions';
-import { getMatchTheme, getMatchTypeLabel } from '@/lib/match-theme';
+import { getMatchTheme, getMatchTypeLabel, getMatchBackgroundImage } from '@/lib/match-theme';
 import { Trophy, Handshake } from 'lucide-react';
 import { CountdownTimer } from './ui/countdown-timer';
 import { MatchWeatherForecast } from './matches/match-weather-forecast';
@@ -212,8 +212,16 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 matchTheme.border,
             )}
         >
-            {/* Pitch texture overlay - Subtle and only in Dark/Game mode */}
-            <div className="absolute inset-0 pitch-texture pointer-events-none opacity-0 dark:opacity-5 z-0" />
+            {/* Background Image Overlay (Tema Game) - Hidden in Light mode, visible in Dark/Game */}
+            <div className="absolute inset-0 z-0 overflow-hidden rounded-xl hidden dark:block game:block bg-card/95 backdrop-blur-sm">
+                <img
+                    src={getMatchBackgroundImage(match.id)}
+                    alt=""
+                    className="w-full h-full object-cover opacity-30 grayscale brightness-90 contrast-125"
+                />
+                {/* Subtle vignette for depth without being "pitch black" */}
+                <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-background/30" />
+            </div>
 
 
             <CardHeader className="relative z-10 p-4 pb-3">
@@ -241,20 +249,16 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 {/* Types & Status Indicators - Cleaner Integration */}
                 <div className="flex items-center gap-2 mt-2">
                     {/* Match Type - Stylized Icon Tag */}
+                    {/* Match Type - Stylized Glow Dot Tag */}
                     <div className={cn(
-                        "inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold tracking-wide uppercase border bg-background/50 backdrop-blur-sm shadow-sm transition-all",
-                        matchTheme.border,
-                        (match.type === 'league' || match.type === 'cup' || match.type === 'league_final') && "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-200"
+                        "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black tracking-[0.1em] uppercase border transition-all shadow-sm",
+                        "bg-background/80 dark:bg-black/40 game:bg-black/40 backdrop-blur-md border-border/50 dark:border-white/10 game:border-white/10 text-foreground",
                     )}>
-                        <div className={cn("p-0.5 rounded", matchTheme.badge)}>
-                            {matchTheme.icon === 'UserCheck' && <UserCheck className="h-3 w-3" />}
-                            {matchTheme.icon === 'Users' && <Users className="h-3 w-3" />}
-                            {matchTheme.icon === 'Shirt' && <Shirt className="h-3 w-3" />}
-                            {matchTheme.icon === 'Trophy' && <Trophy className="h-3 w-3" />}
-                            {matchTheme.icon === 'Handshake' && <Handshake className="h-3 w-3" />}
-                            {matchTheme.icon === 'Globe' && <Globe className="h-3 w-3" />}
-                        </div>
-                        <span className="opacity-90">{matchTheme.label}</span>
+                        <div className={cn(
+                            "w-2 h-2 rounded-full shrink-0 bg-current shadow-[0_0_8px_currentColor] brightness-125",
+                            matchTheme.badgeColor.replace('bg-', 'text-')
+                        )} />
+                        <span className="text-foreground/90">{matchTheme.label}</span>
                     </div>
 
                     {/* Status Indicator */}
@@ -275,14 +279,20 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                         <Calendar className="h-5 w-5 text-muted-foreground" />
                         <div>
                             <p className="text-xs text-muted-foreground">Fecha</p>
-                            <p className="font-bold text-sm capitalize">{format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es })}</p>
+                            <p className="font-bold text-sm capitalize">
+                                {match.status === 'planning' || !match.date
+                                    ? 'Por confirmar'
+                                    : format(new Date(match.date), "EEEE, d 'de' MMMM, yyyy", { locale: es })}
+                            </p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
                         <Clock className="h-5 w-5 text-muted-foreground" />
                         <div>
                             <p className="text-xs text-muted-foreground">Hora</p>
-                            <p className="font-bold text-sm">{match.time} hs</p>
+                            <p className="font-bold text-sm">
+                                {match.status === 'planning' || !match.time ? 'Por votar' : `${match.time} hs`}
+                            </p>
                         </div>
                     </div>
                 </div>

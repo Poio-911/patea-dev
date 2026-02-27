@@ -512,18 +512,18 @@ export default function PerformEvaluationPage() {
         <form onSubmit={handleSmartSubmit} className="space-y-8">
 
           {/* Tu Rendimiento - GAMER REDESIGN */}
-          <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm game:bg-[#0b1e3b]/80 game:border-primary/30 game:shadow-[0_0_20px_rgba(170,254,72,0.1)]">
+          <div className="relative overflow-hidden rounded-xl border border-border bg-card shadow-sm game:bg-card/80 game:border-primary/30 game:shadow-[0_0_20px_rgba(170,254,72,0.1)]">
             {/* Background glow - Game Mode Only */}
             <div className="absolute top-0 right-0 h-[200px] w-[200px] bg-primary/10 blur-[80px] hidden game:block" />
 
             <div className="relative space-y-6  p-6">
               <div className="relative flex items-center gap-3 mb-6">
-                <div className="rounded-lg bg-slate-50 border border-slate-100 p-2 text-slate-700 ring-1 ring-slate-100 game:bg-primary/10 game:text-primary game:ring-primary/20 game:border-none">
+                <div className="rounded-lg bg-muted/50 border border-border/50 p-2 text-muted-foreground ring-1 ring-border/50 game:bg-primary/10 game:text-primary game:ring-primary/20 game:border-none">
                   <ShieldCheck className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold tracking-tight text-slate-900 game:text-white">Tu Rendimiento</h3>
-                  <p className="text-sm text-slate-500 game:text-primary/60">Registrá tus estadísticas personales del partido.</p>
+                  <h3 className="text-xl font-bold tracking-tight text-foreground game:text-white">Tu Rendimiento</h3>
+                  <p className="text-sm text-muted-foreground game:text-primary/60">Registrá tus estadísticas personales del partido.</p>
                 </div>
               </div>
 
@@ -532,7 +532,7 @@ export default function PerformEvaluationPage() {
                   control={form.control}
                   name="evaluatorGoals"
                   render={({ field }) => (
-                    <FormItem className="flex flex-col items-center justify-center space-y-4 rounded-xl border border-slate-200 bg-slate-50/30 p-6 backdrop-blur-sm game:border-white/10 game:bg-[#051329]">
+                    <FormItem className="flex flex-col items-center justify-center space-y-4 rounded-xl border border-border bg-muted/30 p-6 backdrop-blur-sm game:border-white/10 game:bg-background">
                       <CounterDial
                         value={field.value}
                         onChange={field.onChange}
@@ -548,7 +548,7 @@ export default function PerformEvaluationPage() {
                   control={form.control}
                   name="evaluatorAssists"
                   render={({ field }) => (
-                    <FormItem className="flex flex-col items-center justify-center space-y-4 rounded-xl border border-slate-200 bg-slate-50/30 p-6 backdrop-blur-sm game:border-white/10 game:bg-[#051329]">
+                    <FormItem className="flex flex-col items-center justify-center space-y-4 rounded-xl border border-border bg-muted/30 p-6 backdrop-blur-sm game:border-white/10 game:bg-background">
                       <CounterDial
                         value={field.value}
                         onChange={field.onChange}
@@ -568,12 +568,12 @@ export default function PerformEvaluationPage() {
                 render={({ field }) => (
                   <FormItem className="space-y-4 pt-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 ring-1 ring-slate-200 game:bg-primary/20 game:text-primary game:ring-primary/50">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground ring-1 ring-border game:bg-primary/20 game:text-primary game:ring-primary/50">
                         <Award className="h-5 w-5 animate-pulse" />
                       </div>
-                      <FormLabel className="text-lg font-bold text-slate-800 game:text-primary tracking-wide">VOTO MVP</FormLabel>
+                      <FormLabel className="text-lg font-bold text-foreground game:text-primary tracking-wide">VOTO MVP</FormLabel>
                     </div>
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 game:bg-[#051329] game:border-primary/20">
+                    <div className="rounded-xl border border-border bg-muted/50 p-4 game:bg-background game:border-primary/20">
                       <PlayerCarousel
                         players={currentMatch?.players
                           .filter((p, idx, arr) => arr.findIndex(x => x.uid === p.uid) === idx)
@@ -597,13 +597,13 @@ export default function PerformEvaluationPage() {
                 name="personalChronicle"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-zinc-700 game:text-cyan-200/80">Crónica Personal (Opcional)</FormLabel>
+                    <FormLabel className="text-foreground/80 game:text-cyan-200/80">Crónica Personal (Opcional)</FormLabel>
                     <div className="relative group">
                       <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-600/20 opacity-0 transition-opacity group-focus-within:opacity-100 blur-sm hidden game:block" />
                       <FormControl>
                         <Textarea
                           placeholder="¿Cómo te sentiste en la cancha? Contanos..."
-                          className="relative resize-none h-24 border-zinc-200 bg-white text-zinc-900 placeholder:text-zinc-400 focus:border-slate-400 game:border-white/10 game:bg-[#051329] game:text-white game:placeholder:text-white/30"
+                          className="relative resize-none h-24 border-border bg-background text-foreground placeholder:text-muted-foreground focus:border-border game:border-white/10 game:bg-background game:text-white game:placeholder:text-white/30"
                           {...field}
                         />
                       </FormControl>
@@ -615,21 +615,21 @@ export default function PerformEvaluationPage() {
             </div>
           </div>
 
-          <Card className="border-slate-200 bg-white shadow-sm game:bg-[#0b1e3b]/80 game:border-primary/30 game:shadow-[0_0_20px_rgba(170,254,72,0.1)]">
+          <Card className="border-border bg-card shadow-sm game:bg-card/80 game:border-primary/30 game:shadow-[0_0_20px_rgba(170,254,72,0.1)]">
             <CardHeader>
-              <CardTitle className="text-zinc-900 game:text-white">Jugadores a Evaluar</CardTitle>
+              <CardTitle className="text-foreground game:text-white">Jugadores a Evaluar</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {fields.map((field, index) => (
-                <div key={field.id} className="rounded-lg border border-slate-200 bg-slate-50/50 p-6 shadow-sm transition-all hover:bg-white hover:shadow-md game:border-white/10 game:bg-[#051329] game:shadow-none game:hover:bg-[#0b1e3b] game:hover:border-primary/30">
+                <div key={field.id} className="rounded-lg border border-border bg-muted/30 p-6 shadow-sm transition-all hover:bg-card hover:shadow-md game:border-white/10 game:bg-background game:shadow-none game:hover:bg-card game:hover:border-primary/30">
                   <div className="flex items-center gap-4 mb-6">
-                    <Avatar className="h-16 w-16 border-2 border-slate-100 game:border-primary/50">
+                    <Avatar className="h-16 w-16 border-2 border-border/50 game:border-primary/50">
                       <AvatarImage src={field.photoURL} alt={field.displayName} className="object-cover" />
-                      <AvatarFallback className="text-lg font-bold text-slate-700 bg-slate-200 game:bg-[#0b1e3b] game:text-primary">{field.displayName.charAt(0)}</AvatarFallback>
+                      <AvatarFallback className="text-lg font-bold text-muted-foreground bg-muted game:bg-card game:text-primary">{field.displayName.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <h3 className="font-bold text-xl text-zinc-900 game:text-white">{field.displayName}</h3>
-                      <p className="text-sm text-zinc-500 font-medium font-mono uppercase tracking-wider game:text-primary/80">{field.position}</p>
+                      <h3 className="font-bold text-xl text-foreground game:text-white">{field.displayName}</h3>
+                      <p className="text-sm text-muted-foreground font-medium font-mono uppercase tracking-wider game:text-primary/80">{field.position}</p>
                     </div>
                   </div>
 
@@ -640,13 +640,13 @@ export default function PerformEvaluationPage() {
                       <Tabs value={typeField.value} onValueChange={(value) => {
                         form.setValue(`evaluations.${index}.evaluationType`, value as 'points' | 'tags' | 'text', { shouldValidate: true });
                       }} className="w-full">
-                        <TabsList className="grid w-full grid-cols-3 bg-slate-100 game:bg-[#051329] game:border game:border-white/10">
-                          <TabsTrigger value="points" className="text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm game:data-[state=active]:bg-primary game:data-[state=active]:text-[#0b1e3b]">Puntos</TabsTrigger>
-                          <TabsTrigger value="tags" className="text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm game:data-[state=active]:bg-primary game:data-[state=active]:text-[#0b1e3b]">Etiquetas</TabsTrigger>
-                          <TabsTrigger value="text" className="text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm game:data-[state=active]:bg-primary game:data-[state=active]:text-[#0b1e3b]">Descripción</TabsTrigger>
+                        <TabsList className="grid w-full grid-cols-3 bg-muted game:bg-background game:border game:border-white/10">
+                          <TabsTrigger value="points" className="text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm game:data-[state=active]:bg-primary game:data-[state=active]:text-background">Puntos</TabsTrigger>
+                          <TabsTrigger value="tags" className="text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm game:data-[state=active]:bg-primary game:data-[state=active]:text-background">Etiquetas</TabsTrigger>
+                          <TabsTrigger value="text" className="text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm game:data-[state=active]:bg-primary game:data-[state=active]:text-background">Descripción</TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="points" className="p-6 bg-white border border-slate-200 rounded-lg mt-2 game:bg-white/5 game:border-white/10">
+                        <TabsContent value="points" className="p-6 bg-card border border-border rounded-lg mt-2 game:bg-white/5 game:border-white/10">
                           <FormField
                             control={form.control}
                             name={`evaluations.${index}.rating`}
@@ -696,13 +696,13 @@ export default function PerformEvaluationPage() {
                           />
                         </TabsContent>
 
-                        <TabsContent value="tags" className="p-6 bg-white border border-slate-200 rounded-lg mt-2 game:bg-white/5 game:border-white/10">
+                        <TabsContent value="tags" className="p-6 bg-card border border-border rounded-lg mt-2 game:bg-white/5 game:border-white/10">
                           <Controller
                             name={`evaluations.${index}.performanceTags`}
                             control={form.control}
                             render={({ field: tagsField, fieldState }) => (
                               <FormItem className="space-y-4">
-                                <FormLabel className="text-base font-medium text-slate-900 game:text-white">Selecciona etiquetas de rendimiento</FormLabel>
+                                <FormLabel className="text-base font-medium text-foreground game:text-white">Selecciona etiquetas de rendimiento</FormLabel>
                                 <TagSelector
                                   tags={randomTags[field.subjectId] || []}
                                   selectedTagIds={(tagsField.value || []).map((t: any) => t.id)}
@@ -721,13 +721,13 @@ export default function PerformEvaluationPage() {
                           />
                         </TabsContent>
 
-                        <TabsContent value="text" className="p-6 bg-white border border-slate-200 rounded-lg mt-2 space-y-6 game:bg-white/5 game:border-white/10">
+                        <TabsContent value="text" className="p-6 bg-card border border-border rounded-lg mt-2 space-y-6 game:bg-white/5 game:border-white/10">
                           <FormField
                             control={form.control}
                             name={`evaluations.${index}.textDescription`}
                             render={({ field: textField, fieldState }) => (
                               <FormItem className="space-y-3">
-                                <FormLabel className="text-base text-slate-900 game:text-white">Descripción</FormLabel>
+                                <FormLabel className="text-base text-foreground game:text-white">Descripción</FormLabel>
                                 <FormControl>
                                   <Textarea
                                     placeholder="Ejemplo: Estuvo muy activo en defensa, recuperó varias pelotas importantes y distribuyó bien el juego. Sus pases fueron precisos pero le faltó más protagonismo en ataque..."
@@ -735,7 +735,7 @@ export default function PerformEvaluationPage() {
                                     onChange={textField.onChange}
                                     rows={5}
                                     maxLength={500}
-                                    className="resize-none text-sm border-slate-200 text-slate-800 placeholder:text-slate-400 focus:border-slate-400 game:bg-[#051329] game:text-white game:border-white/10 game:placeholder:text-white/30"
+                                    className="resize-none text-sm border-border text-foreground placeholder:text-muted-foreground focus:border-border game:bg-background game:text-white game:border-white/10 game:placeholder:text-white/30"
                                   />
                                 </FormControl>
                                 <div className="flex justify-between items-center text-xs text-muted-foreground game:text-slate-400">
@@ -826,7 +826,7 @@ export default function PerformEvaluationPage() {
           </Card>
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={isSubmitting} className="game:bg-primary game:text-[#0b1e3b] game:hover:bg-primary/90 game:font-bold">
+            <Button type="submit" disabled={isSubmitting} className="game:bg-primary game:text-background game:hover:bg-primary/90 game:font-bold">
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               {isSubmitting ? 'Enviando...' : 'Enviar Evaluaciones'}
             </Button>

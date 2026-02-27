@@ -3,14 +3,16 @@
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useMemo, useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import Image from 'next/image';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
 import { doc, collection, query, where } from 'firebase/firestore';
 import type { Cup, GroupTeam, BracketMatch, CupSeedingType } from '@/lib/types';
-import { Loader2, Trophy, Settings, Trash2, Play, Award } from 'lucide-react';
+import { Loader2, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CupBracket } from '@/components/competitions/cup-bracket';
+import { CupHeader, type CupTab } from '@/components/cup/CupHeader';
 import { useToast } from '@/hooks/use-toast';
 import { startCupAction, updateCupStatusAction, deleteCupAction, createCupMatchAction } from '@/lib/actions/server-actions';
 import { isErrorResponse } from '@/lib/errors';
@@ -25,14 +27,10 @@ import {
   ResponsiveAlertDialogTitle as AlertDialogTitle,
 } from '@/components/ui/responsive-alert-dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getRoundName, isTournamentComplete } from '@/lib/utils/cup-bracket';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { ChampionCelebration } from '@/components/leagues/ChampionCelebration';
 import { BackButton } from '@/components/navigation/back-button';
-
-type CupTab = 'bracket' | 'teams';
 
 export default function CupDetailPage() {
   const params = useParams<{ id: string }>();
@@ -51,7 +49,6 @@ export default function CupDetailPage() {
         spread: 80,
         origin: { y: 0.6 }
       });
-      // Optionally remove the param from URL to prevent re-triggering on refresh
       const url = new URL(window.location.href);
       url.searchParams.delete('celebrate');
       window.history.replaceState({}, '', url.toString());
@@ -78,7 +75,7 @@ export default function CupDetailPage() {
     if (!firestore || !cup?.teams || cup.teams.length === 0) return null;
     return query(
       collection(firestore, 'teams'),
-      where('__name__', 'in', cup.teams.slice(0, 10)) // Firestore limit
+      where('__name__', 'in', cup.teams.slice(0, 10))
     );
   }, [firestore, cup?.teams]);
 
@@ -150,7 +147,6 @@ export default function CupDetailPage() {
   const handleMatchClick = async (match: BracketMatch) => {
     if (!cup) return;
 
-    // If match is already completed, view details
     if (match.winnerId) {
       if (match.matchId) {
         router.push(`/matches/${match.matchId}`);
@@ -158,17 +154,13 @@ export default function CupDetailPage() {
       return;
     }
 
-    // If match is ready to play (has both teams)
     if (match.team1Id && match.team2Id) {
-      // If we have a matchId, navigate to it
       if (match.matchId) {
         router.push(`/matches/${match.matchId}`);
         return;
       }
 
-      // If not, create it and navigate (only owner)
       if (isOwner) {
-        // Show loading toast
         const loadingToast = toast({
           title: 'Preparando partido...',
           description: 'Creando el encuentro en el sistema.',
@@ -225,88 +217,16 @@ export default function CupDetailPage() {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <BackButton href="/competitions" label="Volver a Competiciones" />
         {/* Header */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col md:flex-row items-start justify-between gap-4 md:gap-8">
-            <div className="flex flex-col md:flex-row items-start gap-4 flex-1">
-              {cup.logoUrl && (
-                <div className="w-20 h-20 md:w-24 md:h-24 rounded-lg overflow-hidden border shrink-0 bg-muted/30 mx-auto md:mx-0 relative">
-                  <Image
-                    src={cup.logoUrl}
-                    alt={cup.name}
-                    fill
-                    className="object-contain transition-opacity duration-300"
-                    sizes="(max-width: 768px) 80px, 96px"
-                  />
-                </div>
-              )}
-              <div className="flex-1 space-y-3">
-                <div className="flex items-start justify-between gap-4">
-                  <h1 className="text-2xl md:text-3xl font-bold leading-tight">{cup.name}</h1>
-                  {isOwner && (
-                    <div className="flex items-center gap-2 shrink-0">
-                      {cup.status === 'draft' && (
-                        <Button onClick={() => setShowStartDialog(true)} size="sm" className="h-8">
-                          <Play className="mr-2 h-3 w-3" />
-                          Iniciar
-                        </Button>
-                      )}
-                      <Button variant="ghost" size="icon" onClick={() => setShowDeleteDialog(true)} className="h-8 w-8 text-muted-foreground hover:text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                  <Badge variant={cup.status === 'draft' ? 'secondary' : cup.status === 'completed' ? 'outline' : 'default'} className="whitespace-nowrap">
-                    {cup.status === 'draft' && 'Borrador'}
-                    {cup.status === 'in_progress' && 'En Curso'}
-                    {cup.status === 'completed' && 'Finalizada'}
-                  </Badge>
-                  <span>·</span>
-                  <span className="whitespace-nowrap">{cup.teams.length} equipos</span>
-                  <span>·</span>
-                  <span className="whitespace-nowrap">Eliminación Directa</span>
-                </div>
-
-                {organizer && (
-                  <div className="flex items-center gap-2 pt-1">
-                    <span className="text-sm text-muted-foreground">Organizado por</span>
-                    <div className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded-full">
-                      {organizer.photoURL || organizer.photoUrl ? (
-                        <div className="relative w-4 h-4 rounded-full overflow-hidden">
-                          <Image
-                            src={organizer.photoURL || organizer.photoUrl}
-                            alt={organizer.displayName || 'Organizador'}
-                            fill
-                            className="object-cover"
-                            sizes="16px"
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-4 h-4 rounded-full bg-muted flex items-center justify-center">
-                          <span className="text-[9px] font-bold">{organizer.displayName?.charAt(0) || '?'}</span>
-                        </div>
-                      )}
-                      <span className="text-sm font-medium truncate max-w-[120px]">{organizer.displayName || 'Usuario'}</span>
-                    </div>
-                  </div>
-                )}
-
-                {cup.currentRound && cup.status === 'in_progress' && (
-                  <div className="flex items-center gap-2 mt-2 bg-primary/5 py-1 px-3 rounded-full w-fit">
-                    <Trophy className="h-3.5 w-3.5 text-primary" />
-                    <span className="text-sm font-medium text-primary">{getRoundName(cup.currentRound)}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-
-          </div>
-        </div>
+        <CupHeader
+          cup={cup}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          isOwner={isOwner}
+          organizer={organizer}
+          onStartCup={() => setShowStartDialog(true)}
+          onDeleteCup={() => setShowDeleteDialog(true)}
+        />
 
         {/* Champion Celebration */}
         {isCompleted && cup.championTeamId && cup.championTeamName && (
@@ -318,14 +238,9 @@ export default function CupDetailPage() {
           />
         )}
 
-        {/* Content Tabs */}
+        {/* Tab content — controlled by CupHeader tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as CupTab)}>
-          <TabsList>
-            <TabsTrigger value="bracket">Bracket</TabsTrigger>
-            <TabsTrigger value="teams">Equipos</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="bracket" className="mt-6">
+          <TabsContent value="bracket" className="mt-0">
             {cup.bracket && cup.bracket.length > 0 ? (
               <CupBracket
                 bracket={cup.bracket}
@@ -347,7 +262,7 @@ export default function CupDetailPage() {
             )}
           </TabsContent>
 
-          <TabsContent value="teams" className="mt-6">
+          <TabsContent value="teams" className="mt-0">
             <Card>
               <CardHeader>
                 <CardTitle>Equipos Participantes</CardTitle>
@@ -384,42 +299,38 @@ export default function CupDetailPage() {
           </AlertDialogHeader>
 
           <div className="space-y-3 py-4">
-            <label className="text-sm font-medium">Tipo de sorteo:</label>
-            <div className="flex flex-col gap-2">
-              <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-accent transition-colors">
-                <input
-                  type="radio"
-                  name="seedingType"
-                  value="random"
-                  checked={seedingType === 'random'}
-                  onChange={(e) => setSeedingType(e.target.value as CupSeedingType)}
-                  className="h-4 w-4"
-                />
+            <Label className="text-sm font-medium">Tipo de sorteo:</Label>
+            <RadioGroup
+              value={seedingType}
+              onValueChange={(v) => setSeedingType(v as CupSeedingType)}
+              className="grid grid-cols-1 gap-3"
+            >
+              <Label
+                htmlFor="seeding-random"
+                className="flex items-center gap-3 cursor-pointer rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary transition-colors"
+              >
+                <RadioGroupItem value="random" id="seeding-random" className="sr-only" />
                 <div className="flex-1">
                   <div className="font-medium">Sorteo Aleatorio</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs text-muted-foreground mt-0.5">
                     Los equipos se distribuyen al azar
                   </div>
                 </div>
-              </label>
+              </Label>
 
-              <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-accent transition-colors">
-                <input
-                  type="radio"
-                  name="seedingType"
-                  value="ovr_based"
-                  checked={seedingType === 'ovr_based'}
-                  onChange={(e) => setSeedingType(e.target.value as CupSeedingType)}
-                  className="h-4 w-4"
-                />
+              <Label
+                htmlFor="seeding-ovr"
+                className="flex items-center gap-3 cursor-pointer rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary transition-colors"
+              >
+                <RadioGroupItem value="ovr_based" id="seeding-ovr" className="sr-only" />
                 <div className="flex-1">
                   <div className="font-medium">Sorteo por OVR</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs text-muted-foreground mt-0.5">
                     Los equipos más fuertes se enfrentan en rondas finales
                   </div>
                 </div>
-              </label>
-            </div>
+              </Label>
+            </RadioGroup>
           </div>
 
           <AlertDialogFooter>
@@ -444,7 +355,11 @@ export default function CupDetailPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteCup} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDeleteCup}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Eliminar
             </AlertDialogAction>

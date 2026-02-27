@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  ResponsiveDropdownMenu,
+  ResponsiveDropdownMenuContent,
+  ResponsiveDropdownMenuItem,
+  ResponsiveDropdownMenuLabel,
+  ResponsiveDropdownMenuSeparator,
+  ResponsiveDropdownMenuTrigger,
+} from '@/components/ui/responsive-dropdown-menu';
 import { Share2, MessageCircle, Twitter, Facebook, Link2, Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -130,60 +130,60 @@ export function ShareButton({
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+    <ResponsiveDropdownMenu>
+      <ResponsiveDropdownMenuTrigger asChild>
         <Button variant={variant} size={size}>
           <Share2 className={showLabel ? 'mr-2 h-4 w-4' : 'h-4 w-4'} />
           {showLabel && 'Compartir'}
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Compartir en</DropdownMenuLabel>
-        <DropdownMenuSeparator />
+      </ResponsiveDropdownMenuTrigger>
+      <ResponsiveDropdownMenuContent align="end" className="w-56">
+        <ResponsiveDropdownMenuLabel>Compartir en</ResponsiveDropdownMenuLabel>
+        <ResponsiveDropdownMenuSeparator />
 
-        <DropdownMenuItem onClick={handleWhatsAppShare}>
+        <ResponsiveDropdownMenuItem onClick={handleWhatsAppShare}>
           <MessageCircle className="mr-2 h-4 w-4 text-foreground" />
           WhatsApp
-        </DropdownMenuItem>
+        </ResponsiveDropdownMenuItem>
 
-        <DropdownMenuItem onClick={handleTwitterShare}>
+        <ResponsiveDropdownMenuItem onClick={handleTwitterShare}>
           <Twitter className="mr-2 h-4 w-4 text-foreground" />
           Twitter
-        </DropdownMenuItem>
+        </ResponsiveDropdownMenuItem>
 
-        <DropdownMenuItem onClick={handleFacebookShare}>
+        <ResponsiveDropdownMenuItem onClick={handleFacebookShare}>
           <Facebook className="mr-2 h-4 w-4 text-foreground" />
           Facebook
-        </DropdownMenuItem>
+        </ResponsiveDropdownMenuItem>
 
-        <DropdownMenuSeparator />
+        <ResponsiveDropdownMenuSeparator />
 
-        <DropdownMenuItem onClick={handleCopyLink}>
+        <ResponsiveDropdownMenuItem onClick={handleCopyLink}>
           <Link2 className="mr-2 h-4 w-4" />
           Copiar enlace
-        </DropdownMenuItem>
+        </ResponsiveDropdownMenuItem>
 
         {imageUrl && (
-          <DropdownMenuItem onClick={handleDownloadImage} disabled={isDownloading}>
+          <ResponsiveDropdownMenuItem onClick={handleDownloadImage} disabled={isDownloading}>
             {isDownloading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Download className="mr-2 h-4 w-4" />
             )}
             Descargar imagen
-          </DropdownMenuItem>
+          </ResponsiveDropdownMenuItem>
         )}
 
         {typeof window !== 'undefined' && 'share' in navigator && (
           <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleNativeShare}>
+            <ResponsiveDropdownMenuSeparator />
+            <ResponsiveDropdownMenuItem onClick={handleNativeShare}>
               <Share2 className="mr-2 h-4 w-4" />
               Compartir...
-            </DropdownMenuItem>
+            </ResponsiveDropdownMenuItem>
           </>
         )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </ResponsiveDropdownMenuContent>
+    </ResponsiveDropdownMenu>
   );
 }

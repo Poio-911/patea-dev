@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { NotificationSettings } from '@/components/notifications/notification-permission-prompt';
 import { EditProfileDialog } from '@/components/settings/edit-profile-dialog';
 import { doc, getDoc } from 'firebase/firestore';
-import type { Player } from '@/lib/types';
+import type { Player, UserProfile } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
@@ -23,6 +23,7 @@ export default function SettingsPage() {
   const { user, loading } = useUser();
   const firestore = useFirestore();
   const [player, setPlayer] = useState<Player | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [playerLoading, setPlayerLoading] = useState(true);
 
   useEffect(() => {
@@ -32,9 +33,15 @@ export default function SettingsPage() {
         return;
       }
       try {
-        const snap = await getDoc(doc(firestore, 'players', user.uid));
-        if (snap.exists()) {
-          setPlayer(snap.data() as Player);
+        const [playerSnap, userSnap] = await Promise.all([
+          getDoc(doc(firestore, 'players', user.uid)),
+          getDoc(doc(firestore, 'users', user.uid)),
+        ]);
+        if (playerSnap.exists()) {
+          setPlayer(playerSnap.data() as Player);
+        }
+        if (userSnap.exists()) {
+          setUserProfile(userSnap.data() as UserProfile);
         }
       } catch (err) {
         console.error('Error fetching player in settings:', err);
@@ -122,7 +129,7 @@ export default function SettingsPage() {
 
             {/* Edit Profile Button */}
             {!playerLoading && (
-              <EditProfileDialog user={user as any} playerData={player || null} />
+              <EditProfileDialog user={user as any} playerData={player || null} userProfile={userProfile} />
             )}
           </div>
         </CardContent>

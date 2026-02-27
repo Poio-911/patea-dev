@@ -144,10 +144,9 @@ export async function fetchGoogleFitActivitiesAction(
         }
 
         const sessionsData = await sessionsResponse.json();
-        const sessions: GoogleFitSession[] = [];
 
-        // For each session, fetch detailed data (steps, calories, heart rate)
-        for (const session of sessionsData.session || []) {
+        // For each session, fetch detailed data (steps, calories, heart rate) in parallel
+        const sessionsPromises = (sessionsData.session || []).map(async (session: any) => {
             // Fetch aggregate data for this session
             const aggregateResponse = await fetch(
                 'https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate',
@@ -205,7 +204,7 @@ export async function fetchGoogleFitActivitiesAction(
             const endTimeMillis = Number(session.endTimeMillis);
             const duration = endTimeMillis - startTimeMillis;
 
-            sessions.push({
+            return {
                 id: session.id,
                 name: session.name,
                 startTime: new Date(startTimeMillis).toISOString(),
@@ -213,8 +212,10 @@ export async function fetchGoogleFitActivitiesAction(
                 activityType: session.activityType,
                 duration,
                 metrics
-            });
-        }
+            };
+        });
+
+        const sessions = await Promise.all(sessionsPromises);
 
         return { success: true, sessions };
     } catch (error) {

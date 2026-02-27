@@ -40,11 +40,11 @@ const matchThemes: Record<MatchType, MatchTheme> = {
         gradient: 'from-blue-500/10 via-blue-500/5 to-transparent dark:from-blue-600/20 dark:via-blue-600/10',
         glow: 'bg-blue-500/20 dark:bg-blue-500/40',
         badge: 'bg-blue-100/50 border-blue-200 text-blue-700 dark:bg-blue-500/20 dark:border-blue-500/40 dark:text-blue-200',
-        badgeText: '', // merged into badge for simplicity if needed, or kept separate
+        badgeText: '',
         button: 'bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-400 dark:text-white',
         border: 'border-blue-500/20 dark:border-blue-500/30',
         icon: 'UserCheck',
-        label: 'Manual',
+        label: 'Amistoso',
         priority: 'casual',
         brandColor: 'blue-500',
         topAccent: 'border-t-blue-500',
@@ -179,4 +179,35 @@ export function isCompetitiveMatch(type: MatchType): boolean {
  */
 export function getMatchTypeLabel(type: MatchType): string {
     return matchThemes[type].label;
+}
+
+/**
+ * Background images for match cards (Tema Game)
+ */
+const MATCH_BACKGROUNDS = [
+    '/images/backgrounds/fondo_1.jpg',
+    '/images/backgrounds/fondo_2.jpg',
+    '/images/backgrounds/fondo_3.jpg',
+    '/images/backgrounds/fondo_4.jpg',
+    '/images/backgrounds/fondo_5.jpg',
+    '/images/backgrounds/fondo_6.jpg',
+    '/images/backgrounds/fondo_7.jpg',
+    '/images/backgrounds/fondo_8.jpg',
+    '/images/backgrounds/fondo_9.jpg',
+];
+
+/**
+ * Get a deterministic background image for a match card based on its ID
+ */
+export function getMatchBackgroundImage(matchId: string): string {
+    if (!matchId) return MATCH_BACKGROUNDS[0];
+
+    // Simple hash to get a consistent index
+    let hash = 0;
+    for (let i = 0; i < matchId.length; i++) {
+        hash = matchId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    const index = Math.abs(hash) % MATCH_BACKGROUNDS.length;
+    return MATCH_BACKGROUNDS[index];
 }

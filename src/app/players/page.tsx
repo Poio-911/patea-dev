@@ -61,15 +61,22 @@ export default function PlayersPage() {
     if (!players) return [];
     return [...players]
       .map(player => {
-        // If player has no photoUrl but has ownerUid, try to get it from users collection
-        // Note: PlayerPhoto component uses photoUrl (camelCase), users have photoURL (uppercase)
+        const creatorDoc = groupUsers?.find(u => u.uid === player.ownerUid);
+        let updatedPlayer = { ...player };
+
+        // 1. Fallback de foto si ownerUid es usuario real y el documento player no tiene fotoUrl (camelCase)
         if (!(player as any).photoUrl && player.ownerUid) {
-          const userDoc = groupUsers?.find(u => u.uid === player.ownerUid);
-          if (userDoc?.photoURL) {
-            return { ...player, photoUrl: userDoc.photoURL };
+          if (creatorDoc?.photoURL) {
+            updatedPlayer.photoUrl = creatorDoc.photoURL;
           }
         }
-        return player;
+
+        // 2. Adjuntar nombre del creador si es jugador manual (ID !== ownerUid)
+        if (player.id !== player.ownerUid && creatorDoc) {
+          (updatedPlayer as any).creatorName = creatorDoc.displayName;
+        }
+
+        return updatedPlayer;
       })
       .sort((a, b) => b.ovr - a.ovr);
   }, [players, groupUsers]);
@@ -166,7 +173,12 @@ export default function PlayersPage() {
           </div>
           <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredPlayers.map((player, index) => (
-              <PlayerCard key={player.id} player={player} index={index} />
+              <PlayerCard
+                key={player.id}
+                player={player}
+                index={index}
+                creatorName={(player as any).creatorName}
+              />
             ))}
           </section>
         </>

@@ -166,6 +166,13 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
                 </Dialog>
               </motion.div>
               <h3 className="w-full truncate text-center text-xl font-semibold">{playerName}</h3>
+              {player.id !== player.ownerUid && (
+                <div className="flex flex-col items-center gap-1 mt-1">
+                  <Badge variant="outline" className="bg-muted/50 border-primary/20 text-[10px] font-black uppercase tracking-widest text-primary/80">
+                    Jugador Manual
+                  </Badge>
+                </div>
+              )}
 
               {/* MVP Badge: show only if has votes */}
               {(player.stats?.mvpVotes ?? 0) > 0 && (

@@ -8,7 +8,7 @@ import { useDoc, useFirestore } from '@/firebase';
 import { useMemo } from 'react';
 import { doc } from 'firebase/firestore';
 import type { Player } from '@/lib/types';
-import { PersonalInfoEditor } from '@/components/profile/personal-info-editor';
+import { EditProfileDialog } from '@/components/settings/edit-profile-dialog';
 
 export default function ProfilePage() {
   const { user, loading: userLoading } = useUser();
@@ -38,7 +38,7 @@ export default function ProfilePage() {
           title="Mi Perfil"
           description="Tu información personal, estadísticas de jugador y actividad."
         />
-        <PersonalInfoEditor user={user} />
+        <EditProfileDialog user={user as any} playerData={player} userProfile={user} />
       </div>
 
       {/* Player Stats and Performance */}

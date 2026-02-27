@@ -172,6 +172,7 @@ export default function CompetitionsPage() {
             title="Amistosos"
             icon={Swords}
             notificationCount={invitations.length}
+            isActive={activeTab === 'friendly'}
             stats={[
               { label: 'Desafíos pendientes', value: invitations.length },
               { label: 'Equipos activos', value: myTeams.length },
@@ -183,6 +184,7 @@ export default function CompetitionsPage() {
             type="league"
             title="Ligas"
             icon={Shield}
+            isActive={activeTab === 'leagues'}
             stats={[
               { label: 'Ligas activas', value: leagues?.filter(l => l.status === 'in_progress').length || 0 },
               { label: 'Total ligas', value: leagues?.length || 0 },
@@ -194,6 +196,7 @@ export default function CompetitionsPage() {
             type="cup"
             title="Copas"
             icon={Trophy}
+            isActive={activeTab === 'cups'}
             stats={[
               { label: 'Copas activas', value: cups?.filter(c => c.status === 'in_progress').length || 0 },
               { label: 'Total copas', value: cups?.length || 0 },

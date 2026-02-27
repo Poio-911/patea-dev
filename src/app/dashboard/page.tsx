@@ -39,12 +39,12 @@ const statusConfig: Record<Match['status'], { label: string; className: string }
   evaluated: { label: 'Evaluado', className: 'bg-card/60 text-foreground border border-border rounded-full backdrop-blur-sm' },
 };
 
-const pageVariants = {
+const PAGE_VARIANTS = {
   initial: { opacity: 0 },
   animate: { opacity: 1, transition: { duration: 0.5 } },
 };
 
-const listVariants = {
+const LIST_VARIANTS = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -54,7 +54,7 @@ const listVariants = {
   },
 };
 
-const cardVariants = {
+const CARD_VARIANTS = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
@@ -227,7 +227,7 @@ function DashboardContent() {
       return (
         <motion.div
           className="flex flex-col items-center justify-center min-h-[70vh] gap-8 text-center px-4 relative"
-          variants={pageVariants}
+          variants={PAGE_VARIANTS}
           initial="initial"
           animate="animate"
         >
@@ -281,7 +281,7 @@ function DashboardContent() {
       return (
         <motion.div
           className="flex flex-col items-center justify-center min-h-[70vh] gap-8 text-center px-4 relative"
-          variants={pageVariants}
+          variants={PAGE_VARIANTS}
           initial="initial"
           animate="animate"
         >
@@ -328,7 +328,7 @@ function DashboardContent() {
   return (
     <motion.div
       className="flex flex-col gap-8"
-      variants={pageVariants}
+      variants={PAGE_VARIANTS}
       initial="initial"
       animate="animate"
     >

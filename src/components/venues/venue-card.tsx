@@ -19,12 +19,12 @@ import {
   Globe,
 } from 'lucide-react';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  ResponsiveDropdownMenu,
+  ResponsiveDropdownMenuContent,
+  ResponsiveDropdownMenuItem,
+  ResponsiveDropdownMenuSeparator,
+  ResponsiveDropdownMenuTrigger,
+} from '@/components/ui/responsive-dropdown-menu';
 import type { Venue, VenueSurface } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -90,31 +90,31 @@ export function VenueCard({
           </div>
 
           {showActions && !selectable && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+            <ResponsiveDropdownMenu>
+              <ResponsiveDropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm">
                   <MoreVertical className="w-4 h-4" />
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              </ResponsiveDropdownMenuTrigger>
+              <ResponsiveDropdownMenuContent align="end">
                 {onEdit && (
-                  <DropdownMenuItem onClick={onEdit}>
+                  <ResponsiveDropdownMenuItem onClick={onEdit}>
                     <Edit className="w-4 h-4 mr-2" />
                     Editar
-                  </DropdownMenuItem>
+                  </ResponsiveDropdownMenuItem>
                 )}
-                {onEdit && onDelete && <DropdownMenuSeparator />}
+                {onEdit && onDelete && <ResponsiveDropdownMenuSeparator />}
                 {onDelete && (
-                  <DropdownMenuItem
+                  <ResponsiveDropdownMenuItem
                     onClick={onDelete}
                     className="text-destructive"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Eliminar
-                  </DropdownMenuItem>
+                  </ResponsiveDropdownMenuItem>
                 )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </ResponsiveDropdownMenuContent>
+            </ResponsiveDropdownMenu>
           )}
         </div>
       </CardHeader>

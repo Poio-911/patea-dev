@@ -188,8 +188,25 @@ const editGroupSchema = z.object({
 });
 type EditGroupForm = z.infer<typeof editGroupSchema>;
 
-export function EditGroupDialog({ group, children }: { group: Group, children: React.ReactNode }) {
-    const [open, setOpen] = useState(false);
+export function EditGroupDialog({
+    group,
+    children,
+    open: openProp,
+    onOpenChange: onOpenChangeProp,
+}: {
+    group: Group
+    children?: React.ReactNode
+    open?: boolean
+    onOpenChange?: (open: boolean) => void
+}) {
+    const [internalOpen, setInternalOpen] = useState(false);
+    const controlled = openProp !== undefined;
+    const open = controlled ? openProp : internalOpen;
+    const setOpen = (v: boolean) => {
+        if (!controlled) setInternalOpen(v);
+        onOpenChangeProp?.(v);
+    };
+
     const [isEditing, setIsEditing] = useState(false);
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -211,10 +228,10 @@ export function EditGroupDialog({ group, children }: { group: Group, children: R
             setIsEditing(false);
         }
     };
-    
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>{children}</DialogTrigger>
+            {children && <DialogTrigger asChild>{children}</DialogTrigger>}
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Editar Grupo</DialogTitle>

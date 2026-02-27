@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/responsive-popover";
 import { UserCheck, Shirt, Globe, HelpCircle, Users } from 'lucide-react';
 
-const listVariants = {
+const LIST_VARIANTS = {
     hidden: { opacity: 0 },
     visible: {
         opacity: 1,
@@ -36,7 +36,7 @@ const listVariants = {
     },
 };
 
-const itemVariants = {
+const ITEM_VARIANTS = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
 };
@@ -211,8 +211,9 @@ export default function MatchesPage() {
         // Apply time filter
         switch (timeFilter) {
             case 'upcoming':
-                // Show all matches with date >= today OR status active
+                // Show all matches with date >= today OR status active OR status planning (no confirmed date yet)
                 return matches.filter(m => {
+                    if (m.status === 'planning') return true;
                     const matchDate = new Date(m.date);
                     const matchDay = new Date(matchDate.getFullYear(), matchDate.getMonth(), matchDate.getDate());
                     return matchDay >= today || m.status === 'active';
@@ -268,6 +269,7 @@ export default function MatchesPage() {
         const weekEnd = new Date(today.getTime() + 7 * 86400000);
         return {
             upcoming: amistososMatches.filter(m => {
+                if (m.status === 'planning') return true;
                 const matchDate = new Date(m.date);
                 const matchDay = new Date(matchDate.getFullYear(), matchDate.getMonth(), matchDate.getDate());
                 return matchDay >= today || m.status === 'active';
@@ -405,8 +407,17 @@ export default function MatchesPage() {
                     </PageHeader>
 
                     {/* Featured Match - Full width header */}
-                    {featuredMatch && timeFilter !== 'history' && (
-                        <NextMatchCard match={featuredMatch} variant="compact" />
+                    {amistososMatches.length > 0 && timeFilter !== 'history' && (
+                        <NextMatchCard
+                            matches={amistososMatches.filter(m => {
+                                const d = new Date(m.date);
+                                const clean = (m.time || '').replace(' hs', '').replace('hs', '').trim();
+                                const [hh, mm = '0'] = clean.split(':');
+                                d.setHours(parseInt(hh || '0', 10) || 0, parseInt(mm || '0', 10) || 0, 0, 0);
+                                return (m.status === 'active') || (m.status === 'upcoming' && d.getTime() >= new Date().getTime());
+                            }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())}
+                            allPlayers={sortedPlayers}
+                        />
                     )}
 
                     {/* Matches List */}
@@ -421,17 +432,17 @@ export default function MatchesPage() {
 
                         {gridMatches.length > 0 ? (
                             viewMode === 'grid' ? (
-                                <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={listVariants} initial="hidden" animate="visible" key={`grid-${timeFilter}`}>
+                                <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={LIST_VARIANTS} initial="hidden" animate="visible" key={`grid-${timeFilter}`}>
                                     {gridMatches.map(match => (
-                                        <motion.div key={match.id} variants={itemVariants}>
+                                        <motion.div key={match.id} variants={ITEM_VARIANTS}>
                                             <MatchCard match={match} allPlayers={sortedPlayers} />
                                         </motion.div>
                                     ))}
                                 </motion.div>
                             ) : (
-                                <motion.div className="grid grid-cols-2 md:grid-cols-1 gap-2 md:gap-3" variants={listVariants} initial="hidden" animate="visible" key={`compact-${timeFilter}`}>
+                                <motion.div className="grid grid-cols-2 md:grid-cols-1 gap-2 md:gap-3" variants={LIST_VARIANTS} initial="hidden" animate="visible" key={`compact-${timeFilter}`}>
                                     {gridMatches.map(match => (
-                                        <motion.div key={match.id} variants={itemVariants}>
+                                        <motion.div key={match.id} variants={ITEM_VARIANTS}>
                                             <CompactMatchCard match={match} />
                                         </motion.div>
                                     ))}

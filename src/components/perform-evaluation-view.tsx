@@ -106,7 +106,7 @@ const TagCheckbox = ({
             ? 'bg-emerald-500/10 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
             : 'bg-rose-500/10 border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.2)]'
           : 'bg-card border-border hover:border-border/80 hover:bg-accent/50',
-        "game:bg-[#0b1e3b]/50 game:border-white/10"
+        "game:bg-card/50 game:border-white/10"
       )}
     >
       {/* Background Glow when checked */}
@@ -327,7 +327,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           {/* Strict Game Mode Card */}
-          <Card className="game:border-primary/30 game:bg-[#0b1e3b]/80 game:backdrop-blur-md game:shadow-[0_0_20px_rgba(170,254,72,0.1)]">
+          <Card className="game:border-primary/30 game:bg-card/80 game:backdrop-blur-md game:shadow-[0_0_20px_rgba(170,254,72,0.1)]">
             <CardHeader>
               <CardTitle className="game:text-white">Tu Rendimiento</CardTitle>
               <CardDescription className="game:text-slate-400">Antes de evaluar a tus compañeros, registra tu propia actuación.</CardDescription>
@@ -370,7 +370,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
             </CardContent>
           </Card>
 
-          <Card className="game:border-primary/30 game:bg-[#0b1e3b]/80 game:backdrop-blur-md game:shadow-[0_0_20px_rgba(170,254,72,0.1)]">
+          <Card className="game:border-primary/30 game:bg-card/80 game:backdrop-blur-md game:shadow-[0_0_20px_rgba(170,254,72,0.1)]">
             <CardHeader>
               <CardTitle className="game:text-white">Jugadores a Evaluar</CardTitle>
             </CardHeader>
@@ -378,9 +378,9 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
               {fields.map((field, index) => (
                 <div key={field.id} className="border-b pb-6 last:border-b-0 last:pb-0 game:border-white/10">
                   <div className="flex items-center gap-4 mb-4">
-                    <Avatar className="h-12 w-12 game:ring-2 game:ring-primary game:ring-offset-2 game:ring-offset-[#0b1e3b]">
+                    <Avatar className="h-12 w-12 game:ring-2 game:ring-primary game:ring-offset-2 game:ring-offset-background">
                       <AvatarImage src={field.photoURL} alt={field.displayName} />
-                      <AvatarFallback className="game:bg-[#051329] game:text-primary">{field.displayName.charAt(0)}</AvatarFallback>
+                      <AvatarFallback className="game:bg-background game:text-primary">{field.displayName.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <p className="font-semibold text-lg game:text-white">{field.displayName}</p>
                   </div>
@@ -392,9 +392,9 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
                       <Tabs value={typeField.value} onValueChange={(value) => {
                         form.setValue(`evaluations.${index}.evaluationType`, value as 'points' | 'tags', { shouldValidate: true });
                       }} className="w-full">
-                        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 game:bg-[#051329]">
-                          <TabsTrigger value="points" className="game:data-[state=active]:bg-primary game:data-[state=active]:text-[#0b1e3b]">Evaluar por Puntos</TabsTrigger>
-                          <TabsTrigger value="tags" className="game:data-[state=active]:bg-primary game:data-[state=active]:text-[#0b1e3b]">Evaluar por Etiquetas</TabsTrigger>
+                        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 game:bg-background">
+                          <TabsTrigger value="points" className="game:data-[state=active]:bg-primary game:data-[state=active]:text-background">Evaluar por Puntos</TabsTrigger>
+                          <TabsTrigger value="tags" className="game:data-[state=active]:bg-primary game:data-[state=active]:text-background">Evaluar por Etiquetas</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="points" className="p-4 bg-muted/30 rounded-b-md game:bg-white/5">
@@ -487,7 +487,7 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
           </Card>
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={isSubmitting} className="game:bg-primary game:text-[#0b1e3b] game:hover:bg-primary/90 game:font-bold">
+            <Button type="submit" disabled={isSubmitting} className="game:bg-primary game:text-background game:hover:bg-primary/90 game:font-bold">
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               {isSubmitting ? 'Enviando...' : 'Enviar Evaluaciones'}
             </Button>

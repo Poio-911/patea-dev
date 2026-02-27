@@ -26,6 +26,7 @@ import { CreateGroupDialog, JoinGroupDialog } from '@/components/groups/group-di
 import { useToast } from '@/hooks/use-toast';
 import { GroupSummaryCard } from '@/components/group-summary-card';
 import { GroupHeroCard } from '@/components/groups/group-hero-card';
+import { UserGroupsList } from '@/components/groups/user-groups-list';
 
 export default function GroupsPage() {
   const { user, loading: userLoading } = useUser();
@@ -42,7 +43,7 @@ export default function GroupsPage() {
 
   const groupMatchesQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
-    return query(collection(firestore, 'matches'), where('groupId', '==', user.activeGroupId), where('status', '==', 'upcoming'), orderBy('date', 'asc'), limit(5));
+    return query(collection(firestore, 'matches'), where('groupId', '==', user.activeGroupId), where('status', 'in', ['upcoming', 'planning']), orderBy('date', 'asc'), limit(5));
   }, [firestore, user?.activeGroupId]);
   const { data: upcomingMatches, loading: matchesLoading } = useCollection<Match>(groupMatchesQuery);
 
@@ -62,7 +63,14 @@ export default function GroupsPage() {
   }, [firestore, user?.activeGroupId]);
   const { data: activeGroup, loading: groupLoading } = useDoc<Group>(activeGroupRef);
 
-  const loading = userLoading || playersLoading || matchesLoading || friendlyMatchesLoading || groupLoading;
+  // New query to check if user has ANY groups even if activeGroupId is null
+  const userGroupsQuery = useMemo(() => {
+    if (!firestore || !user?.uid) return null;
+    return query(collection(firestore, 'groups'), where('members', 'array-contains', user.uid));
+  }, [firestore, user?.uid]);
+  const { data: allUserGroups, loading: allGroupsLoading } = useCollection<Group>(userGroupsQuery);
+
+  const loading = userLoading || playersLoading || matchesLoading || friendlyMatchesLoading || groupLoading || allGroupsLoading;
 
   return (
     <div className="flex flex-col gap-6">
@@ -89,11 +97,39 @@ export default function GroupsPage() {
       {loading ? (
         <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
       ) : !user?.activeGroupId || !activeGroup ? (
-        <Alert className="text-center py-10">
-          <Users2 className="h-6 w-6 mx-auto mb-2" />
-          <AlertTitle>No hay un grupo activo</AlertTitle>
-          <AlertDescription>Creá un grupo o unite a uno para empezar.</AlertDescription>
-        </Alert>
+        <div className="space-y-6">
+          <Alert className="bg-primary/5 border-primary/20">
+            <Users2 className="h-5 w-5 text-primary" />
+            <AlertTitle className="text-primary font-bold">No tenés un grupo seleccionado</AlertTitle>
+            <AlertDescription>
+              {allUserGroups && allUserGroups.length > 0
+                ? "Seleccioná uno de tus grupos debajo para empezar a operar."
+                : "Creá un grupo o unite a uno mediante un código para empezar."}
+            </AlertDescription>
+          </Alert>
+
+          {allUserGroups && allUserGroups.length > 0 ? (
+            <div className="space-y-4">
+              <h3 className="text-lg font-bold font-headline uppercase tracking-tight flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                Tus Grupos Disponibles
+              </h3>
+              <UserGroupsList />
+            </div>
+          ) : (
+            <Card className="border-dashed py-10 flex flex-col items-center justify-center gap-4">
+              <Users2 className="h-10 w-10 text-muted-foreground/50" />
+              <div className="text-center space-y-1">
+                <p className="font-bold text-lg">Bandeja de Grupos Vacía</p>
+                <p className="text-sm text-muted-foreground">Todavía no formas parte de ningún grupo de fútbol.</p>
+              </div>
+              <div className="flex gap-3">
+                <Button onClick={() => setJoinGroupOpen(true)} variant="outline">Unirse a uno</Button>
+                <Button onClick={() => setCreateGroupOpen(true)}>Crear el mío</Button>
+              </div>
+            </Card>
+          )}
+        </div>
       ) : (
         <div className="space-y-6">
           <GroupHeroCard group={activeGroup} />

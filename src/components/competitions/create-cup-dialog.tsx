@@ -116,7 +116,8 @@ export function CreateCupDialog({ open, onOpenChange, groupId, userId, teams }: 
           buffer,
           logoFile.name,
           'cup',
-          groupId
+          groupId,
+          userId
         );
 
         if (!uploadResult.success) {

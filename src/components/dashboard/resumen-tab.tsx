@@ -95,7 +95,7 @@ export function ResumenTab({ nextMatch, liveMatches, liveLoading, top5Players, p
                             <Calendar className="h-4 w-4 text-primary" />
                             Próximo Partido
                         </h3>
-                        <NextMatchCard match={nextMatch} />
+                        <NextMatchCard matches={nextMatch} />
                     </motion.div>
                 )}
 
