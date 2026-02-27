@@ -15,28 +15,35 @@ export async function triggerMatchFullSequence(matchId: string) {
     const matchRef = db.collection('matches').doc(matchId);
 
     try {
-        // 1. Get latest match data
-        const matchSnap = await matchRef.get();
-        if (!matchSnap.exists) return { success: false, error: 'Match not found' };
+        // Phase 1: Atomically check if match is full and mark it as "generating teams"
+        // This prevents race conditions when two players join simultaneously
+        const matchData = await db.runTransaction(async (transaction) => {
+            const matchSnap = await transaction.get(matchRef);
+            if (!matchSnap.exists) return null;
 
-        const match = matchSnap.data() as Match;
-        const maxPlayers = match.matchSize;
+            const match = matchSnap.data() as Match;
 
-        // 2. Safety check: avoid double execution
-        if (match.status === 'upcoming' && match.teamsGenerated) {
-            return { success: true, message: 'Teams already generated' };
-        }
+            // Already processed
+            if (match.teamsGenerated) return null;
 
-        // 3. Confirm we have enough players
-        const currentPlayers = match.players || [];
-        if (currentPlayers.length < maxPlayers) {
-            logger.info(`[match-logic] Match ${matchId} not full yet (${currentPlayers.length}/${maxPlayers})`);
-            return { success: true, message: 'Not full yet' };
-        }
+            const currentPlayers = match.players || [];
+            if (currentPlayers.length < match.matchSize) return null;
 
-        logger.info(`[match-logic] Match ${matchId} is FULL. Triggering auto-completion...`);
+            // Claim the lock: mark teamsGenerated BEFORE generating teams
+            // This prevents a second concurrent call from also generating teams
+            transaction.update(matchRef, { teamsGenerated: true });
 
-        // 4. Prepare input for AI Balancing
+            return match;
+        });
+
+        // If transaction returned null, nothing to do
+        if (!matchData) return { success: true, message: 'Not ready or already processed' };
+
+        logger.info(`[match-logic] Match ${matchId} is FULL. Generating teams...`);
+
+        const currentPlayers = matchData.players || [];
+
+        // Phase 2: Generate teams (outside transaction since AI call can be slow)
         const aiInput = {
             players: currentPlayers.map(p => ({
                 uid: p.uid,
@@ -47,14 +54,15 @@ export async function triggerMatchFullSequence(matchId: string) {
             teamCount: 2
         };
 
-        // 5. Generate Teams via AI
         const result = await generateBalancedTeams(aiInput);
 
         if ('error' in result) {
+            // Rollback the teamsGenerated flag so it can be retried
+            await matchRef.update({ teamsGenerated: false });
             throw new Error(`AI Team Generation Failed: ${result.error}`);
         }
 
-        // 6. Enrich teams with photoUrls (optional but recommended for consistency)
+        // Enrich teams with photoUrls
         const playerIds = currentPlayers.map(p => p.uid);
         const photoMap: Record<string, string> = {};
         const playerDocs = await db.getAll(...playerIds.map(id => db.collection('players').doc(id)));
@@ -68,14 +76,13 @@ export async function triggerMatchFullSequence(matchId: string) {
             });
         });
 
-        // 7. Final Update: status -> upcoming, teams -> results
+        // Phase 3: Write final teams
         await matchRef.update({
             status: 'upcoming',
             teams: [
                 result.teams?.[0] || { name: 'Equipo A', players: [], averageOVR: 0 },
                 result.teams?.[1] || { name: 'Equipo B', players: [], averageOVR: 0 }
             ],
-            teamsGenerated: true,
             updatedAt: FieldValue.serverTimestamp()
         });
 

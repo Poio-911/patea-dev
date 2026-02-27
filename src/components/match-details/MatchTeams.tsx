@@ -46,7 +46,7 @@ const TeamMosaicPlayer = ({ player, match, isOwner, index }: { player: any, matc
                 </div>
 
                 {isOwner && match.status === 'upcoming' && (
-                    <div className="opacity-0 group-hover/player:opacity-100 transition-opacity">
+                    <div className="opacity-100 md:opacity-0 md:group-hover/player:opacity-100 transition-opacity">
                         <SwapPlayerDialog match={match} playerToSwap={player}>
                             <Button
                                 variant="ghost"
