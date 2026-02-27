@@ -80,7 +80,7 @@ function IdentityRevealRequestCard({
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm game:border-primary/30 game:bg-[#0b1e3b]/80 flex flex-col gap-4">
+    <div className="rounded-xl border border-border bg-card p-5 shadow-sm game:border-primary/30 game:bg-card/80 flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <Avatar className="h-12 w-12 ring-2 ring-background shadow-md">
           {request.fromPlayerPhotoUrl ? (
@@ -99,7 +99,7 @@ function IdentityRevealRequestCard({
       <p className="text-sm text-muted-foreground">
         <span className="font-semibold text-foreground">{request.fromPlayerName}</span> quiere saber que fuiste vos quien lo evaluó.
       </p>
-      <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100 game:border-white/5">
+      <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/50 game:border-white/5">
         <Button
           variant="outline"
           size="sm"
@@ -340,7 +340,7 @@ export default function EvaluationsPage() {
 
         // --- CLEAN SAAS DESIGN (Light) & STRICT GAME MODE (Dark/Game) ---
         return (
-            <div key={item.match.id} className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] transition-all hover:border-slate-300 hover:shadow-lg game:border-primary/30 game:bg-[#0b1e3b]/80 game:backdrop-blur-md game:shadow-[0_0_20px_rgba(170,254,72,0.1)] game:hover:border-primary/80 game:hover:shadow-[0_0_30px_rgba(170,254,72,0.25)]">
+            <div key={item.match.id} className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-5 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] transition-all hover:border-border hover:shadow-lg game:border-primary/30 game:bg-card/80 game:backdrop-blur-md game:shadow-[0_0_20px_rgba(170,254,72,0.1)] game:hover:border-primary/80 game:hover:shadow-[0_0_30px_rgba(170,254,72,0.25)]">
 
                 {/* Game Mode Glow Effect (Volt Yellow) - ONLY in Game Mode */}
                 <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-primary/10 blur-[60px] hidden game:block pointer-events-none" />
@@ -349,22 +349,22 @@ export default function EvaluationsPage() {
                 <div className="mb-4 flex items-start justify-between relative z-10">
                     <div className="flex items-center gap-3">
                         {/* Date Box: Clean Gray (Light) vs Deep Tech (Game) */}
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-slate-50 border border-slate-100 px-3 py-1.5 game:bg-[#051329] game:border game:border-primary/20 game:shadow-inner">
+                        <div className="flex flex-col items-center justify-center rounded-lg bg-muted/50 border border-border/50 px-3 py-1.5 game:bg-background game:border game:border-primary/20 game:shadow-inner">
                             <span className="text-xs font-bold text-slate-500 game:text-primary/90 tracking-widest">{format(matchDate, 'MMM', { locale: es }).toUpperCase()}</span>
-                            <span className="text-lg font-bold leading-none text-slate-900 game:text-white font-mono">{format(matchDate, 'dd')}</span>
+                            <span className="text-lg font-bold leading-none text-foreground game:text-white font-mono">{format(matchDate, 'dd')}</span>
                         </div>
 
                         <div className="flex flex-col">
                             {/* Type Badge: Clean Label (Light - Monochrome) vs Neon Badge (Game) */}
                             <span className={cn(
                                 "text-xs font-medium uppercase tracking-wider w-fit px-2 py-0.5 rounded",
-                                "text-slate-600 bg-slate-100 border border-slate-200", // Light: Strictly Monochrome
-                                "game:text-xs game:font-bold game:bg-[#051329] game:border", // Game Base
+                                "text-muted-foreground bg-muted border border-border", // Light: Strictly Monochrome
+                                "game:text-xs game:font-bold game:bg-background game:border", // Game Base
                                 item.match.title?.includes('Copa') ? "game:text-accent game:border-accent/40" : "game:text-primary game:border-primary/40" // Game Variant
                             )}>
                                 {item.match.title?.includes('Copa') ? 'Copa' : 'Amistoso'}
                             </span>
-                            <h3 className="line-clamp-1 text-base font-bold text-slate-900 game:text-white group-hover:text-blue-600 game:group-hover:text-primary transition-colors mt-1">
+                            <h3 className="line-clamp-1 text-base font-bold text-foreground game:text-white group-hover:text-blue-600 game:group-hover:text-primary transition-colors mt-1">
                                 {item.match.title}
                             </h3>
                         </div>
@@ -379,7 +379,7 @@ export default function EvaluationsPage() {
                     </div>
 
                     {/* Progress Bar: Clean Line (Light) vs Volt Gradient (Game) */}
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 border border-slate-100 game:bg-[#051329] game:border game:border-white/5">
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted border border-border/50 game:bg-background game:border game:border-white/5">
                         <div
                             className="h-full bg-blue-600 game:bg-gradient-to-r game:from-primary game:to-primary/80 game:shadow-[0_0_12px_rgba(170,254,72,0.6)] transition-all duration-500 ease-out relative"
                             style={{ width: `${evaluationProgress}%` }}
@@ -406,16 +406,16 @@ export default function EvaluationsPage() {
                 </div>
 
                 {/* Actions Footer */}
-                <div className="mt-auto grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 game:border-white/5 relative z-10">
+                <div className="mt-auto grid grid-cols-2 gap-3 pt-4 border-t border-border/50 game:border-white/5 relative z-10">
                     {isEvaluationSent && item.submission ? (
                         <ViewSubmissionDialog submission={item.submission} matchPlayers={item.match.players as any}>
-                            <Button variant="outline" className="w-full col-span-2 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 shadow-sm game:border-primary/20 game:bg-[#051329] game:text-primary game:hover:bg-primary/20 game:hover:border-primary/50 transition-all">
+                            <Button variant="outline" className="w-full col-span-2 border-border bg-card text-foreground hover:bg-muted/50 hover:text-foreground hover:border-border shadow-sm game:border-primary/20 game:bg-background game:text-primary game:hover:bg-primary/20 game:hover:border-primary/50 transition-all">
                                 <Eye className="mr-2 h-4 w-4" />
                                 Ver Evaluación
                             </Button>
                         </ViewSubmissionDialog>
                     ) : (
-                        <Button asChild className="col-span-2 w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm border border-transparent hover:shadow-md game:bg-primary game:hover:bg-primary/90 game:text-[#0b1e3b] game:font-black game:uppercase game:tracking-wide game:shadow-[0_0_20px_rgba(170,254,72,0.4)] game:hover:shadow-[0_0_35px_rgba(170,254,72,0.6)] transition-all hover:scale-[1.01]">
+                        <Button asChild className="col-span-2 w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm border border-transparent hover:shadow-md game:bg-primary game:hover:bg-primary/90 game:text-background game:font-black game:uppercase game:tracking-wide game:shadow-[0_0_20px_rgba(170,254,72,0.4)] game:hover:shadow-[0_0_35px_rgba(170,254,72,0.6)] transition-all hover:scale-[1.01]">
                             <Link href={`/evaluations/${item.match.id}`}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 EVALUAR AHORA
@@ -436,7 +436,7 @@ export default function EvaluationsPage() {
                 <PageHeader title="Mis Evaluaciones" description="Aquí encontrarás los partidos que tienes pendientes por evaluar." />
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[...Array(3)].map((_, i) => (
-                        <div key={i} className="rounded-xl border border-slate-200 p-5 space-y-4">
+                        <div key={i} className="rounded-xl border border-border p-5 space-y-4">
                             <div className="flex items-center gap-3">
                                 <Skeleton className="h-12 w-10 rounded-lg" />
                                 <div className="space-y-1 flex-1">
@@ -543,7 +543,7 @@ export default function EvaluationsPage() {
                     {isLoadingRequests ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {[...Array(2)].map((_, i) => (
-                                <div key={i} className="rounded-xl border border-slate-200 p-5 space-y-4">
+                                <div key={i} className="rounded-xl border border-border p-5 space-y-4">
                                     <div className="flex items-center gap-3">
                                         <Skeleton className="h-12 w-12 rounded-full" />
                                         <div className="space-y-1 flex-1">

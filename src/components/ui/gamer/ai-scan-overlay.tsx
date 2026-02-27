@@ -25,7 +25,7 @@ export function AiScanOverlay({ isScanning, result }: AiScanOverlayProps) {
     if (!isScanning && !result) return null;
 
     return (
-        <div className="rounded-xl border border-zinc-200 dark:border-emerald-500/30 bg-white dark:bg-black/40 backdrop-blur-md overflow-hidden relative min-h-[160px] transition-all shadow-sm dark:shadow-none">
+        <div className="rounded-xl border border-border dark:border-emerald-500/30 bg-card dark:bg-black/40 backdrop-blur-md overflow-hidden relative min-h-[160px] transition-all shadow-sm dark:shadow-none">
 
             {/* Scanning State */}
             <AnimatePresence>
@@ -96,7 +96,7 @@ export function AiScanOverlay({ isScanning, result }: AiScanOverlayProps) {
                     </div>
 
                     {/* Summary Text */}
-                    <div className="bg-zinc-50 dark:bg-white/5 rounded-lg p-3 border border-zinc-200 dark:border-white/5">
+                    <div className="bg-muted/50 dark:bg-white/5 rounded-lg p-3 border border-border dark:border-white/5">
                         <p className="text-sm text-zinc-600 dark:text-zinc-300 italic leading-relaxed">"{result.summary}"</p>
                     </div>
                 </motion.div>

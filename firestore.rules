@@ -114,14 +114,21 @@ service cloud.firestore {
       //   TODO: Refactorizar Join/Leave a Server Actions para restringir esto.
       allow read: if isAuthenticated();
       allow create: if false; 
-      allow update: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.ownerUid == request.auth.uid
+        || request.auth.uid in resource.data.playerUids
+      );
       allow delete: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
 
       // Subcolecciones de partido (invitations, dateProposals, etc.)
       // - invitations: Respuestas de jugadores (confirmed/declined/maybe/pending)
       // - dateProposals: Propuestas de fechas alternativas con votación
       match /{subcollection}/{docId} {
-        allow read, write: if isAuthenticated();
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated() && (
+          get(/databases/$(database)/documents/matches/$(matchId)).data.ownerUid == request.auth.uid
+          || request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.playerUids
+        );
       }
     }
 

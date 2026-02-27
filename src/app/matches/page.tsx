@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/responsive-popover";
 import { UserCheck, Shirt, Globe, HelpCircle, Users } from 'lucide-react';
 
-const listVariants = {
+const LIST_VARIANTS = {
     hidden: { opacity: 0 },
     visible: {
         opacity: 1,
@@ -36,7 +36,7 @@ const listVariants = {
     },
 };
 
-const itemVariants = {
+const ITEM_VARIANTS = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
 };
@@ -432,17 +432,17 @@ export default function MatchesPage() {
 
                         {gridMatches.length > 0 ? (
                             viewMode === 'grid' ? (
-                                <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={listVariants} initial="hidden" animate="visible" key={`grid-${timeFilter}`}>
+                                <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={LIST_VARIANTS} initial="hidden" animate="visible" key={`grid-${timeFilter}`}>
                                     {gridMatches.map(match => (
-                                        <motion.div key={match.id} variants={itemVariants}>
+                                        <motion.div key={match.id} variants={ITEM_VARIANTS}>
                                             <MatchCard match={match} allPlayers={sortedPlayers} />
                                         </motion.div>
                                     ))}
                                 </motion.div>
                             ) : (
-                                <motion.div className="grid grid-cols-2 md:grid-cols-1 gap-2 md:gap-3" variants={listVariants} initial="hidden" animate="visible" key={`compact-${timeFilter}`}>
+                                <motion.div className="grid grid-cols-2 md:grid-cols-1 gap-2 md:gap-3" variants={LIST_VARIANTS} initial="hidden" animate="visible" key={`compact-${timeFilter}`}>
                                     {gridMatches.map(match => (
-                                        <motion.div key={match.id} variants={itemVariants}>
+                                        <motion.div key={match.id} variants={ITEM_VARIANTS}>
                                             <CompactMatchCard match={match} />
                                         </motion.div>
                                     ))}

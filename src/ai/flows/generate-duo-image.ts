@@ -12,7 +12,7 @@ import { ai } from '@/ai/genkit';
 import { GenerateDuoImageInputSchema, type GenerateDuoImageInput } from '@/lib/types';
 import { z } from 'genkit';
 import { getCachedOrGenerate, generateCacheKey } from '@/lib/ai-cache';
-
+import { withTimeout } from '@/ai/ai-utils';
 
 export async function generateDuoImage(player1DataUri: string, player2DataUri: string, player1Name: string, player2Name: string, prompt: string): Promise<string> {
   const isIndividualImage = !player2DataUri || player1DataUri === player2DataUri;
@@ -55,16 +55,19 @@ export async function generateDuoImage(player1DataUri: string, player2DataUri: s
   const imageUrl = await getCachedOrGenerate(
     cacheKey,
     async () => {
-      const { media } = await ai.generate({
-        model: 'googleai/gemini-2.5-flash-image-preview',
-        prompt: [
-          ...mediaPrompts,
-          { text: instructionText },
-        ],
-        config: {
-          responseModalities: ['IMAGE'],
-        },
-      });
+      const { media } = await withTimeout(
+        ai.generate({
+          model: 'googleai/gemini-2.5-flash-image-preview',
+          prompt: [
+            ...mediaPrompts,
+            { text: instructionText },
+          ],
+          config: {
+            responseModalities: ['IMAGE'],
+          },
+        }),
+        25_000
+      );
 
       if (!media?.url) {
         throw new Error('La IA no pudo generar la imagen.');

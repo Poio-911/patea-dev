@@ -23,7 +23,7 @@ function StatRow({
     showAssists?: boolean;
 }) {
     const rankColors = ['text-yellow-500', 'text-slate-400', 'text-amber-600'];
-    const rankBg = ['bg-yellow-50 border-yellow-200', 'bg-slate-50 border-slate-200', 'bg-orange-50 border-orange-200'];
+    const rankBg = ['bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-800/30', 'bg-muted/50 border-border', 'bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800/30'];
 
     return (
         <motion.div
@@ -32,7 +32,7 @@ function StatRow({
             transition={{ delay: rank * 0.08 }}
             className={cn(
                 'flex items-center gap-3 rounded-xl border p-3',
-                rank < 3 ? rankBg[rank] : 'bg-white border-slate-100'
+                rank < 3 ? rankBg[rank] : 'bg-card border-border/50'
             )}
         >
             <span className={cn('text-lg font-black w-6 text-center', rank < 3 ? rankColors[rank] : 'text-slate-400')}>
@@ -84,7 +84,7 @@ export function MatchResultCard({ match }: MatchResultCardProps) {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center py-10 rounded-2xl border bg-white shadow-sm">
+            <div className="flex items-center justify-center py-10 rounded-2xl border bg-card shadow-sm">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         );
@@ -106,7 +106,7 @@ export function MatchResultCard({ match }: MatchResultCardProps) {
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl border bg-white shadow-sm overflow-hidden"
+            className="rounded-2xl border bg-card shadow-sm overflow-hidden"
         >
             {/* Header */}
             <div className="relative bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-5 text-white overflow-hidden">
@@ -128,7 +128,7 @@ export function MatchResultCard({ match }: MatchResultCardProps) {
                 {(stats.hasFinalScore || (stats.totalTeam1Goals > 0 || stats.totalTeam2Goals > 0)) && match.teams && match.teams.length >= 2 && (
                     <div className="flex items-center justify-center gap-4">
                         <div className="flex-1 text-right">
-                            <p className="font-bold text-slate-700 truncate">{match.teams[0]?.name || 'Equipo 1'}</p>
+                            <p className="font-bold text-foreground/80 truncate">{match.teams[0]?.name || 'Equipo 1'}</p>
                         </div>
                         <div className="flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-3 shadow-lg">
                             <span className="text-4xl font-black text-white tabular-nums">
@@ -140,7 +140,7 @@ export function MatchResultCard({ match }: MatchResultCardProps) {
                             </span>
                         </div>
                         <div className="flex-1 text-left">
-                            <p className="font-bold text-slate-700 truncate">{match.teams[1]?.name || 'Equipo 2'}</p>
+                            <p className="font-bold text-foreground/80 truncate">{match.teams[1]?.name || 'Equipo 2'}</p>
                         </div>
                     </div>
                 )}
@@ -150,7 +150,7 @@ export function MatchResultCard({ match }: MatchResultCardProps) {
                     <div>
                         <div className="flex items-center gap-2 mb-3">
                             <Award className="h-4 w-4 text-yellow-500" />
-                            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">MVP del Partido</h3>
+                            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">MVP del Partido</h3>
                         </div>
                         <motion.div
                             initial={{ scale: 0.95, opacity: 0 }}
@@ -171,7 +171,7 @@ export function MatchResultCard({ match }: MatchResultCardProps) {
                                 </div>
                             </div>
                             <div className="relative">
-                                <p className="text-xl font-black text-slate-900">{stats.mvpPlayer.displayName}</p>
+                                <p className="text-xl font-black text-foreground">{stats.mvpPlayer.displayName}</p>
                                 <div className="flex items-center gap-2 mt-1">
                                     <Badge className="bg-yellow-400 text-yellow-900 border-yellow-500 text-xs font-bold hover:bg-yellow-400">
                                         MVP
@@ -195,7 +195,7 @@ export function MatchResultCard({ match }: MatchResultCardProps) {
                     <div>
                         <div className="flex items-center gap-2 mb-3">
                             <Goal className="h-4 w-4 text-emerald-600" />
-                            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Goleadores</h3>
+                            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Goleadores</h3>
                         </div>
                         <div className="space-y-2">
                             {scorers.map((player, i) => (
@@ -210,7 +210,7 @@ export function MatchResultCard({ match }: MatchResultCardProps) {
                     <div>
                         <div className="flex items-center gap-2 mb-3">
                             <Zap className="h-4 w-4 text-blue-500" />
-                            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Asistencias</h3>
+                            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Asistencias</h3>
                         </div>
                         <div className="space-y-2">
                             {assisters.map((player, i) => (

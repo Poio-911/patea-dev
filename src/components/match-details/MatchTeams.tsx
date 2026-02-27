@@ -23,10 +23,10 @@ const TeamMosaicPlayer = ({ player, match, isOwner, index }: { player: any, matc
 
     return (
         <AnimatedCardWrapper animation="slide" delay={staggerDelay}>
-            <div className="flex items-center gap-4 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 transition-all duration-300 group/player">
+            <div className="flex items-center gap-4 p-2 rounded-xl hover:bg-muted/50 transition-all duration-300 group/player">
                 <div className="relative">
                     <PlayerPhoto player={player} size="compact" />
-                    <div className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-950 rounded-full p-0.5 shadow-sm border border-slate-100 dark:border-slate-800">
+                    <div className="absolute -bottom-1 -right-1 bg-card rounded-full p-0.5 shadow-sm border border-border/50">
                         <Badge variant="secondary" className="px-1 py-0 h-4 text-[9px] font-black">
                             {player.ovr}
                         </Badge>
@@ -133,13 +133,13 @@ export const MatchTeams = React.memo(function MatchTeams({ match, isOwner }: Mat
 
                             {/* Team Header */}
                             <div className="flex items-center gap-4 mb-8 relative z-10 pl-2">
-                                <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm transition-transform group-hover:scale-105 duration-300">
+                                <div className="p-3 rounded-2xl bg-card border border-border/50 shadow-sm transition-transform group-hover:scale-105 duration-300">
                                     <JerseyPreview jersey={team.jersey} size="md" />
                                 </div>
                                 <div className="flex flex-col">
                                     <h3 className="text-2xl font-black uppercase tracking-tight leading-none mb-1">{team.name}</h3>
                                     <div className="flex items-center gap-3">
-                                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted border border-border">
                                             <span className="text-[10px] font-black uppercase text-slate-500">OVR</span>
                                             <span className="text-xs font-black">{team.averageOVR.toFixed(1)}</span>
                                         </div>

@@ -135,7 +135,8 @@ export function CreateLeagueDialog({ open, onOpenChange, groupId, userId, teams 
           buffer,
           logoFile.name,
           'league',
-          groupId
+          groupId,
+          userId
         );
 
         if (!uploadResult.success) {

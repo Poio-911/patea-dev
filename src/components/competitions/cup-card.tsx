@@ -33,11 +33,12 @@ export function CupCard({ cup }: CupCardProps) {
       <div
         className={cn(
           'relative overflow-hidden rounded-2xl border transition-all duration-300',
-          'hover:shadow-xl hover:-translate-y-1.5 hover:shadow-amber-500/10',
+          'hover:shadow-xl hover:-translate-y-1.5 hover:shadow-amber-500/10 game:hover:shadow-amber-500/25',
           'bg-gradient-to-br from-amber-50 via-white to-yellow-50/50',
           'dark:from-amber-950/30 dark:via-card dark:to-yellow-950/20',
-          'border-amber-100 dark:border-amber-900/50',
-          'group-hover:border-amber-300 dark:group-hover:border-amber-700/60',
+          'game:from-amber-900/50 game:via-amber-950/30 game:to-yellow-900/40',
+          'border-amber-100 dark:border-amber-900/50 game:border-amber-500/50',
+          'group-hover:border-amber-300 dark:group-hover:border-amber-700/60 game:group-hover:border-amber-400/70',
         )}
       >
         {/* Top accent strip */}

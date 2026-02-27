@@ -41,7 +41,7 @@ export async function generatePlayerCardImageAction(userId: string) {
     if (player.photoUrl.includes('picsum.photos')) {
       return { error: 'La generación de imágenes no funciona con fotos de marcador de posición. Por favor, sube una foto tuya real.' };
     }
-    
+
     // Convert current photo to data URI to send to AI
     const url = new URL(player.photoUrl);
     function extractFilePath(u: URL): string {
@@ -57,6 +57,12 @@ export async function generatePlayerCardImageAction(userId: string) {
     }
     const filePath = extractFilePath(url);
     const file = getAdminStorage().file(filePath);
+
+    // Audit 2.3: Validate size before download
+    const [metadata] = await file.getMetadata();
+    if (metadata.size && Number(metadata.size) > 5 * 1024 * 1024) {
+      return { error: 'La imagen es demasiado grande para procesar (máx 5MB).' };
+    }
 
     const [imageBuffer] = await file.download();
     const photoDataUri = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
@@ -92,7 +98,7 @@ export async function generatePlayerCardImageAction(userId: string) {
 
     // Make the file public and get standard download URL to match client-side crop behavior
     await newFile.makePublic();
-    
+
     // Get public download URL (same format as getDownloadURL from client)
     const newPhotoURL = `https://firebasestorage.googleapis.com/v0/b/${getAdminStorage().name}/o/${encodeURIComponent(newFilePath)}?alt=media`;
 
@@ -181,8 +187,13 @@ export async function convertStorageUrlToBase64(storageUrl: string): Promise<{ s
     const filePath = extractFilePath(url);
     const file = getAdminStorage().file(filePath);
 
-    const [imageBuffer] = await file.download();
+    // Audit 2.3: Validate size before download
     const [metadata] = await file.getMetadata();
+    if (metadata.size && Number(metadata.size) > 5 * 1024 * 1024) {
+      throw new Error('La imagen es demasiado grande para procesar (máx 5MB).');
+    }
+
+    const [imageBuffer] = await file.download();
     const contentType = metadata.contentType || 'image/jpeg';
     const dataUri = `data:${contentType};base64,${imageBuffer.toString('base64')}`;
 

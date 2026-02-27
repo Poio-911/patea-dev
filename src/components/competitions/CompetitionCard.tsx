@@ -21,6 +21,8 @@ const typeConfig = {
     friendly: {
         gradient: 'from-emerald-600 via-emerald-500 to-teal-400',
         darkGradient: 'dark:from-emerald-900 dark:via-emerald-800 dark:to-teal-800',
+        gameGradient: 'game:from-emerald-700 game:via-emerald-600 game:to-teal-500',
+        gameShadow: 'game:shadow-emerald-500/40 game:ring-1 game:ring-emerald-400/30',
         activeRing: 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-background',
         activeBar: 'bg-emerald-400',
         shadow: 'shadow-emerald-500/40',
@@ -28,6 +30,8 @@ const typeConfig = {
     league: {
         gradient: 'from-blue-600 via-blue-500 to-indigo-500',
         darkGradient: 'dark:from-blue-900 dark:via-blue-800 dark:to-indigo-900',
+        gameGradient: 'game:from-blue-700 game:via-blue-600 game:to-indigo-600',
+        gameShadow: 'game:shadow-blue-500/40 game:ring-1 game:ring-blue-400/30',
         activeRing: 'ring-2 ring-blue-400 ring-offset-2 ring-offset-background',
         activeBar: 'bg-blue-400',
         shadow: 'shadow-blue-500/40',
@@ -35,6 +39,8 @@ const typeConfig = {
     cup: {
         gradient: 'from-amber-600 via-amber-500 to-yellow-400',
         darkGradient: 'dark:from-amber-900 dark:via-amber-800 dark:to-yellow-800',
+        gameGradient: 'game:from-amber-700 game:via-amber-600 game:to-yellow-500',
+        gameShadow: 'game:shadow-amber-500/40 game:ring-1 game:ring-amber-400/30',
         activeRing: 'ring-2 ring-amber-400 ring-offset-2 ring-offset-background',
         activeBar: 'bg-amber-400',
         shadow: 'shadow-amber-500/40',
@@ -60,8 +66,8 @@ export function CompetitionCard({
                 'transition-all duration-300 ease-out',
                 // Active vs inactive state
                 isActive
-                    ? [config.activeRing, 'scale-[1.03] -translate-y-2', `shadow-2xl ${config.shadow}`]
-                    : ['shadow-lg opacity-80 hover:opacity-100 hover:scale-[1.02] hover:-translate-y-1'],
+                    ? [config.activeRing, 'scale-[1.03] -translate-y-2', `shadow-2xl ${config.shadow}`, config.gameShadow]
+                    : ['shadow-lg opacity-80 hover:opacity-100 hover:scale-[1.02] hover:-translate-y-1', config.gameShadow],
                 className
             )}
             onClick={onClick}
@@ -72,7 +78,7 @@ export function CompetitionCard({
             )}
 
             {/* Gradient background */}
-            <div className={cn('absolute inset-0 bg-gradient-to-br', config.gradient, config.darkGradient)} />
+            <div className={cn('absolute inset-0 bg-gradient-to-br', config.gradient, config.darkGradient, config.gameGradient)} />
 
             {/* Dot pattern overlay */}
             <div

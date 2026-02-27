@@ -217,7 +217,6 @@ body.standalone main {
     --chart-3: 217 91% 60%;
     --chart-4: 38 92% 50%;
     --chart-5: 27 87% 67%;
-    --chart-5: 27 87% 67%;
 
     /* Semantic Colors */
     --success: 142 76% 36%;
@@ -303,6 +302,20 @@ body.standalone main {
     --whatsapp-outgoing: 142 50% 25%;
     --whatsapp-incoming: 220 20% 18%;
     --whatsapp-foreground: 0 0% 100%;
+
+    /* Semantic Colors - brighter for dark bg */
+    --success: 142 76% 55%;
+    --success-foreground: 210 40% 98%;
+    --warning: 38 92% 65%;
+    --warning-foreground: 222.2 47.4% 11.2%;
+    --info: 195 90% 55%;
+    --info-foreground: 210 40% 98%;
+
+    /* Position Colors - brighter for dark bg */
+    --pos-del: 0 85% 70%;
+    --pos-med: 270 85% 72%;
+    --pos-def: 210 85% 72%;
+    --pos-por: 30 90% 70%;
 
     /* OVR level colors - brighter for dark bg */
     --ovr-elite: 280 85% 70%;
@@ -549,7 +562,7 @@ body.standalone main {
   }
 
   .shimmer-bg {
-    @apply bg-slate-100;
+    @apply bg-muted;
   }
 
   .shimmer-effect::before {
@@ -1881,8 +1894,8 @@ body.standalone main {
     --friendly-gradient: linear-gradient(135deg, hsl(var(--friendly-primary)), hsl(var(--friendly-secondary)));
 
     /* League - Blue to Indigo */
-    --league-primary: 142 76% 36%;
-    --league-secondary: 199 89% 48%;
+    --league-primary: 217 91% 50%;
+    --league-secondary: 238 84% 65%;
     --league-gradient: linear-gradient(135deg, hsl(var(--league-primary)), hsl(var(--league-secondary)));
 
     /* Cup - Amber to Orange */
@@ -1902,9 +1915,9 @@ body.standalone main {
     --friendly-secondary: 158 64% 58%;
     --friendly-gradient: linear-gradient(135deg, hsl(var(--friendly-primary)), hsl(var(--friendly-secondary)));
 
-    /* League - Vibrant greens/blues */
-    --league-primary: 142 76% 45%;
-    --league-secondary: 199 89% 55%;
+    /* League - Vibrant blue/indigo for game */
+    --league-primary: 217 91% 60%;
+    --league-secondary: 238 84% 72%;
     --league-gradient: linear-gradient(135deg, hsl(var(--league-primary)), hsl(var(--league-secondary)));
 
     /* Cup - Bright golds */

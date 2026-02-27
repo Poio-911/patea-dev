@@ -44,11 +44,12 @@ export function LeagueCard({ league, matches = [], standings = [] }: LeagueCardP
       <div
         className={cn(
           'relative overflow-hidden rounded-2xl border transition-all duration-300',
-          'hover:shadow-xl hover:-translate-y-1.5 hover:shadow-blue-500/10',
+          'hover:shadow-xl hover:-translate-y-1.5 hover:shadow-blue-500/10 game:hover:shadow-blue-500/25',
           'bg-gradient-to-br from-blue-50 via-white to-indigo-50/50',
           'dark:from-blue-950/30 dark:via-card dark:to-indigo-950/20',
-          'border-blue-100 dark:border-blue-900/50',
-          'group-hover:border-blue-300 dark:group-hover:border-blue-700/60',
+          'game:from-blue-900/50 game:via-blue-950/30 game:to-indigo-900/40',
+          'border-blue-100 dark:border-blue-900/50 game:border-blue-500/50',
+          'group-hover:border-blue-300 dark:group-hover:border-blue-700/60 game:group-hover:border-blue-400/70',
         )}
       >
         {/* Top accent strip */}
@@ -186,7 +187,7 @@ export function LeagueCard({ league, matches = [], standings = [] }: LeagueCardP
 
         {/* Footer */}
         <div className="px-5 pb-4 flex items-center justify-end">
-          <div className="flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 group-hover:gap-2 transition-all">
+          <div className="flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 game:text-blue-300 group-hover:gap-2 transition-all">
             Ver Liga
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </div>

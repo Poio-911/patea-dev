@@ -17,17 +17,19 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
-    // Allow authenticated users to upload league logos
-    match /leagues/{groupId}/{allPaths=**} {
+    // Allow authenticated users to upload league logos to their own folder
+    match /leagues/{groupId}/{userId}/{allPaths=**} {
       allow write: if request.auth != null
+        && request.auth.uid == userId
         && request.resource.size <= 5 * 1024 * 1024  // 5MB max
         && request.resource.contentType.matches('image/.*');
       allow read;
     }
 
-    // Allow authenticated users to upload cup logos
-    match /cups/{groupId}/{allPaths=**} {
+    // Allow authenticated users to upload cup logos to their own folder
+    match /cups/{groupId}/{userId}/{allPaths=**} {
       allow write: if request.auth != null
+        && request.auth.uid == userId
         && request.resource.size <= 5 * 1024 * 1024  // 5MB max
         && request.resource.contentType.matches('image/.*');
       allow read;

@@ -125,13 +125,13 @@ export function IntegratedMatchStory({ match }: IntegratedMatchStoryProps) {
                 <div className="bg-card border shadow-sm rounded-3xl overflow-hidden flex flex-col">
 
                     {/* SECTION 1: CABECERA Y RESULTADO */}
-                    <div className="relative bg-[#faf9f6] dark:bg-card border-b">
+                    <div className="relative bg-background border-b">
                         {/* Fondo sutil tipo papel prensa */}
                         <div className="absolute inset-0 opacity-[0.03] dark:opacity-5 pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\\"20\\" height=\\"20\\" viewBox=\\"0 0 20 20\\" xmlns=\\"http://www.w3.org/2000/svg\\"%3E%3Cg fill=\\"%23000000\\" fill-opacity=\\"1\\" fill-rule=\\"evenodd\\"%3E%3Ccircle cx=\\"3\\" cy=\\"3\\" r=\\"1\\"%3E%3C/circle%3E%3C/g%3E%3C/svg%3E")' }} />
 
                         <div className="relative pt-12 pb-10 px-6 sm:px-10 text-center space-y-8">
                             {/* Título */}
-                            <h2 className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-slate-100 leading-tight font-serif tracking-tight max-w-3xl mx-auto" style={{ fontFamily: "Georgia, serif" }}>
+                            <h2 className="text-4xl sm:text-5xl font-black text-foreground leading-tight font-serif tracking-tight max-w-3xl mx-auto" style={{ fontFamily: "Georgia, serif" }}>
                                 "{chronicle?.headline}"
                             </h2>
 
@@ -148,7 +148,7 @@ export function IntegratedMatchStory({ match }: IntegratedMatchStoryProps) {
 
                                     {/* Equipo 1 */}
                                     <div className="flex-1 flex flex-col items-end text-right">
-                                        <p className="text-sm sm:text-xl font-bold font-serif text-slate-700 dark:text-slate-300 uppercase tracking-widest line-clamp-2">
+                                        <p className="text-sm sm:text-xl font-bold font-serif text-foreground/80 uppercase tracking-widest line-clamp-2">
                                             {match.teams[0]?.name || 'Equipo 1'}
                                         </p>
                                     </div>
@@ -162,7 +162,7 @@ export function IntegratedMatchStory({ match }: IntegratedMatchStoryProps) {
 
                                     {/* Equipo 2 */}
                                     <div className="flex-1 flex flex-col items-start text-left">
-                                        <p className="text-sm sm:text-xl font-bold font-serif text-slate-700 dark:text-slate-300 uppercase tracking-widest line-clamp-2">
+                                        <p className="text-sm sm:text-xl font-bold font-serif text-foreground/80 uppercase tracking-widest line-clamp-2">
                                             {match.teams[1]?.name || 'Equipo 2'}
                                         </p>
                                     </div>
@@ -172,7 +172,7 @@ export function IntegratedMatchStory({ match }: IntegratedMatchStoryProps) {
                             {/* Badges de Destaque (MVP) - Suspendidos debajo del resultado */}
                             {matchMVP && (
                                 <div className="flex justify-center -mb-16 relative z-10 pt-4">
-                                    <div className="flex items-center gap-3 bg-white dark:bg-slate-900 border shadow-lg rounded-full pr-6 pl-2 py-2">
+                                    <div className="flex items-center gap-3 bg-card border shadow-lg rounded-full pr-6 pl-2 py-2">
                                         <Avatar className="h-10 w-10 border-2 border-yellow-400">
                                             <AvatarImage src={matchMVP.photoURL} />
                                             <AvatarFallback className="bg-yellow-100 text-yellow-700 font-bold">{matchMVP.displayName[0]}</AvatarFallback>
@@ -190,18 +190,18 @@ export function IntegratedMatchStory({ match }: IntegratedMatchStoryProps) {
                     </div>
 
                     {/* SECTION 2: CUERPO NARRATIVO */}
-                    <div className={cn("px-6 sm:px-12 py-12 bg-white dark:bg-card relative", matchMVP ? "pt-20" : "")}>
+                    <div className={cn("px-6 sm:px-12 py-12 bg-card relative", matchMVP ? "pt-20" : "")}>
                         <div className="max-w-3xl mx-auto prose prose-lg dark:prose-invert">
-                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed font-serif whitespace-pre-line text-lg
-                          first-letter:float-left first-letter:text-7xl first-letter:font-black first-letter:text-slate-900 
-                          dark:first-letter:text-slate-100 first-letter:mr-4 first-letter:mt-[-0.2em]">
+                            <p className="text-foreground/80 leading-relaxed font-serif whitespace-pre-line text-lg
+                          first-letter:float-left first-letter:text-7xl first-letter:font-black first-letter:text-foreground
+                          first-letter:mr-4 first-letter:mt-[-0.2em]">
                                 {chronicle?.story}
                             </p>
                         </div>
 
                         {/* --- VOCES DEL VESTUARIO (CARRUSEL) --- */}
                         {chronicle?.playerVoices && chronicle.playerVoices.length > 0 && (
-                            <div className="mt-20 pt-12 border-t border-slate-100 dark:border-slate-800">
+                            <div className="mt-20 pt-12 border-t border-border">
                                 <h3 className="text-center font-bold font-serif text-slate-400 uppercase tracking-widest text-sm mb-12 flex items-center justify-center gap-3">
                                     <Quote className="w-4 h-4" /> Voces del Vestuario <Quote className="w-4 h-4 rotate-180" />
                                 </h3>
@@ -225,17 +225,17 @@ export function IntegratedMatchStory({ match }: IntegratedMatchStoryProps) {
                                                 return (
                                                     <CarouselItem key={idx} className="pl-4 md:basis-1/2 lg:basis-1/2">
                                                         <div className="p-1 h-full">
-                                                            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 h-full flex flex-col gap-4 relative overflow-hidden group hover:shadow-lg transition-all duration-300">
+                                                            <div className="bg-card border border-border rounded-3xl p-6 h-full flex flex-col gap-4 relative overflow-hidden group hover:shadow-lg transition-all duration-300">
                                                                 <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
                                                                     <Quote className="w-20 h-20 rotate-180" />
                                                                 </div>
 
-                                                                <p className="text-base font-serif italic leading-relaxed text-slate-700 dark:text-slate-300 relative z-10 flex-grow">
+                                                                <p className="text-base font-serif italic leading-relaxed text-foreground/80 relative z-10 flex-grow">
                                                                     "{voice.quote}"
                                                                 </p>
 
                                                                 <div className="flex items-center gap-3 mt-2 relative z-10">
-                                                                    <Avatar className="h-10 w-10 border-2 border-slate-100 dark:border-slate-800">
+                                                                    <Avatar className="h-10 w-10 border-2 border-border">
                                                                         <AvatarImage src={player?.photoURL} />
                                                                         <AvatarFallback className="text-xs font-bold">{voice.playerName[0]}</AvatarFallback>
                                                                     </Avatar>
@@ -266,7 +266,7 @@ export function IntegratedMatchStory({ match }: IntegratedMatchStoryProps) {
 
                     {/* Footer / Regenerar */}
                     {isOrganizer && chronicle && !isGenerating && (
-                        <div className="bg-slate-50 dark:bg-slate-900/50 p-4 flex justify-end shrink-0 border-t rounded-b-3xl mt-[-1px]">
+                        <div className="bg-muted/50 p-4 flex justify-end shrink-0 border-t rounded-b-3xl mt-[-1px]">
                             <Button variant="ghost" size="sm" onClick={() => handleGenerateChronicle(true)} disabled={isGenerating} className="text-xs text-muted-foreground hover:text-foreground">
                                 <RefreshCcw className="mr-2 h-3 w-3" />
                                 Regenerar Historia (Admin)

@@ -52,19 +52,26 @@ export function ClientProviders({ children }: FirebaseClientProviderProps) {
         (navigator as Navigator & { clearAppBadge: () => Promise<void> }).clearAppBadge().catch(() => { });
       }
     };
-    window.addEventListener('focus', clearBadge);
-    document.addEventListener('visibilitychange', () => {
+
+    const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') clearBadge();
-    });
+    };
+
+    window.addEventListener('focus', clearBadge);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     clearBadge(); // also clear on first mount
-    return () => window.removeEventListener('focus', clearBadge);
+
+    return () => {
+      window.removeEventListener('focus', clearBadge);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // Dynamic theme-color meta tag — keeps Android status/nav bar in sync
   useEffect(() => {
     const updateThemeColor = () => {
       const isDark = document.documentElement.classList.contains('dark') ||
-        document.documentElement.getAttribute('data-theme') === 'game';
+        document.documentElement.classList.contains('game');
       const color = isDark ? '#0f172a' : '#3B82F6';
       let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
       if (!meta) {

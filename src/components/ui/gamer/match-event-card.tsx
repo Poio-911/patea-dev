@@ -97,7 +97,7 @@ export function MatchEventCard({ match, children, className, onClick }: MatchEve
 
                 {/* Match Title & Location */}
                 <div>
-                    <h3 className="text-lg font-bold text-zinc-900 dark:text-white group-hover:text-primary dark:group-hover:text-white transition-colors line-clamp-1 leading-tight">
+                    <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1 leading-tight">
                         {match.title}
                     </h3>
                     <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">

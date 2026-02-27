@@ -10,7 +10,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon, Laptop } from 'lucide-react';
+import { Sun, Zap } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 
 interface SettingsSheetProps {
@@ -27,7 +27,7 @@ export function SettingsSheet({ children, isPopoverContent = false }: SettingsSh
         <h4 className="font-semibold">Apariencia</h4>
         <div className="space-y-2">
           <Label>Tema</Label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Button
               variant={theme === 'light' ? 'default' : 'outline'}
               size="sm"
@@ -37,20 +37,12 @@ export function SettingsSheet({ children, isPopoverContent = false }: SettingsSh
               Claro
             </Button>
             <Button
-              variant={theme === 'dark' ? 'default' : 'outline'}
+              variant={theme === 'game' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setTheme('dark')}
+              onClick={() => setTheme('game')}
             >
-              <Moon className="mr-2 h-4 w-4" />
-              Oscuro
-            </Button>
-            <Button
-              variant={theme === 'system' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setTheme('system')}
-            >
-              <Laptop className="mr-2 h-4 w-4" />
-              Sistema
+              <Zap className="mr-2 h-4 w-4" />
+              Game
             </Button>
           </div>
         </div>

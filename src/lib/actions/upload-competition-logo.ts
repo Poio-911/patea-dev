@@ -9,9 +9,13 @@ export async function uploadCompetitionLogoAction(
     file: Buffer,
     fileName: string,
     competitionType: 'league' | 'cup',
-    groupId: string
+    groupId: string,
+    userId: string
 ): Promise<{ success: boolean; url?: string; error?: string }> {
     try {
+        // ✅ VALIDATION: Ensure userId is provided
+        if (!userId) return { success: false, error: 'No autorizado' };
+
         // Validar tamaño (5MB max)
         const sizeInMB = file.length / (1024 * 1024);
         if (sizeInMB > 5) {
@@ -21,8 +25,8 @@ export async function uploadCompetitionLogoAction(
         // Obtener bucket de Storage
         const bucket = getAdminStorage();
 
-        // Crear path del archivo
-        const filePath = `${competitionType}s/${groupId}/${Date.now()}_${fileName}`;
+        // Crear path del archivo incluyendo el userId para cumplir con Storage Rules
+        const filePath = `${competitionType}s/${groupId}/${userId}/${Date.now()}_${fileName}`;
         const fileRef = bucket.file(filePath);
 
         // Subir archivo

@@ -79,9 +79,9 @@ export const LeagueStandingsTable = React.memo(function LeagueStandingsTable({
                     key={standing.teamId}
                     className={cn(
                       'transition-colors border-b last:border-b-0',
-                      isFirst && 'bg-yellow-50/60 dark:bg-yellow-900/10 hover:bg-yellow-50 dark:hover:bg-yellow-900/20',
-                      isSecond && 'bg-slate-50/60 dark:bg-slate-800/10 hover:bg-slate-50 dark:hover:bg-slate-800/20',
-                      isThird && 'bg-amber-50/50 dark:bg-amber-900/10 hover:bg-amber-50 dark:hover:bg-amber-900/20',
+                      isFirst && 'bg-yellow-50/60 dark:bg-yellow-900/10 game:bg-yellow-900/20 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 game:hover:bg-yellow-900/30',
+                      isSecond && 'bg-slate-50/60 dark:bg-slate-800/10 game:bg-muted/10 hover:bg-slate-50 dark:hover:bg-slate-800/20 game:hover:bg-muted/20',
+                      isThird && 'bg-amber-50/50 dark:bg-amber-900/10 game:bg-amber-900/15 hover:bg-amber-50 dark:hover:bg-amber-900/20 game:hover:bg-amber-900/25',
                       !isTop3 && 'hover:bg-muted/40',
                       isHighlighted && 'border-l-2 border-l-blue-500',
                     )}
