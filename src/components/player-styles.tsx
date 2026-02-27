@@ -199,7 +199,7 @@ export function PlayerPhoto({ player, size = 'standard', className }: PlayerPhot
   const name = player.name || 'Jugador';
 
   return (
-    <Avatar className={cn(sizeMap[size], 'border-4 shadow-sm overflow-hidden bg-muted', className)}>
+    <Avatar className={cn(sizeMap[size], 'border-4 shadow-sm overflow-hidden bg-muted hover:scale-110 hover:shadow-md transition-all duration-300', className)}>
       {src && (
         <Image
           src={src}
