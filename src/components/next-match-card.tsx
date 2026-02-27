@@ -168,10 +168,10 @@ export function NextMatchCard({ matches, allPlayers = [] }: NextMatchCardProps) 
             </AnimatePresence>
 
             {/* Content Container */}
-            <div className="relative z-10 p-5 md:p-10 text-white h-full flex flex-col">
+            <div className="relative z-10 p-4 md:p-10 text-white h-full flex flex-col">
 
                 {/* 1. Header Row (Static position, dynamic content) */}
-                <div className="flex items-center justify-between gap-4 mb-4 md:mb-8 h-10 shrink-0">
+                <div className="flex items-center justify-between gap-4 mb-2 md:mb-8 h-10 shrink-0">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={currentMatch.id + '_type'}
@@ -227,8 +227,8 @@ export function NextMatchCard({ matches, allPlayers = [] }: NextMatchCardProps) 
                         >
                             {isTeamMatch ? (
                                 <div className="flex items-center justify-between gap-2 md:gap-12 w-full max-w-4xl px-2">
-                                    <div className="flex flex-col items-center gap-2 md:gap-4 w-[45%]">
-                                        <div className="scale-[0.55] xs:scale-[0.8] sm:scale-100 md:scale-110 transition-transform origin-center">
+                                    <div className="flex flex-col items-center gap-1 md:gap-4 w-[45%]">
+                                        <div className="scale-[0.5] xs:scale-[0.8] sm:scale-100 md:scale-110 transition-transform origin-center">
                                             <JerseyPreview jersey={currentMatch.teams![0].jersey} size="lg" className="drop-shadow-[0_15px_30px_rgba(0,0,0,0.8)]" />
                                         </div>
                                         <h3 className="text-[10px] md:text-xl font-black text-center uppercase tracking-tighter drop-shadow-2xl line-clamp-1">{currentMatch.teams![0].name}</h3>
@@ -236,8 +236,8 @@ export function NextMatchCard({ matches, allPlayers = [] }: NextMatchCardProps) 
                                     <div className="flex flex-col items-center justify-center px-1">
                                         <span className="text-2xl md:text-7xl font-black text-white/10 italic tracking-tighter select-none drop-shadow-sm">VS</span>
                                     </div>
-                                    <div className="flex flex-col items-center gap-2 md:gap-4 w-[45%]">
-                                        <div className="scale-[0.55] xs:scale-[0.8] sm:scale-100 md:scale-110 transition-transform origin-center">
+                                    <div className="flex flex-col items-center gap-1 md:gap-4 w-[45%]">
+                                        <div className="scale-[0.5] xs:scale-[0.8] sm:scale-100 md:scale-110 transition-transform origin-center">
                                             <JerseyPreview jersey={currentMatch.teams![1].jersey} size="lg" className="drop-shadow-[0_15px_30px_rgba(0,0,0,0.8)]" />
                                         </div>
                                         <h3 className="text-[10px] md:text-xl font-black text-center uppercase tracking-tighter drop-shadow-2xl line-clamp-1">{currentMatch.teams![1].name}</h3>
@@ -255,7 +255,7 @@ export function NextMatchCard({ matches, allPlayers = [] }: NextMatchCardProps) 
                 </div>
 
                 {/* 3. Metadata (Animated Area) */}
-                <div className="h-16 md:h-20 shrink-0 mt-4 overflow-hidden border-t border-white/10 pt-4 flex flex-col justify-center">
+                <div className="h-12 md:h-20 shrink-0 mt-1 overflow-hidden border-t border-white/10 pt-2 flex flex-col justify-center">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={currentMatch.id + '_meta'}
@@ -284,13 +284,13 @@ export function NextMatchCard({ matches, allPlayers = [] }: NextMatchCardProps) 
                 </div>
 
                 {/* 4. Action Row (STATIC POSITION) */}
-                <div className="flex flex-col items-center mt-6 shrink-0 relative">
+                <div className="flex flex-col items-center mt-1 shrink-0 relative">
                     {/* Fixed action button */}
                     <Button
                         asChild
                         size="lg"
                         className={cn(
-                            "group/btn relative overflow-hidden font-black uppercase tracking-[0.25em] px-12 md:px-24 h-11 md:h-14 text-xs md:text-base transition-all hover:scale-105 active:scale-95 z-20",
+                            "group/btn relative overflow-hidden font-black uppercase tracking-[0.15em] px-8 md:px-24 h-9 md:h-14 text-[10px] md:text-base transition-all hover:scale-105 active:scale-95 z-20",
                             "bg-primary shadow-[0_20px_40px_rgba(0,0,0,0.5)] hover:bg-primary/95",
                             "text-black game-theme-button"
                         )}
