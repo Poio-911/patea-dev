@@ -141,92 +141,10 @@ export function DashboardSkeleton() {
           </motion.div>
         </div>
 
-        {/* Right Column */}
-        <div className="lg:col-span-1 space-y-8">
-          {/* Top Players Skeleton */}
-          <motion.div
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
-            transition={{ delay: 0.5 }}
-          >
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-6 w-48" />
-                  <Skeleton className="h-5 w-16" />
-                </div>
-                <Skeleton className="h-4 w-56 mt-2" />
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-4">
-                    <Skeleton className="h-4 w-4" />
-                    <Skeleton className="h-10 w-10 rounded-full" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-3 w-16" />
-                    </div>
-                    <Skeleton className="h-6 w-8" />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
+      </div>
 
-          {/* Visibility Skeleton */}
-          <motion.div
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
-            transition={{ delay: 0.6 }}
-          >
-            <Card>
-              <CardHeader>
-                <Skeleton className="h-6 w-44" />
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2 flex-1">
-                    <Skeleton className="h-4 w-40" />
-                    <Skeleton className="h-3 w-full" />
-                  </div>
-                  <Skeleton className="h-6 w-11 rounded-full" />
-                </div>
-                <Skeleton className="h-px w-full" />
-                <Skeleton className="h-10 w-full" />
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Social Feed Skeleton */}
-          <motion.div
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
-            transition={{ delay: 0.7 }}
-          >
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <Skeleton className="h-6 w-40" />
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <Skeleton className="h-5 w-5 rounded-full mt-1" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-3 w-20" />
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
+      {/* Right Column (Empty for now to match main layout) */}
+      <div className="hidden lg:block lg:col-span-1">
       </div>
     </div>
   );

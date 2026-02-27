@@ -54,62 +54,60 @@ export function PlayerStatsCard({ player }: PlayerStatsCardProps) {
       title: 'Partidos Jugados',
       value: stats.totalMatches,
       icon: Calendar,
-      color: 'text-foreground',
-      bgColor: 'bg-muted/50',
-      valueColor: 'text-foreground',
+      color: 'text-blue-500 text-blue-400',
+      bgColor: 'bg-blue-500/10',
+      valueColor: 'text-blue-600 dark:text-blue-400',
     },
     {
       title: 'Goles',
       value: stats.totalGoals,
       icon: Target,
-      color: 'text-foreground',
-      bgColor: 'bg-muted/50',
-      valueColor: 'text-foreground',
+      color: 'text-amber-500 dark:text-amber-400',
+      bgColor: 'bg-amber-500/10',
+      valueColor: 'text-amber-600 dark:text-amber-400',
     },
     {
-      title: 'Goles por Partido',
+      title: 'Promedio Goles',
       value: stats.avgGoalsPerMatch,
       icon: Trophy,
-      color: 'text-foreground',
-      bgColor: 'bg-muted/50',
-      valueColor: 'text-foreground',
+      color: 'text-emerald-500 dark:text-emerald-400',
+      bgColor: 'bg-emerald-500/10',
+      valueColor: 'text-emerald-600 dark:text-emerald-400',
     },
     {
       title: 'Tendencia OVR',
       value: stats.ovrTrend > 0 ? `+${stats.ovrTrend}` : stats.ovrTrend || '0',
       icon: TrendingUp,
-      color: 'text-foreground',
-      bgColor: 'bg-muted/50',
-      valueColor: 'text-foreground',
+      color: stats.ovrTrend >= 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400',
+      bgColor: stats.ovrTrend >= 0 ? 'bg-green-500/10' : 'bg-red-500/10',
+      valueColor: stats.ovrTrend >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400',
     },
   ];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Mis Estadísticas</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          {statCards.map((stat, index) => (
-            <motion.div
-              key={stat.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1, duration: 0.3 }}
-              className={`flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg ${stat.bgColor}`}
-            >
-              <div className={`p-1.5 sm:p-2 rounded-full bg-background/40 ${stat.color} shrink-0`}>
-                <stat.icon className="h-4 w-4 sm:h-5 sm:w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className={`text-xl sm:text-2xl font-bold ${stat.valueColor} truncate`}>{stat.value}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{stat.title}</p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 relative group w-full">
+      {/* Glow Effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-500 -z-10"></div>
+
+      {statCards.map((stat, index) => (
+        <motion.div
+          key={stat.title}
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.1, duration: 0.4, type: "sping", stiffness: 100 }}
+          className="flex flex-col items-center justify-center p-4 sm:p-5 rounded-2xl bg-card/60 backdrop-blur-md border border-white/10 dark:border-white/5 shadow-xl relative overflow-hidden"
+        >
+          <div className={`absolute top-0 right-0 w-16 h-16 ${stat.bgColor.replace('bg-', 'bg-').replace('/10', '/20')} rounded-full blur-2xl -mr-8 -mt-8 opacity-50`}></div>
+          <div className={`absolute bottom-0 left-0 w-16 h-16 ${stat.color.replace('text-', 'bg-')}/10 rounded-full blur-2xl -ml-8 -mb-8 opacity-50`}></div>
+
+          <div className="flex items-center gap-2 mb-1 z-10">
+            <stat.icon className={`h-4 w-4 sm:h-5 sm:w-5 ${stat.color} opacity-80`} />
+            <p className={`text-2xl sm:text-3xl font-black ${stat.valueColor} drop-shadow-sm tracking-tighter`}>{stat.value}</p>
+          </div>
+
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground uppercase tracking-[0.1em] sm:tracking-[0.2em] font-bold z-10 text-center">{stat.title}</p>
+        </motion.div>
+      ))}
+    </div>
   );
 }

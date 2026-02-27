@@ -6,15 +6,12 @@ import { BarChart3, TrendingUp, Users, Users2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Match, Player, AvailablePlayer, SavedLocation, Group } from '@/lib/types';
 import { ResumenTab } from './resumen-tab';
-import { ProgresoTab } from './progreso-tab';
-import { SocialTab } from './social-tab';
 import { GrupoTab } from './grupo-tab';
 
 interface DashboardTabsProps {
     nextMatch: Match | null;
     liveMatches: Match[];
     liveLoading: boolean;
-    top5Players: Player[];
     player: Player | null;
     recentMatches: Match[];
     availablePlayerData: AvailablePlayer | null;
@@ -32,7 +29,6 @@ export function DashboardTabs({
     nextMatch,
     liveMatches,
     liveLoading,
-    top5Players,
     player,
     recentMatches,
     availablePlayerData,
@@ -50,7 +46,7 @@ export function DashboardTabs({
     // Load saved tab from localStorage
     useEffect(() => {
         const savedTab = localStorage.getItem('dashboardActiveTab');
-        if (savedTab && ['resumen', 'progreso', 'social', 'grupo'].includes(savedTab)) {
+        if (savedTab && ['resumen', 'grupo'].includes(savedTab)) {
             setActiveTab(savedTab);
         }
     }, []);
@@ -78,31 +74,7 @@ export function DashboardTabs({
                         />
                     )}
                     <BarChart3 className="h-4 w-4 sm:h-4 sm:w-4 shrink-0 relative z-10" />
-                    <span className="font-semibold relative z-10">Resumen</span>
-                </TabsTrigger>
-
-                <TabsTrigger value="progreso" className="relative flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 sm:py-2.5 text-[10px] sm:text-sm min-h-[48px] text-muted-foreground data-[state=active]:text-foreground transition-colors duration-300 z-0 overflow-hidden rounded-lg">
-                    {activeTab === 'progreso' && (
-                        <motion.div
-                            layoutId="active-dashboard-tab"
-                            className="absolute inset-0 bg-background shadow-sm border border-border/50 rounded-lg -z-10"
-                            transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                        />
-                    )}
-                    <TrendingUp className="h-4 w-4 sm:h-4 sm:w-4 shrink-0 relative z-10" />
-                    <span className="font-semibold relative z-10">Progreso</span>
-                </TabsTrigger>
-
-                <TabsTrigger value="social" className="relative flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 sm:py-2.5 text-[10px] sm:text-sm min-h-[48px] text-muted-foreground data-[state=active]:text-foreground transition-colors duration-300 z-0 overflow-hidden rounded-lg">
-                    {activeTab === 'social' && (
-                        <motion.div
-                            layoutId="active-dashboard-tab"
-                            className="absolute inset-0 bg-background shadow-sm border border-border/50 rounded-lg -z-10"
-                            transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                        />
-                    )}
-                    <Users className="h-4 w-4 sm:h-4 sm:w-4 shrink-0 relative z-10" />
-                    <span className="font-semibold relative z-10">Social</span>
+                    <span className="font-semibold relative z-10">Mi Resumen</span>
                 </TabsTrigger>
 
                 <TabsTrigger value="grupo" className="relative flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 sm:py-2.5 text-[10px] sm:text-sm min-h-[48px] text-muted-foreground data-[state=active]:text-foreground transition-colors duration-300 z-0 overflow-hidden rounded-lg">
@@ -114,7 +86,7 @@ export function DashboardTabs({
                         />
                     )}
                     <Users2 className="h-4 w-4 sm:h-4 sm:w-4 shrink-0 relative z-10" />
-                    <span className="font-semibold relative z-10">Grupo</span>
+                    <span className="font-semibold relative z-10">Mi Grupo</span>
                 </TabsTrigger>
             </TabsList>
 
@@ -123,23 +95,10 @@ export function DashboardTabs({
                     nextMatch={nextMatch}
                     liveMatches={liveMatches}
                     liveLoading={liveLoading}
-                    top5Players={top5Players}
-                    playerStats={playerStats}
-                    onOpenLiveMatch={onOpenLiveMatch}
-                />
-            </TabsContent>
-
-            <TabsContent value="progreso" className="mt-0">
-                <ProgresoTab
                     player={player}
                     recentMatches={recentMatches}
-                    groupId={groupId}
-                    userId={userId}
+                    onOpenLiveMatch={onOpenLiveMatch}
                 />
-            </TabsContent>
-
-            <TabsContent value="social" className="mt-0">
-                <SocialTab />
             </TabsContent>
 
             <TabsContent value="grupo" className="mt-0">

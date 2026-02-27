@@ -7,13 +7,13 @@ import type { Match, Player } from '@/lib/types';
 import { NextMatchCard } from '@/components/next-match-card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { PlayerPositionBadge } from '@/components/player-styles';
 import { Button } from '@/components/ui/button';
 import { useMatchPresence } from '@/hooks/useMatchPresence';
-
-import { Crown } from 'lucide-react';
-
+import { PlayerStatsCard } from '@/components/dashboard/player-stats-card';
+import { OVRProgressionChart } from '@/components/dashboard/ovr-progression-chart';
+import Link from 'next/link';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -40,13 +40,18 @@ interface ResumenTabProps {
     nextMatch: Match | null;
     liveMatches: Match[];
     liveLoading: boolean;
-    top5Players: Player[];
-    playerStats: {
-        totalMatches: number;
-        totalGoals: number;
-    };
+    player: Player | null;
+    recentMatches: Match[];
     onOpenLiveMatch: (match: Match) => void;
 }
+
+const statusConfig: Record<Match['status'], { label: string; className: string }> = {
+    planning: { label: 'A Confirmar', className: 'bg-primary/5 text-primary border border-primary/20 rounded-full backdrop-blur-sm' },
+    upcoming: { label: 'Próximo', className: 'bg-primary/10 text-foreground border border-primary/30 rounded-full backdrop-blur-sm' },
+    active: { label: 'Activo', className: 'bg-foreground/10 text-foreground border border-foreground/30 rounded-full backdrop-blur-sm' },
+    completed: { label: 'Finalizado', className: 'bg-muted/40 text-muted-foreground border border-muted/50 rounded-full backdrop-blur-sm' },
+    evaluated: { label: 'Evaluado', className: 'bg-card/60 text-foreground border border-border rounded-full backdrop-blur-sm' },
+};
 
 function LiveMatchRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
     const { count } = useMatchPresence({ matchId: match.id, track: false, staleMs: 5 * 60 * 1000 });
@@ -80,7 +85,7 @@ function LiveMatchRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
     );
 }
 
-export function ResumenTab({ nextMatch, liveMatches, liveLoading, top5Players, playerStats, onOpenLiveMatch }: ResumenTabProps) {
+export function ResumenTab({ nextMatch, liveMatches, liveLoading, player, recentMatches, onOpenLiveMatch }: ResumenTabProps) {
     return (
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
             <motion.div
@@ -122,115 +127,50 @@ export function ResumenTab({ nextMatch, liveMatches, liveLoading, top5Players, p
                     </Card>
                 </motion.div>
 
-                <motion.div variants={cardVariants} className="space-y-3">
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide px-1">
-                        Mis Estadísticas
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3 sm:gap-4 relative group">
-                        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-500 -z-10"></div>
+                {player && (
+                    <>
+                        <motion.div variants={cardVariants} className="space-y-3">
+                            <h3 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                                <Star className="h-4 w-4 text-primary" />
+                                Mis Estadísticas
+                            </h3>
+                            <PlayerStatsCard player={player} />
+                        </motion.div>
+                        <motion.div variants={cardVariants}>
+                            <OVRProgressionChart player={player} />
+                        </motion.div>
+                    </>
+                )}
 
-                        <div className="flex flex-col items-center p-5 rounded-2xl bg-card/60 backdrop-blur-md border border-white/10 dark:border-white/5 shadow-xl relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-16 h-16 bg-primary/10 rounded-full blur-2xl -mr-8 -mt-8"></div>
-                            <p className="text-4xl font-black text-foreground drop-shadow-sm tracking-tighter mb-1 relative z-10">{playerStats.totalMatches}</p>
-                            <p className="text-[11px] text-muted-foreground uppercase tracking-[0.2em] font-semibold relative z-10">Partidos</p>
-                        </div>
-
-                        <div className="flex flex-col items-center p-5 rounded-2xl bg-card/60 backdrop-blur-md border border-white/10 dark:border-white/5 shadow-xl relative overflow-hidden">
-                            <div className="absolute bottom-0 left-0 w-16 h-16 bg-blue-500/10 rounded-full blur-2xl -ml-8 -mb-8"></div>
-                            <p className="text-4xl font-black text-foreground drop-shadow-sm tracking-tighter mb-1 relative z-10">{playerStats.totalGoals}</p>
-                            <p className="text-[11px] text-muted-foreground uppercase tracking-[0.2em] font-semibold relative z-10">Goles</p>
-                        </div>
-                    </div>
-                </motion.div>
-            </motion.div>
-
-            <motion.div
-                className="lg:col-span-1 space-y-4 sm:space-y-6"
-                variants={listVariants}
-                initial="hidden"
-                animate="visible"
-            >
                 <motion.div variants={cardVariants}>
                     <Card>
-                        <CardHeader className="pb-3 px-4 pt-4 sm:px-6 sm:pt-6">
-                            <CardTitle className="flex items-center gap-2 text-base">
-                                <Star className="h-5 w-5 text-primary" />
-                                Los Cracks del Grupo
-                                <Badge variant="outline" className="text-xs font-normal ml-auto">Por OVR</Badge>
-                            </CardTitle>
-                            <CardDescription>El Top 5 de jugadores por OVR.</CardDescription>
+                        <CardHeader>
+                            <CardTitle>Partidos Anteriores</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0 space-y-3">
-                            <motion.div
-                                className="space-y-4"
-                                variants={listVariants}
-                                initial="hidden"
-                                animate="visible"
-                            >
-                                {top5Players && top5Players.length > 0 ? top5Players.map((player: Player, index: number) => {
-                                    const isManualPlayer = player.id !== player.ownerUid;
-
-                                    // Podium Logic
-                                    const isTop1 = index === 0;
-                                    const isTop2 = index === 1;
-                                    const isTop3 = index === 2;
-
-                                    let podiumClass = "bg-muted/30 border-transparent text-muted-foreground";
-                                    let borderAvatarClass = "border-primary/50";
-                                    let rankColorClass = "text-muted-foreground";
-
-                                    if (isTop1) {
-                                        podiumClass = "bg-amber-500/10 border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/20";
-                                        borderAvatarClass = "border-amber-400 dark:border-amber-500";
-                                        rankColorClass = "text-amber-500 font-black text-lg";
-                                    } else if (isTop2) {
-                                        podiumClass = "bg-slate-300/10 dark:bg-slate-400/10 border-slate-400/30";
-                                        borderAvatarClass = "border-slate-300 dark:border-slate-400";
-                                        rankColorClass = "text-slate-500 dark:text-slate-400 font-bold text-lg";
-                                    } else if (isTop3) {
-                                        podiumClass = "bg-orange-700/10 dark:bg-orange-800/20 border-orange-700/30";
-                                        borderAvatarClass = "border-orange-600 dark:border-orange-700";
-                                        rankColorClass = "text-orange-600 dark:text-orange-500 font-bold text-lg";
-                                    }
-
-                                    return (
-                                        <motion.div
-                                            key={player.id}
-                                            variants={listVariants}
-                                            className={cn("flex items-center gap-4 p-3 rounded-xl border transition-all duration-300", podiumClass)}
-                                        >
-                                            <div className={cn("w-6 flex justify-center", rankColorClass)}>
-                                                {isTop1 ? <Crown className="h-5 w-5 animate-pulse" /> : `#${index + 1}`}
+                        <CardContent className="space-y-4">
+                            {recentMatches && recentMatches.length > 0 ? recentMatches.map(match => {
+                                const statusInfo = statusConfig[match.status] || { label: 'Desconocido', className: 'bg-muted text-foreground' };
+                                return (
+                                    <Link key={match.id} href={`/matches/${match.id}`} className="block">
+                                        <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                                            <div>
+                                                <p className="font-semibold">{match.title}</p>
+                                                <p className="text-sm text-muted-foreground">{format(new Date(match.date), "dd 'de' MMMM, yyyy", { locale: es })}</p>
                                             </div>
-                                            <Avatar className={cn("h-11 w-11 border-2", borderAvatarClass, isManualPlayer && "border-dashed opacity-80")}>
-                                                <AvatarImage src={player.photoUrl} alt={player.name} data-ai-hint="player portrait" />
-                                                <AvatarFallback className="bg-background">{player.name.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 mb-0.5">
-                                                    <p className={cn("font-bold truncate", isTop1 ? "text-amber-600 dark:text-amber-400" : "text-foreground")}>{player.name}</p>
-                                                    {isManualPlayer && <Badge variant="secondary" className="text-[9px] px-1 h-4 uppercase font-semibold">Bot</Badge>}
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <PlayerPositionBadge position={player.position} showIcon={false} size="sm" />
-                                                </div>
-                                            </div>
-                                            <motion.div
-                                                className={cn("text-xl font-black pr-1", isTop1 ? "text-amber-500" : "text-primary")}
-                                                initial={{ scale: 0 }}
-                                                animate={{ scale: 1 }}
-                                                transition={{ delay: index * 0.1 + 0.2, type: "spring", stiffness: 200 }}
-                                            >
-                                                {player.ovr}
-                                            </motion.div>
-                                        </motion.div>
-                                    )
-                                }) : <p className="text-sm text-muted-foreground text-center py-4">Aún no hay jugadores en este grupo.</p>}
-                            </motion.div>
+                                            <Badge variant="outline" className={cn(statusInfo.className)}>{statusInfo.label}</Badge>
+                                        </div>
+                                    </Link>
+                                )
+                            }) : <p className="text-sm text-muted-foreground text-center py-4">Aún no hay partidos jugados en este grupo.</p>}
                         </CardContent>
                     </Card>
                 </motion.div>
             </motion.div>
+
+            {/* Columna Derecha se eliminó ya que absorbimos "Los Cracks" en "GrupoTab" */}
+            <div className="hidden lg:block lg:col-span-1">
+                {/* Espacio reservado para futuros widgets o banners */}
+            </div>
         </div>
     );
 }

@@ -70,33 +70,15 @@ function DashboardContent() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const top5PlayersQuery = useMemo(() => {
-    if (!firestore || !user?.activeGroupId) return null;
-    return query(
-      collection(firestore, 'players'),
-      where('groupId', '==', user.activeGroupId),
-      orderBy('ovr', 'desc'),
-      limit(5)
-    );
-  }, [firestore, user?.activeGroupId]);
-
+  // Queries that are actually used by the new components
   const groupMatchesQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
     return query(
       collection(firestore, 'matches'),
       where('groupId', '==', user.activeGroupId),
       orderBy('date', 'desc'),
-      limit(10)
     );
   }, [firestore, user?.activeGroupId]);
-
-  const joinedMatchesQuery = useMemo(() => {
-    if (!firestore || !user?.uid) return null;
-    return query(
-      collection(firestore, 'matches'),
-      where('playerUids', 'array-contains', user.uid)
-    );
-  }, [firestore, user?.uid]);
 
   const playerRef = useMemo(() => firestore && user?.uid ? doc(firestore, 'players', user.uid) : null, [firestore, user?.uid]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
@@ -107,8 +89,6 @@ function DashboardContent() {
   // Get user profile for savedLocation
   const userProfileRef = useMemo(() => firestore && user?.uid ? doc(firestore, 'users', user.uid) : null, [firestore, user?.uid]);
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
-
-  const { data: top5Players, loading: top5PlayersLoading } = useCollection<Player>(top5PlayersQuery);
 
   const allPlayersInGroupQuery = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
@@ -148,7 +128,6 @@ function DashboardContent() {
   const { data: friendlyMatchesData, loading: friendlyMatchesLoading } = useCollection<Match>(friendlyMatchesQuery);
 
   const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(groupMatchesQuery);
-  const { data: joinedMatches, loading: joinedMatchesLoading } = useCollection<Match>(joinedMatchesQuery);
 
   // Active Matches (Status === active), filtered in memory to avoid composite index limits
   const activeMatchesQuery = useMemo(() => firestore && user?.activeGroupId ? query(
@@ -168,23 +147,13 @@ function DashboardContent() {
   const [showVisualizer, setShowVisualizer] = useState(false);
   const [selectedLive, setSelectedLive] = useState<Match | null>(null);
 
-  const loading = top5PlayersLoading || allPlayersLoading || groupMatchesLoading || joinedMatchesLoading || playerLoading || availablePlayerLoading || activeGroupLoading || upcomingMatchesLoading || friendlyMatchesLoading;
+  const loading = allPlayersLoading || groupMatchesLoading || playerLoading || availablePlayerLoading || activeGroupLoading || upcomingMatchesLoading || friendlyMatchesLoading;
 
   const matches = useMemo(() => {
-    if (!groupMatches && !joinedMatches) return null;
+    if (!groupMatches) return null;
 
-    const allMatchesMap = new Map<string, Match>();
-
-    (groupMatches || []).forEach(match => allMatchesMap.set(match.id, match));
-
-    (joinedMatches || []).forEach(match => {
-      if (!allMatchesMap.has(match.id)) {
-        allMatchesMap.set(match.id, match);
-      }
-    });
-
-    return Array.from(allMatchesMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [groupMatches, joinedMatches]);
+    return [...groupMatches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [groupMatches]);
 
   const { nextMatch, recentMatches } = useMemo(() => {
     if (!matches) return { nextMatch: null, recentMatches: [] };
@@ -353,7 +322,6 @@ function DashboardContent() {
         nextMatch={nextMatch}
         liveMatches={liveMatches}
         liveLoading={liveLoading}
-        top5Players={top5Players || []}
         player={player}
         recentMatches={recentMatches}
         availablePlayerData={availablePlayerData}
