@@ -135,10 +135,13 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
             {match.title}
           </h2>
           <div className={cn(
-            "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest border shadow-none flex-shrink-0",
-            "bg-white/15 border-white/25 text-white"
+            "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest border shadow-none flex-shrink-0",
+            "bg-white/15 border-white/25 text-white backdrop-blur-md"
           )}>
-            <div className={cn("w-2 h-2 rounded-full shrink-0", matchTheme.badgeColor)} />
+            <div className={cn(
+              "w-2 h-2 rounded-full shrink-0 bg-current shadow-[0_0_10px_currentColor] brightness-150",
+              matchTheme.badgeColor.replace('bg-', 'text-')
+            )} />
             <span>{matchTheme.label}</span>
           </div>
         </div>

@@ -8,15 +8,7 @@ import type { Match, MatchStatus } from '@/lib/types';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { getMatchTheme, getMatchBackgroundImage } from '@/lib/match-theme';
 
-const typeLabels: Record<string, string> = {
-  manual: 'Amistoso',
-  collaborative: 'Colaborativo',
-  by_teams: 'Por Equipos',
-  intergroup_friendly: 'Intergrupos',
-  league: 'Liga',
-  cup: 'Copa',
-  league_final: 'Final',
-};
+// Local mapping removed
 
 const statusConfig: Record<MatchStatus, { label: string; className: string }> = {
   planning: {
@@ -78,7 +70,6 @@ function MiniAvatarStack({ players, maxVisible = 3 }: {
 }
 
 export function CompactMatchCard({ match, className, distance }: CompactMatchCardProps) {
-  const typeLabel = typeLabels[match.type] || match.type;
   const matchTheme = getMatchTheme(match.type);
   const dateObj = new Date(match.date);
   const isPlanning = match.status === 'planning' || !match.date;
@@ -140,19 +131,16 @@ export function CompactMatchCard({ match, className, distance }: CompactMatchCar
           {/* Top row: type and status badges */}
           <div className="flex items-center justify-between gap-1">
             {/* Type Indicator - Stylized Tag */}
+            {/* Type Indicator - Stylized Glow Dot */}
             <div className={cn(
-              'inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-wider border bg-background/50 backdrop-blur-sm flex-shrink-0',
-              matchTheme.border,
+              'inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-wider border shadow-sm flex-shrink-0',
+              'bg-white/90 dark:bg-black/50 backdrop-blur-md border-black/5 dark:border-white/10'
             )}>
-              <div className={cn("p-0.5 rounded", matchTheme.badge)}>
-                {matchTheme.icon === 'UserCheck' && <UserCheck className="h-2 w-2" />}
-                {matchTheme.icon === 'Users' && <Users className="h-2 w-2" />}
-                {matchTheme.icon === 'Shirt' && <Shirt className="h-2 w-2" />}
-                {matchTheme.icon === 'Trophy' && <Trophy className="h-2 w-2" />}
-                {matchTheme.icon === 'Handshake' && <Handshake className="h-2 w-2" />}
-                {matchTheme.icon === 'Globe' && <Globe className="h-2 w-2" />}
-              </div>
-              <span className="hidden xs:inline">{typeLabel}</span>
+              <div className={cn(
+                "w-1.5 h-1.5 rounded-full shrink-0 bg-current shadow-[0_0_6px_currentColor] brightness-125",
+                matchTheme.badgeColor.replace('bg-', 'text-')
+              )} />
+              <span className="hidden xs:inline text-foreground/90">{matchTheme.label}</span>
             </div>
 
             {/* Status Badge */}

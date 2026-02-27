@@ -14,15 +14,7 @@ import { cn, formatVenueName } from '@/lib/utils';
 import { getMatchTheme } from '@/lib/match-theme';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const typeLabels: Record<string, string> = {
-    manual: 'Amistoso',
-    collaborative: 'Colaborativo',
-    by_teams: 'Por Equipos',
-    intergroup_friendly: 'Intergrupos',
-    league: 'Liga',
-    cup: 'Copa',
-    league_final: 'Final',
-};
+// Local mapping removed in favor of global match-theme.ts
 
 interface NextMatchCardProps {
     matches: Match[] | Match | null;
@@ -190,8 +182,11 @@ export function NextMatchCard({ matches, allPlayers = [] }: NextMatchCardProps) 
                                 "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-white/30 bg-black/60 backdrop-blur-2xl shadow-2xl"
                             )}
                         >
-                            <div className={cn("w-2 h-2 rounded-full shrink-0 shadow-[0_0_8px_currentColor]", matchTheme.badgeColor.replace('bg-', 'text-'))} />
-                            <span>{typeLabels[currentMatch.type] || currentMatch.type}</span>
+                            <div className={cn(
+                                "w-2 h-2 rounded-full shrink-0 bg-current shadow-[0_0_10px_currentColor] brightness-150",
+                                matchTheme.badgeColor.replace('bg-', 'text-')
+                            )} />
+                            <span>{matchTheme.label}</span>
                         </motion.div>
                     </AnimatePresence>
 

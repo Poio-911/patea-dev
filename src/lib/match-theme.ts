@@ -40,11 +40,11 @@ const matchThemes: Record<MatchType, MatchTheme> = {
         gradient: 'from-blue-500/10 via-blue-500/5 to-transparent dark:from-blue-600/20 dark:via-blue-600/10',
         glow: 'bg-blue-500/20 dark:bg-blue-500/40',
         badge: 'bg-blue-100/50 border-blue-200 text-blue-700 dark:bg-blue-500/20 dark:border-blue-500/40 dark:text-blue-200',
-        badgeText: '', // merged into badge for simplicity if needed, or kept separate
+        badgeText: '',
         button: 'bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-400 dark:text-white',
         border: 'border-blue-500/20 dark:border-blue-500/30',
         icon: 'UserCheck',
-        label: 'Manual',
+        label: 'Amistoso',
         priority: 'casual',
         brandColor: 'blue-500',
         topAccent: 'border-t-blue-500',
