@@ -131,7 +131,10 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, cr
                                         <button
                                             aria-label="Ver foto jugador"
                                             className="cursor-pointer"
-                                            onClick={(e) => e.stopPropagation()}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                            }}
                                         >
                                             <PlayerPhoto player={player} />
                                         </button>
