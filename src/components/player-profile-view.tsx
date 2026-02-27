@@ -39,7 +39,7 @@ export default function PlayerProfileView({ playerId, player, jersey }: PlayerPr
       {/* NEW: Teams List */}
       <PlayerTeamsList playerId={playerId} groupId={player.groupId} />
 
-      {isCurrentUserProfile && (
+      {isCurrentUserProfile && player.id === player.ownerUid && (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Link href={`/players/${playerId}/analysis`}>
@@ -80,8 +80,10 @@ export default function PlayerProfileView({ playerId, player, jersey }: PlayerPr
       {/* Historial inline — visible para cualquier perfil */}
       <PlayerMatchDebriefView playerId={playerId} compact />
 
-      {/* NEW: Achievements Showcase */}
-      <PlayerAchievementsPanel playerId={playerId} />
+      {/* NEW: Achievements Showcase - Oculto para jugadores manuales */}
+      {player.id === player.ownerUid && (
+        <PlayerAchievementsPanel playerId={playerId} />
+      )}
     </div>
   );
 }

@@ -5,13 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  ResponsiveDropdownMenu as DropdownMenu,
+  ResponsiveDropdownMenuContent as DropdownMenuContent,
+  ResponsiveDropdownMenuItem as DropdownMenuItem,
+  ResponsiveDropdownMenuLabel as DropdownMenuLabel,
+  ResponsiveDropdownMenuSeparator as DropdownMenuSeparator,
+  ResponsiveDropdownMenuTrigger as DropdownMenuTrigger,
+} from '@/components/ui/responsive-dropdown-menu';
 import {
   ResponsiveAlertDialog as AlertDialog,
   ResponsiveAlertDialogAction as AlertDialogAction,

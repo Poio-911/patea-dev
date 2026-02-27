@@ -5,11 +5,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Heart, Trash2, MoreHorizontal } from 'lucide-react';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  ResponsiveDropdownMenu,
+  ResponsiveDropdownMenuContent,
+  ResponsiveDropdownMenuItem,
+  ResponsiveDropdownMenuTrigger,
+} from '@/components/ui/responsive-dropdown-menu';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -111,8 +111,8 @@ export function CommentItem({
             <span className="text-xs text-muted-foreground">{timeAgo}</span>
 
             {isOwner && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+              <ResponsiveDropdownMenu>
+                <ResponsiveDropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -120,17 +120,17 @@ export function CommentItem({
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
+                </ResponsiveDropdownMenuTrigger>
+                <ResponsiveDropdownMenuContent align="end">
+                  <ResponsiveDropdownMenuItem
                     onClick={() => setShowDeleteDialog(true)}
                     className="text-red-600"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Eliminar
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </ResponsiveDropdownMenuItem>
+                </ResponsiveDropdownMenuContent>
+              </ResponsiveDropdownMenu>
             )}
           </div>
 

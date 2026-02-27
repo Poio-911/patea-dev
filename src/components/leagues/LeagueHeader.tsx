@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  ResponsiveDropdownMenu,
+  ResponsiveDropdownMenuContent,
+  ResponsiveDropdownMenuItem,
+  ResponsiveDropdownMenuSeparator,
+  ResponsiveDropdownMenuTrigger,
+} from '@/components/ui/responsive-dropdown-menu';
 import { ChevronLeft, Play, Trophy, Trash2, MoreVertical, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -140,8 +140,8 @@ export function LeagueHeader({
                     )}
 
                     {/* More actions dropdown */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                    <ResponsiveDropdownMenu>
+                      <ResponsiveDropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -149,30 +149,30 @@ export function LeagueHeader({
                         >
                           <MoreVertical className="h-4 w-4" />
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      </ResponsiveDropdownMenuTrigger>
+                      <ResponsiveDropdownMenuContent align="end">
                         {league.status === 'open_for_applications' && (
-                          <DropdownMenuItem onClick={onStartLeague} className="gap-2">
+                          <ResponsiveDropdownMenuItem onClick={onStartLeague} className="gap-2">
                             <Play className="h-4 w-4 text-blue-600" />
                             Iniciar Liga
-                          </DropdownMenuItem>
+                          </ResponsiveDropdownMenuItem>
                         )}
                         {league.status === 'in_progress' && (
-                          <DropdownMenuItem onClick={onCompleteLeague} className="gap-2">
+                          <ResponsiveDropdownMenuItem onClick={onCompleteLeague} className="gap-2">
                             <Trophy className="h-4 w-4 text-blue-600" />
                             Finalizar Liga
-                          </DropdownMenuItem>
+                          </ResponsiveDropdownMenuItem>
                         )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
+                        <ResponsiveDropdownMenuSeparator />
+                        <ResponsiveDropdownMenuItem
                           onClick={onDeleteLeague}
                           className="gap-2 text-destructive focus:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
                           Eliminar Liga
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                        </ResponsiveDropdownMenuItem>
+                      </ResponsiveDropdownMenuContent>
+                    </ResponsiveDropdownMenu>
                   </div>
                 )}
               </div>

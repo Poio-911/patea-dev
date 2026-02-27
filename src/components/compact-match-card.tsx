@@ -134,7 +134,7 @@ export function CompactMatchCard({ match, className, distance }: CompactMatchCar
             {/* Type Indicator - Stylized Glow Dot */}
             <div className={cn(
               'inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-wider border shadow-sm flex-shrink-0',
-              'bg-white/90 dark:bg-black/50 backdrop-blur-md border-black/5 dark:border-white/10'
+              'bg-background/80 dark:bg-black/50 game:bg-black/50 backdrop-blur-md border-border/50 dark:border-white/10 game:border-white/10 text-foreground'
             )}>
               <div className={cn(
                 "w-1.5 h-1.5 rounded-full shrink-0 bg-current shadow-[0_0_6px_currentColor] brightness-125",

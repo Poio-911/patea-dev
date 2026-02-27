@@ -12,14 +12,31 @@ import { Badge } from '../ui/badge';
 import { Loader2, CheckCircle, Copy, Trash2, Edit, MoreVertical, Crown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import {
+  ResponsiveAlertDialog as AlertDialog,
+  ResponsiveAlertDialogAction as AlertDialogAction,
+  ResponsiveAlertDialogCancel as AlertDialogCancel,
+  ResponsiveAlertDialogContent as AlertDialogContent,
+  ResponsiveAlertDialogDescription as AlertDialogDescription,
+  ResponsiveAlertDialogFooter as AlertDialogFooter,
+  ResponsiveAlertDialogHeader as AlertDialogHeader,
+  ResponsiveAlertDialogTitle as AlertDialogTitle,
+} from '@/components/ui/responsive-alert-dialog';
 import { EditGroupDialog } from './group-dialogs';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import {
+  ResponsiveDropdownMenu,
+  ResponsiveDropdownMenuContent,
+  ResponsiveDropdownMenuItem,
+  ResponsiveDropdownMenuSeparator,
+  ResponsiveDropdownMenuTrigger,
+} from '@/components/ui/responsive-dropdown-menu';
 
 export function UserGroupsList() {
   const { user } = useUser();
   const [isChangingGroup, setIsChangingGroup] = useState<string | null>(null);
   const [isDeletingGroup, setIsDeletingGroup] = useState<string | null>(null);
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
   const { toast } = useToast();
   const firestore = useFirestore();
 
@@ -90,8 +107,11 @@ export function UserGroupsList() {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el grupo.' });
     } finally {
       setIsDeletingGroup(null);
+      setDeletingGroupId(null);
     }
   };
+
+  const deletingGroup = groups?.find(g => g.id === deletingGroupId) ?? null;
 
   if (groupsLoading) {
     return (
@@ -108,95 +128,116 @@ export function UserGroupsList() {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {groups.map(group => {
-        const isActive = user?.activeGroupId === group.id;
-        const isOwner = user?.uid === group.ownerUid;
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {groups.map(group => {
+          const isActive = user?.activeGroupId === group.id;
+          const isOwner = user?.uid === group.ownerUid;
 
-        return (
-          <Card key={group.id} className={cn("flex flex-col", isActive && 'border-primary ring-2 ring-primary/50')}>
-            <CardHeader className="flex-row items-start justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-3">
-                  <span>{group.name}</span>
-                  {isOwner && (
-                    <Badge variant="secondary" className="bg-card text-foreground border-border">
-                      <Crown className="h-3 w-3 mr-1" />
-                      Dueño
-                    </Badge>
-                  )}
-                </CardTitle>
-                <div className="flex items-center gap-2 mt-2">
-                  <p className="text-xs text-muted-foreground">Código:</p>
-                  <code className="text-sm font-bold font-mono bg-muted px-2 py-1 rounded-md">{group.inviteCode}</code>
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleCopyCode(group.inviteCode)}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              {isOwner && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 -mt-2">
-                      <MoreVertical className="h-4 w-4" />
+          return (
+            <Card key={group.id} className={cn("flex flex-col", isActive && 'border-primary ring-2 ring-primary/50')}>
+              <CardHeader className="flex-row items-start justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-3">
+                    <span>{group.name}</span>
+                    {isOwner && (
+                      <Badge variant="secondary" className="bg-card text-foreground border-border">
+                        <Crown className="h-3 w-3 mr-1" />
+                        Dueño
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <div className="flex items-center gap-2 mt-2">
+                    <p className="text-xs text-muted-foreground">Código:</p>
+                    <code className="text-sm font-bold font-mono bg-muted px-2 py-1 rounded-md">{group.inviteCode}</code>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleCopyCode(group.inviteCode)}>
+                      <Copy className="h-4 w-4" />
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" onClick={(e) => e.preventDefault()}>
-                    <EditGroupDialog group={group}>
-                      <DropdownMenuItem onSelect={e => e.preventDefault()}>
+                  </div>
+                </div>
+                {isOwner && (
+                  <ResponsiveDropdownMenu>
+                    <ResponsiveDropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 -mt-2">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </ResponsiveDropdownMenuTrigger>
+                    <ResponsiveDropdownMenuContent align="end">
+                      <ResponsiveDropdownMenuItem onClick={() => setEditingGroup(group)}>
                         <Edit className="mr-2 h-4 w-4" /> Editar
-                      </DropdownMenuItem>
-                    </EditGroupDialog>
-                    <DropdownMenuSeparator />
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" /> Eliminar
-                        </DropdownMenuItem>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>¿Borrar "{group.name}"?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Esta acción es permanente. Se borrarán todos los jugadores y partidos asociados a este grupo.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDeleteGroup(group.id, group.name)} disabled={isDeletingGroup === group.id} className="bg-destructive hover:bg-destructive/90">
-                            {isDeletingGroup === group.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Borrar
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </CardHeader>
-            <CardFooter className="mt-auto bg-muted/50 p-3">
-              {isActive ? (
-                <Badge className="w-full justify-center text-base py-1.5 bg-primary text-primary-foreground hover:bg-primary/90">
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Activo
-                </Badge>
-              ) : (
-                <Button
-                  className="w-full"
-                  variant="outline"
-                  onClick={() => handleSetActiveGroup(group.id)}
-                  disabled={!!isChangingGroup}
-                >
-                  {isChangingGroup === group.id ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  Activar Grupo
-                </Button>
-              )}
-            </CardFooter>
-          </Card>
-        );
-      })}
-    </div>
+                      </ResponsiveDropdownMenuItem>
+                      <ResponsiveDropdownMenuSeparator />
+                      <ResponsiveDropdownMenuItem
+                        onClick={() => setDeletingGroupId(group.id)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                      </ResponsiveDropdownMenuItem>
+                    </ResponsiveDropdownMenuContent>
+                  </ResponsiveDropdownMenu>
+                )}
+              </CardHeader>
+              <CardFooter className="mt-auto bg-muted/50 p-3">
+                {isActive ? (
+                  <Badge className="w-full justify-center text-base py-1.5 bg-primary text-primary-foreground hover:bg-primary/90">
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Activo
+                  </Badge>
+                ) : (
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={() => handleSetActiveGroup(group.id)}
+                    disabled={!!isChangingGroup}
+                  >
+                    {isChangingGroup === group.id ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Activar Grupo
+                  </Button>
+                )}
+              </CardFooter>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Edit dialog — lifted outside the dropdown to avoid nested drawers */}
+      {editingGroup && (
+        <EditGroupDialog
+          group={editingGroup}
+          open={true}
+          onOpenChange={(open) => { if (!open) setEditingGroup(null); }}
+        />
+      )}
+
+      {/* Delete confirmation — lifted outside the dropdown */}
+      {deletingGroup && (
+        <AlertDialog
+          open={true}
+          onOpenChange={(open) => { if (!open) setDeletingGroupId(null); }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Borrar "{deletingGroup.name}"?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta acción es permanente. Se borrarán todos los jugadores y partidos asociados a este grupo.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setDeletingGroupId(null)}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => handleDeleteGroup(deletingGroup.id, deletingGroup.name)}
+                disabled={isDeletingGroup === deletingGroup.id}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                {isDeletingGroup === deletingGroup.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Borrar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+    </>
   );
 }

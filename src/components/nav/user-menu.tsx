@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import {
     LogOut,
     User,
@@ -25,11 +25,7 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-    DropdownMenuSub,
-    DropdownMenuSubTrigger,
-    DropdownMenuSubContent,
-    DropdownMenuPortal
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import type { Player, UserProfile } from '@/lib/types';
 import { useTheme } from 'next-themes';
 
@@ -42,12 +38,13 @@ type UserMenuProps = {
 
 export function UserMenu({ user, player, onLogout, onRequestPermission }: UserMenuProps) {
     const { setTheme } = useTheme();
+    const router = useRouter();
     const [isLoaded, setIsLoaded] = useState(false);
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-fit sm:h-12 rounded-full p-0 flex items-center gap-1.5 px-1 hover:bg-muted/50 transition-colors">
+                <Button variant="ghost" className="relative h-10 w-fit sm:h-12 rounded-full p-0 flex items-center gap-1.5 px-1 hover:bg-muted/50 transition-colors focus-visible:ring-0 focus-visible:ring-offset-0">
                     <Avatar className="h-10 w-10 sm:h-12 sm:w-12 border overflow-hidden bg-muted flex-shrink-0">
                         {user?.photoURL && (
                             <Image
@@ -86,43 +83,31 @@ export function UserMenu({ user, player, onLogout, onRequestPermission }: UserMe
                     </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                    <Link href="/profile">
-                        <User className="mr-2 h-4 w-4" />
-                        <span>Mi Perfil</span>
-                    </Link>
+                <DropdownMenuItem onClick={() => router.push('/profile')}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Mi Perfil</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                    <Link href="/achievements">
-                        <Award className="mr-2 h-4 w-4" />
-                        <span>Logros</span>
-                    </Link>
+                <DropdownMenuItem onClick={() => router.push('/achievements')}>
+                    <Award className="mr-2 h-4 w-4" />
+                    <span>Logros</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                    <Link href="/settings">
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>Configuración</span>
-                    </Link>
+                <DropdownMenuItem onClick={() => router.push('/settings')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Configuración</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                    <Link href="/feed">
-                        <Rss className="mr-2 h-4 w-4" />
-                        <span>Feed</span>
-                    </Link>
+                <DropdownMenuItem onClick={() => router.push('/feed')}>
+                    <Rss className="mr-2 h-4 w-4" />
+                    <span>Feed</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                    <Link href="/rankings">
-                        <Trophy className="mr-2 h-4 w-4" />
-                        <span>Rankings</span>
-                    </Link>
+                <DropdownMenuItem onClick={() => router.push('/rankings')}>
+                    <Trophy className="mr-2 h-4 w-4" />
+                    <span>Rankings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                    <Link href="/groups">
-                        <Users2 className="mr-2 h-4 w-4" />
-                        <span>Gestionar Grupos</span>
-                    </Link>
+                <DropdownMenuItem onClick={() => router.push('/groups')}>
+                    <Users2 className="mr-2 h-4 w-4" />
+                    <span>Gestionar Grupos</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <div className="px-2 py-1.5">

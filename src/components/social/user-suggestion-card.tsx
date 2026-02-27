@@ -6,18 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Users, Trophy, UserPlus, Loader2, MoreVertical, Send, Eye } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import type { SuggestedUser, SuggestedUserReason, Match } from '@/lib/types';
 import { followUserAction } from '@/lib/actions/social-actions';
 import { useToast } from '@/hooks/use-toast';
 import { InvitePlayerDialog } from '@/components/invite-player-dialog';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
+  ResponsiveDropdownMenu as DropdownMenu,
+  ResponsiveDropdownMenuContent as DropdownMenuContent,
+  ResponsiveDropdownMenuItem as DropdownMenuItem,
+  ResponsiveDropdownMenuTrigger as DropdownMenuTrigger,
+  ResponsiveDropdownMenuSeparator as DropdownMenuSeparator,
+} from '@/components/ui/responsive-dropdown-menu';
 
 interface UserSuggestionCardProps {
   user: SuggestedUser;
@@ -48,6 +49,7 @@ export function UserSuggestionCard({
   userMatches = [],
 }: UserSuggestionCardProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const [isFollowing, setIsFollowing] = useState(false);
   const [hasFollowed, setHasFollowed] = useState(user.isFollowing ?? false);
 
@@ -177,11 +179,9 @@ export function UserSuggestionCard({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link href={`/players/${user.uid}`} className="flex items-center gap-2">
-                <Eye className="h-4 w-4" />
-                Ver perfil
-              </Link>
+            <DropdownMenuItem onClick={() => router.push(`/players/${user.uid}`)}>
+              <Eye className="h-4 w-4 mr-2" />
+              Ver perfil
             </DropdownMenuItem>
 
             {/* Show follow in menu if invite is primary */}

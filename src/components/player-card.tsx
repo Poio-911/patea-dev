@@ -25,6 +25,7 @@ import { Sparkles } from 'lucide-react';
 type PlayerCardProps = {
     player: Player & { displayName?: string };
     index?: number;
+    creatorName?: string;
     jersey?: Jersey;
 };
 
@@ -36,7 +37,7 @@ const auraClasses: Record<string, string> = {
 };
 
 
-export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, jersey }: PlayerCardProps) {
+export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, creatorName, jersey }: PlayerCardProps) {
     if (!player) {
         return (
             <Card className="h-full w-full rounded-2xl">
@@ -152,6 +153,12 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, je
                                     </DialogContent>
                                 </Dialog>
                                 <h3 className="w-full truncate text-center text-sm font-semibold transition-colors">{playerName}</h3>
+                                {player.id !== player.ownerUid && creatorName && (
+                                    <p className="text-[9px] font-black uppercase tracking-wider text-muted-foreground/80 mt-0.5 flex items-center justify-center gap-1">
+                                        <span className="opacity-50">👤 Creado por</span>
+                                        <span className="text-primary/70">{creatorName}</span>
+                                    </p>
+                                )}
                             </div>
                             <AttributesGrid player={player} />
                         </div>

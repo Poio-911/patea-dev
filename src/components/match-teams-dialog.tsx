@@ -33,11 +33,12 @@ export function MatchTeamsDialog({ match, children }: MatchTeamsDialogProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{match.title}</DialogTitle>
+          <DialogDescription className="sr-only">Equipos del partido</DialogDescription>
         </DialogHeader>
-        <div className="py-2">
+        <div className="py-2 min-h-[200px]">
           <TeamsMobileStacked teams={teams} />
         </div>
       </DialogContent>

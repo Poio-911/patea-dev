@@ -18,7 +18,7 @@ import type { AnalyzePlayerProgressionInput } from '../../ai/flows/analyze-playe
 import { type GenerateMatchChronicleOutput, type GenerateMatchChronicleInput, MatchLocation } from '../../lib/types';
 // Note: AI flow functions are imported dynamically within each action to avoid
 // loading Genkit during build when API key is not available
-import { Player, Evaluation, OvrHistory, EvaluationAssignment, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, GroupTeamMember, TeamAvailabilityPost, Match, GenerateDuoImageInput, League, LeagueFormat, CompetitionStatus, Cup, CupFormat, CupSeedingType, BracketMatch, CompetitionApplication, CompetitionFormat, HealthConnection, PlayerPerformance, GoogleFitAuthUrl, GoogleFitSession, SocialActivity, Follow, NotificationType, PlayerPosition } from '../types';
+import { Player, Evaluation, OvrHistory, EvaluationAssignment, PerformanceTag, SelfEvaluation, Invitation, Notification, GroupTeam, GroupTeamMember, TeamAvailabilityPost, Match, GenerateDuoImageInput, League, LeagueFormat, CompetitionStatus, Cup, CupFormat, CupSeedingType, BracketMatch, CompetitionApplication, CompetitionFormat, HealthConnection, PlayerPerformance, GoogleFitAuthUrl, GoogleFitSession, SocialActivity, Follow, NotificationType, PlayerPosition, PreferredFoot } from '../types';
 import { logger } from '../logger';
 import { handleServerActionError, createError, ErrorCodes, formatErrorResponse, isErrorResponse, type ErrorResponse } from '../errors';
 import { addDays, format } from 'date-fns';
@@ -3687,7 +3687,16 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
     }
 }
 
-export async function updateProfileAction(uid: string, data: { displayName?: string; photoURL?: string; position?: PlayerPosition }) {
+export async function updateProfileAction(uid: string, data: {
+    displayName?: string;
+    photoURL?: string;
+    position?: PlayerPosition;
+    preferredFoot?: PreferredFoot;
+    phoneNumber?: string;
+    bio?: string;
+    birthYear?: number;
+    nationality?: string;
+}) {
     try {
         const { getAuth } = await import('firebase-admin/auth');
         const db = getAdminDb();
@@ -3700,6 +3709,7 @@ export async function updateProfileAction(uid: string, data: { displayName?: str
         const userUpdates: any = {};
         if (data.displayName !== undefined) userUpdates.displayName = data.displayName;
         if (data.photoURL !== undefined) userUpdates.photoURL = data.photoURL;
+        if (data.phoneNumber !== undefined) userUpdates.phoneNumber = data.phoneNumber;
 
         if (Object.keys(userUpdates).length > 0) {
             batch.update(userRef, userUpdates);
@@ -3714,6 +3724,10 @@ export async function updateProfileAction(uid: string, data: { displayName?: str
             playerUpdates.photoURL = data.photoURL; // update both to be safe due to legacy code
         }
         if (data.position !== undefined) playerUpdates.position = data.position;
+        if (data.preferredFoot !== undefined) playerUpdates.preferredFoot = data.preferredFoot;
+        if (data.bio !== undefined) playerUpdates.bio = data.bio;
+        if (data.birthYear !== undefined) playerUpdates.birthYear = data.birthYear;
+        if (data.nationality !== undefined) playerUpdates.nationality = data.nationality;
 
         if (Object.keys(playerUpdates).length > 0) {
             batch.update(playerRef, playerUpdates);

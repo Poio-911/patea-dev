@@ -6,6 +6,7 @@ import { z } from 'zod';
 export type PerformanceTag = Pt;
 
 export type PlayerPosition = 'DEL' | 'MED' | 'DEF' | 'POR';
+export type PreferredFoot = 'derecho' | 'izquierdo' | 'ambidiestro';
 
 export type AttributeKey = 'PAC' | 'SHO' | 'PAS' | 'DRI' | 'DEF' | 'PHY';
 
@@ -52,6 +53,10 @@ export type Player = {
   cropZoom?: number;
   jersey?: Jersey; // Jersey del equipo al que pertenece (para watermark en cards)
   teamId?: string; // ID del equipo persistente al que pertenece
+  preferredFoot?: PreferredFoot;
+  bio?: string;
+  birthYear?: number;
+  nationality?: string;
 } & DocumentData;
 
 export type DetailedTeamPlayer = Player & { number: number; status: 'titular' | 'suplente' };

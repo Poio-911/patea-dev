@@ -29,14 +29,23 @@ interface ResponsiveDialogProps extends React.ComponentProps<typeof Dialog> {
   handleOnly?: boolean
 }
 
-const ResponsiveDialog = ({ handleOnly, ...props }: ResponsiveDialogProps) => {
+const ResponsiveDialog = ({ handleOnly, children, ...props }: ResponsiveDialogProps) => {
   const isMobile = useIsMobile()
+  const [mounted, setMounted] = React.useState(false)
 
-  if (isMobile) {
-    return <Drawer handleOnly={handleOnly} {...props} />
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return <Dialog {...props}>{children}</Dialog>
   }
 
-  return <Dialog {...props} />
+  if (isMobile) {
+    return <Drawer handleOnly={handleOnly} {...props}>{children}</Drawer>
+  }
+
+  return <Dialog {...props}>{children}</Dialog>
 }
 ResponsiveDialog.displayName = "ResponsiveDialog"
 

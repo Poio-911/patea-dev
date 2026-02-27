@@ -5,9 +5,18 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  ResponsiveDialog as Dialog,
+  ResponsiveDialogContent as DialogContent,
+  ResponsiveDialogDescription as DialogDescription,
+  ResponsiveDialogFooter as DialogFooter,
+  ResponsiveDialogHeader as DialogHeader,
+  ResponsiveDialogTitle as DialogTitle,
+  ResponsiveDialogTrigger as DialogTrigger,
+} from '@/components/ui/responsive-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Camera, Edit2 } from 'lucide-react';
 import { updateProfileAction } from '@/lib/actions/server-actions';
@@ -19,11 +28,22 @@ import { initializeFirebase } from '@/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import type { User } from 'firebase/auth';
-import type { Player } from '@/lib/types';
+import type { Player, UserProfile } from '@/lib/types';
+import { CountryPicker } from '@/components/ui/country-picker';
+
+const currentYear = new Date().getFullYear();
 
 const profileSchema = z.object({
     displayName: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
     position: z.enum(['DEL', 'MED', 'DEF', 'POR'], { required_error: 'La posición es obligatoria.' }),
+    preferredFoot: z.enum(['derecho', 'izquierdo', 'ambidiestro']).optional(),
+    phoneNumber: z.string().optional(),
+    bio: z.string().max(160, 'Máximo 160 caracteres').optional(),
+    birthYear: z.union([
+        z.coerce.number().min(1950, 'Año demasiado antiguo').max(currentYear - 5, 'Año inválido'),
+        z.literal(''),
+    ]).optional(),
+    nationality: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -31,9 +51,10 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 interface EditProfileDialogProps {
     user: User;
     playerData: Player | null;
+    userProfile?: UserProfile | null;
 }
 
-export function EditProfileDialog({ user, playerData }: EditProfileDialogProps) {
+export function EditProfileDialog({ user, playerData, userProfile }: EditProfileDialogProps) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -45,8 +66,18 @@ export function EditProfileDialog({ user, playerData }: EditProfileDialogProps) 
         defaultValues: {
             displayName: user.displayName || '',
             position: playerData?.position || 'MED',
+            preferredFoot: playerData?.preferredFoot ?? undefined,
+            phoneNumber: userProfile?.phoneNumber || '',
+            bio: playerData?.bio || '',
+            birthYear: playerData?.birthYear ?? '',
+            nationality: playerData?.nationality || 'Uruguay',
         },
     });
+
+    const watchBio = form.watch('bio');
+    const watchBirthYear = form.watch('birthYear');
+    const birthYearNum = typeof watchBirthYear === 'number' ? watchBirthYear : Number(watchBirthYear);
+    const age = !isNaN(birthYearNum) && birthYearNum > 1950 ? currentYear - birthYearNum : null;
 
     const onSubmit = async (data: ProfileFormValues) => {
         setIsSubmitting(true);
@@ -64,10 +95,19 @@ export function EditProfileDialog({ user, playerData }: EditProfileDialogProps) 
                 finalPhotoURL = await getDownloadURL(uploadResult.ref);
             }
 
+            const birthYearValue = data.birthYear === '' || data.birthYear === undefined
+                ? undefined
+                : typeof data.birthYear === 'number' ? data.birthYear : Number(data.birthYear);
+
             // 1. Update Server Side (Firestore + Admin SDK Auth)
             const res = await updateProfileAction(user.uid, {
                 displayName: data.displayName,
                 position: data.position,
+                preferredFoot: data.preferredFoot,
+                phoneNumber: data.phoneNumber || undefined,
+                bio: data.bio || undefined,
+                birthYear: birthYearValue,
+                nationality: data.nationality || undefined,
                 ...(finalPhotoURL && finalPhotoURL !== user.photoURL ? { photoURL: finalPhotoURL } : {})
             });
 
@@ -113,8 +153,8 @@ export function EditProfileDialog({ user, playerData }: EditProfileDialogProps) 
                 </DialogHeader>
 
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                        <div className="flex flex-col items-center gap-4 py-4">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <div className="flex flex-col items-center gap-4 py-2">
                             <Avatar className="h-24 w-24">
                                 <AvatarImage src={imagePreview || user.photoURL || undefined} />
                                 <AvatarFallback className="text-2xl">
@@ -149,25 +189,135 @@ export function EditProfileDialog({ user, playerData }: EditProfileDialogProps) 
                             )}
                         />
 
+                        <div className="grid grid-cols-2 gap-3">
+                            <FormField
+                                control={form.control}
+                                name="position"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Posición</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Posición" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="DEL">Delantero</SelectItem>
+                                                <SelectItem value="MED">Mediocampista</SelectItem>
+                                                <SelectItem value="DEF">Defensor</SelectItem>
+                                                <SelectItem value="POR">Portero</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="preferredFoot"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Pie hábil</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Pie" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="derecho">Derecho</SelectItem>
+                                                <SelectItem value="izquierdo">Izquierdo</SelectItem>
+                                                <SelectItem value="ambidiestro">Ambidiestro</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
                         <FormField
                             control={form.control}
-                            name="position"
+                            name="bio"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Posición Favorita</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormLabel>Bio</FormLabel>
+                                    <FormControl>
+                                        <Textarea
+                                            placeholder="Contá algo sobre vos como jugador..."
+                                            className="resize-none"
+                                            rows={3}
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <div className="flex justify-between">
+                                        <FormMessage />
+                                        <span className="text-xs text-muted-foreground ml-auto">
+                                            {watchBio?.length || 0}/160
+                                        </span>
+                                    </div>
+                                </FormItem>
+                            )}
+                        />
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <FormField
+                                control={form.control}
+                                name="birthYear"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Año de nac.</FormLabel>
                                         <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Elige tu posición" />
-                                            </SelectTrigger>
+                                            <div className="relative">
+                                                <Input
+                                                    type="number"
+                                                    placeholder="1995"
+                                                    min={1950}
+                                                    max={currentYear - 5}
+                                                    {...field}
+                                                    value={field.value ?? ''}
+                                                />
+                                                {age !== null && (
+                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
+                                                        {age}a
+                                                    </span>
+                                                )}
+                                            </div>
                                         </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="DEL">Delantero (DEL)</SelectItem>
-                                            <SelectItem value="MED">Mediocampista (MED)</SelectItem>
-                                            <SelectItem value="DEF">Defensor (DEF)</SelectItem>
-                                            <SelectItem value="POR">Portero (POR)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="nationality"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Nacionalidad</FormLabel>
+                                        <FormControl>
+                                            <CountryPicker
+                                                value={field.value as string | undefined}
+                                                onChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
+                        <FormField
+                            control={form.control}
+                            name="phoneNumber"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Teléfono / WhatsApp</FormLabel>
+                                    <FormControl>
+                                        <Input type="tel" placeholder="+54 9 11 1234-5678" {...field} />
+                                    </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}

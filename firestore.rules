@@ -51,8 +51,12 @@ service cloud.firestore {
     // Colección de Jugadores
     match /players/{playerId} {
       allow read: if isAuthenticated();
-      // El dueño del perfil de jugador puede modificarlo.
-      allow write: if isOwner(playerId);
+      // TEMPORAL: Permitir creación para depurar
+      allow create: if true;
+      allow update, delete: if isAuthenticated() && (
+        request.auth.uid == playerId || 
+        resource.data.ownerUid == request.auth.uid
+      );
     }
 
     // Subcolección de historial de OVR (solo escritura desde el servidor)

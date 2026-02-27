@@ -17,7 +17,7 @@ import {
 import { addMatchDateProposalAction, voteMatchDateAction, confirmMatchDateAction } from '@/lib/actions/match-planning-actions';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ResponsivePopover as Popover, ResponsivePopoverContent as PopoverContent, ResponsivePopoverTrigger as PopoverTrigger } from '@/components/ui/responsive-popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';

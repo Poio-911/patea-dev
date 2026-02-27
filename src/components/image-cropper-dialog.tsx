@@ -27,6 +27,7 @@ interface ImageCropperDialogProps {
     photoURL?: string;
   };
   onSaveComplete?: (newUrl: string) => void;
+  skipProfileUpdate?: boolean; // New flag to avoid updating current user profile
   children: React.ReactNode;
 }
 
@@ -125,7 +126,7 @@ function normalizeFirebaseStorageUrl(url: string): string {
 }
 
 
-export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCropperDialogProps) {
+export function ImageCropperDialog({ player, onSaveComplete, skipProfileUpdate, children }: ImageCropperDialogProps) {
   const [open, setOpen] = useState(false);
   const [imgSrc, setImgSrc] = useState('');
   const [crop, setCrop] = useState<Crop>();
@@ -310,43 +311,43 @@ export function ImageCropperDialog({ player, onSaveComplete, children }: ImageCr
       });
       console.log('Upload completed:', uploadResult.metadata.fullPath);
 
-      const newPhotoURL = await getDownloadURL(uploadResult.ref);
-      console.log('Download URL obtained:', newPhotoURL);
+      const newPhotoUrlValue = await getDownloadURL(uploadResult.ref);
 
-      // ✅ FIX: Update user, player, and availablePlayers documents in a single batch
-      const userDocRef = doc(firestore, 'users', user.uid);
-      const playerDocRef = doc(firestore, 'players', user.uid);
-      const availablePlayerRef = doc(firestore, 'availablePlayers', user.uid);
+      if (onSaveComplete) {
+        onSaveComplete(newPhotoUrlValue);
+      }
 
-      // Check if availablePlayers document exists before updating
+      // ✅ SKIP profile update if flag is set (for manual players)
+      if (skipProfileUpdate) {
+        toast({ title: '¡Foto cargada!', description: 'La foto del jugador ha sido procesada.' });
+        setOpen(false);
+        return;
+      }
+
+      // Logged-in user flow (default)
+      const { firebaseApp: adminAppInstance, firestore: dbInstance } = initializeFirebase();
+      const userDocRef = doc(dbInstance, 'users', user.uid);
+      const playerDocRef = doc(dbInstance, 'players', user.uid);
+      const availablePlayerRef = doc(dbInstance, 'availablePlayers', user.uid);
+
       const availablePlayerSnap = await getDoc(availablePlayerRef);
 
       const photoUpdates = {
-        photoUrl: newPhotoURL,
-        // Reset crop and zoom as the new image is already cropped
+        photoUrl: newPhotoUrlValue,
         cropPosition: { x: 50, y: 50 },
         cropZoom: 1
       };
 
-      const batch = writeBatch(firestore);
-      batch.update(userDocRef, { photoURL: newPhotoURL });
+      const batch = writeBatch(dbInstance);
+      batch.update(userDocRef, { photoURL: newPhotoUrlValue });
       batch.update(playerDocRef, photoUpdates);
 
-      // Only update availablePlayers if document exists (player is looking for match)
       if (availablePlayerSnap.exists()) {
         batch.update(availablePlayerRef, photoUpdates);
       }
 
       await batch.commit();
-      console.log('Firestore batch update completed (including availablePlayers if exists)');
-
-      // ✅ FIX: Force update the auth user profile to propagate changes globally
-      await updateProfile(auth.currentUser, { photoURL: newPhotoURL });
-      console.log('Auth profile updated');
-
-      if (onSaveComplete) {
-        onSaveComplete(newPhotoURL);
-      }
+      await updateProfile(auth.currentUser, { photoURL: newPhotoUrlValue });
 
       toast({ title: '¡Foto actualizada!', description: 'Tu foto de perfil ha sido recortada y guardada.' });
       setOpen(false);

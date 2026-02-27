@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Calendar as CalendarIcon, Loader2, PlusCircle, Search, ArrowLeft, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, UserCheck, Users, Globe, Check, HelpCircle, ChevronRight, UsersRound, MapPin } from 'lucide-react';
 import { useState, useTransition, useEffect, useMemo, useRef } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -120,6 +121,7 @@ const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = fal
     const [osmSuggestions, setOsmSuggestions] = useState<Array<{ label: string; lat: number; lng: number; placeId: string }>>([]);
     const [googleSuggestions, setGoogleSuggestions] = useState<Array<{ description: string; placeId: string }>>([]);
     const [geoLoading, setGeoLoading] = useState(false);
+    const [autocompleteLoading, setAutocompleteLoading] = useState(false);
     const [geoError, setGeoError] = useState<string | null>(null);
     const [isOpen, setIsOpen] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
@@ -163,9 +165,10 @@ const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = fal
 
     // Debounce the input value update
     useEffect(() => {
+        setAutocompleteLoading(true);
         const handler = setTimeout(() => {
             setDebouncedValue(value);
-        }, 500);
+        }, 300); // Reduced to 300ms for snappier response
         return () => clearTimeout(handler);
     }, [value]);
 
@@ -184,12 +187,15 @@ const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = fal
         const svc = autocompleteServiceRef.current;
         if (!svc) return;
 
-        // Add componentRestrictions to bias results to preferred countries if needed, 
-        // but for now relying on user input. 
-        // Could technically add location bias if we had user coordinates.
-        const req: any = { input: debouncedValue, types: ['establishment', 'geocode'] };
+        // Optimize with location bias (e.g. UY, AR) to speed up relevance
+        const req: any = {
+            input: debouncedValue,
+            types: ['establishment', 'geocode'],
+            componentRestrictions: { country: ['uy', 'ar'] } // Restrict to Uruguay and Argentina
+        };
 
         svc.getPlacePredictions(req, (preds: any) => {
+            setAutocompleteLoading(false);
             if (!active) return;
             const arr = (preds || []).map((p: any) => {
                 const main = p.structured_formatting?.main_text as string | undefined;
@@ -210,12 +216,18 @@ const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = fal
         let active = true;
         const fetchOsm = async () => {
             try {
-                if (!debouncedValue || debouncedValue.length < 3) { setOsmSuggestions([]); return; }
+                if (!debouncedValue || debouncedValue.length < 3) { setOsmSuggestions([]); setAutocompleteLoading(false); return; }
                 const res = await fetch(`/api/geocode/suggest?q=${encodeURIComponent(debouncedValue)}`);
                 const json = await res.json();
-                if (active && json?.success) setOsmSuggestions(json.suggestions || []);
+                if (active && json?.success) {
+                    setOsmSuggestions(json.suggestions || []);
+                    setAutocompleteLoading(false);
+                }
             } catch {
-                if (active) setOsmSuggestions([]);
+                if (active) {
+                    setOsmSuggestions([]);
+                    setAutocompleteLoading(false);
+                }
             }
         };
         fetchOsm();
@@ -333,7 +345,12 @@ const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = fal
                                         autoComplete="off"
                                     />
                                     <div className="mt-2 flex items-center justify-between">
-                                        <p className="text-xs text-muted-foreground">{useGoogleAutocomplete ? 'Elegí una sugerencia de Google.' : 'Tip: Elegí una sugerencia o usá la dirección escrita.'}</p>
+                                        <div className="flex items-center gap-2">
+                                            {autocompleteLoading && value.length > 2 && (
+                                                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground inline" />
+                                            )}
+                                            <p className="text-xs text-muted-foreground">{useGoogleAutocomplete ? 'Elegí una sugerencia de Google.' : 'Tip: Elegí una sugerencia o usá la dirección escrita.'}</p>
+                                        </div>
                                         {!useGoogleAutocomplete && (
                                             <Button type="button" variant="outline" size="sm" onClick={() => tryGeocode(value)} disabled={geoLoading || !value || value.length < 5}>Usar dirección</Button>
                                         )}
@@ -404,6 +421,7 @@ const LocationInput = ({ onSelectLocation, groupVenues = [], venuesLoading = fal
 
 
 export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
+    const isMobile = useIsMobile();
     const [open, setOpen] = useState(false);
     const [step, setStep] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
@@ -828,30 +846,67 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                             <Controller
                                                 name="date"
                                                 control={control}
-                                                render={({ field }) => (
-                                                    <Popover>
-                                                        <PopoverTrigger asChild>
-                                                            <Button
-                                                                variant={"outline"}
-                                                                className={cn(
-                                                                    "w-full justify-start text-left font-normal",
-                                                                    !field.value && "text-muted-foreground"
-                                                                )}
-                                                            >
-                                                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                                                {field.value ? format(field.value, "PPP", { locale: es }) : <span>Elegí una fecha</span>}
-                                                            </Button>
-                                                        </PopoverTrigger>
-                                                        <PopoverContent className="w-auto p-0" align="start">
-                                                            <Calendar
-                                                                mode="single"
-                                                                selected={field.value}
-                                                                onSelect={field.onChange}
-                                                                initialFocus
-                                                            />
-                                                        </PopoverContent>
-                                                    </Popover>
-                                                )}
+                                                render={({ field }) => {
+                                                    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+
+                                                    const handleSelect = (date: Date | undefined) => {
+                                                        field.onChange(date);
+                                                        setIsDatePickerOpen(false);
+                                                    };
+
+                                                    return isMobile ? (
+                                                        <Dialog open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                                                            <DialogTrigger asChild>
+                                                                <Button
+                                                                    variant={"outline"}
+                                                                    className={cn(
+                                                                        "w-full justify-start text-left font-normal",
+                                                                        !field.value && "text-muted-foreground"
+                                                                    )}
+                                                                >
+                                                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                                                    {field.value ? format(field.value, "PPP", { locale: es }) : <span>Elegí una fecha</span>}
+                                                                </Button>
+                                                            </DialogTrigger>
+                                                            <DialogContent className="w-[calc(100%-2rem)] max-w-md p-4 flex flex-col items-center">
+                                                                <DialogHeader className="w-full text-center sm:text-left mb-2">
+                                                                    <DialogTitle>Seleccionar Fecha</DialogTitle>
+                                                                    <DialogDescription className="sr-only">Seleccioná la fecha del partido en el calendario</DialogDescription>
+                                                                </DialogHeader>
+                                                                <Calendar
+                                                                    mode="single"
+                                                                    selected={field.value}
+                                                                    onSelect={handleSelect}
+                                                                    locale={es}
+                                                                    className="rounded-md border mx-auto"
+                                                                />
+                                                            </DialogContent>
+                                                        </Dialog>
+                                                    ) : (
+                                                        <Popover>
+                                                            <PopoverTrigger asChild>
+                                                                <Button
+                                                                    variant={"outline"}
+                                                                    className={cn(
+                                                                        "w-full justify-start text-left font-normal",
+                                                                        !field.value && "text-muted-foreground"
+                                                                    )}
+                                                                >
+                                                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                                                    {field.value ? format(field.value, "PPP", { locale: es }) : <span>Elegí una fecha</span>}
+                                                                </Button>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-auto p-0" align="start">
+                                                                <Calendar
+                                                                    mode="single"
+                                                                    selected={field.value}
+                                                                    onSelect={field.onChange}
+                                                                    initialFocus
+                                                                />
+                                                            </PopoverContent>
+                                                        </Popover>
+                                                    );
+                                                }}
                                             />
                                             {formState.errors.date && <p className="text-xs text-destructive mt-1">{formState.errors.date.message}</p>}
                                         </div>

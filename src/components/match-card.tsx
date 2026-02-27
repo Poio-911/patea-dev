@@ -252,7 +252,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     {/* Match Type - Stylized Glow Dot Tag */}
                     <div className={cn(
                         "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black tracking-[0.1em] uppercase border transition-all shadow-sm",
-                        "bg-white/80 dark:bg-black/40 backdrop-blur-md border-black/5 dark:border-white/10",
+                        "bg-background/80 dark:bg-black/40 game:bg-black/40 backdrop-blur-md border-border/50 dark:border-white/10 game:border-white/10 text-foreground",
                     )}>
                         <div className={cn(
                             "w-2 h-2 rounded-full shrink-0 bg-current shadow-[0_0_8px_currentColor] brightness-125",
