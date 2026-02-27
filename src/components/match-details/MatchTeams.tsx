@@ -151,7 +151,7 @@ export const MatchTeams = React.memo(function MatchTeams({ match, isOwner }: Mat
                             </div>
 
                             {/* Player List (Mosaic Style) */}
-                            <div className="grid grid-cols-1 xs:grid-cols-2 gap-x-6 gap-y-2 relative z-10">
+                            <div className="grid grid-cols-2 gap-x-6 gap-y-2 relative z-10">
                                 {teamMembersWithDetails.map((player, index) => (
                                     <TeamMosaicPlayer
                                         key={player.id}
