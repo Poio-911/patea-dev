@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/responsive-dialog';
 import { Button } from './ui/button';
 import { Loader2, Shuffle } from 'lucide-react';
-import { ScrollArea } from './ui/scroll-area';
+
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import type { Match, Team } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -42,12 +42,12 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
       return;
     }
     setIsSwapping(true);
-    
+
     try {
       const matchRef = doc(firestore, 'matches', match.id);
-      
+
       const newTeams: Team[] = JSON.parse(JSON.stringify(match.teams));
-      
+
       let sourceTeamIndex = -1, sourcePlayerIndex = -1;
       let targetTeamIndex = -1, targetPlayerIndex = -1;
 
@@ -63,15 +63,15 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
           targetPlayerIndex = pIdx;
         }
       });
-      
+
       if (sourceTeamIndex === -1 || targetTeamIndex === -1) {
-          throw new Error("No se pudo encontrar a uno de los jugadores en los equipos.");
+        throw new Error("No se pudo encontrar a uno de los jugadores en los equipos.");
       }
 
       const temp = newTeams[sourceTeamIndex].players[sourcePlayerIndex];
       newTeams[sourceTeamIndex].players[sourcePlayerIndex] = newTeams[targetTeamIndex].players[targetPlayerIndex];
       newTeams[targetTeamIndex].players[targetPlayerIndex] = temp;
-      
+
       newTeams.forEach(team => {
         const totalOVR = team.players.reduce((sum, p) => sum + p.ovr, 0);
         team.averageOVR = team.players.length > 0 ? totalOVR / team.players.length : 0;
@@ -91,7 +91,7 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
       setSelectedPlayerId(null);
     }
   };
-  
+
   const { eligiblePlayers } = useMemo(() => {
     if (!match.teams || match.teams.length < 2) {
       return { eligiblePlayers: [] };
@@ -101,7 +101,7 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
     if (!sourceTeam) {
       return { eligiblePlayers: [] };
     }
-    
+
     // Filter to get players from the *other* team(s)
     const eligible = match.teams
       .filter(team => team.name !== sourceTeam.name)
@@ -122,7 +122,7 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
-          <ScrollArea className="h-64 pr-4">
+          <div className="h-64 overflow-y-auto pr-4" data-vaul-no-drag>
             <div className="space-y-2">
               {eligiblePlayers.map(player => {
                 const isSelected = selectedPlayerId === player.uid;
@@ -151,7 +151,7 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
                 );
               })}
             </div>
-          </ScrollArea>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
