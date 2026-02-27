@@ -60,7 +60,7 @@ export async function createManualPlayerAction(
                 }
             });
         } catch (socialError) {
-            logger.warn('Failed to publish player creation activity:', socialError);
+            logger.warn('Failed to publish player creation activity:', { error: socialError });
         }
 
         return {
@@ -70,11 +70,7 @@ export async function createManualPlayerAction(
         };
 
     } catch (error: any) {
-        logger.error('[createManualPlayerAction] Error creating player:', {
-            message: error.message,
-            stack: error.stack,
-            creatorUserId
-        });
+        logger.error('[createManualPlayerAction] Error creating player:', error, { creatorUserId });
         return {
             success: false,
             message: error.message || 'Error al crear el jugador en el servidor.'
