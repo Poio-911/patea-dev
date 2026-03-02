@@ -9,6 +9,18 @@ import { PostItem } from '@/components/social/post-item';
 import { getFeedActivitiesAction } from '@/lib/actions/server-actions';
 import type { SocialActivity } from '@/lib/types';
 
+import { AdBanner } from '@/components/ads/ad-banner';
+import { SponsorCard, type SponsorCampaign } from '@/components/ads/sponsor-card';
+
+const mockSponsor: SponsorCampaign = {
+  id: 'sim_sponsor_1',
+  title: 'Nike Mercurial Vapor - Nuevos Ingresos',
+  sponsorName: 'SportStore MVD',
+  imageUrl: 'https://images.unsplash.com/photo-1511886929837-354d827aae26?auto=format&fit=crop&q=80',
+  redirectUrl: '#',
+  placement: 'feed'
+};
+
 interface SocialFeedProps {
   limit?: number;
   showHeader?: boolean;
@@ -122,15 +134,28 @@ export function SocialFeed({ limit = 20, showHeader = true }: SocialFeedProps) {
         </div>
       ) : (
         <div className="flex flex-col">
-          {activities.map((activity) => (
-            <PostItem
-              key={activity.id}
-              activity={activity}
-              userId={user.uid}
-              userName={user.displayName || undefined}
-              userPhotoUrl={user.photoURL || undefined}
-              onRefresh={() => loadActivities(true)}
-            />
+          {activities.map((activity, index) => (
+            <div key={activity.id} className="flex flex-col">
+              {/* Insertar Banner publicitario o Sponsor cada 3 posteos */}
+              {index > 0 && index % 3 === 0 && (
+                <div className="py-2 border-b border-border/50 bg-muted/10">
+                  {index % 6 === 0 ? (
+                    <div className="px-4 py-2">
+                      <SponsorCard campaign={mockSponsor} />
+                    </div>
+                  ) : (
+                    <AdBanner dataAdSlot="simulated" className="my-2" />
+                  )}
+                </div>
+              )}
+              <PostItem
+                activity={activity}
+                userId={user.uid}
+                userName={user.displayName || undefined}
+                userPhotoUrl={user.photoURL || undefined}
+                onRefresh={() => loadActivities(true)}
+              />
+            </div>
           ))}
         </div>
       )}

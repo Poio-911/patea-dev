@@ -46,6 +46,8 @@ export const viewport: Viewport = {
   interactiveWidget: 'resizes-content',
 };
 
+import Script from 'next/script';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -53,6 +55,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
+      <head>
+        {/* Placeholder para Google AdSense (se activa con la variable de entorno) */}
+        {process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID && (
+          <Script
+            id="adsbygoogle-init"
+            strategy="afterInteractive"
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID}`}
+            crossOrigin="anonymous"
+          />
+        )}
+      </head>
       <body
         className={cn(
           'min-h-[100svh] bg-background text-foreground font-body antialiased'

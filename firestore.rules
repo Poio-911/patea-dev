@@ -161,6 +161,14 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Campañas Publicitarias (Sponsors)
+    match /campaigns/{campaignId} {
+      // Públicas para mostrarse a cualquier usuario autenticado
+      allow read: if isAuthenticated();
+      // Las escrituras de estadísticas se manejan a través de Server Actions
+      allow write: if false;
+    }
+
     // Colección de Caché de IA
     match /ai_cache/{cacheId} {
       // Solo accesible desde Server Actions (Cloud Functions)
