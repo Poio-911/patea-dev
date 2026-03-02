@@ -16,6 +16,17 @@ import { motion } from 'framer-motion';
 import { cn, formatVenueName } from '@/lib/utils';
 import { getMatchTheme } from '@/lib/match-theme';
 import type { Group, Player, Match, GenerateMatchChronicleOutput } from '@/lib/types';
+import { AdBanner } from '@/components/ads/ad-banner';
+import { SponsorCard, type SponsorCampaign } from '@/components/ads/sponsor-card';
+
+const mockGrupoSponsor: SponsorCampaign = {
+  id: 'sim_sponsor_3',
+  title: 'Camisetas Full Print 30% OFF',
+  sponsorName: 'Taller Sublime',
+  imageUrl: 'https://images.unsplash.com/photo-1542385906-8cc4d9fbf576?auto=format&fit=crop&q=80',
+  redirectUrl: '#',
+  placement: 'match'
+};
 
 interface GrupoTabProps {
   activeGroup?: Group | null;
@@ -205,6 +216,10 @@ export function GrupoTab({
             </div>
           </div>
 
+          <div className="my-2">
+            <AdBanner dataAdSlot="simulated_dashboard_grupo" className="my-2" />
+          </div>
+
           {/* Últimos Partidos Evaluados */}
           {groupRecentMatches.length > 0 && (
             <div className="relative overflow-hidden rounded-2xl bg-card/60 backdrop-blur-md border border-white/10 dark:border-white/5 shadow-xl transition-all">
@@ -296,6 +311,10 @@ export function GrupoTab({
               </div>
             </div>
           )}
+
+          <div className="mt-4">
+            <SponsorCard campaign={mockGrupoSponsor} />
+          </div>
         </div>
       </div>
     </div>

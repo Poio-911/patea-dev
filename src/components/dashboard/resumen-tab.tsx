@@ -14,6 +14,18 @@ import { OVRProgressionChart } from '@/components/dashboard/ovr-progression-char
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { AdBanner } from '@/components/ads/ad-banner';
+import { SponsorCard, type SponsorCampaign } from '@/components/ads/sponsor-card';
+
+const mockResumenSponsor: SponsorCampaign = {
+    id: 'sim_sponsor_2',
+    title: 'Alquiler de Canchas - 20% OFF Jueves',
+    sponsorName: 'Complejo El Triángulo',
+    imageUrl: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&q=80',
+    redirectUrl: '#',
+    placement: 'leaderboard'
+};
+
 const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -142,6 +154,11 @@ export function ResumenTab({ nextMatch, liveMatches, liveLoading, player, recent
                     </>
                 )}
 
+                {/* Banner Ad Sense Intercalado */}
+                <motion.div variants={cardVariants} className="my-4">
+                    <AdBanner dataAdSlot="simulated_dashboard_inline" />
+                </motion.div>
+
                 <motion.div variants={cardVariants}>
                     <Card>
                         <CardHeader>
@@ -167,9 +184,14 @@ export function ResumenTab({ nextMatch, liveMatches, liveLoading, player, recent
                 </motion.div>
             </motion.div>
 
-            {/* Columna Derecha se eliminó ya que absorbimos "Los Cracks" en "GrupoTab" */}
-            <div className="hidden lg:block lg:col-span-1">
-                {/* Espacio reservado para futuros widgets o banners */}
+            {/* Espacio Banner Lateral Patrocinado */}
+            <div className="hidden lg:flex lg:col-span-1 flex-col gap-4">
+                <div className="sticky top-[100px]">
+                    <SponsorCard campaign={mockResumenSponsor} />
+                    <div className="mt-4">
+                        <AdBanner dataAdSlot="simulated_dashboard_sidebar" className="h-[400px]" dataFullWidthResponsive={false} />
+                    </div>
+                </div>
             </div>
         </div>
     );
