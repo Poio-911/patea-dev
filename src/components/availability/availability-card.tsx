@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Search, MapPin, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
+import { Loader2, Search, MapPin, RefreshCw, AlertCircle, Sun, Cloud, Moon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { saveUserLocationAction, reverseGeocodeAction } from '@/lib/actions/location-actions';
 import { cn } from '@/lib/utils';
@@ -25,10 +25,10 @@ const daysOfWeek: { id: DayOfWeek; label: string; short: string }[] = [
   { id: 'domingo', label: 'Domingo', short: 'Dom' },
 ];
 
-const timeSlots: { id: TimeOfDay; label: string }[] = [
-  { id: 'mañana', label: 'Mañana' },
-  { id: 'tarde', label: 'Tarde' },
-  { id: 'noche', label: 'Noche' },
+const timeSlots = [
+  { id: 'mañana' as TimeOfDay, label: 'Mañana', Icon: Sun },
+  { id: 'tarde' as TimeOfDay, label: 'Tarde', Icon: Cloud },
+  { id: 'noche' as TimeOfDay, label: 'Noche', Icon: Moon },
 ];
 
 interface AvailabilityCardProps {
@@ -271,9 +271,12 @@ export function AvailabilityCard({ player, availablePlayerData, savedLocation }:
 
         {/* Status indicator */}
         {isVisible && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-            <span>Estás visible en la búsqueda de jugadores</span>
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-success/10 border border-success/20">
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
+            </span>
+            <span className="text-sm font-semibold text-success">Estás activo en el Mercado de Fichajes</span>
           </div>
         )}
 
@@ -313,14 +316,15 @@ export function AvailabilityCard({ player, availablePlayerData, savedLocation }:
             onValueChange={handleTimesChange}
             className="flex gap-1"
           >
-            {timeSlots.map((slot) => (
+            {timeSlots.map(({ id, label, Icon }) => (
               <ToggleGroupItem
-                key={slot.id}
-                value={slot.id}
-                className="text-xs px-3 h-8 flex-1"
+                key={id}
+                value={id}
+                className="text-xs px-3 h-8 flex-1 gap-1"
                 disabled={!isVisible}
               >
-                {slot.label}
+                <Icon className="w-3.5 h-3.5 shrink-0" />
+                {label}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -329,8 +333,11 @@ export function AvailabilityCard({ player, availablePlayerData, savedLocation }:
         {/* Location */}
         <div className={cn('space-y-2', !isVisible && 'opacity-50 pointer-events-none')}>
           <label className="text-sm font-medium">Ubicación</label>
-          <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50">
-            <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className={cn(
+            "flex items-center gap-2 p-2 rounded-md",
+            isVisible ? "bg-primary/5 border border-primary/20" : "bg-muted/50"
+          )}>
+            <MapPin className={cn("h-4 w-4 shrink-0", isVisible ? "text-primary" : "text-muted-foreground")} />
             <span className="text-sm text-muted-foreground flex-1 truncate">
               {currentLocation?.label || 'Sin ubicación guardada'}
             </span>
@@ -349,6 +356,11 @@ export function AvailabilityCard({ player, availablePlayerData, savedLocation }:
               <span className="sr-only">Actualizar ubicación</span>
             </Button>
           </div>
+          {isVisible && currentLocation && (
+            <p className="text-xs text-muted-foreground">
+              Los organizadores en un radio de 50 km te verán.
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>

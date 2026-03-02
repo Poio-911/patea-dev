@@ -80,23 +80,40 @@ export const MatchManagementActions = React.memo(function MatchManagementActions
             </Button>
           </InvitePlayerDialog>
         )}
-        {/* Volver a sortear equipos: manual y colaborativo, solo si ya hay equipos */
-          onShuffle && hasTeams && match.type !== 'by_teams' && match.type !== 'intergroup_friendly' && match.status === 'upcoming' && (
-            <Button
-              onClick={onShuffle}
-              disabled={isShuffling}
-              size="sm"
-              variant="outline"
-              aria-label="Volver a sortear equipos"
-            >
-              {isShuffling ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-              ) : (
-                <Shuffle className="mr-2 h-4 w-4" aria-hidden="true" />
-              )}
-              Sortear
-            </Button>
-          )}
+        {/* Generar equipos: cuando no existen aún (upcoming o completed sin equipos) */}
+        {onShuffle && !hasTeams && !isCompetitive && match.type !== 'intergroup_friendly' && match.status !== 'evaluated' && (
+          <Button
+            onClick={onShuffle}
+            disabled={isShuffling}
+            size="sm"
+            variant="outline"
+            aria-label="Generar equipos con IA"
+          >
+            {isShuffling ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Shuffle className="mr-2 h-4 w-4" aria-hidden="true" />
+            )}
+            Generar Equipos
+          </Button>
+        )}
+        {/* Volver a sortear equipos: solo si ya hay equipos y el partido es upcoming */}
+        {onShuffle && hasTeams && !isCompetitive && match.type !== 'intergroup_friendly' && match.status === 'upcoming' && (
+          <Button
+            onClick={onShuffle}
+            disabled={isShuffling}
+            size="sm"
+            variant="outline"
+            aria-label="Volver a sortear equipos"
+          >
+            {isShuffling ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Shuffle className="mr-2 h-4 w-4" aria-hidden="true" />
+            )}
+            Sortear
+          </Button>
+        )}
         {/* Editar equipos: manual siempre, colaborativo solo si está completo */}
         {(isManual || (isCollaborative && isFull)) && (
           <EditableTeamsDialog match={match}>

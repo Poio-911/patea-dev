@@ -686,7 +686,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 location: data.location,
                 type: 'by_teams',
                 matchSize: parseInt(data.matchSize),
-                isPublic: false,
+                isPublic: data.isPublic,
                 weather: data.isPlanning ? undefined : weather,
                 selectedTeams: data.selectedTeams,
             }),
@@ -734,7 +734,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                 location: data.location,
                 type: 'manual',
                 matchSize: selectedMatchSize,
-                isPublic: false,
+                isPublic: data.isPublic,
                 weather: data.isPlanning ? undefined : weather,
                 players: selectedPlayersData.map(p => p.id),
             }),
@@ -993,22 +993,20 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                         )}
                                     />
                                 </div>
-                                {watchedType === 'collaborative' && (
-                                    <Controller
-                                        name="isPublic"
-                                        control={form.control}
-                                        render={({ field }) => (
-                                            <div className="flex items-center space-x-4 rounded-md border p-4">
-                                                <Globe />
-                                                <div className="flex-1 space-y-1">
-                                                    <p className="text-sm font-medium leading-none">Hacer Partido Público</p>
-                                                    <p className="text-sm text-muted-foreground">Permite que jugadores de afuera se sumen.</p>
-                                                </div>
-                                                <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                <Controller
+                                    name="isPublic"
+                                    control={form.control}
+                                    render={({ field }) => (
+                                        <div className="flex items-center space-x-4 rounded-md border p-4">
+                                            <Globe />
+                                            <div className="flex-1 space-y-1">
+                                                <p className="text-sm font-medium leading-none">Hacer Partido Público</p>
+                                                <p className="text-sm text-muted-foreground">Permite que jugadores de afuera se sumen.</p>
                                             </div>
-                                        )}
-                                    />
-                                )}
+                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                        </div>
+                                    )}
+                                />
                             </div>
                         )}
                         {step === 3 && (

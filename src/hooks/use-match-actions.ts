@@ -12,7 +12,7 @@ import {
   notifyEvaluationAvailableAction,
   notifyMatchUpdatedAction
 } from '@/lib/actions/notification-actions';
-import { joinMatchAction, leaveMatchAction } from '@/lib/actions/match-actions';
+import { joinMatchAction, leaveMatchAction, requestJoinMatchAction } from '@/lib/actions/match-actions';
 import { useHaptics } from '@/hooks/use-haptics';
 
 // Helper to determine if a player is a "real user"
@@ -231,6 +231,8 @@ export function useMatchActions({
     }
   }, [firestore, userId, match, allGroupPlayers, generateEvaluationAssignments, toast]);
 
+  const isUserPendingRequest = !!(userId && match?.pendingPlayerUids?.includes(userId));
+
   const handleJoinOrLeave = useCallback(async () => {
     if (!userId || !match) return;
     setIsJoining(true);
@@ -242,6 +244,22 @@ export function useMatchActions({
           toast({ title: 'Te has dado de baja', description: `Ya no estás apuntado a "${match.title}".` });
         } else {
           throw new Error(result.error);
+        }
+      } else if (match.type === 'manual' && match.ownerUid !== userId) {
+        // Manual public matches require organizer approval
+        const result = await requestJoinMatchAction(match.id);
+        if ('success' in result && result.success) {
+          if ((result as any).alreadyPending) {
+            toast({ description: 'Ya enviaste una solicitud para este partido.' });
+          } else {
+            hapticSuccess();
+            toast({
+              title: '📋 Solicitud enviada',
+              description: `El organizador revisará tu perfil y te avisará.`,
+            });
+          }
+        } else {
+          throw new Error('error' in result ? (result as any).error : 'No se pudo enviar la solicitud.');
         }
       } else {
         const result = await joinMatchAction(match.id, userId, userDisplayName || 'Jugador');
@@ -358,6 +376,7 @@ export function useMatchActions({
     isShuffling,
     isRescheduling,
     isChangingLocation,
+    isUserPendingRequest,
     handleFinish,
     handleJoinOrLeave,
     handleDelete,

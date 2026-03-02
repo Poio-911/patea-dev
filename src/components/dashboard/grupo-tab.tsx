@@ -190,17 +190,6 @@ export function GrupoTab({
     <div className="space-y-6">
       <GroupHeroCard group={activeGroup} compact={true} />
 
-      {/* Accesos Directos Rápidos */}
-      <div className="grid grid-cols-2 gap-4">
-        <Link href="/comunidad?tab=rankings" className="flex items-center justify-center gap-3 p-4 rounded-2xl bg-card border border-border shadow-sm hover:border-primary/40 transition-all font-headline uppercase font-black tracking-widest text-primary drop-shadow-sm group">
-          <Trophy className="h-6 w-6 group-hover:scale-110 group-hover:text-amber-500 transition-all duration-300" />
-          Rankings
-        </Link>
-        <Link href="/comunidad" className="flex items-center justify-center gap-3 p-4 rounded-2xl bg-card border border-border shadow-sm hover:border-primary/40 transition-all font-headline uppercase font-black tracking-widest text-primary drop-shadow-sm group">
-          <MessageSquare className="h-6 w-6 group-hover:scale-110 group-hover:text-blue-500 transition-all duration-300" />
-          Social
-        </Link>
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
         {/* Columna Izquierda (Principal - Equipos y Últimos Partidos) */}

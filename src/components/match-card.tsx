@@ -26,7 +26,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, User, FileSignature, MoreVertical, Users, UserCheck, Shuffle, UsersRound, Shirt, Globe } from 'lucide-react';
+import { Calendar, Clock, MapPin, Trash2, CheckCircle, Eye, Loader2, UserPlus, LogOut, User, FileSignature, MoreVertical, Users, UserCheck, Shuffle, UsersRound, Shirt, Globe, Hourglass } from 'lucide-react';
 import { InvitePlayerDialog } from './invite-player-dialog';
 import Link from 'next/link';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
@@ -126,7 +126,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         allGroupPlayers: allPlayers,
         isUserInMatch,
     });
-    const { isJoining, handleJoinOrLeave } = actions;
+    const { isJoining, handleJoinOrLeave, isUserPendingRequest } = actions;
 
     // Compute unique players once for the whole component
     const uniquePlayers = useMemo(() => {
@@ -171,11 +171,19 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     const currentStatus = statusConfig[match.status] || statusConfig.completed;
 
     const JoinLeaveButton = ({ className }: { className?: string }) => {
-        if (match.type === 'collaborative' && match.status === 'upcoming') {
-            if (isMatchFull && !isUserInMatch) {
+        if ((match.type === 'collaborative' || match.type === 'manual') && match.status === 'upcoming') {
+            if (isMatchFull && !isUserInMatch && !isUserPendingRequest) {
                 return (
                     <Button variant="outline" size="sm" className={cn("w-full bg-white/5 text-white/40 border-white/10 !shadow-none", className)} disabled>
                         Lleno
+                    </Button>
+                );
+            }
+            if (isUserPendingRequest) {
+                return (
+                    <Button variant="outline" size="sm" className={cn("w-full bg-white/5 text-white/30 border-white/10 !shadow-none", className)} disabled>
+                        <Hourglass className="h-3.5 w-3.5 mr-1.5" />
+                        Solicitud enviada
                     </Button>
                 );
             }
@@ -192,7 +200,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     )}
                 >
                     {isJoining ? <Loader2 className="h-4 w-4 animate-spin" /> : (isUserInMatch ? <LogOut className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />)}
-                    {isUserInMatch ? 'Baja' : 'Apuntarse'}
+                    {isUserInMatch ? 'Baja' : (match.type === 'manual' ? 'Solicitar' : 'Apuntarse')}
                 </Button>
             );
         }
@@ -416,12 +424,11 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                         </Link>
                     </Button>
 
-                    {match.type === 'collaborative' && match.status === 'upcoming' && (
+                    {(match.type === 'collaborative' || match.type === 'manual') && match.status === 'upcoming' && (
                         <JoinLeaveButton className="w-full" />
                     )}
                 </div>
-                {/* Fallback for cases where it might not be in the flex row but we want it visible (though the above covers upcoming collaborative) */}
-                {match.type !== 'collaborative' && <JoinLeaveButton />}
+                {match.type !== 'collaborative' && match.type !== 'manual' && <JoinLeaveButton />}
             </CardFooter>
         </Card>
     );

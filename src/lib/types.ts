@@ -135,6 +135,7 @@ export type Match = {
   groupId: string | null;
   players: { uid: string; displayName: string; ovr: number; position: PlayerPosition; photoURL: string }[]; // Flattened list
   playerUids: string[];
+  pendingPlayerUids?: string[]; // UIDs with pending join requests (manual matches)
 
   // Teams structure (for by_teams/intergroup)
   teams?: Team[];

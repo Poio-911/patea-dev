@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, AlertCircle, MapPin, UserPlus, Calendar, Search, Sparkles, Filter, Check } from 'lucide-react';
+import { Users, MapPin, UserPlus, Calendar, Search, Sparkles } from 'lucide-react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { getAvailableLocalPlayersAction } from '@/lib/actions/recruitment-actions';
 import { findBestFitPlayerAction } from '@/lib/actions/ai-scouting-actions';
@@ -13,7 +13,7 @@ import { InvitePlayerDialog } from '@/components/invite-player-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlayerPhoto } from '@/components/player-styles';
 import { getOvrLevel, getOvrColorClass } from '@/lib/player-utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { parseISO, getDay, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -25,12 +25,12 @@ function FreeAgentCard({
   incompleteMatches,
   aiRecommendation
 }: {
-  player: AvailablePlayer & { matchScore?: number; isCurrentUser?: boolean };
+  player: AvailablePlayer & { matchScore?: number; isCurrentUser?: boolean; distanceKm?: number };
   selectedMatch: Match;
   incompleteMatches: Match[];
   aiRecommendation?: { reason: string };
 }) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [playerInfo, setPlayerInfo] = useState<Player | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const firestore = useFirestore();
@@ -38,139 +38,180 @@ function FreeAgentCard({
   const ovrLevel = getOvrLevel(player.ovr || 0);
   const ovrColor = getOvrColorClass(player.ovr || 0);
 
-  const handleToggle = async () => {
-    if (!isExpanded && !playerInfo && !isLoadingStats && firestore) {
-      setIsLoadingStats(true);
-      try {
-        const playerRef = doc(firestore, 'players', player.uid);
-        const playerSnap = await getDoc(playerRef);
-        if (playerSnap.exists()) {
-          setPlayerInfo({ id: playerSnap.id, ...playerSnap.data() } as Player);
-        }
-      } catch (e) {
-        console.error('Error loading player stats:', e);
-      } finally {
-        setIsLoadingStats(false);
-      }
-    }
-    setIsExpanded(!isExpanded);
-  };
+  // Load stats lazily when drawer opens
+  useEffect(() => {
+    if (!isOpen || playerInfo || isLoadingStats || !firestore) return;
+    setIsLoadingStats(true);
+    getDoc(doc(firestore, 'players', player.uid))
+      .then(snap => { if (snap.exists()) setPlayerInfo({ id: snap.id, ...snap.data() } as Player); })
+      .catch(console.error)
+      .finally(() => setIsLoadingStats(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  const matchDate = parseISO(selectedMatch.date);
+  const rawDay = format(matchDate, 'EEE', { locale: es });
+  const dayLabel = (rawDay.charAt(0).toUpperCase() + rawDay.slice(1)).replace('.', '');
+  const matchHour = parseInt(selectedMatch.time.split(':')[0], 10);
+  const timeLabel = matchHour < 12 ? 'Mañana' : matchHour >= 18 ? 'Noche' : 'Tarde';
+
+  const availChip = player.matchScore === 2
+    ? { label: `${dayLabel} · ${timeLabel}`, chipCn: 'bg-success/10 text-success border-success/20' }
+    : player.matchScore === 1
+    ? { label: dayLabel, chipCn: 'bg-amber-500/10 text-amber-600 border-amber-500/20' }
+    : { label: 'No coincide', chipCn: 'bg-destructive/10 text-destructive border-destructive/20' };
 
   return (
-    <motion.div
-      layout
-      initial={false}
-      className={cn(
-        "relative overflow-hidden cursor-pointer transition-all duration-300 rounded-2xl border bg-card flex flex-col",
-        `aura-${ovrLevel}`,
-        isExpanded ? "shadow-xl border-primary/40 ring-1 ring-primary/20" : "shadow-sm border-border hover:border-primary/30",
-        aiRecommendation && !isExpanded && "border-primary/30 bg-gradient-to-br from-primary/5 via-card to-card shadow-[0_0_15px_rgba(var(--primary),0.05)]"
-      )}
-      onClick={handleToggle}
-    >
-      {/* AI Recommendation Badge (Option 1: Sutil & Integrado) */}
-      {aiRecommendation && (
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[7px] font-black px-2.5 py-0.5 rounded-b-md shadow-sm z-10 uppercase tracking-widest flex items-center gap-1">
-          <Sparkles className="w-2.5 h-2.5 fill-current" />
-          Recomendado
-        </div>
-      )}
-      {/* Top Banner (Position + OVR) */}
-      <div className="flex justify-between items-start p-3 w-full">
-        <div className="flex flex-col items-center">
+    <>
+      {/* Collapsed card */}
+      <div
+        className={cn(
+          "relative overflow-hidden cursor-pointer select-none",
+          "rounded-2xl border bg-card flex flex-col",
+          "transition-all duration-200 shadow-sm hover:shadow-md hover:border-primary/30 active:scale-[0.98]",
+          `aura-${ovrLevel}`,
+          aiRecommendation && "border-primary/30 bg-gradient-to-br from-primary/5 via-card to-card"
+        )}
+        onClick={() => setIsOpen(true)}
+      >
+        {/* AI Badge — full-width top bar */}
+        {aiRecommendation && (
+          <div className="w-full bg-primary text-primary-foreground text-[10px] font-bold px-3 py-1 flex items-center gap-1.5">
+            <Sparkles className="w-3 h-3 fill-current shrink-0" />
+            <span>Recomendado IA</span>
+          </div>
+        )}
+
+        {/* "TÚ" badge */}
+        {player.isCurrentUser && (
+          <div className="absolute top-2 right-2 bg-primary/80 text-primary-foreground text-[9px] font-black px-1.5 py-0.5 rounded-md z-10 uppercase tracking-wider">
+            TÚ
+          </div>
+        )}
+
+        {/* OVR + Position */}
+        <div className={cn("flex justify-between items-start px-3", aiRecommendation ? "pt-2" : "pt-3")}>
           <span className={cn("text-3xl font-headline font-black leading-none", ovrColor)}>
             {player.ovr}
           </span>
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
+          <span className="text-sm font-bold uppercase tracking-wider text-foreground">
             {player.position}
           </span>
         </div>
 
-        {/* Availability Dot Indicator */}
-        <div className="flex flex-col items-end">
-          {player.matchScore === 2 && <div className="w-2.5 h-2.5 rounded-full bg-success shadow-[0_0_8px_hsl(var(--success))]" title="Compatible" />}
-          {player.matchScore === 1 && <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_hsl(var(--warning))]" title="Día diferente" />}
-          {player.matchScore === 0 && <div className="w-2.5 h-2.5 rounded-full bg-destructive shadow-[0_0_8px_hsl(var(--destructive))]" title="Horario incompatible" />}
+        {/* Photo */}
+        <div className="flex justify-center my-2">
+          <PlayerPhoto
+            player={player as unknown as Player}
+            size="standard"
+            className="ring-4 ring-background shadow-lg"
+          />
+        </div>
+
+        {/* Name + quick stats */}
+        <div className="px-3 pb-2 text-center flex flex-col items-center gap-0.5">
+          <h4 className="font-bold text-sm truncate w-full uppercase tracking-tight">
+            {player.displayName}
+          </h4>
+          <div className="flex items-center justify-center gap-2.5 text-xs text-muted-foreground">
+            <span>⭐ {playerInfo?.stats?.averageRating?.toFixed(1) ?? '—'}</span>
+            <span>🎮 {playerInfo?.stats?.matchesPlayed ?? '—'}</span>
+          </div>
+          {player.distanceKm !== undefined && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="w-3 h-3 shrink-0" />
+              <span>{player.distanceKm.toFixed(1)} km</span>
+            </div>
+          )}
+        </div>
+
+        {/* Availability chip */}
+        <div className="px-3 pb-3 flex justify-center">
+          <span className={cn("text-[10px] font-bold px-2.5 py-1 rounded-full border", availChip.chipCn)}>
+            {availChip.label}
+          </span>
         </div>
       </div>
 
-      {/* Center - Photo */}
-      <div className="flex justify-center -mt-2 mb-2">
-        <PlayerPhoto
-          player={player as unknown as Player}
-          size="standard"
-          className={cn(
-            "ring-4 ring-background shadow-lg transition-transform",
-            isExpanded ? "scale-110" : "hover:scale-105"
-          )}
-        />
-      </div>
-
-      {/* Bottom - Name & Info */}
-      <div className="px-3 pb-4 text-center">
-        <h4 className="font-bold text-sm truncate uppercase tracking-tight">{player.displayName}</h4>
-        {!isExpanded && (
-          <p className="text-[10px] text-muted-foreground mt-0.5 font-medium uppercase opacity-70"> Ver ficha completa </p>
-        )}
-      </div>
-
-      {/* Expanded Content */}
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="overflow-hidden bg-muted/30 border-t border-border/50"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-4 space-y-4">
-              {/* Stats Row */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="flex flex-col items-center p-2 rounded-lg bg-background/50 border border-border/40">
-                  <span className="text-xs text-muted-foreground uppercase font-semibold scale-90">Partidos</span>
-                  <span className="text-lg font-headline font-black">
-                    {isLoadingStats ? <Skeleton className="h-6 w-8 mt-1" /> : playerInfo?.stats?.matchesPlayed ?? 0}
-                  </span>
-                </div>
-                <div className="flex flex-col items-center p-2 rounded-lg bg-background/50 border border-border/40">
-                  <span className="text-xs text-muted-foreground uppercase font-semibold scale-90">Goles</span>
-                  <span className="text-lg font-headline font-black">
-                    {isLoadingStats ? <Skeleton className="h-6 w-8 mt-1" /> : playerInfo?.stats?.goals ?? 0}
-                  </span>
-                </div>
-                <div className="flex flex-col items-center p-2 rounded-lg bg-background/50 border border-border/40">
-                  <span className="text-xs text-muted-foreground uppercase font-semibold scale-90">Nota</span>
-                  <span className="text-lg font-headline font-black">
-                    {isLoadingStats ? <Skeleton className="h-6 w-8 mt-1" /> : (playerInfo?.stats?.averageRating?.toFixed(1) ?? '—')}
-                  </span>
+      {/* Detail Drawer */}
+      <Drawer open={isOpen} onOpenChange={setIsOpen}>
+        <DrawerContent>
+          <div className="overflow-y-auto">
+            <DrawerHeader className="text-left">
+              <div className="flex items-center gap-4">
+                <PlayerPhoto
+                  player={player as unknown as Player}
+                  size="profile"
+                  className="ring-4 ring-background shadow-lg shrink-0"
+                />
+                <div className="min-w-0">
+                  <DrawerTitle className="truncate">{player.displayName}</DrawerTitle>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {player.position} · OVR {player.ovr}
+                  </p>
+                  {player.distanceKm !== undefined && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span>{player.distanceKm.toFixed(1)} km</span>
+                    </div>
+                  )}
                 </div>
               </div>
+            </DrawerHeader>
 
-              {/* AI Reasoning (Sutil & Integrado Style) */}
+            <div className="px-4 pb-6 space-y-4">
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: 'Partidos', value: isLoadingStats ? null : (playerInfo?.stats?.matchesPlayed ?? 0) },
+                  { label: 'Goles', value: isLoadingStats ? null : (playerInfo?.stats?.goals ?? 0) },
+                  { label: 'Nota', value: isLoadingStats ? null : (playerInfo?.stats?.averageRating?.toFixed(1) ?? '—') },
+                ].map(({ label, value }) => (
+                  <div key={label} className="flex flex-col items-center p-2.5 rounded-xl bg-muted/50 border border-border/40">
+                    <span className="text-[10px] text-muted-foreground uppercase font-semibold">{label}</span>
+                    <span className="text-xl font-headline font-black mt-0.5">
+                      {value === null ? <Skeleton className="h-7 w-8 mt-1" /> : value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Availability */}
+              {player.availability && Object.keys(player.availability).length > 0 && (
+                <div className="space-y-2">
+                  <h5 className="text-sm font-semibold flex items-center gap-2">
+                    <span className={cn(
+                      "w-2 h-2 rounded-full",
+                      player.matchScore === 2 ? "bg-success" : player.matchScore === 1 ? "bg-amber-500" : "bg-destructive"
+                    )} />
+                    Disponibilidad
+                  </h5>
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.entries(player.availability).map(([day, times]) => (
+                      <div key={day} className="flex items-center gap-1 bg-muted/50 border border-border/40 rounded-lg px-2.5 py-1">
+                        <span className="text-xs font-semibold capitalize">
+                          {(day.charAt(0).toUpperCase() + day.slice(1, 3))}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">· {(times as string[]).join(', ')}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* AI Reasoning */}
               {aiRecommendation && (
                 <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl flex items-start gap-2">
                   <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                  <p className="text-xs font-semibold text-foreground/80 leading-snug">"{aiRecommendation.reason}"</p>
+                  <p className="text-xs font-semibold text-foreground/80 leading-snug">
+                    "{aiRecommendation.reason}"
+                  </p>
                 </div>
               )}
 
-              {/* Recruitment Message / Badge */}
-              {!player.isCurrentUser && !aiRecommendation && (
-                <div className="text-center">
-                  {player.matchScore === 0 && (
-                    <p className="text-[10px] text-destructive font-bold uppercase mb-2">⚠️ Horario no coincide</p>
-                  )}
-                  {player.matchScore === 1 && (
-                    <p className="text-[10px] text-amber-600 font-bold uppercase mb-2">⚠️ Juega otros días</p>
-                  )}
-                </div>
-              )}
-
-              {/* Action Button */}
+              {/* Action */}
               {player.isCurrentUser ? (
-                <div className="w-full text-center py-2.5 text-[10px] text-muted-foreground border border-dashed rounded-xl uppercase font-bold tracking-wider">
+                <div className="w-full text-center py-3 text-xs text-muted-foreground border border-dashed rounded-xl font-bold tracking-wider uppercase">
                   Tu Perfil de Pase Libre
                 </div>
               ) : (
@@ -179,17 +220,17 @@ function FreeAgentCard({
                   userMatches={incompleteMatches}
                   match={selectedMatch}
                 >
-                  <Button className="w-full font-black gap-2 uppercase text-xs h-10 shadow-lg" variant="default">
+                  <Button className="w-full font-black gap-2 uppercase text-sm h-11 shadow-lg" variant="default">
                     <UserPlus className="w-4 h-4" />
-                    Invitar
+                    Invitar a mi partido
                   </Button>
                 </InvitePlayerDialog>
               )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </>
   );
 }
 
@@ -197,7 +238,7 @@ export function ExploreContent() {
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [availablePlayers, setAvailablePlayers] = useState<(AvailablePlayer & { matchScore?: number; isCurrentUser?: boolean })[]>([]);
+  const [availablePlayers, setAvailablePlayers] = useState<(AvailablePlayer & { matchScore?: number; isCurrentUser?: boolean; distanceKm?: number })[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMatchId, setSelectedMatchId] = useState<string>('');
 
@@ -490,7 +531,7 @@ export function ExploreContent() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-2 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {filteredPlayers.map(player => (
                   <FreeAgentCard
                     key={player.uid}

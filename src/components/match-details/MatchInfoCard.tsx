@@ -5,7 +5,7 @@ import type { Match, UserProfile } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, MapPin, UserPlus, LogOut, Loader2, Share2, Navigation } from 'lucide-react';
+import { Calendar, Clock, MapPin, UserPlus, LogOut, Loader2, Share2, Navigation, Hourglass } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useNativeShare } from '@/hooks/use-native-share';
@@ -24,6 +24,7 @@ interface MatchInfoCardProps {
   isUserInMatch: boolean;
   isMatchFull: boolean;
   isJoining: boolean;
+  isUserPendingRequest?: boolean;
   onJoinOrLeave?: () => void;
 }
 
@@ -103,6 +104,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
   isUserInMatch,
   isMatchFull,
   isJoining,
+  isUserPendingRequest,
   onJoinOrLeave,
 }: MatchInfoCardProps) {
   const matchTheme = getMatchTheme(match.type);
@@ -295,11 +297,16 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
               </Button>
             )}
 
-            {match.type === 'collaborative' && match.status === 'upcoming' && (
+            {(match.type === 'collaborative' || match.type === 'manual') && match.status === 'upcoming' && !isOwner && (
               <div className="flex-[1.2] sm:flex-[1.5]">
-                {isMatchFull && !isUserInMatch ? (
+                {isMatchFull && !isUserInMatch && !isUserPendingRequest ? (
                   <Button disabled className="w-full bg-white/10 text-white/60 border-0 rounded-xl h-10 sm:h-12 text-xs sm:text-sm font-bold">
                     Lleno
+                  </Button>
+                ) : isUserPendingRequest ? (
+                  <Button disabled className="w-full bg-white/10 text-white/50 border border-white/15 rounded-xl h-10 sm:h-12 text-xs sm:text-sm font-bold">
+                    <Hourglass className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    Solicitud enviada
                   </Button>
                 ) : (
                   <Button
@@ -311,7 +318,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
                   >
                     {isJoining ? <Loader2 className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" /> :
                       isUserInMatch ? <LogOut className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <UserPlus className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />}
-                    {isUserInMatch ? 'Baja' : 'Apuntarse'}
+                    {isUserInMatch ? 'Baja' : (match.type === 'manual' ? 'Solicitar unirse' : 'Apuntarse')}
                   </Button>
                 )}
               </div>

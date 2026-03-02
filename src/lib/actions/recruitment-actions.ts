@@ -93,7 +93,7 @@ export async function getAvailableLocalPlayersAction({
     dayOfWeek?: DayOfWeek;
     timeOfDay?: TimeOfDay;
     matchPlayerUids?: string[];
-}): Promise<{ success: boolean; players?: (AvailablePlayer & { matchScore?: number; isCurrentUser?: boolean })[]; error?: string }> {
+}): Promise<{ success: boolean; players?: (AvailablePlayer & { matchScore?: number; isCurrentUser?: boolean; distanceKm?: number })[]; error?: string }> {
     try {
         const session = await getServerSession();
         if (!session?.user?.uid) {
@@ -160,7 +160,10 @@ export async function getAvailableLocalPlayersAction({
                 }
                 // availability vacío = disponible siempre → score neutro (1)
             }
-            return { ...p, matchScore: score, isCurrentUser: p.uid === currentUserId };
+            const distKm = (p.location?.lat != null && p.location?.lng != null)
+                ? parseFloat(calculateDistanceInKm(lat, lng, p.location.lat, p.location.lng).toFixed(1))
+                : undefined;
+            return { ...p, matchScore: score, isCurrentUser: p.uid === currentUserId, distanceKm: distKm };
         });
         scoredPlayers.sort((a, b) => b.matchScore - a.matchScore);
 

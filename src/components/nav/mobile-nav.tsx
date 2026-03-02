@@ -96,8 +96,8 @@ export function MobileNav() {
                         </AnimatePresence>
                     </div>
 
-                    {/* Right: Comunidad & Evaluaciones */}
-                    <MobileNavItem key={mainNavItems[3].href} item={mainNavItems[3]} pathname={pathname} />
+                    {/* Right: Explorar & Evaluaciones */}
+                    <MobileNavItem key={mainNavItems[2].href} item={mainNavItems[2]} pathname={pathname} />
                     <MobileNavItem key={extraNavItems[0].href} item={extraNavItems[0]} pathname={pathname} />
                 </div>
             </div>

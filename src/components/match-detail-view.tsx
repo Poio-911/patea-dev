@@ -34,6 +34,7 @@ import { LocationVoting } from './match-details/location-voting';
 import { DateVoting } from './match-details/date-voting';
 import { IntegratedMatchStory } from './match-details/IntegratedMatchStory';
 import { EditableTeamsDialog } from './editable-teams-dialog';
+import { JoinRequestsSection } from './match-details/JoinRequestsSection';
 
 interface MatchDetailViewProps {
   matchId: string;
@@ -171,11 +172,17 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
           isUserInMatch={permissions.isUserInMatch}
           isMatchFull={(match.players?.length || 0) >= match.matchSize}
           isJoining={actions.isJoining}
+          isUserPendingRequest={actions.isUserPendingRequest}
           onJoinOrLeave={isCompetitionMatch ? undefined : actions.handleJoinOrLeave}
         />
 
         {/* Advertencias climáticas */}
         <MatchWeatherAlert match={match} />
+
+        {/* Join requests — visible only for organizer of manual matches */}
+        {permissions.isOwner && match.type === 'manual' && match.status === 'upcoming' && (
+          <JoinRequestsSection matchId={match.id} />
+        )}
 
         {/* Management Actions - Centralizadas para organizadores */}
         {permissions.isOwner && (
