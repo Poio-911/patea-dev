@@ -171,9 +171,6 @@ body.standalone main {
 
 @layer base {
   :root {
-    /* Video background control */
-    --video-display: block;
-
     /* Light theme: increase surface contrast */
     --background: 210 20% 99%;
     --foreground: 222.2 84% 5%;
@@ -424,7 +421,11 @@ body.standalone main {
   }
 
   .game body {
-    background: hsl(var(--background));
+    /* Radial glow sutil en esquina superior izquierda para dar profundidad */
+    background:
+      radial-gradient(ellipse at top left, hsla(75, 100%, 60%, 0.04) 0%, transparent 55%),
+      radial-gradient(ellipse at bottom right, hsla(175, 100%, 45%, 0.03) 0%, transparent 50%),
+      hsl(var(--background));
   }
 
   .nike body {
@@ -449,30 +450,6 @@ body.standalone main {
     /* tuned overlay for readability */
   }
 
-  .nike .video-background {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: -3;
-    opacity: 0.32;
-    filter: brightness(0.30) contrast(1.1);
-  }
-
-  /* Image background support for Nike theme */
-  .nike .image-background {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: -3;
-    opacity: 0.30;
-    filter: brightness(0.35) contrast(1.05);
-  }
 
   /* Enhance content visibility in Nike theme */
   .nike [data-radix-popper-content-wrapper] {

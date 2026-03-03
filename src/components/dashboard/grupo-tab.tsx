@@ -195,7 +195,7 @@ export function GrupoTab({
         {/* Columna Izquierda (Principal - Equipos y Últimos Partidos) */}
         <div className="lg:col-span-8 space-y-4 sm:space-y-6">
           {/* Equipos */}
-          <div className="relative overflow-hidden rounded-2xl bg-card/60 backdrop-blur-md border border-white/10 dark:border-white/5 shadow-xl transition-all">
+          <div className="relative overflow-hidden rounded-2xl bg-card/60 backdrop-blur-md border border-white/10 dark:border-white/5 shadow-xl transition-all hover:shadow-2xl hover:-translate-y-0.5">
             <div className="p-4 sm:p-5 border-b border-border/50 flex items-center gap-2 text-base uppercase tracking-widest text-primary font-black drop-shadow-sm bg-muted/20">
               <Shield className="h-5 w-5" />
               Equipos Guardados
@@ -207,7 +207,7 @@ export function GrupoTab({
 
           {/* Últimos Partidos Evaluados */}
           {groupRecentMatches.length > 0 && (
-            <div className="relative overflow-hidden rounded-2xl bg-card/60 backdrop-blur-md border border-white/10 dark:border-white/5 shadow-xl transition-all">
+            <div className="relative overflow-hidden rounded-2xl bg-card/60 backdrop-blur-md border border-white/10 dark:border-white/5 shadow-xl transition-all hover:shadow-2xl hover:-translate-y-0.5">
               <div className="p-4 sm:p-5 border-b border-border/50 flex items-center gap-2 text-base uppercase tracking-widest text-primary font-black drop-shadow-sm bg-muted/20">
                 <History className="h-5 w-5" />
                 Últimos Partidos
@@ -231,7 +231,7 @@ export function GrupoTab({
         <div className="lg:col-span-4 space-y-4 sm:space-y-6">
 
           {/* Quick Stats Group */}
-          <div className="relative overflow-hidden rounded-2xl bg-card/60 backdrop-blur-md border border-white/10 dark:border-white/5 shadow-xl transition-all">
+          <div className="relative overflow-hidden rounded-2xl bg-card/60 backdrop-blur-md border border-white/10 dark:border-white/5 shadow-xl transition-all hover:shadow-2xl hover:-translate-y-0.5">
             <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl -mr-8 -mt-8 opacity-70 pointer-events-none" />
             <div className="p-4 sm:p-5 flex flex-col gap-4">
               <h3 className="font-headline text-sm uppercase tracking-widest text-primary font-black drop-shadow-sm flex items-center gap-2">
@@ -240,7 +240,7 @@ export function GrupoTab({
 
               <div className="grid grid-cols-2 gap-3 relative z-10">
                 {/* Box 1: Partidos Jugados */}
-                <div className="bg-muted/30 border border-border/50 rounded-xl p-3 flex flex-col items-center justify-center text-center gap-1 shadow-sm hover:border-primary/30 transition-colors">
+                <div className="bg-muted/30 border border-border/50 rounded-xl p-3 flex flex-col items-center justify-center text-center gap-1 shadow-sm hover:border-primary/30 hover:-translate-y-0.5 hover:shadow-md transition-all">
                   <History className="h-5 w-5 text-muted-foreground mb-1" />
                   <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest text-center leading-tight">Partidos<br />Totales</span>
                   <span className="text-2xl font-black font-headline text-primary mt-1">{totalGroupMatchesCount}</span>

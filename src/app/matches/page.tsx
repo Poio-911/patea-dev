@@ -13,6 +13,7 @@ import { PageHeader } from '@/components/page-header';
 import { motion } from 'framer-motion';
 import { MatchCard } from '@/components/match-card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
 import { CompactMatchCard } from '@/components/compact-match-card';
 import { QuickTimeFilter, type TimeFilter } from '@/components/matches/quick-time-filter';
 import { MatchFilters } from '@/components/matches/match-filters';
@@ -466,21 +467,19 @@ export default function MatchesPage() {
                                 </motion.div>
                             )
                         ) : (
-                            <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-muted-foreground/20 rounded-xl">
-                                {timeFilter === 'history' ? (
-                                    <>
-                                        <Info className="h-16 w-16 text-muted-foreground mb-4" />
-                                        <h2 className="text-xl font-semibold mb-2">Sin Historial</h2>
-                                        <p className="text-muted-foreground mb-6 max-w-md">Cuando los partidos finalicen, aparecerán acá.</p>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
-                                        <h2 className="text-xl font-semibold mb-2">No hay partidos</h2>
-                                        <p className="text-muted-foreground mb-6 max-w-md">¡Es hora de organizar el próximo encuentro!</p>
-                                    </>
-                                )}
-                            </div>
+                            timeFilter === 'history' ? (
+                                <EmptyState
+                                    icon={<Info className="h-14 w-14" />}
+                                    title="Sin Historial"
+                                    description="Cuando los partidos finalicen, aparecerán acá."
+                                />
+                            ) : (
+                                <EmptyState
+                                    icon={<Calendar className="h-14 w-14" />}
+                                    title="No hay partidos"
+                                    description="¡Es hora de organizar el próximo encuentro!"
+                                />
+                            )
                         )}
                     </div>
                 </div>
