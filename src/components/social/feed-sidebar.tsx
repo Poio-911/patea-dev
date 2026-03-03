@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users } from 'lucide-react';
+import { Users, UserPlus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserSuggestionCard } from '@/components/social/user-suggestion-card';
 import { getSuggestedUsersAction } from '@/lib/actions/social-feed-actions';
@@ -27,8 +27,10 @@ export function FeedSidebar() {
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-        <Users className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-semibold">Sugeridos para seguir</span>
+        <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+          <UserPlus className="h-3 w-3 text-primary" />
+        </div>
+        <span className="font-headline font-bold text-sm tracking-tight">Sugeridos para seguir</span>
       </div>
 
       <div className="p-3 flex flex-col gap-2">
@@ -46,8 +48,8 @@ export function FeedSidebar() {
             ))}
           </>
         ) : suggestions.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No hay sugerencias por ahora.
+          <p className="text-xs text-muted-foreground text-center py-6 px-3">
+            No hay sugerencias disponibles en este momento.
           </p>
         ) : (
           suggestions.map((suggestedUser) => (

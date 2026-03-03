@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Users, Activity } from 'lucide-react';
+import { RefreshCw, Users, Activity, Rss } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { PostItem } from '@/components/social/post-item';
 import { getFeedActivitiesAction } from '@/lib/actions/server-actions';
 import type { SocialActivity } from '@/lib/types';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface SocialFeedProps {
   limit?: number;
@@ -115,11 +116,11 @@ export function SocialFeed({ limit = 20, showHeader = true }: SocialFeedProps) {
       )}
 
       {activities.length === 0 ? (
-        <div className="text-center py-10 text-muted-foreground px-4">
-          <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p className="mb-1">No hay actividad reciente</p>
-          <p className="text-sm">Segui a otros jugadores para ver su actividad aqui</p>
-        </div>
+        <EmptyState
+          icon={<Rss className="h-14 w-14" />}
+          title="Sin actividad reciente"
+          description="Seguí a otros jugadores para ver su actividad acá."
+        />
       ) : (
         <div className="flex flex-col">
           {activities.map((activity) => (
