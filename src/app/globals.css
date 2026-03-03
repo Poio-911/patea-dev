@@ -140,10 +140,6 @@ body.standalone main {
   opacity: 0.92;
 }
 
-.game .aura-elite,
-.nike .aura-elite {
-  opacity: 0.22 !important;
-}
 
 .game .player-card .badge,
 .nike .player-card .badge {
@@ -238,8 +234,8 @@ body.standalone main {
     /* Portero */
 
     /* OVR level colors */
-    --ovr-elite: 280 85% 55%;
-    /* Purple */
+    --ovr-elite: 215 50% 35%;
+    /* Steel blue — saturated vs silver 220 10% 50% gris neutro */
     --ovr-gold: 43 96% 46%;
     /* Gold - darker for light bg */
     --ovr-silver: 220 10% 50%;
@@ -319,8 +315,8 @@ body.standalone main {
     --pos-por: 30 90% 70%;
 
     /* OVR level colors - brighter for dark bg */
-    --ovr-elite: 280 85% 70%;
-    /* Electric Purple */
+    --ovr-elite: 210 10% 97%;
+    /* Platinum near-pure white — clearly brighter than silver 80% */
     --ovr-gold: 43 96% 60%;
     /* Bright Gold */
     --ovr-silver: 220 15% 80%;
@@ -705,33 +701,22 @@ body.standalone main {
     background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.25) 0%, transparent 65%);
   }
 
-  /* Liquid Mesh Gradient for Elite Cards - Light & Fantasy Style */
+  /* Platinum aura — two-layer static: top bloom + center fill, clearly brighter than silver */
   .aura-elite {
-    background:
-      radial-gradient(at 0% 0%, hsla(280, 85%, 85%, 1) 0, transparent 50%),
-      radial-gradient(at 50% 0%, hsla(190, 85%, 85%, 1) 0, transparent 50%),
-      radial-gradient(at 100% 0%, hsla(320, 85%, 85%, 1) 0, transparent 50%);
-    background-size: 200% 200%;
-    animation: aura-liquid var(--aura-duration, 15s) ease infinite alternate;
+    background-image:
+      radial-gradient(ellipse at top center, rgba(180, 198, 240, 0.50) 0%, transparent 55%),
+      radial-gradient(ellipse at center, rgba(190, 208, 242, 0.18) 0%, transparent 80%);
   }
 
   .game .aura-elite {
-    background:
-      radial-gradient(at 0% 0%, hsla(280, 90%, 80%, 1) 0, transparent 50%),
-      radial-gradient(at 50% 0%, hsla(190, 90%, 80%, 1) 0, transparent 50%),
-      radial-gradient(at 100% 0%, hsla(320, 90%, 80%, 1) 0, transparent 50%);
-    background-size: 200% 200%;
-    animation: aura-liquid var(--aura-duration, 15s) ease infinite alternate;
+    background-image:
+      radial-gradient(ellipse at top center, rgba(210, 222, 255, 0.62) 0%, transparent 55%),
+      radial-gradient(ellipse at center, rgba(215, 224, 255, 0.22) 0%, transparent 80%);
   }
 
-  /* Nike Elite - Monochrome grayscale gradient with subtle white accents */
   .nike .aura-elite {
-    background:
-      radial-gradient(at 0% 0%, rgba(255, 255, 255, 0.25) 0, transparent 50%),
-      radial-gradient(at 50% 0%, rgba(200, 200, 200, 0.2) 0, transparent 50%),
-      radial-gradient(at 100% 0%, rgba(255, 255, 255, 0.25) 0, transparent 50%);
-    background-size: 200% 200%;
-    animation: aura-liquid 15s ease infinite alternate;
+    background-image:
+      radial-gradient(ellipse at top center, rgba(240, 242, 255, 0.30) 0%, transparent 65%);
   }
 
   @keyframes aura-liquid {
@@ -1103,11 +1088,16 @@ body.standalone main {
   }
 
   .holo-effect-elite::before {
-    opacity: 0.25;
+    background: linear-gradient(135deg,
+      transparent 0%,
+      rgba(220, 226, 255, 0.72) 50%,
+      transparent 100%);
+    mix-blend-mode: overlay;
+    opacity: 0.12;
   }
 
   .holo-effect-elite:hover::before {
-    opacity: 0.5;
+    opacity: 0.30;
   }
 
   /* Diagonal sweep layer */
@@ -1164,29 +1154,39 @@ body.standalone main {
     box-shadow: 0 0 8px hsla(43, 96%, 56%, 0.18);
   }
 
-  /* Elite (OVR 86+) - Rainbow border, muy sutil */
+  /* Elite (OVR 86+) - Platinum border: 2px, CSS-var-driven pulse */
   .border-glow-elite {
-    border: 2px solid transparent;
-    background:
-      linear-gradient(var(--card), var(--card)) padding-box,
-      linear-gradient(135deg,
-        hsla(300, 80%, 65%, 0.8) 0%,
-        hsla(185, 80%, 65%, 0.8) 33%,
-        hsla(55, 80%, 65%, 0.8) 66%,
-        hsla(300, 80%, 65%, 0.8) 100%) border-box;
-    background-size: 200% 200%;
-    box-shadow: 0 0 10px rgba(200, 100, 255, 0.12);
-    animation: glow-rotate-elite 6s linear infinite;
+    --pt-border-dim:   rgba(190, 202, 235, 0.60);
+    --pt-border-bright: rgba(225, 235, 255, 0.98);
+    --pt-glow-dim:   0 0 10px rgba(190, 202, 235, 0.20);
+    --pt-glow-bright: 0 0 22px rgba(150, 175, 230, 0.55);
+    border: 2px solid var(--pt-border-dim);
+    box-shadow: var(--pt-glow-dim);
+    animation: platinum-pulse 4s ease-in-out infinite;
   }
 
-  @keyframes glow-rotate-elite {
-    0% {
-      background-position: 0% 50%;
-    }
+  /* Dark theme: animación mucho más dramática */
+  .game .border-glow-elite {
+    --pt-border-dim:   rgba(205, 218, 255, 0.68);
+    --pt-border-bright: rgba(235, 242, 255, 1.00);
+    --pt-glow-dim:   0 0 18px rgba(210, 222, 255, 0.40);
+    --pt-glow-bright: 0 0 38px rgba(210, 220, 255, 0.88);
+  }
 
-    100% {
-      background-position: 200% 50%;
+  @keyframes platinum-pulse {
+    0%, 100% {
+      border-color: var(--pt-border-dim);
+      box-shadow: var(--pt-glow-dim);
     }
+    50% {
+      border-color: var(--pt-border-bright);
+      box-shadow: var(--pt-glow-bright);
+    }
+  }
+
+  /* OVR glow — elite dark mode: número OVR parece luminoso */
+  .game .border-glow-elite .font-headline.text-4xl {
+    text-shadow: 0 0 14px rgba(220, 228, 255, 0.85), 0 0 4px rgba(240, 244, 255, 0.50);
   }
 
   /* ========================================
@@ -1210,9 +1210,9 @@ body.standalone main {
       opacity: 0.12;
     }
 
-    /* Elite border: slow down rotation on mobile */
+    /* Elite border: slow down pulse on mobile */
     .border-glow-elite {
-      animation: glow-rotate-elite 8s linear infinite;
+      animation: platinum-pulse 6s ease-in-out infinite;
     }
   }
 
@@ -1255,7 +1255,6 @@ body.standalone main {
     .border-glow-silver,
     .border-glow-gold,
     .border-glow-elite,
-    .aura-elite,
     .card-shimmer-effect {
       animation: none !important;
       transition: none !important;
