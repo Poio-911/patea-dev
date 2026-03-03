@@ -26,6 +26,8 @@ const mockResumenSponsor: SponsorCampaign = {
     placement: 'leaderboard'
 };
 
+import { matchStatusConfig } from '@/lib/match-status-config';
+
 const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -57,13 +59,7 @@ interface ResumenTabProps {
     onOpenLiveMatch: (match: Match) => void;
 }
 
-const statusConfig: Record<Match['status'], { label: string; className: string }> = {
-    planning: { label: 'A Confirmar', className: 'bg-primary/5 text-primary border border-primary/20 rounded-full backdrop-blur-sm' },
-    upcoming: { label: 'Próximo', className: 'bg-primary/10 text-foreground border border-primary/30 rounded-full backdrop-blur-sm' },
-    active: { label: 'Activo', className: 'bg-foreground/10 text-foreground border border-foreground/30 rounded-full backdrop-blur-sm' },
-    completed: { label: 'Finalizado', className: 'bg-muted/40 text-muted-foreground border border-muted/50 rounded-full backdrop-blur-sm' },
-    evaluated: { label: 'Evaluado', className: 'bg-card/60 text-foreground border border-border rounded-full backdrop-blur-sm' },
-};
+
 
 function LiveMatchRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
     const { count } = useMatchPresence({ matchId: match.id, track: false, staleMs: 5 * 60 * 1000 });
@@ -166,7 +162,7 @@ export function ResumenTab({ nextMatch, liveMatches, liveLoading, player, recent
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {recentMatches && recentMatches.length > 0 ? recentMatches.map(match => {
-                                const statusInfo = statusConfig[match.status] || { label: 'Desconocido', className: 'bg-muted text-foreground' };
+                                const statusInfo = matchStatusConfig[match.status] || { label: 'Desconocido', className: 'bg-muted text-foreground' };
                                 return (
                                     <Link key={match.id} href={`/matches/${match.id}`} className="block">
                                         <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">

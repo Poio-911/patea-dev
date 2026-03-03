@@ -32,6 +32,11 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'firebasestorage.app',
       },
+      // Imágenes de demo/simulación de sponsors
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
     ],
   },
 
