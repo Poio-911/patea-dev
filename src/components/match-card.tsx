@@ -44,34 +44,12 @@ import { getMatchTheme, getMatchTypeLabel, getMatchBackgroundImage } from '@/lib
 import { Trophy, Handshake } from 'lucide-react';
 import { CountdownTimer } from './ui/countdown-timer';
 import { MatchWeatherForecast } from './matches/match-weather-forecast';
+import { matchStatusConfig, getMatchActionLabel } from '@/lib/match-status-config';
 
 
 type MatchCardProps = {
     match: Match;
     allPlayers: Player[];
-};
-
-const statusConfig: Record<Match['status'], { label: string; className: string }> = {
-    planning: {
-        label: 'A Confirmar',
-        className: 'bg-muted text-muted-foreground border-border',
-    },
-    upcoming: {
-        label: 'Próximo',
-        className: 'bg-primary/10 text-primary border-primary/20 dark:bg-primary/20 dark:text-primary-foreground dark:border-primary/40',
-    },
-    active: {
-        label: 'Activo',
-        className: 'bg-green-500/10 text-green-700 border-green-500/20 dark:bg-green-500/30 dark:text-green-200 dark:border-green-400/40',
-    },
-    completed: {
-        label: 'Finalizado',
-        className: 'bg-muted/50 text-muted-foreground border-border/50',
-    },
-    evaluated: {
-        label: 'Evaluado',
-        className: 'bg-secondary text-secondary-foreground border-border',
-    },
 };
 
 function PlayerAvatarStack({ players, maxVisible = 5, matchSize }: {
@@ -168,7 +146,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
     }, [match.players, match.matchSize]);
 
 
-    const currentStatus = statusConfig[match.status] || statusConfig.completed;
+    const currentStatus = matchStatusConfig[match.status] || matchStatusConfig.completed;
 
     const JoinLeaveButton = ({ className }: { className?: string }) => {
         if ((match.type === 'collaborative' || match.type === 'manual') && match.status === 'upcoming') {
@@ -219,15 +197,14 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 matchTheme.border,
             )}
         >
-            {/* Background Image Overlay (Tema Game) - Hidden in Light mode, visible in Dark/Game */}
-            <div className="absolute inset-0 z-0 overflow-hidden rounded-xl hidden dark:block game:block bg-card/95 backdrop-blur-sm">
+            {/* Background Image Overlay — visible en todos los temas con intensidad adaptada */}
+            <div className="absolute inset-0 z-0 overflow-hidden rounded-xl">
                 <img
                     src={getMatchBackgroundImage(match.id)}
                     alt=""
-                    className="w-full h-full object-cover opacity-30 grayscale brightness-90 contrast-125"
+                    className="w-full h-full object-cover opacity-[0.07] dark:opacity-30 grayscale brightness-90 contrast-125"
                 />
-                {/* Subtle vignette for depth without being "pitch black" */}
-                <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-background/30" />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/60 dark:from-background/80 via-transparent to-transparent" />
             </div>
 
 
@@ -417,10 +394,16 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     <Button
                         asChild
                         variant="default"
-                        className={cn("w-full font-semibold !shadow-none", "bg-primary text-primary-foreground hover:bg-primary/90")}
+                        className={cn(
+                            "w-full font-semibold !shadow-none transition-all",
+                            match.status === 'active'
+                                ? 'bg-green-600 hover:bg-green-700 text-white animate-pulse'
+                                : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                        )}
                     >
                         <Link href={`/matches/${match.id}`}>
-                            <Eye className="mr-2 h-4 w-4" /> Detalles
+                            <Eye className="mr-2 h-4 w-4" />
+                            {getMatchActionLabel(match.status)}
                         </Link>
                     </Button>
 

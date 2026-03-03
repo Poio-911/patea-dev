@@ -12,6 +12,7 @@ import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 import { PageHeader } from '@/components/page-header';
 import { motion } from 'framer-motion';
 import { MatchCard } from '@/components/match-card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { CompactMatchCard } from '@/components/compact-match-card';
 import { QuickTimeFilter, type TimeFilter } from '@/components/matches/quick-time-filter';
 import { MatchFilters } from '@/components/matches/match-filters';
@@ -299,9 +300,25 @@ export default function MatchesPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="ml-4 text-muted-foreground">Cargando partidos...</p>
+            <div className="flex flex-col gap-6">
+                <div className="flex items-start gap-3">
+                    <Skeleton className="w-1 h-12 rounded-full" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-32" />
+                        <Skeleton className="h-4 w-56" />
+                    </div>
+                </div>
+                <Skeleton className="h-[280px] w-full rounded-xl" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[...Array(6)].map((_, i) => (
+                        <div key={i} className="rounded-xl overflow-hidden space-y-3 p-4 border border-border/40 bg-card/50">
+                            <Skeleton className="h-5 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                            <Skeleton className="h-[120px] w-full rounded-lg" />
+                            <Skeleton className="h-9 w-full rounded-lg" />
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }

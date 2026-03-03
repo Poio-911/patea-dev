@@ -114,12 +114,15 @@ function MobileNavItem({ item, pathname }: { item: any, pathname: string }) {
             href={item.href}
             onClick={tap}
             className={cn(
-                'group relative inline-flex flex-col items-center justify-center gap-1 px-1 text-muted-foreground transition-all duration-200 hover:text-foreground',
+                'group relative inline-flex flex-col items-center justify-center gap-1 px-3 py-1 rounded-xl text-muted-foreground transition-all duration-200 hover:text-foreground',
                 isActive && 'text-primary font-bold'
             )}
         >
-            <Icon className={cn('h-5 w-5 transition-all duration-200', isActive && 'scale-110 stroke-[2.5px]')} />
-            <span className="text-[10px] leading-none">{item.label}</span>
+            {isActive && (
+                <span className="absolute inset-0 rounded-xl bg-primary/10 dark:bg-primary/15" aria-hidden="true" />
+            )}
+            <Icon className={cn('relative h-5 w-5 transition-all duration-200', isActive && 'scale-110 stroke-[2.5px]')} />
+            <span className="relative text-[10px] leading-none">{item.label}</span>
         </Link>
     );
 }

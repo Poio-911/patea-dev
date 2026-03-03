@@ -7,31 +7,9 @@ import { cn, formatVenueName } from '@/lib/utils';
 import type { Match, MatchStatus } from '@/lib/types';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { getMatchTheme, getMatchBackgroundImage } from '@/lib/match-theme';
+import { matchStatusConfig } from '@/lib/match-status-config';
 
-// Local mapping removed
 
-const statusConfig: Record<MatchStatus, { label: string; className: string }> = {
-  planning: {
-    label: 'A Confirmar',
-    className: 'bg-muted text-muted-foreground border-border',
-  },
-  upcoming: {
-    label: 'Próximo',
-    className: 'bg-primary/10 text-primary border-primary/20 dark:bg-primary/20 dark:text-primary-foreground dark:border-primary/40',
-  },
-  active: {
-    label: 'En Vivo',
-    className: 'bg-green-500/10 text-green-700 border-green-500/20 dark:bg-green-500/30 dark:text-green-200 dark:border-green-400/40',
-  },
-  completed: {
-    label: 'Finalizado',
-    className: 'bg-muted/50 text-muted-foreground border-border/50',
-  },
-  evaluated: {
-    label: 'Evaluado',
-    className: 'bg-secondary text-secondary-foreground border-border',
-  },
-};
 
 interface CompactMatchCardProps {
   match: Match;
@@ -78,7 +56,7 @@ export function CompactMatchCard({ match, className, distance }: CompactMatchCar
     : dateObj.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   const hora = isPlanning ? 'Por votar' : (match.time || '').replace(' hs', '').replace('hs', '').trim();
   const locationName = formatVenueName(match.location.name, match.location.address);
-  const statusInfo = statusConfig[match.status];
+  const statusInfo = matchStatusConfig[match.status];
 
   const isByTeams = match.type === 'by_teams' && match.teams?.length === 2;
   const hasScore = match.finalScore && (match.status === 'completed' || match.status === 'evaluated');
