@@ -7,7 +7,7 @@ import { AddPlayerDialog } from '@/components/add-player-dialog';
 import { collection, query, where } from 'firebase/firestore';
 import { useMemo, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Users2, Users, Filter } from 'lucide-react';
+import { Users2, Users, Filter, HelpCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -102,7 +102,7 @@ export default function PlayersPage() {
 
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-3">
       <FirstTimeInfoDialog
         featureKey="hasSeenPlayersInfo"
         title="Sección de Plantel"
@@ -115,11 +115,20 @@ export default function PlayersPage() {
         <AddPlayerDialog />
       </PageHeader>
 
-      <div className="flex items-center justify-between gap-4">
-        <AttributesHelpDialog>
-          <Button variant="link" className="p-0 h-auto self-start">¿Qué significan los atributos?</Button>
-        </AttributesHelpDialog>
-
+      {/* Barra de controles: contador + ayuda + filtros en una sola fila */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {sortedPlayers && sortedPlayers.length > 0 && (
+            <span className="text-xs font-medium text-muted-foreground shrink-0">
+              {filteredPlayers?.length}/{sortedPlayers?.length} jugadores
+            </span>
+          )}
+          <AttributesHelpDialog>
+            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-muted-foreground/50 hover:text-primary">
+              <HelpCircle className="h-3.5 w-3.5" />
+            </Button>
+          </AttributesHelpDialog>
+        </div>
         <PlayerFiltersComponent filters={filters} onFiltersChange={setFilters} />
       </div>
 
@@ -168,9 +177,6 @@ export default function PlayersPage() {
 
       {filteredPlayers && filteredPlayers.length > 0 && (
         <>
-          <div className="text-sm text-muted-foreground">
-            Mostrando {filteredPlayers.length} de {sortedPlayers.length} jugadores
-          </div>
           <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredPlayers.map((player, index) => (
               <PlayerCard
