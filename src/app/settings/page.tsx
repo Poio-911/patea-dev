@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/navigation/back-button';
 import { getAuth } from 'firebase/auth';
 
 const ADMIN_EMAILS = ['lopeztoma.santiago@gmail.com', 'admin@patea.app'];
@@ -55,6 +56,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
+        <BackButton href="/profile" label="Volver a Perfil" className="self-start" />
         <div className="space-y-2">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-4 w-96" />
@@ -80,7 +82,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-4">
+      <BackButton href="/profile" label="Volver al Perfil" className="self-start -ml-2" />
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">

@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useUser, useCollection, useFirestore } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { PageHeader } from '@/components/page-header';
+import { BackButton } from '@/components/navigation/back-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
@@ -135,6 +136,7 @@ export default function AchievementsPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <BackButton href="/profile" label="Volver a Perfil" className="self-start -ml-2" />
       <PageHeader
         title="Logros"
         description="Desbloquea logros jugando partidos, marcando goles y siendo parte de la comunidad."

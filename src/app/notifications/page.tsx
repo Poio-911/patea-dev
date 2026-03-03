@@ -8,6 +8,7 @@ import { collection, query, orderBy, writeBatch, doc } from 'firebase/firestore'
 import type { Notification, NotificationType } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/navigation/back-button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Bell, CheckCheck, FileSignature, UserPlus, Info, Swords, CheckCircle2, XCircle, FileText, Users, Calendar, TrendingUp, Trophy, ShieldQuestion } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -115,6 +116,7 @@ export default function NotificationsPage() {
     if (userLoading || notificationsLoading) {
         return (
             <div className="flex flex-col gap-6">
+                <BackButton href="/dashboard" label="Volver al Inicio" className="self-start" />
                 <PageHeader title="Notificaciones" description="Acá están todas tus notificaciones." />
                 <div className="space-y-2">
                     {[...Array(6)].map((_, i) => (
@@ -141,7 +143,8 @@ export default function NotificationsPage() {
     }
 
     return (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
+            <BackButton href="/dashboard" label="Volver al Inicio" className="self-start" />
             <PageHeader
                 title="Notificaciones"
                 description="Acá están todas tus notificaciones, las nuevas y las viejas."

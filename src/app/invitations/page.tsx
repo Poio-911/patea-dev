@@ -6,6 +6,7 @@ import { collectionGroup, query, where, orderBy, writeBatch, doc, getDoc, update
 import type { Invitation, Match, Player } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/navigation/back-button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Mail, ChevronDown, ChevronUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -150,8 +151,11 @@ export default function InvitationsPage() {
 
   if (userLoading || pendingLoading) {
     return (
-      <div className="flex justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex flex-col gap-6">
+        <BackButton href="/dashboard" label="Volver al Inicio" className="self-start" />
+        <div className="flex justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
       </div>
     );
   }
@@ -169,7 +173,8 @@ export default function InvitationsPage() {
   const respondedCount = respondedInvitations?.length || 0;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
+      <BackButton href="/dashboard" label="Volver al Inicio" className="self-start" />
       <PageHeader
         title="Invitaciones"
         description={
