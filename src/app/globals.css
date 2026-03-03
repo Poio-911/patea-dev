@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -666,40 +666,43 @@ body.standalone main {
   }
 
   /* Player Card Aura Effects */
+  /* Bronze: bottom-left — humble, dimmed */
   .aura-bronze {
-    background-image: radial-gradient(ellipse at top right, rgba(205, 127, 50, 0.2) 0%, transparent 70%);
+    background-image: radial-gradient(ellipse at bottom left, rgba(205, 127, 50, 0.18) 0%, transparent 65%);
   }
 
   .game .aura-bronze {
-    background-image: radial-gradient(ellipse at top right, rgba(205, 127, 50, 0.3) 0%, transparent 70%);
+    background-image: radial-gradient(ellipse at bottom left, rgba(205, 127, 50, 0.28) 0%, transparent 65%);
   }
 
   .nike .aura-bronze {
-    background-image: radial-gradient(ellipse at top right, rgba(205, 127, 50, 0.25) 0%, transparent 70%);
+    background-image: radial-gradient(ellipse at bottom left, rgba(205, 127, 50, 0.25) 0%, transparent 65%);
   }
 
+  /* Silver: top-center — neutral */
   .aura-silver {
-    background-image: radial-gradient(ellipse at top right, hsla(220, 15%, 75%, 0.25) 0%, transparent 70%);
+    background-image: radial-gradient(ellipse at top center, hsla(220, 15%, 75%, 0.22) 0%, transparent 65%);
   }
 
   .game .aura-silver {
-    background-image: radial-gradient(ellipse at top right, hsla(220, 15%, 75%, 0.35) 0%, transparent 70%);
+    background-image: radial-gradient(ellipse at top center, hsla(220, 15%, 75%, 0.32) 0%, transparent 65%);
   }
 
   .nike .aura-silver {
-    background-image: radial-gradient(ellipse at top right, rgba(192, 192, 192, 0.3) 0%, transparent 70%);
+    background-image: radial-gradient(ellipse at top center, rgba(192, 192, 192, 0.30) 0%, transparent 65%);
   }
 
+  /* Gold: top-right — aspirational */
   .aura-gold {
-    background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.2) 0%, transparent 70%);
+    background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.28) 0%, transparent 65%);
   }
 
   .game .aura-gold {
-    background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.3) 0%, transparent 70%);
+    background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.38) 0%, transparent 65%);
   }
 
   .nike .aura-gold {
-    background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.25) 0%, transparent 70%);
+    background-image: radial-gradient(ellipse at top right, hsla(43, 96%, 56%, 0.25) 0%, transparent 65%);
   }
 
   /* Liquid Mesh Gradient for Elite Cards - Light & Fantasy Style */
@@ -709,7 +712,7 @@ body.standalone main {
       radial-gradient(at 50% 0%, hsla(190, 85%, 85%, 1) 0, transparent 50%),
       radial-gradient(at 100% 0%, hsla(320, 85%, 85%, 1) 0, transparent 50%);
     background-size: 200% 200%;
-    animation: aura-liquid 15s ease infinite alternate;
+    animation: aura-liquid var(--aura-duration, 15s) ease infinite alternate;
   }
 
   .game .aura-elite {
@@ -718,7 +721,7 @@ body.standalone main {
       radial-gradient(at 50% 0%, hsla(190, 90%, 80%, 1) 0, transparent 50%),
       radial-gradient(at 100% 0%, hsla(320, 90%, 80%, 1) 0, transparent 50%);
     background-size: 200% 200%;
-    animation: aura-liquid 15s ease infinite alternate;
+    animation: aura-liquid var(--aura-duration, 15s) ease infinite alternate;
   }
 
   /* Nike Elite - Monochrome grayscale gradient with subtle white accents */
@@ -1145,96 +1148,35 @@ body.standalone main {
 
   /* Bronze (OVR < 65) */
   .border-glow-bronze {
-    border: 2px solid rgba(205, 127, 50, 0.6);
-    box-shadow:
-      0 0 10px rgba(205, 127, 50, 0.4),
-      inset 0 0 15px rgba(205, 127, 50, 0.1);
-    animation: glow-pulse-bronze 3s ease-in-out infinite;
-  }
-
-  @keyframes glow-pulse-bronze {
-
-    0%,
-    100% {
-      box-shadow:
-        0 0 10px rgba(205, 127, 50, 0.4),
-        inset 0 0 15px rgba(205, 127, 50, 0.1);
-    }
-
-    50% {
-      box-shadow:
-        0 0 20px rgba(205, 127, 50, 0.6),
-        inset 0 0 20px rgba(205, 127, 50, 0.2);
-    }
+    border: 1px solid rgba(205, 127, 50, 0.35);
+    box-shadow: 0 0 6px rgba(205, 127, 50, 0.15);
   }
 
   /* Silver (OVR 65-75) */
   .border-glow-silver {
-    border: 2px solid rgba(192, 192, 192, 0.7);
-    box-shadow:
-      0 0 15px rgba(192, 192, 192, 0.5),
-      inset 0 0 20px rgba(192, 192, 192, 0.15);
-    animation: glow-pulse-silver 2.5s ease-in-out infinite;
-  }
-
-  @keyframes glow-pulse-silver {
-
-    0%,
-    100% {
-      box-shadow:
-        0 0 15px rgba(192, 192, 192, 0.5),
-        inset 0 0 20px rgba(192, 192, 192, 0.15);
-    }
-
-    50% {
-      box-shadow:
-        0 0 25px rgba(192, 192, 192, 0.7),
-        inset 0 0 25px rgba(192, 192, 192, 0.25);
-    }
+    border: 1px solid rgba(192, 192, 192, 0.40);
+    box-shadow: 0 0 6px rgba(192, 192, 192, 0.15);
   }
 
   /* Gold (OVR 76-85) */
   .border-glow-gold {
-    border: 2px solid hsl(43, 96%, 56%);
-    box-shadow:
-      0 0 20px hsla(43, 96%, 56%, 0.6),
-      inset 0 0 25px hsla(43, 96%, 56%, 0.2);
-    animation: glow-pulse-gold 2s ease-in-out infinite;
+    border: 1px solid hsla(43, 96%, 56%, 0.50);
+    box-shadow: 0 0 8px hsla(43, 96%, 56%, 0.18);
   }
 
-  @keyframes glow-pulse-gold {
-
-    0%,
-    100% {
-      box-shadow:
-        0 0 20px hsla(43, 96%, 56%, 0.6),
-        inset 0 0 25px hsla(43, 96%, 56%, 0.2);
-    }
-
-    50% {
-      box-shadow:
-        0 0 30px hsla(43, 96%, 56%, 0.8),
-        inset 0 0 30px hsla(43, 96%, 56%, 0.3);
-    }
-  }
-
-  /* Elite (OVR 86+) - Multi-color rotating */
+  /* Elite (OVR 86+) - Rainbow border, muy sutil */
   .border-glow-elite {
-    border: 3px solid transparent;
+    border: 2px solid transparent;
     background:
       linear-gradient(var(--card), var(--card)) padding-box,
       linear-gradient(135deg,
-        #ff00ff 0%,
-        #00ffff 25%,
-        #ffff00 50%,
-        #ff00ff 75%,
-        #00ffff 100%) border-box;
+        hsla(300, 80%, 65%, 0.8) 0%,
+        hsla(185, 80%, 65%, 0.8) 33%,
+        hsla(55, 80%, 65%, 0.8) 66%,
+        hsla(300, 80%, 65%, 0.8) 100%) border-box;
     background-size: 200% 200%;
-    box-shadow:
-      0 0 30px rgba(255, 0, 255, 0.5),
-      0 0 40px rgba(0, 255, 255, 0.3),
-      inset 0 0 30px rgba(255, 255, 0, 0.15);
-    animation: glow-rotate-elite 4s linear infinite, glow-pulse-elite 2s ease-in-out infinite;
+    box-shadow: 0 0 10px rgba(200, 100, 255, 0.12);
+    animation: glow-rotate-elite 6s linear infinite;
   }
 
   @keyframes glow-rotate-elite {
@@ -1244,24 +1186,6 @@ body.standalone main {
 
     100% {
       background-position: 200% 50%;
-    }
-  }
-
-  @keyframes glow-pulse-elite {
-
-    0%,
-    100% {
-      box-shadow:
-        0 0 30px rgba(255, 0, 255, 0.5),
-        0 0 40px rgba(0, 255, 255, 0.3),
-        inset 0 0 30px rgba(255, 255, 0, 0.15);
-    }
-
-    50% {
-      box-shadow:
-        0 0 40px rgba(255, 0, 255, 0.7),
-        0 0 50px rgba(0, 255, 255, 0.5),
-        inset 0 0 40px rgba(255, 255, 0, 0.25);
     }
   }
 
@@ -1286,17 +1210,37 @@ body.standalone main {
       opacity: 0.12;
     }
 
-    /* Border glow: keep animation but reduce shadow */
-    .border-glow-bronze,
-    .border-glow-silver,
-    .border-glow-gold {
-      animation-duration: 4s;
-      box-shadow: 0 0 6px currentColor;
+    /* Elite border: slow down rotation on mobile */
+    .border-glow-elite {
+      animation: glow-rotate-elite 8s linear infinite;
+    }
+  }
+
+  /* ========================================
+     CARD SHIMMER HOVER EFFECT
+     ======================================== */
+
+  @keyframes card-shimmer {
+    0% {
+      transform: translateX(-150%) skewX(-15deg);
     }
 
-    .border-glow-elite {
-      animation: glow-rotate-elite 4s linear infinite;
+    100% {
+      transform: translateX(350%) skewX(-15deg);
     }
+  }
+
+  .player-card:hover .card-shimmer-effect {
+    animation: card-shimmer 0.8s ease-out forwards;
+  }
+
+  /* ========================================
+     LIGHT THEME: TIER SHADOWS FOR CARDS
+     Cards "float" over white background via subtle directional shadow
+     ======================================== */
+
+  :root .player-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
   }
 
   /* ========================================
@@ -1310,7 +1254,9 @@ body.standalone main {
     .border-glow-bronze,
     .border-glow-silver,
     .border-glow-gold,
-    .border-glow-elite {
+    .border-glow-elite,
+    .aura-elite,
+    .card-shimmer-effect {
       animation: none !important;
       transition: none !important;
     }
