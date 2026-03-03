@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { logger } from '@/lib/logger';
@@ -259,7 +260,28 @@ export default function EvaluateMatchPage() {
     };
 
     if (isPageLoading) {
-        return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+        return (
+            <div className="flex flex-col gap-6 w-full animate-pulse p-4 md:p-8">
+                <div className="flex items-center gap-4">
+                    <Skeleton className="h-10 w-10 md:h-12 md:w-12 rounded-full" />
+                    <Skeleton className="h-8 md:h-10 w-[40%] rounded-md" />
+                </div>
+                <div className="mt-8">
+                    <Skeleton className="h-8 w-64 rounded-md mx-auto" />
+                    <Skeleton className="h-4 w-48 rounded-md mx-auto mt-2" />
+                </div>
+                <Card className="border-primary/20 shadow-lg relative overflow-hidden mt-6 min-h-[400px]">
+                    <div className="flex justify-center mt-8">
+                        <Skeleton className="w-48 h-48 rounded-full" />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-6 mt-4">
+                        {[...Array(6)].map((_, i) => (
+                            <Skeleton key={i} className="h-16 w-full rounded-xl" />
+                        ))}
+                    </div>
+                </Card>
+            </div>
+        );
     }
 
     if (!match || !user) {

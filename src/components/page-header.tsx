@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 type PageHeaderProps = {
   title: string;
-  description?: string;
+  description?: React.ReactNode;
   children?: React.ReactNode;
   className?: string;
   icon?: React.ReactNode;
@@ -22,9 +22,9 @@ export function PageHeader({ title, description, children, className, icon }: Pa
             </h1>
           </div>
           {description && (
-            <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+            <div className="mt-1 text-sm text-muted-foreground leading-relaxed">
               {description}
-            </p>
+            </div>
           )}
         </div>
       </div>

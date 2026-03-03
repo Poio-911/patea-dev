@@ -171,28 +171,31 @@ export function MatchChatView({ match }: MatchChatViewProps) {
 
   return (
     <>
-      {/* Floating circular button */}
+      {/* Bottom Floating Bar / Circular Button for Chat */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "fixed right-6 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center z-[100] transition-all",
-          "bg-gradient-to-br from-[#25D366] to-[#128C7E] text-white",
-          "border border-white/20 active:scale-95",
-          "bottom-[calc(5rem+env(safe-area-inset-bottom))]"
+          "fixed z-[100] transition-all overflow-hidden flex items-center justify-center shadow-2xl",
+          "bg-gradient-to-br from-[#25D366] to-[#128C7E] text-white border border-white/20 active:scale-95",
+          // Mobile: Barra horizontal (rectángulo redondeado con texto)
+          "bottom-[calc(5rem+env(safe-area-inset-bottom))] left-4 right-4 h-12 rounded-2xl md:right-6 md:left-auto md:w-14 md:h-14 md:rounded-full"
         )}
         whileHover={{
-          scale: 1.1,
+          scale: 1.05,
           boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)"
         }}
-        whileTap={{ scale: 0.9 }}
+        whileTap={{ scale: 0.95 }}
         aria-label="Abrir chat del partido"
       >
-        <WhatsAppIcon className="h-8 w-8 ml-[1px]" />
+        <div className="flex items-center justify-center gap-2">
+          <WhatsAppIcon className="h-6 w-6 md:h-8 md:w-8 md:ml-[1px]" />
+          <span className="font-bold tracking-wide md:hidden">CHAT DEL PARTIDO</span>
+        </div>
         {unreadCount > 0 && (
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border-2 border-background shadow-lg"
+            className="absolute -top-1 -right-1 md:top-0 md:right-0 min-w-[22px] h-[22px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border-2 border-background shadow-lg"
           >
             {unreadCount > 9 ? '9+' : unreadCount}
           </motion.div>

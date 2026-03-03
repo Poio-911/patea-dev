@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useParams } from 'next/navigation';
 import MatchDetailView from '@/components/match-detail-view';
 import { BackButton } from '@/components/navigation/back-button';
-import { Loader2 } from 'lucide-react';
 import { Suspense } from 'react';
+import { MatchDetailSkeleton } from '@/components/match-details/MatchDetailSkeleton';
 
 export default function MatchDetailPage() {
   const params = useParams<{ id: string }>();
@@ -16,11 +15,11 @@ export default function MatchDetailPage() {
   }
 
   return (
-    <Suspense fallback={<div className="flex justify-center items-center h-full"><Loader2 className="h-12 w-12 animate-spin"/></div>}>
-        <div className="space-y-2">
-          <BackButton href="/matches" label="Volver a Partidos" />
-          <MatchDetailView matchId={id} />
-        </div>
+    <Suspense fallback={<MatchDetailSkeleton />}>
+      <div className="space-y-4">
+        <BackButton href="/matches" label="Volver a Partidos" />
+        <MatchDetailView matchId={id} />
+      </div>
     </Suspense>
   );
 }

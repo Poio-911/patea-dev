@@ -18,14 +18,14 @@ type LiveMatchDashboardProps = {
   match: Match;
   isAdmin?: boolean; // Only admins can log events
   onEventLogged?: (event: MatchEvent) => void;
-  onMatchStatusChange?: (status: LiveMatchStatus, currentMinute: number) => void;
+  onMatchStatusChange?: (status: LiveMatchStatus, currentMinute: number) => void | Promise<void>;
 };
 
-export function LiveMatchDashboard({ 
-  match, 
-  isAdmin = false, 
+export function LiveMatchDashboard({
+  match,
+  isAdmin = false,
   onEventLogged,
-  onMatchStatusChange 
+  onMatchStatusChange
 }: LiveMatchDashboardProps) {
   const [baseMinute, setBaseMinute] = useState(match.currentMinute || 0);
   const [periodStartMs, setPeriodStartMs] = useState<number | null>(match.periodStartTs ? new Date((match as any).periodStartTs?.toDate?.() || match.periodStartTs).getTime() : null);
@@ -37,6 +37,7 @@ export function LiveMatchDashboard({
   const [selectedEventType, setSelectedEventType] = useState<MatchEventType | null>(null);
   const [showVisualizer, setShowVisualizer] = useState(false);
   const [showStreamDialog, setShowStreamDialog] = useState(false);
+  const [isProcessingStatus, setIsProcessingStatus] = useState(false);
 
   // Derive clock from base + elapsed since periodStartMs; keeps running even if admin leaves
   useEffect(() => {
@@ -58,28 +59,34 @@ export function LiveMatchDashboard({
     return () => { if (interval) clearInterval(interval); };
   }, [isTimerRunning, liveStatus, periodStartMs, baseMinute]);
 
-  const handleStatusChange = (newStatus: LiveMatchStatus) => {
-    setLiveStatus(newStatus);
-    // compute baseline + start time
-    if (newStatus === 'first_half') {
-      setBaseMinute(0);
-      setPeriodStartMs(Date.now());
-      setIsTimerRunning(true);
-      onMatchStatusChange?.('first_half', 0);
-      return;
-    }
-    if (newStatus === 'second_half') {
-      const baseline = Math.max(45, currentMinute >= 45 ? currentMinute : 45);
-      setBaseMinute(baseline);
-      setPeriodStartMs(Date.now());
-      setIsTimerRunning(true);
-      onMatchStatusChange?.('second_half', baseline);
-      return;
-    }
-    
-    if (newStatus === 'half_time' || newStatus === 'finished') {
-      setIsTimerRunning(false);
-      onMatchStatusChange?.(newStatus, currentMinute);
+  const handleStatusChange = async (newStatus: LiveMatchStatus) => {
+    setIsProcessingStatus(true);
+    try {
+      if (newStatus === 'first_half') {
+        setBaseMinute(0);
+        setPeriodStartMs(Date.now());
+        setIsTimerRunning(true);
+        await onMatchStatusChange?.('first_half', 0);
+        setLiveStatus(newStatus);
+        return;
+      }
+      if (newStatus === 'second_half') {
+        const baseline = Math.max(45, currentMinute >= 45 ? currentMinute : 45);
+        setBaseMinute(baseline);
+        setPeriodStartMs(Date.now());
+        setIsTimerRunning(true);
+        await onMatchStatusChange?.('second_half', baseline);
+        setLiveStatus(newStatus);
+        return;
+      }
+
+      if (newStatus === 'half_time' || newStatus === 'finished') {
+        setIsTimerRunning(false);
+        await onMatchStatusChange?.(newStatus, currentMinute);
+        setLiveStatus(newStatus);
+      }
+    } finally {
+      setIsProcessingStatus(false);
     }
   };
 
@@ -142,57 +149,62 @@ export function LiveMatchDashboard({
             </div>
           </div>
         </CardHeader>
-        
+
         {isAdmin && (
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {liveStatus === 'not_started' && (
-                <Button 
+                <Button
                   onClick={() => handleStatusChange('first_half')}
                   className="bg-primary hover:bg-primary/90"
+                  disabled={isProcessingStatus}
                 >
                   <Play className="h-4 w-4 mr-2" />
                   Iniciar Partido
                 </Button>
               )}
-              
+
               {liveStatus === 'first_half' && (
                 <>
-                  <Button 
+                  <Button
                     onClick={() => setIsTimerRunning(!isTimerRunning)}
                     variant={isTimerRunning ? "destructive" : "default"}
+                    disabled={isProcessingStatus}
                   >
                     {isTimerRunning ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
                     {isTimerRunning ? 'Pausar' : 'Reanudar'}
                   </Button>
-                  <Button onClick={() => handleStatusChange('half_time')}>
+                  <Button onClick={() => handleStatusChange('half_time')} disabled={isProcessingStatus}>
                     Entretiempo
                   </Button>
                 </>
               )}
-              
+
               {liveStatus === 'half_time' && (
-                <Button 
+                <Button
                   onClick={() => handleStatusChange('second_half')}
                   className="bg-primary hover:bg-primary/90"
+                  disabled={isProcessingStatus}
                 >
                   <Play className="h-4 w-4 mr-2" />
                   Segundo Tiempo
                 </Button>
               )}
-              
+
               {liveStatus === 'second_half' && (
                 <>
-                  <Button 
+                  <Button
                     onClick={() => setIsTimerRunning(!isTimerRunning)}
                     variant={isTimerRunning ? "destructive" : "default"}
+                    disabled={isProcessingStatus}
                   >
                     {isTimerRunning ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
                     {isTimerRunning ? 'Pausar' : 'Reanudar'}
                   </Button>
-                  <Button 
+                  <Button
                     onClick={() => handleStatusChange('finished')}
                     variant="destructive"
+                    disabled={isProcessingStatus}
                   >
                     <Square className="h-4 w-4 mr-2" />
                     Finalizar
@@ -213,14 +225,14 @@ export function LiveMatchDashboard({
           <div className="flex items-center justify-center text-4xl font-bold">
             <div className="text-center">
               <div className="text-sm font-normal text-muted-foreground mb-1">
-                {match.teams?.[0]?.name || 'Equipo 1'}
+                {match.teams?.[0]?.name || 'Local'}
               </div>
               <div>{match.finalScore?.team1 || 0}</div>
             </div>
             <Separator orientation="vertical" className="mx-8 h-16" />
             <div className="text-center">
               <div className="text-sm font-normal text-muted-foreground mb-1">
-                {match.teams?.[1]?.name || 'Equipo 2'}
+                {match.teams?.[1]?.name || 'Visitante'}
               </div>
               <div>{match.finalScore?.team2 || 0}</div>
             </div>
@@ -277,10 +289,10 @@ export function LiveMatchDashboard({
       )}
 
       {/* Fullscreen Visualizer */}
-      <MatchVisualizer 
-        match={match} 
-        isOpen={showVisualizer} 
-        onClose={() => setShowVisualizer(false)} 
+      <MatchVisualizer
+        match={match}
+        isOpen={showVisualizer}
+        onClose={() => setShowVisualizer(false)}
         isAdmin={isAdmin}
         onEventLogged={onEventLogged}
         currentMinute={currentMinute}

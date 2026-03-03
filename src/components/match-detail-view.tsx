@@ -5,13 +5,17 @@ import { useMemo, useState, useEffect, useCallback } from 'react';
 import type { Match, Player, UserProfile, PlayerPerformance } from '@/lib/types';
 import { doc, getDoc, query, where, collection } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, AlertCircle, Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
 import { PageHeader } from './page-header';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from './ui/button';
 import Link from 'next/link';
 import { MatchInfoCard } from './match-details/MatchInfoCard';
 import { MatchManagementActions } from './match-details/MatchManagementActions';
 import { CompetitionMatchControls } from './match-details/CompetitionMatchControls';
+import { matchStatusConfig } from '@/lib/match-status-config';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import { useMatchPermissions } from '@/hooks/use-match-permissions';
 import { useMatchActions } from '@/hooks/use-match-actions';
 import { MatchChatView } from './match-chat-view';
@@ -41,12 +45,12 @@ interface MatchDetailViewProps {
 }
 
 const weatherIcons: Record<string, React.ElementType> = {
-  Sun: require('lucide-react').Sun,
-  Cloud: require('lucide-react').Cloud,
-  Cloudy: require('lucide-react').Cloudy,
-  CloudRain: require('lucide-react').CloudRain,
-  Wind: require('lucide-react').Wind,
-  Zap: require('lucide-react').Zap,
+  Sun,
+  Cloud,
+  Cloudy,
+  CloudRain,
+  Wind,
+  Zap,
 };
 
 
@@ -139,7 +143,16 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
   }
 
   if (!match) {
-    return <div className="text-center p-8"><h2 className="text-xl font-bold">Partido no encontrado</h2></div>;
+    return (
+      <div className="flex justify-center p-8">
+        <EmptyState
+          icon={<AlertCircle className="w-12 h-12 text-muted-foreground/30" />}
+          title="Partido no encontrado"
+          description="El partido que buscas no existe o fue eliminado."
+          action={{ label: 'Volver a Partidos', href: '/matches' }}
+        />
+      </div>
+    );
   }
 
   const WeatherIcon = match.weather?.icon ? weatherIcons[match.weather.icon] : null;
@@ -160,7 +173,18 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
       <div className="relative flex flex-col gap-8 md:p-6 text-foreground">
         {/* Back button rendered by page wrapper; avoid duplication here */}
 
-        <PageHeader title={match.title} className="text-foreground" />
+        <PageHeader
+          title={match.title}
+          description={
+            <div className="flex items-center gap-2 mt-1">
+              <Badge className={cn("shadow-sm capitalize group/badge transition-transform", matchStatusConfig[match.status]?.className)}>
+                {matchStatusConfig[match.status]?.label || match.status}
+              </Badge>
+              {match.date && <span className="text-muted-foreground">• {new Date(match.date).toLocaleDateString()}</span>}
+            </div>
+          }
+          className="text-foreground"
+        />
 
         <MatchInfoCard
           match={match}
@@ -274,8 +298,8 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
               <PlayersConfirmed match={match} />
             )}
 
-            {/* Live Broadcast Controls for League Matches (parity with cup) */}
-            {(['league', 'league_final'].includes(match.type)) && (match.status === 'upcoming' || match.status === 'active') && permissions.isOwner && (
+            {/* Live Broadcast Controls for All Matches where Admin is present */}
+            {(match.status === 'upcoming' || match.status === 'active') && permissions.isOwner && (
               <div className="space-y-6">
                 <LiveMatchDashboard
                   match={match}

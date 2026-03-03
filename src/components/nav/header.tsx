@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import type { Player, UserProfile } from '@/lib/types';
 import { Logo } from '@/components/logo';
@@ -20,6 +21,32 @@ type HeaderProps = {
 };
 
 export function Header({ user, player, onLogout, onRequestPermission }: HeaderProps) {
+    const [showMobilePlayerInfo, setShowMobilePlayerInfo] = useState(true);
+
+    useEffect(() => {
+        // En mobile: Mostrar por 4s, ocultar por 15s, loop.
+        const showDurationMs = 4000;
+        const hiddenDurationMs = 15000;
+
+        let timeoutId: NodeJS.Timeout;
+
+        const cycleVisibility = () => {
+            setShowMobilePlayerInfo(true);
+            timeoutId = setTimeout(() => {
+                setShowMobilePlayerInfo(false);
+                timeoutId = setTimeout(cycleVisibility, hiddenDurationMs);
+            }, showDurationMs);
+        };
+
+        // Iniciar el primer cilco de ocultamiento
+        timeoutId = setTimeout(() => {
+            setShowMobilePlayerInfo(false);
+            timeoutId = setTimeout(cycleVisibility, hiddenDurationMs);
+        }, showDurationMs);
+
+        return () => clearTimeout(timeoutId);
+    }, []);
+
     return (
         <header className="fixed-header fixed top-0 left-0 right-0 z-20 h-16 shrink-0 border-b bg-card/80 backdrop-blur-lg transition-all">
             <div className="max-w-7xl mx-auto h-full px-2 sm:px-6 flex items-center justify-between">
@@ -47,12 +74,32 @@ export function Header({ user, player, onLogout, onRequestPermission }: HeaderPr
                     {player && (
                         <div className="flex items-center gap-2 md:gap-3 ml-1 lg:ml-2">
                             {/* Desktop: nombre + posición (oculto en mobile) */}
-                            <div className="text-right hidden sm:block">
+                            <div className="text-right hidden sm:block shrink-0">
                                 <p className="font-bold text-sm truncate max-w-[100px] xl:max-w-[150px]">{player.name}</p>
                                 <div className="flex justify-end">
                                     <PlayerPositionBadge position={player.position} size="sm" showIcon={false} showFullName={true} textOnly={true} className="text-[10px]" />
                                 </div>
                             </div>
+
+                            {/* Mobile: Animación periódica del nombre + posición */}
+                            <AnimatePresence>
+                                {showMobilePlayerInfo && (
+                                    <motion.div
+                                        initial={{ width: 0, opacity: 0, scale: 0.9 }}
+                                        animate={{ width: 'auto', opacity: 1, scale: 1 }}
+                                        exit={{ width: 0, opacity: 0, scale: 0.9 }}
+                                        transition={{ duration: 0.4, ease: "easeInOut" }}
+                                        className="text-right sm:hidden block overflow-hidden whitespace-nowrap origin-right"
+                                    >
+                                        <div className="pr-1">
+                                            <p className="font-bold text-sm truncate max-w-[80px]">{player.name.split(' ')[0]}</p>
+                                            <div className="flex justify-end">
+                                                <PlayerPositionBadge position={player.position} size="sm" showIcon={false} showFullName={false} textOnly={true} className="text-[10px]" />
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             {/* OVR Circle — visible en desktop y mobile */}
                             <div className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 text-base md:text-lg font-bold rounded-full bg-primary/10 border border-primary/20 text-primary shrink-0 transition-transform hover:scale-105">
