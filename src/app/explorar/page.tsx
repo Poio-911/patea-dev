@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { PageHeader } from '@/components/page-header';
 import { ExploreContent } from '@/components/social/explore-content';
 import { PublicMatchesContent } from '@/components/social/public-matches-content';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -32,12 +33,10 @@ export default function ExplorarPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 px-4 pb-12">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Explorar</h1>
-        <p className="text-muted-foreground">
-          Reclutá agentes libres para tus partidos, o sumate a partidos abiertos.
-        </p>
-      </div>
+      <PageHeader
+        title="Explorar"
+        description="Reclutá agentes libres para tus partidos, o sumate a partidos abiertos."
+      />
 
       {/* Free Agent Banner */}
       {user && (
