@@ -36,6 +36,20 @@ const auraClasses: Record<string, string> = {
     elite: 'aura-elite',
 };
 
+const borderGlowClasses: Record<string, string> = {
+    bronze: 'border-glow-bronze',
+    silver: 'border-glow-silver',
+    gold: 'border-glow-gold',
+    elite: 'border-glow-elite',
+};
+
+const positionWatermarkClasses: Record<string, string> = {
+    DEL: 'text-pos-del/10',
+    MED: 'text-pos-med/10',
+    DEF: 'text-pos-def/10',
+    POR: 'text-pos-por/10',
+};
+
 
 export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, creatorName, jersey }: PlayerCardProps) {
     if (!player) {
@@ -52,6 +66,8 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, cr
     const PositionIcon = positionConfig[player.position].Icon;
     const ovrLevel = getOvrLevel(player.ovr);
     const selectedAuraClass = auraClasses[ovrLevel];
+    const borderGlowClass = borderGlowClasses[ovrLevel];
+    const watermarkClass = positionWatermarkClasses[player.position] ?? 'text-muted-foreground/8';
     const animationType = getAnimationByRarity(player.ovr);
     const staggerDelay = getStaggerDelay(index, 3);
 
@@ -60,8 +76,6 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, cr
 
     const cardStyle = ovrLevel === 'elite' ? {
         '--intensity': intensity.toFixed(2),
-        // Animation duration adjusts with intensity: 15s (slow) -> 8s (fast)
-        animationDuration: `${15 - (intensity * 7)}s`
     } as React.CSSProperties : undefined;
 
     return (
@@ -70,11 +84,11 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, cr
                 <Card
                     className={cn(
                         "player-card relative h-full flex flex-col overflow-hidden rounded-2xl",
-                        "bg-card border-border",
+                        "bg-card",
+                        borderGlowClass,
                         // Hover effects for desktop
                         "transition-all duration-300 ease-out",
                         "md:hover:shadow-2xl md:hover:scale-[1.02] md:hover:-translate-y-1.5",
-                        "md:hover:border-primary/40",
                         // Active/touch effects for mobile
                         "active:scale-[0.98] active:shadow-md",
                         // Cursor
@@ -95,13 +109,13 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, cr
                         </div>
                     </div>
 
-                    {/* Shimmer effect on hover (desktop only) */}
-                    <div className="hidden md:block absolute inset-0 z-[1] opacity-0 hover:opacity-100 transition-opacity duration-700 pointer-events-none">
-                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-foreground/5 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-1000" />
+                    {/* Shimmer effect on hover (desktop only) - CSS keyframe driven */}
+                    <div className="hidden md:block absolute inset-0 z-[1] overflow-hidden pointer-events-none">
+                        <div className="card-shimmer-effect absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-foreground/8 to-transparent skew-x-[-15deg]" />
                     </div>
 
                     <CardContent className="relative z-10 flex h-full flex-col justify-between p-3 text-center">
-                        <div className="absolute -bottom-2 -right-2 h-2/5 w-2/5 text-muted-foreground/5 game:text-primary/5 transition-all duration-300 hover:text-primary/10">
+                        <div className={cn("absolute -bottom-2 -right-2 h-2/5 w-2/5 transition-all duration-300", watermarkClass)}>
                             {PositionIcon && <PositionIcon className="w-full h-full" />}
                         </div>
                         <div className="relative z-10 flex flex-col h-full justify-between">
@@ -115,7 +129,7 @@ export const PlayerCard = React.memo(function PlayerCard({ player, index = 0, cr
                                 />
                                 <div className="flex items-center gap-1">
                                     {player.ovr >= 90 && (
-                                        <Sparkles className="w-4 h-4 text-yellow-500 animate-pulse" fill="currentColor" />
+                                        <Sparkles className="w-4 h-4 text-slate-300 animate-pulse" fill="currentColor" />
                                     )}
                                     <div className={cn("transition-all", ovrLevel === 'elite' && "scale-110 origin-top-right")}>
                                         <PlayerOvr

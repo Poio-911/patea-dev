@@ -150,21 +150,38 @@ export function PlayerOvr({ value, size = 'standard', highlight, neutral = false
     );
   }
   return (
-    <span
-      className={cn(
-        base,
-        'text-4xl leading-none',
-        highlight && 'text-primary',
-        neutral ? undefined : (context === 'card' ? levelText[level] : levelText[level]),
-        className
-      )}
-    >
-      {value}
+    <span className={cn('flex flex-col items-center leading-none', className)}>
+      <span
+        className={cn(
+          base,
+          'text-4xl leading-none',
+          highlight && 'text-primary',
+          neutral ? undefined : levelText[level],
+        )}
+      >
+        {value}
+      </span>
+      <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5">OVR</span>
     </span>
   );
 }
 
 const attributeLabels: Record<AttributeKey, string> = { PAC: 'RIT', SHO: 'TIR', PAS: 'PAS', DRI: 'REG', DEF: 'DEF', PHY: 'FIS' };
+
+// Key attributes per position that get highlighted with position color
+const positionKeyStats: Record<PlayerPosition, AttributeKey[]> = {
+  DEL: ['PAC', 'SHO'],
+  MED: ['PAS', 'DRI'],
+  DEF: ['DEF', 'PHY'],
+  POR: ['DEF', 'PHY'],
+};
+
+const positionBarColors: Record<PlayerPosition, string> = {
+  DEL: 'bg-pos-del/60',
+  MED: 'bg-pos-med/60',
+  DEF: 'bg-pos-def/60',
+  POR: 'bg-pos-por/60',
+};
 
 export type AttributesGridProps = { player: Player; className?: string };
 export function AttributesGrid({ player, className }: AttributesGridProps) {
@@ -177,17 +194,54 @@ export function AttributesGrid({ player, className }: AttributesGridProps) {
     { key: 'PHY', value: player.phy },
   ];
   const primary = stats.reduce((m, s) => (s.value > m.value ? s : m), stats[0]);
+  const keyStats = positionKeyStats[player.position] ?? [];
+  const barColor = positionBarColors[player.position];
+
   return (
     <div className={cn('grid grid-cols-2 gap-1', className)}>
-      {stats.map(s => (
-        <div key={s.key} className={cn('flex items-center justify-between rounded-md px-2 py-1 text-xs border', s.key === primary.key ? 'bg-primary/5 border-primary/30' : 'border-transparent bg-muted/30')}>
-          <span className="text-muted-foreground">{attributeLabels[s.key]}</span>
-          <span className="font-bold">{s.value}</span>
-        </div>
-      ))}
+      {stats.map(s => {
+        const isTop = s.key === primary.key;
+        const isKey = keyStats.includes(s.key);
+        const pct = Math.round((s.value / 99) * 100);
+        return (
+          <div
+            key={s.key}
+            className={cn(
+              'flex items-center gap-1.5 rounded-md px-2 py-1 text-xs border',
+              isTop ? 'bg-primary/5 border-primary/20' : 'border-transparent bg-muted/30'
+            )}
+          >
+            <span className={cn('w-6 shrink-0', isKey ? positionTextColors[player.position] : 'text-muted-foreground')}>
+              {attributeLabels[s.key]}
+            </span>
+            <div className="flex-1 h-1 rounded-full bg-muted-foreground/15 overflow-hidden">
+              <div
+                className={cn('h-full rounded-full', isTop ? barColor : 'bg-muted-foreground/30')}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="font-bold w-5 text-right">{s.value}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
+
+const positionTextColors: Record<PlayerPosition, string> = {
+  DEL: 'text-pos-del',
+  MED: 'text-pos-med',
+  DEF: 'text-pos-def',
+  POR: 'text-pos-por',
+};
+
+// Border classes per OVR tier for PlayerPhoto
+const photoBorderClasses: Record<string, string> = {
+  bronze: 'border-[hsl(var(--ovr-bronze)/0.6)]',
+  silver: 'border-[hsl(var(--ovr-silver)/0.7)]',
+  gold: 'border-[hsl(var(--ovr-gold)/0.8)] drop-shadow-[0_0_4px_hsla(43,96%,56%,0.4)]',
+  elite: 'border-[rgba(200,210,240,0.88)] drop-shadow-[0_0_8px_rgba(200,210,240,0.60)]',
+};
 
 export type PlayerPhotoProps = { player: Player; size?: 'compact' | 'standard' | 'profile'; className?: string };
 export function PlayerPhoto({ player, size = 'standard', className }: PlayerPhotoProps) {
@@ -197,9 +251,12 @@ export function PlayerPhoto({ player, size = 'standard', className }: PlayerPhot
 
   const src = player.photoURL || (player as any).photoUrl;
   const name = player.name || 'Jugador';
+  const level = getOvrLevel(player.ovr);
+  const borderClass = photoBorderClasses[level];
+  const borderWidth = 'border-4';
 
   return (
-    <Avatar className={cn(sizeMap[size], 'border-4 shadow-sm overflow-hidden bg-muted hover:scale-110 hover:shadow-md transition-all duration-300', className)}>
+    <Avatar className={cn(sizeMap[size], borderWidth, 'shadow-sm overflow-hidden bg-muted hover:scale-110 hover:shadow-md transition-all duration-300', borderClass, className)}>
       {src && (
         <Image
           src={src}
