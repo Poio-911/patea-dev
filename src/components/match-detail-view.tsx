@@ -387,12 +387,12 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
                 )}
               </div>
             )}
+
+            {/* Chat Integrado del Partido */}
+            <MatchChatView match={match} />
           </div>
         </div>
       </div>
-
-      {/* Chat flotante */}
-      <MatchChatView match={match} />
     </div>
   );
 }

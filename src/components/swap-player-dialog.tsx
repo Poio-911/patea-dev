@@ -116,7 +116,7 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Intercambiar a {playerToSwap.displayName}</DialogTitle>
+          <DialogTitle>Intercambiar a {playerToSwap.displayName || (playerToSwap as any).name || 'Jugador'}</DialogTitle>
           <DialogDescription>
             Seleccioná un jugador del equipo contrario para hacer el cambio.
           </DialogDescription>
@@ -126,6 +126,7 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
             <div className="space-y-2">
               {eligiblePlayers.map(player => {
                 const isSelected = selectedPlayerId === player.uid;
+                const pName = player.displayName || (player as any).name || 'Jugador';
                 return (
                   <div
                     key={player.uid}
@@ -136,11 +137,11 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
                     )}
                   >
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoURL} alt={player.displayName} />
-                      <AvatarFallback>{player.displayName.charAt(0)}</AvatarFallback>
+                      <AvatarImage src={match.players.find(p => p.uid === player.uid)?.photoURL} alt={pName} />
+                      <AvatarFallback>{pName.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <p className="font-semibold">{player.displayName}</p>
+                      <p className="font-semibold">{pName}</p>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <PlayerPositionBadge position={player.position as import('@/lib/types').PlayerPosition} showIcon={false} size="sm" />
                         <span>OVR {player.ovr}</span>

@@ -126,9 +126,14 @@ function EvaluatedMatchCard({ match, index }: { match: Match; index: number }) {
                 <span className="absolute -top-[8px] left-1 bg-card text-[7px] font-black uppercase tracking-[0.18em] text-primary/40 px-1.5 py-px rounded-sm border border-primary/15">
                   relato
                 </span>
-                <p className="italic text-[10px] text-muted-foreground/75 line-clamp-2 leading-relaxed">
+                <p className="italic font-bold text-[10px] text-foreground/85 line-clamp-1 leading-relaxed">
                   &ldquo;{chronicle.headline}&rdquo;
                 </p>
+                {chronicle.story && (
+                  <p className="mt-1 text-[11px] text-muted-foreground/80 font-serif leading-snug line-clamp-2">
+                    {chronicle.story}
+                  </p>
+                )}
               </div>
             </div>
           )}

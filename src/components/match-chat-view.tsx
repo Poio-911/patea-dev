@@ -10,10 +10,10 @@ import { useChatReactions } from '@/hooks/use-chat-reactions';
 import { useChatReply } from '@/hooks/use-chat-reply';
 import { useChatReadReceipts } from '@/hooks/use-chat-read-receipts';
 import { cn } from '@/lib/utils';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { MessageCircle } from 'lucide-react';
-import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { MessageCircle, ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import {
   ChatMessageBubble,
   ChatInput,
@@ -69,9 +69,10 @@ export function MatchChatView({ match }: MatchChatViewProps) {
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
-
     if (messages && messages.length > 0) {
+      if (isOpen) {
+        scrollToBottom();
+      }
       const lastSeenTimestamp = parseInt(localStorage.getItem(lastSeenKey) || '0', 10);
       const newMessages = messages.filter((msg) => {
         const msgTimestamp = msg.createdAt?.toDate ? msg.createdAt.toDate().getTime() : 0;
@@ -79,7 +80,7 @@ export function MatchChatView({ match }: MatchChatViewProps) {
       });
       setUnreadCount(newMessages.length);
     }
-  }, [messages, lastSeenKey, scrollToBottom]);
+  }, [messages, lastSeenKey, scrollToBottom, isOpen]);
 
   const handleFocus = () => {
     if (messages && messages.length > 0) {
@@ -170,90 +171,61 @@ export function MatchChatView({ match }: MatchChatViewProps) {
   };
 
   return (
-    <>
-      {/* Bottom Floating Bar / Circular Button for Chat */}
-      <motion.button
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "fixed z-[100] transition-all overflow-hidden flex items-center justify-center shadow-2xl",
-          "bg-gradient-to-br from-[#25D366] to-[#128C7E] text-white border border-white/20 active:scale-95",
-          // Mobile: Barra horizontal (rectángulo redondeado con texto)
-          "bottom-[calc(5rem+env(safe-area-inset-bottom))] left-4 right-4 h-12 rounded-2xl md:right-6 md:left-auto md:w-14 md:h-14 md:rounded-full"
-        )}
-        whileHover={{
-          scale: 1.05,
-          boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)"
-        }}
-        whileTap={{ scale: 0.95 }}
-        aria-label="Abrir chat del partido"
-      >
-        <div className="flex items-center justify-center gap-2">
-          <WhatsAppIcon className="h-6 w-6 md:h-8 md:w-8 md:ml-[1px]" />
-          <span className="font-bold tracking-wide md:hidden">CHAT DEL PARTIDO</span>
-        </div>
-        {unreadCount > 0 && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="absolute -top-1 -right-1 md:top-0 md:right-0 min-w-[22px] h-[22px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border-2 border-background shadow-lg"
-          >
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </motion.div>
-        )}
-      </motion.button>
+    <Card className="bg-card w-full rounded-3xl overflow-hidden border-2 shadow-sm transition-all duration-300">
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <CollapsibleTrigger asChild>
+          <div className="flex items-center justify-between p-4 sm:p-6 cursor-pointer hover:bg-muted/30 transition-colors select-none">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2 sm:p-3 rounded-2xl">
+                <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+              </div>
+              <div className="text-left">
+                <h3 className="text-base sm:text-lg font-bold">Chat del Partido</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground font-medium hidden sm:block">Organizá, bardeá y motivá al equipo.</p>
+              </div>
+            </div>
 
-      {/* Chat panel */}
-      <AnimatePresence>
-        {isOpen && (
+            <div className="flex items-center gap-3 md:gap-4 shrink-0">
+              {unreadCount > 0 && (
+                <Badge variant="destructive" className="font-bold px-2 py-0.5 rounded-full shadow-md animate-pulse">
+                  {unreadCount > 9 ? '9+' : unreadCount} {unreadCount === 1 ? 'nuevo' : 'nuevos'}
+                </Badge>
+              )}
+              <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }} className="text-muted-foreground bg-muted p-1.5 rounded-full">
+                <ChevronDown className="h-5 w-5" />
+              </motion.div>
+            </div>
+          </div>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent>
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="fixed bottom-20 right-6 w-96 max-w-[calc(100vw-3rem)] z-[100] mb-4 pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="flex flex-col border-t bg-card/50"
           >
-            <Card className="bg-card/95 backdrop-blur-md border-2 shadow-2xl overflow-hidden">
-              <CardHeader className="flex flex-row items-center justify-between p-4 border-b bg-[hsl(var(--whatsapp-green))] text-[hsl(var(--whatsapp-foreground))]">
-                <div className="flex items-center gap-2">
-                  <MessageCircle className="h-5 w-5" />
-                  <CardTitle className="text-lg font-semibold text-[hsl(var(--whatsapp-foreground))]">Chat del Partido</CardTitle>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsOpen(false)}
-                  className="h-8 w-8 text-[hsl(var(--whatsapp-foreground))] hover:bg-[hsl(var(--whatsapp-foreground))]/20 hover:text-[hsl(var(--whatsapp-foreground))]"
-                >
-                  ×
-                </Button>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div
-                  className="flex-1 flex flex-col overflow-hidden chat-container"
-                  onFocus={handleFocus}
-                  tabIndex={0}
-                >
-                  <div
-                    className="p-4 h-[400px] overflow-y-auto"
-                    ref={scrollAreaRef}
-                  >
-                    {renderContent()}
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="p-0">
-                <ChatInput
-                  onSend={handleSendMessage}
-                  isSending={isSending}
-                  replyTo={replyTo}
-                  onCancelReply={cancelReply}
-                  placeholder="Escribe un mensaje..."
-                />
-              </CardFooter>
-            </Card>
+            <div
+              className="flex-1 overflow-y-auto p-4 sm:p-6 chat-container scroll-smooth h-[350px] sm:h-[450px]"
+              ref={scrollAreaRef}
+              onFocus={handleFocus}
+              tabIndex={0}
+            >
+              {renderContent()}
+            </div>
+            <div className="p-0 border-t bg-card">
+              <ChatInput
+                onSend={handleSendMessage}
+                isSending={isSending}
+                replyTo={replyTo}
+                onCancelReply={cancelReply}
+                placeholder="Escribe un mensaje al grupo..."
+              />
+            </div>
           </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
   );
 }
+

@@ -193,9 +193,16 @@ export default function GroupsPage() {
                         </div>
 
                         {match.chronicle ? (
-                          <p className="text-[11px] sm:text-xs text-card-foreground italic line-clamp-2 mt-1 z-10 border-l-2 border-primary/40 pl-2">
-                            "{(match.chronicle as GenerateMatchChronicleOutput).story ?? (match.chronicle as GenerateMatchChronicleOutput).headline}"
-                          </p>
+                          <div className="flex flex-col gap-1 mt-1 z-10 border-l-2 border-primary/40 pl-2">
+                            <p className="text-[11px] sm:text-xs text-foreground/90 italic font-bold line-clamp-1">
+                              "{(match.chronicle as GenerateMatchChronicleOutput).headline}"
+                            </p>
+                            {(match.chronicle as GenerateMatchChronicleOutput).story && (
+                              <p className="text-[10px] text-muted-foreground line-clamp-2 leading-snug font-serif">
+                                {(match.chronicle as GenerateMatchChronicleOutput).story}
+                              </p>
+                            )}
+                          </div>
                         ) : (
                           <div className="text-[11px] sm:text-xs text-muted-foreground flex flex-col gap-1 mt-1 z-10">
                             <span className="flex items-center gap-1.5"><Users2 className="h-3 w-3" /> Formato {match.format}v{match.format}</span>
