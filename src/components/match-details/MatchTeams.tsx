@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-import { ArrowLeftRight } from 'lucide-react';
+import { ArrowLeftRight, Shirt } from 'lucide-react';
 import { PlayerPhoto, PlayerPositionBadge } from '@/components/player-styles';
 import { SwapPlayerDialog } from '@/components/swap-player-dialog';
 import { AnimatedCardWrapper } from '@/components/animated-card-wrapper';
@@ -119,7 +119,18 @@ export const MatchTeams = React.memo(function MatchTeams({ match, isOwner }: Mat
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12 pt-8">
-                {(match.teams || []).map((team) => {
+                {(match.teams || []).map((team, tIdx) => {
+                    const isLegacyChaleco = team.name.toLowerCase().includes('chaleco');
+
+                    // Lógica de nombres dinámicos
+                    let displayTeamName = team.name;
+                    let extraTags: string[] = [];
+
+                    if (isLegacyChaleco) {
+                        displayTeamName = tIdx === 0 ? "Equipo Azul" : "Equipo Naranja";
+                        // El "Chaleco" se maneja como indicador aparte
+                    }
+
                     const teamMembersWithDetails: any[] = team.players
                         .map((p: any) => {
                             const matchPlayer = match.players.find((mp: any) => mp.uid === p.uid);
@@ -140,20 +151,29 @@ export const MatchTeams = React.memo(function MatchTeams({ match, isOwner }: Mat
 
                     return (
                         <div key={team.name} className="relative group">
-                            {/* Watermark Team Name */}
-                            <div className="absolute -top-14 left-0 right-0 pointer-events-none select-none opacity-[0.03] dark:opacity-[0.07] overflow-hidden">
-                                <h3 className="text-8xl font-black uppercase whitespace-nowrap leading-none tracking-tighter">
-                                    {team.name}
+                            {/* Watermark Team Name - Sólido (como estaba antes) */}
+                            <div className="absolute -top-14 left-0 right-0 pointer-events-none select-none overflow-hidden z-0 opacity-[0.05] dark:opacity-[0.1]">
+                                <h3 className="text-7xl sm:text-8xl font-black uppercase italic whitespace-nowrap leading-none tracking-tighter">
+                                    {displayTeamName}
                                 </h3>
                             </div>
 
                             {/* Team Header */}
                             <div className="flex items-center gap-4 mb-8 relative z-10 pl-2">
-                                <div className="p-3 rounded-2xl bg-card border border-border/50 shadow-sm transition-transform group-hover:scale-105 duration-300">
+                                {/* Camiseta Liberada */}
+                                <div className="p-0 transition-transform group-hover:scale-110 duration-500 drop-shadow-[0_20px_20px_rgba(0,0,0,0.15)]">
                                     <JerseyPreview jersey={team.jersey} size="md" />
                                 </div>
                                 <div className="flex flex-col">
-                                    <h3 className="text-2xl font-black uppercase tracking-tight leading-none mb-1">{team.name}</h3>
+                                    <div className="flex items-center gap-3">
+                                        <h3 className="text-2xl font-black uppercase tracking-tight leading-none mb-1">{displayTeamName}</h3>
+                                        {isLegacyChaleco && team.name.toLowerCase().includes('con') && (
+                                            <div className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400 font-black text-[10px] uppercase tracking-widest pl-1">
+                                                <Shirt className="h-3.5 w-3.5" />
+                                                Usa Chaleco
+                                            </div>
+                                        )}
+                                    </div>
                                     <div className="flex flex-wrap items-center gap-2">
                                         <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-widest leading-none">
                                             {team.players.length} JUGADORES
@@ -161,8 +181,8 @@ export const MatchTeams = React.memo(function MatchTeams({ match, isOwner }: Mat
                                         {team.tags && team.tags.length > 0 && (
                                             <>
                                                 <span className="text-muted-foreground/30 text-[10px]">•</span>
-                                                <div className="flex items-center gap-1.5">
-                                                    {team.tags.slice(0, 2).map((tag: string, i: number) => (
+                                                <div className="flex items-center gap-1.5 leading-none">
+                                                    {team.tags.slice(0, 3).map((tag: string, i: number) => (
                                                         <span key={i} className="text-[10px] font-black uppercase text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-sm">
                                                             {tag}
                                                         </span>

@@ -1,27 +1,21 @@
 
 'use client';
 
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { Match, Player, UserProfile, PlayerPerformance } from '@/lib/types';
 import { doc, getDoc, query, where, collection } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { Loader2, ArrowLeft, AlertCircle, Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
-import { PageHeader } from './page-header';
+import { Loader2, AlertCircle, Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from './ui/button';
-import Link from 'next/link';
 import { MatchInfoCard } from './match-details/MatchInfoCard';
 import { MatchManagementActions } from './match-details/MatchManagementActions';
 import { CompetitionMatchControls } from './match-details/CompetitionMatchControls';
-import { matchStatusConfig } from '@/lib/match-status-config';
-import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 import { useMatchPermissions } from '@/hooks/use-match-permissions';
 import { useMatchActions } from '@/hooks/use-match-actions';
 import { MatchChatView } from './match-chat-view';
 import { MatchTeams } from './match-details/MatchTeams';
 import { PlayersConfirmed } from './match-details/PlayersConfirmed';
-import { MatchChronicleCard } from './match-chronicle-card';
 import { AvailablePlayersSection } from './available-players-section';
 import { ImportActivityDialog } from './health/import-activity-dialog';
 import { PhysicalMetricsCard } from './health/physical-metrics-card';
@@ -33,7 +27,6 @@ import { LiveStats } from '@/components/match/live-stats';
 import { logMatchEventAction, updateLiveStateAction } from '@/lib/actions/server-actions';
 import { useToast } from '@/hooks/use-toast';
 import { MatchWeatherAlert } from './match-details/MatchWeatherAlert';
-import { logger } from '@/lib/logger';
 import { LocationVoting } from './match-details/location-voting';
 import { DateVoting } from './match-details/date-voting';
 import { IntegratedMatchStory } from './match-details/IntegratedMatchStory';
@@ -170,22 +163,9 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
 
   return (
     <div className="relative isolate">
-      <div className="relative flex flex-col gap-8 md:p-6 text-foreground">
-        {/* Back button rendered by page wrapper; avoid duplication here */}
+      <div className="relative flex flex-col gap-6 md:p-6 text-foreground">
 
-        <PageHeader
-          title={match.title}
-          description={
-            <div className="flex items-center gap-2 mt-1">
-              <Badge className={cn("shadow-sm capitalize group/badge transition-transform", matchStatusConfig[match.status]?.className)}>
-                {matchStatusConfig[match.status]?.label || match.status}
-              </Badge>
-              {match.date && <span className="text-muted-foreground">• {new Date(match.date).toLocaleDateString()}</span>}
-            </div>
-          }
-          className="text-foreground"
-        />
-
+        {/* 1. HERO — siempre full width */}
         <MatchInfoCard
           match={match}
           ownerProfile={ownerProfile}
@@ -200,86 +180,21 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
           onJoinOrLeave={isCompetitionMatch ? undefined : actions.handleJoinOrLeave}
         />
 
-        {/* Advertencias climáticas */}
+        {/* 2. Weather alert — full width, condicional */}
         <MatchWeatherAlert match={match} />
 
-        {/* Join requests — visible only for organizer of manual matches */}
-        {permissions.isOwner && match.type === 'manual' && match.status === 'upcoming' && (
-          <JoinRequestsSection matchId={match.id} />
-        )}
+        {/* 3. GRID: Main (3/5) + Sidebar (2/5) */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
-        {/* Management Actions - Centralizadas para organizadores */}
-        {permissions.isOwner && (
-          <MatchManagementActions
-            match={match}
-            allGroupPlayers={allGroupPlayers || []}
-            canFinalize={permissions.canFinalize}
-            isFinishing={actions.isFinishing}
-            isDeleting={actions.isDeleting}
-            onFinish={actions.handleFinish}
-            onDelete={actions.handleDelete}
-            isCompetitionMatch={isCompetitionMatch}
-            onShuffle={isCompetitionMatch ? undefined : actions.handleShuffleTeams}
-            isShuffling={actions.isShuffling}
-            onReschedule={isCompetitionMatch ? undefined : actions.handleReschedule}
-            isRescheduling={actions.isRescheduling}
-            onChangeLocation={isCompetitionMatch ? undefined : actions.handleChangeLocation}
-            isChangingLocation={actions.isChangingLocation}
-          />
-        )}
-
-        {/* Competition Controls */}
-        {isCompetitionMatch && permissions.isOwner && (
-          <div className="mt-6">
-            <CompetitionMatchControls match={match} />
-          </div>
-        )}
-
-        {/* Alerta de Jugadores Duplicados para el Organizador */}
-        {permissions.isOwner && match.type === 'by_teams' && match.teams && match.teams.length === 2 && (() => {
-          const team1Uids = new Set(match.teams[0].players?.map(p => p.uid) || []);
-          const duplicates = match.teams[1].players?.filter(p => team1Uids.has(p.uid)) || [];
-
-          if (duplicates.length === 0) return null;
-
-          return (
-            <div className="mt-6 px-1">
-              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="mt-1 p-2 bg-amber-100 dark:bg-amber-900 rounded-full text-amber-600 dark:text-amber-400">
-                    <AlertCircle className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-amber-900 dark:text-amber-100">Jugadores detectados en ambos equipos</h4>
-                    <p className="text-sm text-amber-800 dark:text-amber-200 mt-1">
-                      {duplicates.map(p => p.displayName).join(', ')} {duplicates.length === 1 ? 'está participando' : 'están participando'} en los dos equipos.
-                      Esto puede generar inconsistencias en las evaluaciones.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <Button variant="ghost" size="sm" className="text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900" onClick={(e) => {
-                    const el = e.currentTarget.closest('.bg-amber-50');
-                    if (el) (el as HTMLElement).style.display = 'none';
-                  }}>
-                    Continuar
-                  </Button>
-                  <EditableTeamsDialog match={match}>
-                    <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white border-none shadow-sm">
-                      Revisar Equipos
-                    </Button>
-                  </EditableTeamsDialog>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+          {/* MAIN (izquierda, 60%) */}
           <div className="lg:col-span-3 space-y-6">
+            {match.teams && match.teams.length > 0 ? (
+              <MatchTeams match={match} isOwner={permissions.isOwner} />
+            ) : (
+              <PlayersConfirmed match={match} />
+            )}
 
-            {/* Votación de Fecha (Para Partidos en estado Planning) */}
+            {/* Votación de Fecha */}
             {(match.status === 'planning' || match.isVotingOpen) && (
               <DateVoting match={match} userId={user?.uid || ''} />
             )}
@@ -289,109 +204,161 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
               <LocationVoting match={match} userId={user?.uid || ''} />
             )}
 
-            {match.teams && match.teams.length > 0 ? (
-              <MatchTeams
-                match={match}
-                isOwner={permissions.isOwner}
-              />
-            ) : (
-              <PlayersConfirmed match={match} />
-            )}
-
-            {/* Live Broadcast Controls for All Matches where Admin is present */}
-            {(match.status === 'upcoming' || match.status === 'active') && permissions.isOwner && (
-              <div className="space-y-6">
-                <LiveMatchDashboard
-                  match={match}
-                  isAdmin={permissions.isOwner}
-                  onEventLogged={async (event) => {
-                    const result = await logMatchEventAction(match.id, event, user?.uid || '');
-                    if (!result.success) {
-                      toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo registrar el evento.' });
-                    } else {
-                      toast({ title: 'Evento registrado', description: `${event.type} - ${event.playerName}` });
-                    }
-                  }}
-                  onMatchStatusChange={async (status, minute) => {
-                    const result = await updateLiveStateAction(match.id, status, minute ?? (match.currentMinute ?? 0), user?.uid || '');
-                    if (!result.success) {
-                      toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo actualizar el estado.' });
-                    } else {
-                      toast({ title: 'Estado del partido actualizado', description: `Nuevo estado: ${status}` });
-                    }
-                  }}
-                />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <MatchTimeline
-                    events={match.events || []}
-                    currentMinute={match.currentMinute || 0}
-                  />
-                  <LiveStats
-                    match={match}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Show player search section if match is incomplete AND not competition */}
+            {/* Available players */}
             {!isCompetitionMatch && (match.players?.length || 0) < match.matchSize && (
-              <AvailablePlayersSection
+              <AvailablePlayersSection match={match} isOwner={permissions.isOwner} />
+            )}
+          </div>
+
+          {/* SIDEBAR (derecha, 40%) — sticky en desktop */}
+          <div className="lg:col-span-2 space-y-6 lg:sticky lg:top-6 lg:self-start">
+
+            {/* Management Actions */}
+            {permissions.isOwner && (
+              <MatchManagementActions
                 match={match}
-                isOwner={permissions.isOwner}
+                allGroupPlayers={allGroupPlayers || []}
+                canFinalize={permissions.canFinalize}
+                isFinishing={actions.isFinishing}
+                isDeleting={actions.isDeleting}
+                onFinish={actions.handleFinish}
+                onDelete={actions.handleDelete}
+                isCompetitionMatch={isCompetitionMatch}
+                onShuffle={isCompetitionMatch ? undefined : actions.handleShuffleTeams}
+                isShuffling={actions.isShuffling}
+                onReschedule={isCompetitionMatch ? undefined : actions.handleReschedule}
+                isRescheduling={actions.isRescheduling}
+                onChangeLocation={isCompetitionMatch ? undefined : actions.handleChangeLocation}
+                isChangingLocation={actions.isChangingLocation}
               />
             )}
 
-            {/* --- NUEVO FLUJO INTEGRADO (Match Story) --- */}
-            {match.status === 'evaluated' && (
-              <IntegratedMatchStory match={match} />
+            {/* Join requests — visible only for organizer of manual matches */}
+            {permissions.isOwner && match.type === 'manual' && match.status === 'upcoming' && (
+              <JoinRequestsSection matchId={match.id} />
             )}
 
-            {/* RESULTADO (Legacy fallback si no está evaluado pero hay score, ej. partidos históricos sin evaluación) */}
-            {match.status !== 'evaluated' && match.finalScore && (
-              <div className="bg-card border shadow-sm rounded-3xl p-6 text-center">
-                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-4">Resultado Final</h3>
-                <div className="flex items-center justify-center gap-6">
-                  <span className="text-xl font-bold">{match.teams?.[0]?.name || 'Equipo 1'}</span>
-                  <div className="px-6 py-2 bg-foreground text-background rounded-full text-3xl font-black">
-                    {match.finalScore.team1} - {match.finalScore.team2}
+            {/* Competition Controls */}
+            {isCompetitionMatch && permissions.isOwner && (
+              <CompetitionMatchControls match={match} />
+            )}
+
+            {/* Alerta de Jugadores Duplicados */}
+            {permissions.isOwner && match.type === 'by_teams' && match.teams && match.teams.length === 2 && (() => {
+              const team1Uids = new Set(match.teams[0].players?.map(p => p.uid) || []);
+              const duplicates = match.teams[1].players?.filter(p => team1Uids.has(p.uid)) || [];
+              if (duplicates.length === 0) return null;
+              return (
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1 p-2 bg-amber-100 dark:bg-amber-900 rounded-full text-amber-600 dark:text-amber-400">
+                      <AlertCircle className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-amber-900 dark:text-amber-100">Jugadores detectados en ambos equipos</h4>
+                      <p className="text-sm text-amber-800 dark:text-amber-200 mt-1">
+                        {duplicates.map(p => p.displayName).join(', ')} {duplicates.length === 1 ? 'está participando' : 'están participando'} en los dos equipos.
+                        Esto puede generar inconsistencias en las evaluaciones.
+                      </p>
+                    </div>
                   </div>
-                  <span className="text-xl font-bold">{match.teams?.[1]?.name || 'Equipo 2'}</span>
+                  <div className="flex gap-2 shrink-0">
+                    <Button variant="ghost" size="sm" className="text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900" onClick={(e) => {
+                      const el = e.currentTarget.closest('.bg-amber-50');
+                      if (el) (el as HTMLElement).style.display = 'none';
+                    }}>
+                      Continuar
+                    </Button>
+                    <EditableTeamsDialog match={match}>
+                      <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white border-none shadow-sm">
+                        Revisar Equipos
+                      </Button>
+                    </EditableTeamsDialog>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
-            {/* Physical Metrics Section - Only for players who participated */}
+            {/* Physical Metrics — solo si el usuario participó */}
             {userPlayerInMatch && userPlayer && (match.status === 'completed' || match.status === 'evaluated') && (
               <div className="space-y-4">
                 {userPerformance ? (
                   <PhysicalMetricsCard performance={userPerformance} />
                 ) : (
-                  <div>
-                    <div className="rounded-lg border bg-card shadow p-0">
-                      <div className="p-6 pb-0">
-                        <h3 className="text-lg font-semibold">Métricas Físicas</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Vinculá tus datos de actividad física para obtener pequeños bonus en tus atributos PAC y PHY.
-                          Es completamente opcional y no afecta tu evaluación principal.
-                        </p>
-                      </div>
-                      <div className="p-6">
-                        <ImportActivityDialog
-                          matchId={matchId}
-                          playerId={userPlayer.id}
-                          matchDate={new Date(match.date)}
-                        />
-                      </div>
+                  <div className="rounded-lg border bg-card shadow p-0">
+                    <div className="p-6 pb-0">
+                      <h3 className="text-lg font-semibold">Métricas Físicas</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Vinculá tus datos de actividad física para obtener pequeños bonus en tus atributos PAC y PHY.
+                        Es completamente opcional y no afecta tu evaluación principal.
+                      </p>
+                    </div>
+                    <div className="p-6">
+                      <ImportActivityDialog
+                        matchId={matchId}
+                        playerId={userPlayer.id}
+                        matchDate={new Date(match.date)}
+                      />
                     </div>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Chat Integrado del Partido */}
             <MatchChatView match={match} />
           </div>
         </div>
+
+        {/* === SECCIONES FULL-WIDTH debajo del grid === */}
+
+        {/* Live dashboard (owner + upcoming/active) */}
+        {(match.status === 'upcoming' || match.status === 'active') && permissions.isOwner && (
+          <div className="space-y-6">
+            <LiveMatchDashboard
+              match={match}
+              isAdmin={permissions.isOwner}
+              onEventLogged={async (event) => {
+                const result = await logMatchEventAction(match.id, event, user?.uid || '');
+                if (!result.success) {
+                  toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo registrar el evento.' });
+                } else {
+                  toast({ title: 'Evento registrado', description: `${event.type} - ${event.playerName}` });
+                }
+              }}
+              onMatchStatusChange={async (status, minute) => {
+                const result = await updateLiveStateAction(match.id, status, minute ?? (match.currentMinute ?? 0), user?.uid || '');
+                if (!result.success) {
+                  toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo actualizar el estado.' });
+                } else {
+                  toast({ title: 'Estado del partido actualizado', description: `Nuevo estado: ${status}` });
+                }
+              }}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <MatchTimeline events={match.events || []} currentMinute={match.currentMinute || 0} />
+              <LiveStats match={match} />
+            </div>
+          </div>
+        )}
+
+        {/* Match story (evaluated) */}
+        {match.status === 'evaluated' && (
+          <IntegratedMatchStory match={match} />
+        )}
+
+        {/* Legacy score */}
+        {match.status !== 'evaluated' && match.finalScore && (
+          <div className="bg-card border shadow-sm rounded-3xl p-6 text-center">
+            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-4">Resultado Final</h3>
+            <div className="flex items-center justify-center gap-6">
+              <span className="text-xl font-bold">{match.teams?.[0]?.name || 'Equipo 1'}</span>
+              <div className="px-6 py-2 bg-foreground text-background rounded-full text-3xl font-black">
+                {match.finalScore.team1} - {match.finalScore.team2}
+              </div>
+              <span className="text-xl font-bold">{match.teams?.[1]?.name || 'Equipo 2'}</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
