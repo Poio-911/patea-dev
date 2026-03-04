@@ -122,7 +122,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
     });
   };
 
-  const matchPhoto = `/images/backgrounds/fondo_${(Math.abs(match.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % 12) + 1}.jpg`;
+  const matchPhoto = `/images/backgrounds/fondo_${(Math.abs(match.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % 9) + 1}.jpg`;
   const isTeamMatch = match.type === 'by_teams' && match.teams && match.teams.length === 2;
   const hasScore = match.finalScore && match.status !== 'upcoming' && match.status !== 'planning';
 

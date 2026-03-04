@@ -6,13 +6,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import {
-  ResponsiveDialog as Dialog,
-  ResponsiveDialogContent as DialogContent,
-  ResponsiveDialogDescription as DialogDescription,
-  ResponsiveDialogFooter as DialogFooter,
-  ResponsiveDialogHeader as DialogHeader,
-  ResponsiveDialogTitle as DialogTitle,
-  ResponsiveDialogTrigger as DialogTrigger,
+    ResponsiveDialog as Dialog,
+    ResponsiveDialogContent as DialogContent,
+    ResponsiveDialogDescription as DialogDescription,
+    ResponsiveDialogFooter as DialogFooter,
+    ResponsiveDialogHeader as DialogHeader,
+    ResponsiveDialogTitle as DialogTitle,
+    ResponsiveDialogTrigger as DialogTrigger,
 } from '@/components/ui/responsive-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -26,7 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImageCropperDialog } from '@/components/image-cropper-dialog';
 import { initializeFirebase } from '@/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { updateProfile } from 'firebase/auth';
+import { updateProfile, getAuth } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import type { Player, UserProfile } from '@/lib/types';
 import { CountryPicker } from '@/components/ui/country-picker';
@@ -114,10 +114,16 @@ export function EditProfileDialog({ user, playerData, userProfile }: EditProfile
             if (isErrorResponse(res)) throw new Error(res.error || 'Error al actualizar en el servidor');
 
             // 2. Update Client Side Auth (so UI updates immediately without reload)
-            await updateProfile(user, {
-                displayName: data.displayName,
-                ...(finalPhotoURL !== user.photoURL ? { photoURL: finalPhotoURL } : {})
-            });
+            // IMPORTANT: updateProfile() requires the native Firebase Auth User object (auth.currentUser),
+            // NOT the custom UserProfile POJO from Firestore, which lacks internal methods like getIdToken().
+            const { firebaseApp } = initializeFirebase();
+            const currentUser = getAuth(firebaseApp).currentUser;
+            if (currentUser) {
+                await updateProfile(currentUser, {
+                    displayName: data.displayName,
+                    ...(finalPhotoURL !== user.photoURL ? { photoURL: finalPhotoURL } : {})
+                });
+            }
 
             toast({
                 title: '¡Perfil actualizado!',

@@ -135,7 +135,7 @@ export function NextMatchCard({ matches, allPlayers = [] }: NextMatchCardProps) 
     const isTeamMatch = currentMatch.type === 'by_teams' && currentMatch.teams && currentMatch.teams.length === 2;
 
     // Dynamic photo from /images/backgrounds/ (same as match cards) but AT FULL COLOR
-    const matchPhoto = `/images/backgrounds/fondo_${(Math.abs(currentMatch.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % 12) + 1}.jpg`;
+    const matchPhoto = `/images/backgrounds/fondo_${(Math.abs(currentMatch.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % 9) + 1}.jpg`;
 
     return (
         <div className={cn(
