@@ -96,11 +96,6 @@ export function UserMenu({ user, player, onLogout, onRequestPermission }: UserMe
                     <span>Configuración</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push('/comunidad')}>
-                    <Users2 className="mr-2 h-4 w-4" />
-                    <span>Comunidad</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => router.push('/groups')}>
                     <Users2 className="mr-2 h-4 w-4" />
                     <span>Gestionar Grupos</span>

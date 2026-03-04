@@ -65,7 +65,7 @@ export function Header({ user, player, onLogout, onRequestPermission }: HeaderPr
                 {/* Right section: Actions + User Info */}
                 <div className="flex items-center gap-1 sm:gap-3 lg:gap-4">
                     {/* Actions: Help + Invitations + Notifications */}
-                    <div className="flex items-center gap-0.5 sm:gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                         <HelpDialog />
                         <InvitationsBell />
                         <NotificationBell />
@@ -101,9 +101,11 @@ export function Header({ user, player, onLogout, onRequestPermission }: HeaderPr
                                 )}
                             </AnimatePresence>
 
-                            {/* OVR Circle — visible en desktop y mobile */}
-                            <div className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 text-base md:text-lg font-bold rounded-full bg-primary/10 border border-primary/20 text-primary shrink-0 transition-transform hover:scale-105">
-                                {player.ovr}
+                            {/* OVR overlaid on desktop only — badge in corner of avatar-equivalent circle */}
+                            <div className="relative hidden sm:flex items-center justify-center h-9 w-9 md:h-10 md:w-10 shrink-0">
+                                <div className="flex items-center justify-center h-full w-full text-base md:text-lg font-bold rounded-full bg-primary/10 border border-primary/20 text-primary transition-transform hover:scale-105">
+                                    {player.ovr}
+                                </div>
                             </div>
                         </div>
                     )}
