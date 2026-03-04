@@ -4,7 +4,7 @@
 import { useState, useMemo } from 'react';
 import { useUser, useFirestore } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, where, doc, updateDoc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc, deleteDoc, getDocs, writeBatch, arrayUnion } from 'firebase/firestore';
 import type { Group } from '@/lib/types';
 import { Button } from '../ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -52,7 +52,13 @@ export function UserGroupsList() {
     setIsChangingGroup(groupId);
     const userRef = doc(firestore, 'users', user.uid);
     try {
-      await updateDoc(userRef, { activeGroupId: groupId });
+      // IMPORTANT: also update `groups` array to ensure consistency.
+      // The dashboard checks `user.groups.length === 0` to decide if the user is new.
+      // If groups is empty/missing while activeGroupId is set, the welcome screen appears.
+      await updateDoc(userRef, {
+        activeGroupId: groupId,
+        groups: arrayUnion(groupId),
+      });
       toast({
         title: 'Grupo cambiado',
         description: `Ahora estás operando en el grupo ${groups?.find(g => g.id === groupId)?.name}.`,

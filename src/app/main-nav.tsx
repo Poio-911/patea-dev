@@ -88,7 +88,6 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const isFullscreenLayout = pathname === '/explorar';
 
   return (
     <div className="relative min-h-screen w-full">
@@ -100,10 +99,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
       />
 
       <main className="min-h-screen pt-16 pb-[env(safe-area-inset-bottom)]">
-        <div className={cn(
-          "min-h-full",
-          !isFullscreenLayout ? "p-4 md:p-6 pb-[calc(5rem+env(safe-area-inset-bottom))]" : "p-0"
-        )}>
+        <div className="min-h-full p-4 md:p-6 pb-[calc(5rem+env(safe-area-inset-bottom))]">
           {children}
         </div>
       </main>

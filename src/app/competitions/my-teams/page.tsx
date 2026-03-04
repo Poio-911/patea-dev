@@ -66,7 +66,7 @@ export default function MyTeamsPage() {
           <InvitationsSheet />
         </PageHeader>
         <Button asChild variant="outline" className="shrink-0">
-          <Link href="/competitions">
+          <Link href="/competitions/amistosos">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Volver
           </Link>
@@ -83,7 +83,7 @@ export default function MyTeamsPage() {
           </h2>
         </div>
         {teamsLoading ? (
-            <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+          <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
         ) : teams ? (
           <MyTeamsAvailability teams={teams} userId={user.uid} isActive={true} />
         ) : (

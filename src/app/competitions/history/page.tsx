@@ -58,7 +58,7 @@ export default function HistoryPage() {
           <InvitationsSheet />
         </PageHeader>
         <Button asChild variant="outline" className="shrink-0">
-          <Link href="/competitions">
+          <Link href="/competitions/amistosos">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Volver
           </Link>

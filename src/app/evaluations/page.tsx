@@ -3,29 +3,32 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, collectionGroup, getDocs, onSnapshot, Unsubscribe, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, collectionGroup, getDocs, onSnapshot, doc, getDoc, Unsubscribe } from 'firebase/firestore';
 import type { Match, Player, EvaluationAssignment, EvaluationSubmission, Evaluation } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/page-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShieldQuestion, Calendar, Edit, Eye, FileClock, Users, MapPin, UsersRound, Check, EyeOff, Loader2 } from 'lucide-react';
+import { ShieldQuestion, Edit, Eye, EyeOff, FileClock, UsersRound, Check, Loader2, Clock, CheckCircle2, UserCheck } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format, subDays, isBefore } from 'date-fns';
+import { format, subDays, isBefore, differenceInHours } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
-import { MatchTeamsDialog } from '@/components/match-teams-dialog';
 import { ViewSubmissionDialog } from '@/components/view-submission-dialog';
 import { AttributesHelpDialog } from '@/components/attributes-help-dialog';
-import { MatchEventCard } from '@/components/ui/gamer/match-event-card';
-import { GamerProgress } from '@/components/ui/gamer/gamer-progress';
 import { respondToIdentityRevealAction } from '@/lib/actions/evaluation-actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { motion } from 'framer-motion';
+
+type AssignedPlayerInfo = {
+    id: string;
+    name: string;
+    photoURL?: string;
+    position?: string;
+};
 
 type PendingItem = {
     match: Match;
@@ -33,95 +36,96 @@ type PendingItem = {
     userAssignmentCount: number;
     totalAssignments: number;
     completedAssignments: number;
+    assignedPlayers: AssignedPlayerInfo[];
 };
 
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
 
 type IdentityRevealRequest = {
-  evaluation: Evaluation;
-  fromPlayerName: string;
-  fromPlayerPhotoUrl: string;
-  matchTitle: string;
+    evaluation: Evaluation;
+    fromPlayerName: string;
+    fromPlayerPhotoUrl: string;
+    matchTitle: string;
 };
 
 function IdentityRevealRequestCard({
-  request,
-  onResponded,
+    request,
+    onResponded,
 }: {
-  request: IdentityRevealRequest;
-  onResponded: (evaluationId: string) => void;
+    request: IdentityRevealRequest;
+    onResponded: (evaluationId: string) => void;
 }) {
-  const { user } = useUser();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState<'accepted' | 'rejected' | null>(null);
+    const { user } = useUser();
+    const { toast } = useToast();
+    const [loading, setLoading] = useState<'accepted' | 'rejected' | null>(null);
 
-  const handleRespond = async (response: 'accepted' | 'rejected') => {
-    if (!user) return;
-    setLoading(response);
-    try {
-      const result = await respondToIdentityRevealAction(request.evaluation.id, user.uid, response);
-      if (result.success) {
-        toast({
-          title: response === 'accepted' ? '✅ Identidad revelada' : '🔒 Identidad mantenida',
-          description: response === 'accepted'
-            ? `${request.fromPlayerName} ya sabe que fuiste vos.`
-            : 'Tu anonimato fue preservado.',
-        });
-        onResponded(request.evaluation.id);
-      } else {
-        toast({ variant: 'destructive', description: result.error || 'Error al responder.' });
-        setLoading(null);
-      }
-    } catch {
-      toast({ variant: 'destructive', description: 'Error de conexión.' });
-      setLoading(null);
-    }
-  };
+    const handleRespond = async (response: 'accepted' | 'rejected') => {
+        if (!user) return;
+        setLoading(response);
+        try {
+            const result = await respondToIdentityRevealAction(request.evaluation.id, user.uid, response);
+            if (result.success) {
+                toast({
+                    title: response === 'accepted' ? '✅ Identidad revelada' : '🔒 Identidad mantenida',
+                    description: response === 'accepted'
+                        ? `${request.fromPlayerName} ya sabe que fuiste vos.`
+                        : 'Tu anonimato fue preservado.',
+                });
+                onResponded(request.evaluation.id);
+            } else {
+                toast({ variant: 'destructive', description: result.error || 'Error al responder.' });
+                setLoading(null);
+            }
+        } catch {
+            toast({ variant: 'destructive', description: 'Error de conexión.' });
+            setLoading(null);
+        }
+    };
 
-  return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-sm game:border-primary/30 game:bg-card/80 flex flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <Avatar className="h-12 w-12 ring-2 ring-background shadow-md">
-          {request.fromPlayerPhotoUrl ? (
-            <AvatarImage src={request.fromPlayerPhotoUrl} />
-          ) : (
-            <AvatarFallback className="bg-primary/20 text-primary font-bold">
-              {request.fromPlayerName.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          )}
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm truncate">{request.fromPlayerName}</p>
-          <p className="text-xs text-muted-foreground truncate">{request.matchTitle}</p>
+    return (
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm game:border-primary/30 game:bg-card/80 flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+                <Avatar className="h-12 w-12 ring-2 ring-background shadow-md">
+                    {request.fromPlayerPhotoUrl ? (
+                        <AvatarImage src={request.fromPlayerPhotoUrl} />
+                    ) : (
+                        <AvatarFallback className="bg-primary/20 text-primary font-bold">
+                            {request.fromPlayerName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                    )}
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm truncate">{request.fromPlayerName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{request.matchTitle}</p>
+                </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+                <span className="font-semibold text-foreground">{request.fromPlayerName}</span> quiere saber que fuiste vos quien lo evaluó.
+            </p>
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/50 game:border-white/5">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={loading !== null}
+                    onClick={() => handleRespond('rejected')}
+                    className="text-xs"
+                >
+                    {loading === 'rejected' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <EyeOff className="h-3 w-3 mr-1" />}
+                    Mantener anonimato
+                </Button>
+                <Button
+                    size="sm"
+                    disabled={loading !== null}
+                    onClick={() => handleRespond('accepted')}
+                    className="text-xs"
+                >
+                    {loading === 'accepted' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
+                    Revelar identidad
+                </Button>
+            </div>
         </div>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        <span className="font-semibold text-foreground">{request.fromPlayerName}</span> quiere saber que fuiste vos quien lo evaluó.
-      </p>
-      <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/50 game:border-white/5">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={loading !== null}
-          onClick={() => handleRespond('rejected')}
-          className="text-xs"
-        >
-          {loading === 'rejected' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <EyeOff className="h-3 w-3 mr-1" />}
-          Mantener anonimato
-        </Button>
-        <Button
-          size="sm"
-          disabled={loading !== null}
-          onClick={() => handleRespond('accepted')}
-          className="text-xs"
-        >
-          {loading === 'accepted' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
-          Revelar identidad
-        </Button>
-      </div>
-    </div>
-  );
+    );
 }
 
 export default function EvaluationsPage() {
@@ -182,8 +186,6 @@ export default function EvaluationsPage() {
             const completedMatchIds = new Set(userCompletedAssignments.map(a => a.matchId));
             const submissionMatchIds = new Set([...submissionsMap.keys()]);
 
-            // Fix "Ghost Matches": Only include matches where the user HAS assignments or submissions
-            // We NO LONGER include all participated matches by default to avoid showing 0/0 items
             const allRelevantMatchIds = [...new Set([...pendingMatchIds, ...completedMatchIds, ...submissionMatchIds])];
 
             if (allRelevantMatchIds.length === 0) {
@@ -192,7 +194,7 @@ export default function EvaluationsPage() {
                 return;
             }
 
-            // 2. Fetch the actual matches AND processed submissions in parallel
+            // 2. Fetch matches, processed submissions, AND player info in parallel
             const matchesMap = new Map<string, Match>();
             const chunks = [];
             for (let i = 0; i < allRelevantMatchIds.length; i += 30) {
@@ -203,8 +205,6 @@ export default function EvaluationsPage() {
                 getDocs(query(collection(firestore, 'matches'), where('__name__', 'in', chunk)))
             );
 
-            // Reverted back to individual queries because collectionGroup required a missing index.
-            // Since we removed participatedMatchIds, this array is very small now, making this fast.
             const processedPromises = allRelevantMatchIds.map(matchId =>
                 getDocs(query(collection(firestore, `matches/${matchId}/processedSubmissions`), where('evaluatorId', '==', user.uid)))
             );
@@ -225,20 +225,36 @@ export default function EvaluationsPage() {
                 });
             });
 
+            // 3. Fetch player info for pending assignments
+            const subjectIds = [...new Set(userPendingAssignments.map(a => a.subjectId))];
+            const playersMap = new Map<string, AssignedPlayerInfo>();
+            if (subjectIds.length > 0) {
+                const playerChunks = [];
+                for (let i = 0; i < subjectIds.length; i += 10) playerChunks.push(subjectIds.slice(i, i + 10));
+                const playerSnaps = await Promise.all(
+                    playerChunks.map(chunk => getDocs(query(collection(firestore, 'players'), where('__name__', 'in', chunk))))
+                );
+                playerSnaps.forEach(snap => snap.docs.forEach(d => {
+                    const p = d.data() as any;
+                    playersMap.set(d.id, { id: d.id, name: p.name, photoURL: p.photoURL || p.photoUrl || '', position: p.position });
+                }));
+            }
+
             const initialItems: (PendingItem | null)[] = allRelevantMatchIds.map(matchId => {
                 const match = matchesMap.get(matchId);
                 const isSubmitted = submissionsMap.has(matchId);
 
-                if (!match || (match.status === 'evaluated' && !isSubmitted)) return null;
+                if (!match) return null;
+                if (match.status === 'evaluated' && !isSubmitted) return null;
 
-                const userAssignmentCount = userPendingAssignments.filter(a => a.matchId === matchId).length;
+                const myPendingAssignments = userPendingAssignments.filter(a => a.matchId === matchId);
+                const userAssignmentCount = myPendingAssignments.length;
 
-                // If no assignments and not submitted, avoid showing unless it's recent and we are expecting something
-                if (userAssignmentCount === 0 && !isSubmitted) {
-                    // Check if there are any assignments at all for this match for THIS user in completed state
-                    const hasCompleted = userCompletedAssignments.some(a => a.matchId === matchId);
-                    if (!hasCompleted) return null;
-                }
+                if (userAssignmentCount === 0 && !isSubmitted) return null;
+
+                const assignedPlayers = myPendingAssignments
+                    .map(a => playersMap.get(a.subjectId))
+                    .filter((p): p is AssignedPlayerInfo => !!p);
 
                 return {
                     match,
@@ -246,6 +262,7 @@ export default function EvaluationsPage() {
                     userAssignmentCount,
                     totalAssignments: 0,
                     completedAssignments: 0,
+                    assignedPlayers,
                 };
             });
 
@@ -333,89 +350,152 @@ export default function EvaluationsPage() {
         fetchRequests();
     }, [user, firestore]);
 
+    const getMatchTypeLabel = (title?: string) => {
+        if (!title) return 'Partido';
+        if (title.includes('Copa')) return 'Copa';
+        if (title.includes('Liga')) return 'Liga';
+        return 'Amistoso';
+    };
+
+    const getUrgencyInfo = (match: Match) => {
+        // Evaluations close 72h after the match
+        const deadline = new Date(match.date);
+        deadline.setHours(deadline.getHours() + 72);
+        const now = new Date();
+        const hoursLeft = differenceInHours(deadline, now);
+        if (hoursLeft <= 0) return { label: 'Cerrada', color: 'text-slate-400 game:text-slate-500', bg: 'bg-slate-100 game:bg-slate-800', urgent: false };
+        if (hoursLeft <= 12) return { label: `${hoursLeft}h restantes`, color: 'text-red-600 game:text-red-400', bg: 'bg-red-50 game:bg-red-950/40 border border-red-200 game:border-red-500/30', urgent: true };
+        if (hoursLeft <= 24) return { label: `${hoursLeft}h restantes`, color: 'text-amber-600 game:text-amber-400', bg: 'bg-amber-50 game:bg-amber-950/40 border border-amber-200 game:border-amber-500/30', urgent: false };
+        const days = Math.floor(hoursLeft / 24);
+        return { label: `${days}d restantes`, color: 'text-slate-500 game:text-slate-400', bg: 'bg-muted game:bg-background', urgent: false };
+    };
+
     const renderCard = (item: PendingItem) => {
         const isEvaluationSent = !!item.submission;
         const evaluationProgress = item.totalAssignments > 0 ? (item.completedAssignments / item.totalAssignments) * 100 : 0;
         const matchDate = new Date(item.match.date);
+        const matchType = getMatchTypeLabel(item.match.title);
+        const urgency = getUrgencyInfo(item.match);
 
-        // --- CLEAN SAAS DESIGN (Light) & STRICT GAME MODE (Dark/Game) ---
         return (
-            <div key={item.match.id} className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-5 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] transition-all hover:border-border hover:shadow-lg game:border-primary/30 game:bg-card/80 game:backdrop-blur-md game:shadow-[0_0_20px_rgba(170,254,72,0.1)] game:hover:border-primary/80 game:hover:shadow-[0_0_30px_rgba(170,254,72,0.25)]">
+            <motion.div
+                key={item.match.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] transition-all hover:shadow-lg game:border-primary/30 game:bg-card/80 game:backdrop-blur-md game:shadow-[0_0_20px_rgba(170,254,72,0.08)] game:hover:border-primary/80"
+            >
+                {/* Top accent strip by type */}
+                <div className={cn(
+                    'h-0.5 w-full',
+                    isEvaluationSent ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' :
+                        urgency.urgent ? 'bg-gradient-to-r from-red-500 to-orange-500 animate-pulse' :
+                            matchType === 'Copa' ? 'bg-gradient-to-r from-amber-500 to-yellow-400' :
+                                matchType === 'Liga' ? 'bg-gradient-to-r from-blue-600 to-indigo-500' :
+                                    'bg-gradient-to-r from-slate-400 to-slate-300 game:from-primary/50 game:to-primary/20'
+                )} />
 
-                {/* Game Mode Glow Effect (Volt Yellow) - ONLY in Game Mode */}
-                <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-primary/10 blur-[60px] hidden game:block pointer-events-none" />
-
-                {/* Header: Date & Status */}
-                <div className="mb-4 flex items-start justify-between relative z-10">
-                    <div className="flex items-center gap-3">
-                        {/* Date Box: Clean Gray (Light) vs Deep Tech (Game) */}
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-muted/50 border border-border/50 px-3 py-1.5 game:bg-background game:border game:border-primary/20 game:shadow-inner">
-                            <span className="text-xs font-bold text-slate-500 game:text-primary/90 tracking-widest">{format(matchDate, 'MMM', { locale: es }).toUpperCase()}</span>
-                            <span className="text-lg font-bold leading-none text-foreground game:text-white font-mono">{format(matchDate, 'dd')}</span>
-                        </div>
-
-                        <div className="flex flex-col">
-                            {/* Type Badge: Clean Label (Light - Monochrome) vs Neon Badge (Game) */}
-                            <span className={cn(
-                                "text-xs font-medium uppercase tracking-wider w-fit px-2 py-0.5 rounded",
-                                "text-muted-foreground bg-muted border border-border", // Light: Strictly Monochrome
-                                "game:text-xs game:font-bold game:bg-background game:border", // Game Base
-                                item.match.title?.includes('Copa') ? "game:text-accent game:border-accent/40" : "game:text-primary game:border-primary/40" // Game Variant
-                            )}>
-                                {item.match.title?.includes('Copa') ? 'Copa' : 'Amistoso'}
-                            </span>
-                            <h3 className="line-clamp-1 text-base font-bold text-foreground game:text-white group-hover:text-blue-600 game:group-hover:text-primary transition-colors mt-1">
-                                {item.match.title}
-                            </h3>
+                <div className="p-5 space-y-4">
+                    {/* Header: Date, Type, Urgency */}
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-3">
+                            <div className="flex flex-col items-center justify-center rounded-lg bg-muted/50 border border-border/50 px-2.5 py-1.5 min-w-[44px] game:bg-background game:border game:border-primary/20">
+                                <span className="text-[10px] font-bold text-muted-foreground game:text-primary/70 tracking-widest">{format(matchDate, 'MMM', { locale: es }).toUpperCase()}</span>
+                                <span className="text-xl font-black leading-none text-foreground game:text-white font-mono">{format(matchDate, 'dd')}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className={cn(
+                                        'text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border',
+                                        matchType === 'Copa' ? 'text-amber-700 bg-amber-50 border-amber-200 game:text-amber-300 game:bg-amber-900/30 game:border-amber-500/30' :
+                                            matchType === 'Liga' ? 'text-blue-700 bg-blue-50 border-blue-200 game:text-blue-300 game:bg-blue-900/30 game:border-blue-500/30' :
+                                                'text-muted-foreground bg-muted border-border'
+                                    )}>
+                                        {matchType}
+                                    </span>
+                                    {!isEvaluationSent && (
+                                        <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1', urgency.bg, urgency.color)}>
+                                            {urgency.urgent && <Clock className="h-2.5 w-2.5" />}
+                                            {urgency.label}
+                                        </span>
+                                    )}
+                                    {isEvaluationSent && (
+                                        <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full game:text-emerald-400 game:bg-emerald-950/30 game:border-emerald-500/30 flex items-center gap-1">
+                                            <CheckCircle2 className="h-2.5 w-2.5" />
+                                            Enviada
+                                        </span>
+                                    )}
+                                </div>
+                                <h3 className="font-bold text-sm text-foreground game:text-white mt-1 leading-tight line-clamp-1">
+                                    {item.match.title}
+                                </h3>
+                            </div>
                         </div>
                     </div>
+
+                    {/* Assigned Players Section */}
+                    {!isEvaluationSent && item.assignedPlayers.length > 0 && (
+                        <div className="space-y-2">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground game:text-primary/60">Evaluás a</p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                {item.assignedPlayers.map(player => (
+                                    <div key={player.id} className="flex items-center gap-1.5 bg-muted/60 border border-border/50 rounded-full px-2 py-0.5 game:bg-background game:border-white/10">
+                                        <Avatar className="h-5 w-5">
+                                            <AvatarImage src={player.photoURL} alt={player.name} />
+                                            <AvatarFallback className="text-[9px] font-bold bg-blue-100 text-blue-700 game:bg-primary/20 game:text-primary">
+                                                {player.name.charAt(0).toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <span className="text-xs font-medium text-foreground game:text-white">{player.name.split(' ')[0]}</span>
+                                        {player.position && <span className="text-[9px] text-muted-foreground font-mono">{player.position}</span>}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Submission summary for sent evaluations */}
+                    {isEvaluationSent && item.submission && (
+                        <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 game:bg-emerald-950/20 game:border-emerald-500/20">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600 game:text-emerald-400 shrink-0" />
+                            <div className="text-xs text-emerald-700 game:text-emerald-300">
+                                <span className="font-semibold">Evaluaste {item.submission.submission.evaluations.length} jugadores</span>
+                                {item.submission.submission.evaluatorGoals !== undefined && (
+                                    <span className="text-emerald-600/70 game:text-emerald-400/70 ml-1">
+                                        · {item.submission.submission.evaluatorGoals} goles · {item.submission.submission.evaluatorAssists ?? 0} asis.
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Global round progress */}
+                    {!isEvaluationSent && item.totalAssignments > 0 && (
+                        <div className="space-y-1.5">
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                                <span className="uppercase tracking-widest font-bold game:text-primary/60">Progreso de la ronda</span>
+                                <span className="font-mono game:text-white">{item.completedAssignments}/{item.totalAssignments}</span>
+                            </div>
+                            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden border border-border/50 game:bg-background game:border-white/5">
+                                <div
+                                    className="h-full bg-blue-500 game:bg-gradient-to-r game:from-primary game:to-primary/80 transition-all duration-700"
+                                    style={{ width: `${evaluationProgress}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {/* Progress Section */}
-                <div className="mb-6 space-y-3 relative z-10">
-                    <div className="flex items-center justify-between text-xs text-slate-500 game:text-slate-400 font-medium">
-                        <span className="uppercase tracking-wider text-[10px] text-slate-400 game:text-primary/80">Tu Progreso</span>
-                        <span className="text-slate-700 game:text-white font-mono">{item.completedAssignments} <span className="text-slate-300 game:text-slate-600">/</span> {item.totalAssignments}</span>
-                    </div>
-
-                    {/* Progress Bar: Clean Line (Light) vs Volt Gradient (Game) */}
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted border border-border/50 game:bg-background game:border game:border-white/5">
-                        <div
-                            className="h-full bg-blue-600 game:bg-gradient-to-r game:from-primary game:to-primary/80 game:shadow-[0_0_12px_rgba(170,254,72,0.6)] transition-all duration-500 ease-out relative"
-                            style={{ width: `${evaluationProgress}%` }}
-                        >
-                            {/* Shine effect for Game Mode ONLY */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent translate-x-[-100%] animate-[shimmer_2s_infinite] hidden game:block" />
-                        </div>
-                    </div>
-
-                    {/* Status Text */}
-                    <div className="flex items-center gap-2 text-sm">
-                        {isEvaluationSent ? (
-                            <div className="flex items-center gap-2 font-medium bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-1 rounded-md game:bg-emerald-950/30 game:text-emerald-400 game:border game:border-emerald-500/30">
-                                <Check className="h-4 w-4" />
-                                <span>Completado</span>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-2 text-slate-600 game:text-slate-300">
-                                <UsersRound className="h-4 w-4 text-slate-400 game:text-slate-500" />
-                                <span>{item.userAssignmentCount} jugadores asignados</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Actions Footer */}
-                <div className="mt-auto grid grid-cols-2 gap-3 pt-4 border-t border-border/50 game:border-white/5 relative z-10">
+                {/* Footer CTA */}
+                <div className="px-5 pb-5">
                     {isEvaluationSent && item.submission ? (
                         <ViewSubmissionDialog submission={item.submission} matchPlayers={item.match.players as any}>
-                            <Button variant="outline" className="w-full col-span-2 border-border bg-card text-foreground hover:bg-muted/50 hover:text-foreground hover:border-border shadow-sm game:border-primary/20 game:bg-background game:text-primary game:hover:bg-primary/20 game:hover:border-primary/50 transition-all">
+                            <Button variant="outline" className="w-full border-border bg-card text-foreground hover:bg-muted/50 hover:border-border shadow-sm game:border-primary/20 game:bg-background game:text-primary game:hover:bg-primary/10 transition-all">
                                 <Eye className="mr-2 h-4 w-4" />
-                                Ver Evaluación
+                                Ver mi Evaluación
                             </Button>
                         </ViewSubmissionDialog>
                     ) : (
-                        <Button asChild className="col-span-2 w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm border border-transparent hover:shadow-md game:bg-primary game:hover:bg-primary/90 game:text-background game:font-black game:uppercase game:tracking-wide game:shadow-[0_0_20px_rgba(170,254,72,0.4)] game:hover:shadow-[0_0_35px_rgba(170,254,72,0.6)] transition-all hover:scale-[1.01]">
+                        <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm hover:shadow-md game:bg-primary game:hover:bg-primary/90 game:text-background game:font-black game:uppercase game:tracking-wider game:shadow-[0_0_20px_rgba(170,254,72,0.3)] transition-all hover:scale-[1.01] active:scale-100">
                             <Link href={`/evaluations/${item.match.id}`}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 EVALUAR AHORA
@@ -423,8 +503,7 @@ export default function EvaluationsPage() {
                         </Button>
                     )}
                 </div>
-
-            </div>
+            </motion.div>
         );
     };
 
@@ -467,18 +546,55 @@ export default function EvaluationsPage() {
         )
     }
 
+    // Compute stats for the header
+    const totalCompleted = pendingItems.filter(i => !!i.submission).length;
+    const pendingCount = pendingItems.filter(i => !i.submission).length;
+    const urgentCount = pendingItems.filter(i => !i.submission && differenceInHours(new Date(new Date(i.match.date).getTime() + 72 * 3600000), new Date()) <= 12).length;
+
     return (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-6">
             <FirstTimeInfoDialog
                 featureKey="hasSeenEvaluationsInfo"
                 title="Bandeja de Evaluaciones"
                 description="Después de cada partido, acá aparecerán tus tareas de evaluación. Tenés que puntuar el rendimiento de un par de compañer@s para que el sistema pueda actualizar los OVRs de tod@s. ¡Tu opinión es clave!"
             />
-            <PageHeader title="Mis Evaluaciones" description="Aquí encontrarás los partidos que tienes pendientes por evaluar." />
 
-            <AttributesHelpDialog>
-                <Button variant="link" className="p-0 h-auto self-start">¿Qué significan los atributos de evaluación?</Button>
-            </AttributesHelpDialog>
+            {/* Header with stats */}
+            <div className="space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary mb-1 flex items-center gap-1.5">
+                            <UserCheck className="h-3.5 w-3.5" />
+                            SALA DE EVALUACIONES
+                        </p>
+                        <h1 className="text-2xl font-black tracking-tight">Mis Evaluaciones</h1>
+                    </div>
+                    <AttributesHelpDialog>
+                        <Button variant="outline" size="sm" className="shrink-0 text-xs">
+                            ¿Qué evalúo?
+                        </Button>
+                    </AttributesHelpDialog>
+                </div>
+
+                {/* Stats row */}
+                <div className="grid grid-cols-3 gap-3">
+                    <div className="rounded-xl border border-border bg-card px-4 py-3 text-center game:border-primary/20 game:bg-card/80">
+                        <p className="text-2xl font-black text-foreground game:text-white">{pendingCount}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">Pendientes</p>
+                    </div>
+                    <div className="rounded-xl border border-border bg-card px-4 py-3 text-center game:border-primary/20 game:bg-card/80">
+                        <p className="text-2xl font-black text-emerald-600 game:text-emerald-400">{totalCompleted}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">Completadas</p>
+                    </div>
+                    <div className={cn(
+                        "rounded-xl border px-4 py-3 text-center",
+                        urgentCount > 0 ? 'border-red-200 bg-red-50 game:border-red-500/30 game:bg-red-950/20' : 'border-border bg-card game:border-primary/20 game:bg-card/80'
+                    )}>
+                        <p className={cn("text-2xl font-black", urgentCount > 0 ? 'text-red-600 game:text-red-400' : 'text-foreground game:text-white')}>{urgentCount}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">Urgentes</p>
+                    </div>
+                </div>
+            </div>
 
             <Tabs defaultValue="pending" className="w-full">
                 <TabsList className="grid w-full grid-cols-3 max-w-md">

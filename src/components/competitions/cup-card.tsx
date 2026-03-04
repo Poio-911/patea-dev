@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import type { Cup } from '@/lib/types';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Trophy, Target, ArrowRight, Crown } from 'lucide-react';
 import { getRoundName } from '@/lib/utils/cup-bracket';
@@ -12,15 +11,15 @@ type CupCardProps = {
   cup: Cup;
 };
 
-const statusConfig = {
-  draft: { label: 'Borrador', variant: 'secondary' as const },
-  open_for_applications: { label: 'Abierta', variant: 'default' as const },
-  in_progress: { label: 'En Curso', variant: 'default' as const },
-  completed: { label: 'Finalizada', variant: 'outline' as const },
+const statusLabels = {
+  draft: 'Borrador',
+  open_for_applications: 'Abierta',
+  in_progress: 'En Curso',
+  completed: 'Finalizada',
 };
 
 export function CupCard({ cup }: CupCardProps) {
-  const status = statusConfig[cup.status] || statusConfig.draft;
+  const statusLabel = statusLabels[cup.status] || 'Borrador';
   const isCompleted = cup.status === 'completed' && cup.championTeamId;
 
   // Bracket progress from bracket data
@@ -32,33 +31,26 @@ export function CupCard({ cup }: CupCardProps) {
     <Link href={`/competitions/cups/${cup.id}`} className="block group">
       <div
         className={cn(
-          'relative overflow-hidden rounded-2xl border transition-all duration-300',
-          'hover:shadow-xl hover:-translate-y-1.5 hover:shadow-amber-500/10 game:hover:shadow-amber-500/25',
-          'bg-gradient-to-br from-amber-50 via-white to-yellow-50/50',
-          'dark:from-amber-950/30 dark:via-card dark:to-yellow-950/20',
-          'game:from-amber-900/50 game:via-amber-950/30 game:to-yellow-900/40',
-          'border-amber-100 dark:border-amber-900/50 game:border-amber-500/50',
-          'group-hover:border-amber-300 dark:group-hover:border-amber-700/60 game:group-hover:border-amber-400/70',
+          'relative rounded-2xl border border-border border-l-4 border-l-amber-500 bg-card',
+          'overflow-hidden transition-all duration-300',
+          'hover:-translate-y-1.5 hover:shadow-lg hover:shadow-amber-500/10',
         )}
       >
-        {/* Top accent strip */}
-        <div className="h-1 w-full bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-400" />
-
         <div className="p-5 space-y-4">
           {/* Header: icon + name + status badge */}
           <div className="flex items-start gap-3">
             <div
               className={cn(
-                'w-14 h-14 rounded-xl overflow-hidden shrink-0 flex items-center justify-center shadow-md',
+                'w-14 h-14 rounded-xl overflow-hidden shrink-0 flex items-center justify-center',
                 cup.logoUrl
-                  ? 'border border-amber-100 dark:border-amber-900/50 bg-white dark:bg-amber-950/20'
-                  : 'bg-gradient-to-br from-amber-500 to-yellow-500',
+                  ? 'bg-muted/30 border border-border'
+                  : 'bg-amber-500/10',
               )}
             >
               {cup.logoUrl ? (
                 <img src={cup.logoUrl} alt={cup.name} className="w-full h-full object-contain" />
               ) : (
-                <Trophy className="h-7 w-7 text-white" strokeWidth={1.5} />
+                <Trophy className="h-7 w-7 text-amber-500" strokeWidth={1.5} />
               )}
             </div>
 
@@ -67,20 +59,9 @@ export function CupCard({ cup }: CupCardProps) {
                 <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors leading-tight">
                   {cup.name}
                 </h3>
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    'shrink-0 text-xs font-medium',
-                    cup.status === 'in_progress' &&
-                      'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800',
-                    cup.status === 'completed' && 'bg-muted text-muted-foreground',
-                    cup.status === 'draft' && 'bg-muted text-muted-foreground',
-                    cup.status === 'open_for_applications' &&
-                      'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300',
-                  )}
-                >
-                  {cup.status === 'in_progress' ? 'En Curso' : status.label}
-                </Badge>
+                <span className="shrink-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full text-[10px] font-bold sport-text uppercase tracking-widest">
+                  ● {statusLabel}
+                </span>
               </div>
               <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
                 <span>{cup.teams.length} equipos</span>
@@ -101,18 +82,18 @@ export function CupCard({ cup }: CupCardProps) {
               </div>
               <Progress
                 value={bracketProgress}
-                className="h-2 bg-amber-100 dark:bg-amber-950/50 [&>div]:bg-gradient-to-r [&>div]:from-amber-500 [&>div]:to-yellow-400"
+                className="h-2 bg-muted [&>div]:bg-amber-500"
               />
             </div>
           )}
 
           {/* Current Round */}
           {cup.status === 'in_progress' && cup.currentRound && (
-            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-amber-50/80 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/40">
-              <Target className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-muted/30 border border-border">
+              <Target className="h-4 w-4 text-amber-500 shrink-0" />
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Ronda Actual</p>
-                <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
                   {getRoundName(cup.currentRound)}
                 </p>
               </div>
@@ -121,11 +102,11 @@ export function CupCard({ cup }: CupCardProps) {
 
           {/* Champion */}
           {isCompleted && (
-            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border border-amber-200 dark:border-amber-800">
+            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-muted/30 border border-border">
               <Crown className="h-5 w-5 text-amber-500 shrink-0" />
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Campeón</p>
-                <p className="text-sm font-bold text-amber-700 dark:text-amber-400 truncate">
+                <p className="text-sm font-bold text-amber-600 dark:text-amber-400 truncate">
                   {cup.championTeamName}
                 </p>
               </div>
@@ -153,7 +134,7 @@ export function CupCard({ cup }: CupCardProps) {
         <div className="px-5 pb-4 flex items-center justify-end">
           <div
             className={cn(
-              'flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all',
+              'flex items-center gap-1 text-sm font-semibold sport-text group-hover:gap-2 transition-all',
               isCompleted ? 'text-amber-500' : 'text-amber-600 dark:text-amber-400',
             )}
           >

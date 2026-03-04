@@ -32,7 +32,7 @@ export default function ExplorarPage() {
   const isFreeAgent = currentAvailability !== null;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 px-4 pb-12">
+    <div className="flex flex-col gap-8 pb-12">
       <PageHeader
         title="Explorar"
         description="Reclutá agentes libres para tus partidos, o sumate a partidos abiertos."

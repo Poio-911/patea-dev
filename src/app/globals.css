@@ -797,6 +797,101 @@ body.standalone main {
     animation: color-cycle 4s infinite;
   }
 
+  /* FIFA / EA Sports HUD Styles */
+  .hud-card {
+    position: relative;
+    clip-path: polygon(4% 0, 100% 0, 96% 100%, 0 100%);
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    overflow: hidden;
+  }
+
+  .dark .hud-card,
+  .game .hud-card,
+  .nike .hud-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: none;
+    backdrop-blur: 10px;
+  }
+
+  .hud-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(90deg,
+        transparent,
+        rgba(255, 255, 255, 0.05),
+        transparent);
+    transition: left 0.5s ease;
+  }
+
+  .hud-card:hover::before {
+    left: 100%;
+  }
+
+  .hud-card-glow-emerald {
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.1);
+    border-left: 4px solid #10b981;
+  }
+
+  .hud-card-glow-blue {
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.1);
+    border-left: 4px solid #3b82f6;
+  }
+
+  .hud-card-glow-amber {
+    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.1);
+    border-left: 4px solid #f59e0b;
+  }
+
+  .sport-text {
+    font-family: 'Space Grotesk', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    font-style: italic;
+  }
+
+  .game .hud-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  /* Scanline effect */
+  @keyframes scanline {
+    0% {
+      transform: translateY(-100%);
+    }
+
+    100% {
+      transform: translateY(100%);
+    }
+  }
+
+  .hud-scanline {
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.05);
+    opacity: 0.1;
+    animation: scanline 4s linear infinite;
+    pointer-events: none;
+  }
+
+  .dark .hud-scanline,
+  .game .hud-scanline,
+  .nike .hud-scanline {
+    height: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    opacity: 0.2;
+    animation-duration: 3s;
+  }
+
   /* Champions League Style - Gradientes Sutiles Minimalistas */
 
   /* Gradientes de fondo para cards de competición */
@@ -1089,9 +1184,9 @@ body.standalone main {
 
   .holo-effect-elite::before {
     background: linear-gradient(135deg,
-      transparent 0%,
-      rgba(220, 226, 255, 0.72) 50%,
-      transparent 100%);
+        transparent 0%,
+        rgba(220, 226, 255, 0.72) 50%,
+        transparent 100%);
     mix-blend-mode: overlay;
     opacity: 0.12;
   }
@@ -1156,9 +1251,9 @@ body.standalone main {
 
   /* Elite (OVR 86+) - Platinum border: 2px, CSS-var-driven pulse */
   .border-glow-elite {
-    --pt-border-dim:   rgba(190, 202, 235, 0.60);
+    --pt-border-dim: rgba(190, 202, 235, 0.60);
     --pt-border-bright: rgba(225, 235, 255, 0.98);
-    --pt-glow-dim:   0 0 10px rgba(190, 202, 235, 0.20);
+    --pt-glow-dim: 0 0 10px rgba(190, 202, 235, 0.20);
     --pt-glow-bright: 0 0 22px rgba(150, 175, 230, 0.55);
     border: 2px solid var(--pt-border-dim);
     box-shadow: var(--pt-glow-dim);
@@ -1167,17 +1262,20 @@ body.standalone main {
 
   /* Dark theme: animación mucho más dramática */
   .game .border-glow-elite {
-    --pt-border-dim:   rgba(205, 218, 255, 0.68);
+    --pt-border-dim: rgba(205, 218, 255, 0.68);
     --pt-border-bright: rgba(235, 242, 255, 1.00);
-    --pt-glow-dim:   0 0 18px rgba(210, 222, 255, 0.40);
+    --pt-glow-dim: 0 0 18px rgba(210, 222, 255, 0.40);
     --pt-glow-bright: 0 0 38px rgba(210, 220, 255, 0.88);
   }
 
   @keyframes platinum-pulse {
-    0%, 100% {
+
+    0%,
+    100% {
       border-color: var(--pt-border-dim);
       box-shadow: var(--pt-glow-dim);
     }
+
     50% {
       border-color: var(--pt-border-bright);
       box-shadow: var(--pt-glow-bright);

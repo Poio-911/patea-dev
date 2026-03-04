@@ -46,12 +46,12 @@ export default function FindOpponentForTeamPage() {
 
     const filteredTeams = useMemo(() => {
         if (!teams) return [];
-        return teams.filter(team => 
-            team.id !== teamId && 
+        return teams.filter(team =>
+            team.id !== teamId &&
             team.name.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [teams, searchTerm, teamId]);
-    
+
     const handleChallenge = async (challengedTeamId: string) => {
         if (!user || !teamId) return;
         setIsChallenging(challengedTeamId);
@@ -81,7 +81,7 @@ export default function FindOpponentForTeamPage() {
     if (loading) {
         return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
-    
+
     if (!challengingTeam) {
         return (
             <div className="text-center p-8">
@@ -99,48 +99,48 @@ export default function FindOpponentForTeamPage() {
     return (
         <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
-                <PageHeader 
+                <PageHeader
                     title={`Buscar Rival para ${challengingTeam.name}`}
                     description="Encontrá equipos abiertos a desafíos y enviales una invitación." />
                 <Button asChild variant="outline">
-                    <Link href="/competitions">
+                    <Link href="/competitions/amistosos">
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Elegir otro equipo
                     </Link>
                 </Button>
             </div>
-            
+
             <div className="relative max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
+                <Input
                     placeholder="Buscar equipo por nombre..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                     className="pl-10"
                 />
             </div>
-            
+
             {filteredTeams.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {filteredTeams.map(team => (
                         <Card key={team.id} className="overflow-hidden h-full flex flex-col">
-                             <CardHeader className="flex-grow flex flex-col items-center justify-center p-4">
-                                 <div className="w-24 h-24 mx-auto">
+                            <CardHeader className="flex-grow flex flex-col items-center justify-center p-4">
+                                <div className="w-24 h-24 mx-auto">
                                     <JerseyPreview jersey={team.jersey} size="lg" />
-                                 </div>
-                                 <CardTitle className="text-center mt-2 text-base font-bold">{team.name}</CardTitle>
-                             </CardHeader>
-                             <CardFooter className="p-2 border-t">
+                                </div>
+                                <CardTitle className="text-center mt-2 text-base font-bold">{team.name}</CardTitle>
+                            </CardHeader>
+                            <CardFooter className="p-2 border-t">
                                 <Button className="w-full" variant="secondary" onClick={() => handleChallenge(team.id)} disabled={!!isChallenging}>
                                     {isChallenging === team.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Swords className="mr-2 h-4 w-4" />}
                                     {isChallenging === team.id ? 'Enviando...' : 'Desafiar'}
                                 </Button>
-                             </CardFooter>
+                            </CardFooter>
                         </Card>
                     ))}
                 </div>
             ) : (
-                 <Alert>
+                <Alert>
                     <AlertTitle>No hay rivales disponibles</AlertTitle>
                     <AlertDescription>
                         Actualmente no hay equipos abiertos a desafíos que coincidan con tu búsqueda. ¡Volvé a intentarlo más tarde!

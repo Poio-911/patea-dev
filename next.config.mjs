@@ -66,7 +66,7 @@ const nextConfig = {
       config.devtool = false;
     }
 
-    // Exclude genkit and OpenTelemetry from client bundle
+    // Exclude genkit, OpenTelemetry, and firebase-admin from client bundle
     if (!isServer) {
       config.resolve = config.resolve || {};
       config.resolve.alias = config.resolve.alias || {};
@@ -77,6 +77,13 @@ const nextConfig = {
       config.resolve.alias['@opentelemetry/sdk-node'] = false;
       config.resolve.alias['@opentelemetry/instrumentation'] = false;
       config.resolve.alias['require-in-the-middle'] = false;
+      // firebase-admin uses native gRPC bindings — must never reach the client bundle
+      config.resolve.alias['firebase-admin'] = false;
+      config.resolve.alias['firebase-admin/app'] = false;
+      config.resolve.alias['firebase-admin/firestore'] = false;
+      config.resolve.alias['firebase-admin/auth'] = false;
+      config.resolve.alias['firebase-admin/storage'] = false;
+      config.resolve.alias['firebase-admin/messaging'] = false;
     }
 
     // Ignore critical dependency warnings from OpenTelemetry

@@ -129,7 +129,7 @@ export default function CupDetailPage() {
           title: 'Copa eliminada',
           description: 'La copa ha sido eliminada correctamente.',
         });
-        router.push('/competitions');
+        router.push('/competitions/cups');
       } else {
         throw new Error(isErrorResponse(result) ? result.error : (result as any).error);
       }
@@ -206,7 +206,7 @@ export default function CupDetailPage() {
   if (!cup) {
     return (
       <div className="p-4">
-        <BackButton href="/competitions" label="Volver a Competiciones" />
+        <BackButton href="/competitions/cups" label="Volver a Copas" />
         <Alert>
           <AlertDescription>Copa no encontrada.</AlertDescription>
         </Alert>

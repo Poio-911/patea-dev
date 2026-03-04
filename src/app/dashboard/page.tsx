@@ -203,7 +203,9 @@ function DashboardContent() {
   }
 
   if (!user?.activeGroupId) {
-    if (!user?.groups || user.groups.length === 0) {
+    // Only show the full "new user" welcome if they truly have no group membership at all
+    const hasNoGroups = !user?.groups || user.groups.length === 0;
+    if (hasNoGroups) {
       // True New User Onboarding
       return (
         <motion.div

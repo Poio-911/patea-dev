@@ -1,143 +1,115 @@
+
 'use client';
 
-import { type LucideIcon } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { CompetitionType } from '@/lib/types';
+import { LucideIcon, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-export type CompetitionType = 'friendly' | 'league' | 'cup';
+import { motion } from 'framer-motion';
 
 interface CompetitionCardProps {
-    type: CompetitionType;
+    type: CompetitionType | 'friendly';
     title: string;
     icon: LucideIcon;
-    stats?: { label: string; value: string | number }[];
     notificationCount?: number;
-    onClick?: () => void;
+    stats?: { label: string; value: number | string }[];
     className?: string;
-    isActive?: boolean;
 }
 
-const typeConfig = {
+const config = {
     friendly: {
-        gradient: 'from-emerald-600 via-emerald-500 to-teal-400',
-        darkGradient: 'dark:from-emerald-900 dark:via-emerald-800 dark:to-teal-800',
-        gameGradient: 'game:from-emerald-700 game:via-emerald-600 game:to-teal-500',
-        gameShadow: 'game:shadow-emerald-500/40 game:ring-1 game:ring-emerald-400/30',
-        activeRing: 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-background',
-        activeBar: 'bg-emerald-400',
-        shadow: 'shadow-emerald-500/40',
+        label: 'Amistoso',
+        border: 'border-l-emerald-500',
+        badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+        iconBg: 'bg-emerald-500/10 text-emerald-500',
+        shadow: 'hover:shadow-emerald-500/10',
+        accent: 'text-emerald-500',
     },
     league: {
-        gradient: 'from-blue-600 via-blue-500 to-indigo-500',
-        darkGradient: 'dark:from-blue-900 dark:via-blue-800 dark:to-indigo-900',
-        gameGradient: 'game:from-blue-700 game:via-blue-600 game:to-indigo-600',
-        gameShadow: 'game:shadow-blue-500/40 game:ring-1 game:ring-blue-400/30',
-        activeRing: 'ring-2 ring-blue-400 ring-offset-2 ring-offset-background',
-        activeBar: 'bg-blue-400',
-        shadow: 'shadow-blue-500/40',
+        label: 'Liga',
+        border: 'border-l-blue-500',
+        badge: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+        iconBg: 'bg-blue-500/10 text-blue-500',
+        shadow: 'hover:shadow-blue-500/10',
+        accent: 'text-blue-500',
     },
     cup: {
-        gradient: 'from-amber-600 via-amber-500 to-yellow-400',
-        darkGradient: 'dark:from-amber-900 dark:via-amber-800 dark:to-yellow-800',
-        gameGradient: 'game:from-amber-700 game:via-amber-600 game:to-yellow-500',
-        gameShadow: 'game:shadow-amber-500/40 game:ring-1 game:ring-amber-400/30',
-        activeRing: 'ring-2 ring-amber-400 ring-offset-2 ring-offset-background',
-        activeBar: 'bg-amber-400',
-        shadow: 'shadow-amber-500/40',
+        label: 'Copa',
+        border: 'border-l-amber-500',
+        badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+        iconBg: 'bg-amber-500/10 text-amber-500',
+        shadow: 'hover:shadow-amber-500/10',
+        accent: 'text-amber-500',
     },
-} as const;
+};
 
-export function CompetitionCard({
-    type,
-    title,
-    icon: Icon,
-    stats = [],
-    notificationCount,
-    onClick,
-    className,
-    isActive = false,
-}: CompetitionCardProps) {
-    const config = typeConfig[type];
+export function CompetitionCard({ type, title, icon: Icon, notificationCount, stats, className }: CompetitionCardProps) {
+    const c = config[type === 'friendly' ? 'friendly' : type as keyof typeof config];
 
     return (
-        <div
+        <motion.div
+            whileHover={{ y: -3 }}
+            whileTap={{ scale: 0.99 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             className={cn(
-                'relative overflow-hidden cursor-pointer rounded-2xl',
-                'transition-all duration-300 ease-out',
-                // Active vs inactive state
-                isActive
-                    ? [config.activeRing, 'scale-[1.03] -translate-y-2', `shadow-2xl ${config.shadow}`, config.gameShadow]
-                    : ['shadow-lg opacity-80 hover:opacity-100 hover:scale-[1.02] hover:-translate-y-1', config.gameShadow],
+                "group relative flex flex-col p-5 md:p-6 min-h-[180px]",
+                "bg-card border border-border border-l-4 rounded-2xl",
+                "shadow-sm hover:shadow-lg transition-shadow duration-300",
+                c.border,
+                c.shadow,
                 className
             )}
-            onClick={onClick}
         >
-            {/* Active bottom accent bar */}
-            {isActive && (
-                <div className={cn('absolute bottom-0 left-0 right-0 h-1 z-20', config.activeBar)} />
-            )}
-
-            {/* Gradient background */}
-            <div className={cn('absolute inset-0 bg-gradient-to-br', config.gradient, config.darkGradient, config.gameGradient)} />
-
-            {/* Dot pattern overlay */}
-            <div
-                className="absolute inset-0 opacity-[0.08]"
-                style={{
-                    backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-                    backgroundSize: '20px 20px',
-                }}
-            />
-
-            {/* Top shine */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/25 to-transparent pointer-events-none" />
-
-            {/* Notification Badge */}
-            {(notificationCount ?? 0) > 0 && (
-                <Badge className="absolute top-3 right-3 font-bold px-2.5 py-0.5 shadow-lg z-10 bg-white/90 text-foreground border-0 backdrop-blur-sm">
-                    {notificationCount}
-                </Badge>
-            )}
-
-            {/* Content */}
-            <div className="relative z-10 p-5 flex flex-col gap-3 min-h-[200px]">
-                {/* Icon */}
-                <div className="flex items-center justify-center">
-                    <Icon
-                        className="w-12 h-12 text-white drop-shadow-lg"
-                        strokeWidth={1.5}
-                    />
+            {/* Header row */}
+            <div className="flex items-start justify-between gap-3 mb-auto">
+                <div className="space-y-2">
+                    {/* Type badge */}
+                    <span className={cn(
+                        "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold sport-text tracking-widest uppercase",
+                        c.badge
+                    )}>
+                        {c.label}
+                    </span>
+                    {/* Title */}
+                    <h3 className="text-2xl md:text-3xl font-black sport-text leading-none tracking-tight">
+                        {title}
+                    </h3>
                 </div>
-
-                {/* Title */}
-                <h3 className="text-xl font-bold text-white text-center drop-shadow-md tracking-tight">
-                    {title}
-                </h3>
-
-                {/* Active pill */}
-                {isActive && (
-                    <div className="flex items-center justify-center">
-                        <span className="text-[11px] font-semibold text-white/90 bg-white/25 px-2.5 py-0.5 rounded-full uppercase tracking-widest">
-                            Activo
-                        </span>
-                    </div>
-                )}
-
-                {/* Quick Stats */}
-                {stats.length > 0 && (
-                    <div className="flex flex-col gap-2 mt-auto">
-                        {stats.map((stat, index) => (
-                            <div
-                                key={index}
-                                className="flex items-center justify-between px-3 py-2 rounded-xl bg-black/20 backdrop-blur-sm"
-                            >
-                                <span className="text-xs font-medium text-white/70">{stat.label}</span>
-                                <span className="text-sm font-bold text-white">{stat.value}</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                {/* Icon circle */}
+                <div className={cn("flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center", c.iconBg)}>
+                    <Icon className="w-5 h-5" strokeWidth={2.5} />
+                </div>
             </div>
-        </div>
+
+            {/* Notification badge */}
+            {!!notificationCount && (
+                <div className="absolute -top-2 -right-2 z-20">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-[10px] font-black sport-text text-white shadow-lg shadow-red-500/30 animate-bounce">
+                        {notificationCount}
+                    </span>
+                </div>
+            )}
+
+            {/* Stats */}
+            {stats && stats.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 gap-4">
+                    {stats.map((stat, idx) => (
+                        <div key={idx}>
+                            <p className="text-[9px] font-bold uppercase tracking-widest sport-text text-muted-foreground leading-none mb-1">
+                                {stat.label}
+                            </p>
+                            <p className={cn("text-2xl font-black tabular-nums leading-none sport-text", c.accent)}>
+                                {stat.value}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Chevron hint on hover */}
+            <ChevronRight className={cn(
+                "absolute bottom-4 right-4 w-4 h-4 opacity-0 group-hover:opacity-40 transition-opacity",
+                c.accent
+            )} />
+        </motion.div>
     );
 }

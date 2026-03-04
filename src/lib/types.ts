@@ -695,6 +695,7 @@ export type CompetitionFormat = 'league' | 'cup';
 export type LeagueFormat = 'round_robin' | 'double_round_robin';
 export type CupFormat = 'single_elimination';
 export type CompetitionStatus = 'draft' | 'open_for_applications' | 'in_progress' | 'completed';
+export type CompetitionType = 'league' | 'cup' | 'friendly';
 
 export type League = {
   id: string;

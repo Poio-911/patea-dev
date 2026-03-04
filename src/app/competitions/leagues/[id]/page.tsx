@@ -254,7 +254,7 @@ export default function LeagueDetailPage() {
 
   return (
     <div className="space-y-6">
-      <BackButton href="/competitions" label="Volver a Competiciones" />
+      <BackButton href="/competitions/leagues" label="Volver a Ligas" />
       <LeagueHeader
         league={league}
         activeTab={activeTab}

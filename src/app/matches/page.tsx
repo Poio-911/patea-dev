@@ -10,7 +10,8 @@ import Link from 'next/link';
 import type { Match, Player, MatchFilters as MatchFiltersType, MatchesViewMode } from '@/lib/types';
 import { FirstTimeInfoDialog } from '@/components/first-time-info-dialog';
 import { PageHeader } from '@/components/page-header';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import { MatchCard } from '@/components/match-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -28,7 +29,7 @@ import {
     ResponsivePopoverContent,
     ResponsivePopoverTrigger,
 } from "@/components/ui/responsive-popover";
-import { UserCheck, Shirt, Globe, HelpCircle, Users } from 'lucide-react';
+import { UserCheck, Shirt, Globe, HelpCircle, Users, Trophy, ChevronDown } from 'lucide-react';
 
 const LIST_VARIANTS = {
     hidden: { opacity: 0 },
@@ -60,6 +61,21 @@ export default function MatchesPage() {
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('upcoming');
     const [showPendingDialog, setShowPendingDialog] = useState(false);
     const hasCheckedPending = useRef(false);
+
+    const [isCompetitionOpen, setIsCompetitionOpen] = useState(true);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('matchesCompetitionOpen');
+        if (saved !== null) setIsCompetitionOpen(saved !== 'false');
+    }, []);
+
+    const toggleCompetition = () => {
+        setIsCompetitionOpen(prev => {
+            const next = !prev;
+            localStorage.setItem('matchesCompetitionOpen', String(next));
+            return next;
+        });
+    };
 
     // Load user preferences on mount
     useEffect(() => {
@@ -187,6 +203,36 @@ export default function MatchesPage() {
         return allMatches.filter(m => m.type === 'manual' || m.type === 'collaborative' || m.type === 'by_teams' || m.type === 'intergroup_friendly');
     }, [allMatches]);
 
+    const competitionMatches = useMemo(() => {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const weekEnd = new Date(today.getTime() + 7 * 86400000);
+        const comp = allMatches.filter(m => m.type === 'league' || m.type === 'cup' || m.type === 'league_final');
+
+        if (timeFilter === 'history') {
+            return comp.filter(m => {
+                const d = new Date(m.date);
+                const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                return day < today && (m.status === 'completed' || m.status === 'evaluated');
+            }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        }
+
+        // For upcoming / this_week: show only the next match per competition
+        const candidates = comp.filter(m => {
+            const d = new Date(m.date);
+            const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            if (timeFilter === 'this_week') return day >= today && day < weekEnd;
+            return day >= today || m.status === 'active';
+        }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        const nextByCompetition: Record<string, Match> = {};
+        for (const m of candidates) {
+            const compId = m.leagueInfo?.leagueId ?? m.leagueInfo?.cupId ?? m.id;
+            if (!nextByCompetition[compId]) nextByCompetition[compId] = m;
+        }
+        return Object.values(nextByCompetition);
+    }, [allMatches, timeFilter]);
+
     const filteredMatches = useMemo(() => {
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -256,14 +302,14 @@ export default function MatchesPage() {
             d.setHours(parseInt(hh || '0', 10) || 0, parseInt(mm || '0', 10) || 0, 0, 0);
             return d.getTime();
         };
-        const upcomingMatches = amistososMatches
+        const upcomingMatches = allMatches
             .filter(m => {
                 const matchTs = getTs(m);
                 return (m.status === 'active') || (m.status === 'upcoming' && matchTs >= now.getTime());
             })
             .sort((a, b) => getTs(a) - getTs(b));
         return upcomingMatches[0] || null;
-    }, [amistososMatches, timeFilter]);
+    }, [allMatches, timeFilter]);
 
     const timeCounts = useMemo(() => {
         const now = new Date();
@@ -425,9 +471,9 @@ export default function MatchesPage() {
                     </PageHeader>
 
                     {/* Featured Match - Full width header */}
-                    {amistososMatches.length > 0 && timeFilter !== 'history' && (
+                    {allMatches.length > 0 && timeFilter !== 'history' && (
                         <NextMatchCard
-                            matches={amistososMatches.filter(m => {
+                            matches={allMatches.filter(m => {
                                 const d = new Date(m.date);
                                 const clean = (m.time || '').replace(' hs', '').replace('hs', '').trim();
                                 const [hh, mm = '0'] = clean.split(':');
@@ -447,6 +493,60 @@ export default function MatchesPage() {
                             <MatchFilters filters={matchFilters} onFiltersChange={handleFiltersChange} />
                             <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
                         </div>
+
+                        {competitionMatches.length > 0 && (
+                            <div className="space-y-3">
+                                <button
+                                    onClick={toggleCompetition}
+                                    className="w-full flex items-center justify-between gap-2 group"
+                                >
+                                    <p className="text-[10px] font-bold sport-text tracking-[0.25em] text-muted-foreground flex items-center gap-1.5">
+                                        <Trophy className="w-3 h-3" />
+                                        COMPETENCIAS
+                                        {!isCompetitionOpen && (
+                                            <span className="ml-1 text-[9px] bg-muted px-1.5 py-0.5 rounded-full">
+                                                {competitionMatches.length}
+                                            </span>
+                                        )}
+                                    </p>
+                                    <ChevronDown className={cn(
+                                        "w-3.5 h-3.5 text-muted-foreground transition-transform duration-200",
+                                        !isCompetitionOpen && "-rotate-90"
+                                    )} />
+                                </button>
+
+                                <AnimatePresence initial={false}>
+                                    {isCompetitionOpen && (
+                                        <motion.div
+                                            key="competition-content"
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            transition={{ duration: 0.2, ease: 'easeInOut' }}
+                                            className="overflow-hidden"
+                                        >
+                                            {viewMode === 'grid' ? (
+                                                <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={LIST_VARIANTS} initial="hidden" animate="visible" key={`comp-grid-${timeFilter}`}>
+                                                    {competitionMatches.map(m => (
+                                                        <motion.div key={m.id} variants={ITEM_VARIANTS}>
+                                                            <MatchCard match={m} allPlayers={sortedPlayers} />
+                                                        </motion.div>
+                                                    ))}
+                                                </motion.div>
+                                            ) : (
+                                                <motion.div className="grid grid-cols-2 md:grid-cols-1 gap-2 md:gap-3" variants={LIST_VARIANTS} initial="hidden" animate="visible" key={`comp-compact-${timeFilter}`}>
+                                                    {competitionMatches.map(m => (
+                                                        <motion.div key={m.id} variants={ITEM_VARIANTS}>
+                                                            <CompactMatchCard match={m} />
+                                                        </motion.div>
+                                                    ))}
+                                                </motion.div>
+                                            )}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        )}
 
                         {gridMatches.length > 0 ? (
                             viewMode === 'grid' ? (

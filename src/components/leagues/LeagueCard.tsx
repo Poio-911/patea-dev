@@ -4,7 +4,6 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import type { League, Match, LeagueStanding } from '@/lib/types';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Trophy, Calendar, ArrowRight, Shield } from 'lucide-react';
@@ -19,15 +18,15 @@ type LeagueCardProps = {
   standings?: LeagueStanding[];
 };
 
-const statusConfig = {
-  draft: { label: 'Borrador', variant: 'secondary' as const },
-  open_for_applications: { label: 'Abierta', variant: 'default' as const },
-  in_progress: { label: 'En Curso', variant: 'default' as const },
-  completed: { label: 'Finalizada', variant: 'outline' as const },
+const statusLabels = {
+  draft: 'Borrador',
+  open_for_applications: 'Abierta',
+  in_progress: 'En Curso',
+  completed: 'Finalizada',
 };
 
 export function LeagueCard({ league, matches = [], standings = [] }: LeagueCardProps) {
-  const status = statusConfig[league.status] || statusConfig.draft;
+  const statusLabel = statusLabels[league.status] || 'Borrador';
   const progress = getLeagueProgress(matches);
   const completedMatches = matches.filter(m => m.status === 'completed' || m.status === 'evaluated').length;
   const top3 = standings.slice(0, 3);
@@ -43,33 +42,26 @@ export function LeagueCard({ league, matches = [], standings = [] }: LeagueCardP
     <Link href={`/competitions/leagues/${league.id}`} className="block group">
       <div
         className={cn(
-          'relative overflow-hidden rounded-2xl border transition-all duration-300',
-          'hover:shadow-xl hover:-translate-y-1.5 hover:shadow-blue-500/10 game:hover:shadow-blue-500/25',
-          'bg-gradient-to-br from-blue-50 via-white to-indigo-50/50',
-          'dark:from-blue-950/30 dark:via-card dark:to-indigo-950/20',
-          'game:from-blue-900/50 game:via-blue-950/30 game:to-indigo-900/40',
-          'border-blue-100 dark:border-blue-900/50 game:border-blue-500/50',
-          'group-hover:border-blue-300 dark:group-hover:border-blue-700/60 game:group-hover:border-blue-400/70',
+          'relative rounded-2xl border border-border border-l-4 border-l-blue-500 bg-card',
+          'overflow-hidden transition-all duration-300',
+          'hover:-translate-y-1.5 hover:shadow-lg hover:shadow-blue-500/10',
         )}
       >
-        {/* Top accent strip */}
-        <div className="h-1 w-full bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500" />
-
         <div className="p-5 space-y-4">
           {/* Header: icon + name + status badge */}
           <div className="flex items-start gap-3">
             <div
               className={cn(
-                'w-14 h-14 rounded-xl overflow-hidden shrink-0 flex items-center justify-center shadow-md',
+                'w-14 h-14 rounded-xl overflow-hidden shrink-0 flex items-center justify-center',
                 league.logoUrl
-                  ? 'border border-blue-100 dark:border-blue-900/50 bg-white dark:bg-blue-950/20'
-                  : 'bg-gradient-to-br from-blue-600 to-indigo-600',
+                  ? 'bg-muted/30 border border-border'
+                  : 'bg-blue-500/10',
               )}
             >
               {league.logoUrl ? (
                 <img src={league.logoUrl} alt={league.name} className="w-full h-full object-contain" />
               ) : (
-                <Shield className="h-7 w-7 text-white" strokeWidth={1.5} />
+                <Shield className="h-7 w-7 text-blue-500" strokeWidth={1.5} />
               )}
             </div>
 
@@ -78,20 +70,9 @@ export function LeagueCard({ league, matches = [], standings = [] }: LeagueCardP
                 <h3 className="text-base font-bold text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">
                   {league.name}
                 </h3>
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    'shrink-0 text-xs font-medium',
-                    league.status === 'in_progress' &&
-                      'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800',
-                    league.status === 'completed' && 'bg-muted text-muted-foreground',
-                    league.status === 'draft' && 'bg-muted text-muted-foreground',
-                    league.status === 'open_for_applications' &&
-                      'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300',
-                  )}
-                >
-                  {league.status === 'in_progress' ? 'En Curso' : status.label}
-                </Badge>
+                <span className="shrink-0 bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full text-[10px] font-bold sport-text uppercase tracking-widest">
+                  ● {statusLabel}
+                </span>
               </div>
               <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
                 <span>{league.teams.length} equipos</span>
@@ -112,7 +93,7 @@ export function LeagueCard({ league, matches = [], standings = [] }: LeagueCardP
               </div>
               <Progress
                 value={progress}
-                className="h-2 bg-blue-100 dark:bg-blue-950/50 [&>div]:bg-gradient-to-r [&>div]:from-blue-600 [&>div]:to-indigo-500"
+                className="h-2 bg-muted [&>div]:bg-blue-500"
               />
             </div>
           )}
@@ -149,8 +130,8 @@ export function LeagueCard({ league, matches = [], standings = [] }: LeagueCardP
 
           {/* Leader only (when full standings not available but one exists) */}
           {top3.length === 0 && standings[0] && league.status !== 'draft' && (
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50/80 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/40">
-              <Trophy className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border">
+              <Trophy className="h-4 w-4 text-blue-500 shrink-0" />
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <JerseyPreview jersey={standings[0].teamJersey} size="sm" />
                 <div className="flex-1 min-w-0">
@@ -187,7 +168,7 @@ export function LeagueCard({ league, matches = [], standings = [] }: LeagueCardP
 
         {/* Footer */}
         <div className="px-5 pb-4 flex items-center justify-end">
-          <div className="flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 game:text-blue-300 group-hover:gap-2 transition-all">
+          <div className="flex items-center gap-1 text-sm font-semibold text-blue-500 sport-text group-hover:gap-2 transition-all">
             Ver Liga
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </div>
