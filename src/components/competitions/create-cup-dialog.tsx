@@ -109,12 +109,11 @@ export function CreateCupDialog({ open, onOpenChange, groupId, userId, teams }: 
 
       // Upload logo if selected
       if (logoFile) {
-        const arrayBuffer = await logoFile.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+        const formData = new FormData();
+        formData.append('file', logoFile);
 
         const uploadResult = await uploadCompetitionLogoAction(
-          buffer,
-          logoFile.name,
+          formData,
           'cup',
           groupId,
           userId

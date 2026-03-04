@@ -1,12 +1,9 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-import { Trophy, Medal, Star, Crown } from 'lucide-react';
+import { Star, Crown } from 'lucide-react';
 import type { Jersey } from '@/lib/types';
-import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import Confetti from 'react-confetti';
 import { useEffect, useState } from 'react';
 
 type ChampionCelebrationProps = {
@@ -22,109 +19,130 @@ export function ChampionCelebration({
   runnerUpName,
   runnerUpJersey,
 }: ChampionCelebrationProps) {
-  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
-
-  useEffect(() => {
-    // Solo en cliente
-    setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-    const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-indigo-950 via-background to-purple-950/30 shadow-xl">
-      {windowSize.width > 0 && (
-        <Confetti
-          width={windowSize.width}
-          height={windowSize.height}
-          recycle={false}
-          numberOfPieces={400}
-          gravity={0.15}
-          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }}
-        />
-      )}
-      {/* Decorative Background Elements */}
-      <div className="absolute top-0 right-0 -mt-16 -mr-16 h-64 w-64 rounded-full bg-muted/10 blur-3xl" />
-      <div className="absolute bottom-0 left-0 -mb-16 -ml-16 h-64 w-64 rounded-full bg-muted/10 blur-3xl" />
+    <div className="relative overflow-hidden rounded-2xl shadow-2xl">
+      {/* Layered background for premium feel */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-zinc-900 to-slate-900" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(250,204,21,0.12),transparent_70%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_rgba(234,179,8,0.06),transparent_60%)]" />
 
-      <div className="relative pt-16 p-8 md:p-12 flex flex-col items-center text-center z-10">
-
-        {/* Champion Section */}
-        <motion.div
-          className="mb-8 relative"
-          initial={{ scale: 0.5, opacity: 0, y: 50 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
-        >
+      {/* Sparkle dots for texture */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
+        {mounted && [
+          { top: '12%', left: '8%', size: 2, delay: 0 },
+          { top: '28%', left: '85%', size: 3, delay: 0.4 },
+          { top: '65%', left: '6%', size: 2, delay: 0.8 },
+          { top: '72%', left: '90%', size: 3, delay: 0.2 },
+          { top: '45%', left: '92%', size: 2, delay: 1.1 },
+          { top: '18%', left: '45%', size: 2, delay: 0.6 },
+          { top: '80%', left: '55%', size: 2, delay: 0.9 },
+        ].map((dot, i) => (
           <motion.div
-            className="absolute -top-12 left-1/2 -translate-x-1/2"
-            animate={{ y: [0, -10, 0] }}
-            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            key={i}
+            className="absolute rounded-full bg-yellow-300"
+            style={{ top: dot.top, left: dot.left, width: dot.size, height: dot.size }}
+            animate={{ opacity: [0.2, 0.9, 0.2], scale: [1, 1.5, 1] }}
+            transition={{ repeat: Infinity, duration: 2.5, delay: dot.delay, ease: 'easeInOut' }}
+          />
+        ))}
+      </div>
+
+      {/* Main content */}
+      <div className="relative z-10 flex flex-col items-center text-center px-6 pt-14 pb-10">
+
+        {/* Crown + Champion Jersey */}
+        <motion.div
+          className="relative mb-6"
+          initial={{ scale: 0.6, opacity: 0, y: 40 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 180, damping: 14, delay: 0.15 }}
+        >
+          {/* Glow ring behind jersey */}
+          <div className="absolute inset-0 rounded-full bg-yellow-400/20 blur-2xl scale-110 pointer-events-none" />
+
+          {/* Floating crown */}
+          <motion.div
+            className="absolute -top-10 left-1/2 -translate-x-1/2 z-20"
+            animate={{ y: [0, -6, 0] }}
+            transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut' }}
           >
-            <Crown className="h-12 w-12 text-yellow-400 fill-yellow-400/20 drop-shadow-md" />
+            <Crown className="h-11 w-11 text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)] fill-yellow-400/30" />
           </motion.div>
 
-          <div className="relative z-10 transform transition-transform hover:scale-105 duration-500">
-            {championJersey ? (
-              <div className="drop-shadow-[0_0_35px_rgba(250,204,21,0.4)]">
-                <JerseyPreview jersey={championJersey} size="xl" />
-              </div>
-            ) : (
-              <div className="h-48 w-48 rounded-full bg-card/90 flex items-center justify-center border-4 border-yellow-500/50 shadow-[0_0_30px_rgba(250,204,21,0.3)]">
-                <Trophy className="h-24 w-24 text-yellow-500 drop-shadow-lg" />
-              </div>
-            )}
-
-            {/* Winner Badge */}
-            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-600 to-yellow-400 text-white px-6 py-1.5 rounded-full font-bold text-sm shadow-xl border border-yellow-300/50 whitespace-nowrap flex items-center gap-2">
-              <Star className="h-3.5 w-3.5 fill-white" />
-              CAMPEÓN
-              <Star className="h-3.5 w-3.5 fill-white" />
-            </div>
+          {/* Champion jersey */}
+          <div className="drop-shadow-[0_0_40px_rgba(250,204,21,0.45)]">
+            <JerseyPreview jersey={championJersey} size="xl" />
           </div>
+
+          {/* CAMPEÓN badge */}
+          <motion.div
+            className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.7, type: 'spring', stiffness: 300, damping: 20 }}
+          >
+            <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-yellow-500 to-amber-400 text-black text-[11px] font-black tracking-widest uppercase px-5 py-1.5 rounded-full shadow-[0_4px_20px_rgba(250,204,21,0.5)] border border-yellow-300/60">
+              <Star className="h-3 w-3 fill-black/60" />
+              CAMPEÓN
+              <Star className="h-3 w-3 fill-black/60" />
+            </div>
+          </motion.div>
         </motion.div>
 
+        {/* Champion name */}
         <motion.h2
-          className="text-4xl md:text-5xl font-black tracking-tight text-foreground mt-4 mb-2"
-          initial={{ opacity: 0, y: 20 }}
+          className="text-4xl md:text-5xl font-black tracking-tight mt-8 mb-1"
+          style={{
+            background: 'linear-gradient(135deg, #fef08a, #facc15, #d97706)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            textShadow: 'none',
+            filter: 'drop-shadow(0 0 20px rgba(250,204,21,0.3))'
+          }}
+          initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.5 }}
+          transition={{ delay: 0.55, duration: 0.55 }}
         >
           {championName}
         </motion.h2>
+
         <motion.p
-          className="text-muted-foreground text-lg mb-8 max-w-md mx-auto"
+          className="text-zinc-400 text-sm mb-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.7, duration: 0.5 }}
+          transition={{ delay: 0.75, duration: 0.45 }}
         >
           ¡Felicitaciones por la victoria! El trofeo es suyo.
         </motion.p>
 
-        {/* Runner Up Section */}
+        {/* Divider */}
         <motion.div
-          className="flex items-center justify-center gap-6 md:gap-12 w-full max-w-2xl border-t border-border/50 pt-8 mt-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 0.8 }}
+          className="w-full max-w-xs h-px bg-gradient-to-r from-transparent via-zinc-600 to-transparent mb-7"
+          initial={{ opacity: 0, scaleX: 0 }}
+          animate={{ opacity: 1, scaleX: 1 }}
+          transition={{ delay: 0.95, duration: 0.6 }}
+        />
+
+        {/* Runner up */}
+        <motion.div
+          className="flex flex-col items-center gap-3"
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.05, duration: 0.5 }}
         >
-          <div className="flex flex-col items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Subcampeón</span>
-            <div className="flex items-center gap-4 bg-card/50 p-3 pr-6 rounded-full border border-border/50 backdrop-blur-sm">
-              <div className="relative">
-                {runnerUpJersey ? (
-                  <JerseyPreview jersey={runnerUpJersey} size="sm" />
-                ) : (
-                  <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                    <Medal className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                )}
-                <div className="absolute -bottom-1 -right-1 bg-muted-foreground text-foreground text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center border-2 border-background">
-                  2
-                </div>
+          <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-500">Subcampeón</span>
+          <div className="flex items-center gap-3 bg-white/5 border border-white/10 backdrop-blur-sm px-5 py-3 rounded-2xl">
+            <div className="relative">
+              <JerseyPreview jersey={runnerUpJersey} size="sm" />
+              <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-zinc-600 border-2 border-zinc-800 flex items-center justify-center text-[9px] font-black text-zinc-200">
+                2
               </div>
             </div>
+            <span className="font-semibold text-zinc-300 text-sm">{runnerUpName}</span>
           </div>
         </motion.div>
       </div>

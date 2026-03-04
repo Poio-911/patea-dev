@@ -44,8 +44,8 @@ export function PlayerCarousel({
                                 className={cn(
                                     'relative flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 w-[120px]',
                                     isSelected
-                                        ? 'border-blue-500 bg-blue-50 dark:border-yellow-500 dark:bg-yellow-500/10 shadow-md dark:shadow-[0_0_20px_rgba(234,179,8,0.2)]'
-                                        : 'border-slate-200 dark:border-white/5 bg-white dark:bg-white/5 hover:border-blue-300 dark:hover:border-white/20 hover:bg-slate-50 dark:hover:bg-white/10'
+                                        ? 'border-blue-500 bg-blue-50 dark:border-yellow-500 dark:bg-yellow-500/10 shadow-md dark:shadow-[0_0_20px_rgba(234,179,8,0.2)] game:border-primary game:bg-primary/10 game:shadow-[0_0_20px_rgba(170,254,72,0.2)]'
+                                        : 'border-slate-200 dark:border-white/5 bg-white dark:bg-white/5 hover:border-blue-300 dark:hover:border-white/20 hover:bg-slate-50 dark:hover:bg-white/10 game:bg-zinc-950/40 game:border-white/5 game:hover:border-primary/30'
                                 )}
                             >
                                 {/* Selection Indicator */}

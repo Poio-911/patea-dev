@@ -241,6 +241,11 @@ export function handleServerActionError(
     return formatErrorResponse(appError);
   }
 
+  // Error ya formateado (AppError)
+  if (error && typeof error === 'object' && 'code' in error && 'userMessage' in error) {
+    return formatErrorResponse(error as AppError);
+  }
+
   // Error genérico
   const appError = createError(ErrorCodes.SYS_INTERNAL_ERROR, context, error);
   return formatErrorResponse(appError);

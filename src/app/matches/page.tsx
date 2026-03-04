@@ -2,7 +2,7 @@
 
 import { Users2, Calendar, Loader2, Info } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, orderBy, doc, writeBatch } from 'firebase/firestore';
+import { collection, query, where, orderBy, doc, writeBatch, limit } from 'firebase/firestore';
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -144,10 +144,28 @@ export default function MatchesPage() {
     }, [firestore, user?.activeGroupId]);
     const { data: allGroupPlayers, loading: playersLoading } = useCollection<Player>(playersQuery);
 
-    const groupMatchesQuery = useMemo(() => {
+    const groupMatchesQuery1 = useMemo(() => {
         if (!firestore || !user?.activeGroupId) return null;
-        return query(collection(firestore, 'matches'), where('groupId', '==', user.activeGroupId), orderBy('date', 'desc'));
+        return query(
+            collection(firestore, 'matches'),
+            where('groupId', '==', user.activeGroupId),
+            orderBy('date', 'desc'),
+            limit(50)
+        );
     }, [firestore, user?.activeGroupId]);
+
+    const groupMatchesQuery2 = useMemo(() => {
+        if (!firestore || !user?.activeGroupId) return null;
+        return query(
+            collection(firestore, 'matches'),
+            where('participantGroupIds', 'array-contains', user.activeGroupId),
+            orderBy('date', 'desc'),
+            limit(50)
+        );
+    }, [firestore, user?.activeGroupId]);
+
+    const { data: groupMatchesRaw1, loading: g1Loading } = useCollection<Match>(groupMatchesQuery1);
+    const { data: groupMatchesRaw2, loading: g2Loading } = useCollection<Match>(groupMatchesQuery2);
     const joinedMatchesQuery = useMemo(() => {
         if (!firestore || !user?.uid) return null;
         return query(
@@ -156,9 +174,16 @@ export default function MatchesPage() {
         );
     }, [firestore, user?.uid]);
 
-    const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(groupMatchesQuery);
-
     const { data: joinedMatches, loading: joinedMatchesLoading } = useCollection<Match>(joinedMatchesQuery);
+
+    const groupMatches = useMemo(() => {
+        const combined = [...(groupMatchesRaw1 || []), ...(groupMatchesRaw2 || [])];
+        const unique = new Map<string, Match>();
+        combined.forEach(m => unique.set(m.id, m));
+        return Array.from(unique.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [groupMatchesRaw1, groupMatchesRaw2]);
+
+    const groupMatchesLoading = g1Loading || g2Loading;
 
     const allMatches = useMemo(() => {
         const all = new Map<string, Match>();

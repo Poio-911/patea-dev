@@ -30,7 +30,8 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
 
   const handleAccept = () => {
     startTransition(async () => {
-      const result = await acceptTeamChallengeAction(invitation.id, teamId, userId);
+      const targetTeamId = invitation.toTeamId || teamId;
+      const result = await acceptTeamChallengeAction(invitation.id, targetTeamId, userId);
 
       if (result && 'success' in result && result.success) {
         setIsExiting(true);
@@ -63,7 +64,8 @@ export function TeamChallengeCard({ invitation, teamId, userId, onUpdate }: Team
 
   const handleReject = () => {
     startTransition(async () => {
-      const result = await rejectTeamChallengeAction(invitation.id, teamId, userId);
+      const targetTeamId = invitation.toTeamId || teamId;
+      const result = await rejectTeamChallengeAction(invitation.id, targetTeamId, userId);
       if (result && 'success' in result && result.success) {
         setIsExiting(true);
         toast({

@@ -156,6 +156,7 @@ export type Match = {
 
   // Inter-Group specific
   participantTeamIds?: string[];
+  participantGroupIds?: string[];
   captains?: string[]; // [uid1, uid2]
   locationProposals?: LocationProposal[];
   dateProposals?: MatchDateProposal[]; // For 'planning' phase date voting
@@ -400,6 +401,7 @@ export type NotificationType =
   | 'challenge_accepted'
   | 'challenge_rejected'
   | 'league_application'
+  | 'cup_application'
   | 'new_follower'
   | 'match_invitation'
   | 'match_reminder'

@@ -14,8 +14,8 @@ import type { Match } from '@/lib/types';
 export function useMatchPermissions(match: Match | null | undefined, userId: string | undefined) {
   const isOwner = useMemo(() => {
     if (!userId || !match) return false;
-    return userId === match.ownerUid;
-  }, [userId, match?.ownerUid]);
+    return userId === match.ownerUid || (match.captains && match.captains.includes(userId));
+  }, [userId, match?.ownerUid, match?.captains]);
 
   const isUserInMatch = useMemo(() => {
     if (!userId || !match?.playerUids) return false;

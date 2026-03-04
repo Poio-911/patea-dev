@@ -114,6 +114,17 @@ const calculateAttributeChanges = (currentAttrs: Player, tags: PerformanceTag[] 
             });
         });
     }
+    // Cap net delta per attribute to ±5
+    const NET_CAP = 5;
+    const attrs = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const;
+    for (const attr of attrs) {
+        const initialVal = (currentAttrs as any)[attr] as number;
+        const finalVal = (newAttributes as any)[attr] as number;
+        const delta = finalVal - initialVal;
+        if (Math.abs(delta) > NET_CAP) {
+            (newAttributes as any)[attr] = initialVal + (delta > 0 ? NET_CAP : -NET_CAP);
+        }
+    }
     return newAttributes;
 };
 
@@ -1232,6 +1243,19 @@ export async function acceptTeamChallengeAction(invitationId: string, teamId: st
                 }
             }
 
+            // Clean matchTime (remove 'hs', etc.) to avoid Invalid Date
+            const cleanTime = (matchTime || '').replace(' hs', '').replace('hs', '').trim();
+            const startTimestampStr = `${matchDate}T${cleanTime}`;
+            let startTimestamp: string | undefined;
+            try {
+                const dateObj = new Date(startTimestampStr);
+                if (!isNaN(dateObj.getTime())) {
+                    startTimestamp = dateObj.toISOString();
+                }
+            } catch (e) {
+                console.warn('Failed to parse match date/time:', startTimestampStr);
+            }
+
             const matchRef = getAdminDb().collection('matches').doc();
             const newMatch: Omit<Match, 'id'> = {
                 title: `${team1Data.name} vs ${team2Data.name}`,
@@ -1246,8 +1270,9 @@ export async function acceptTeamChallengeAction(invitationId: string, teamId: st
                 status: 'upcoming',
                 ownerUid: team1Data.createdBy,
                 groupId: team1Data.groupId,
+                participantGroupIds: [team1Data.groupId, team2Data.groupId].filter(Boolean) as string[],
                 isPublic: false,
-                startTimestamp: new Date(`${matchDate}T${matchTime}`).toISOString(),
+                startTimestamp: startTimestamp || new Date().toISOString(),
                 participantTeamIds: [team1Data.id!, team2Data.id!],
                 captains: [team1Data.createdBy, team2Data.createdBy],
                 createdAt: new Date().toISOString(),
@@ -1255,6 +1280,24 @@ export async function acceptTeamChallengeAction(invitationId: string, teamId: st
 
             transaction.set(matchRef, newMatch);
             transaction.update(invitationRef, { status: 'accepted' });
+
+            // Enviar notificación al retador (Solo si existe createdBy)
+            if (invitation.createdBy) {
+                const challengerNotificationRef = getAdminDb().collection(`users/${invitation.createdBy}/notifications`).doc();
+                transaction.set(challengerNotificationRef, {
+                    type: 'challenge_accepted',
+                    title: '¡Desafío Aceptado!',
+                    message: `"${team1Data.name}" ha aceptado tu desafío. El partido ha sido creado.`,
+                    link: `/matches/${matchRef.id}`,
+                    isRead: false,
+                    createdAt: new Date().toISOString(),
+                    metadata: {
+                        matchId: matchRef.id,
+                        fromUserId: userId,
+                        fromUserName: team1Data.name
+                    }
+                });
+            }
 
             return { success: true, matchId: matchRef.id };
         });
@@ -1277,8 +1320,14 @@ export async function rejectTeamChallengeAction(invitationId: string, teamId: st
         const invitation = invitationSnap.data() as Invitation;
 
         const challengedTeamSnap = await getAdminDb().doc(`teams/${teamId}`).get();
-        if (challengedTeamSnap.data()?.createdBy !== userId) {
-            throw createError(ErrorCodes.AUTH_INSUFFICIENT_PERMISSIONS);
+        if (challengedTeamSnap.exists) {
+            if (challengedTeamSnap.data()?.createdBy !== userId) {
+                throw createError(ErrorCodes.AUTH_INSUFFICIENT_PERMISSIONS);
+            }
+        } else {
+            // If team is missing, we still allow deletion if the invitation belongs to this team path
+            // This is a safety measure for "ghost" invitations after resets.
+            console.warn(`Attempting to reject invitation ${invitationId} for missing team ${teamId}`);
         }
 
         batch.update(invitationSnap.ref, { status: 'declined' });
@@ -1290,7 +1339,7 @@ export async function rejectTeamChallengeAction(invitationId: string, teamId: st
             batch.set(notificationRef, {
                 type: 'match_update',
                 title: 'Desafío Rechazado',
-                message: `"${invitation.toTeamName}" ha rechazado tu desafío.`,
+                message: `"${invitation.toTeamName || 'Un equipo'}" ha rechazado tu desafío.`,
                 link: '/competitions',
                 isRead: false,
                 createdAt: new Date().toISOString(),
@@ -1299,7 +1348,7 @@ export async function rejectTeamChallengeAction(invitationId: string, teamId: st
         await batch.commit();
         return { success: true };
     } catch (error) {
-        return handleServerActionError(error);
+        return handleServerActionError(error, { invitationId, teamId, userId });
     }
 }
 
@@ -1399,7 +1448,7 @@ export async function createLeagueAction(
             isPublic,
             groupId,
             ownerUid,
-            status: 'draft',
+            status: isPublic ? 'open_for_applications' : 'draft',
             createdAt: new Date().toISOString(),
             ...(logoUrl && { logoUrl }),
             ...(scheduleConfig && {
@@ -1685,7 +1734,7 @@ export async function createCupAction(
         const cupData: Omit<Cup, 'id'> = {
             name,
             format,
-            status: 'draft',
+            status: isPublic ? 'open_for_applications' : 'draft',
             ownerUid,
             groupId,
             isPublic,
@@ -1720,7 +1769,7 @@ export async function startCupAction(
 
         const cup = { id: cupDoc.id, ...cupDoc.data() } as Cup;
 
-        if (cup.status !== 'draft') {
+        if (cup.status !== 'draft' && cup.status !== 'open_for_applications') {
             return { success: false, error: 'La copa ya fue iniciada' };
         }
 
@@ -1922,10 +1971,11 @@ export async function updateMatchLocationAction(
 /**
  * Get all public leagues and cups that are open for applications
  */
-export async function getPublicCompetitionsAction(): Promise<{
+export async function getPublicCompetitionsAction(userId?: string): Promise<{
     success: boolean;
     leagues?: League[];
     cups?: Cup[];
+    applications?: CompetitionApplication[];
     error?: string;
 }> {
     try {
@@ -1953,7 +2003,21 @@ export async function getPublicCompetitionsAction(): Promise<{
             ...doc.data()
         } as Cup));
 
-        return { success: true, leagues, cups };
+        // Fetch user applications if userId is provided
+        let applications: CompetitionApplication[] = [];
+        if (userId) {
+            const appsSnapshot = await getAdminDb()
+                .collection('competitionApplications')
+                .where('submittedBy', '==', userId)
+                .get();
+
+            applications = appsSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as CompetitionApplication));
+        }
+
+        return { success: true, leagues, cups, applications };
     } catch (error) {
         const err = handleServerActionError(error);
         return { success: false, error: err.error };
@@ -2009,6 +2073,31 @@ export async function submitCompetitionApplicationAction(
 
         const applicationRef = await getAdminDb().collection('competitionApplications').add(applicationData);
 
+        // Notify competition owner
+        try {
+            const competitionDoc = await getAdminDb().collection(competitionType === 'cup' ? 'cups' : 'leagues').doc(competitionId).get();
+            if (competitionDoc.exists) {
+                const competition = competitionDoc.data() as League | Cup;
+                const notificationType: NotificationType = competitionType === 'cup' ? 'cup_application' : 'league_application';
+
+                await getAdminDb().collection(`users/${competition.ownerUid}/notifications`).add({
+                    type: notificationType,
+                    title: `Nueva postulación para ${competition.name}`,
+                    message: `El equipo ${team.name} quiere unirse.`,
+                    link: `/competitions/${competitionType === 'cup' ? 'cups' : 'leagues'}/${competitionId}?tab=applications`,
+                    isRead: false,
+                    createdAt: new Date().toISOString(),
+                    metadata: {
+                        fromUserId: userId,
+                        fromUserName: team.name, // Using team name as "from" for context
+                    }
+                });
+            }
+        } catch (notifError) {
+            console.error('Error sending application notification:', notifError);
+            // Don't fail the whole action if notification fails
+        }
+
         return { success: true, applicationId: applicationRef.id };
     } catch (error) {
         const err = handleServerActionError(error);
@@ -2028,13 +2117,15 @@ export async function getCompetitionApplicationsAction(
             .collection('competitionApplications')
             .where('competitionId', '==', competitionId)
             .where('competitionType', '==', competitionType)
-            .orderBy('submittedAt', 'asc')
             .get();
 
         const applications = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         } as CompetitionApplication));
+
+        // Sort by submittedAt in memory to avoid requiring a composite index
+        applications.sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime());
 
         return { success: true, applications };
     } catch (error) {

@@ -41,21 +41,21 @@ export default function LeaguesPage() {
 
     return (
         <div className="flex flex-col gap-8 pb-20">
-            <div className="flex items-center justify-between">
-                <PageHeader
-                    title="Ligas"
-                    description="Torneos todos contra todos. La regularidad manda."
-                    icon={<Shield className="h-8 w-8 text-blue-500" />}
-                />
-                <div className="flex items-center gap-3">
-                    <Button
-                        onClick={() => setCreateOpen(true)}
-                        className="rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 px-6"
-                    >
-                        <Plus className="mr-2 h-4 w-4" /> Crear Liga
-                    </Button>
-                    <BackButton href="/competitions" label="Hub" />
+            <div className="flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-2">
+                    <PageHeader
+                        title="Ligas"
+                        description="Torneos todos contra todos. La regularidad manda."
+                        icon={<Shield className="h-8 w-8 text-blue-500" />}
+                    />
+                    <BackButton href="/competitions" label="Hub" className="shrink-0 mt-1" />
                 </div>
+                <Button
+                    onClick={() => setCreateOpen(true)}
+                    className="w-full sm:w-auto rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 sm:px-6"
+                >
+                    <Plus className="mr-2 h-4 w-4" /> Crear Liga
+                </Button>
             </div>
 
             <div className="space-y-12">

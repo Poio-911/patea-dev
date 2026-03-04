@@ -27,6 +27,7 @@ const notificationIcons: Record<NotificationType, React.ElementType> = {
     challenge_accepted: CheckCircle2,
     challenge_rejected: XCircle,
     league_application: FileText,
+    cup_application: FileText,
     new_follower: Users,
     match_invitation: Calendar,
     match_reminder: Bell,

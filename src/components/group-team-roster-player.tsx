@@ -2,17 +2,14 @@
 'use client';
 
 import type { GroupTeam, DetailedTeamPlayer } from '@/lib/types';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { MoreVertical } from 'lucide-react';
-import { PlayerOvr, PlayerPhoto, positionConfig, PlayerPositionBadge } from '@/components/player-styles';
+import { PlayerPhoto, positionConfig } from '@/components/player-styles';
 import { Button } from '@/components/ui/button';
-import { useUser } from '@/firebase';
 import { SetPlayerStatusDialog } from '@/components/set-player-status-dialog';
 import { AnimatedCardWrapper } from '@/components/animated-card-wrapper';
-import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { getOvrLevel } from '@/lib/player-utils';
+import type { PlayerPosition } from '@/lib/types';
 
 interface GroupTeamRosterPlayerProps {
     player: DetailedTeamPlayer;
@@ -22,57 +19,66 @@ interface GroupTeamRosterPlayerProps {
     canEdit?: boolean;
 }
 
+const positionColors: Record<PlayerPosition, string> = {
+    DEL: 'text-pos-del',
+    MED: 'text-pos-med',
+    DEF: 'text-pos-def',
+    POR: 'text-pos-por',
+};
+
 export const GroupTeamRosterPlayer = ({ player, team, onPlayerUpdate, index = 0, canEdit = false }: GroupTeamRosterPlayerProps) => {
-    const ovrLevel = getOvrLevel(player.ovr);
     const staggerDelay = index * 0.03;
-    const { user } = useUser();
+    const posConfig = positionConfig[player.position as PlayerPosition];
+    const positionName = posConfig?.name ?? player.position;
+    const positionColor = positionColors[player.position as PlayerPosition] ?? 'text-muted-foreground';
 
     return (
         <AnimatedCardWrapper animation="slide" delay={staggerDelay}>
-            <Card className={cn(
-                "flex flex-col items-center text-center p-3 gap-2 transition-shadow relative",
-                // NEW: Subtle holographic effect (only on dark theme)
-                "game:holo-effect",
-                // NEW: Hover effects with shadows by tier (lighter version, only on dark theme)
-                "hover:shadow-md",
-                ovrLevel === 'elite' && "game:hover:border-purple-500/50 game:hover:shadow-lg game:hover:shadow-purple-500/30",
-                ovrLevel === 'gold' && "game:hover:border-yellow-500/50 game:hover:shadow-lg game:hover:shadow-yellow-500/30",
-                ovrLevel === 'silver' && "game:hover:border-gray-400/50 game:hover:shadow-lg game:hover:shadow-gray-400/30",
-                ovrLevel === 'bronze' && "game:hover:border-amber-700/50 game:hover:shadow-lg game:hover:shadow-amber-700/30",
-            )}>
-            {canEdit && (
-              <div className="absolute top-1 right-1">
-                  <SetPlayerStatusDialog player={player} team={team} onPlayerUpdate={onPlayerUpdate}>
-                      <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <MoreVertical className="h-4 w-4" />
-                      </Button>
-                  </SetPlayerStatusDialog>
-              </div>
-            )}
+            <div className="relative flex items-center gap-4 px-3 py-2.5 rounded-xl border bg-card hover:bg-accent/30 transition-colors group">
 
-            {/* NEW: Tiny jersey indicator (only on dark theme) */}
-            {team.jersey && (
-                <div className="hidden game:block absolute top-1 left-1 opacity-30 z-0">
-                    <JerseyPreview jersey={team.jersey} size="xs" />
-                </div>
-            )}
+                {/* Actions menu */}
+                {canEdit && (
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <SetPlayerStatusDialog player={player} team={team} onPlayerUpdate={onPlayerUpdate}>
+                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                                <MoreVertical className="h-3.5 w-3.5" />
+                            </Button>
+                        </SetPlayerStatusDialog>
+                    </div>
+                )}
 
-            <div className="relative mt-4">
-                <PlayerPhoto player={player as any} size="compact" />
-                <Badge className="absolute -bottom-2 -right-2 text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center border-2 border-background">
-                    {player.number}
-                </Badge>
-            </div>
-            <div className="flex flex-col items-center">
-                <div className="flex items-center gap-2">
-                    <p className="font-bold truncate w-24 text-base">{player.name}</p>
+                {/* Number — dorsal deportivo */}
+                <div className="flex flex-col items-center justify-center shrink-0 w-10">
+                    <span
+                        className={cn(
+                            'font-black tabular-nums leading-none text-3xl',
+                            positionColor
+                        )}
+                        style={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.03em' }}
+                    >
+                        {player.number}
+                    </span>
+                    <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 mt-0.5">Nº</span>
                 </div>
-                <div className="flex items-center justify-center gap-2 mt-1">
-                    <PlayerOvr value={player.ovr} size="compact" />
-                    <PlayerPositionBadge position={player.position} size="sm" showIcon={false} textOnly={true} />
+
+                {/* Photo */}
+                <div className="shrink-0">
+                    <PlayerPhoto player={player as any} size="compact" />
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                    <p
+                        className="font-black text-sm uppercase tracking-widest leading-tight truncate"
+                        style={{ letterSpacing: '0.08em' }}
+                    >
+                        {player.name}
+                    </p>
+                    <p className={cn('text-xs font-semibold mt-0.5', positionColor)}>
+                        {positionName}
+                    </p>
                 </div>
             </div>
-        </Card>
         </AnimatedCardWrapper>
     );
 };

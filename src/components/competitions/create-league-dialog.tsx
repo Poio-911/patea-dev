@@ -35,7 +35,7 @@ import { TeamSelectorCard } from './team-selector-card';
 const createLeagueSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
   format: z.enum(['round_robin', 'double_round_robin'], { required_error: 'Debes seleccionar un formato.' }),
-  teamIds: z.array(z.string()).min(4, 'Debes seleccionar al menos 4 equipos.'),
+  teamIds: z.array(z.string()),
   isPublic: z.boolean().default(false),
   // Schedule configuration
   startDate: z.string().min(1, 'Debes seleccionar una fecha de inicio.'),
@@ -43,6 +43,14 @@ const createLeagueSchema = z.object({
   matchDayOfWeek: z.number().min(0).max(6),
   matchTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Hora inválida.'),
   defaultLocation: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (!data.isPublic && data.teamIds.length < 4) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Debes seleccionar al menos 4 equipos.',
+      path: ['teamIds'],
+    });
+  }
 });
 
 type CreateLeagueForm = z.infer<typeof createLeagueSchema>;
@@ -86,7 +94,8 @@ export function CreateLeagueDialog({ open, onOpenChange, groupId, userId, teams 
       defaultLocation: '',
     },
   });
-  const { register, handleSubmit, control, getValues, setValue, trigger, formState: { errors } } = form;
+  const { register, handleSubmit, control, getValues, setValue, trigger, watch, formState: { errors } } = form;
+  const isPublic = watch('isPublic');
 
   const handleTeamSelect = (teamId: string) => {
     const currentTeamIds = getValues('teamIds') || [];
@@ -128,12 +137,11 @@ export function CreateLeagueDialog({ open, onOpenChange, groupId, userId, teams 
 
       // Upload logo if selected
       if (logoFile) {
-        const arrayBuffer = await logoFile.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+        const formData = new FormData();
+        formData.append('file', logoFile);
 
         const uploadResult = await uploadCompetitionLogoAction(
-          buffer,
-          logoFile.name,
+          formData,
           'league',
           groupId,
           userId
@@ -360,7 +368,12 @@ export function CreateLeagueDialog({ open, onOpenChange, groupId, userId, teams 
                 )}
                 {step === 3 && (
                   <div className="space-y-4">
-                    <Label>Equipos Participantes (mínimo 4)</Label>
+                    <Label>Equipos Participantes {isPublic ? '(opcional)' : '(mínimo 4)'}</Label>
+                    {isPublic && (
+                      <p className="text-sm text-muted-foreground">
+                        Al ser pública, podés crear la liga sin equipos. Los grupos interesados se postularán y vos los aprobás.
+                      </p>
+                    )}
                     <ScrollArea className="h-72">
                       <div className="grid grid-cols-1 gap-2 pr-4">
                         {teams.map(team => (

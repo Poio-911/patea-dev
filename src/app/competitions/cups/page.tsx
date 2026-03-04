@@ -41,21 +41,21 @@ export default function CupsPage() {
 
     return (
         <div className="flex flex-col gap-8 pb-20">
-            <div className="flex items-center justify-between">
-                <PageHeader
-                    title="Copas"
-                    description="Torneos de eliminación directa. Ganar o morir."
-                    icon={<Trophy className="h-8 w-8 text-amber-500" />}
-                />
-                <div className="flex items-center gap-3">
-                    <Button
-                        onClick={() => setCreateOpen(true)}
-                        className="rounded-full bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-500/20 px-6 text-white"
-                    >
-                        <Plus className="mr-2 h-4 w-4" /> Crear Copa
-                    </Button>
-                    <BackButton href="/competitions" label="Hub" />
+            <div className="flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-2">
+                    <PageHeader
+                        title="Copas"
+                        description="Torneos de eliminación directa. Ganar o morir."
+                        icon={<Trophy className="h-8 w-8 text-amber-500" />}
+                    />
+                    <BackButton href="/competitions" label="Hub" className="shrink-0 mt-1" />
                 </div>
+                <Button
+                    onClick={() => setCreateOpen(true)}
+                    className="w-full sm:w-auto rounded-full bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-500/20 sm:px-6 text-white"
+                >
+                    <Plus className="mr-2 h-4 w-4" /> Crear Copa
+                </Button>
             </div>
 
             <div className="space-y-12">

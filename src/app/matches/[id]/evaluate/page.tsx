@@ -43,13 +43,22 @@ export default function EvaluateMatchPage() {
     const [isProcessingSubmissions, setIsProcessingSubmissions] = useState(false);
     const [pendingSubmissionsCount, setPendingSubmissionsCount] = useState(0);
 
-    const allGroupPlayersQuery = useMemo(() =>
-        firestore && user?.activeGroupId ? query(collection(firestore, 'players'), where('groupId', '==', user.activeGroupId)) : null
-        , [firestore, user?.activeGroupId]);
-    const { data: allGroupPlayers, loading: playersLoading } = useCollection<Player>(allGroupPlayersQuery);
-
     const matchRef = useMemo(() => firestore ? doc(firestore, 'matches', matchId as string) : null, [firestore, matchId]);
     const { data: match, loading: matchLoading } = useDoc<Match>(matchRef);
+
+    const participantGroupIds = useMemo(() => {
+        if (!match) return [];
+        return match.participantGroupIds && match.participantGroupIds.length > 0
+            ? match.participantGroupIds
+            : [match.groupId];
+    }, [match]);
+
+    const allGroupPlayersQuery = useMemo(() => {
+        if (!firestore || participantGroupIds.length === 0) return null;
+        return query(collection(firestore, 'players'), where('groupId', 'in', participantGroupIds));
+    }, [firestore, participantGroupIds]);
+
+    const { data: allGroupPlayers, loading: playersLoading } = useCollection<Player>(allGroupPlayersQuery);
 
     const assignmentsQuery = useMemo(() =>
         firestore ? collection(firestore, 'matches', matchId as string, 'assignments') : null,

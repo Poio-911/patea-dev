@@ -66,11 +66,11 @@ export function LeagueHeader({
           <span className="text-foreground font-medium truncate max-w-[200px]">{league.name}</span>
         </div>
 
-        <div className="flex flex-col md:flex-row items-start gap-5">
+        <div className="flex flex-row items-start gap-4">
           {/* Logo or Shield icon */}
           <div
             className={cn(
-              'w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden shrink-0 flex items-center justify-center mx-auto md:mx-0 relative',
+              'w-16 h-16 md:w-24 md:h-24 rounded-2xl overflow-hidden shrink-0 flex items-center justify-center relative',
               league.logoUrl ? 'bg-muted/30 border border-border' : 'bg-blue-500/10',
             )}
           >
@@ -91,15 +91,15 @@ export function LeagueHeader({
             )}
           </div>
 
-          <div className="flex-1 space-y-2.5 text-center md:text-left">
+          <div className="flex-1 space-y-2.5 min-w-0">
             {/* Title + owner actions */}
-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+            <div className="flex flex-row items-start justify-between gap-2">
               <h1 className="text-2xl md:text-3xl font-black sport-text leading-tight text-foreground">
                 {league.name}
               </h1>
 
               {isOwner && (
-                <div className="flex items-center gap-2 justify-center md:justify-end shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   {(league.status === 'draft' || league.status === 'open_for_applications') && (
                     <Button onClick={onStartLeague} size="sm" className="gap-1.5">
                       <Play className="h-3.5 w-3.5" />
@@ -147,7 +147,7 @@ export function LeagueHeader({
             </div>
 
             {/* Status badge + meta */}
-            <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start">
+            <div className="flex flex-wrap items-center gap-2 justify-start">
               <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full text-[10px] font-bold sport-text uppercase tracking-widest">
                 ● {statusLabel}
               </span>
@@ -160,7 +160,7 @@ export function LeagueHeader({
 
             {/* Organizer */}
             {organizer && (
-              <div className="flex items-center gap-2 justify-center md:justify-start pt-1">
+              <div className="flex items-center gap-2 justify-start pt-1">
                 <span className="text-muted-foreground text-sm">Organizado por</span>
                 <div className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded-full">
                   {organizer.photoURL || organizer.photoUrl ? (

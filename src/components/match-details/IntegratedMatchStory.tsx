@@ -29,7 +29,7 @@ export function IntegratedMatchStory({ match }: IntegratedMatchStoryProps) {
 
     const { toast } = useToast();
     const { user } = useUser();
-    const isOrganizer = user?.uid === match.ownerUid;
+    const isOrganizer = user?.uid === match.ownerUid || (match.captains && match.captains.includes(user?.uid || ''));
 
     // Cargar estadísticas reportadas
     useEffect(() => {

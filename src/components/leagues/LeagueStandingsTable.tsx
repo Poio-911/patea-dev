@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 
 type LeagueStandingsTableProps = {
   standings: LeagueStanding[];
@@ -102,15 +103,13 @@ export const LeagueStandingsTable = React.memo(function LeagueStandingsTable({
                     {/* Team */}
                     <TableCell className="py-3">
                       <div className="flex items-center gap-2.5">
-                        <div
-                          className="w-6 h-6 rounded-sm flex items-center justify-center text-xs font-bold shrink-0 shadow-sm"
-                          style={{
-                            backgroundColor: standing.teamJersey?.primaryColor || '#1e40af',
-                            color: standing.teamJersey?.secondaryColor || '#fff',
-                          }}
-                        >
-                          {standing.teamName.charAt(0)}
-                        </div>
+                        {standing.teamJersey ? (
+                          <JerseyPreview jersey={standing.teamJersey} size="xs" />
+                        ) : (
+                          <div className="w-6 h-6 rounded-sm bg-blue-500/20 flex items-center justify-center text-xs font-bold shrink-0">
+                            {standing.teamName.charAt(0)}
+                          </div>
+                        )}
                         <span
                           className={cn(
                             'font-medium text-sm leading-tight',

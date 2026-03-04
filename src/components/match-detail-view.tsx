@@ -58,8 +58,11 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
 
   const allGroupPlayersQuery = useMemo(() => {
     if (!firestore || !match?.groupId) return null;
-    return query(collection(firestore, 'players'), where('groupId', '==', match.groupId));
-  }, [firestore, match?.groupId]);
+    const groupIds = match.participantGroupIds && match.participantGroupIds.length > 0
+      ? match.participantGroupIds
+      : [match.groupId];
+    return query(collection(firestore, 'players'), where('groupId', 'in', groupIds));
+  }, [firestore, match?.groupId, match?.participantGroupIds]);
   const { data: allGroupPlayers } = useCollection<Player>(allGroupPlayersQuery);
 
   // Find user's player in this match
@@ -172,8 +175,8 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
           googleMapsUrl={googleMapsUrl}
           whatsAppShareText={whatsAppShareText}
           weatherIcon={WeatherIcon ?? undefined}
-          isOwner={permissions.isOwner}
-          isUserInMatch={permissions.isUserInMatch}
+          isOwner={!!permissions.isOwner}
+          isUserInMatch={!!permissions.isUserInMatch}
           isMatchFull={(match.players?.length || 0) >= match.matchSize}
           isJoining={actions.isJoining}
           isUserPendingRequest={actions.isUserPendingRequest}
@@ -189,7 +192,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
           {/* MAIN (izquierda, 60%) */}
           <div className="lg:col-span-3 space-y-6">
             {match.teams && match.teams.length > 0 ? (
-              <MatchTeams match={match} isOwner={permissions.isOwner} />
+              <MatchTeams match={match} isOwner={!!permissions.isOwner} />
             ) : (
               <PlayersConfirmed match={match} />
             )}
@@ -206,7 +209,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
 
             {/* Available players */}
             {!isCompetitionMatch && (match.players?.length || 0) < match.matchSize && (
-              <AvailablePlayersSection match={match} isOwner={permissions.isOwner} />
+              <AvailablePlayersSection match={match} isOwner={!!permissions.isOwner} />
             )}
           </div>
 

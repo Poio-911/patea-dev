@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, Users2, Calendar, User, Loader2, UserRound, Search, PlayCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { collection, query, where, orderBy, limit, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, doc, or, and } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -71,14 +71,35 @@ function DashboardContent() {
   const firestore = useFirestore();
 
   // Queries that are actually used by the new components
-  const groupMatchesQuery = useMemo(() => {
+  const groupMatchesQuery1 = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
     return query(
       collection(firestore, 'matches'),
       where('groupId', '==', user.activeGroupId),
       orderBy('date', 'desc'),
+      limit(50)
     );
   }, [firestore, user?.activeGroupId]);
+
+  const groupMatchesQuery2 = useMemo(() => {
+    if (!firestore || !user?.activeGroupId) return null;
+    return query(
+      collection(firestore, 'matches'),
+      where('participantGroupIds', 'array-contains', user.activeGroupId),
+      orderBy('date', 'desc'),
+      limit(50)
+    );
+  }, [firestore, user?.activeGroupId]);
+
+  const { data: groupMatches1 } = useCollection<Match>(groupMatchesQuery1);
+  const { data: groupMatches2 } = useCollection<Match>(groupMatchesQuery2);
+
+  const groupMatches = useMemo(() => {
+    const combined = [...(groupMatches1 || []), ...(groupMatches2 || [])];
+    const unique = new Map<string, Match>();
+    combined.forEach(m => unique.set(m.id, m));
+    return Array.from(unique.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [groupMatches1, groupMatches2]);
 
   const playerRef = useMemo(() => firestore && user?.uid ? doc(firestore, 'players', user.uid) : null, [firestore, user?.uid]);
   const { data: player, loading: playerLoading } = useDoc<Player>(playerRef);
@@ -104,40 +125,99 @@ function DashboardContent() {
   const { data: activeGroup, loading: activeGroupLoading } = useDoc<Group>(activeGroupRef);
 
   // Upcoming matches for grupo tab
-  const upcomingMatchesQuery = useMemo(() => {
+  const upcomingMatchesQuery1 = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
     return query(
       collection(firestore, 'matches'),
       where('groupId', '==', user.activeGroupId),
       where('status', '==', 'upcoming'),
       orderBy('date', 'asc'),
-      limit(5)
+      limit(20)
     );
   }, [firestore, user?.activeGroupId]);
-  const { data: upcomingMatchesData, loading: upcomingMatchesLoading } = useCollection<Match>(upcomingMatchesQuery);
+
+  const upcomingMatchesQuery2 = useMemo(() => {
+    if (!firestore || !user?.activeGroupId) return null;
+    return query(
+      collection(firestore, 'matches'),
+      where('participantGroupIds', 'array-contains', user.activeGroupId),
+      where('status', '==', 'upcoming'),
+      orderBy('date', 'asc'),
+      limit(20)
+    );
+  }, [firestore, user?.activeGroupId]);
+
+  const { data: upcoming1, loading: u1Loading } = useCollection<Match>(upcomingMatchesQuery1);
+  const { data: upcoming2, loading: u2Loading } = useCollection<Match>(upcomingMatchesQuery2);
+
+  const upcomingMatchesData = useMemo(() => {
+    const combined = [...(upcoming1 || []), ...(upcoming2 || [])];
+    const unique = new Map<string, Match>();
+    combined.forEach(m => unique.set(m.id, m));
+    return Array.from(unique.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [upcoming1, upcoming2]);
+
+  const upcomingMatchesLoading = u1Loading || u2Loading;
 
   // Friendly matches for grupo tab
-  const friendlyMatchesQuery = useMemo(() => {
+  const friendlyMatchesQuery1 = useMemo(() => {
     if (!firestore || !user?.activeGroupId) return null;
     return query(
       collection(firestore, 'matches'),
       where('type', '==', 'intergroup_friendly'),
-      where('groupId', '==', user.activeGroupId)
+      where('groupId', '==', user.activeGroupId),
+      limit(20)
     );
   }, [firestore, user?.activeGroupId]);
-  const { data: friendlyMatchesData, loading: friendlyMatchesLoading } = useCollection<Match>(friendlyMatchesQuery);
 
-  const { data: groupMatches, loading: groupMatchesLoading } = useCollection<Match>(groupMatchesQuery);
+  const friendlyMatchesQuery2 = useMemo(() => {
+    if (!firestore || !user?.activeGroupId) return null;
+    return query(
+      collection(firestore, 'matches'),
+      where('type', '==', 'intergroup_friendly'),
+      where('participantGroupIds', 'array-contains', user.activeGroupId),
+      limit(20)
+    );
+  }, [firestore, user?.activeGroupId]);
+
+  const { data: friendly1, loading: f1Loading } = useCollection<Match>(friendlyMatchesQuery1);
+  const { data: friendly2, loading: f2Loading } = useCollection<Match>(friendlyMatchesQuery2);
+
+  const friendlyMatchesData = useMemo(() => {
+    const combined = [...(friendly1 || []), ...(friendly2 || [])];
+    const unique = new Map<string, Match>();
+    combined.forEach(m => unique.set(m.id, m));
+    return Array.from(unique.values());
+  }, [friendly1, friendly2]);
+
+  const friendlyMatchesLoading = f1Loading || f2Loading;
+
+  const groupMatchesLoading = false; // Combined loading state if needed, but here simple
 
   // Active Matches (Status === active), filtered in memory to avoid composite index limits
-  const activeMatchesQuery = useMemo(() => firestore && user?.activeGroupId ? query(
+  const activeMatchesQuery1 = useMemo(() => firestore && user?.activeGroupId ? query(
     collection(firestore, 'matches'),
     where('groupId', '==', user.activeGroupId),
     where('status', '==', 'active')
   ) : null, [firestore, user?.activeGroupId]);
 
-  const { data: activeGroupMatches, loading: activeLoading } = useCollection<Match>(activeMatchesQuery);
-  const liveLoading = activeLoading;
+  const activeMatchesQuery2 = useMemo(() => firestore && user?.activeGroupId ? query(
+    collection(firestore, 'matches'),
+    where('participantGroupIds', 'array-contains', user.activeGroupId),
+    where('status', '==', 'active')
+  ) : null, [firestore, user?.activeGroupId]);
+
+  const { data: active1, loading: a1Loading } = useCollection<Match>(activeMatchesQuery1);
+  const { data: active2, loading: a2Loading } = useCollection<Match>(activeMatchesQuery2);
+
+  const activeGroupMatches = useMemo(() => {
+    const combined = [...(active1 || []), ...(active2 || [])];
+    const unique = new Map<string, Match>();
+    combined.forEach(m => unique.set(m.id, m));
+    return Array.from(unique.values());
+  }, [active1, active2]);
+
+  const liveLoading = a1Loading || a2Loading;
 
   const liveMatches = useMemo(() => {
     if (!activeGroupMatches) return [];

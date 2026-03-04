@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { League, Cup, GroupTeam } from '@/lib/types';
+import { League, Cup, GroupTeam, CompetitionApplication } from '@/lib/types';
 import { getPublicCompetitionsAction, submitCompetitionApplicationAction } from '@/lib/actions/server-actions';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ interface PublicCompetitionsBrowserProps {
 export function PublicCompetitionsBrowser({ userId, userTeams }: PublicCompetitionsBrowserProps) {
   const [leagues, setLeagues] = useState<League[]>([]);
   const [cups, setCups] = useState<Cup[]>([]);
+  const [applications, setApplications] = useState<CompetitionApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState<string | null>(null);
   const { toast } = useToast();
@@ -37,10 +38,11 @@ export function PublicCompetitionsBrowser({ userId, userTeams }: PublicCompetiti
   const loadPublicCompetitions = async () => {
     setLoading(true);
     try {
-      const result = await getPublicCompetitionsAction();
+      const result = await getPublicCompetitionsAction(userId);
       if (result.success) {
         setLeagues(result.leagues || []);
         setCups(result.cups || []);
+        setApplications(result.applications || []);
       } else {
         toast({
           variant: 'destructive',
@@ -144,6 +146,7 @@ export function PublicCompetitionsBrowser({ userId, userTeams }: PublicCompetiti
                 competition={league}
                 type="league"
                 userTeams={userTeams}
+                applications={applications}
                 onApply={handleApply}
                 isApplying={applying === league.id}
               />
@@ -163,6 +166,7 @@ export function PublicCompetitionsBrowser({ userId, userTeams }: PublicCompetiti
                 competition={cup}
                 type="cup"
                 userTeams={userTeams}
+                applications={applications}
                 onApply={handleApply}
                 isApplying={applying === cup.id}
               />
@@ -178,12 +182,29 @@ interface CompetitionCardProps {
   competition: League | Cup;
   type: 'league' | 'cup';
   userTeams: GroupTeam[];
+  applications: CompetitionApplication[];
   onApply: (competitionId: string, type: 'league' | 'cup', teamId: string) => void;
   isApplying: boolean;
 }
 
-function CompetitionCard({ competition, type, userTeams, onApply, isApplying }: CompetitionCardProps) {
+function CompetitionCard({ competition, type, userTeams, applications, onApply, isApplying }: CompetitionCardProps) {
   const [selectedTeam, setSelectedTeam] = useState<string>('');
+
+  const eligibleTeams = useState(() => {
+    return userTeams.filter(team => {
+      // 1. Not already in the competition
+      if (competition.teams.includes(team.id || '')) return false;
+
+      // 2. No pending or approved application for this competition
+      const hasApplication = applications.some(app =>
+        app.teamId === team.id &&
+        app.competitionId === competition.id &&
+        (app.status === 'pending' || app.status === 'approved')
+      );
+
+      return !hasApplication;
+    });
+  })[0];
 
   return (
     <Card>
@@ -243,11 +264,17 @@ function CompetitionCard({ competition, type, userTeams, onApply, isApplying }: 
               <SelectValue placeholder="Elegí tu equipo" />
             </SelectTrigger>
             <SelectContent>
-              {userTeams.map(team => (
-                <SelectItem key={team.id} value={team.id}>
-                  {team.name}
+              {eligibleTeams.length > 0 ? (
+                eligibleTeams.map(team => (
+                  <SelectItem key={team.id} value={team.id || ''}>
+                    {team.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  Sin equipos disponibles
                 </SelectItem>
-              ))}
+              )}
             </SelectContent>
           </Select>
         </div>

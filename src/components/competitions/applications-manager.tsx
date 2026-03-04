@@ -239,12 +239,12 @@ function ApplicationCard({ application, onApprove, onReject, isProcessing, reado
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="w-10 h-10 flex-shrink-0">
-              <JerseyPreview jersey={application.teamJersey} />
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            <div className="w-12 h-12 flex-shrink-0">
+              <JerseyPreview jersey={application.teamJersey} size="sm" />
             </div>
             <div className="flex-1 min-w-0">
-              <CardTitle className="text-base">{application.teamName}</CardTitle>
+              <CardTitle className="text-base truncate">{application.teamName}</CardTitle>
               <CardDescription className="text-xs">
                 {format(new Date(application.submittedAt), "d 'de' MMMM, HH:mm'hs'", { locale: es })}
               </CardDescription>

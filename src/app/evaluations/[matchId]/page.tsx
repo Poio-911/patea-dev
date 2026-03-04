@@ -109,15 +109,17 @@ const evaluationSchema = z.object({
   evaluations: z.array(playerEvaluationSchema),
 }).superRefine((val, ctx) => {
   val.evaluations.forEach((ev, idx) => {
-    // Exigir al menos 1 etiqueta negativa en evaluaciones tipo 'tags'
+    // Validación proporcional: por cada 2 positivos, 1 negativo requerido
     if (ev && (ev as any).evaluationType === 'tags') {
       const tags = (ev as any).performanceTags || []
-      const hasNegative = tags.some((t: any) => t && t.impact === 'negative')
+      const positiveCount = tags.filter((t: any) => t && t.impact === 'positive').length
+      const negativeCount = tags.filter((t: any) => t && t.impact === 'negative').length
+      const requiredNegatives = Math.ceil(positiveCount / 2)
       const override = (ev as any).overrideNoNegative === true
-      if (!hasNegative && !override) {
+      if (!override && negativeCount < requiredNegatives) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Incluye al menos 1 etiqueta negativa para equilibrar la evaluación.',
+          message: `Con ${positiveCount} tags positivos necesitás al menos ${requiredNegatives} negativos.`,
           path: ['evaluations', idx, 'performanceTags'],
         })
       }
@@ -646,7 +648,7 @@ export default function PerformEvaluationPage() {
                           <TabsTrigger value="text" className="text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm game:data-[state=active]:bg-primary game:data-[state=active]:text-background">Descripción</TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="points" className="p-6 bg-card border border-border rounded-lg mt-2 game:bg-white/5 game:border-white/10">
+                        <TabsContent value="points" className="mt-2">
                           <FormField
                             control={form.control}
                             name={`evaluations.${index}.rating`}
@@ -696,7 +698,7 @@ export default function PerformEvaluationPage() {
                           />
                         </TabsContent>
 
-                        <TabsContent value="tags" className="p-6 bg-card border border-border rounded-lg mt-2 game:bg-white/5 game:border-white/10">
+                        <TabsContent value="tags" className="mt-2">
                           <Controller
                             name={`evaluations.${index}.performanceTags`}
                             control={form.control}
@@ -713,7 +715,7 @@ export default function PerformEvaluationPage() {
                                     tagsField.onChange(selectedTags)
                                   }}
                                   minTags={3}
-                                  maxTags={8}
+                                  maxTags={5}
                                 />
                                 <FormMessage>{fieldState.error?.message}</FormMessage>
                               </FormItem>
@@ -721,7 +723,7 @@ export default function PerformEvaluationPage() {
                           />
                         </TabsContent>
 
-                        <TabsContent value="text" className="p-6 bg-card border border-border rounded-lg mt-2 space-y-6 game:bg-white/5 game:border-white/10">
+                        <TabsContent value="text" className="mt-2 space-y-6">
                           <FormField
                             control={form.control}
                             name={`evaluations.${index}.textDescription`}

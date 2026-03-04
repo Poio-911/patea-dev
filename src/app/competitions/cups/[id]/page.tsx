@@ -31,6 +31,7 @@ import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { ChampionCelebration } from '@/components/leagues/ChampionCelebration';
 import { BackButton } from '@/components/navigation/back-button';
+import { ApplicationsManager } from '@/components/competitions/applications-manager';
 
 export default function CupDetailPage() {
   const params = useParams<{ id: string }>();
@@ -284,6 +285,16 @@ export default function CupDetailPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {isOwner && (
+            <TabsContent value="applications" className="mt-0">
+              <ApplicationsManager
+                competitionId={cup.id}
+                competitionType="cup"
+                competitionName={cup.name}
+              />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 

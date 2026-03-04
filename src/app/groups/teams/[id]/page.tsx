@@ -4,22 +4,21 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
-import { doc, collection, query, where, updateDoc, deleteDoc } from 'firebase/firestore';
-import type { GroupTeam, Player, DetailedTeamPlayer, Match } from '@/lib/types';
-import { PageHeader } from '@/components/page-header';
-import { Loader2, ArrowLeft, ShieldCheck, UserCheck, History, Globe, Swords, Pencil, Trash2 } from 'lucide-react';
+import { doc, collection, query, where, deleteDoc } from 'firebase/firestore';
+import type { GroupTeam, Player, DetailedTeamPlayer, Match, Cup, League } from '@/lib/types';
+import { Loader2, ShieldCheck, UserCheck, History, Swords, Pencil, Trash2, MoreVertical, Users, CalendarDays, CheckCircle2, XCircle, Minus } from 'lucide-react';
+import { BackButton } from '@/components/navigation/back-button';
+import { TeamTrophiesSection } from '@/components/teams/TeamTrophiesSection';
 import { GroupTeamRosterPlayer } from '@/components/group-team-roster-player';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { UpcomingMatchesFeed } from '@/components/groups/upcoming-matches-feed';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { getUserRoleInGroupAction } from '@/lib/actions/group-role-actions';
@@ -28,16 +27,24 @@ import { hasPermission } from '@/lib/group-permissions';
 import { ManageRosterDialog } from '@/components/manage-roster-dialog';
 import { EditTeamDialog } from '@/components/edit-team-dialog';
 import {
-  ResponsiveAlertDialog as AlertDialog,
-  ResponsiveAlertDialogAction as AlertDialogAction,
-  ResponsiveAlertDialogCancel as AlertDialogCancel,
-  ResponsiveAlertDialogContent as AlertDialogContent,
-  ResponsiveAlertDialogDescription as AlertDialogDescription,
-  ResponsiveAlertDialogFooter as AlertDialogFooter,
-  ResponsiveAlertDialogHeader as AlertDialogHeader,
-  ResponsiveAlertDialogTitle as AlertDialogTitle,
-  ResponsiveAlertDialogTrigger as AlertDialogTrigger,
+    ResponsiveAlertDialog as AlertDialog,
+    ResponsiveAlertDialogAction as AlertDialogAction,
+    ResponsiveAlertDialogCancel as AlertDialogCancel,
+    ResponsiveAlertDialogContent as AlertDialogContent,
+    ResponsiveAlertDialogDescription as AlertDialogDescription,
+    ResponsiveAlertDialogFooter as AlertDialogFooter,
+    ResponsiveAlertDialogHeader as AlertDialogHeader,
+    ResponsiveAlertDialogTitle as AlertDialogTitle,
+    ResponsiveAlertDialogTrigger as AlertDialogTrigger,
 } from '@/components/ui/responsive-alert-dialog';
+import {
+    ResponsiveDropdownMenu,
+    ResponsiveDropdownMenuContent,
+    ResponsiveDropdownMenuItem,
+    ResponsiveDropdownMenuSeparator,
+    ResponsiveDropdownMenuTrigger,
+    ResponsiveDropdownMenuLabel,
+} from '@/components/ui/responsive-dropdown-menu';
 
 export default function TeamDetailPage() {
     const params = useParams<{ id: string }>();
@@ -73,6 +80,30 @@ export default function TeamDetailPage() {
     }, [firestore, team?.groupId]);
 
     const { data: allGroupMatches, loading: matchesLoading } = useCollection<Match>(groupMatchesQuery);
+
+    // Query for cup championships
+    const cupChampionshipsQuery = useMemo(() => {
+        if (!firestore || !teamId) return null;
+        return query(
+            collection(firestore, 'cups'),
+            where('championTeamId', '==', teamId),
+            where('status', '==', 'completed')
+        );
+    }, [firestore, teamId]);
+
+    const { data: championCups } = useCollection<Cup>(cupChampionshipsQuery);
+
+    // Query for league championships
+    const leagueChampionshipsQuery = useMemo(() => {
+        if (!firestore || !teamId) return null;
+        return query(
+            collection(firestore, 'leagues'),
+            where('championTeamId', '==', teamId),
+            where('status', '==', 'completed')
+        );
+    }, [firestore, teamId]);
+
+    const { data: championLeagues } = useCollection<League>(leagueChampionshipsQuery);
 
     const { upcomingMatches, pastMatches } = useMemo(() => {
         if (!allGroupMatches || !team?.name) return { upcomingMatches: [], pastMatches: [] };
@@ -160,12 +191,9 @@ export default function TeamDetailPage() {
         return (
             <div className="text-center p-8">
                 <h2 className="text-xl font-bold">Equipo no encontrado</h2>
-                <Button asChild variant="outline" className="mt-4">
-                    <Link href="/groups">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Volver a Grupos
-                    </Link>
-                </Button>
+                <div className="mt-4">
+                    <BackButton href="/groups" label="Volver a Grupos" />
+                </div>
             </div>
         );
     }
@@ -173,80 +201,110 @@ export default function TeamDetailPage() {
     const memberCount = team.members?.length || 0;
 
     return (
-        <div className="flex flex-col gap-8">
-            <div className="flex w-full items-center justify-between">
-                <Button asChild variant="outline" className="self-start">
-                    <Link href="/groups">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Volver a Grupos
-                    </Link>
-                </Button>
-            </div>
+        <div className="flex flex-col gap-6 pb-20">
+            {/* Back navigation */}
+            <BackButton href="/groups" label="Volver a Grupos" />
 
-            <div className="flex flex-col items-center text-center gap-4">
-                {team.jersey && (
-                    <div className="h-32 w-32 flex items-center justify-center overflow-hidden">
-                        <JerseyPreview jersey={team.jersey} size="xl" />
+            {/* ── Editorial Header ── */}
+            <div className="flex flex-row items-start gap-4">
+                {/* Jersey */}
+                <div className="w-16 h-16 md:w-20 md:h-20 shrink-0 flex items-center justify-center">
+                    <JerseyPreview jersey={team.jersey} size="xl" />
+                </div>
+
+                {/* Info + actions */}
+                <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                        <h1 className="text-2xl md:text-3xl font-black sport-text leading-tight tracking-tight text-foreground truncate">
+                            {team.name}
+                        </h1>
+
+                        {/* Actions dropdown — only for owners/admins */}
+                        {canEditTeam && (
+                            <ResponsiveDropdownMenu>
+                                <ResponsiveDropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </ResponsiveDropdownMenuTrigger>
+                                <ResponsiveDropdownMenuContent align="end">
+                                    <ResponsiveDropdownMenuLabel>Equipo</ResponsiveDropdownMenuLabel>
+                                    <ResponsiveDropdownMenuSeparator />
+                                    <ResponsiveDropdownMenuItem
+                                        disableAutoClose
+                                        onClick={() => setIsEditOpen(true)}
+                                        className="gap-2"
+                                    >
+                                        <Pencil className="h-4 w-4" />
+                                        Editar Equipo
+                                    </ResponsiveDropdownMenuItem>
+                                    <ResponsiveDropdownMenuSeparator />
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <ResponsiveDropdownMenuItem
+                                                disableAutoClose
+                                                className="gap-2 text-destructive focus:text-destructive"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                                Eliminar Equipo
+                                            </ResponsiveDropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>¿Eliminar "{team.name}"?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Esta acción no se puede deshacer. El equipo y su configuración se eliminarán permanentemente.
+                                                    Los partidos anteriores no se verán afectados.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    onClick={handleDeleteTeam}
+                                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                >
+                                                    {isDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                                    Eliminar
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </ResponsiveDropdownMenuContent>
+                            </ResponsiveDropdownMenu>
+                        )}
                     </div>
-                )}
-                <div className="flex flex-col items-center gap-2">
-                    <PageHeader title={team.name} className="justify-center text-center" />
-                    <Badge variant="outline" className="text-sm">
-                        {memberCount} Jugadores
-                    </Badge>
+
+                    {/* Meta badges */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Users className="h-3.5 w-3.5" />
+                            {memberCount} jugadores
+                        </span>
+                    </div>
+
+                    {/* Champion trophies */}
+                    <TeamTrophiesSection
+                        cups={championCups || []}
+                        leagues={championLeagues || []}
+                    />
                 </div>
             </div>
 
-            {canEditTeam && (
-                <div className="flex gap-2 justify-center flex-wrap">
-                    <Button variant="outline" size="sm" onClick={() => setIsEditOpen(true)}>
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Editar Equipo
-                    </Button>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm" disabled={isDeleting}>
-                                {isDeleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
-                                Eliminar Equipo
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>¿Eliminar "{team.name}"?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Esta acción no se puede deshacer. El equipo y su configuración se eliminarán permanentemente.
-                                    Los partidos anteriores no se verán afectados.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                    onClick={handleDeleteTeam}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                    Eliminar
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-            )}
-
+            {/* Competitions shortcut — for owner */}
             {isOwner && (
-                <Card className="bg-gradient-to-r from-primary/10 to-transparent border-primary/20">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Swords className="h-5 w-5 text-primary" />
-                            Partidos y Competiciones
-                        </CardTitle>
-                        <CardDescription>
-                            Gestioná las postulaciones y desafíos de tu equipo
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Button asChild className="w-full">
+                <Card className="border-primary/20 bg-gradient-to-r from-primary/8 to-transparent">
+                    <CardContent className="flex items-center justify-between gap-4 p-4">
+                        <div className="flex items-center gap-3">
+                            <div className="rounded-lg bg-primary/10 p-2">
+                                <Swords className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                                <p className="font-semibold text-sm">Competiciones</p>
+                                <p className="text-xs text-muted-foreground">Postulaciones y desafíos</p>
+                            </div>
+                        </div>
+                        <Button asChild size="sm" variant="outline">
                             <Link href="/competitions">
-                                <Swords className="mr-2 h-4 w-4" />
                                 Ir a Competiciones
                             </Link>
                         </Button>
@@ -254,10 +312,11 @@ export default function TeamDetailPage() {
                 </Card>
             )}
 
+            {/* Upcoming matches */}
             <Card>
-                <CardHeader>
+                <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2">
-                        <Globe className="h-5 w-5 text-primary" />
+                        <CalendarDays className="h-5 w-5 text-primary" />
                         Próximos Partidos
                     </CardTitle>
                     <CardDescription>Agenda y desafíos del equipo</CardDescription>
@@ -267,64 +326,70 @@ export default function TeamDetailPage() {
                 </CardContent>
             </Card>
 
+            {/* ── Roster tabs ── */}
             <Card>
                 <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle className="flex items-center gap-2">
                                 <ShieldCheck className="h-5 w-5 text-primary" />
-                                Titulares ({titulares.length})
+                                Plantel
                             </CardTitle>
-                            <CardDescription>Jugadores confirmados en el once inicial</CardDescription>
+                            <CardDescription>{titulares.length} titulares · {suplentes.length} suplentes</CardDescription>
                         </div>
                         {canEditTeam && (
                             <ManageRosterDialog team={team} players={[...titulares, ...suplentes]} allGroupPlayers={groupPlayers || []}>
-                                <Button variant="secondary">Gestionar Plantel</Button>
+                                <Button variant="secondary" size="sm">Gestionar</Button>
                             </ManageRosterDialog>
                         )}
                     </div>
                 </CardHeader>
-                <CardContent>
-                    {titulares.length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                            {titulares.map((player: DetailedTeamPlayer, index: number) => (
-                                <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={handlePlayerUpdate} index={index} canEdit={canEditTeam} />
-                            ))}
-                        </div>
-                    ) : (
-                        <Alert variant="default">
-                            <AlertTitle>Sin Titulares Definidos</AlertTitle>
-                            <AlertDescription>
-                                Aún no asignaste jugadores al equipo titular.
-                            </AlertDescription>
-                        </Alert>
-                    )}
+                <CardContent className="pt-0">
+                    <Tabs defaultValue="titulares">
+                        <TabsList className="w-full mb-4">
+                            <TabsTrigger value="titulares" className="flex-1">
+                                <ShieldCheck className="h-4 w-4 mr-1.5" />
+                                Titulares ({titulares.length})
+                            </TabsTrigger>
+                            <TabsTrigger value="suplentes" className="flex-1">
+                                <UserCheck className="h-4 w-4 mr-1.5" />
+                                Suplentes ({suplentes.length})
+                            </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="titulares">
+                            {titulares.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {titulares.map((player: DetailedTeamPlayer, index: number) => (
+                                        <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={() => { }} index={index} canEdit={canEditTeam} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <Alert>
+                                    <AlertTitle>Sin Titulares</AlertTitle>
+                                    <AlertDescription>Aún no asignaste jugadores al once inicial.</AlertDescription>
+                                </Alert>
+                            )}
+                        </TabsContent>
+
+                        <TabsContent value="suplentes">
+                            {suplentes.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {suplentes.map((player: DetailedTeamPlayer, index: number) => (
+                                        <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={() => { }} index={index} canEdit={canEditTeam} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground text-center py-4">No hay jugadores suplentes.</p>
+                            )}
+                        </TabsContent>
+                    </Tabs>
                 </CardContent>
             </Card>
 
+            {/* ── Match History ── */}
             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <UserCheck className="h-5 w-5 text-muted-foreground" />
-                        Suplentes ({suplentes.length})
-                    </CardTitle>
-                    <CardDescription>Alternativas disponibles para el partido</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {suplentes.length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                            {suplentes.map((player: DetailedTeamPlayer, index: number) => (
-                                <GroupTeamRosterPlayer key={player.id} player={player} team={team} onPlayerUpdate={handlePlayerUpdate} index={index} canEdit={canEditTeam} />
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-sm text-muted-foreground">No hay jugadores suplentes definidos.</p>
-                    )}
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
+                <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2">
                         <History className="h-5 w-5 text-muted-foreground" />
                         Historial de Partidos
@@ -333,25 +398,58 @@ export default function TeamDetailPage() {
                 </CardHeader>
                 <CardContent>
                     {pastMatches.length > 0 ? (
-                        <div className="space-y-3">
-                            {pastMatches.map(match => (
-                                <Card key={match.id}>
-                                    <CardHeader className="flex flex-row items-center justify-between p-4">
-                                        <div>
-                                            <CardTitle className="text-base">{match.title}</CardTitle>
-                                            <CardDescription>{format(new Date(match.date), "dd MMM yyyy", { locale: es })}</CardDescription>
+                        <div className="space-y-2">
+                            {pastMatches.slice(0, 10).map(match => {
+                                // finalScore lives directly on the match, not match.result
+                                const score = match.finalScore as { team1: number; team2: number } | undefined;
+                                const teamIndex = match.teams?.findIndex(t => t.name === team.name) ?? -1;
+                                const opponentIndex = teamIndex === 0 ? 1 : 0;
+                                const opponent = match.teams?.[opponentIndex];
+
+                                // team.finalScore (per-team) takes priority; fallback to match.finalScore by index
+                                const teamGoals: number | null = (() => {
+                                    if (match.teams?.[teamIndex]?.finalScore != null) return match.teams[teamIndex].finalScore!;
+                                    if (score != null && teamIndex !== -1) return teamIndex === 0 ? score.team1 : score.team2;
+                                    return null;
+                                })();
+                                const opponentGoals: number | null = (() => {
+                                    if (match.teams?.[opponentIndex]?.finalScore != null) return match.teams[opponentIndex].finalScore!;
+                                    if (score != null && teamIndex !== -1) return opponentIndex === 0 ? score.team1 : score.team2;
+                                    return null;
+                                })();
+
+                                const hasResult = teamGoals !== null && opponentGoals !== null;
+                                const won = hasResult && teamGoals! > opponentGoals!;
+                                const lost = hasResult && teamGoals! < opponentGoals!;
+
+                                return (
+                                    <Link key={match.id} href={`/matches/${match.id}`} className="flex items-center gap-3 p-3 rounded-xl border hover:bg-accent/50 transition-colors">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${won ? 'bg-green-500/15' : lost ? 'bg-red-500/15' : 'bg-muted'
+                                            }`}>
+                                            {won ? <CheckCircle2 className="h-4 w-4 text-green-500" /> :
+                                                lost ? <XCircle className="h-4 w-4 text-red-500" /> :
+                                                    <Minus className="h-4 w-4 text-muted-foreground" />}
                                         </div>
-                                        <Badge variant="outline">Finalizado</Badge>
-                                    </CardHeader>
-                                </Card>
-                            ))}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-sm truncate">{match.title}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {format(new Date(match.date), "dd MMM yyyy", { locale: es })}
+                                            </p>
+                                        </div>
+                                        {hasResult && (
+                                            <span className={`font-bold text-sm tabular-nums ${won ? 'text-green-500' : lost ? 'text-red-500' : 'text-muted-foreground'
+                                                }`}>
+                                                {teamGoals} - {opponentGoals}
+                                            </span>
+                                        )}
+                                    </Link>
+                                );
+                            })}
                         </div>
                     ) : (
-                        <Alert variant="default">
+                        <Alert>
                             <AlertTitle>Sin Historial</AlertTitle>
-                            <AlertDescription>
-                                Este equipo todavía no ha jugado ningún partido.
-                            </AlertDescription>
+                            <AlertDescription>Este equipo todavía no ha jugado ningún partido.</AlertDescription>
                         </Alert>
                     )}
                 </CardContent>

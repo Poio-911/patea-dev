@@ -102,13 +102,13 @@ function TagCheckboxItem({
         if (!disabled) onCheckedChange(!isChecked);
       }}
       className={cn(
-        'relative flex w-full flex-col gap-2 rounded-xl border-2 p-4 text-left transition-all duration-300 overflow-hidden',
+        'relative flex w-full flex-col gap-2 rounded-xl border-2 p-3 sm:p-4 text-left transition-all duration-300 overflow-hidden',
         isChecked
           ? isPositiveImpact
             ? 'bg-emerald-500/10 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
             : 'bg-rose-500/10 border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.2)]'
           : 'bg-card border-border hover:border-border/80 hover:bg-accent/50',
-        "game:bg-[#0b1e3b]/50 game:border-white/10",
+        "game:bg-zinc-950/40 game:border-white/10",
         disabled && !isChecked && 'opacity-50 cursor-not-allowed filter grayscale'
       )}
     >
@@ -122,10 +122,10 @@ function TagCheckboxItem({
 
       <div className="flex items-start justify-between w-full relative z-10">
         <div>
-          <p className={cn("font-bold text-base", isChecked ? (isPositiveImpact ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400") : "text-foreground game:text-white")}>
+          <p className={cn("font-bold text-sm sm:text-base", isChecked ? (isPositiveImpact ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400") : "text-foreground game:text-white")}>
             {tag.name}
           </p>
-          <p className="text-xs text-muted-foreground game:text-slate-400 mt-0.5">{tag.description}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground game:text-slate-400 mt-0.5 leading-tight">{tag.description}</p>
         </div>
         <AnimatePresence>
           {isChecked && (

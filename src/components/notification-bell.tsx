@@ -6,9 +6,9 @@ import Link from 'next/link';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { collection, query, where, orderBy, limit, writeBatch, doc } from 'firebase/firestore';
 import {
-  ResponsivePopover as Popover,
-  ResponsivePopoverContent as PopoverContent,
-  ResponsivePopoverTrigger as PopoverTrigger,
+    ResponsivePopover as Popover,
+    ResponsivePopoverContent as PopoverContent,
+    ResponsivePopoverTrigger as PopoverTrigger,
 } from "@/components/ui/responsive-popover"
 import { Button } from './ui/button';
 import { Bell, CheckCheck, FileSignature, UserPlus, Info, Swords, CheckCircle2, XCircle, FileText, Users, CalendarClock, TrendingUp, Award, ShieldQuestion } from 'lucide-react';
@@ -21,7 +21,7 @@ import { Avatar, AvatarFallback } from './ui/avatar';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 
 interface NotificationBellProps {
-  isPopoverContent?: boolean;
+    isPopoverContent?: boolean;
 }
 
 const notificationIcons: Record<NotificationType, React.ElementType> = {
@@ -33,6 +33,7 @@ const notificationIcons: Record<NotificationType, React.ElementType> = {
     challenge_accepted: CheckCircle2,
     challenge_rejected: XCircle,
     league_application: FileText,
+    cup_application: FileText,
     new_follower: Users,
     match_invitation: CalendarClock,
     match_reminder: CalendarClock,
@@ -65,7 +66,7 @@ export function NotificationBell({ isPopoverContent = false }: NotificationBellP
             limit(20)
         );
     }, [firestore, user?.uid]);
-    
+
     const { data: notifications, loading } = useCollection<Notification>(notificationsQuery);
 
     const unreadCount = useMemo(() => {
@@ -86,52 +87,52 @@ export function NotificationBell({ isPopoverContent = false }: NotificationBellP
     };
 
     const Content = () => (
-      <>
-        <ScrollArea className="h-96">
-            {loading ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">Cargando...</div>
-            ) : notifications && notifications.length > 0 ? (
-                <div className="divide-y">
-                    {notifications.map(notification => (
-                        <Link key={notification.id} href={notification.link} className="block hover:bg-muted/30" onClick={() => setIsOpen(false)}>
-                            <div className={cn("flex items-start gap-3 p-4", !notification.isRead && "bg-primary/10")}>
-                                <div className="mt-1">
-                                    <IconWrapper type={notification.type} className="h-8 w-8" />
+        <>
+            <ScrollArea className="h-96">
+                {loading ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">Cargando...</div>
+                ) : notifications && notifications.length > 0 ? (
+                    <div className="divide-y">
+                        {notifications.map(notification => (
+                            <Link key={notification.id} href={notification.link} className="block hover:bg-muted/30" onClick={() => setIsOpen(false)}>
+                                <div className={cn("flex items-start gap-3 p-4", !notification.isRead && "bg-primary/10")}>
+                                    <div className="mt-1">
+                                        <IconWrapper type={notification.type} className="h-8 w-8" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-semibold text-sm leading-tight">{notification.title}</p>
+                                        <p className="text-xs text-muted-foreground">{notification.message}</p>
+                                        <p className="text-xs text-muted-foreground/80 mt-1">
+                                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true, locale: es })}
+                                        </p>
+                                    </div>
+                                    {!notification.isRead && (
+                                        <div className="h-2 w-2 rounded-full bg-primary mt-1" />
+                                    )}
                                 </div>
-                                <div className="flex-1">
-                                    <p className="font-semibold text-sm leading-tight">{notification.title}</p>
-                                    <p className="text-xs text-muted-foreground">{notification.message}</p>
-                                    <p className="text-xs text-muted-foreground/80 mt-1">
-                                        {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true, locale: es })}
-                                    </p>
-                                </div>
-                                {!notification.isRead && (
-                                    <div className="h-2 w-2 rounded-full bg-primary mt-1" />
-                                )}
-                            </div>
-                        </Link>
-                    ))}
-                </div>
-            ) : (
-                <p className="p-8 text-center text-sm text-muted-foreground">No tienes notificaciones.</p>
-            )}
-        </ScrollArea>
-        <div className="p-2 border-t text-center">
-            <Button variant="link" size="sm" asChild>
-                <Link href="/notifications">Ver todas</Link>
-            </Button>
-        </div>
-      </>
+                            </Link>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="p-8 text-center text-sm text-muted-foreground">No tienes notificaciones.</p>
+                )}
+            </ScrollArea>
+            <div className="p-2 border-t text-center">
+                <Button variant="link" size="sm" asChild>
+                    <Link href="/notifications">Ver todas</Link>
+                </Button>
+            </div>
+        </>
     );
 
     if (isPopoverContent) {
-      return <Content />;
+        return <Content />;
     }
 
     return (
         <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
-                 <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full">
+                <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full">
                     <Bell className="h-5 w-5" />
                     {unreadCount > 0 && (
                         <span className="absolute top-1.5 right-1.5 inline-flex rounded-full h-3 w-3 bg-primary"></span>
@@ -143,8 +144,8 @@ export function NotificationBell({ isPopoverContent = false }: NotificationBellP
                 <div className="flex items-center justify-between p-4 border-b">
                     <h3 className="font-semibold text-lg">Notificaciones</h3>
                     {unreadCount > 0 && (
-                         <Button variant="ghost" size="sm" onClick={markAllAsRead} className="h-auto px-2 py-1 text-xs">
-                            <CheckCheck className="mr-2 h-3 w-3"/>
+                        <Button variant="ghost" size="sm" onClick={markAllAsRead} className="h-auto px-2 py-1 text-xs">
+                            <CheckCheck className="mr-2 h-3 w-3" />
                             Marcar todo como leído
                         </Button>
                     )}

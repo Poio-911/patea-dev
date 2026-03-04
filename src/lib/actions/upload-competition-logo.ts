@@ -6,18 +6,24 @@
 import { getAdminStorage } from '@/firebase/admin-init';
 
 export async function uploadCompetitionLogoAction(
-    file: Buffer,
-    fileName: string,
+    formData: FormData,
     competitionType: 'league' | 'cup',
     groupId: string,
     userId: string
 ): Promise<{ success: boolean; url?: string; error?: string }> {
     try {
+        const file = formData.get('file') as File;
+        if (!file) return { success: false, error: 'No se proporcionó ningún archivo.' };
+
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        const fileName = file.name;
         // ✅ VALIDATION: Ensure userId is provided
         if (!userId) return { success: false, error: 'No autorizado' };
 
         // Validar tamaño (5MB max)
-        const sizeInMB = file.length / (1024 * 1024);
+        const sizeInMB = buffer.length / (1024 * 1024);
         if (sizeInMB > 5) {
             return { success: false, error: 'La imagen no debe superar los 5MB.' };
         }
@@ -30,9 +36,9 @@ export async function uploadCompetitionLogoAction(
         const fileRef = bucket.file(filePath);
 
         // Subir archivo
-        await fileRef.save(file, {
+        await fileRef.save(buffer, {
             metadata: {
-                contentType: 'image/png', // o detectar el tipo real
+                contentType: file.type || 'image/png', // o detectar el tipo real
             },
         });
 
