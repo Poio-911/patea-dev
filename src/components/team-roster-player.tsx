@@ -47,21 +47,22 @@ export const TeamRosterPlayer = ({ player, match, isOwner = false, index = 0 }: 
                 ovrLevel === 'silver' && "game:hover:border-gray-400/50 game:hover:shadow-lg game:hover:shadow-gray-400/30",
                 ovrLevel === 'bronze' && "game:hover:border-amber-700/50 game:hover:shadow-lg game:hover:shadow-amber-700/30",
             )}>
-                {/* Swap button - Disable for intergroup matches */}
-                {isOwner && match.status === 'upcoming' && matchPlayer && match.type !== 'intergroup_friendly' && (
-                    <div className="absolute top-1 right-1 z-10">
-                        <SwapPlayerDialog match={match} playerToSwap={matchPlayer}>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 hover:bg-primary/10"
-                                title="Intercambiar jugador"
-                            >
-                                <ArrowLeftRight className="h-4 w-4" />
-                            </Button>
-                        </SwapPlayerDialog>
-                    </div>
-                )}
+                {/* Swap button — only for non-team matches (manual/collaborative) */}
+                {isOwner && match.status === 'upcoming' && matchPlayer &&
+                    (match.type === 'manual' || match.type === 'collaborative') && (
+                        <div className="absolute top-1 right-1 z-10">
+                            <SwapPlayerDialog match={match} playerToSwap={matchPlayer}>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 hover:bg-primary/10"
+                                    title="Intercambiar jugador"
+                                >
+                                    <ArrowLeftRight className="h-4 w-4" />
+                                </Button>
+                            </SwapPlayerDialog>
+                        </div>
+                    )}
 
                 {/* Captain Badge for Inter-Group */}
                 {match.type === 'intergroup_friendly' && match.captains?.includes(player.id) && (
@@ -70,19 +71,13 @@ export const TeamRosterPlayer = ({ player, match, isOwner = false, index = 0 }: 
                     </div>
                 )}
 
-                {/* NEW: Tiny jersey indicator (only on dark theme) */}
-                {playerTeam?.jersey && (
-                    <div className="hidden game:block absolute top-1 left-1 opacity-30 z-0">
-                        <JerseyPreview jersey={playerTeam.jersey} size="xs" />
-                    </div>
-                )}
 
                 <div className="relative mt-4">
                     <PlayerPhoto player={player as any} size="compact" />
                 </div>
                 <div className="flex flex-col items-center">
                     <div className="flex items-center gap-2">
-                        <p className="font-bold truncate w-24 text-base">{player.name}</p>
+                        <p className="font-bold truncate max-w-full text-base">{player.name}</p>
                     </div>
                     <div className="flex items-center justify-center gap-2 mt-1">
                         <PlayerOvr value={player.ovr} size="compact" />

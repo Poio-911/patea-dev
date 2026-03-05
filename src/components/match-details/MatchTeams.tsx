@@ -38,19 +38,20 @@ const TeamMosaicPlayer = ({ player, match, isOwner, index }: { player: any, matc
                     </div>
                 </div>
 
-                {isOwner && match.status === 'upcoming' && (
-                    <div className="opacity-100 md:opacity-0 md:group-hover/player:opacity-100 transition-opacity">
-                        <SwapPlayerDialog match={match} playerToSwap={player}>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 hover:bg-primary/10 rounded-full"
-                            >
-                                <ArrowLeftRight className="h-3.5 w-3.5" />
-                            </Button>
-                        </SwapPlayerDialog>
-                    </div>
-                )}
+                {isOwner && match.status === 'upcoming' &&
+                    (match.type === 'manual' || match.type === 'collaborative') && (
+                        <div className="opacity-100 md:opacity-0 md:group-hover/player:opacity-100 transition-opacity">
+                            <SwapPlayerDialog match={match} playerToSwap={player}>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 hover:bg-primary/10 rounded-full"
+                                >
+                                    <ArrowLeftRight className="h-3.5 w-3.5" />
+                                </Button>
+                            </SwapPlayerDialog>
+                        </div>
+                    )}
             </div>
         </AnimatedCardWrapper>
     );

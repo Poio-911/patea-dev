@@ -16,7 +16,7 @@ const db = getFirestore();
 interface Player { id: string; name: string; position: string; photoURL?: string; }
 interface Assignment { id: string; evaluatorId: string; subjectId: string; }
 
-const MATCH_ID = 'nTRvy0S3mJ1zEzfOYeFj';
+const MATCH_ID = 'sSTA1Tgv9pj18TJhUkWO';
 
 // Helper para barajar etiquetas
 const shuffleArray = <T,>(array: T[]): T[] => {
