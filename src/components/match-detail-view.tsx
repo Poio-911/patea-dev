@@ -5,7 +5,7 @@ import { useMemo, useState, useEffect } from 'react';
 import type { Match, Player, UserProfile, PlayerPerformance } from '@/lib/types';
 import { doc, getDoc, query, where, collection } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { Loader2, AlertCircle, Sun, Cloud, Cloudy, CloudRain, Wind, Zap } from 'lucide-react';
+import { Loader2, AlertCircle, Sun, Cloud, Cloudy, CloudRain, Wind, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from './ui/button';
 import { MatchInfoCard } from './match-details/MatchInfoCard';
@@ -52,6 +52,7 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
   const { user } = useUser();
   const { toast } = useToast();
   const [ownerProfile, setOwnerProfile] = useState<UserProfile | null>(null);
+  const [showLiveStats, setShowLiveStats] = useState(false);
 
   const matchRef = useMemo(() => firestore ? doc(firestore, 'matches', matchId) : null, [firestore, matchId]);
   const { data: match, loading: matchLoading } = useDoc<Match>(matchRef);
@@ -316,31 +317,47 @@ export default function MatchDetailView({ matchId }: MatchDetailViewProps) {
 
         {/* Live dashboard (owner + upcoming/active) */}
         {(match.status === 'upcoming' || match.status === 'active') && permissions.isOwner && (
-          <div className="space-y-6">
-            <LiveMatchDashboard
-              match={match}
-              isAdmin={permissions.isOwner}
-              onEventLogged={async (event) => {
-                const result = await logMatchEventAction(match.id, event, user?.uid || '');
-                if (!result.success) {
-                  toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo registrar el evento.' });
-                } else {
-                  toast({ title: 'Evento registrado', description: `${event.type} - ${event.playerName}` });
-                }
-              }}
-              onMatchStatusChange={async (status, minute) => {
-                const result = await updateLiveStateAction(match.id, status, minute ?? (match.currentMinute ?? 0), user?.uid || '');
-                if (!result.success) {
-                  toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo actualizar el estado.' });
-                } else {
-                  toast({ title: 'Estado del partido actualizado', description: `Nuevo estado: ${status}` });
-                }
-              }}
-            />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <MatchTimeline events={match.events || []} currentMinute={match.currentMinute || 0} />
-              <LiveStats match={match} />
-            </div>
+          <div className="space-y-3">
+            {/* For non-competition matches, hide entire block behind a toggle */}
+            {!isCompetitionMatch && (
+              <button
+                type="button"
+                onClick={() => setShowLiveStats(v => !v)}
+                className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors px-1"
+              >
+                {showLiveStats ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {showLiveStats ? 'Ocultar panel de partido' : 'Panel de partido en vivo'}
+              </button>
+            )}
+
+            {(isCompetitionMatch || showLiveStats) && (
+              <div className="space-y-4">
+                <LiveMatchDashboard
+                  match={match}
+                  isAdmin={permissions.isOwner}
+                  onEventLogged={async (event) => {
+                    const result = await logMatchEventAction(match.id, event, user?.uid || '');
+                    if (!result.success) {
+                      toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo registrar el evento.' });
+                    } else {
+                      toast({ title: 'Evento registrado', description: `${event.type} - ${event.playerName}` });
+                    }
+                  }}
+                  onMatchStatusChange={async (status, minute) => {
+                    const result = await updateLiveStateAction(match.id, status, minute ?? (match.currentMinute ?? 0), user?.uid || '');
+                    if (!result.success) {
+                      toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo actualizar el estado.' });
+                    } else {
+                      toast({ title: 'Estado del partido actualizado', description: `Nuevo estado: ${status}` });
+                    }
+                  }}
+                />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <MatchTimeline events={match.events || []} currentMinute={match.currentMinute || 0} />
+                  <LiveStats match={match} />
+                </div>
+              </div>
+            )}
           </div>
         )}
 
