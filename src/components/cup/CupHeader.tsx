@@ -11,7 +11,7 @@ import {
   ResponsiveDropdownMenuSeparator,
   ResponsiveDropdownMenuTrigger,
 } from '@/components/ui/responsive-dropdown-menu';
-import { Trophy, Play, Trash2, Target, MoreVertical } from 'lucide-react';
+import { Trophy, Play, Trash2, MoreVertical } from 'lucide-react';
 import { getRoundName } from '@/lib/utils/cup-bracket';
 import { BackButton } from '@/components/navigation/back-button';
 import { cn } from '@/lib/utils';
@@ -57,7 +57,13 @@ export function CupHeader({
           <div
             className={cn(
               'w-16 h-16 md:w-24 md:h-24 rounded-2xl overflow-hidden shrink-0 flex items-center justify-center relative',
-              cup.logoUrl ? 'bg-muted/30 border border-border' : 'bg-amber-500/10',
+              cup.logoUrl
+                ? 'bg-muted/30 border border-border'
+                : [
+                    'bg-gradient-to-br from-amber-500/15 to-amber-600/5',
+                    'border border-amber-500/25',
+                    'shadow-[inset_0_0_20px_rgba(245,158,11,0.08)]',
+                  ],
             )}
           >
             {cup.logoUrl ? (
@@ -69,7 +75,12 @@ export function CupHeader({
                 sizes="96px"
               />
             ) : (
-              <Trophy className="h-8 w-8 md:h-10 md:w-10 text-amber-500" strokeWidth={1.5} />
+              <>
+                {cup.status === 'in_progress' && (
+                  <span className="absolute inset-0 rounded-2xl ring-2 ring-amber-400/30 animate-ping" />
+                )}
+                <Trophy className="h-8 w-8 md:h-10 md:w-10 text-amber-500 relative z-10" strokeWidth={1.5} />
+              </>
             )}
           </div>
 
@@ -119,8 +130,17 @@ export function CupHeader({
 
             {/* Status + meta badges */}
             <div className="flex flex-wrap items-center gap-2 justify-start">
-              <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full text-[10px] font-bold sport-text uppercase tracking-widest">
-                ● {statusLabel}
+              <span className={cn(
+                "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold sport-text uppercase tracking-widest border",
+                cup.status === 'in_progress'
+                  ? "bg-amber-500/15 text-amber-400 border-amber-500/25"
+                  : cup.status === 'completed'
+                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                  : "bg-muted/60 text-muted-foreground border-border/40"
+              )}>
+                {cup.status === 'in_progress' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
+                {cup.status === 'completed' && <Trophy className="w-3 h-3" />}
+                {statusLabel}
               </span>
               <span className="text-sm text-muted-foreground">{cup.teams.length} equipos</span>
               <span className="text-muted-foreground/40">·</span>
@@ -129,9 +149,11 @@ export function CupHeader({
 
             {/* Current round chip */}
             {cup.currentRound && cup.status === 'in_progress' && (
-              <div className="inline-flex items-center gap-1.5 bg-muted/50 px-3 py-1 rounded-full text-sm font-medium">
-                <Target className="h-3.5 w-3.5 text-amber-500" />
-                {getRoundName(cup.currentRound)}
+              <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-500/70 sport-text">En Juego</span>
+                <span className="w-px h-3 bg-amber-500/30" />
+                <span className="text-xs font-bold text-amber-400 sport-text">{getRoundName(cup.currentRound)}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
               </div>
             )}
 
@@ -172,20 +194,20 @@ export function CupHeader({
         <TabsList className="bg-transparent p-0 border-b w-full justify-start h-auto rounded-none space-x-6 overflow-x-auto scrollbar-hide">
           <TabsTrigger
             value="bracket"
-            className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-amber-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400"
+            className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-amber-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-bold sport-text uppercase tracking-wider text-xs data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400 data-[state=active]:[filter:drop-shadow(0_2px_6px_rgba(245,158,11,0.3))]"
           >
             Bracket
           </TabsTrigger>
           <TabsTrigger
             value="teams"
-            className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-amber-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400"
+            className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-amber-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-bold sport-text uppercase tracking-wider text-xs data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400 data-[state=active]:[filter:drop-shadow(0_2px_6px_rgba(245,158,11,0.3))]"
           >
             Equipos
           </TabsTrigger>
           {isOwner && cup.status === 'open_for_applications' && (
             <TabsTrigger
               value="applications"
-              className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-amber-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400"
+              className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-amber-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-bold sport-text uppercase tracking-wider text-xs data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400 data-[state=active]:[filter:drop-shadow(0_2px_6px_rgba(245,158,11,0.3))]"
             >
               Postulaciones
             </TabsTrigger>

@@ -121,7 +121,7 @@ const coachConversationFlow = ai.defineFlow(
     const output = await getCachedOrGenerate(
       cacheKey,
       async () => {
-        const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
+        const { output } = await prompt(input, { model: 'googleai/gemini-3.1-pro-preview' });
         return output!;
       },
       { ttlHours: 0.5, category: 'coach-conversation' }

@@ -125,7 +125,7 @@ const generateBalancedTeamsFlow = ai.defineFlow(
     const output = await getCachedOrGenerate(
       cacheKey,
       async () => {
-        const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
+        const { output } = await prompt(input, { model: 'googleai/gemini-3.1-pro-preview' });
         if (!output || !output.teams || output.teams.length < 2) {
           throw new Error('La IA no pudo generar los equipos correctamente.');
         }

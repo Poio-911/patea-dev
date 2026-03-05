@@ -56,7 +56,7 @@ const prompt = ai.definePrompt({
   name: 'findBestFitPlayerPrompt',
   input: { schema: FindBestFitPlayerInputSchema },
   output: { schema: FindBestFitPlayerOutputSchema },
-  model: 'googleai/gemini-2.0-flash',
+  model: 'googleai/gemini-3.1-pro-preview',
   prompt: `
     Eres un DT experimentado del fútbol uruguayo/rioplatense. Tu ojo no falla.
     Analizá el partido y recomendá los mejores refuerzos de la lista.
@@ -97,7 +97,7 @@ const findBestFitPlayerFlow = ai.defineFlow(
     const output = await getCachedOrGenerate(
       cacheKey,
       async () => {
-        const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
+        const { output } = await prompt(input, { model: 'googleai/gemini-3.1-pro-preview' });
         return output!;
       },
       { ttlHours: 1, category: 'player-matching' }

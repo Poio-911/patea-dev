@@ -91,7 +91,7 @@ const analyzeTextPerformanceFlow = ai.defineFlow(
     const output = await getCachedOrGenerate(
       cacheKey,
       async () => {
-        const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
+        const { output } = await prompt(input, { model: 'googleai/gemini-3-flash-preview' });
 
         if (!output || !output.attributeChanges || output.attributeChanges.length === 0) {
           throw new Error('La IA no pudo extraer cambios de atributos del texto.');

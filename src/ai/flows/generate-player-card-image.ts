@@ -12,7 +12,7 @@ export async function generatePlayerCardImage(photoDataUri: string): Promise<str
     async () => {
       const { media } = await withTimeout(
         ai.generate({
-          model: 'googleai/gemini-2.0-flash-exp',
+          model: 'googleai/gemini-3.1-flash-image-preview',
           prompt: [
             { media: { url: photoDataUri, contentType: 'image/jpeg' } },
             {

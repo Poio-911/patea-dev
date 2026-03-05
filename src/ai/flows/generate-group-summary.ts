@@ -84,7 +84,7 @@ const generateGroupSummaryFlow = ai.defineFlow(
     const output = await getCachedOrGenerate(
       cacheKey,
       async () => {
-        const { output } = await prompt(input, { model: 'googleai/gemini-2.5-flash' });
+        const { output } = await prompt(input, { model: 'googleai/gemini-3-flash-preview' });
         return output!;
       },
       { ttlHours: 24 * 7, category: 'group-summary' }

@@ -55,31 +55,31 @@ export function ChampionCelebration({
 
         {/* Crown + Champion Jersey */}
         <motion.div
-          className="relative mb-6"
+          className="flex flex-col items-center mb-2"
           initial={{ scale: 0.6, opacity: 0, y: 40 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 180, damping: 14, delay: 0.15 }}
         >
-          {/* Glow ring behind jersey */}
-          <div className="absolute inset-0 rounded-full bg-yellow-400/20 blur-2xl scale-110 pointer-events-none" />
-
-          {/* Floating crown */}
+          {/* Floating crown — in flow, overlaps jersey slightly */}
           <motion.div
-            className="absolute -top-10 left-1/2 -translate-x-1/2 z-20"
+            className="flex justify-center mb-[-8px] relative z-20"
             animate={{ y: [0, -6, 0] }}
             transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut' }}
           >
-            <Crown className="h-11 w-11 text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)] fill-yellow-400/30" />
+            <Crown className="h-10 w-10 text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)] fill-yellow-400/30" />
           </motion.div>
 
-          {/* Champion jersey */}
-          <div className="drop-shadow-[0_0_40px_rgba(250,204,21,0.45)]">
-            <JerseyPreview jersey={championJersey} size="xl" />
+          {/* Jersey with explicit size container */}
+          <div className="relative w-36 h-36 flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full bg-yellow-400/20 blur-2xl scale-110 pointer-events-none" />
+            <div className="drop-shadow-[0_0_40px_rgba(250,204,21,0.45)] relative z-10">
+              <JerseyPreview jersey={championJersey} size="lg" />
+            </div>
           </div>
 
-          {/* CAMPEÓN badge */}
+          {/* CAMPEÓN badge — in normal flow, always centered */}
           <motion.div
-            className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap"
+            className="mt-4"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.7, type: 'spring', stiffness: 300, damping: 20 }}
@@ -94,7 +94,7 @@ export function ChampionCelebration({
 
         {/* Champion name */}
         <motion.h2
-          className="text-4xl md:text-5xl font-black tracking-tight mt-8 mb-1"
+          className="text-4xl md:text-5xl font-black tracking-tight mt-5 mb-1"
           style={{
             background: 'linear-gradient(135deg, #fef08a, #facc15, #d97706)',
             WebkitBackgroundClip: 'text',

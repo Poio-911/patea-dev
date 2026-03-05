@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useUser } from '@/firebase';
 import type { Player, Jersey } from '@/lib/types';
 import { PlayerDetailCard } from '@/components/player-detail-card';
@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { PlayerTeamsList } from './player-teams-list';
 import { PlayerAchievementsPanel } from './player-achievements-panel';
 import { PlayerMatchDebriefView } from './player-match-debrief-view';
+import { useRouter } from 'next/navigation';
 
 type PlayerProfileViewProps = {
   playerId: string;
@@ -19,18 +20,21 @@ type PlayerProfileViewProps = {
 
 export default function PlayerProfileView({ playerId, player, jersey }: PlayerProfileViewProps) {
   const { user } = useUser();
+  const router = useRouter();
+  const [localPlayer, setLocalPlayer] = useState<Player>(player);
+
   const isCurrentUserProfile = user?.uid === playerId;
 
-  // Callback opcional para compatibilidad - la actualización real viene de useDoc
-  const handlePhotoUpdate = () => {
-    // No es necesario actualizar estado local
-    // useDoc ya maneja la sincronización automática desde Firestore
+  const handlePhotoUpdate = (newUrl: string) => {
+    // Actualizamos el estado local para reflejar el cambio en la vista enseguida
+    setLocalPlayer(prev => ({ ...prev, photoUrl: newUrl }));
+    router.refresh(); // Opcional, para forzar actualización en servidor si hace falta
   };
 
   return (
     <div className="flex flex-col gap-8">
       <PlayerDetailCard
-        player={player}
+        player={localPlayer}
         onPhotoUpdate={handlePhotoUpdate}
         isCurrentUserProfile={isCurrentUserProfile}
         jersey={jersey}

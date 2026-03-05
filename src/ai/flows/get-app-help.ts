@@ -120,7 +120,7 @@ const appHelpFlow = ai.defineFlow(
     const output = await getCachedOrGenerate(
       cacheKey,
       async () => {
-        const { output } = await prompt(input, { model: 'googleai/gemini-2.0-flash' });
+        const { output } = await prompt(input, { model: 'googleai/gemini-3-flash-preview' });
         return output!;
       },
       { ttlHours: 24 * 30, category: 'app-help' }

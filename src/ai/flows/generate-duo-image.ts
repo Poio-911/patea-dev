@@ -57,7 +57,7 @@ export async function generateDuoImage(player1DataUri: string, player2DataUri: s
     async () => {
       const { media } = await withTimeout(
         ai.generate({
-          model: 'googleai/gemini-2.5-flash-image-preview',
+          model: 'googleai/gemini-3.1-flash-image-preview',
           prompt: [
             ...mediaPrompts,
             { text: instructionText },

@@ -208,8 +208,6 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
             {isCurrentUserProfile && (
               <div className="flex flex-col gap-2 w-full my-4">
                 <div className="grid grid-cols-2 gap-2 w-full">
-                  {/* 
-                  // OCULTADO POR SOLICITUD DEL USUARIO (BRANCH MAIN)
                   {player.cardGenerationCredits && player.cardGenerationCredits > 0 ? (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -245,8 +243,7 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
                       <ShoppingCart className="mr-2 h-4 w-4" />
                       Comprar Créditos
                     </Button>
-                  )} 
-                  */}
+                  )}
                   <ImageCropperDialog player={player} onSaveComplete={onPhotoUpdate}>
                     <Button variant="secondary" size="sm" disabled={isGeneratingAI} className="w-full">
                       <Scissors className="mr-2 h-4 w-4" />
@@ -255,14 +252,11 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
                   </ImageCropperDialog>
                 </div>
 
-                {/* 
-              // OCULTADO POR SOLICITUD DEL USUARIO (BRANCH MAIN)
-              {player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0 && (
-                <p className="text-xs text-center text-muted-foreground">
-                  Sin créditos. Compra un paquete para generar fotos con IA.
-                </p>
-              )} 
-              */}
+                {player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0 && (
+                  <p className="text-xs text-center text-muted-foreground">
+                    Sin créditos. Compra un paquete para generar fotos con IA.
+                  </p>
+                )}
               </div>
             )}
 
