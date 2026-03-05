@@ -231,7 +231,7 @@ export function NextMatchCard({ matches, allPlayers = [] }: NextMatchCardProps) 
                                         <div className="scale-[0.5] xs:scale-[0.8] sm:scale-100 md:scale-110 transition-transform origin-center">
                                             <JerseyPreview jersey={currentMatch.teams![0].jersey} size="lg" className="drop-shadow-[0_15px_30px_rgba(0,0,0,0.8)]" />
                                         </div>
-                                        <h3 className="text-[10px] md:text-xl font-black text-center uppercase tracking-tighter drop-shadow-2xl line-clamp-1">{currentMatch.teams![0].name}</h3>
+                                        <h3 className="text-[10px] md:text-xl font-black text-center uppercase tracking-tighter drop-shadow-2xl line-clamp-2">{currentMatch.teams![0].name}</h3>
                                     </div>
                                     <div className="flex flex-col items-center justify-center px-1">
                                         <span className="text-2xl md:text-7xl font-black text-white/10 italic tracking-tighter select-none drop-shadow-sm">VS</span>
@@ -240,7 +240,7 @@ export function NextMatchCard({ matches, allPlayers = [] }: NextMatchCardProps) 
                                         <div className="scale-[0.5] xs:scale-[0.8] sm:scale-100 md:scale-110 transition-transform origin-center">
                                             <JerseyPreview jersey={currentMatch.teams![1].jersey} size="lg" className="drop-shadow-[0_15px_30px_rgba(0,0,0,0.8)]" />
                                         </div>
-                                        <h3 className="text-[10px] md:text-xl font-black text-center uppercase tracking-tighter drop-shadow-2xl line-clamp-1">{currentMatch.teams![1].name}</h3>
+                                        <h3 className="text-[10px] md:text-xl font-black text-center uppercase tracking-tighter drop-shadow-2xl line-clamp-2">{currentMatch.teams![1].name}</h3>
                                     </div>
                                 </div>
                             ) : (

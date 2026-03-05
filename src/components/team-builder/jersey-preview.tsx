@@ -42,22 +42,13 @@ export function JerseyPreview({ jersey: jerseyProp, size = 'md', className }: Je
           throw new Error(`Template not found for type: ${jersey.type}`);
         }
 
-        // Fetch the SVG content from the public folder
         const response = await fetch(template.svgPath);
         if (!response.ok) {
           throw new Error(`Failed to load SVG from ${template.svgPath}`);
         }
 
         const svgText = await response.text();
-
-        // Apply the custom colors
-        const coloredSvg = applyColorsToSvg(
-          svgText,
-          template,
-          jersey.primaryColor,
-          jersey.secondaryColor
-        );
-
+        const coloredSvg = applyColorsToSvg(svgText, template, jersey.primaryColor, jersey.secondaryColor);
         setSvgContent(coloredSvg);
       } catch (err) {
         console.error('Error loading jersey SVG:', err);
@@ -105,7 +96,7 @@ export function JerseyPreview({ jersey: jerseyProp, size = 'md', className }: Je
       <div
         className={cn(
           "w-full h-full [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain",
-          // ✅ AÑADIDO: Efecto de contorno blanco solo en dark mode
+          // Subtle white outline in dark mode
           "dark:[&>svg]:[filter:drop-shadow(0px_0px_1px_rgba(255,255,255,0.5))]"
         )}
         dangerouslySetInnerHTML={{ __html: svgContent }}

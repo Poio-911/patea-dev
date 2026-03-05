@@ -261,7 +261,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
         className={cn(
           'relative z-10 flex flex-col gap-5 px-4 sm:px-6 md:px-8 pb-5 sm:pb-7',
           (match.type === 'league_final') ? 'pt-16 sm:pt-20' :
-          ((match.type === 'league' || match.type === 'cup') && match.leagueInfo) ? 'pt-12 sm:pt-14' : 'pt-5 sm:pt-7'
+            ((match.type === 'league' || match.type === 'cup') && match.leagueInfo) ? 'pt-12 sm:pt-14' : 'pt-5 sm:pt-7'
         )}
       >
 
@@ -319,7 +319,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
                   )}
                 />
                 <span className={cn(
-                  'font-black text-sm sm:text-lg md:text-xl text-center text-balance leading-tight line-clamp-2',
+                  'font-black text-sm sm:text-lg md:text-xl text-center text-balance leading-tight',
                   isLight ? 'text-foreground' : 'text-white drop-shadow-md'
                 )}>
                   {match.teams![0].name}
@@ -376,7 +376,7 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
                   )}
                 />
                 <span className={cn(
-                  'font-black text-sm sm:text-lg md:text-xl text-center text-balance leading-tight line-clamp-2',
+                  'font-black text-sm sm:text-lg md:text-xl text-center text-balance leading-tight',
                   isLight ? 'text-foreground' : 'text-white drop-shadow-md'
                 )}>
                   {match.teams![1].name}

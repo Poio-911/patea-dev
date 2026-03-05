@@ -215,7 +215,7 @@ export default function TeamDetailPage() {
                 {/* Info + actions */}
                 <div className="flex-1 min-w-0 space-y-1.5">
                     <div className="flex items-start justify-between gap-2">
-                        <h1 className="text-2xl md:text-3xl font-black sport-text leading-tight tracking-tight text-foreground truncate">
+                        <h1 className="text-2xl md:text-3xl font-black sport-text leading-tight tracking-tight text-foreground">
                             {team.name}
                         </h1>
 

@@ -154,10 +154,10 @@ export function CompactMatchCard({ match, className, distance }: CompactMatchCar
 
               {/* Team names row */}
               <div className="flex items-start justify-between gap-1 w-full overflow-hidden">
-                <span className="text-[10px] font-bold leading-tight truncate text-center flex-1">
+                <span className="text-[10px] font-bold leading-tight line-clamp-2 text-center flex-1">
                   {team1.name}
                 </span>
-                <span className="text-[10px] font-bold leading-tight truncate text-center flex-1">
+                <span className="text-[10px] font-bold leading-tight line-clamp-2 text-center flex-1">
                   {team2.name}
                 </span>
               </div>
@@ -189,7 +189,7 @@ export function CompactMatchCard({ match, className, distance }: CompactMatchCar
           ) : (
             // Layout para otros tipos de partido
             <div className="space-y-2">
-              <h3 className="font-semibold text-sm truncate text-center">
+              <h3 className="font-semibold text-sm line-clamp-2 text-center min-h-[2.5em] flex items-center justify-center">
                 {match.title || locationName}
               </h3>
               {/* Player count row */}
