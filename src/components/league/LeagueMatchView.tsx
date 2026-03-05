@@ -193,7 +193,7 @@ export function LeagueMatchView({ match, leagueId, userId }: LeagueMatchViewProp
                             </div>
                         </div>
 
-                        {!isCompleted && (
+                        {!isCompleted ? (
                             <Button
                                 onClick={handleFinalize}
                                 disabled={isSubmitting}
@@ -212,17 +212,9 @@ export function LeagueMatchView({ match, leagueId, userId }: LeagueMatchViewProp
                                     </>
                                 )}
                             </Button>
-                        )}
-
-                        {isCompleted && (
+                        ) : (
                             <div className="text-center py-2 space-y-4">
-                                <p className="text-sm text-muted-foreground">✓ Partido finalizado</p>
-                                <Button asChild variant="outline" className="w-full">
-                                    <Link href={`/matches/${match.id}/evaluate`}>
-                                        <FileSignature className="mr-2 h-4 w-4" />
-                                        Evaluaciones
-                                    </Link>
-                                </Button>
+                                <p className="text-sm font-semibold text-muted-foreground">✓ Partido finalizado</p>
                             </div>
                         )}
                     </CardContent>

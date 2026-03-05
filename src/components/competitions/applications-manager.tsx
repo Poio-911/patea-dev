@@ -6,6 +6,7 @@ import {
   getCompetitionApplicationsAction,
   approveApplicationAction,
   rejectApplicationAction,
+  revokeApplicationAction,
 } from '@/lib/actions/server-actions';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -117,6 +118,34 @@ export function ApplicationsManager({
     }
   };
 
+  const handleRevoke = async (applicationId: string) => {
+    setProcessing(applicationId);
+    try {
+      const result = await revokeApplicationAction(applicationId);
+      if (result.success) {
+        toast({
+          title: 'Aplicación revocada',
+          description: 'La aplicación ha sido revocada. El equipo ya no participa.',
+        });
+        await loadApplications();
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: result.error || 'No se pudo revocar la aplicación.',
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Error al revocar aplicación.',
+      });
+    } finally {
+      setProcessing(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -181,8 +210,10 @@ export function ApplicationsManager({
                 application={application}
                 onApprove={handleApprove}
                 onReject={handleReject}
+                onRevoke={handleRevoke}
                 isProcessing={processing === application.id}
                 readonly
+                showRevoke={true}
               />
             ))}
           </div>
@@ -218,11 +249,13 @@ interface ApplicationCardProps {
   application: CompetitionApplication;
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
+  onRevoke?: (id: string) => void;
   isProcessing: boolean;
   readonly?: boolean;
+  showRevoke?: boolean;
 }
 
-function ApplicationCard({ application, onApprove, onReject, isProcessing, readonly }: ApplicationCardProps) {
+function ApplicationCard({ application, onApprove, onReject, onRevoke, isProcessing, readonly, showRevoke }: ApplicationCardProps) {
   const statusColors = {
     pending: 'bg-warning/20 text-warning-foreground',
     approved: 'bg-success/20 text-success-foreground',
@@ -292,6 +325,27 @@ function ApplicationCard({ application, onApprove, onReject, isProcessing, reado
               )}
             </Button>
           </div>
+        </CardContent>
+      )}
+
+      {readonly && showRevoke && application.status === 'approved' && onRevoke && (
+        <CardContent className="pt-0">
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
+            onClick={() => onRevoke(application.id)}
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <X className="mr-1 h-4 w-4" />
+                Revocar Participación
+              </>
+            )}
+          </Button>
         </CardContent>
       )}
     </Card>

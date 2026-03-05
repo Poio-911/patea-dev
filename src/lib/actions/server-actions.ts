@@ -1371,6 +1371,93 @@ export async function deleteTeamAvailabilityPostAction(postId: string, userId: s
         return handleServerActionError(error);
     }
 }
+
+/**
+ * Revoke an approved competition application and remove the team from the competition
+ */
+export async function revokeApplicationAction(
+    applicationId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const applicationRef = getAdminDb().collection('competitionApplications').doc(applicationId);
+        const applicationDoc = await applicationRef.get();
+
+        if (!applicationDoc.exists) {
+            return { success: false, error: 'Aplicación no encontrada' };
+        }
+
+        const application = applicationDoc.data() as CompetitionApplication;
+
+        if (application.status !== 'approved') {
+            return { success: false, error: 'La aplicación no está aprobada' };
+        }
+
+        // 1. Update application status back to pending
+        await applicationRef.update({ status: 'pending' });
+
+        // 2. Remove team from competition
+        const competitionCollection = application.competitionType === 'cup' ? 'cups' : 'leagues';
+        const competitionRef = getAdminDb().collection(competitionCollection).doc(application.competitionId);
+
+        await competitionRef.update({
+            teams: FieldValue.arrayRemove(application.teamId)
+        });
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Remove a team directly from a cup and update its application status if exists.
+ */
+export async function removeTeamFromCupAction(
+    cupId: string,
+    teamId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const cupRef = getAdminDb().collection('cups').doc(cupId);
+        const cupDoc = await cupRef.get();
+
+        if (!cupDoc.exists) {
+            return { success: false, error: 'Copa no encontrada.' };
+        }
+
+        const cup = cupDoc.data() as Cup;
+
+        // Only allow removal if not completed
+        if (cup.status === 'completed') {
+            return { success: false, error: 'No se puede remover equipos de una copa finalizada.' };
+        }
+
+        // 1. Remove team from cup teams array
+        await cupRef.update({
+            teams: FieldValue.arrayRemove(teamId)
+        });
+
+        // 2. Find and update related approved application to 'pending'
+        const applicationsSnapshot = await getAdminDb().collection('competitionApplications')
+            .where('competitionId', '==', cupId)
+            .where('teamId', '==', teamId)
+            .where('status', '==', 'approved')
+            .get();
+
+        if (!applicationsSnapshot.empty) {
+            const batch = getAdminDb().batch();
+            applicationsSnapshot.docs.forEach(doc => {
+                batch.update(doc.ref, { status: 'pending' });
+            });
+            await batch.commit();
+        }
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
 export async function sendTeamChallengeAction(challengingTeamId: string, challengedTeamId: string, challengerUserId: string) {
     try {
         const batch = getAdminDb().batch();
@@ -1771,6 +1858,15 @@ export async function startCupAction(
 
         if (cup.status !== 'draft' && cup.status !== 'open_for_applications') {
             return { success: false, error: 'La copa ya fue iniciada' };
+        }
+
+        // Validate number of teams
+        const validCounts = [2, 4, 8, 16, 32];
+        if (!cup.teams || !validCounts.includes(cup.teams.length)) {
+            return {
+                success: false,
+                error: `La copa tiene ${cup.teams?.length || 0} equipos. Debe tener exactamente 2, 4, 8, 16 o 32 equipos para generar el fixture.`
+            };
         }
 
         // Get teams data
@@ -2459,6 +2555,12 @@ export async function updateLiveStateAction(
             return { success: false, error: 'No autorizado para actualizar estado.' };
         }
 
+        if (newStatus === 'finished') {
+            const team1Score = match.finalScore?.team1 ?? 0;
+            const team2Score = match.finalScore?.team2 ?? 0;
+            return await updateMatchFinalScoreAction(matchId, team1Score, team2Score, userId);
+        }
+
         const updates: Record<string, any> = {
             liveStatus: newStatus,
             currentMinute,
@@ -2470,15 +2572,9 @@ export async function updateLiveStateAction(
             // Ensure dashboards treat match as live/active
             updates['status'] = 'active';
         }
-        if (newStatus === 'half_time' || newStatus === 'finished') {
+        if (newStatus === 'half_time') {
             updates['timerPaused'] = true;
-            if (newStatus === 'half_time') {
-                updates['status'] = 'active';
-            }
-            if (newStatus === 'finished') {
-                // Mark completed so it disappears from live lists
-                updates['status'] = 'completed';
-            }
+            updates['status'] = 'active';
         }
 
         await matchRef.update(updates);

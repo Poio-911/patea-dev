@@ -5,7 +5,7 @@ import { getRoundName, getMatchesByRound } from '@/lib/utils/cup-bracket';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Clock, Medal } from 'lucide-react';
+import { Trophy, Clock, Medal, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
@@ -214,32 +214,32 @@ function BracketMatchCard({ match, onClick, isHighlighted, isFinal, canCreate, u
     const isUser = userTeamId && teamId === userTeamId;
     return (
       <div className={cn(
-        "flex items-center justify-between px-3 py-1.5 transition-colors border-l-2",
-        isWinner ? (isUser ? "bg-purple-500/10 border-purple-500 font-bold" : "bg-primary/5 border-primary font-semibold") : "border-transparent",
+        "flex items-center justify-between px-3 py-2 transition-colors border-l-[3px]",
+        isWinner ? "bg-primary/5 border-primary" : "border-transparent",
+        isUser && "border-l-primary bg-primary/10",
         !isWinner && isCompleted && "opacity-60 grayscale",
         !name && "opacity-40"
       )}>
-        <div className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden">
+        <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
           {jersey ? (
-            <div className="w-5 h-5 flex-shrink-0 shadow-sm">
-              <JerseyPreview jersey={jersey} size="xs" />
+            <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center">
+              <JerseyPreview jersey={jersey} size="xs" className="scale-125" />
             </div>
           ) : (
-            <div className="w-5 h-5 flex-shrink-0 rounded-full bg-muted/50 border border-white/10" />
+            <div className="w-7 h-7 flex-shrink-0 rounded-full bg-muted/30 border border-dashed border-border/50" />
           )}
           <span className={cn(
             "text-sm truncate",
-            isUser && "text-purple-600 dark:text-purple-400 font-medium",
-            !name && "italic text-xs opacity-70"
+            isUser ? "font-bold text-foreground" : "font-medium text-foreground/90",
+            !name && "italic text-xs opacity-60"
           )}>
             {name || "Por definir..."}
           </span>
         </div>
         {name && (
           <span className={cn(
-            "text-sm font-variant-numeric tabular-nums w-6 text-center rounded-sm",
-            isCompleted ? (isWinner ? "text-foreground font-bold" : "text-muted-foreground") : "text-muted-foreground/50",
-            score !== undefined ? "bg-muted/10" : ""
+            "text-base font-bold font-variant-numeric tabular-nums w-6 text-center rounded-sm",
+            isCompleted ? (isWinner ? "text-primary" : "text-muted-foreground") : "text-muted-foreground/30",
           )}>
             {score ?? "-"}
           </span>
@@ -281,18 +281,20 @@ function BracketMatchCard({ match, onClick, isHighlighted, isFinal, canCreate, u
       {(hasTeams || isFinal) && (
         <div className="absolute top-1 right-2 flex gap-1">
           {isCompleted && isFinal ? (
-            <Badge variant="secondary" className="h-4 px-1 text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
-              <Medal className="w-3 h-3 mr-1" /> Campeón
+            <Badge variant="secondary" className="h-5 px-2 text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200/50 dark:border-amber-700/30">
+              <Trophy className="w-3 h-3 mr-1" /> Campeón
             </Badge>
           ) : isCompleted ? (
-            <Badge variant="outline" className="h-4 px-1 text-[9px] border-0 bg-muted/50">Finalizado</Badge>
+            <Badge variant="outline" className="h-5 px-2 text-[10px] border-border/50 bg-muted/30">Finalizado</Badge>
           ) : hasTeams ? (
             match.matchId ? (
-              <Badge variant="default" className="h-4 px-1 text-[9px]">Jugar</Badge>
+              <Badge variant="default" className="h-5 px-2 text-[10px] shadow-sm">Jugar</Badge>
             ) : canCreate ? (
-              <Badge variant="default" className="h-4 px-1 text-[9px] bg-green-600 hover:bg-green-700 animate-pulse border-0">Generar Partido</Badge>
+              <Badge variant="secondary" className="h-5 px-2 text-[10px] bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors">
+                <Clock className="w-3 h-3 mr-1" /> Generar Partido
+              </Badge>
             ) : (
-              <Badge variant="outline" className="h-4 px-1 text-[9px] border-0 bg-muted/50">Pendiente</Badge>
+              <Badge variant="outline" className="h-5 px-2 text-[10px] border-border/50 bg-muted/30">Pendiente</Badge>
             )
           ) : null}
         </div>

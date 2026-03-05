@@ -4,9 +4,9 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useMemo, useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
-import { doc, collection, query, where } from 'firebase/firestore';
+import { doc, collection, query, where, FieldValue } from 'firebase/firestore';
 import type { Cup, GroupTeam, BracketMatch, CupSeedingType } from '@/lib/types';
-import { Loader2, Trophy } from 'lucide-react';
+import { Loader2, Trophy, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -14,7 +14,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CupBracket } from '@/components/competitions/cup-bracket';
 import { CupHeader, type CupTab } from '@/components/cup/CupHeader';
 import { useToast } from '@/hooks/use-toast';
-import { startCupAction, updateCupStatusAction, deleteCupAction, createCupMatchAction } from '@/lib/actions/server-actions';
+import {
+  startCupAction,
+  updateCupStatusAction,
+  deleteCupAction,
+  createCupMatchAction,
+  removeTeamFromCupAction
+} from '@/lib/actions/server-actions';
 import { isErrorResponse } from '@/lib/errors';
 import {
   ResponsiveAlertDialog as AlertDialog,
@@ -61,7 +67,37 @@ export default function CupDetailPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRemovingTeam, setIsRemovingTeam] = useState(false);
+  const [teamToRemove, setTeamToRemove] = useState<{ id: string, name: string } | null>(null);
   const [seedingType, setSeedingType] = useState<CupSeedingType>('random');
+
+  // ... Cup and Teams fetching logic ...
+
+  const handleRemoveTeam = async () => {
+    if (!cup || !teamToRemove) return;
+
+    setIsRemovingTeam(true);
+    try {
+      const result = await removeTeamFromCupAction(cup.id, teamToRemove.id);
+      if (!isErrorResponse(result) && result.success) {
+        toast({
+          title: 'Equipo removido',
+          description: `El equipo ${teamToRemove.name} ha sido removido de la copa.`,
+        });
+        setTeamToRemove(null);
+      } else {
+        throw new Error(isErrorResponse(result) ? result.error : (result as any).error);
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudo remover el equipo.',
+      });
+    } finally {
+      setIsRemovingTeam(false);
+    }
+  };
 
   // Fetch cup data
   const cupRef = useMemo(() => {
@@ -95,6 +131,16 @@ export default function CupDetailPage() {
 
   const handleStartCup = async () => {
     if (!cup) return;
+
+    const validCounts = [2, 4, 8, 16, 32];
+    if (!validCounts.includes(cup.teams.length)) {
+      toast({
+        variant: 'destructive',
+        title: 'Error de validación',
+        description: `La copa tiene ${cup.teams.length} equipos. Debe tener exactamente 2, 4, 8, 16 o 32 equipos. Por favor, revoca aplicaciones excedentes o invita más equipos.`,
+      });
+      return;
+    }
 
     setIsStarting(true);
     try {
@@ -271,16 +317,34 @@ export default function CupDetailPage() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {teams?.map(team => (
-                    <div key={team.id} className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer">
+                    <div key={team.id} className="group flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 transition-colors relative h-[72px]">
                       <div className="flex-shrink-0">
                         <JerseyPreview jersey={team.jersey} size="sm" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold truncate">{team.name}</p>
+                        <p className="font-semibold truncate pr-8">{team.name}</p>
                         <p className="text-xs text-muted-foreground">{team.members.length} jugadores</p>
                       </div>
+                      {isOwner && !cup.status.includes('completed') && !cup.bracket?.length && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTeamToRemove({ id: team.id, name: team.name });
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   ))}
+                  {(!teams || teams.length === 0) && (
+                    <div className="col-span-full py-8 text-center text-muted-foreground italic">
+                      No hay equipos inscriptos aún.
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -297,6 +361,30 @@ export default function CupDetailPage() {
           )}
         </Tabs>
       </div>
+
+      {/* Team Removal Dialog */}
+      <AlertDialog open={!!teamToRemove} onOpenChange={(open) => !open && setTeamToRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Remover equipo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de que deseas remover a <strong>{teamToRemove?.name}</strong> de la copa?
+              Su postulación volverá a estar pendiente si existía una previa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRemovingTeam}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRemoveTeam}
+              disabled={isRemovingTeam}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isRemovingTeam && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Remover Equipo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Start Cup Dialog */}
       <AlertDialog open={showStartDialog} onOpenChange={setShowStartDialog}>
