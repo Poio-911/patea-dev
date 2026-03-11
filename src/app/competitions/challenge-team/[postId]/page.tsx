@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { challengeTeamPostAction, getAvailableTeamPostsAction } from '@/lib/actions/server-actions';
+import { challengeTeamPostAction, getAvailableTeamPostsAction } from '@/lib/actions/competitions-actions';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';

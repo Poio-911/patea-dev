@@ -15,7 +15,7 @@ import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Card, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { sendTeamChallengeAction } from '@/lib/actions/server-actions';
+import { sendTeamChallengeAction } from '@/lib/actions/competitions-actions';
 import { celebrationConfetti } from '@/lib/animations';
 
 export default function FindOpponentForTeamPage() {

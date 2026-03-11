@@ -19,6 +19,146 @@ if (getApps().length === 0) {
 
 const db = getFirestore();
 
+export async function acceptMatchInvitationAction(
+  invitationId: string,
+  matchId: string
+): Promise<{ success: boolean; error?: string; matchTitle?: string }> {
+  try {
+    const session = await getServerSession();
+    if (!session?.user?.uid) {
+      return { success: false, error: 'No autenticado' };
+    }
+
+    if (!invitationId || !matchId) {
+      return { success: false, error: 'Parámetros inválidos.' };
+    }
+
+    const userId = session.user.uid;
+    const matchRef = db.collection('matches').doc(matchId);
+    const invitationRef = matchRef.collection('invitations').doc(invitationId);
+    const playerRef = db.collection('players').doc(userId);
+
+    let resolvedMatchTitle = 'partido';
+
+    await db.runTransaction(async (transaction) => {
+      const [matchSnap, invitationSnap, playerSnap] = await Promise.all([
+        transaction.get(matchRef),
+        transaction.get(invitationRef),
+        transaction.get(playerRef),
+      ]);
+
+      if (!matchSnap.exists) {
+        throw new Error('No se encontró el partido.');
+      }
+
+      if (!invitationSnap.exists) {
+        throw new Error('No se encontró la invitación.');
+      }
+
+      if (!playerSnap.exists) {
+        throw new Error('No se encontró tu perfil de jugador.');
+      }
+
+      const matchData = matchSnap.data() as any;
+      const invitationData = invitationSnap.data() as any;
+      const playerData = playerSnap.data() as any;
+
+      resolvedMatchTitle = matchData?.title || invitationData?.matchTitle || 'partido';
+
+      if (invitationData?.playerId !== userId) {
+        throw new Error('No autorizado para responder esta invitación.');
+      }
+
+      if (invitationData?.status && invitationData.status !== 'pending') {
+        throw new Error('Esta invitación ya fue respondida.');
+      }
+
+      const currentPlayers = Array.isArray(matchData?.players) ? matchData.players : [];
+      const currentPlayerUids = Array.isArray(matchData?.playerUids) ? matchData.playerUids : [];
+      const matchSize = Number(matchData?.matchSize) || 0;
+
+      if (currentPlayerUids.includes(userId)) {
+        transaction.update(invitationRef, { status: 'accepted' });
+        return;
+      }
+
+      if (matchSize > 0 && currentPlayers.length >= matchSize) {
+        throw new Error('El partido ya está lleno.');
+      }
+
+      const playerPayload = {
+        uid: userId,
+        displayName: playerData?.name || 'Jugador',
+        ovr: Number(playerData?.ovr) || 50,
+        position: playerData?.position || 'MED',
+        photoURL: playerData?.photoUrl || playerData?.photoURL || '',
+      };
+
+      transaction.update(matchRef, {
+        players: FieldValue.arrayUnion(playerPayload),
+        playerUids: FieldValue.arrayUnion(userId),
+      });
+
+      transaction.update(invitationRef, { status: 'accepted' });
+    });
+
+    return { success: true, matchTitle: resolvedMatchTitle };
+  } catch (error: any) {
+    console.error('Error accepting invitation:', error);
+    return {
+      success: false,
+      error: error?.message || 'No se pudo aceptar la invitación.',
+    };
+  }
+}
+
+export async function rejectMatchInvitationAction(
+  invitationId: string,
+  matchId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await getServerSession();
+    if (!session?.user?.uid) {
+      return { success: false, error: 'No autenticado' };
+    }
+
+    if (!invitationId || !matchId) {
+      return { success: false, error: 'Parámetros inválidos.' };
+    }
+
+    const userId = session.user.uid;
+    const invitationRef = db.collection('matches').doc(matchId).collection('invitations').doc(invitationId);
+
+    await db.runTransaction(async (transaction) => {
+      const invitationSnap = await transaction.get(invitationRef);
+
+      if (!invitationSnap.exists) {
+        throw new Error('No se encontró la invitación.');
+      }
+
+      const invitationData = invitationSnap.data() as any;
+
+      if (invitationData?.playerId !== userId) {
+        throw new Error('No autorizado para responder esta invitación.');
+      }
+
+      if (invitationData?.status && invitationData.status !== 'pending') {
+        throw new Error('Esta invitación ya fue respondida.');
+      }
+
+      transaction.update(invitationRef, { status: 'declined' });
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error rejecting invitation:', error);
+    return {
+      success: false,
+      error: error?.message || 'No se pudo rechazar la invitación.',
+    };
+  }
+}
+
 /**
  * Responder a una invitación de partido
  * Actualiza el documento de invitación y los contadores en el partido

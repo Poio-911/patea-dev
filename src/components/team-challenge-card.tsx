@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, X, Loader2, Swords } from 'lucide-react';
 import { Invitation } from '@/lib/types';
 import { JerseyPreview } from './team-builder/jersey-preview';
-import { acceptTeamChallengeAction, rejectTeamChallengeAction } from '@/lib/actions/server-actions';
+import { acceptTeamChallengeAction, rejectTeamChallengeAction } from '@/lib/actions/competitions-actions';
 import { useToast } from '@/hooks/use-toast';
 import { celebrationConfetti } from '@/lib/animations';
 import { useRouter } from 'next/navigation';

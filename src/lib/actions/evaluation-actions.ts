@@ -35,6 +35,52 @@ export async function analyzeEvaluationTextAction(input: {
   }
 }
 
+export async function submitEvaluationSubmissionAction(input: {
+  matchId: string;
+  submission: unknown;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { requireAuth } = await import('../auth/get-server-session');
+    const { getAdminDb } = await import('@/firebase/admin-init');
+
+    const evaluatorId = await requireAuth();
+    const db = getAdminDb();
+
+    if (!input?.matchId) {
+      return { success: false, error: 'ID de partido inválido.' };
+    }
+
+    const matchRef = db.collection('matches').doc(input.matchId);
+    const matchSnap = await matchRef.get();
+    if (!matchSnap.exists) {
+      return { success: false, error: 'Partido no encontrado.' };
+    }
+
+    const existingSubmissionSnap = await db
+      .collection('evaluationSubmissions')
+      .where('matchId', '==', input.matchId)
+      .where('evaluatorId', '==', evaluatorId)
+      .limit(1)
+      .get();
+
+    if (!existingSubmissionSnap.empty) {
+      return { success: false, error: 'Ya enviaste tus evaluaciones para este partido.' };
+    }
+
+    await db.collection('evaluationSubmissions').add({
+      evaluatorId,
+      matchId: input.matchId,
+      submittedAt: new Date().toISOString(),
+      submission: input.submission,
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error submitting evaluation submission:', error);
+    return { success: false, error: error?.message || 'No se pudieron enviar las evaluaciones.' };
+  }
+}
+
 export async function requestIdentityRevelation(evaluationId: string): Promise<{ success: boolean; error?: string }> {
   try {
     const { getAdminDb, getAdminAuth } = await import('@/firebase/admin-init');

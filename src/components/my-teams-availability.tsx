@@ -9,7 +9,7 @@ import { Calendar, MapPin, Trash2, PlusCircle, Loader2 } from 'lucide-react';
 import { GroupTeam, TeamAvailabilityPost } from '@/lib/types';
 import { JerseyPreview } from './team-builder/jersey-preview';
 import { TeamAvailabilityDialog } from './team-availability-dialog';
-import { deleteTeamAvailabilityPostAction } from '@/lib/actions/server-actions';
+import { deleteTeamAvailabilityPostAction } from '@/lib/actions/competitions-actions';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';

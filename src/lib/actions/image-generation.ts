@@ -4,11 +4,16 @@
 import { getAdminDb, getAdminAuth, getAdminStorage } from '../../firebase/admin-init';
 import { FieldValue } from 'firebase-admin/firestore';
 // Note: generatePlayerCardImage is imported dynamically to avoid loading Genkit during build
-import type { Player } from '../../lib/types';
+import type { Player, Jersey } from '../../lib/types';
+import { FEATURE_DISABLED_MESSAGES, isFeatureEnabled } from '../../lib/feature-availability';
 import { logger } from '../../lib/logger';
 import { sanitizeText } from '../../lib/validation';
 
-export async function generatePlayerCardImageAction(userId: string) {
+export async function generatePlayerCardImageAction(userId: string, jersey?: Jersey) {
+  if (!isFeatureEnabled('aiImageGeneration')) {
+    return { error: FEATURE_DISABLED_MESSAGES.aiImageGeneration };
+  }
+
   // ✅ VALIDATION: Validate userId
   if (!userId || typeof userId !== 'string' || userId.trim().length === 0) {
     return { error: 'ID de usuario inválido' };
@@ -67,9 +72,42 @@ export async function generatePlayerCardImageAction(userId: string) {
     const [imageBuffer] = await file.download();
     const photoDataUri = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
 
+    // Fetch jersey for visual branding
+    let finalJersey: Jersey | undefined = jersey;
+
+    // Fallback logic if no jersey was provided by the client
+    if (!finalJersey) {
+      // 1. Try player.jersey field directly
+      if (player.jersey) {
+        finalJersey = player.jersey;
+      }
+      // 2. Try group defaultJersey (legacy/fallback)
+      else if (player.groupId) {
+        const groupSnap = await db.doc(`groups/${player.groupId}`).get();
+        if (groupSnap.exists) {
+          finalJersey = (groupSnap.data() as any).defaultJersey;
+        }
+      }
+
+      // 3. NEW: If still no jersey, try to find a team the player belongs to
+      if (!finalJersey && player.groupId) {
+        const teamsColl = db.collection('teams');
+        const teamsSnap = await teamsColl.where('groupId', '==', player.groupId).get();
+
+        for (const doc of teamsSnap.docs) {
+          const teamData = doc.data();
+          const isMember = teamData.members?.some((m: any) => m.playerId === sanitizedUserId);
+          if (isMember && teamData.jersey) {
+            finalJersey = teamData.jersey;
+            break;
+          }
+        }
+      }
+    }
+
     // Call AI flow (dynamic import to avoid loading Genkit during build)
     const { generatePlayerCardImage } = await import('../../ai/flows/generate-player-card-image');
-    const generatedImageResponse = await generatePlayerCardImage(photoDataUri);
+    const generatedImageResponse = await generatePlayerCardImage(photoDataUri, finalJersey);
 
     // Handle both Data URI and URL responses from Gemini
     let generatedImageBuffer: Buffer;

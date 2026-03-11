@@ -219,6 +219,17 @@ La documentación completa del proyecto se encuentra en la carpeta `/docs/`:
 
 Pateá integra 13 flujos de inteligencia artificial usando Google Gemini:
 
+## Feature Operational Status
+
+Estado operativo rápido (fuente de verdad técnica en [docs/technical/ESTADO_APP_2026-03-10.md](docs/technical/ESTADO_APP_2026-03-10.md)):
+
+- `Payments (Mercado Pago)`: OFF
+- `AI Image Generation`: OFF
+- `Match Invitations Accept/Reject`: ON
+- `Notifications mark-all-read`: ON
+- `Evaluation Submissions`: ON
+- `Competitions participation queries (>10 teams)`: ON (chunked)
+
 **Gestión de Equipos:**
 - `generate-balanced-teams` - Genera equipos equilibrados
 

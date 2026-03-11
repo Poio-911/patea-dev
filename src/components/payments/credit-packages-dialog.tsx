@@ -5,6 +5,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/index';
 import type { CreditPackage } from '@/lib/types';
 import { createCreditPurchaseAction } from '@/lib/actions/payment-actions';
+import { FEATURE_DISABLED_MESSAGES, isFeatureEnabled } from '@/lib/feature-availability';
 import {
   ResponsiveDialog as Dialog,
   ResponsiveDialogContent as DialogContent,
@@ -30,6 +31,7 @@ export function CreditPackagesDialog({
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const { toast } = useToast();
+  const paymentsEnabled = isFeatureEnabled('payments');
 
   // Cargar paquetes disponibles
   useEffect(() => {
@@ -64,6 +66,15 @@ export function CreditPackagesDialog({
   };
 
   const handlePurchase = async (packageId: string) => {
+    if (!paymentsEnabled) {
+      toast({
+        title: 'Pagos no disponibles',
+        description: FEATURE_DISABLED_MESSAGES.payments,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       setPurchasing(packageId);
 
@@ -109,7 +120,14 @@ export function CreditPackagesDialog({
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div className="space-y-4 mt-4">
+            {!paymentsEnabled && (
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">
+                {FEATURE_DISABLED_MESSAGES.payments}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {packages.map((pkg) => (
               <div
                 key={pkg.id}
@@ -173,7 +191,7 @@ export function CreditPackagesDialog({
                 {/* Botón de compra */}
                 <Button
                   onClick={() => handlePurchase(pkg.id)}
-                  disabled={purchasing !== null}
+                  disabled={purchasing !== null || !paymentsEnabled}
                   className="w-full"
                   size="lg"
                   variant={pkg.popular ? 'default' : 'outline'}
@@ -186,12 +204,13 @@ export function CreditPackagesDialog({
                   ) : (
                     <>
                       <CreditCard className="w-4 h-4 mr-2" />
-                      Comprar Ahora
+                      {paymentsEnabled ? 'Comprar Ahora' : 'No disponible'}
                     </>
                   )}
                 </Button>
               </div>
             ))}
+            </div>
           </div>
         )}
 

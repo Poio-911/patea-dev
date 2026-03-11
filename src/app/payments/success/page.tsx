@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { checkPaymentStatusAction } from '@/lib/actions/payment-actions';
+import { FEATURE_DISABLED_MESSAGES, isFeatureEnabled } from '@/lib/feature-availability';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2, XCircle, Clock, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -11,13 +12,19 @@ function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const transactionId = searchParams?.get('transaction_id');
+  const paymentsEnabled = isFeatureEnabled('payments');
 
-  const [status, setStatus] = useState<'checking' | 'approved' | 'rejected' | 'pending' | 'error'>('checking');
+  const [status, setStatus] = useState<'checking' | 'approved' | 'rejected' | 'pending' | 'error' | 'disabled'>('checking');
   const [credits, setCredits] = useState<number>(0);
   const [amount, setAmount] = useState<number>(0);
   const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
+    if (!paymentsEnabled) {
+      setStatus('disabled');
+      return;
+    }
+
     if (!transactionId) {
       setStatus('error');
       return;
@@ -84,7 +91,34 @@ function PaymentSuccessContent() {
 
     // Cleanup
     return () => clearInterval(interval);
-  }, [transactionId, retryCount]);
+  }, [paymentsEnabled, transactionId, retryCount]);
+
+  if (status === 'disabled') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="mb-6">
+            <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/20 rounded-full flex items-center justify-center mx-auto">
+              <XCircle className="w-12 h-12 text-amber-600 dark:text-amber-400" />
+            </div>
+          </div>
+
+          <h1 className="text-3xl font-bold mb-2">Pagos no disponibles</h1>
+          <p className="text-lg text-muted-foreground mb-6">
+            {FEATURE_DISABLED_MESSAGES.payments}
+          </p>
+
+          <Button
+            onClick={() => router.push('/dashboard')}
+            className="w-full"
+            size="lg"
+          >
+            Volver al Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   // Estado de carga
   if (status === 'checking' || status === 'pending') {

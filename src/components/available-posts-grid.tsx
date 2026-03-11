@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useTransition, useRef, useMemo } from 'react';
+import { useState, useEffect, useTransition, useRef, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,7 @@ import { Calendar, MapPin, Trash2, PlusCircle, Loader2, Swords, CheckCircle2, Se
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GroupTeam, TeamAvailabilityPost, Invitation } from '@/lib/types';
 import { JerseyPreview } from './team-builder/jersey-preview';
-import { getAvailableTeamPostsAction, challengeTeamPostAction, deleteTeamAvailabilityPostAction } from '@/lib/actions/server-actions';
+import { getAvailableTeamPostsAction, challengeTeamPostAction, deleteTeamAvailabilityPostAction } from '@/lib/actions/competitions-actions';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -24,8 +24,8 @@ import {
   ResponsiveDialogFooter as DialogFooter,
 } from './ui/responsive-dialog';
 import { celebrationConfetti } from '@/lib/animations';
-import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 interface AvailablePostsGridProps {
   userId: string;
@@ -51,25 +51,42 @@ export function AvailablePostsGrid({ userId, userTeams, isActive = true }: Avail
   // Force recompile
   const myTeams = userTeams.filter(team => team.createdBy === userId);
   const myTeamIds = myTeams.map(team => team.id);
+  const [challengedPostIds, setChallengedPostIds] = useState<Set<string>>(new Set());
 
-  const invitationsQuery = useMemo(() => {
-    if (!firestore || myTeamIds.length === 0) return null;
-    // Query invitations where user's teams are the challenger
-    return query(
-      collection(firestore, 'invitations'),
-      where('type', '==', 'team_challenge'),
-      where('fromTeamId', 'in', myTeamIds.slice(0, 10)), // Firestore limit
-      where('status', '==', 'pending')
+  const loadSentInvitations = useCallback(async () => {
+    if (!firestore || myTeamIds.length === 0) {
+      setChallengedPostIds(new Set());
+      return;
+    }
+
+    const chunkSize = 10;
+    const chunks: string[][] = [];
+    for (let i = 0; i < myTeamIds.length; i += chunkSize) {
+      chunks.push(myTeamIds.slice(i, i + chunkSize));
+    }
+
+    const snapshots = await Promise.all(
+      chunks.map((chunk) =>
+        getDocs(
+          query(
+            collection(firestore, 'invitations'),
+            where('type', '==', 'team_challenge'),
+            where('fromTeamId', 'in', chunk),
+            where('status', '==', 'pending')
+          )
+        )
+      )
     );
-  }, [firestore, myTeamIds.join(',')]);
 
-  const { data: sentInvitations } = useCollection<Invitation>(invitationsQuery);
-
-  // Create a Set of postIds that have been challenged
-  const challengedPostIds = useMemo(() => {
-    if (!sentInvitations) return new Set<string>();
-    return new Set(sentInvitations.map(inv => inv.postId).filter(Boolean) as string[]);
-  }, [sentInvitations]);
+    const ids = new Set<string>();
+    snapshots.forEach((snap) => {
+      snap.docs.forEach((docSnap) => {
+        const inv = docSnap.data() as Invitation;
+        if (inv.postId) ids.add(inv.postId);
+      });
+    });
+    setChallengedPostIds(ids);
+  }, [firestore, myTeamIds]);
 
   // ✅ FASE 2.4: Filter posts based on search term and date
   const filteredPosts = useMemo(() => {
@@ -131,6 +148,10 @@ export function AvailablePostsGrid({ userId, userTeams, isActive = true }: Avail
     }
   }, [isActive, userId]);
 
+  useEffect(() => {
+    loadSentInvitations();
+  }, [loadSentInvitations]);
+
   const handleChallengePost = () => {
     if (!selectedPost || !selectedTeamId) return;
 
@@ -146,6 +167,7 @@ export function AvailablePostsGrid({ userId, userTeams, isActive = true }: Avail
         setSelectedPost(null);
         setSelectedTeamId(null);
         loadPosts();
+        loadSentInvitations();
       } else {
         toast({
           title: 'Error',

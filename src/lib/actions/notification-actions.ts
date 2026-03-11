@@ -3,8 +3,36 @@
 import { getAdminDb, getAdminMessaging } from '@/firebase/admin-init';
 import { FieldValue } from 'firebase-admin/firestore';
 import { logger } from '@/lib/logger';
+import { requireAuth } from '@/lib/auth/get-server-session';
 
 const db = getAdminDb();
+
+/**
+ * Mark all unread notifications as read for current authenticated user
+ */
+export async function markAllNotificationsAsReadAction(): Promise<{ success: boolean; updatedCount?: number; error?: string }> {
+  try {
+    const userId = await requireAuth();
+
+    const notificationsRef = db.collection('users').doc(userId).collection('notifications');
+    const unreadSnap = await notificationsRef.where('isRead', '==', false).get();
+
+    if (unreadSnap.empty) {
+      return { success: true, updatedCount: 0 };
+    }
+
+    const batch = db.batch();
+    unreadSnap.docs.forEach((docSnap) => {
+      batch.update(docSnap.ref, { isRead: true });
+    });
+    await batch.commit();
+
+    return { success: true, updatedCount: unreadSnap.size };
+  } catch (error: any) {
+    logger.error('Error marking notifications as read', { error: error?.message });
+    return { success: false, error: error?.message || 'No se pudieron marcar las notificaciones como leídas.' };
+  }
+}
 
 /**
  * Save FCM token for a user

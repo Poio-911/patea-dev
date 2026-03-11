@@ -4,7 +4,7 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { useUser, useFirestore, useCollection } from '@/firebase';
-import { collection, query, orderBy, writeBatch, doc } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import type { Notification, NotificationType } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { markAllNotificationsAsReadAction } from '@/lib/actions/notification-actions';
 
 const notificationIcons: Record<NotificationType, React.ElementType> = {
     match_invite: UserPlus,
@@ -90,16 +91,12 @@ export default function NotificationsPage() {
     }, [notifications]);
 
     const markAllAsRead = async () => {
-        if (!firestore || !user?.uid || unreadCount === 0 || !notifications) return;
-        const batch = writeBatch(firestore);
-        notifications.forEach(n => {
-            if (!n.isRead) {
-                const notifRef = doc(firestore, 'users', user.uid, 'notifications', n.id);
-                batch.update(notifRef, { isRead: true });
-            }
-        });
+        if (!user?.uid || unreadCount === 0) return;
         try {
-            await batch.commit();
+            const result = await markAllNotificationsAsReadAction();
+            if (!result.success) {
+                throw new Error(result.error || 'No se pudieron marcar las notificaciones como leídas.');
+            }
             toast({
                 title: "Notificaciones leídas",
                 description: "Todas tus notificaciones han sido marcadas como leídas."

@@ -10,7 +10,6 @@ import {
   collection,
   query,
   where,
-  addDoc,
   getDocs,
   doc,
 } from 'firebase/firestore'
@@ -32,7 +31,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Sparkles } from 'lucide-react'
-import { analyzeEvaluationTextAction } from '@/lib/actions/evaluation-actions'
+import { analyzeEvaluationTextAction, submitEvaluationSubmissionAction } from '@/lib/actions/evaluation-actions'
 import { TagSelector } from '@/components/ui/tag-selector'
 import { PerformanceTag, performanceTagsDb } from '@/lib/performance-tags'
 import { cn } from '@/lib/utils'
@@ -392,18 +391,18 @@ export default function PerformEvaluationPage() {
   }, [assignments, allGroupPlayers, replace, assignmentsLoading, playersLoading, getRandomTagsForPosition])
 
   const onSubmit = async (data: EvaluationFormData) => {
-    if (!firestore || !user || !matchId) return
+    if (!user || !matchId) return
 
     setIsSubmitting(true)
     try {
-      const submissionData = {
-        evaluatorId: user.uid,
+      const result = await submitEvaluationSubmissionAction({
         matchId,
-        submittedAt: new Date().toISOString(),
         submission: data,
-      };
+      });
 
-      await addDoc(collection(firestore, 'evaluationSubmissions'), submissionData);
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudieron enviar las evaluaciones.');
+      }
 
       hapticSuccess();
       toast({

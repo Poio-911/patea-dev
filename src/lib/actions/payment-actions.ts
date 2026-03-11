@@ -2,6 +2,7 @@
 
 import { getAdminDb } from '@/firebase/admin-init';
 import { requireAuth } from '@/lib/auth/get-server-session';
+import { FEATURE_DISABLED_MESSAGES, isFeatureEnabled } from '@/lib/feature-availability';
 import type { CreditTransaction } from '@/lib/types';
 
 const db = getAdminDb();
@@ -14,6 +15,10 @@ const db = getAdminDb();
 export async function createCreditPurchaseAction(
   _packageId: string
 ): Promise<{ success: boolean; error?: string; initPoint?: string; transactionId?: string }> {
+  if (!isFeatureEnabled('payments')) {
+    return { success: false, error: FEATURE_DISABLED_MESSAGES.payments };
+  }
+
   return { success: false, error: 'Mercado Pago deshabilitado' };
 }
 
@@ -25,6 +30,10 @@ export async function createCreditPurchaseAction(
 export async function checkPaymentStatusAction(
   _transactionId: string
 ): Promise<{ success: boolean; error?: string; status?: string; credits?: number; amount?: number }> {
+  if (!isFeatureEnabled('payments')) {
+    return { success: false, error: FEATURE_DISABLED_MESSAGES.payments };
+  }
+
   return { success: false, error: 'Mercado Pago deshabilitado' };
 }
 
@@ -33,6 +42,10 @@ export async function checkPaymentStatusAction(
  * IMPORTANTE: Esta función debe ser llamada desde /api/webhooks/mercadopago
  */
 export async function handleMercadoPagoWebhook(_data: any) {
+  if (!isFeatureEnabled('payments')) {
+    return { success: false, error: FEATURE_DISABLED_MESSAGES.payments };
+  }
+
   return { success: false, error: 'Mercado Pago deshabilitado' };
 }
 

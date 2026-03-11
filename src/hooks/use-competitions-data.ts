@@ -6,6 +6,17 @@ import { collection, query, where, orderBy, limit, getDocs, or, and } from 'fire
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import type { GroupTeam, Invitation, League, Cup, Match } from '@/lib/types';
 
+const IN_QUERY_LIMIT = 10;
+
+function chunkArray<T>(arr: T[], chunkSize: number): T[][] {
+    if (arr.length === 0) return [];
+    const chunks: T[][] = [];
+    for (let i = 0; i < arr.length; i += chunkSize) {
+        chunks.push(arr.slice(i, i + chunkSize));
+    }
+    return chunks;
+}
+
 export function useCompetitionsData() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
@@ -48,14 +59,21 @@ export function useCompetitionsData() {
             // Query 2: By Participation (User Teams)
             let leaguesParticipating: League[] = [];
             if (myTeamIds.length > 0) {
-                // Firestore limit for 'array-contains-any' is 10. If more, we'd need to batch.
-                // Assuming typical user has < 10 teams.
-                const qPart = query(
-                    collection(firestore, 'leagues'),
-                    where('teams', 'array-contains-any', myTeamIds.slice(0, 10))
+                const chunks = chunkArray(myTeamIds, IN_QUERY_LIMIT);
+                const participationSnaps = await Promise.all(
+                    chunks.map((chunk) =>
+                        getDocs(
+                            query(
+                                collection(firestore, 'leagues'),
+                                where('teams', 'array-contains-any', chunk)
+                            )
+                        )
+                    )
                 );
-                const snapPart = await getDocs(qPart);
-                leaguesParticipating = snapPart.docs.map(doc => ({ id: doc.id, ...doc.data() } as League));
+
+                leaguesParticipating = participationSnaps
+                    .flatMap((snap) => snap.docs)
+                    .map(doc => ({ id: doc.id, ...doc.data() } as League));
             }
 
             // Combine and unique
@@ -97,12 +115,21 @@ export function useCompetitionsData() {
             // Query 2: By Participation
             let cupsParticipating: Cup[] = [];
             if (myTeamIds.length > 0) {
-                const qPart = query(
-                    collection(firestore, 'cups'),
-                    where('teams', 'array-contains-any', myTeamIds.slice(0, 10))
+                const chunks = chunkArray(myTeamIds, IN_QUERY_LIMIT);
+                const participationSnaps = await Promise.all(
+                    chunks.map((chunk) =>
+                        getDocs(
+                            query(
+                                collection(firestore, 'cups'),
+                                where('teams', 'array-contains-any', chunk)
+                            )
+                        )
+                    )
                 );
-                const snapPart = await getDocs(qPart);
-                cupsParticipating = snapPart.docs.map(doc => ({ id: doc.id, ...doc.data() } as Cup));
+
+                cupsParticipating = participationSnaps
+                    .flatMap((snap) => snap.docs)
+                    .map(doc => ({ id: doc.id, ...doc.data() } as Cup));
             }
 
             // Combine and unique

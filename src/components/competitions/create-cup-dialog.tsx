@@ -103,6 +103,10 @@ export function CreateCupDialog({ open, onOpenChange, groupId, userId, teams }: 
   };
 
   const onSubmit = async (data: CreateCupForm) => {
+    if (step < 3) {
+      handleNextStep();
+      return;
+    }
     setIsCreating(true);
     try {
       let logoUrl: string | undefined;

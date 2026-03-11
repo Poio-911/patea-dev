@@ -14,6 +14,7 @@ import { ResponsiveAlertDialog as AlertDialog, ResponsiveAlertDialogAction as Al
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/lib/logger';
 import { generatePlayerCardImageAction } from '@/lib/actions/image-generation';
+import { FEATURE_DISABLED_MESSAGES, isFeatureEnabled } from '@/lib/feature-availability';
 import { PlayerOvr, AttributesGrid, PlayerPhoto, positionConfig, PlayerPositionBadge } from '@/components/player-styles';
 import { ImageCropperDialog } from './image-cropper-dialog';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from './ui/dialog';
@@ -45,6 +46,7 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
   const { toast } = useToast();
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [showCreditPackages, setShowCreditPackages] = useState(false);
+  const aiImageEnabled = isFeatureEnabled('aiImageGeneration');
 
   const playerName = player.name || 'Jugador';
 
@@ -62,9 +64,18 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
   const handleGenerateAIPhoto = async () => {
     if (!user?.uid) return;
 
+    if (!aiImageEnabled) {
+      toast({
+        title: 'Función no disponible',
+        description: FEATURE_DISABLED_MESSAGES.aiImageGeneration,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsGeneratingAI(true);
     try {
-      const result = await generatePlayerCardImageAction(user.uid);
+      const result = await generatePlayerCardImageAction(user.uid, jersey);
 
       if ('error' in result) {
         toast({ variant: 'destructive', title: 'Error al generar imagen', description: result.error });
@@ -208,42 +219,17 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
             {isCurrentUserProfile && (
               <div className="flex flex-col gap-2 w-full my-4">
                 <div className="grid grid-cols-2 gap-2 w-full">
-                  {player.cardGenerationCredits && player.cardGenerationCredits > 0 ? (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="default" size="sm" disabled={isGeneratingAI}>
-                          <div className="flex items-center gap-2">
-                            <Sparkles className="h-4 w-4" />
-                            <span>Generar IA</span>
-                            <Badge className="bg-primary-foreground/20 text-primary-foreground">{player.cardGenerationCredits || 0}</Badge>
-                          </div>
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>¿Confirmar generación de imagen?</AlertDialogTitle>
-                          <AlertDialogDescription>Esto usará 1 de tus {player.cardGenerationCredits} créditos. Esta acción no se puede deshacer.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleGenerateAIPhoto} disabled={isGeneratingAI}>
-                            {isGeneratingAI ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Confirmar y Usar Crédito
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  ) : (
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => setShowCreditPackages(true)}
-                      className="bg-gradient-to-r from-warning to-[hsl(var(--warning)/0.9)] hover:from-[hsl(var(--warning)/0.95)] hover:to-[hsl(var(--warning)/0.85)] text-warning-foreground"
-                    >
-                      <ShoppingCart className="mr-2 h-4 w-4" />
-                      Comprar Créditos
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled
+                    className="w-full"
+                    onClick={handleGenerateAIPhoto}
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    IA no disponible
+                  </Button>
+
                   <ImageCropperDialog player={player} onSaveComplete={onPhotoUpdate}>
                     <Button variant="secondary" size="sm" disabled={isGeneratingAI} className="w-full">
                       <Scissors className="mr-2 h-4 w-4" />
@@ -252,10 +238,8 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
                   </ImageCropperDialog>
                 </div>
 
-                {player.cardGenerationCredits !== undefined && player.cardGenerationCredits <= 0 && (
-                  <p className="text-xs text-center text-muted-foreground">
-                    Sin créditos. Compra un paquete para generar fotos con IA.
-                  </p>
+                {!aiImageEnabled && (
+                  <p className="text-xs text-muted-foreground text-left">{FEATURE_DISABLED_MESSAGES.aiImageGeneration}</p>
                 )}
               </div>
             )}
