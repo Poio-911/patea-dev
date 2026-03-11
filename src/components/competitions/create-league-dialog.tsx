@@ -131,6 +131,10 @@ export function CreateLeagueDialog({ open, onOpenChange, groupId, userId, teams 
   };
 
   const onSubmit = async (data: CreateLeagueForm) => {
+    if (step < 3) {
+      handleNextStep();
+      return;
+    }
     setIsCreating(true);
     try {
       let logoUrl: string | undefined;
