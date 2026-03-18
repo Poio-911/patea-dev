@@ -24,8 +24,7 @@ import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useFirestore, useUser } from '@/firebase';
-import { addDoc, collection } from 'firebase/firestore';
+import { useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { PlayerPosition } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
@@ -84,7 +83,6 @@ export function AddPlayerDialog() {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { user } = useUser();
-  const firestore = useFirestore();
   const { toast } = useToast();
 
   const {
@@ -107,7 +105,7 @@ export function AddPlayerDialog() {
   });
 
   const onSubmit = async (data: PlayerFormData) => {
-    if (!user || !firestore || !user.activeGroupId) {
+    if (!user || !user.activeGroupId) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -118,24 +116,11 @@ export function AddPlayerDialog() {
 
     setIsSaving(true);
 
-    // DEBUG LOGS
-    console.log('DEBUG: Attempting to create player');
-    console.log('DEBUG: User state from useUser:', user);
-    try {
-      const { getAuth } = await import('firebase/auth');
-      const auth = getAuth();
-      console.log('DEBUG: Firebase Auth Current User:', auth.currentUser?.uid);
-    } catch (e) {
-      console.log('DEBUG: Could not check auth.currentUser', e);
-    }
-
     const ovr = Math.round(
       (data.pac + data.sho + data.pas + data.dri + data.def + data.phy) / 6
     );
 
     try {
-      // ✅ USAR SERVER ACTION en lugar de addDoc directo
-      // Esto bypassea las reglas de Firestore que fallan en producción
       const result = await createManualPlayerAction({
         ...data,
         ovr,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -28,11 +28,7 @@ export function MatchCostSplit({ match }: MatchCostSplitProps) {
   const [players, setPlayers] = useState<PlayerPaymentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadPaymentInfo();
-  }, [match.id]);
-
-  const loadPaymentInfo = async () => {
+  const loadPaymentInfo = useCallback(async () => {
     try {
       if (!match.cost?.splitBetweenPlayers) {
         setIsLoading(false);
@@ -78,7 +74,11 @@ export function MatchCostSplit({ match }: MatchCostSplitProps) {
       console.error('Error loading payment info:', error);
       setIsLoading(false);
     }
-  };
+  }, [match]);
+
+  useEffect(() => {
+    loadPaymentInfo();
+  }, [loadPaymentInfo]);
 
   // Si no hay info de costo, no mostrar nada
   if (!match.cost) {

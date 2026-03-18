@@ -108,7 +108,7 @@ export function MatchVisualizer({ match, isOpen, onClose, isAdmin = false, onEve
     setShowGoalAnim(true);
     const t = setTimeout(() => setShowGoalAnim(false), 1800);
     return () => clearTimeout(t);
-  }, [goalEvents.length, t1Id, team1Primary, team2Primary]);
+  }, [goalEvents, t1Id, team1Primary, team2Primary]);
 
   const enterFullscreenLandscape = async () => {
     try {

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -152,10 +153,13 @@ export function NextMatchCard({ matches, allPlayers = [] }: NextMatchCardProps) 
                     transition={{ duration: 1 }}
                     className="absolute inset-0 z-0 h-full w-full"
                 >
-                    <img
+                    <Image
                         src={matchPhoto}
                         alt=""
-                        className="absolute inset-0 h-full w-full object-cover"
+                        fill
+                        sizes="100vw"
+                        unoptimized
+                        className="absolute inset-0 object-cover"
                     />
                     <div className="absolute inset-0 bg-black/50 z-[1]" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent z-[2]" />
@@ -200,7 +204,7 @@ export function NextMatchCard({ matches, allPlayers = [] }: NextMatchCardProps) 
                         >
                             <div className="h-6 w-6 rounded-full overflow-hidden border border-white/30 bg-white/10 flex items-center justify-center text-[10px] font-bold shrink-0">
                                 {ownerPhoto ? (
-                                    <img src={ownerPhoto} alt={ownerName || ''} className="h-full w-full object-cover" />
+                                    <Image src={ownerPhoto} alt={ownerName || ''} width={24} height={24} unoptimized className="h-full w-full object-cover" />
                                 ) : (
                                     <div className="bg-muted w-full h-full flex items-center justify-center">
                                         <User className="h-3.5 w-3.5 text-white/80" />

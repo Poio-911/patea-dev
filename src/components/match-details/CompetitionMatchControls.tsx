@@ -26,13 +26,13 @@ export const CompetitionMatchControls = ({ match, onSuccess }: CompetitionMatchC
     const team1 = match.teams?.[0];
     const team2 = match.teams?.[1];
 
-    if (!team1 || !team2) return null;
-
-    // ✅ Sync local state if match prop changes (e.g. goals added in visualizer)
+    // Sync local state if match prop changes (e.g. goals added in visualizer)
     useEffect(() => {
         setTeam1Score(match.finalScore?.team1?.toString() || match.teams?.[0]?.finalScore?.toString() || '0');
         setTeam2Score(match.finalScore?.team2?.toString() || match.teams?.[1]?.finalScore?.toString() || '0');
     }, [match.finalScore, match.teams]);
+
+    if (!team1 || !team2) return null;
 
     const handleSaveScore = async () => {
         if (!user) {

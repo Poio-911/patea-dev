@@ -12,9 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Pencil } from 'lucide-react';
 import { JerseyDesigner } from './team-builder/jersey-designer';
 import { GroupTeam, Jersey } from '@/lib/types';
-import { useFirestore } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { updateTeamAction } from '@/lib/actions/team-actions';
 
 interface EditTeamDialogProps {
   open: boolean;
@@ -36,7 +35,6 @@ type EditTeamFormData = z.infer<typeof editTeamSchema>;
 export function EditTeamDialog({ open, onOpenChange, team }: EditTeamDialogProps) {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
-  const firestore = useFirestore();
 
   const form = useForm<EditTeamFormData>({
     resolver: zodResolver(editTeamSchema),
@@ -47,13 +45,12 @@ export function EditTeamDialog({ open, onOpenChange, team }: EditTeamDialogProps
   });
 
   const handleSave = async (data: EditTeamFormData) => {
-    if (!firestore) return;
     setIsSaving(true);
     try {
-      await updateDoc(doc(firestore, 'teams', team.id), {
-        name: data.name,
-        jersey: data.jersey,
-      });
+      const result = await updateTeamAction({ teamId: team.id, name: data.name, jersey: data.jersey });
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudo actualizar el equipo.');
+      }
       toast({ title: 'Equipo actualizado', description: `"${data.name}" fue guardado correctamente.` });
       onOpenChange(false);
     } catch (error) {

@@ -15,9 +15,8 @@ import { Button } from './ui/button';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import type { Player, AvailablePlayer, DayOfWeek, TimeOfDay, Availability } from '@/lib/types';
-import { useFirestore, useUser } from '@/firebase';
-import { doc, setDoc, deleteDoc } from 'firebase/firestore';
+import type { Player, DayOfWeek, TimeOfDay, Availability } from '@/lib/types';
+import { useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CalendarCheck, UserRoundX } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
@@ -26,6 +25,8 @@ import { Switch } from './ui/switch';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
+import { saveUserLocationAction } from '@/lib/actions/location-actions';
+import { setAvailabilityAction } from '@/lib/actions/availability-actions';
 
 const daysOfWeek: { id: DayOfWeek, label: string }[] = [
     { id: 'lunes', label: 'Lunes' },
@@ -70,7 +71,6 @@ interface SetAvailabilityDialogProps {
 export function SetAvailabilityDialog({ player, availability, children }: SetAvailabilityDialogProps) {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
 
@@ -89,7 +89,7 @@ export function SetAvailabilityDialog({ player, availability, children }: SetAva
 
 
   const onSubmit = async (data: AvailabilityFormData) => {
-    if (!firestore || !user || !player) {
+    if (!user || !player) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo guardar la disponibilidad.' });
       return;
     }
@@ -103,23 +103,15 @@ export function SetAvailabilityDialog({ player, availability, children }: SetAva
         return acc;
     }, {} as Availability);
 
-
-    const availablePlayerDocRef = doc(firestore, 'availablePlayers', user.uid);
-
     try {
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 const { latitude, longitude } = position.coords;
-                const newAvailablePlayer: Omit<AvailablePlayer, 'id'> = {
-                    uid: user.uid,
-                    displayName: player.name,
-                    photoUrl: player.photoUrl || '',
-                    position: player.position,
-                    ovr: player.ovr,
-                    location: { lat: latitude, lng: longitude },
-                    availability: cleanAvailability,
-                };
-                await setDoc(availablePlayerDocRef, newAvailablePlayer, { merge: true });
+        await saveUserLocationAction(latitude, longitude);
+        const result = await setAvailabilityAction(cleanAvailability, { lat: latitude, lng: longitude });
+        if (!result.success) {
+          throw new Error(result.error || 'No se pudo guardar la disponibilidad.');
+        }
                 toast({ title: 'Disponibilidad actualizada', description: 'Tus preferencias de horario han sido guardadas.' });
                 setOpen(false);
                 setIsSubmitting(false);

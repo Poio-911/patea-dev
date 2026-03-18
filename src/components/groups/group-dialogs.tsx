@@ -5,9 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useFirestore, useUser } from '@/firebase';
-import { collection, addDoc, updateDoc, doc, query, where, getDocs, arrayUnion, writeBatch } from 'firebase/firestore';
-import { nanoid } from 'nanoid';
+import { useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { Group } from '@/lib/types';
 import {
@@ -24,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { createGroupAction, editGroupNameAction, joinGroupByInviteCodeAction } from '@/lib/actions/group-actions';
 
 interface DialogProps {
     open: boolean;
@@ -38,34 +37,16 @@ type CreateGroupForm = z.infer<typeof createGroupSchema>;
 
 export function CreateGroupDialog({ open, onOpenChange, children }: DialogProps) {
   const [isCreating, setIsCreating] = useState(false);
-  const { user } = useUser();
-  const firestore = useFirestore();
   const { toast } = useToast();
   const form = useForm<CreateGroupForm>({ resolver: zodResolver(createGroupSchema), defaultValues: { name: '' } });
 
   const handleCreateGroup = async (data: CreateGroupForm) => {
-    if (!firestore || !user?.uid) return;
     setIsCreating(true);
     try {
-      const inviteCode = nanoid(8);
-      const batch = writeBatch(firestore);
-      
-      const newGroupRef = doc(collection(firestore, 'groups'));
-      const groupData: Omit<Group, 'id'> = {
-        name: data.name,
-        ownerUid: user.uid,
-        inviteCode,
-        members: [user.uid],
-      };
-      batch.set(newGroupRef, groupData);
-      
-      const userRef = doc(firestore, 'users', user.uid);
-      batch.update(userRef, {
-        activeGroupId: newGroupRef.id,
-        groups: arrayUnion(newGroupRef.id)
-      });
-      
-      await batch.commit();
+      const result = await createGroupAction(data.name);
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudo crear el grupo.');
+      }
 
       toast({ title: "Grupo creado", description: `"${data.name}" ha sido creado.` });
       onOpenChange(false);
@@ -113,38 +94,18 @@ type JoinGroupForm = z.infer<typeof joinGroupSchema>;
 
 export function JoinGroupDialog({ open, onOpenChange, children }: DialogProps) {
     const [isJoining, setIsJoining] = useState(false);
-    const { user } = useUser();
-    const firestore = useFirestore();
     const { toast } = useToast();
     const form = useForm<JoinGroupForm>({ resolver: zodResolver(joinGroupSchema), defaultValues: { inviteCode: '' } });
 
     const handleJoinGroup = async (data: JoinGroupForm) => {
-        if (!firestore || !user?.uid) return;
         setIsJoining(true);
         try {
-            const codeToSearch = data.inviteCode;
-            const groupsQuery = query(collection(firestore, 'groups'), where('inviteCode', '==', codeToSearch));
-            const snapshot = await getDocs(groupsQuery);
+      const result = await joinGroupByInviteCodeAction(data.inviteCode);
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudo unir al grupo.');
+      }
 
-            if (snapshot.empty) {
-                toast({ variant: 'destructive', title: "Código inválido", description: "No se encontró ningún grupo con ese código. Verificá que esté escrito exactamente igual." });
-                setIsJoining(false);
-                return;
-            }
-
-            const groupDoc = snapshot.docs[0];
-            const groupData = groupDoc.data() as Group;
-
-            if (groupData.members.includes(user.uid)) {
-                toast({ variant: 'destructive', title: "Ya eres miembro", description: "Ya perteneces a este grupo." });
-                setIsJoining(false);
-                return;
-            }
-
-            await updateDoc(groupDoc.ref, { members: arrayUnion(user.uid) });
-            await updateDoc(doc(firestore, 'users', user.uid), { activeGroupId: groupDoc.id, groups: arrayUnion(groupDoc.id) });
-
-            toast({ title: "¡Te has unido!", description: `Ahora eres miembro de "${groupData.name}".` });
+      toast({ title: "¡Te has unido!", description: `Ahora eres miembro de "${result.groupName}".` });
             onOpenChange(false);
             form.reset();
         } catch (error) {
@@ -208,7 +169,6 @@ export function EditGroupDialog({
     };
 
     const [isEditing, setIsEditing] = useState(false);
-    const firestore = useFirestore();
     const { toast } = useToast();
     const form = useForm<EditGroupForm>({
         resolver: zodResolver(editGroupSchema),
@@ -216,10 +176,12 @@ export function EditGroupDialog({
     });
 
     const handleEditGroup = async (data: EditGroupForm) => {
-        if (!firestore) return;
         setIsEditing(true);
         try {
-            await updateDoc(doc(firestore, 'groups', group.id), { name: data.name });
+        const result = await editGroupNameAction(group.id, data.name);
+        if (!result.success) {
+          throw new Error(result.error || 'No se pudo actualizar el nombre del grupo.');
+        }
             toast({ title: "Grupo actualizado" });
             setOpen(false);
         } catch (error) {

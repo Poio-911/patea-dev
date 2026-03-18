@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -59,12 +59,7 @@ export function GroupMembersManager({ groupId, ownerId }: GroupMembersManagerPro
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<MemberWithInfo | null>(null);
 
-  useEffect(() => {
-    loadMembers();
-    loadCurrentUserRole();
-  }, [groupId]);
-
-  const loadMembers = async () => {
+  const loadMembers = useCallback(async () => {
     try {
       const result = await getGroupMembersWithRolesAction(groupId);
       if (result.success && result.members) {
@@ -75,9 +70,9 @@ export function GroupMembersManager({ groupId, ownerId }: GroupMembersManagerPro
       console.error('Error loading members:', error);
       setIsLoading(false);
     }
-  };
+  }, [groupId]);
 
-  const loadCurrentUserRole = async () => {
+  const loadCurrentUserRole = useCallback(async () => {
     if (!user?.uid) return;
 
     try {
@@ -88,7 +83,12 @@ export function GroupMembersManager({ groupId, ownerId }: GroupMembersManagerPro
     } catch (error) {
       console.error('Error loading current user role:', error);
     }
-  };
+  }, [groupId, user?.uid]);
+
+  useEffect(() => {
+    loadMembers();
+    loadCurrentUserRole();
+  }, [loadCurrentUserRole, loadMembers]);
 
   const handleChangeRole = async (targetUserId: string, newRole: GroupRole) => {
     setActionLoading(targetUserId);

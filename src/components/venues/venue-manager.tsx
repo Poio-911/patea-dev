@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -81,11 +81,7 @@ export function VenueManager({ groupId }: VenueManagerProps) {
     notes: '',
   });
 
-  useEffect(() => {
-    loadVenues();
-  }, [groupId]);
-
-  const loadVenues = async () => {
+  const loadVenues = useCallback(async () => {
     try {
       const result = await getGroupVenuesAction(groupId);
       if (result.success && result.venues) {
@@ -96,7 +92,11 @@ export function VenueManager({ groupId }: VenueManagerProps) {
       console.error('Error loading venues:', error);
       setIsLoading(false);
     }
-  };
+  }, [groupId]);
+
+  useEffect(() => {
+    loadVenues();
+  }, [loadVenues]);
 
   const resetForm = () => {
     setFormData({

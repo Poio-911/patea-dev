@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useTransition, useRef, useMemo } from 'react';
+import { useState, useEffect, useTransition, useRef, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,19 +49,20 @@ export function AvailablePostsGrid({ userId, userTeams, isActive = true }: Avail
 
   // ✅ Query all invitations for user's teams to check which posts are already challenged
   // Force recompile
-  const myTeams = userTeams.filter(team => team.createdBy === userId);
-  const myTeamIds = myTeams.map(team => team.id);
+  const myTeams = useMemo(() => userTeams.filter(team => team.createdBy === userId), [userTeams, userId]);
+  const myTeamIds = useMemo(() => myTeams.map(team => team.id), [myTeams]);
+  const challengerTeamIds = useMemo(() => myTeamIds.slice(0, 10), [myTeamIds]);
 
   const invitationsQuery = useMemo(() => {
-    if (!firestore || myTeamIds.length === 0) return null;
+    if (!firestore || challengerTeamIds.length === 0) return null;
     // Query invitations where user's teams are the challenger
     return query(
       collection(firestore, 'invitations'),
       where('type', '==', 'team_challenge'),
-      where('fromTeamId', 'in', myTeamIds.slice(0, 10)), // Firestore limit
+      where('fromTeamId', 'in', challengerTeamIds),
       where('status', '==', 'pending')
     );
-  }, [firestore, myTeamIds.join(',')]);
+  }, [challengerTeamIds, firestore]);
 
   const { data: sentInvitations } = useCollection<Invitation>(invitationsQuery);
 
@@ -114,14 +115,14 @@ export function AvailablePostsGrid({ userId, userTeams, isActive = true }: Avail
     return filtered;
   }, [posts, searchTerm, dateFilter]);
 
-  const loadPosts = async () => {
+  const loadPosts = useCallback(async () => {
     setLoading(true);
     const result = await getAvailableTeamPostsAction(userId);
     if ('posts' in result && result.posts) {
       setPosts(result.posts);
     }
     setLoading(false);
-  };
+  }, [userId]);
 
   useEffect(() => {
     // Only load when active and hasn't loaded before
@@ -129,7 +130,7 @@ export function AvailablePostsGrid({ userId, userTeams, isActive = true }: Avail
       hasLoadedRef.current = true;
       loadPosts();
     }
-  }, [isActive, userId]);
+  }, [isActive, loadPosts]);
 
   const handleChallengePost = () => {
     if (!selectedPost || !selectedTeamId) return;
@@ -332,7 +333,7 @@ export function AvailablePostsGrid({ userId, userTeams, isActive = true }: Avail
           <DialogHeader>
             <DialogTitle>Seleccioná tu equipo</DialogTitle>
             <DialogDescription>
-              ¿Con qué equipo querés aceptar el desafío de "{selectedPost?.teamName}"?
+              ¿Con qué equipo querés aceptar el desafío de &ldquo;{selectedPost?.teamName}&rdquo;?
             </DialogDescription>
           </DialogHeader>
 

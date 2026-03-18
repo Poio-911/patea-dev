@@ -2,7 +2,7 @@
 'use client';
 
 import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
-import { doc, collection, query, writeBatch, runTransaction, getDocs, where, addDoc, deleteDoc } from 'firebase/firestore';
+import { doc, collection, query, where } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
 import type { Match, Player, EvaluationAssignment, Evaluation, OvrHistory, SelfEvaluation, PerformanceTag } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
@@ -23,6 +23,7 @@ import { updateLeagueStandingsAction, advanceCupWinnerAction } from '@/lib/actio
 import { isErrorResponse } from '@/lib/errors';
 import { BackButton } from '@/components/navigation/back-button';
 import { cn } from '@/lib/utils';
+import { processPendingEvaluationSubmissionsAction } from '@/lib/actions/evaluation-actions';
 
 // Helper to determine if a player is a "real user"
 const isRealUser = (player: Player) => player.id === player.ownerUid;
@@ -66,100 +67,30 @@ export default function EvaluateMatchPage() {
     const { data: assignments, loading: assignmentsLoading } = useCollection<EvaluationAssignment>(assignmentsQuery);
 
     const processPendingSubmissions = useCallback(async () => {
-        if (!firestore || !matchId) return;
+        if (!matchId) return;
         setIsProcessingSubmissions(true);
 
         try {
-            // ✅ Use runTransaction for atomicity and to prevent race conditions
-            await runTransaction(firestore, async (transaction) => {
-                const submissionsQuery = query(collection(firestore, 'evaluationSubmissions'), where('matchId', '==', matchId));
-                const snapshot = await getDocs(submissionsQuery);
+            const result = await processPendingEvaluationSubmissionsAction(matchId);
+            if (!result.success) {
+                throw new Error(result.error || 'No se pudieron procesar las evaluaciones pendientes.');
+            }
 
-                if (snapshot.empty) {
-                    setPendingSubmissionsCount(0); // Ensure count is reset if no submissions
-                    return;
-                }
+            const processedCount = result.processedCount || 0;
+            setPendingSubmissionsCount(processedCount);
 
-                setPendingSubmissionsCount(snapshot.size);
-
-                for (const submissionDoc of snapshot.docs) {
-                    const submissionData = submissionDoc.data();
-
-                    // ✅ SOFT DELETE: Move to processedSubmissions with processing metadata
-                    const processedRef = doc(collection(firestore, `matches/${matchId}/processedSubmissions`));
-                    transaction.set(processedRef, {
-                        ...submissionData,
-                        processedAt: new Date().toISOString(),
-                        originalSubmissionId: submissionDoc.id,
-                        processingStatus: 'completed',
-                    });
-
-                    // Delete original submission (data preserved in processedSubmissions)
-                    transaction.delete(submissionDoc.ref);
-
-                    const { evaluatorId, submission: formData } = submissionData;
-
-                    // Create self-evaluation if player contributed (goals, assists OR MVP vote)
-                    if (formData.evaluatorGoals > 0 || (formData.evaluatorAssists && formData.evaluatorAssists > 0) || formData.mvpVote) {
-                        const selfEvalRef = doc(collection(firestore, `matches/${matchId}/selfEvaluations`));
-                        transaction.set(selfEvalRef, {
-                            playerId: evaluatorId,
-                            matchId,
-                            goals: formData.evaluatorGoals || 0,
-                            assists: formData.evaluatorAssists || 0,
-                            mvpVote: formData.mvpVote || null,
-                            reportedAt: submissionData.submittedAt,
-                        });
-                    }
-
-                    // Create peer evaluations
-                    for (const evaluation of formData.evaluations) {
-                        const evalRef = doc(collection(firestore, 'evaluations'));
-                        const newEvaluation: Omit<Evaluation, 'id'> = {
-                            assignmentId: evaluation.assignmentId,
-                            playerId: evaluation.subjectId,
-                            evaluatorId,
-                            matchId: matchId as string,
-                            goals: 0,
-                            evaluatedAt: submissionData.submittedAt,
-                        };
-
-                        if (evaluation.evaluationType === 'points') {
-                            newEvaluation.rating = evaluation.rating;
-                        } else if (evaluation.evaluationType === 'tags') {
-                            newEvaluation.performanceTags = evaluation.performanceTags;
-                        } else if (evaluation.evaluationType === 'text') {
-                            // Save AI attribute changes for direct attribute impact
-                            if ((evaluation as any).aiAttributeChanges) {
-                                newEvaluation.aiAttributeChanges = (evaluation as any).aiAttributeChanges;
-                                newEvaluation.aiConfidence = (evaluation as any).aiConfidence;
-                            }
-                            // Text and summary for reference
-                            newEvaluation.textDescription = evaluation.textDescription || '';
-                            if ((evaluation as any).aiSummary) newEvaluation.aiSummary = (evaluation as any).aiSummary;
-                        }
-
-                        transaction.set(evalRef, newEvaluation);
-
-                        // Update assignment status
-                        const assignmentRef = doc(firestore, 'matches', matchId as string, 'assignments', evaluation.assignmentId);
-                        transaction.update(assignmentRef, { status: 'completed', evaluationId: evalRef.id });
-                    }
-                }
-            });
-
-            if (pendingSubmissionsCount > 0) {
-                toast({ title: "Nuevas evaluaciones procesadas", description: `${pendingSubmissionsCount} envío(s) de evaluaciones han sido registrados.` });
+            if (processedCount > 0) {
+                toast({ title: "Nuevas evaluaciones procesadas", description: `${processedCount} envío(s) de evaluaciones han sido registrados.` });
             }
 
         } catch (error) {
-            console.error("Error processing submissions transaction:", error);
+            console.error("Error processing submissions:", error);
             toast({ variant: 'destructive', title: 'Error de Transacción', description: 'No se pudieron procesar las evaluaciones pendientes. Reintentando...' });
         } finally {
             setIsProcessingSubmissions(false);
             setPendingSubmissionsCount(0);
         }
-    }, [firestore, matchId, toast, pendingSubmissionsCount]);
+    }, [matchId, toast]);
 
     useEffect(() => {
         if (match && match.status !== 'evaluated') {

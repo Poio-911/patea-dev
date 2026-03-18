@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   ResponsiveDialog as Dialog,
   ResponsiveDialogContent as DialogContent,
@@ -57,14 +57,7 @@ export function ImportActivityDialog({ matchId, playerId, matchDate, children }:
   const isConnected = connection && connection.isActive;
   const isExpired = connection && new Date(connection.expiresAt) < new Date();
 
-  // Fetch activities when dialog opens and Google Fit is connected
-  useEffect(() => {
-    if (open && isConnected && !isExpired && user) {
-      fetchActivities();
-    }
-  }, [open, isConnected, isExpired, user]);
-
-  const fetchActivities = async () => {
+  const fetchActivities = useCallback(async () => {
     if (!user) return;
 
     setIsLoading(true);
@@ -100,7 +93,14 @@ export function ImportActivityDialog({ matchId, playerId, matchDate, children }:
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [matchDate, toast, user]);
+
+  // Fetch activities when dialog opens and Google Fit is connected
+  useEffect(() => {
+    if (open && isConnected && !isExpired && user) {
+      fetchActivities();
+    }
+  }, [fetchActivities, isConnected, isExpired, open, user]);
 
   const handleLinkActivity = async (activity: GoogleFitActivity) => {
     if (!user) return;
@@ -289,7 +289,7 @@ export function ImportActivityDialog({ matchId, playerId, matchDate, children }:
                         ({format(matchDate, "d 'de' MMMM 'de' yyyy", { locale: es })}).
                       </p>
                       <p className="text-xs text-muted-foreground mt-2">
-                        Podés usar la pestaña "Entrada Manual" para ingresar tus métricas.
+                        Podés usar la pestaña &ldquo;Entrada Manual&rdquo; para ingresar tus métricas.
                       </p>
                     </div>
                   </div>

@@ -204,7 +204,7 @@ function FreeAgentCard({
                 <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl flex items-start gap-2">
                   <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                   <p className="text-xs font-semibold text-foreground/80 leading-snug">
-                    "{aiRecommendation.reason}"
+                    &ldquo;{aiRecommendation.reason}&rdquo;
                   </p>
                 </div>
               )}

@@ -1,0 +1,22 @@
+[
+  {
+    "route": "/login",
+    "viewport": "desktop",
+    "url": "http://127.0.0.1:3000/login",
+    "finalUrl": "http://127.0.0.1:3000/login",
+    "status": null,
+    "loginError": null,
+    "consoleErrors": [],
+    "textSnippet": "!function(){try{var d=document.documentElement,c=d.classList;c.remove('light','game');var e=localStorage.getItem('theme');if(e){c.add(e|| '')}else{c.add('light');}if(e==='light'||e==='dark'||!e)d.style.colorScheme=e||'light'}catch(t){}}();PateáInicia sesión para organizar los partidos con tus amigos"
+  },
+  {
+    "route": "/login",
+    "viewport": "mobile",
+    "url": "http://127.0.0.1:3000/login",
+    "finalUrl": "http://127.0.0.1:3000/login",
+    "status": null,
+    "loginError": null,
+    "consoleErrors": [],
+    "textSnippet": "!function(){try{var d=document.documentElement,c=d.classList;c.remove('light','game');var e=localStorage.getItem('theme');if(e){c.add(e|| '')}else{c.add('light');}if(e==='light'||e==='dark'||!e)d.style.colorScheme=e||'light'}catch(t){}}();PateáInicia sesión para organizar los partidos con tus amigos"
+  }
+]

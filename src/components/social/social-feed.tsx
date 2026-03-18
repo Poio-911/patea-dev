@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Users, Activity, Rss } from 'lucide-react';
@@ -21,7 +21,7 @@ export function SocialFeed({ limit = 20, showHeader = true }: SocialFeedProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const loadActivities = async (refresh = false) => {
+  const loadActivities = useCallback(async (refresh = false) => {
     if (!user) return;
 
     if (refresh) {
@@ -41,11 +41,11 @@ export function SocialFeed({ limit = 20, showHeader = true }: SocialFeedProps) {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  };
+  }, [limit, user]);
 
   useEffect(() => {
     loadActivities();
-  }, [user]);
+  }, [loadActivities]);
 
   if (!user) {
     return (

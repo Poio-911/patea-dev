@@ -68,6 +68,7 @@ export function NikeBackground() {
   // If mode is image and images exist, render rotating image background
   if (mode === 'image' && NIKE_IMAGES.length > 0) {
     return (
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         className="image-background"
         src={NIKE_IMAGES[currentImage]}

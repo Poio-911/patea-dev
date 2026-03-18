@@ -10,7 +10,6 @@ import {
   collection,
   query,
   where,
-  addDoc,
   getDocs,
 } from 'firebase/firestore'
 import { Loader2, Save, ShieldCheck, Goal, Plus, Minus, FileClock, ChevronLeft, ChevronRight, Zap } from 'lucide-react'
@@ -31,6 +30,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { PerformanceTag, performanceTagsDb } from '@/lib/performance-tags'
 import { cn } from '@/lib/utils'
 import type { Player, EvaluationAssignment, PlayerEvaluationFormData } from '@/lib/types'
+import { submitEvaluationSubmissionAction } from '@/lib/actions/evaluation-actions'
 
 // --- Zod Validation (CORREGIDO Y REFORZADO) ---
 const pointsEvaluationSchema = z.object({
@@ -245,18 +245,14 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
   }, [assignments, allGroupPlayers, replace, assignmentsLoading, playersLoading, getRandomTagsForPosition])
 
   const onSubmit = async (data: EvaluationFormData) => {
-    if (!firestore || !user || !matchId) return
+    if (!user || !matchId) return
 
     setIsSubmitting(true)
     try {
-      const submissionData = {
-        evaluatorId: user.uid,
-        matchId,
-        submittedAt: new Date().toISOString(),
-        submission: data,
-      };
-
-      await addDoc(collection(firestore, 'evaluationSubmissions'), submissionData);
+      const result = await submitEvaluationSubmissionAction(matchId, data as unknown as Record<string, unknown>);
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudieron enviar las evaluaciones.');
+      }
 
       toast({
         title: '¡Evaluaciones en camino!',

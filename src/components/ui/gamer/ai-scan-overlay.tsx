@@ -97,7 +97,7 @@ export function AiScanOverlay({ isScanning, result }: AiScanOverlayProps) {
 
                     {/* Summary Text */}
                     <div className="bg-muted/50 dark:bg-white/5 rounded-lg p-3 border border-border dark:border-white/5">
-                        <p className="text-sm text-zinc-600 dark:text-zinc-300 italic leading-relaxed">"{result.summary}"</p>
+                        <p className="text-sm text-zinc-600 dark:text-zinc-300 italic leading-relaxed">&ldquo;{result.summary}&rdquo;</p>
                     </div>
                 </motion.div>
             )}

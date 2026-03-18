@@ -2,13 +2,13 @@
 
 'use client';
 
-import { useUser, useFirestore, initializeFirebase } from '@/firebase';
+import { useUser, initializeFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useAuth } from '@/firebase';
-import { createSessionCookie } from '@/lib/auth-actions';
+import { createSessionCookie, initializeUserProfileAction } from '@/lib/auth-actions';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,7 +17,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { writeBatch, collection, doc } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { nanoid } from 'nanoid';
 import type { Group, Player } from '@/lib/types';
@@ -40,7 +39,6 @@ export default function RegisterPage() {
     const { user, loading } = useUser();
     const router = useRouter();
     const auth = useAuth();
-    const firestore = useFirestore();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -65,7 +63,7 @@ export default function RegisterPage() {
 
 
     const onSubmit = async (data: RegisterFormValues) => {
-        if (!auth || !firestore) return;
+        if (!auth) return;
         setIsSubmitting(true);
 
         try {
@@ -127,50 +125,18 @@ export default function RegisterPage() {
                 photoURL: finalPhotoURL,
             });
 
-            // Step 3: Create Firestore documents in a batch for atomicity
-            const batch = writeBatch(firestore);
-
-            // 3a. Create user document in /users
-            const userRef = doc(firestore, 'users', newUser.uid);
-            const newUserProfile = {
-                uid: newUser.uid,
+            // Step 3: Initialize Firestore documents server-side using the session cookie
+            const initResult = await initializeUserProfileAction({
                 email: newUser.email,
                 displayName: data.displayName,
-                photoURL: finalPhotoURL,
-                groups: [],
-                activeGroupId: null,
-            };
-            batch.set(userRef, newUserProfile);
-
-            // 3b. Create player document in /players
-            const playerRef = doc(firestore, 'players', newUser.uid);
-            const baseStat = 50;
-            const newPlayer: Omit<Player, 'id'> = {
-                name: data.displayName,
                 position: data.position,
-                pac: baseStat,
-                sho: baseStat,
-                pas: baseStat,
-                dri: baseStat,
-                def: baseStat,
-                phy: baseStat,
-                ovr: baseStat,
-                photoUrl: finalPhotoURL || '',
-                stats: { matchesPlayed: 0, goals: 0, assists: 0, averageRating: 0 },
-                ownerUid: newUser.uid,
-                groupId: null,
-                cardGenerationCredits: 3,
-                lastCreditReset: new Date().toISOString(),
-            };
-            batch.set(playerRef, newPlayer);
+                photoURL: finalPhotoURL,
+            });
 
-            try {
-                await batch.commit();
-            } catch (batchError) {
-                console.error("Firestore batch error, rolling back user creation:", batchError);
-                // Si falla Firestore, eliminamos la criatura de Firebase Auth para no dejar cuentas huérfanas
+            if (!initResult.success) {
+                console.error("Firestore initialization error, rolling back user creation:", initResult.error);
                 await newUser.delete();
-                throw new Error("No pudimos inicializar tu cuenta en la base de datos (Error de red o permisos). Intenta de nuevo.");
+                throw new Error(initResult.error || "No pudimos inicializar tu cuenta en la base de datos. Intenta de nuevo.");
             }
 
             // Create social activity for player creation

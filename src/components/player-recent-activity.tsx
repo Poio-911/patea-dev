@@ -278,7 +278,7 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
                     <div className="bg-muted/30 p-3 rounded-lg italic text-sm text-muted-foreground border border-dashed relative">
                       <Quote className="h-6 w-6 text-muted-foreground/10 absolute top-2 right-2 rotate-180" />
                       <span className="font-semibold text-foreground/80 not-italic block mb-1 text-xs uppercase tracking-wider">Tu Crónica</span>
-                      "{selfEvaluation.personalChronicle}"
+                      &ldquo;{selfEvaluation.personalChronicle}&rdquo;
                     </div>
                   )}
 
@@ -414,7 +414,7 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
                                   {/* 3. Text Description */}
                                   {evalItem.textDescription ? (
                                     <div className="relative mt-2 p-3 bg-muted/40 rounded-r-lg border-l-2 border-primary/20 text-sm text-foreground/80 italic">
-                                      "{evalItem.textDescription}"
+                                      &ldquo;{evalItem.textDescription}&rdquo;
                                     </div>
                                   ) : (
                                     // If empty text, no placeholder needed if we have rating or tags

@@ -67,7 +67,7 @@ export function TeamCard({ team, players, isOwner, onEdit, onDelete }: TeamCardP
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle>¿Eliminar "{team.name}"?</AlertDialogTitle>
+                                    <AlertDialogTitle>¿Eliminar &ldquo;{team.name}&rdquo;?</AlertDialogTitle>
                                     <AlertDialogDescription>Esta acción no se puede deshacer. El equipo y su plantel serán eliminados permanentemente.</AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

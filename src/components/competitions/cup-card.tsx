@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import type { Cup } from '@/lib/types';
 import { Progress } from '@/components/ui/progress';
@@ -44,14 +45,14 @@ export function CupCard({ cup }: CupCardProps) {
           <div className="flex items-start gap-3">
             <div
               className={cn(
-                'w-14 h-14 rounded-xl overflow-hidden shrink-0 flex items-center justify-center',
+                'relative w-14 h-14 rounded-xl overflow-hidden shrink-0 flex items-center justify-center',
                 cup.logoUrl
                   ? 'bg-muted/30 border border-border'
                   : 'bg-amber-500/10',
               )}
             >
               {cup.logoUrl ? (
-                <img src={cup.logoUrl} alt={cup.name} className="w-full h-full object-contain" />
+                <Image src={cup.logoUrl} alt={cup.name} fill sizes="56px" unoptimized className="object-contain" />
               ) : (
                 <Trophy className="h-7 w-7 text-amber-500" strokeWidth={1.5} />
               )}

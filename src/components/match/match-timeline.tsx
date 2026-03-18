@@ -94,7 +94,7 @@ export function MatchTimeline({ events, currentMinute = 0, className }: MatchTim
               <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p>No hay eventos registrados</p>
               {currentMinute > 0 && (
-                <p className="text-sm">Minuto actual: {currentMinute}'</p>
+                <p className="text-sm">Minuto actual: {currentMinute}&rsquo;</p>
               )}
             </div>
           ) : (
@@ -103,7 +103,7 @@ export function MatchTimeline({ events, currentMinute = 0, className }: MatchTim
               {currentMinute > 0 && (
                 <div className="flex items-center gap-3 p-3 rounded-lg border-2 border-primary bg-primary/5">
                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                    {currentMinute}'
+                    {currentMinute}&rsquo;
                   </div>
                   <div className="flex-1">
                     <div className="font-medium text-primary">
@@ -129,7 +129,7 @@ export function MatchTimeline({ events, currentMinute = 0, className }: MatchTim
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <Badge variant="outline" className="text-xs">
-                          {event.minute}'
+                          {event.minute}&rsquo;
                         </Badge>
                         <span className="text-xs text-muted-foreground">
                           {new Date(event.timestamp).toLocaleTimeString()}

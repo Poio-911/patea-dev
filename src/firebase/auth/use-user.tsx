@@ -3,11 +3,12 @@
 import { useEffect, useState, createContext, useContext } from 'react';
 import type { User } from 'firebase/auth';
 import { useAuth } from '@/firebase';
-import { doc, setDoc, getDoc, serverTimestamp, onSnapshot, FieldValue } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { UserProfile, Player } from '@/lib/types';
 import { logger } from '@/lib/logger';
 import { CREDITS } from '@/lib/constants';
+import { ensureUserProfileDocumentAction, syncPlayerActiveGroupAction } from '@/lib/auth-actions';
 
 const UserContext = createContext<{ user: UserProfile | null; loading: boolean }>({
   user: null,
@@ -59,11 +60,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
               const playerDoc = await getDoc(playerRef);
               if (playerDoc.exists()) {
                 const playerData = playerDoc.data() as Player;
-                const updates: Partial<Player> = {};
-
-                if (userData.activeGroupId && playerData.groupId !== userData.activeGroupId) {
-                  updates.groupId = userData.activeGroupId;
-                }
 
                 // CLIENT-SIDE FALLBACK via API: trigger server-side monthly credit reset if needed
                 // Uses a server action to ensure serverTimestamp consistency.
@@ -89,10 +85,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                   }
                 }
 
-                if (Object.keys(updates).length > 0) {
-                  logger.info('Syncing player data', { userId: firebaseUser.uid, updates });
-                  // Update only group-related fields client-side; credit reset happens server-side
-                  await setDoc(playerRef, updates, { merge: true });
+                if (userData.activeGroupId !== undefined && playerData.groupId !== userData.activeGroupId) {
+                  logger.info('Syncing player group via server action', { userId: firebaseUser.uid, activeGroupId: userData.activeGroupId });
+                  await syncPlayerActiveGroupAction(userData.activeGroupId || null);
                 }
               }
              } catch (e) {
@@ -103,22 +98,13 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
              setLoading(false);
 
           } else {
-            // This part is now primarily for brand new users after registration.
-            const newUserProfile: UserProfile & { createdAt: FieldValue } = {
-              uid: firebaseUser.uid,
+            ensureUserProfileDocumentAction({
               email: firebaseUser.email,
               displayName: firebaseUser.displayName,
               photoURL: firebaseUser.photoURL,
-              createdAt: serverTimestamp(),
-              groups: [],
-              activeGroupId: null,
-            };
-            setDoc(userRef, newUserProfile)
-              .then(() => {
-                setUser(newUserProfile);
-              })
+            })
               .catch(e => {
-                logger.error("[useUser] Error creating user profile:", e, { uid: firebaseUser.uid });
+                logger.error("[useUser] Error ensuring user profile:", e, { uid: firebaseUser.uid });
               })
               .finally(() => {
                 setLoading(false);
@@ -141,7 +127,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         unsubUser();
       }
     };
-  }, [auth, firestore]);
+  }, [auth, firestore, loading]);
 
   return (
     <UserContext.Provider value={{ user, loading }}>

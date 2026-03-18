@@ -36,6 +36,12 @@ export function LeagueMatchView({ match, leagueId, userId }: LeagueMatchViewProp
     const isCompleted = match.status === 'completed' || match.status === 'evaluated';
     const isOwner = userId === match.ownerUid;
 
+    // Sync local state if match prop changes (e.g. goals added in visualizer)
+    useEffect(() => {
+        setTeam1Score(match.finalScore?.team1?.toString() || match.teams?.[0]?.finalScore?.toString() || '0');
+        setTeam2Score(match.finalScore?.team2?.toString() || match.teams?.[1]?.finalScore?.toString() || '0');
+    }, [match.finalScore, match.teams]);
+
     if (!team1 || !team2) {
         return (
             <div className="max-w-4xl mx-auto p-8 text-center">
@@ -43,12 +49,6 @@ export function LeagueMatchView({ match, leagueId, userId }: LeagueMatchViewProp
             </div>
         );
     }
-
-    // ✅ Sync local state if match prop changes (e.g. goals added in visualizer)
-    useEffect(() => {
-        setTeam1Score(match.finalScore?.team1?.toString() || match.teams?.[0]?.finalScore?.toString() || '0');
-        setTeam2Score(match.finalScore?.team2?.toString() || match.teams?.[1]?.finalScore?.toString() || '0');
-    }, [match.finalScore, match.teams]);
 
     const handleFinalize = async () => {
         const score1 = parseInt(team1Score);

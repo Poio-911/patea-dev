@@ -310,7 +310,7 @@ function PeerEvalList({
               {/* Text eval: summary */}
               {evalType === 'text' && (ev.aiSummary || ev.textDescription) && (
                 <p className="text-xs text-muted-foreground italic border-l-2 border-primary/20 pl-2">
-                  "{ev.aiSummary ?? ev.textDescription!.slice(0, 120)}"
+                  &ldquo;{ev.aiSummary ?? ev.textDescription!.slice(0, 120)}&rdquo;
                 </p>
               )}
             </div>
@@ -625,7 +625,7 @@ export function PlayerMatchDebriefView({ playerId, compact }: PlayerMatchDebrief
       }
     }
     fetchActivity();
-  }, [firestore, playerId]);
+  }, [firestore, playerId, user?.uid]);
 
   // ── Hero Stats ────────────────────────────────────────────────────────────────
   const heroStats = useMemo(() => {

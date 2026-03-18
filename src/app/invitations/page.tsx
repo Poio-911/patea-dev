@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
-import { collectionGroup, query, where, orderBy, writeBatch, doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
-import type { Invitation, Match, Player } from '@/lib/types';
+import { collectionGroup, query, where } from 'firebase/firestore';
+import type { Invitation } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { BackButton } from '@/components/navigation/back-button';
@@ -14,6 +14,7 @@ import { InvitationCard, RespondedInvitationCard } from '@/components/invitation
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { acceptPlayerMatchInvitationAction, rejectPlayerMatchInvitationAction } from '@/lib/actions/match-invitation-actions';
 
 export default function InvitationsPage() {
   const { user, loading: userLoading } = useUser();
@@ -46,7 +47,7 @@ export default function InvitationsPage() {
   const { data: respondedInvitations, loading: respondedLoading } = useCollection<Invitation>(respondedQuery);
 
   const handleAccept = async (invitation: Invitation) => {
-    if (!firestore || !user) return;
+    if (!user) return;
     setProcessingId(invitation.id);
 
     const matchId = invitation.matchId;
@@ -55,51 +56,20 @@ export default function InvitationsPage() {
       setProcessingId(null);
       return;
     }
-
-    const invitationRef = doc(firestore, 'matches', matchId, 'invitations', invitation.id);
-
     try {
-      const batch = writeBatch(firestore);
-      const matchRef = doc(firestore, 'matches', matchId);
-      const playerRef = doc(firestore, 'players', user.uid);
-
-      const [matchSnap, playerSnap] = await Promise.all([getDoc(matchRef), getDoc(playerRef)]);
-
-      if (!matchSnap.exists() || !playerSnap.exists()) {
-        throw new Error('No se encontró el partido o tu perfil de jugador.');
+      const result = await acceptPlayerMatchInvitationAction(matchId, invitation.id);
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudo aceptar la invitación.');
       }
-
-      const matchData = matchSnap.data() as Match;
-      const playerData = playerSnap.data() as Player;
-
-      if (matchData.players.length >= matchData.matchSize) {
-        throw new Error('El partido ya está lleno.');
-      }
-
-      const playerPayload = {
-        uid: user.uid,
-        displayName: playerData.name,
-        ovr: playerData.ovr,
-        position: playerData.position,
-        photoURL: (playerData as any).photoUrl || playerData.photoURL || ''
-      };
-
-      batch.update(matchRef, {
-        players: arrayUnion(playerPayload),
-        playerUids: arrayUnion(user.uid)
-      });
-
-      batch.update(invitationRef, { status: 'accepted' });
-      await batch.commit();
 
       toast({
         title: 'Te uniste al partido',
-        description: `Te has sumado a "${matchData.title}".`
+        description: 'Te has sumado al partido.'
       });
     } catch (error: any) {
       console.error('Error accepting invitation:', error);
       errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: invitationRef.path,
+        path: `matches/${matchId}/invitations/${invitation.id}`,
         operation: 'update',
         requestResourceData: { status: 'accepted' }
       }));
@@ -114,7 +84,7 @@ export default function InvitationsPage() {
   };
 
   const handleReject = async (invitation: Invitation) => {
-    if (!firestore || !user) return;
+    if (!user) return;
     setProcessingId(invitation.id);
 
     const matchId = invitation.matchId;
@@ -123,11 +93,11 @@ export default function InvitationsPage() {
       setProcessingId(null);
       return;
     }
-
-    const invitationRef = doc(firestore, 'matches', matchId, 'invitations', invitation.id);
-
     try {
-      await updateDoc(invitationRef, { status: 'declined' });
+      const result = await rejectPlayerMatchInvitationAction(matchId, invitation.id);
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudo rechazar la invitación.');
+      }
       toast({
         title: 'Invitación rechazada',
         description: 'Has rechazado la invitación al partido.'
@@ -135,7 +105,7 @@ export default function InvitationsPage() {
     } catch (error: any) {
       console.error('Error rejecting invitation:', error);
       errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: invitationRef.path,
+        path: `matches/${matchId}/invitations/${invitation.id}`,
         operation: 'update',
         requestResourceData: { status: 'declined' }
       }));

@@ -188,9 +188,10 @@ export function PlayersMap({
 
   // Clean up all markers on unmount
   useEffect(() => {
+    const markers = markersRef.current;
     return () => {
-      markersRef.current.forEach((m) => m.setMap(null));
-      markersRef.current.clear();
+      markers.forEach((m) => m.setMap(null));
+      markers.clear();
     };
   }, []);
 

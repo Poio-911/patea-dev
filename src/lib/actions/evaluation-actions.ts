@@ -1,6 +1,9 @@
 'use server';
 
 import { analyzeTextPerformance } from '@/ai/flows/analyze-text-performance';
+import { getAdminDb } from '@/firebase/admin-init';
+import { requireAuth } from '@/lib/auth/get-server-session';
+import type { Evaluation, Match, SelfEvaluation } from '@/lib/types';
 
 export type AttributeChange = {
   attribute: 'pac' | 'sho' | 'pas' | 'dri' | 'def' | 'phy';
@@ -32,6 +35,160 @@ export async function analyzeEvaluationTextAction(input: {
   } catch (error) {
     console.error('Error analyzing evaluation text:', error);
     return { error: 'No se pudo analizar el texto. Intenta describir el rendimiento de otra manera.' };
+  }
+}
+
+export async function submitEvaluationSubmissionAction(
+  matchId: string,
+  submission: Record<string, unknown>
+): Promise<{ success: boolean; alreadySubmitted?: boolean; error?: string }> {
+  try {
+    const evaluatorId = await requireAuth();
+    const db = getAdminDb();
+
+    if (!matchId) {
+      return { success: false, error: 'Partido no válido.' };
+    }
+
+    const existingSubmission = await db
+      .collection('evaluationSubmissions')
+      .where('matchId', '==', matchId)
+      .where('evaluatorId', '==', evaluatorId)
+      .limit(1)
+      .get();
+
+    if (!existingSubmission.empty) {
+      return { success: true, alreadySubmitted: true };
+    }
+
+    await db.collection('evaluationSubmissions').add({
+      evaluatorId,
+      matchId,
+      submittedAt: new Date().toISOString(),
+      submission,
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error submitting evaluation submission:', error);
+    return { success: false, error: error.message || 'No se pudieron enviar las evaluaciones.' };
+  }
+}
+
+export async function processPendingEvaluationSubmissionsAction(
+  matchId: string
+): Promise<{ success: boolean; processedCount?: number; error?: string }> {
+  try {
+    const callerId = await requireAuth();
+    const db = getAdminDb();
+    const matchRef = db.collection('matches').doc(matchId);
+    const matchSnap = await matchRef.get();
+
+    if (!matchSnap.exists) {
+      return { success: false, error: 'Partido no encontrado.' };
+    }
+
+    const match = matchSnap.data() as Match;
+    if (match.ownerUid !== callerId) {
+      return { success: false, error: 'Solo el organizador puede procesar evaluaciones.' };
+    }
+
+    let processedCount = 0;
+
+    await db.runTransaction(async (transaction) => {
+      const submissionsQuery = db.collection('evaluationSubmissions').where('matchId', '==', matchId);
+      const snapshot = await transaction.get(submissionsQuery);
+
+      if (snapshot.empty) {
+        processedCount = 0;
+        return;
+      }
+
+      processedCount = snapshot.size;
+
+      for (const submissionDoc of snapshot.docs) {
+        const submissionData = submissionDoc.data() as {
+          evaluatorId: string;
+          submittedAt: string;
+          submission: {
+            evaluatorGoals?: number;
+            evaluatorAssists?: number;
+            mvpVote?: string;
+            evaluations?: Array<Record<string, any>>;
+          };
+        };
+
+        const processedRef = db.collection(`matches/${matchId}/processedSubmissions`).doc();
+        transaction.set(processedRef, {
+          ...submissionData,
+          processedAt: new Date().toISOString(),
+          originalSubmissionId: submissionDoc.id,
+          processingStatus: 'completed',
+        });
+
+        transaction.delete(submissionDoc.ref);
+
+        const { evaluatorId, submission: formData } = submissionData;
+
+        if (
+          (formData.evaluatorGoals || 0) > 0 ||
+          (formData.evaluatorAssists || 0) > 0 ||
+          formData.mvpVote
+        ) {
+          const selfEvalRef = db.collection(`matches/${matchId}/selfEvaluations`).doc();
+          const selfEvaluation: Omit<SelfEvaluation, 'id'> = {
+            playerId: evaluatorId,
+            matchId,
+            goals: formData.evaluatorGoals || 0,
+            assists: formData.evaluatorAssists || 0,
+            mvpVote: formData.mvpVote || undefined,
+            reportedAt: submissionData.submittedAt,
+          };
+          transaction.set(selfEvalRef, selfEvaluation);
+        }
+
+        for (const evaluation of formData.evaluations || []) {
+          const evalRef = db.collection('evaluations').doc();
+          const newEvaluation: Omit<Evaluation, 'id'> = {
+            assignmentId: evaluation.assignmentId,
+            playerId: evaluation.subjectId,
+            evaluatorId,
+            matchId,
+            goals: 0,
+            evaluatedAt: submissionData.submittedAt,
+          };
+
+          if (evaluation.evaluationType === 'points') {
+            newEvaluation.rating = evaluation.rating;
+          } else if (evaluation.evaluationType === 'tags') {
+            newEvaluation.performanceTags = evaluation.performanceTags;
+          } else if (evaluation.evaluationType === 'text') {
+            if (evaluation.aiAttributeChanges) {
+              newEvaluation.aiAttributeChanges = evaluation.aiAttributeChanges;
+            }
+            if (evaluation.aiConfidence) {
+              newEvaluation.aiConfidence = evaluation.aiConfidence;
+            }
+            newEvaluation.textDescription = evaluation.textDescription || '';
+            if (evaluation.aiSummary) {
+              newEvaluation.aiSummary = evaluation.aiSummary;
+            }
+          }
+
+          transaction.set(evalRef, newEvaluation);
+
+          if (evaluation.assignmentId) {
+            const assignmentRef = db.collection(`matches/${matchId}/assignments`).doc(evaluation.assignmentId);
+            transaction.update(assignmentRef, { status: 'completed', evaluationId: evalRef.id });
+          }
+        }
+      }
+    });
+
+    return { success: true, processedCount };
+  } catch (error: any) {
+    console.error('Error processing pending submissions:', error);
+    return { success: false, error: error.message || 'No se pudieron procesar las evaluaciones pendientes.' };
   }
 }
 

@@ -6,8 +6,6 @@ import { useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useFirestore } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { ResponsiveDialog as Dialog, ResponsiveDialogContent as DialogContent, ResponsiveDialogDescription as DialogDescription, ResponsiveDialogFooter as DialogFooter, ResponsiveDialogHeader as DialogHeader, ResponsiveDialogTitle as DialogTitle, ResponsiveDialogTrigger as DialogTrigger } from '@/components/ui/responsive-dialog';
 import { Button } from './ui/button';
@@ -16,6 +14,7 @@ import { Label } from './ui/label';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Loader2 } from 'lucide-react';
 import type { GroupTeam, GroupTeamMember, PlayerStatus, DetailedTeamPlayer } from '@/lib/types';
+import { updateTeamMembersAction } from '@/lib/actions/team-actions';
 
 const playerStatusSchema = z.object({
   number: z.coerce.number().min(1, "El dorsal debe ser mayor a 0").max(99, "El dorsal no puede ser mayor a 99"),
@@ -34,7 +33,6 @@ interface SetPlayerStatusDialogProps {
 export function SetPlayerStatusDialog({ player, team, onPlayerUpdate, children }: SetPlayerStatusDialogProps) {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const firestore = useFirestore();
   const { toast } = useToast();
 
   const form = useForm<PlayerStatusFormData>({
@@ -59,7 +57,6 @@ export function SetPlayerStatusDialog({ player, team, onPlayerUpdate, children }
   }, [existingNumbers]);
 
   const onSubmit = async (data: PlayerStatusFormData) => {
-    if (!firestore) return;
     setIsSubmitting(true);
 
     try {
@@ -70,7 +67,6 @@ export function SetPlayerStatusDialog({ player, team, onPlayerUpdate, children }
         setIsSubmitting(false);
         return;
       }
-      const teamRef = doc(firestore, 'teams', team.id);
       const updatedMembers = team.members.map((member: GroupTeamMember) => {
         if (member.playerId === player.id) {
           return { ...member, number: data.number, status: data.status };
@@ -78,7 +74,10 @@ export function SetPlayerStatusDialog({ player, team, onPlayerUpdate, children }
         return member;
       });
 
-      await updateDoc(teamRef, { members: updatedMembers });
+      const result = await updateTeamMembersAction({ teamId: team.id, members: updatedMembers });
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudieron guardar los cambios.');
+      }
 
       toast({
         title: 'Jugador Actualizado',

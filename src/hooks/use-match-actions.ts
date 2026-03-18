@@ -1,22 +1,17 @@
 import { useState, useCallback } from 'react';
 import type { Match, Player, EvaluationAssignment, Notification, MatchLocation } from '@/lib/types';
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch, collection, deleteDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { Firestore } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { generateTeamsAction, updateMatchDateAction, updateMatchLocationAction } from '@/lib/actions/server-actions';
 import { logger } from '@/lib/logger';
 import { celebrationConfetti, miniConfetti } from '@/lib/animations';
+import { isErrorResponse } from '@/lib/errors';
 import {
-  notifyPlayerAddedToMatchAction,
-  notifyTeamsShuffledAction,
-  notifyEvaluationAvailableAction,
-  notifyMatchUpdatedAction
+  notifyPlayerAddedToMatchAction
 } from '@/lib/actions/notification-actions';
-import { joinMatchAction, leaveMatchAction, requestJoinMatchAction } from '@/lib/actions/match-actions';
+import { deleteMatchAction, finishMatchAction, joinMatchAction, leaveMatchAction, requestJoinMatchAction, shuffleMatchTeamsAction } from '@/lib/actions/match-actions';
 import { useHaptics } from '@/hooks/use-haptics';
-
-// Helper to determine if a player is a "real user"
-const isRealUser = (player: Player) => player.id === player.ownerUid;
 
 interface UseMatchActionsParams {
   match: Match | null | undefined;
@@ -48,176 +43,21 @@ export function useMatchActions({
   const [isChangingLocation, setIsChangingLocation] = useState(false);
   const { success: hapticSuccess } = useHaptics();
 
-  const generateEvaluationAssignments = useCallback((match: Match, allPlayers: Player[]): Omit<EvaluationAssignment, 'id'>[] => {
-    const assignments: Omit<EvaluationAssignment, 'id'>[] = [];
-    const matchPlayers = allPlayers.filter(p => match.playerUids.includes(p.id));
-
-    // Only real users can be evaluators
-    const realPlayerUids = matchPlayers.filter(isRealUser).map(p => p.id);
-
-    // Track incoming evaluation counts to ensure balance
-    const incomingCounts: Record<string, number> = {};
-    matchPlayers.forEach(p => incomingCounts[p.id] = 0);
-
-    // Fisher-Yates shuffle for unbiased randomization
-    const shuffledEvaluators = [...realPlayerUids];
-    for (let i = shuffledEvaluators.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffledEvaluators[i], shuffledEvaluators[j]] = [shuffledEvaluators[j], shuffledEvaluators[i]];
-    }
-
-    shuffledEvaluators.forEach(evaluatorId => {
-      // myTeam is undefined if no teams → no teammate priority, but assignments still generated
-      const myTeam = match.teams?.find(t => t.players.some(p => p.uid === evaluatorId));
-
-      // 1. Define candidates (ALL players except self)
-      // We do NOT filter by 'already assigned' here because we want to soft-balance, 
-      // but we will prioritize those with fewer incoming counts.
-      let candidates = matchPlayers.filter(p => p.id !== evaluatorId);
-
-      // 2. Sort candidates by:
-      //    a. Incoming Count (Ascending) -> PRIMARY: STARVE THE RICH (Ensure everyone gets evals)
-      //    b. Is Teammate (Descending)   -> SECONDARY: PREFER TEAMMATES
-      //    c. Random                     -> TERTIARY: VARIETY
-
-      candidates.sort((a, b) => {
-        // Primary: Starvation (Load Balancing)
-        const countDiff = incomingCounts[a.id] - incomingCounts[b.id];
-        if (countDiff !== 0) return countDiff;
-
-        // Secondary: Teammate Priority
-        const aIsTeammate = myTeam?.players.some(tp => tp.uid === a.id);
-        const bIsTeammate = myTeam?.players.some(tp => tp.uid === b.id);
-
-        if (aIsTeammate && !bIsTeammate) return -1;
-        if (!aIsTeammate && bIsTeammate) return 1;
-
-        // Tertiary: Stable (pre-shuffle handles randomization)
-        return 0;
-      });
-
-      // 3. Pick top 2
-      const MAX_PEERS = 2;
-      const selectedPeers = candidates.slice(0, MAX_PEERS);
-
-      // If NO peers found (e.g. only 1 player match?), assign self-evaluation fallback
-      if (selectedPeers.length === 0) {
-        assignments.push({
-          matchId: match.id,
-          evaluatorId: evaluatorId,
-          subjectId: evaluatorId, // Self
-          status: 'pending',
-        });
-      } else {
-        selectedPeers.forEach(subject => {
-          incomingCounts[subject.id]++;
-          assignments.push({
-            matchId: match.id,
-            evaluatorId: evaluatorId,
-            subjectId: subject.id,
-            status: 'pending',
-          });
-        });
-      }
-    });
-
-    return assignments;
-  }, []);
-
   const handleFinish = useCallback(async () => {
-    if (!firestore || !userId || !match || !allGroupPlayers) return;
+    if (!userId || !match) return;
     setIsFinishing(true);
-    const batch = writeBatch(firestore);
-    const matchRef = doc(firestore, 'matches', match.id);
 
     try {
-      const freshMatchSnap = await getDoc(matchRef);
-      if (!freshMatchSnap.exists()) {
-        throw new Error("El partido ya no existe.");
+      const result = await finishMatchAction(match.id);
+      if (isErrorResponse(result) || !result.success) {
+        throw new Error(result.error || 'No se pudo finalizar el partido.');
       }
-      const freshMatch = { id: freshMatchSnap.id, ...freshMatchSnap.data() } as Match;
-
-      let finalTeams = freshMatch.teams;
-      let matchUpdateData: any = { status: 'completed' };
-
-      // Logic to generate teams if they don't exist yet
-      if (!finalTeams || finalTeams.length === 0) {
-        const playerIdsInMatch = freshMatch.playerUids;
-        if (playerIdsInMatch.length >= freshMatch.matchSize) {
-          const playersToBalance = allGroupPlayers
-            .filter(p => playerIdsInMatch.includes(p.id))
-            .map(p => ({
-              id: p.id,
-              name: p.name,
-              ovr: p.ovr,
-              position: p.position
-            }));
-          const teamGenerationResult = await generateTeamsAction(playersToBalance);
-          if ('error' in teamGenerationResult) throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
-          if (!teamGenerationResult.teams) throw new Error('La respuesta de la IA no contiene equipos.');
-
-          finalTeams = teamGenerationResult.teams as any;
-          matchUpdateData.teams = finalTeams;
-        } else {
-          logger.warn("Finishing match without full player list. Teams not generated.");
-        }
-      }
-
-      batch.update(matchRef, matchUpdateData);
-
-      // Generate evaluation assignments (works with or without teams)
-      const matchForAssignments = finalTeams ? { ...freshMatch, teams: finalTeams } : freshMatch;
-      const assignments = generateEvaluationAssignments(matchForAssignments, allGroupPlayers);
-      const matchPlayers = allGroupPlayers.filter(p => freshMatch.playerUids.includes(p.id));
-      const realPlayerUids = matchPlayers.filter(isRealUser).map(p => p.id);
-
-      if (assignments.length > 0) {
-        if (assignments.length < realPlayerUids.length) {
-          toast({
-            variant: 'default',
-            title: 'Advertencia: Asignaciones incompletas',
-            description: `Algunos jugadores no recibieron su autoevaluación.`,
-          });
-        }
-
-        // Add assignment docs to batch
-        assignments.forEach(assignment => {
-          const assignmentRef = doc(collection(firestore, `matches/${freshMatch.id}/assignments`));
-          batch.set(assignmentRef, assignment);
-        });
-
-        // Create ONE in-app notification per unique evaluator (not one per assignment)
-        const uniqueEvaluatorIds = [...new Set(assignments.map(a => a.evaluatorId))];
-        uniqueEvaluatorIds.forEach(evaluatorId => {
-          const notificationRef = doc(collection(firestore, `users/${evaluatorId}/notifications`));
-          const notification: Omit<Notification, 'id'> = {
-            type: 'evaluation_pending',
-            title: '¡Evaluación pendiente!',
-            message: `Es hora de evaluar a tus compañeros del partido "${freshMatch.title}".`,
-            link: `/evaluations/${freshMatch.id}`,
-            isRead: false,
-            createdAt: new Date().toISOString(),
-            metadata: { fromUserId: userId },
-          };
-          batch.set(notificationRef, notification);
-        });
-      }
-
-      await batch.commit();
 
       hapticSuccess();
       toast({
         title: 'Partido Finalizado',
-        description: `El partido "${freshMatch.title}" ha sido marcado como finalizado.`
+        description: `El partido "${match.title}" ha sido marcado como finalizado.`
       });
-
-      // Send push notification to evaluators (one per person, no duplicates)
-      if (realPlayerUids.length > 0) {
-        notifyEvaluationAvailableAction({
-          playerIds: realPlayerUids,
-          matchTitle: freshMatch.title,
-        }).catch(err => logger.error('Failed to send evaluation notification', err));
-      }
 
     } catch (error: any) {
       logger.error("Error finishing match", error, { matchId: match.id });
@@ -229,7 +69,7 @@ export function useMatchActions({
     } finally {
       setIsFinishing(false);
     }
-  }, [firestore, userId, match, allGroupPlayers, generateEvaluationAssignments, toast]);
+  }, [userId, match, toast, hapticSuccess]);
 
   const isUserPendingRequest = !!(userId && match?.pendingPlayerUids?.includes(userId));
 
@@ -277,28 +117,23 @@ export function useMatchActions({
     } finally {
       setIsJoining(false);
     }
-  }, [userId, match, isUserInMatch, userDisplayName, toast]);
+  }, [userId, match, isUserInMatch, userDisplayName, toast, hapticSuccess]);
 
   const handleDelete = useCallback(async () => {
-    if (!firestore || !match) return;
+    if (!match) return;
     setIsDeleting(true);
     try {
-      if (match.playerUids && match.playerUids.length > 0) {
-        notifyMatchUpdatedAction({
-          playerIds: match.playerUids,
-          matchTitle: match.title,
-          updateType: 'cancelled',
-          updateDetails: 'El partido fue cancelado por el organizador',
-        }).catch(err => logger.error('Failed to send cancellation notification', err));
+      const result = await deleteMatchAction(match.id);
+      if (isErrorResponse(result) || !result.success) {
+        throw new Error(result.error || 'No se pudo eliminar el partido.');
       }
-      await deleteDoc(doc(firestore, 'matches', match.id));
       toast({ title: "Partido Eliminado", description: "El partido ha sido eliminado con éxito." });
     } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "No se pudo eliminar el partido." });
     } finally {
       setIsDeleting(false);
     }
-  }, [firestore, match, toast]);
+  }, [match, toast]);
 
   const handleReschedule = useCallback(async (date: string, time: string) => {
     if (!match) return;
@@ -331,43 +166,25 @@ export function useMatchActions({
   }, [match, toast]);
 
   const handleShuffleTeams = useCallback(async () => {
-    if (!firestore || !match || !allGroupPlayers) return;
+    if (!match) return;
     setIsShuffling(true);
 
     try {
-      const playersToBalance = allGroupPlayers
-        .filter(p => match.playerUids.includes(p.id))
-        .map(p => ({
-          id: p.id,
-          name: p.name,
-          ovr: p.ovr,
-          position: p.position
-        }));
-      const teamGenerationResult = await generateTeamsAction(playersToBalance);
-
-      if ('error' in teamGenerationResult) throw new Error(teamGenerationResult.error || 'La IA no pudo generar los equipos.');
-      if (!teamGenerationResult.teams) throw new Error('La respuesta de la IA no contiene equipos.');
-
-      await updateDoc(doc(firestore, 'matches', match.id), {
-        teams: teamGenerationResult.teams
-      });
+      const result = await shuffleMatchTeamsAction(match.id);
+      if (isErrorResponse(result) || !result.success) {
+        throw new Error(result.error || 'No se pudieron volver a sortear los equipos.');
+      }
 
       celebrationConfetti();
       hapticSuccess();
       toast({ title: "¡Equipos Sorteados!", description: "La IA ha generado nuevas formaciones." });
-
-      // Send push notification to all players about team change
-      notifyTeamsShuffledAction({
-        playerIds: match.playerUids,
-        matchTitle: match.title,
-      }).catch(err => logger.error('Failed to send team shuffle notification', err));
 
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message || "No se pudieron volver a sortear los equipos." });
     } finally {
       setIsShuffling(false);
     }
-  }, [firestore, match, allGroupPlayers, toast]);
+  }, [match, toast, hapticSuccess]);
 
   return {
     isFinishing,

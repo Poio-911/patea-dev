@@ -3,6 +3,7 @@
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getServerSession } from '@/lib/auth/get-server-session';
+import { hasPermission } from '@/lib/group-permissions';
 import type { MatchInvitationResponse, MatchInvitation, MatchDateProposal } from '@/lib/types';
 
 // Initialize Firebase Admin
@@ -18,6 +19,41 @@ if (getApps().length === 0) {
 }
 
 const db = getFirestore();
+
+async function canManageMatchInvitations(matchId: string, userId: string): Promise<{ allowed: boolean; match?: any; error?: string }> {
+  const matchRef = db.collection('matches').doc(matchId);
+  const matchSnap = await matchRef.get();
+
+  if (!matchSnap.exists) {
+    return { allowed: false, error: 'Partido no encontrado.' };
+  }
+
+  const match = { id: matchSnap.id, ...matchSnap.data() } as any;
+  if (match.ownerUid === userId) {
+    return { allowed: true, match };
+  }
+
+  if (!match.groupId) {
+    return { allowed: false, error: 'No tienes permiso para invitar jugadores a este partido.' };
+  }
+
+  const groupSnap = await db.collection('groups').doc(match.groupId).get();
+  if (!groupSnap.exists) {
+    return { allowed: false, error: 'Grupo no encontrado.' };
+  }
+
+  const group = groupSnap.data() as any;
+  const role = group.ownerUid === userId
+    ? 'admin'
+    : group.memberRoles?.find((member: any) => member.userId === userId)?.role
+      || (group.members?.includes(userId) ? 'member' : null);
+
+  if (!role || !hasPermission(role, 'matches.edit')) {
+    return { allowed: false, error: 'No tienes permiso para invitar jugadores a este partido.' };
+  }
+
+  return { allowed: true, match };
+}
 
 /**
  * Responder a una invitación de partido
@@ -381,5 +417,174 @@ export async function getMatchDateProposalsAction(
   } catch (error: any) {
     console.error('Error getting date proposals:', error);
     return { success: false, error: error.message || 'Error al obtener propuestas' };
+  }
+}
+
+export async function acceptPlayerMatchInvitationAction(
+  matchId: string,
+  invitationId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await getServerSession();
+    if (!session?.user?.uid) {
+      return { success: false, error: 'No autenticado' };
+    }
+
+    const userId = session.user.uid;
+    const matchRef = db.collection('matches').doc(matchId);
+    const invitationRef = matchRef.collection('invitations').doc(invitationId);
+    const playerRef = db.collection('players').doc(userId);
+
+    await db.runTransaction(async (transaction) => {
+      const [matchSnap, invitationSnap, playerSnap] = await Promise.all([
+        transaction.get(matchRef),
+        transaction.get(invitationRef),
+        transaction.get(playerRef),
+      ]);
+
+      if (!matchSnap.exists) {
+        throw new Error('Partido no encontrado');
+      }
+
+      if (!invitationSnap.exists) {
+        throw new Error('Invitación no encontrada');
+      }
+
+      if (!playerSnap.exists) {
+        throw new Error('No se encontró tu perfil de jugador.');
+      }
+
+      const invitation = invitationSnap.data() as any;
+      const match = matchSnap.data() as any;
+      const player = playerSnap.data() as any;
+
+      if (invitation.playerId !== userId) {
+        throw new Error('No tienes permiso para responder esta invitación.');
+      }
+
+      if (invitation.status === 'accepted') {
+        return;
+      }
+
+      if ((match.players?.length || 0) >= match.matchSize) {
+        throw new Error('El partido ya está lleno.');
+      }
+
+      const playerPayload = {
+        uid: userId,
+        displayName: player.name,
+        ovr: player.ovr,
+        position: player.position,
+        photoURL: player.photoURL || player.photoUrl || '',
+      };
+
+      transaction.update(matchRef, {
+        players: FieldValue.arrayUnion(playerPayload),
+        playerUids: FieldValue.arrayUnion(userId),
+      });
+
+      transaction.update(invitationRef, {
+        status: 'accepted',
+        respondedAt: new Date().toISOString(),
+      });
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error accepting player match invitation:', error);
+    return { success: false, error: error.message || 'No se pudo aceptar la invitación.' };
+  }
+}
+
+export async function rejectPlayerMatchInvitationAction(
+  matchId: string,
+  invitationId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await getServerSession();
+    if (!session?.user?.uid) {
+      return { success: false, error: 'No autenticado' };
+    }
+
+    const userId = session.user.uid;
+    const invitationRef = db.collection('matches').doc(matchId).collection('invitations').doc(invitationId);
+    const invitationSnap = await invitationRef.get();
+
+    if (!invitationSnap.exists) {
+      return { success: false, error: 'Invitación no encontrada' };
+    }
+
+    const invitation = invitationSnap.data() as any;
+    if (invitation.playerId !== userId) {
+      return { success: false, error: 'No tienes permiso para responder esta invitación.' };
+    }
+
+    if (invitation.status === 'declined') {
+      return { success: true };
+    }
+
+    await invitationRef.update({
+      status: 'declined',
+      respondedAt: new Date().toISOString(),
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error rejecting player match invitation:', error);
+    return { success: false, error: error.message || 'No se pudo rechazar la invitación.' };
+  }
+}
+
+export async function sendMatchInvitationsAction(
+  matchId: string,
+  playerIds: string[]
+): Promise<{ success: boolean; sent?: number; error?: string }> {
+  try {
+    const session = await getServerSession();
+    if (!session?.user?.uid) {
+      return { success: false, error: 'No autenticado' };
+    }
+
+    const userId = session.user.uid;
+    const permission = await canManageMatchInvitations(matchId, userId);
+    if (!permission.allowed) {
+      return { success: false, error: permission.error };
+    }
+
+    const match = permission.match;
+    const uniquePlayerIds = [...new Set(playerIds)].filter(Boolean);
+    if (uniquePlayerIds.length === 0) {
+      return { success: false, error: 'No se seleccionaron jugadores.' };
+    }
+
+    const batch = db.batch();
+    let sent = 0;
+
+    for (const playerId of uniquePlayerIds) {
+      if (match.playerUids?.includes(playerId)) {
+        continue;
+      }
+
+      const invitationRef = db.collection(`matches/${matchId}/invitations`).doc();
+      batch.set(invitationRef, {
+        matchId,
+        matchTitle: match.title,
+        matchDate: match.date,
+        playerId,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      });
+      sent += 1;
+    }
+
+    if (sent === 0) {
+      return { success: false, error: 'No había jugadores válidos para invitar.' };
+    }
+
+    await batch.commit();
+    return { success: true, sent };
+  } catch (error: any) {
+    console.error('Error sending match invitations:', error);
+    return { success: false, error: error.message || 'No se pudieron enviar las invitaciones.' };
   }
 }

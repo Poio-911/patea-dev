@@ -115,7 +115,7 @@ export function FindBestFitDialog({
       </DialogTrigger>
       <DialogContent className="max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Asistente de Fichajes para "{selectedMatch?.title}"</DialogTitle>
+          <DialogTitle>Asistente de Fichajes para &ldquo;{selectedMatch?.title}&rdquo;</DialogTitle>
           <DialogDescription>
             La IA está analizando a los jugadores disponibles para recomendarte los mejores fichajes.
           </DialogDescription>

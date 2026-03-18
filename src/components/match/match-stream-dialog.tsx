@@ -13,10 +13,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import type { Match } from '@/lib/types';
-import { useFirestore } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
 import { PlayCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { updateMatchStreamAction } from '@/lib/actions/match-actions';
+import { isErrorResponse } from '@/lib/errors';
 
 type MatchStreamDialogProps = {
   match: Match;
@@ -25,7 +25,6 @@ type MatchStreamDialogProps = {
 };
 
 export function MatchStreamDialog({ match, open, onOpenChange }: MatchStreamDialogProps) {
-  const firestore = useFirestore();
   const [active, setActive] = useState<boolean>(!!match.stream?.active);
   const [provider, setProvider] = useState<'youtube' | 'twitch' | 'kick' | 'custom'>(match.stream?.provider || 'youtube');
   const [videoId, setVideoId] = useState<string>(match.stream?.id || '');
@@ -33,19 +32,20 @@ export function MatchStreamDialog({ match, open, onOpenChange }: MatchStreamDial
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!firestore) return;
     setSaving(true);
     try {
-      const ref = doc(firestore, 'matches', match.id);
-      await updateDoc(ref, {
-        stream: {
-          provider,
-          id: provider === 'youtube' || provider === 'twitch' || provider === 'kick' ? (videoId || null) : null,
-          url: provider === 'custom' ? (url || null) : null,
-          active,
-        },
+      const result = await updateMatchStreamAction(match.id, {
+        provider,
+        id: provider === 'youtube' || provider === 'twitch' || provider === 'kick' ? (videoId || null) : null,
+        url: provider === 'custom' ? (url || null) : null,
+        active,
       });
+      if (isErrorResponse(result) || !result.success) {
+        throw new Error(result.error || 'No se pudo actualizar la transmisión.');
+      }
       onOpenChange(false);
+    } catch (error) {
+      console.error('Error updating stream:', error);
     } finally {
       setSaving(false);
     }

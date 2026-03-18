@@ -36,7 +36,8 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   // Original: const { data: availablePlayerData, loading: availablePlayerLoading } = useDoc<AvailablePlayer>(availablePlayerRef);
 
   React.useEffect(() => {
-    if (!userLoading && !user && pathname !== '/' && pathname !== '/login' && pathname !== '/register' && pathname !== '/forgot-password') {
+    const isPublic = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname.startsWith('/organizer');
+    if (!userLoading && !user && !isPublic) {
       router.push('/login');
     }
   }, [user, userLoading, pathname, router]);
@@ -72,10 +73,11 @@ export function MainNav({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Allow public pages to render without auth check
+  // Allow public pages and isolated layouts (/organizer) to render without standard app wrapper
   const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
+  const isOrganizerPage = pathname.startsWith('/organizer');
 
-  if (isPublicPage) {
+  if (isPublicPage || isOrganizerPage) {
     return <>{children}</>;
   }
 

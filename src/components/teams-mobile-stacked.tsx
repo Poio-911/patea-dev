@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import React from 'react';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -60,7 +61,7 @@ export function TeamsMobileStacked({ teams }: TeamsMobileStackedProps) {
           <Card className="rounded-2xl shadow-md border-2 mt-2">
             <CardHeader className="flex flex-col items-center gap-1 pb-1 min-h-0 py-1">
               {team.imageUrl ? (
-                <img src={team.imageUrl} alt={team.name} className="w-24 h-24 object-cover rounded-xl mb-1" />
+                <Image src={team.imageUrl} alt={team.name} width={96} height={96} unoptimized className="w-24 h-24 object-cover rounded-xl mb-1" />
               ) : team.jersey ? (
                 <div className="flex justify-center w-full mb-1"><JerseyPreview jersey={team.jersey} size="sm" /></div>
               ) : null}

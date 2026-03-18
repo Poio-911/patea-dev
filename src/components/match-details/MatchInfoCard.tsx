@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import React, { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import type { Match, UserProfile } from '@/lib/types';
@@ -155,11 +156,14 @@ export const MatchInfoCard = React.memo(function MatchInfoCard({
 
       {/* ── Background layers — all themes ── */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <img
+        <Image
           src={matchPhoto}
           alt=""
+          fill
+          sizes="100vw"
+          unoptimized
           className={cn(
-            'absolute inset-0 h-full w-full object-cover object-center',
+            'absolute inset-0 object-cover object-center',
             isLight ? 'opacity-20' : 'opacity-50'
           )}
         />

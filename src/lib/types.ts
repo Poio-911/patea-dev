@@ -583,14 +583,18 @@ export type SavedLocation = {
   savedAt: string; // ISO 8601 timestamp
 };
 
+export type UserRole = 'player' | 'organizer' | 'admin';
+
 export type UserProfile = {
   uid: string;
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
   phoneNumber?: string; // WhatsApp or phone number
+  role?: UserRole; // 'player' is default if undefined
   groups?: string[];
   activeGroupId?: string | null;
+  organizedLeagues?: string[]; // IDs of leagues this user manages
   fcmTokens?: string[]; // Firebase Cloud Messaging tokens for push notifications
   notificationPreferences?: {
     matchInvites?: boolean;
@@ -710,6 +714,11 @@ export type League = {
   teams: string[]; // Array of teamIds
   createdAt: string;
   logoUrl?: string; // URL to league logo image
+  competitionType?: CompetitionType;
+  sportType?: 'f5' | 'f7' | 'f11';
+  location?: string;
+  locationLat?: number;
+  locationLng?: number;
   // Schedule configuration
   startDate?: string; // ISO date string of first match
   matchFrequency?: 'weekly' | 'biweekly' | 'custom'; // How often matches occur

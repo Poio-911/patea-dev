@@ -195,7 +195,7 @@ export default function GroupsPage() {
                         {match.chronicle ? (
                           <div className="flex flex-col gap-1 mt-1 z-10 border-l-2 border-primary/40 pl-2">
                             <p className="text-[11px] sm:text-xs text-foreground/90 italic font-bold line-clamp-1">
-                              "{(match.chronicle as GenerateMatchChronicleOutput).headline}"
+                              &ldquo;{(match.chronicle as GenerateMatchChronicleOutput).headline}&rdquo;
                             </p>
                             {(match.chronicle as GenerateMatchChronicleOutput).story && (
                               <p className="text-[10px] text-muted-foreground line-clamp-2 leading-snug font-serif">

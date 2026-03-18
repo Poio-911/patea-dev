@@ -1,6 +1,7 @@
 
 'use client';
 
+import Image from 'next/image';
 import { useMemo } from 'react';
 import Link from 'next/link';
 import type { League, Match, LeagueStanding } from '@/lib/types';
@@ -52,14 +53,14 @@ export function LeagueCard({ league, matches = [], standings = [] }: LeagueCardP
           <div className="flex items-start gap-3">
             <div
               className={cn(
-                'w-14 h-14 rounded-xl overflow-hidden shrink-0 flex items-center justify-center',
+                'relative w-14 h-14 rounded-xl overflow-hidden shrink-0 flex items-center justify-center',
                 league.logoUrl
                   ? 'bg-muted/30 border border-border'
                   : 'bg-blue-500/10',
               )}
             >
               {league.logoUrl ? (
-                <img src={league.logoUrl} alt={league.name} className="w-full h-full object-contain" />
+                <Image src={league.logoUrl} alt={league.name} fill sizes="56px" unoptimized className="object-contain" />
               ) : (
                 <Shield className="h-7 w-7 text-blue-500" strokeWidth={1.5} />
               )}

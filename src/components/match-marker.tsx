@@ -4,12 +4,14 @@
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { doc, updateDoc, arrayUnion, arrayRemove, getDoc, writeBatch, collection } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser } from '@/firebase';
-import type { Match, Player, Notification } from '@/lib/types';
+import type { Match } from '@/lib/types';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus, LogOut, MapPin, Clock } from 'lucide-react';
+import { joinMatchAction, leaveMatchAction } from '@/lib/actions/match-actions';
+import { isErrorResponse } from '@/lib/errors';
 
 interface MatchMarkerProps {
   match: Match;
@@ -45,20 +47,14 @@ export function MatchMarker({ match: initialMatch, activeMarker, handleMarkerCli
 
 
   const handleJoinOrLeaveMatch = async () => {
-    if (!firestore || !user) return;
+    if (!user) return;
     setIsJoining(true);
-
-    const batch = writeBatch(firestore);
-    const matchRef = doc(firestore, 'matches', currentMatch.id);
 
     try {
       if (isUserInMatch) {
-        const playerToRemove = currentMatch.players.find((p: any) => p.uid === user.uid);
-        if (playerToRemove) {
-          batch.update(matchRef, {
-            players: arrayRemove(playerToRemove),
-            playerUids: arrayRemove(user.uid),
-          });
+        const result = await leaveMatchAction(currentMatch.id, user.uid);
+        if (isErrorResponse(result) || !result.success) {
+          throw new Error(result.error || 'No se pudo salir del partido.');
         }
         toast({ title: 'Te has dado de baja', description: `Ya no estás apuntado a "${currentMatch.title}".` });
       } else {
@@ -68,35 +64,16 @@ export function MatchMarker({ match: initialMatch, activeMarker, handleMarkerCli
           return;
         }
 
-        const playerRef = doc(firestore, 'players', user.uid);
-        const playerSnap = await getDoc(playerRef);
-
-        if (!playerSnap.exists()) {
-          toast({ variant: 'destructive', title: 'Error', description: 'No se encontró tu perfil de jugador.' });
-          setIsJoining(false);
-          return;
+        const result = await joinMatchAction(currentMatch.id, user.uid, user.displayName || 'Jugador');
+        if (isErrorResponse(result)) {
+          throw new Error(result.error || 'No se pudo unir al partido.');
         }
-        const playerProfile = playerSnap.data() as Player;
-
-        const playerPayload = {
-          uid: user.uid,
-          displayName: playerProfile!.name,
-          ovr: playerProfile!.ovr,
-          position: playerProfile!.position,
-          photoURL: (playerProfile as any).photoUrl || playerProfile!.photoURL || '',
-        };
-
-        batch.update(matchRef, {
-          players: arrayUnion(playerPayload),
-          playerUids: arrayUnion(user.uid),
-        });
-
-        // NOTE: notification to owner is handled by joinMatchAction server action.
-        // Do not create notification manually here to avoid duplicates.
+        if (!result.success) {
+          throw new Error('No se pudo unir al partido.');
+        }
 
         toast({ title: '¡Te has apuntado!', description: `Estás en la lista para "${currentMatch.title}".` });
       }
-      await batch.commit();
     } catch (error) {
       console.error('Error joining/leaving match: ', error);
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo completar la operación.' });

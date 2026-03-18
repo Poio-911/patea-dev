@@ -4,7 +4,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
-import { doc, collection, query, where, deleteDoc } from 'firebase/firestore';
+import { doc, collection, query, where } from 'firebase/firestore';
 import type { GroupTeam, Player, DetailedTeamPlayer, Match, Cup, League } from '@/lib/types';
 import { Loader2, ShieldCheck, UserCheck, History, Swords, Pencil, Trash2, MoreVertical, Users, CalendarDays, CheckCircle2, XCircle, Minus } from 'lucide-react';
 import { BackButton } from '@/components/navigation/back-button';
@@ -45,6 +45,7 @@ import {
     ResponsiveDropdownMenuTrigger,
     ResponsiveDropdownMenuLabel,
 } from '@/components/ui/responsive-dropdown-menu';
+import { deleteTeamAction } from '@/lib/actions/team-actions';
 
 export default function TeamDetailPage() {
     const params = useParams<{ id: string }>();
@@ -170,10 +171,13 @@ export default function TeamDetailPage() {
     }
 
     const handleDeleteTeam = async () => {
-        if (!firestore || !teamId) return;
+        if (!teamId) return;
         setIsDeleting(true);
         try {
-            await deleteDoc(doc(firestore, 'teams', teamId as string));
+            const result = await deleteTeamAction(teamId as string);
+            if (!result.success) {
+                throw new Error(result.error || 'No se pudo eliminar el equipo.');
+            }
             toast({ title: 'Equipo eliminado', description: `"${team?.name}" fue eliminado correctamente.` });
             router.push('/groups');
         } catch (error) {
@@ -251,7 +255,7 @@ export default function TeamDetailPage() {
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
-                                                <AlertDialogTitle>¿Eliminar "{team.name}"?</AlertDialogTitle>
+                                                <AlertDialogTitle>¿Eliminar &ldquo;{team.name}&rdquo;?</AlertDialogTitle>
                                                 <AlertDialogDescription>
                                                     Esta acción no se puede deshacer. El equipo y su configuración se eliminarán permanentemente.
                                                     Los partidos anteriores no se verán afectados.

@@ -2,8 +2,8 @@
 
 import { useEffect, useCallback, useRef } from 'react';
 import { getMessaging, getToken, isSupported } from 'firebase/messaging';
-import { doc, updateDoc, arrayUnion, getFirestore } from 'firebase/firestore';
 import { useFirebaseApp, useAuth } from '@/firebase';
+import { saveFCMTokenAction } from '@/lib/actions/notification-actions';
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 
@@ -43,12 +43,10 @@ export function usePushNotifications() {
 
             if (!token) return;
 
-            // Save token to Firestore using arrayUnion (idempotent)
-            const db = getFirestore(app);
-            const userRef = doc(db, 'users', user.uid);
-            await updateDoc(userRef, {
-                fcmTokens: arrayUnion(token),
-            });
+            const result = await saveFCMTokenAction(user.uid, token);
+            if (!result.success) {
+                throw new Error(result.error || 'Could not save FCM token');
+            }
 
             console.info('[Push] FCM token registered successfully.');
         } catch (err) {

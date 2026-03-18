@@ -22,7 +22,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFirestore, useUser, useAuth } from '@/firebase';
-import { addDoc, collection, writeBatch, doc, getDocs, query, where } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Player, MatchLocation, Notification, Team, MatchType, GroupTeam } from '@/lib/types';
 import { celebrationConfetti } from '@/lib/animations';
@@ -424,6 +424,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
     const isMobile = useIsMobile();
     const [open, setOpen] = useState(false);
     const [step, setStep] = useState(1);
+    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [positionFilter, setPositionFilter] = useState<'all' | 'DEL' | 'MED' | 'DEF' | 'POR'>('all');
     const [weather, setWeather] = useState<GetMatchDayForecastOutput | null>(null);
@@ -847,8 +848,6 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                                 name="date"
                                                 control={control}
                                                 render={({ field }) => {
-                                                    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-
                                                     const handleSelect = (date: Date | undefined) => {
                                                         field.onChange(date);
                                                         setIsDatePickerOpen(false);
@@ -1109,7 +1108,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                         <Label>Seleccioná dos equipos para el partido</Label>
                                         {teamsLoading && <Loader2 className="mx-auto h-6 w-6 animate-spin" />}
                                         {!teamsLoading && (!groupTeams || groupTeams.length === 0) && (
-                                            <Alert><AlertDescription>Tu grupo no tiene equipos creados. Creá un equipo desde la sección "Mis Equipos" para usar este modo.</AlertDescription></Alert>
+                                            <Alert><AlertDescription>Tu grupo no tiene equipos creados. Creá un equipo desde la sección &ldquo;Mis Equipos&rdquo; para usar este modo.</AlertDescription></Alert>
                                         )}
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-96 overflow-y-auto p-1">
                                             {groupTeams?.map(team => (

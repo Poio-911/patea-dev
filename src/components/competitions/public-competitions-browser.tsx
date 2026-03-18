@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { useState, useEffect, useCallback } from 'react';
 import { League, Cup, GroupTeam, CompetitionApplication } from '@/lib/types';
 import { getPublicCompetitionsAction, submitCompetitionApplicationAction } from '@/lib/actions/server-actions';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -31,11 +32,7 @@ export function PublicCompetitionsBrowser({ userId, userTeams }: PublicCompetiti
   const [applying, setApplying] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadPublicCompetitions();
-  }, []);
-
-  const loadPublicCompetitions = async () => {
+  const loadPublicCompetitions = useCallback(async () => {
     setLoading(true);
     try {
       const result = await getPublicCompetitionsAction(userId);
@@ -59,7 +56,11 @@ export function PublicCompetitionsBrowser({ userId, userTeams }: PublicCompetiti
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast, userId]);
+
+  useEffect(() => {
+    loadPublicCompetitions();
+  }, [loadPublicCompetitions]);
 
   const handleApply = async (competitionId: string, competitionType: 'league' | 'cup', teamId: string) => {
     if (!teamId) {
@@ -211,8 +212,8 @@ function CompetitionCard({ competition, type, userTeams, applications, onApply, 
       <CardHeader>
         <div className="flex items-start gap-3">
           {competition.logoUrl && (
-            <div className="w-12 h-12 rounded-lg overflow-hidden border shrink-0 bg-muted/30">
-              <img src={competition.logoUrl} alt={competition.name} className="w-full h-full object-contain" />
+            <div className="relative w-12 h-12 rounded-lg overflow-hidden border shrink-0 bg-muted/30">
+              <Image src={competition.logoUrl} alt={competition.name} fill sizes="48px" unoptimized className="object-contain" />
             </div>
           )}
           <div className="flex-1 min-w-0">

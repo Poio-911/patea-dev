@@ -132,7 +132,7 @@ export function IntegratedMatchStory({ match }: IntegratedMatchStoryProps) {
                         <div className="relative pt-12 pb-10 px-6 sm:px-10 text-center space-y-8">
                             {/* Título */}
                             <h2 className="text-4xl sm:text-5xl font-black text-foreground leading-tight font-serif tracking-tight max-w-3xl mx-auto" style={{ fontFamily: "Georgia, serif" }}>
-                                "{chronicle?.headline}"
+                                &ldquo;{chronicle?.headline}&rdquo;
                             </h2>
 
                             {/* Separador elegante */}
@@ -231,7 +231,7 @@ export function IntegratedMatchStory({ match }: IntegratedMatchStoryProps) {
                                                                 </div>
 
                                                                 <p className="text-base font-serif italic leading-relaxed text-foreground/80 relative z-10 flex-grow">
-                                                                    "{voice.quote}"
+                                                                    &ldquo;{voice.quote}&rdquo;
                                                                 </p>
 
                                                                 <div className="flex items-center gap-3 mt-2 relative z-10">

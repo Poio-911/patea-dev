@@ -2,8 +2,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useFirestore } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { successConfetti } from '@/lib/animations';
 import {
@@ -22,6 +20,8 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import type { Match, Team } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { PlayerPositionBadge } from '@/components/player-styles';
+import { isErrorResponse } from '@/lib/errors';
+import { updateMatchTeamsAction } from '@/lib/actions/match-actions';
 
 interface SwapPlayerDialogProps {
   match: Match;
@@ -33,19 +33,16 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
   const [open, setOpen] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [isSwapping, setIsSwapping] = useState(false);
-  const firestore = useFirestore();
   const { toast } = useToast();
 
   const handleSwap = async () => {
-    if (!firestore || !selectedPlayerId) {
+    if (!selectedPlayerId) {
       toast({ variant: 'destructive', title: 'Error', description: 'Debes seleccionar un jugador para el intercambio.' });
       return;
     }
     setIsSwapping(true);
 
     try {
-      const matchRef = doc(firestore, 'matches', match.id);
-
       const newTeams: Team[] = JSON.parse(JSON.stringify(match.teams));
 
       let sourceTeamIndex = -1, sourcePlayerIndex = -1;
@@ -77,7 +74,10 @@ export function SwapPlayerDialog({ match, playerToSwap, children }: SwapPlayerDi
         team.averageOVR = team.players.length > 0 ? totalOVR / team.players.length : 0;
       });
 
-      await updateDoc(matchRef, { teams: newTeams });
+      const result = await updateMatchTeamsAction(match.id, newTeams);
+      if (isErrorResponse(result) || !result.success) {
+        throw new Error(result.error || 'No se pudo realizar el intercambio.');
+      }
 
       successConfetti();
       toast({ title: '¡Intercambio realizado!', description: 'Los equipos han sido actualizados.' });

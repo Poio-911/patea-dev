@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Calendar, Clock, MapPin, ChevronRight, Trophy, UserCheck, Users, UsersRound, Handshake, Shirt, Globe } from 'lucide-react';
 import { cn, formatVenueName } from '@/lib/utils';
@@ -34,7 +35,7 @@ function MiniAvatarStack({ players, maxVisible = 3 }: {
         {visible.map(p => (
           <div key={p.uid} className="w-4 h-4 rounded-full border border-background dark:border-white/10 overflow-hidden flex-shrink-0">
             {p.photoURL
-              ? <img src={p.photoURL} alt={p.displayName} className="w-full h-full object-cover" />
+              ? <Image src={p.photoURL} alt={p.displayName} width={16} height={16} unoptimized className="w-full h-full object-cover" />
               : <div className="w-full h-full bg-muted flex items-center justify-center text-[6px] font-bold text-muted-foreground">
                 {p.displayName?.[0]?.toUpperCase()}
               </div>
@@ -87,10 +88,13 @@ export function CompactMatchCard({ match, className, distance }: CompactMatchCar
       >
         {/* Background Image Overlay (Tema Game) - Hidden in Light mode, visible in Dark/Game */}
         <div className="absolute inset-0 z-0 overflow-hidden rounded-lg hidden dark:block game:block bg-card/90 backdrop-blur-sm">
-          <img
+          <Image
             src={getMatchBackgroundImage(match.id)}
             alt=""
-            className="w-full h-full object-cover opacity-25 grayscale brightness-110 group-hover:scale-105 transition-transform duration-700"
+            fill
+            sizes="(max-width: 768px) 100vw, 420px"
+            unoptimized
+            className="object-cover opacity-25 grayscale brightness-110 group-hover:scale-105 transition-transform duration-700"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
         </div>

@@ -39,12 +39,6 @@ export function PublicMatchesContent() {
     const [locationStatus, setLocationStatus] = useState<'loading' | 'success' | 'error' | 'denied'>('loading');
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (user) {
-            loadMatches();
-        }
-    }, [user]);
-
     // Request geolocation on mount
     useEffect(() => {
         if (typeof navigator !== 'undefined' && navigator.geolocation) {
@@ -85,7 +79,7 @@ export function PublicMatchesContent() {
         );
     }, []);
 
-    const loadMatches = async () => {
+    const loadMatches = useCallback(async () => {
         if (!user) return;
         setIsLoading(true);
         setError(null);
@@ -96,7 +90,13 @@ export function PublicMatchesContent() {
             setError(result.error);
         }
         setIsLoading(false);
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            loadMatches();
+        }
+    }, [loadMatches, user]);
 
     const toggleType = (type: MatchType) => {
         setSelectedTypes(prev =>

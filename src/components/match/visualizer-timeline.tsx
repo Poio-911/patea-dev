@@ -48,7 +48,7 @@ export function VisualizerTimeline({ events }: VisualizerTimelineProps) {
                 <Icon className="h-5 w-5" />
               </div>
               <div className="flex items-center gap-2">
-                <Badge className="bg-foreground/10 border-foreground/20 text-foreground">{event.minute}'</Badge>
+                <Badge className="bg-foreground/10 border-foreground/20 text-foreground">{event.minute}&rsquo;</Badge>
                 <span className="text-xs opacity-70">{new Date(event.timestamp).toLocaleTimeString()}</span>
               </div>
             </div>

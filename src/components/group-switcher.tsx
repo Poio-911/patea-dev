@@ -4,7 +4,7 @@
 import { useState, useMemo } from 'react';
 import { useUser, useFirestore } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, where, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { Group } from '@/lib/types';
 import {
   Select,
@@ -17,6 +17,7 @@ import { ChevronsUpDown } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from './ui/label';
+import { setActiveGroupAction } from '@/lib/actions/group-actions';
 
 export function GroupSwitcher() {
   const { user, loading: userLoading } = useUser();
@@ -31,16 +32,16 @@ export function GroupSwitcher() {
   const { data: groups, loading: groupsLoading } = useCollection<Group>(groupsQuery);
 
   const handleGroupChange = async (groupId: string) => {
-    if (!firestore || !user?.uid) return;
+    if (!user?.uid) return;
     
-    const userRef = doc(firestore, 'users', user.uid);
     try {
-      await updateDoc(userRef, {
-        activeGroupId: groupId
-      });
+      const result = await setActiveGroupAction(groupId);
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudo cambiar de grupo.');
+      }
       toast({
         title: 'Grupo cambiado',
-        description: `Ahora estás en el grupo ${groups?.find(g => g.id === groupId)?.name}.`,
+        description: `Ahora estás en el grupo ${result.groupName || groups?.find(g => g.id === groupId)?.name}.`,
       });
     } catch (error) {
       console.error("Error al cambiar de grupo:", error);

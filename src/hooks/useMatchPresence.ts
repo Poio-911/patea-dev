@@ -101,7 +101,7 @@ export function useMatchPresence({ matchId, track, staleMs = 5 * 60 * 1000, opti
         window.removeEventListener('blur', onVis);
       }
     };
-  }, [firestore, matchId, track, user?.uid, user?.displayName, user?.photoURL, viewerId]);
+  }, [firestore, matchId, optimisticSelf, track, user, viewerId]);
 
   // Listen to presence list
   useEffect(() => {
@@ -124,7 +124,7 @@ export function useMatchPresence({ matchId, track, staleMs = 5 * 60 * 1000, opti
     });
 
     return () => unsub();
-  }, [firestore, matchId]);
+  }, [firestore, matchId, staleMs]);
 
   return {
     viewers,

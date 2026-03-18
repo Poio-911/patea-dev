@@ -11,9 +11,8 @@ import {
   ResponsiveDialogTrigger as DialogTrigger,
 } from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
-import { useState, useTransition, useMemo } from 'react';
-import { useFirestore, useUser } from '@/firebase';
-import { doc, writeBatch, collection } from 'firebase/firestore';
+import { useState, useTransition, useMemo, useCallback } from 'react';
+import { useUser } from '@/firebase';
 import type { AvailablePlayer, Match, Player, Invitation } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send, Search } from 'lucide-react';
@@ -33,6 +32,7 @@ import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Input } from './ui/input';
 import { Checkbox } from './ui/checkbox';
 import { PlayerSelectItem } from '@/components/player-select-item';
+import { sendMatchInvitationsAction } from '@/lib/actions/match-invitation-actions';
 
 
 type InvitePlayerDialogProps = {
@@ -57,14 +57,13 @@ export function InvitePlayerDialog({
   const [selectedGroupPlayers, setSelectedGroupPlayers] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isPending, startTransition] = useTransition();
-  const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
 
   const finalSelectedMatchId = match?.id || selectedMatchId;
   const isInvitingExternal = !!playerToInvite;
 
-  const getMatchById = (id: string) => [...userMatches, ...(match ? [match] : [])].find(m => m.id === id);
+  const getMatchById = useCallback((id: string) => [...userMatches, ...(match ? [match] : [])].find(m => m.id === id), [match, userMatches]);
 
   const availableGroupPlayers = useMemo(() => {
     if (isInvitingExternal || !allGroupPlayers) return []; // FIX: Check if allGroupPlayers is null/undefined
@@ -74,11 +73,11 @@ export function InvitePlayerDialog({
 
     return allGroupPlayers
       .filter(p => !playerUidsInMatch.has(p.id) && p.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  }, [allGroupPlayers, finalSelectedMatchId, searchTerm, isInvitingExternal, userMatches, match]);
+  }, [allGroupPlayers, finalSelectedMatchId, getMatchById, isInvitingExternal, searchTerm]);
 
 
   const handleInvite = () => {
-    if (!firestore || !user || !finalSelectedMatchId) {
+    if (!user || !finalSelectedMatchId) {
       toast({ variant: 'destructive', title: 'Error', description: 'Selecciona un partido para invitar.' });
       return;
     }
@@ -96,7 +95,6 @@ export function InvitePlayerDialog({
     }
 
     startTransition(async () => {
-      const batch = writeBatch(firestore);
       const selectedMatchData = getMatchById(finalSelectedMatchId);
 
       if (!selectedMatchData) {
@@ -104,26 +102,14 @@ export function InvitePlayerDialog({
         return;
       }
 
-      let invitesSent = 0;
-      for (const player of playersToInvite) {
-        const invitationRef = doc(collection(firestore, `matches/${finalSelectedMatchId}/invitations`));
-        const newInvitation: Omit<Invitation, 'id'> = {
-          matchId: selectedMatchData.id,
-          matchTitle: selectedMatchData.title,
-          matchDate: selectedMatchData.date,
-          playerId: player.id,
-          status: 'pending',
-          createdAt: new Date().toISOString()
-        };
-        batch.set(invitationRef, newInvitation);
-        invitesSent++;
-      }
-
       try {
-        await batch.commit();
+        const result = await sendMatchInvitationsAction(finalSelectedMatchId, playersToInvite.map((player) => player.id));
+        if (!result.success) {
+          throw new Error(result.error || 'No se pudieron enviar las invitaciones.');
+        }
         toast({
           title: '¡Invitaciones Enviadas!',
-          description: `Se han enviado ${invitesSent} invitaciones para unirse a "${selectedMatchData.title}".`,
+          description: `Se han enviado ${result.sent || playersToInvite.length} invitaciones para unirse a "${selectedMatchData.title}".`,
         });
         setOpen(false);
         setSelectedGroupPlayers([]);

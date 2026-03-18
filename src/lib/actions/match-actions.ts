@@ -5,7 +5,100 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
 import { handleServerActionError, createError, ErrorCodes } from '../errors';
 import { requireAuth } from '../auth/get-server-session';
-import type { Match, Player, Notification } from '../types';
+import { hasPermission } from '../group-permissions';
+import type { Match, Player, Notification, EvaluationAssignment } from '../types';
+import { generateTeamsAction } from './server-actions';
+import { notifyEvaluationAvailableAction, notifyMatchUpdatedAction, notifyTeamsShuffledAction } from './notification-actions';
+
+async function canEditMatch(match: Match, userId: string) {
+    if (match.ownerUid === userId) {
+        return true;
+    }
+
+    if (!match.groupId) {
+        return false;
+    }
+
+    const groupSnap = await getAdminDb().collection('groups').doc(match.groupId).get();
+    if (!groupSnap.exists) {
+        return false;
+    }
+
+    const group = groupSnap.data() as any;
+    if (group.ownerUid === userId) {
+        return true;
+    }
+
+    const role = group.memberRoles?.find((member: any) => member.userId === userId)?.role
+        || (group.members?.includes(userId) ? 'member' : null);
+    return role ? hasPermission(role, 'matches.edit') : false;
+}
+
+const isRealUser = (player: Player) => player.id === player.ownerUid;
+
+function generateEvaluationAssignments(match: Match, allPlayers: Player[]): Omit<EvaluationAssignment, 'id'>[] {
+    const assignments: Omit<EvaluationAssignment, 'id'>[] = [];
+    const matchPlayers = allPlayers.filter((player) => match.playerUids.includes(player.id));
+    const realPlayerUids = matchPlayers.filter(isRealUser).map((player) => player.id);
+    const incomingCounts: Record<string, number> = {};
+
+    matchPlayers.forEach((player) => {
+        incomingCounts[player.id] = 0;
+    });
+
+    const shuffledEvaluators = [...realPlayerUids];
+    for (let index = shuffledEvaluators.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [shuffledEvaluators[index], shuffledEvaluators[swapIndex]] = [shuffledEvaluators[swapIndex], shuffledEvaluators[index]];
+    }
+
+    shuffledEvaluators.forEach((evaluatorId) => {
+        const evaluatorTeam = match.teams?.find((team) => team.players.some((player) => player.uid === evaluatorId));
+        const candidates = matchPlayers
+            .filter((player) => player.id !== evaluatorId)
+            .sort((left, right) => {
+                const countDiff = incomingCounts[left.id] - incomingCounts[right.id];
+                if (countDiff !== 0) {
+                    return countDiff;
+                }
+
+                const leftIsTeammate = evaluatorTeam?.players.some((teamPlayer) => teamPlayer.uid === left.id);
+                const rightIsTeammate = evaluatorTeam?.players.some((teamPlayer) => teamPlayer.uid === right.id);
+
+                if (leftIsTeammate && !rightIsTeammate) {
+                    return -1;
+                }
+                if (!leftIsTeammate && rightIsTeammate) {
+                    return 1;
+                }
+                return 0;
+            });
+
+        const selectedPeers = candidates.slice(0, 2);
+
+        if (selectedPeers.length === 0) {
+            assignments.push({
+                matchId: match.id,
+                evaluatorId,
+                subjectId: evaluatorId,
+                status: 'pending',
+            });
+            return;
+        }
+
+        selectedPeers.forEach((subject) => {
+            incomingCounts[subject.id] += 1;
+            assignments.push({
+                matchId: match.id,
+                evaluatorId,
+                subjectId: subject.id,
+                status: 'pending',
+            });
+        });
+    });
+
+    return assignments;
+}
 
 /**
  * Adds a user to a match.
@@ -290,5 +383,259 @@ export async function respondJoinRequestAction(
         return { success: true };
     } catch (error: any) {
         return handleServerActionError(error, { matchId, requesterId, action: 'respondJoinRequest' });
+    }
+}
+
+export async function updateMatchTeamsAction(matchId: string, teams: Match['teams']) {
+    try {
+        const userId = await requireAuth();
+        const db = getAdminDb();
+        const matchRef = db.collection('matches').doc(matchId);
+        const matchDoc = await matchRef.get();
+
+        if (!matchDoc.exists) {
+            return { success: false, error: 'Partido no encontrado.' };
+        }
+
+        const match = { id: matchDoc.id, ...matchDoc.data() } as Match;
+        const allowed = await canEditMatch(match, userId);
+        if (!allowed) {
+            return { success: false, error: 'No tienes permiso para editar este partido.' };
+        }
+
+        await matchRef.update({ teams: teams || [] });
+        revalidatePath(`/matches/${matchId}`);
+        return { success: true };
+    } catch (error: any) {
+        return handleServerActionError(error, { matchId, action: 'updateMatchTeams' });
+    }
+}
+
+export async function updateMatchStreamAction(matchId: string, stream: { provider: string; id: string | null; url: string | null; active: boolean; }) {
+    try {
+        const userId = await requireAuth();
+        const db = getAdminDb();
+        const matchRef = db.collection('matches').doc(matchId);
+        const matchDoc = await matchRef.get();
+
+        if (!matchDoc.exists) {
+            return { success: false, error: 'Partido no encontrado.' };
+        }
+
+        const match = { id: matchDoc.id, ...matchDoc.data() } as Match;
+        const allowed = await canEditMatch(match, userId);
+        if (!allowed) {
+            return { success: false, error: 'No tienes permiso para editar este partido.' };
+        }
+
+        await matchRef.update({ stream });
+        revalidatePath(`/matches/${matchId}`);
+        return { success: true };
+    } catch (error: any) {
+        return handleServerActionError(error, { matchId, action: 'updateMatchStream' });
+    }
+}
+
+export async function finishMatchAction(matchId: string) {
+    try {
+        const userId = await requireAuth();
+        const db = getAdminDb();
+        const matchRef = db.collection('matches').doc(matchId);
+        const matchSnap = await matchRef.get();
+
+        if (!matchSnap.exists) {
+            return { success: false, error: 'Partido no encontrado.' };
+        }
+
+        const match = { id: matchSnap.id, ...matchSnap.data() } as Match;
+        if (!(await canEditMatch(match, userId))) {
+            return { success: false, error: 'No tienes permiso para finalizar este partido.' };
+        }
+
+        const playerRefs = (match.playerUids || []).map((playerId) => db.collection('players').doc(playerId));
+        const playerDocs = playerRefs.length > 0 ? await db.getAll(...playerRefs) : [];
+        const allPlayers = playerDocs.filter((doc) => doc.exists).map((doc) => ({ id: doc.id, ...doc.data() } as Player));
+
+        let finalTeams = match.teams;
+        const matchUpdateData: Record<string, unknown> = { status: 'completed' };
+
+        if ((!finalTeams || finalTeams.length === 0) && (match.playerUids?.length || 0) >= match.matchSize) {
+            const playersToBalance = allPlayers
+                .filter((player) => match.playerUids.includes(player.id))
+                .map((player) => ({ id: player.id, name: player.name, ovr: player.ovr, position: player.position }));
+            const teamGenerationResult = await generateTeamsAction(playersToBalance);
+            if ('error' in teamGenerationResult || !teamGenerationResult.teams) {
+                throw new Error(('error' in teamGenerationResult ? teamGenerationResult.error : undefined) || 'La IA no pudo generar los equipos.');
+            }
+            finalTeams = teamGenerationResult.teams as Match['teams'];
+            matchUpdateData.teams = finalTeams;
+        }
+
+        const matchForAssignments = finalTeams ? { ...match, teams: finalTeams } : match;
+        const assignments = generateEvaluationAssignments(matchForAssignments, allPlayers);
+        const realPlayerUids = allPlayers.filter((player) => match.playerUids.includes(player.id) && isRealUser(player)).map((player) => player.id);
+        const batch = db.batch();
+
+        batch.update(matchRef, matchUpdateData);
+
+        assignments.forEach((assignment) => {
+            const assignmentRef = db.collection(`matches/${match.id}/assignments`).doc();
+            batch.set(assignmentRef, assignment);
+        });
+
+        const uniqueEvaluatorIds = [...new Set(assignments.map((assignment) => assignment.evaluatorId))];
+        uniqueEvaluatorIds.forEach((evaluatorId) => {
+            const notificationRef = db.collection(`users/${evaluatorId}/notifications`).doc();
+            batch.set(notificationRef, {
+                type: 'evaluation_pending',
+                title: '¡Evaluación pendiente!',
+                message: `Es hora de evaluar a tus compañeros del partido "${match.title}".`,
+                link: `/evaluations/${match.id}`,
+                isRead: false,
+                createdAt: new Date().toISOString(),
+                metadata: { fromUserId: userId },
+            });
+        });
+
+        await batch.commit();
+
+        if (realPlayerUids.length > 0) {
+            notifyEvaluationAvailableAction({
+                playerIds: realPlayerUids,
+                matchTitle: match.title,
+            }).catch((error) => console.error('Failed to send evaluation notification', error));
+        }
+
+        revalidatePath(`/matches/${matchId}`);
+        revalidatePath('/matches');
+        return { success: true, assignmentsCount: assignments.length };
+    } catch (error: any) {
+        return handleServerActionError(error, { matchId, action: 'finishMatch' });
+    }
+}
+
+export async function deleteMatchAction(matchId: string) {
+    try {
+        const userId = await requireAuth();
+        const db = getAdminDb();
+        const matchRef = db.collection('matches').doc(matchId);
+        const matchSnap = await matchRef.get();
+
+        if (!matchSnap.exists) {
+            return { success: false, error: 'Partido no encontrado.' };
+        }
+
+        const match = { id: matchSnap.id, ...matchSnap.data() } as Match;
+        if (match.ownerUid !== userId) {
+            return { success: false, error: 'Solo el organizador puede eliminar este partido.' };
+        }
+
+        if (match.playerUids?.length) {
+            notifyMatchUpdatedAction({
+                playerIds: match.playerUids,
+                matchTitle: match.title,
+                updateType: 'cancelled',
+                updateDetails: 'El partido fue cancelado por el organizador',
+            }).catch((error) => console.error('Failed to send cancellation notification', error));
+        }
+
+        await matchRef.delete();
+        revalidatePath('/matches');
+        return { success: true };
+    } catch (error: any) {
+        return handleServerActionError(error, { matchId, action: 'deleteMatch' });
+    }
+}
+
+export async function shuffleMatchTeamsAction(matchId: string) {
+    try {
+        const userId = await requireAuth();
+        const db = getAdminDb();
+        const matchRef = db.collection('matches').doc(matchId);
+        const matchSnap = await matchRef.get();
+
+        if (!matchSnap.exists) {
+            return { success: false, error: 'Partido no encontrado.' };
+        }
+
+        const match = { id: matchSnap.id, ...matchSnap.data() } as Match;
+        if (!(await canEditMatch(match, userId))) {
+            return { success: false, error: 'No tienes permiso para reordenar los equipos.' };
+        }
+
+        const playerRefs = (match.playerUids || []).map((playerId) => db.collection('players').doc(playerId));
+        const playerDocs = playerRefs.length > 0 ? await db.getAll(...playerRefs) : [];
+        const playersToBalance = playerDocs
+            .filter((doc) => doc.exists)
+            .map((doc) => ({ ...(doc.data() as Player), id: doc.id }))
+            .filter((player) => match.playerUids.includes(player.id))
+            .map((player) => ({ id: player.id, name: player.name, ovr: player.ovr, position: player.position }));
+
+        const teamGenerationResult = await generateTeamsAction(playersToBalance);
+        if ('error' in teamGenerationResult || !teamGenerationResult.teams) {
+            throw new Error(('error' in teamGenerationResult ? teamGenerationResult.error : undefined) || 'La IA no pudo generar los equipos.');
+        }
+
+        await matchRef.update({ teams: teamGenerationResult.teams });
+
+        if (match.playerUids?.length) {
+            notifyTeamsShuffledAction({
+                playerIds: match.playerUids,
+                matchTitle: match.title,
+            }).catch((error) => console.error('Failed to send team shuffle notification', error));
+        }
+
+        revalidatePath(`/matches/${matchId}`);
+        return { success: true, teams: teamGenerationResult.teams };
+    } catch (error: any) {
+        return handleServerActionError(error, { matchId, action: 'shuffleMatchTeams' });
+    }
+}
+
+export async function finalizePendingMatchesAction(matchIds: string[]) {
+    try {
+        const userId = await requireAuth();
+        const uniqueMatchIds = [...new Set(matchIds.filter(Boolean))];
+
+        if (uniqueMatchIds.length === 0) {
+            return { success: true, finalizedCount: 0 };
+        }
+
+        const db = getAdminDb();
+        const matchRefs = uniqueMatchIds.map((matchId) => db.collection('matches').doc(matchId));
+        const matchDocs = await db.getAll(...matchRefs);
+        const batch = db.batch();
+        const finalizedAt = new Date().toISOString();
+        const competitionTypes = new Set(['league', 'cup', 'league_final']);
+        let finalizedCount = 0;
+
+        for (const matchDoc of matchDocs) {
+            if (!matchDoc.exists) {
+                continue;
+            }
+
+            const match = { id: matchDoc.id, ...matchDoc.data() } as Match;
+
+            if (match.ownerUid !== userId) {
+                continue;
+            }
+
+            if (match.status !== 'upcoming' || competitionTypes.has(match.type)) {
+                continue;
+            }
+
+            batch.update(matchDoc.ref, { status: 'completed', finalizedAt });
+            finalizedCount += 1;
+        }
+
+        if (finalizedCount > 0) {
+            await batch.commit();
+            revalidatePath('/matches');
+            revalidatePath('/dashboard');
+        }
+
+        return { success: true, finalizedCount };
+    } catch (error: any) {
+        return handleServerActionError(error, { action: 'finalizePendingMatches', matchIds });
     }
 }

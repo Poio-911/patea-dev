@@ -10,9 +10,7 @@ import {
 } from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { useFirestore, useUser } from '@/firebase';
-import { doc, writeBatch, collection } from 'firebase/firestore';
-import type { AvailablePlayer, Match, Invitation } from '@/lib/types';
+import type { AvailablePlayer, Match } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Search, MapPin, Send, UserCheck, Star } from 'lucide-react';
 import { getAvailableLocalPlayersAction } from '@/lib/actions/recruitment-actions';
@@ -23,6 +21,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { sendMatchInvitationsAction } from '@/lib/actions/match-invitation-actions';
 
 interface RecruitmentDialogProps {
     match: Match;
@@ -37,8 +36,6 @@ export function RecruitmentDialog({ match, children }: RecruitmentDialogProps) {
     const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
     const [isPending, startTransition] = useTransition();
-    const firestore = useFirestore();
-    const { user } = useUser();
     const { toast } = useToast();
 
     const selectedPlayer = players.find(p => p.uid === selectedPlayerId);
@@ -89,26 +86,14 @@ export function RecruitmentDialog({ match, children }: RecruitmentDialogProps) {
     }, [open, radiusInKm, match.location, match.date, toast, match.players, match.ownerUid]);
 
     const handleInvite = () => {
-        if (!firestore || !user || !selectedPlayer) return;
+        if (!selectedPlayer) return;
 
         startTransition(async () => {
-            const batch = writeBatch(firestore);
-
-            const invitationRef = doc(collection(firestore, `matches/${match.id}/invitations`));
-            const newInvitation: Omit<Invitation, 'id'> = {
-                matchId: match.id,
-                matchTitle: match.title,
-                matchDate: match.date,
-                playerId: selectedPlayer.uid,
-                status: 'pending',
-                createdAt: new Date().toISOString()
-            };
-            batch.set(invitationRef, newInvitation);
-            // NOTE: onInvitationCreate Cloud Function handles the push + in-app notification.
-            // Do NOT create a notification manually here to avoid duplicates.
-
             try {
-                await batch.commit();
+                const result = await sendMatchInvitationsAction(match.id, [selectedPlayer.uid]);
+                if (!result.success) {
+                    throw new Error(result.error || 'No se pudo enviar la invitación.');
+                }
                 toast({
                     title: '¡Invitación Enviada!',
                     description: `Se notificó a ${selectedPlayer.displayName} para el partido.`,

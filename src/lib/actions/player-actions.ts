@@ -1,6 +1,7 @@
 'use server';
 
 import { getAdminDb } from '../../firebase/admin-init';
+import { requireAuth } from '../../lib/auth/get-server-session';
 import { logger } from '../../lib/logger';
 import { Player } from '../../lib/types';
 import { publishActivityAction } from './social-actions';
@@ -75,5 +76,40 @@ export async function createManualPlayerAction(
             success: false,
             message: error.message || 'Error al crear el jugador en el servidor.'
         };
+    }
+}
+
+export async function updatePlayerAction(
+    playerId: string,
+    playerData: Pick<Player, 'name' | 'position' | 'pac' | 'sho' | 'pas' | 'dri' | 'def' | 'phy'>
+) {
+    try {
+        const userId = await requireAuth();
+        const db = getAdminDb();
+        const playerRef = db.collection('players').doc(playerId);
+        const playerSnap = await playerRef.get();
+
+        if (!playerSnap.exists) {
+            return { success: false, message: 'Jugador no encontrado.' };
+        }
+
+        const existingPlayer = { id: playerSnap.id, ...playerSnap.data() } as Player;
+        if (existingPlayer.ownerUid !== userId && existingPlayer.id !== userId) {
+            return { success: false, message: 'No tienes permiso para editar este jugador.' };
+        }
+
+        const ovr = Math.round(
+            (playerData.pac + playerData.sho + playerData.pas + playerData.dri + playerData.def + playerData.phy) / 6
+        );
+
+        await playerRef.update({
+            ...playerData,
+            ovr,
+        });
+
+        return { success: true };
+    } catch (error: any) {
+        logger.error('[updatePlayerAction] Error updating player:', error, { playerId });
+        return { success: false, message: error.message || 'No se pudo actualizar el jugador.' };
     }
 }

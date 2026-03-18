@@ -36,9 +36,9 @@ import { GripVertical, Save, X, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { JerseyPreview } from './team-builder/jersey-preview';
 import { useToast } from '@/hooks/use-toast';
-import { doc, updateDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { updateMatchTeamsAction } from '@/lib/actions/match-actions';
+import { isErrorResponse } from '@/lib/errors';
 
 type EditableTeamsDialogProps = {
   match: Match;
@@ -103,7 +103,6 @@ export function EditableTeamsDialog({ match, children }: EditableTeamsDialogProp
   const [open, setOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
-  const firestore = useFirestore();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -163,12 +162,13 @@ export function EditableTeamsDialog({ match, children }: EditableTeamsDialogProp
   };
 
   const handleSave = async () => {
-    if (!firestore) return;
     setIsSaving(true);
 
     try {
-      const matchRef = doc(firestore, 'matches', match.id);
-      await updateDoc(matchRef, { teams });
+      const result = await updateMatchTeamsAction(match.id, teams);
+      if (isErrorResponse(result) || !result.success) {
+        throw new Error(result.error || 'No se pudieron guardar los cambios en los equipos.');
+      }
 
       toast({
         title: '¡Equipos actualizados!',

@@ -4,7 +4,7 @@
 import { useState, useMemo } from 'react';
 import { useUser, useFirestore } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, where, doc, updateDoc, deleteDoc, getDocs, writeBatch, arrayUnion } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { Group } from '@/lib/types';
 import { Button } from '../ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -30,6 +30,7 @@ import {
   ResponsiveDropdownMenuSeparator,
   ResponsiveDropdownMenuTrigger,
 } from '@/components/ui/responsive-dropdown-menu';
+import { deleteGroupAction, setActiveGroupAction } from '@/lib/actions/group-actions';
 
 export function UserGroupsList() {
   const { user } = useUser();
@@ -48,20 +49,16 @@ export function UserGroupsList() {
   const { data: groups, loading: groupsLoading } = useCollection<Group>(groupsQuery);
 
   const handleSetActiveGroup = async (groupId: string) => {
-    if (!firestore || !user?.uid) return;
+    if (!user?.uid) return;
     setIsChangingGroup(groupId);
-    const userRef = doc(firestore, 'users', user.uid);
     try {
-      // IMPORTANT: also update `groups` array to ensure consistency.
-      // The dashboard checks `user.groups.length === 0` to decide if the user is new.
-      // If groups is empty/missing while activeGroupId is set, the welcome screen appears.
-      await updateDoc(userRef, {
-        activeGroupId: groupId,
-        groups: arrayUnion(groupId),
-      });
+      const result = await setActiveGroupAction(groupId);
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudo cambiar de grupo.');
+      }
       toast({
         title: 'Grupo cambiado',
-        description: `Ahora estás operando en el grupo ${groups?.find(g => g.id === groupId)?.name}.`,
+        description: `Ahora estás operando en el grupo ${result.groupName || groups?.find(g => g.id === groupId)?.name}.`,
       });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cambiar de grupo.' });
@@ -76,38 +73,15 @@ export function UserGroupsList() {
   }
 
   const handleDeleteGroup = async (groupId: string, groupName: string) => {
-    if (!firestore || !user?.uid) return;
+    if (!user?.uid) return;
     setIsDeletingGroup(groupId);
 
-    const batch = writeBatch(firestore);
-
     try {
-      const playersQuery = query(collection(firestore, 'players'), where('groupId', '==', groupId));
-      const playersSnap = await getDocs(playersQuery);
-      playersSnap.forEach(playerDoc => batch.delete(playerDoc.ref));
-
-      const matchesQuery = query(collection(firestore, 'matches'), where('groupId', '==', groupId));
-      const matchesSnap = await getDocs(matchesQuery);
-      matchesSnap.forEach(matchDoc => batch.delete(matchDoc.ref));
-
-      const teamsQuery = query(collection(firestore, 'teams'), where('groupId', '==', groupId));
-      const teamsSnap = await getDocs(teamsQuery);
-      teamsSnap.forEach(teamDoc => batch.delete(teamDoc.ref));
-
-      batch.delete(doc(firestore, 'groups', groupId));
-
-      const userRef = doc(firestore, 'users', user.uid);
-      const userGroups = user.groups || [];
-      const userUpdate: any = {
-        groups: userGroups.filter(id => id !== groupId)
-      };
-      if (user.activeGroupId === groupId) {
-        userUpdate.activeGroupId = userGroups.length > 1 ? userGroups.find(id => id !== groupId) : null;
+      const result = await deleteGroupAction(groupId);
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudo eliminar el grupo.');
       }
-      batch.update(userRef, userUpdate);
-
-      await batch.commit();
-      toast({ title: 'Grupo Eliminado', description: `El grupo "${groupName}" y todos sus datos han sido eliminados.` });
+      toast({ title: 'Grupo Eliminado', description: `El grupo "${result.groupName || groupName}" y todos sus datos han sido eliminados.` });
     } catch (error) {
       console.error("Error deleting group:", error);
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el grupo.' });
@@ -225,7 +199,7 @@ export function UserGroupsList() {
         >
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>¿Borrar "{deletingGroup.name}"?</AlertDialogTitle>
+              <AlertDialogTitle>¿Borrar &ldquo;{deletingGroup.name}&rdquo;?</AlertDialogTitle>
               <AlertDialogDescription>
                 Esta acción es permanente. Se borrarán todos los jugadores y partidos asociados a este grupo.
               </AlertDialogDescription>

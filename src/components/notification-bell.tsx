@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useUser, useFirestore, useCollection } from '@/firebase';
-import { collection, query, where, orderBy, limit, writeBatch, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import {
     ResponsivePopover as Popover,
     ResponsivePopoverContent as PopoverContent,
@@ -19,6 +19,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
+import { markAllNotificationsAsReadAction } from '@/lib/actions/server-actions';
 
 interface NotificationBellProps {
     isPopoverContent?: boolean;
@@ -75,15 +76,8 @@ export function NotificationBell({ isPopoverContent = false }: NotificationBellP
     }, [notifications]);
 
     const markAllAsRead = async () => {
-        if (!firestore || !user?.uid || unreadCount === 0) return;
-        const batch = writeBatch(firestore);
-        notifications?.forEach(n => {
-            if (!n.isRead) {
-                const notifRef = doc(firestore, 'users', user.uid, 'notifications', n.id);
-                batch.update(notifRef, { isRead: true });
-            }
-        });
-        await batch.commit();
+        if (!user?.uid || unreadCount === 0) return;
+        await markAllNotificationsAsReadAction(user.uid);
     };
 
     const Content = () => (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/index';
 import type { CreditPackage } from '@/lib/types';
@@ -31,14 +31,7 @@ export function CreditPackagesDialog({
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Cargar paquetes disponibles
-  useEffect(() => {
-    if (open) {
-      loadPackages();
-    }
-  }, [open]);
-
-  const loadPackages = async () => {
+  const loadPackages = useCallback(async () => {
     try {
       setLoading(true);
       const packagesSnapshot = await getDocs(collection(db, 'creditPackages'));
@@ -61,7 +54,14 @@ export function CreditPackagesDialog({
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  // Cargar paquetes disponibles
+  useEffect(() => {
+    if (open) {
+      loadPackages();
+    }
+  }, [loadPackages, open]);
 
   const handlePurchase = async (packageId: string) => {
     try {

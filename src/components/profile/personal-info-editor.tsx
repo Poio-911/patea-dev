@@ -16,10 +16,8 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, Mail, Phone, Loader2, Check, Upload, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { doc, updateDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
-import { updateProfile } from 'firebase/auth';
-import { useAuth } from '@/firebase';
+import { isErrorResponse } from '@/lib/errors';
+import { updateProfileAction } from '@/lib/actions/server-actions';
 import type { UserProfile } from '@/lib/types';
 
 type PersonalInfoEditorProps = {
@@ -28,8 +26,6 @@ type PersonalInfoEditorProps = {
 
 export function PersonalInfoEditor({ user }: PersonalInfoEditorProps) {
     const { toast } = useToast();
-    const firestore = useFirestore();
-    const auth = useAuth();
 
     const [open, setOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -39,36 +35,17 @@ export function PersonalInfoEditor({ user }: PersonalInfoEditorProps) {
     });
 
     const handleSave = async () => {
-        if (!firestore || !auth?.currentUser) return;
-
         setIsSaving(true);
         try {
-            const userRef = doc(firestore, 'users', user.uid);
-            const playerRef = doc(firestore, 'players', user.uid);
-
-            // Update Firestore User
-            await updateDoc(userRef, {
+            const result = await updateProfileAction(user.uid, {
                 displayName: formData.displayName,
                 phoneNumber: formData.phoneNumber,
             });
-
-            // Update Firestore Player (sync name and photo if changed)
-            try {
-                // We use updateDoc but catch if it doesn't exist (though it should for registered users)
-                await updateDoc(playerRef, {
-                    name: formData.displayName,
-                    // If user.photoURL is updated (currently not in form but for future proofing / consistency)
-                    ...(user.photoURL ? { photoURL: user.photoURL } : {})
-                });
-            } catch (err) {
-                console.warn('Player document update failed or not found', err);
+            if (isErrorResponse(result)) {
+                throw new Error(result.error || 'No se pudo actualizar el perfil.');
             }
-
-            // Update Firebase Auth displayName
-            if (formData.displayName !== user.displayName) {
-                await updateProfile(auth.currentUser, {
-                    displayName: formData.displayName,
-                });
+            if (!result.success) {
+                throw new Error('No se pudo actualizar el perfil.');
             }
 
             toast({

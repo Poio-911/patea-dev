@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   ResponsiveDialog as Dialog,
   ResponsiveDialogContent as DialogContent,
@@ -42,20 +42,20 @@ export function CommentsDialog({
   const [comments, setComments] = useState<SocialComment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadComments = async () => {
+  const loadComments = useCallback(async () => {
     setIsLoading(true);
     const result = await getCommentsAction(activityId);
     if (result.success && result.comments) {
       setComments(result.comments);
     }
     setIsLoading(false);
-  };
+  }, [activityId]);
 
   useEffect(() => {
     if (open) {
       loadComments();
     }
-  }, [open, activityId]);
+  }, [loadComments, open]);
 
   const handleSubmitComment = async (text: string) => {
     if (!userId || !userName) {

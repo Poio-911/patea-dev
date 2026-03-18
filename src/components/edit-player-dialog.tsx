@@ -25,11 +25,10 @@ import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useFirestore } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { Player } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { updatePlayerAction } from '@/lib/actions/player-actions';
 
 const playerSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio'),
@@ -59,7 +58,6 @@ const AttributeInput = ({ label, attributeKey, register }: { label: string, attr
 export function EditPlayerDialog({ player, children }: EditPlayerDialogProps) {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const firestore = useFirestore();
   const { toast } = useToast();
 
   const {
@@ -82,19 +80,13 @@ export function EditPlayerDialog({ player, children }: EditPlayerDialogProps) {
   });
 
   const onSubmit = async (data: PlayerFormData) => {
-    if (!firestore) return;
     setIsSubmitting(true);
 
-    const ovr = Math.round(
-      (data.pac + data.sho + data.pas + data.dri + data.def + data.phy) / 6
-    );
-
     try {
-      const playerRef = doc(firestore, 'players', player.id);
-      await updateDoc(playerRef, {
-        ...data,
-        ovr,
-      });
+      const result = await updatePlayerAction(player.id, data);
+      if (!result.success) {
+        throw new Error(result.message || 'No se pudo actualizar el jugador.');
+      }
 
       toast({ title: 'Éxito', description: 'Jugador actualizado correctamente.' });
       setOpen(false);

@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useFirestore, useUser } from '@/firebase';
-import { doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { useUser } from '@/firebase';
 import type { Player, AvailablePlayer, DayOfWeek, TimeOfDay, Availability, SavedLocation } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -12,8 +11,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Search, MapPin, RefreshCw, AlertCircle, Sun, Cloud, Moon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { saveUserLocationAction, reverseGeocodeAction } from '@/lib/actions/location-actions';
+import { disableAvailabilityAction, enableAvailabilityAction, updateAvailabilityPreferencesAction } from '@/lib/actions/availability-actions';
 import { cn } from '@/lib/utils';
-import ngeohash from 'ngeohash';
 
 const daysOfWeek: { id: DayOfWeek; label: string; short: string }[] = [
   { id: 'lunes', label: 'Lunes', short: 'Lun' },
@@ -38,7 +37,6 @@ interface AvailabilityCardProps {
 }
 
 export function AvailabilityCard({ player, availablePlayerData, savedLocation }: AvailabilityCardProps) {
-  const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
 
@@ -105,14 +103,12 @@ export function AvailabilityCard({ player, availablePlayerData, savedLocation }:
   }, []);
 
   const handleToggleVisibility = async (checked: boolean) => {
-    if (!firestore || !user || !player) return;
+    if (!user || !player) return;
 
     setIsToggling(true);
     setLocationError(null);
 
     try {
-      const availablePlayerRef = doc(firestore, 'availablePlayers', user.uid);
-
       if (checked) {
         // Need location to enable visibility
         let location = currentLocation;
@@ -130,38 +126,29 @@ export function AvailabilityCard({ player, availablePlayerData, savedLocation }:
           setCurrentLocation(location);
         }
 
-        // Build availability object from selected days/times
-        const availability: Availability = {};
-        selectedDays.forEach((day) => {
-          availability[day] = selectedTimes.length > 0 ? selectedTimes : ['tarde', 'noche'];
-        });
-
         // If no days selected, default to weekends
+        let nextDays = selectedDays;
+        let nextTimes = selectedTimes;
         if (selectedDays.length === 0) {
-          availability.sabado = selectedTimes.length > 0 ? selectedTimes : ['tarde', 'noche'];
-          availability.domingo = selectedTimes.length > 0 ? selectedTimes : ['tarde', 'noche'];
-          setSelectedDays(['sabado', 'domingo']);
-          if (selectedTimes.length === 0) {
-            setSelectedTimes(['tarde', 'noche']);
-          }
+          nextDays = ['sabado', 'domingo'];
+          setSelectedDays(nextDays);
+        }
+        if (selectedTimes.length === 0) {
+          nextTimes = ['tarde', 'noche'];
+          setSelectedTimes(nextTimes);
         }
 
-        const newAvailablePlayer: Omit<AvailablePlayer, 'id'> = {
-          uid: user.uid,
-          displayName: player.name,
-          photoUrl: player.photoUrl || '',
-          position: player.position,
-          ovr: player.ovr,
-          location: { lat: location.lat, lng: location.lng },
-          geohash: ngeohash.encode(location.lat, location.lng),
-          availability,
-        };
-
-        await setDoc(availablePlayerRef, newAvailablePlayer, { merge: true });
+        const result = await enableAvailabilityAction(nextDays, nextTimes);
+        if (!result.success) {
+          throw new Error(result.error || 'No se pudo activar la visibilidad.');
+        }
         setIsVisible(true);
         toast({ title: 'Visibilidad activada', description: 'Ahora otros DTs pueden encontrarte.' });
       } else {
-        await deleteDoc(availablePlayerRef);
+        const result = await disableAvailabilityAction();
+        if (!result.success) {
+          throw new Error(result.error || 'No se pudo desactivar la visibilidad.');
+        }
         setIsVisible(false);
         toast({ title: 'Visibilidad desactivada', description: 'Ya no aparecés en búsquedas.' });
       }
@@ -182,13 +169,6 @@ export function AvailabilityCard({ player, availablePlayerData, savedLocation }:
       await saveUserLocationAction(location.lat, location.lng, location.label);
       setCurrentLocation(location);
 
-      // If visible, update the availablePlayers document
-      if (isVisible && firestore && user) {
-        const availablePlayerRef = doc(firestore, 'availablePlayers', user.uid);
-        const geohash = ngeohash.encode(location.lat, location.lng);
-        await setDoc(availablePlayerRef, { location: { lat: location.lat, lng: location.lng }, geohash }, { merge: true });
-      }
-
       toast({ title: 'Ubicación actualizada' });
     }
 
@@ -198,16 +178,13 @@ export function AvailabilityCard({ player, availablePlayerData, savedLocation }:
   const handleDaysChange = async (days: string[]) => {
     setSelectedDays(days as DayOfWeek[]);
 
-    if (isVisible && firestore && user) {
+    if (isVisible && user) {
       setIsSaving(true);
-      const availability: Availability = {};
-      (days as DayOfWeek[]).forEach((day) => {
-        availability[day] = selectedTimes.length > 0 ? selectedTimes : ['tarde', 'noche'];
-      });
-
       try {
-        const availablePlayerRef = doc(firestore, 'availablePlayers', user.uid);
-        await setDoc(availablePlayerRef, { availability }, { merge: true });
+        const result = await updateAvailabilityPreferencesAction(days as DayOfWeek[], selectedTimes);
+        if (!result.success) {
+          throw new Error(result.error || 'No se pudo actualizar la disponibilidad.');
+        }
       } catch (error) {
         console.error('Error updating days:', error);
       } finally {
@@ -219,16 +196,13 @@ export function AvailabilityCard({ player, availablePlayerData, savedLocation }:
   const handleTimesChange = async (times: string[]) => {
     setSelectedTimes(times as TimeOfDay[]);
 
-    if (isVisible && firestore && user && selectedDays.length > 0) {
+    if (isVisible && user && selectedDays.length > 0) {
       setIsSaving(true);
-      const availability: Availability = {};
-      selectedDays.forEach((day) => {
-        availability[day] = times as TimeOfDay[];
-      });
-
       try {
-        const availablePlayerRef = doc(firestore, 'availablePlayers', user.uid);
-        await setDoc(availablePlayerRef, { availability }, { merge: true });
+        const result = await updateAvailabilityPreferencesAction(selectedDays, times as TimeOfDay[]);
+        if (!result.success) {
+          throw new Error(result.error || 'No se pudo actualizar la disponibilidad.');
+        }
       } catch (error) {
         console.error('Error updating times:', error);
       } finally {

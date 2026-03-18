@@ -531,7 +531,7 @@ export function PlayerMatchHistory({ playerId, player }: PlayerMatchHistoryProps
                                   {/* Text description */}
                                   {evalItem.textDescription ? (
                                     <div className="relative mt-2 p-3 bg-muted/40 rounded-r-lg border-l-2 border-primary/20 text-sm text-foreground/80 italic">
-                                      "{evalItem.textDescription}"
+                                      &ldquo;{evalItem.textDescription}&rdquo;
                                     </div>
                                   ) : (!hasRating && !hasTags) && (
                                     <p className="text-xs text-muted-foreground italic">Sin detalles adicionales.</p>

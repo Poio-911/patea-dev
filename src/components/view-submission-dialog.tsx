@@ -74,7 +74,7 @@ export function ViewSubmissionDialog({ submission, children, matchPlayers }: Vie
               {formData.personalChronicle && (
                 <div className="p-3 border rounded-md bg-blue-50 border-blue-100">
                   <p className="text-xs text-blue-700 font-semibold uppercase">Mi Crónica</p>
-                  <p className="text-sm italic text-blue-900 line-clamp-4">"{formData.personalChronicle}"</p>
+                  <p className="text-sm italic text-blue-900 line-clamp-4">&ldquo;{formData.personalChronicle}&rdquo;</p>
                 </div>
               )}
 

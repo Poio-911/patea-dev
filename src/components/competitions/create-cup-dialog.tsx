@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -244,7 +245,7 @@ export function CreateCupDialog({ open, onOpenChange, groupId, userId, teams }: 
                         </div>
                       ) : (
                         <div className="relative w-full h-32 border-2 rounded-lg overflow-hidden">
-                          <img src={logoPreview} alt="Logo preview" className="w-full h-full object-contain bg-muted/30" />
+                          <Image src={logoPreview} alt="Logo preview" fill sizes="100vw" unoptimized className="object-contain bg-muted/30" />
                           <Button
                             type="button"
                             variant="destructive"

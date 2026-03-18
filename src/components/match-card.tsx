@@ -1,6 +1,7 @@
 
 'use client';
 
+import Image from 'next/image';
 import { useState, useMemo, useEffect } from 'react';
 import type { Match, Player, EvaluationAssignment, Notification, UserProfile, Invitation, Jersey } from '@/lib/types';
 import { doc, getDoc, query, where, collection } from 'firebase/firestore';
@@ -70,7 +71,7 @@ function PlayerAvatarStack({ players, maxVisible = 5, matchSize }: {
                 {visible.map(p => (
                     <div key={p.uid} className="w-6 h-6 rounded-full border-2 border-background dark:border-white/20 overflow-hidden flex-shrink-0">
                         {p.photoURL
-                            ? <img src={p.photoURL} alt={p.displayName} className="w-full h-full object-cover" />
+                            ? <Image src={p.photoURL} alt={p.displayName} width={24} height={24} unoptimized className="w-full h-full object-cover" />
                             : <div className="w-full h-full bg-muted flex items-center justify-center text-[8px] font-bold text-muted-foreground">
                                 {p.displayName?.[0]?.toUpperCase()}
                             </div>
@@ -199,10 +200,13 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
         >
             {/* Background Image Overlay — visible en todos los temas con intensidad adaptada */}
             <div className="absolute inset-0 z-0 overflow-hidden rounded-xl">
-                <img
+                <Image
                     src={getMatchBackgroundImage(match.id)}
                     alt=""
-                    className="w-full h-full object-cover opacity-[0.07] dark:opacity-30 grayscale brightness-90 contrast-125"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 420px"
+                    unoptimized
+                    className="object-cover opacity-[0.07] dark:opacity-30 grayscale brightness-90 contrast-125"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-background/60 dark:from-background/80 via-transparent to-transparent" />
             </div>
@@ -219,7 +223,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                 <div className="flex items-center gap-2 mt-1">
                     <div className="w-6 h-6 rounded-full overflow-hidden bg-muted flex-shrink-0 border border-border">
                         {ownerPhoto
-                            ? <img src={ownerPhoto} alt={ownerName ?? ''} className="w-full h-full object-cover" />
+                            ? <Image src={ownerPhoto} alt={ownerName ?? ''} width={24} height={24} unoptimized className="w-full h-full object-cover" />
                             : <div className="w-full h-full flex items-center justify-center">
                                 <User className="h-3.5 w-3.5 text-muted-foreground" />
                             </div>

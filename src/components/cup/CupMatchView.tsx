@@ -34,6 +34,12 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
     const team2 = match.teams?.[1];
     const isCompleted = match.status === 'completed' || match.status === 'evaluated';
 
+    // Sync local state if match prop changes (e.g. goals added in visualizer)
+    useEffect(() => {
+        setTeam1Score(match.finalScore?.team1?.toString() || match.teams?.[0]?.finalScore?.toString() || '0');
+        setTeam2Score(match.finalScore?.team2?.toString() || match.teams?.[1]?.finalScore?.toString() || '0');
+    }, [match.finalScore, match.teams]);
+
     if (!team1 || !team2) {
         return (
             <div className="max-w-4xl mx-auto p-8 text-center">
@@ -41,12 +47,6 @@ export function CupMatchView({ match, cupId, userId }: CupMatchViewProps) {
             </div>
         );
     }
-
-    // ✅ Sync local state if match prop changes (e.g. goals added in visualizer)
-    useEffect(() => {
-        setTeam1Score(match.finalScore?.team1?.toString() || match.teams?.[0]?.finalScore?.toString() || '0');
-        setTeam2Score(match.finalScore?.team2?.toString() || match.teams?.[1]?.finalScore?.toString() || '0');
-    }, [match.finalScore, match.teams]);
 
     const handleFinalize = async () => {
         const score1 = parseInt(team1Score);

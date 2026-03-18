@@ -2,7 +2,7 @@
 
 import { Users2, Calendar, Loader2, Info } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, orderBy, doc, writeBatch, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,8 @@ import { PendingFinalizationDialog } from '@/components/matches/pending-finaliza
 import { AddMatchDialog } from '@/components/add-match-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserPreferencesAction, getUserPreferencesAction } from '@/lib/actions/server-actions';
+import { finalizePendingMatchesAction } from '@/lib/actions/match-actions';
+import { isErrorResponse } from '@/lib/errors';
 import {
     ResponsivePopover,
     ResponsivePopoverContent,
@@ -208,16 +210,17 @@ export default function MatchesPage() {
     }, [pendingFinalizationMatches.length]);
 
     const handleFinalizeAllPending = async () => {
-        if (!firestore || pendingFinalizationMatches.length === 0) return;
+        if (pendingFinalizationMatches.length === 0) return;
         try {
-            const batch = writeBatch(firestore);
-            const now = new Date().toISOString();
-            for (const match of pendingFinalizationMatches) {
-                const matchRef = doc(firestore, 'matches', match.id);
-                batch.update(matchRef, { status: 'completed', finalizedAt: now });
+            const result = await finalizePendingMatchesAction(pendingFinalizationMatches.map((match) => match.id));
+            if (isErrorResponse(result)) {
+                throw new Error(result.error || 'No se pudieron finalizar los partidos.');
             }
-            await batch.commit();
-            toast({ title: 'Partidos finalizados', description: `Se finalizaron ${pendingFinalizationMatches.length} partido${pendingFinalizationMatches.length !== 1 ? 's' : ''} correctamente.` });
+            if (!result.success) {
+                throw new Error('No se pudieron finalizar los partidos.');
+            }
+            const finalizedCount = result.finalizedCount || 0;
+            toast({ title: 'Partidos finalizados', description: `Se finalizaron ${finalizedCount} partido${finalizedCount !== 1 ? 's' : ''} correctamente.` });
         } catch (error) {
             console.error('Error finalizing matches:', error);
             toast({ title: 'Error', description: 'No se pudieron finalizar los partidos.', variant: 'destructive' });

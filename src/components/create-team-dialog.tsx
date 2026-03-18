@@ -14,12 +14,13 @@ import { JerseyDesigner } from './team-builder/jersey-designer';
 import { Player, Jersey, GroupTeam, GroupTeamMember } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useFirestore, useCollection } from '@/firebase';
-import { collection, addDoc, query, where } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { celebrationConfetti } from '@/lib/animations';
 import { assignSmartDorsal } from '@/lib/utils/dorsal-logic';
 import { TeamTacticalAnalysis } from './team-builder/team-tactical-analysis';
 import { PlayerSelectionCard } from './team-builder/player-selection-card';
+import { createTeamAction } from '@/lib/actions/team-actions';
 
 interface CreateTeamDialogProps {
   open: boolean;
@@ -252,16 +253,17 @@ export function CreateTeamDialog({
         };
       });
 
-      const newTeam: Omit<GroupTeam, 'id'> = {
+      const newTeam = {
         name: data.name,
         groupId,
         jersey: data.jersey,
         members,
-        createdBy: currentUserId,
-        createdAt: new Date().toISOString(),
       };
 
-      await addDoc(collection(firestore, 'teams'), newTeam);
+      const result = await createTeamAction(newTeam);
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudo crear el equipo.');
+      }
 
       celebrationConfetti();
       toast({

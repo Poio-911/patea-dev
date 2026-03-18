@@ -156,6 +156,12 @@ export function GrupoTab({
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [joinGroupOpen, setJoinGroupOpen] = useState(false);
 
+  const topMVPPlayer = useMemo(() => (
+    [...groupPlayers]
+      .filter(p => (p.stats?.mvpVotes || 0) > 0)
+      .sort((a, b) => (b.stats?.mvpVotes || 0) - (a.stats?.mvpVotes || 0))[0] ?? null
+  ), [groupPlayers]);
+
   if (!groupId || !activeGroup) {
     return (
       <div className="space-y-4">
@@ -183,13 +189,6 @@ export function GrupoTab({
       </div>
     );
   }
-
-  // Stats computation
-  const topMVPPlayer = useMemo(() => (
-    [...groupPlayers]
-      .filter(p => (p.stats?.mvpVotes || 0) > 0)
-      .sort((a, b) => (b.stats?.mvpVotes || 0) - (a.stats?.mvpVotes || 0))[0] ?? null
-  ), [groupPlayers]);
 
   return (
     <div className="space-y-6">

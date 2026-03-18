@@ -3877,17 +3877,23 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
 export async function updateProfileAction(uid: string, data: {
     displayName?: string;
     photoURL?: string;
+    photoUrl?: string;
     position?: PlayerPosition;
     preferredFoot?: PreferredFoot;
     phoneNumber?: string;
     bio?: string;
     birthYear?: number;
     nationality?: string;
+    cropPosition?: { x: number; y: number };
+    cropZoom?: number;
 }) {
     try {
         const { getAuth } = await import('firebase-admin/auth');
         const db = getAdminDb();
         const auth = getAuth();
+        const normalizedPhotoUrl = data.photoURL ?? data.photoUrl;
+        const availablePlayerRef = db.collection('availablePlayers').doc(uid);
+        const availablePlayerSnap = normalizedPhotoUrl !== undefined ? await availablePlayerRef.get() : null;
 
         const batch = db.batch();
 
@@ -3895,7 +3901,7 @@ export async function updateProfileAction(uid: string, data: {
         const userRef = db.collection('users').doc(uid);
         const userUpdates: any = {};
         if (data.displayName !== undefined) userUpdates.displayName = data.displayName;
-        if (data.photoURL !== undefined) userUpdates.photoURL = data.photoURL;
+        if (normalizedPhotoUrl !== undefined) userUpdates.photoURL = normalizedPhotoUrl;
         if (data.phoneNumber !== undefined) userUpdates.phoneNumber = data.phoneNumber;
 
         if (Object.keys(userUpdates).length > 0) {
@@ -3906,24 +3912,40 @@ export async function updateProfileAction(uid: string, data: {
         const playerRef = db.collection('players').doc(uid);
         const playerUpdates: any = {};
         if (data.displayName !== undefined) playerUpdates.name = data.displayName;
-        if (data.photoURL !== undefined) {
-            playerUpdates.photoUrl = data.photoURL;
-            playerUpdates.photoURL = data.photoURL; // update both to be safe due to legacy code
+        if (normalizedPhotoUrl !== undefined) {
+            playerUpdates.photoUrl = normalizedPhotoUrl;
+            playerUpdates.photoURL = normalizedPhotoUrl; // update both to be safe due to legacy code
         }
         if (data.position !== undefined) playerUpdates.position = data.position;
         if (data.preferredFoot !== undefined) playerUpdates.preferredFoot = data.preferredFoot;
         if (data.bio !== undefined) playerUpdates.bio = data.bio;
         if (data.birthYear !== undefined) playerUpdates.birthYear = data.birthYear;
         if (data.nationality !== undefined) playerUpdates.nationality = data.nationality;
+        if (data.cropPosition !== undefined) playerUpdates.cropPosition = data.cropPosition;
+        if (data.cropZoom !== undefined) playerUpdates.cropZoom = data.cropZoom;
 
         if (Object.keys(playerUpdates).length > 0) {
             batch.update(playerRef, playerUpdates);
         }
 
+        if (availablePlayerSnap?.exists) {
+            const availablePlayerUpdates: any = {};
+            if (normalizedPhotoUrl !== undefined) {
+                availablePlayerUpdates.photoURL = normalizedPhotoUrl;
+                availablePlayerUpdates.photoUrl = normalizedPhotoUrl;
+            }
+            if (data.cropPosition !== undefined) availablePlayerUpdates.cropPosition = data.cropPosition;
+            if (data.cropZoom !== undefined) availablePlayerUpdates.cropZoom = data.cropZoom;
+
+            if (Object.keys(availablePlayerUpdates).length > 0) {
+                batch.set(availablePlayerRef, availablePlayerUpdates, { merge: true });
+            }
+        }
+
         // 3. Update Auth Profile
         const authUpdates: any = {};
         if (data.displayName !== undefined) authUpdates.displayName = data.displayName;
-        if (data.photoURL !== undefined) authUpdates.photoURL = data.photoURL;
+        if (normalizedPhotoUrl !== undefined) authUpdates.photoURL = normalizedPhotoUrl;
 
         if (Object.keys(authUpdates).length > 0) {
             await auth.updateUser(uid, authUpdates);

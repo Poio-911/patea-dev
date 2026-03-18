@@ -44,7 +44,7 @@ export function getAI(): Genkit {
 // El Proxy delega todas las operaciones a la instancia lazy de Genkit
 export const ai = new Proxy({} as Genkit, {
   get(_, prop) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line
     return (getAI() as any)[prop];
   },
 });

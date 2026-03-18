@@ -8,8 +8,8 @@ import { Activity, Loader2, CheckCircle2, AlertCircle, Unlink } from 'lucide-rea
 import { useToast } from '@/hooks/use-toast';
 import { generateGoogleFitAuthUrlAction, disconnectGoogleFitAction } from '@/lib/actions/google-fit-actions';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, setDoc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
+import { doc } from 'firebase/firestore';
 import type { HealthConnection } from '@/lib/types';
 import { ResponsiveAlertDialog as AlertDialog, ResponsiveAlertDialogAction as AlertDialogAction, ResponsiveAlertDialogCancel as AlertDialogCancel, ResponsiveAlertDialogContent as AlertDialogContent, ResponsiveAlertDialogDescription as AlertDialogDescription, ResponsiveAlertDialogFooter as AlertDialogFooter, ResponsiveAlertDialogHeader as AlertDialogHeader, ResponsiveAlertDialogTitle as AlertDialogTitle, ResponsiveAlertDialogTrigger as AlertDialogTrigger } from '@/components/ui/responsive-alert-dialog';
 import { format } from 'date-fns';
@@ -32,37 +32,14 @@ export function LinkGoogleFitButton() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tokensParam = params.get('google_fit_tokens');
-    const userId = params.get('user_id');
     const error = params.get('google_fit_error');
 
-    // Handle tokens - save to Firestore using client SDK
-    if (tokensParam && userId && user && firestore) {
-      (async () => {
-        try {
-          const tokensData = JSON.parse(Buffer.from(tokensParam, 'base64').toString());
-
-          const connectionDoc = doc(firestore, 'users', userId, 'healthConnections', 'google_fit');
-          await setDoc(connectionDoc, {
-            provider: 'google_fit',
-            userId,
-            ...tokensData,
-          });
-
-          toast({
-            title: '¡Google Fit Conectado!',
-            description: 'Ahora podés vincular tus actividades físicas a los partidos.',
-          });
-        } catch (saveError) {
-          console.error('Error saving Google Fit connection:', saveError);
-          toast({
-            variant: 'destructive',
-            title: 'Error al Guardar',
-            description: 'No se pudo guardar la conexión. Intentá de nuevo.',
-          });
-        }
-        // Clean URL
-        window.history.replaceState({}, '', '/settings');
-      })();
+    if (tokensParam) {
+      toast({
+        title: '¡Google Fit Conectado!',
+        description: 'Ahora podés vincular tus actividades físicas a los partidos.',
+      });
+      window.history.replaceState({}, '', '/settings');
     }
 
     if (error) {
@@ -81,7 +58,7 @@ export function LinkGoogleFitButton() {
       // Clean URL
       window.history.replaceState({}, '', '/settings');
     }
-  }, [toast, user, firestore]);
+  }, [toast]);
 
   const handleConnect = async () => {
     if (!user) {

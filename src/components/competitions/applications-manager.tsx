@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CompetitionApplication, CompetitionFormat } from '@/lib/types';
 import {
   getCompetitionApplicationsAction,
@@ -34,11 +34,7 @@ export function ApplicationsManager({
   const [processing, setProcessing] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadApplications();
-  }, [competitionId]);
-
-  const loadApplications = async () => {
+  const loadApplications = useCallback(async () => {
     setLoading(true);
     try {
       const result = await getCompetitionApplicationsAction(competitionId, competitionType);
@@ -60,7 +56,11 @@ export function ApplicationsManager({
     } finally {
       setLoading(false);
     }
-  };
+  }, [competitionId, competitionType, toast]);
+
+  useEffect(() => {
+    loadApplications();
+  }, [loadApplications]);
 
   const handleApprove = async (applicationId: string) => {
     setProcessing(applicationId);

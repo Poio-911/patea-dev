@@ -2,8 +2,8 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collectionGroup, query, where, writeBatch, doc, getDoc, updateDoc, arrayUnion, deleteDoc, runTransaction, collection } from 'firebase/firestore';
-import type { Invitation, Match, Player, Notification } from '@/lib/types';
+import { collectionGroup, query, where, doc, getDoc } from 'firebase/firestore';
+import type { Invitation, Match } from '@/lib/types';
 import {
   Sheet,
   SheetContent,
@@ -21,8 +21,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { acceptPlayerMatchInvitationAction, rejectPlayerMatchInvitationAction } from '@/lib/actions/match-invitation-actions';
 
 interface InvitationCardProps {
   invitation: Invitation;
@@ -107,7 +106,7 @@ export function InvitationsSheet() {
   const hasInvitations = invitations && invitations.length > 0;
 
   const handleInvitation = async (invitation: Invitation, accepted: boolean) => {
-    if (!firestore || !user) return;
+    if (!user) return;
     setProcessingId(invitation.id);
 
     const matchId = invitation.matchId;
@@ -117,86 +116,14 @@ export function InvitationsSheet() {
       return;
     }
 
-    const invitationRef = doc(firestore, 'matches', matchId, 'invitations', invitation.id);
-
     try {
-      await runTransaction(firestore, async (transaction) => {
-        if (accepted) {
-          const matchRef = doc(firestore, 'matches', matchId);
-          const playerRef = doc(firestore, 'players', user.uid);
+      const result = accepted
+        ? await acceptPlayerMatchInvitationAction(matchId, invitation.id)
+        : await rejectPlayerMatchInvitationAction(matchId, invitation.id);
 
-          const matchSnap = await transaction.get(matchRef);
-          const playerSnap = await transaction.get(playerRef);
-          const invitationSnap = await transaction.get(invitationRef);
-
-          if (!matchSnap.exists()) {
-            throw new Error("El partido ya no existe.");
-          }
-          if (!playerSnap.exists()) {
-            throw new Error("No se encontró tu perfil de jugador.");
-          }
-          if (!invitationSnap.exists()) {
-            throw new Error("La invitación ya no existe.");
-          }
-
-          const matchData = matchSnap.data() as Match;
-          const playerData = playerSnap.data() as Player;
-          const invitationData = invitationSnap.data() as Invitation;
-
-          // Validate invitation status
-          if (invitationData.status !== 'pending') {
-            throw new Error(`La invitación ya fue ${invitationData.status === 'accepted' ? 'aceptada' : 'rechazada'}.`);
-          }
-
-          // Validate match capacity (Race Condition Fix)
-          if (matchData.players.length >= matchData.matchSize) {
-            throw new Error("El partido ya está lleno.");
-          }
-
-          // Check if user is already in match
-          if (matchData.playerUids.includes(user.uid)) {
-            throw new Error("Ya estás en el partido.");
-          }
-
-          const playerPayload = {
-            uid: user.uid,
-            displayName: playerData.name,
-            ovr: playerData.ovr,
-            position: playerData.position,
-            photoUrl: playerData.photoUrl || ''
-          };
-
-          transaction.update(matchRef, {
-            players: arrayUnion(playerPayload),
-            playerUids: arrayUnion(user.uid)
-          });
-
-          transaction.update(invitationRef, { status: 'accepted' });
-
-          // Notify Match Owner
-          if (matchData.ownerUid && matchData.ownerUid !== user.uid) {
-            const ownerNotificationRef = doc(collection(firestore, 'users', matchData.ownerUid, 'notifications'));
-            const newNotification: Omit<Notification, 'id'> = {
-              type: 'match_update',
-              title: '¡Jugador Confirmado!',
-              message: `${playerData.name} aceptó tu invitación para "${matchData.title}".`,
-              link: `/matches/${matchId}`,
-              isRead: false,
-              createdAt: new Date().toISOString(),
-              metadata: {
-                fromUserId: user.uid,
-                fromUserName: playerData.name,
-                fromUserPhoto: playerData.photoUrl,
-                matchId: matchId
-              }
-            };
-            transaction.set(ownerNotificationRef, newNotification);
-          }
-
-        } else {
-          transaction.update(invitationRef, { status: 'declined' });
-        }
-      });
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudo procesar la invitación.');
+      }
 
       if (accepted) {
         toast({ title: '¡Aceptada!', description: `Te has unido al partido.` });
@@ -206,14 +133,6 @@ export function InvitationsSheet() {
 
     } catch (error: any) {
       console.error("Error handling invitation:", error);
-      // Filter permission errors vs logic errors
-      if (error.code === 'permission-denied') {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: invitationRef.path,
-          operation: 'update',
-          requestResourceData: { status: accepted ? 'accepted' : 'declined' }
-        }));
-      }
       toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudo procesar la invitación.' });
     } finally {
       setProcessingId(null);

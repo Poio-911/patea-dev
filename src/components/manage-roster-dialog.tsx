@@ -16,8 +16,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
 import type { GroupTeam, DetailedTeamPlayer, Player } from '@/lib/types';
 import { PlayerPositionBadge } from '@/components/player-styles';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -26,6 +24,7 @@ import { UserMinus, Plus } from 'lucide-react';
 import { ResponsivePopover as Popover, ResponsivePopoverContent as PopoverContent, ResponsivePopoverTrigger as PopoverTrigger } from '@/components/ui/responsive-popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { ResponsiveAlertDialog as AlertDialog, ResponsiveAlertDialogAction as AlertDialogAction, ResponsiveAlertDialogCancel as AlertDialogCancel, ResponsiveAlertDialogContent as AlertDialogContent, ResponsiveAlertDialogDescription as AlertDialogDescription, ResponsiveAlertDialogFooter as AlertDialogFooter, ResponsiveAlertDialogHeader as AlertDialogHeader, ResponsiveAlertDialogTitle as AlertDialogTitle } from '@/components/ui/responsive-alert-dialog';
+import { updateTeamMembersAction } from '@/lib/actions/team-actions';
 
 interface ManageRosterDialogProps {
   team: GroupTeam;
@@ -36,7 +35,6 @@ interface ManageRosterDialogProps {
 
 export function ManageRosterDialog({ team, players, allGroupPlayers, children }: ManageRosterDialogProps) {
   const { toast } = useToast();
-  const firestore = useFirestore();
 
   const [open, setOpen] = useState(false);
   const [localPlayers, setLocalPlayers] = useState<DetailedTeamPlayer[]>(players);
@@ -125,17 +123,18 @@ export function ManageRosterDialog({ team, players, allGroupPlayers, children }:
   };
 
   const saveChanges = async () => {
-    if (!firestore) return;
     if (!team?.id) return;
     setSaving(true);
     try {
-      const teamRef = doc(firestore, 'teams', team.id);
       const newMembers = localPlayers.map(lp => ({
         playerId: lp.id,
         number: lp.number || 0,
         status: lp.status || 'suplente',
       }));
-      await updateDoc(teamRef, { members: newMembers });
+      const result = await updateTeamMembersAction({ teamId: team.id, members: newMembers });
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudo guardar el plantel.');
+      }
       toast({ title: 'Plantel actualizado', description: 'Se guardaron los cambios del plantel.' });
       setOpen(false);
     } catch (e: any) {

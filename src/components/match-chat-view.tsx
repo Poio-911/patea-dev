@@ -82,7 +82,7 @@ export function MatchChatView({ match }: MatchChatViewProps) {
     }
   }, [messages, lastSeenKey, scrollToBottom, isOpen]);
 
-  const handleFocus = () => {
+  const handleFocus = useCallback(() => {
     if (messages && messages.length > 0) {
       const lastMessageTimestamp = messages[messages.length - 1].createdAt?.toDate
         ? messages[messages.length - 1].createdAt.toDate().getTime()
@@ -90,13 +90,13 @@ export function MatchChatView({ match }: MatchChatViewProps) {
       localStorage.setItem(lastSeenKey, lastMessageTimestamp.toString());
       setUnreadCount(0);
     }
-  };
+  }, [lastSeenKey, messages]);
 
   useEffect(() => {
     if (isOpen) {
       handleFocus();
     }
-  }, [isOpen]);
+  }, [handleFocus, isOpen]);
 
   const handleSendMessage = async (text: string) => {
     if (!user) return;

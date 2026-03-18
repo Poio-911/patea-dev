@@ -16,11 +16,13 @@ import { useUser, useAuth, initializeFirebase } from '../firebase';
 import { useToast } from '../hooks/use-toast';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
-import { doc, writeBatch, getDoc } from 'firebase/firestore';
+import { getDoc } from 'firebase/firestore';
 import { Loader2, Upload, Scissors } from 'lucide-react';
 import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { convertStorageUrlToBase64 } from '@/lib/actions/image-generation';
+import { isErrorResponse } from '@/lib/errors';
+import { updateProfileAction } from '@/lib/actions/server-actions';
 
 interface ImageCropperDialogProps {
   player: {
@@ -325,28 +327,17 @@ export function ImageCropperDialog({ player, onSaveComplete, skipProfileUpdate, 
       }
 
       // Logged-in user flow (default)
-      const { firebaseApp: adminAppInstance, firestore: dbInstance } = initializeFirebase();
-      const userDocRef = doc(dbInstance, 'users', user.uid);
-      const playerDocRef = doc(dbInstance, 'players', user.uid);
-      const availablePlayerRef = doc(dbInstance, 'availablePlayers', user.uid);
-
-      const availablePlayerSnap = await getDoc(availablePlayerRef);
-
-      const photoUpdates = {
-        photoUrl: newPhotoUrlValue,
+      const profileResult = await updateProfileAction(user.uid, {
+        photoURL: newPhotoUrlValue,
         cropPosition: { x: 50, y: 50 },
-        cropZoom: 1
-      };
-
-      const batch = writeBatch(dbInstance);
-      batch.update(userDocRef, { photoURL: newPhotoUrlValue });
-      batch.update(playerDocRef, photoUpdates);
-
-      if (availablePlayerSnap.exists()) {
-        batch.update(availablePlayerRef, photoUpdates);
+        cropZoom: 1,
+      });
+      if (isErrorResponse(profileResult)) {
+        throw new Error(profileResult.error || 'No se pudo sincronizar la foto de perfil.');
       }
-
-      await batch.commit();
+      if (!profileResult.success) {
+        throw new Error('No se pudo sincronizar la foto de perfil.');
+      }
       await updateProfile(auth.currentUser, { photoURL: newPhotoUrlValue });
 
       toast({ title: '¡Foto actualizada!', description: 'Tu foto de perfil ha sido recortada y guardada.' });
@@ -403,6 +394,7 @@ export function ImageCropperDialog({ player, onSaveComplete, skipProfileUpdate, 
               aspect={1}
               circularCrop
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 ref={imgRef}
                 src={imgSrc}

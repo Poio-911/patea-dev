@@ -100,7 +100,7 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
               className="text-center space-y-4 pt-4"
             >
               <h2 className="text-4xl md:text-5xl font-black text-foreground leading-tight font-serif tracking-tight px-4" style={{ fontFamily: "Georgia, serif" }}>
-                "{chronicle.headline}"
+                &ldquo;{chronicle.headline}&rdquo;
               </h2>
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground font-medium uppercase tracking-widest">
                 <Sparkles size={14} className="text-primary animate-pulse" />
@@ -118,7 +118,7 @@ export function MatchChronicleCard({ match }: MatchChronicleCardProps) {
               transition={{ duration: 1, delay: 0.3 }}
               className="relative px-2 md:px-8"
             >
-              <div className="absolute -left-2 top-0 text-9xl text-primary/10 font-serif leading-none select-none pointer-events-none">"</div>
+              <div className="absolute -left-2 top-0 text-9xl text-primary/10 font-serif leading-none select-none pointer-events-none">&ldquo;</div>
 
               <div className="prose prose-lg dark:prose-invert max-w-none">
                 <p className="text-foreground/90 leading-loose whitespace-pre-line text-lg font-serif first-letter:float-left first-letter:text-6xl first-letter:font-black first-letter:text-primary first-letter:mr-3 first-letter:mt-[-0.1em] first-letter:font-serif shadow-sm p-6 rounded-2xl bg-card border border-border/50">
