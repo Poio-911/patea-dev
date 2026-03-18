@@ -215,3 +215,47 @@ export async function syncPlayerActiveGroupAction(activeGroupId: string | null) 
     return { success: false, error: error.message || 'No se pudo sincronizar el grupo activo del jugador.' };
   }
 }
+
+export async function updateOrganizerProfileAction(input: {
+  displayName?: string;
+  phoneNumber?: string;
+  organizationName?: string;
+  contactEmail?: string;
+  bio?: string;
+}) {
+  try {
+    const userId = await requireAuth();
+    const db = getAdminDb();
+    const userRef = db.collection('users').doc(userId);
+
+    const updates: Record<string, any> = {
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (input.displayName !== undefined) updates.displayName = input.displayName;
+    if (input.phoneNumber !== undefined) updates.phoneNumber = input.phoneNumber;
+
+    if (
+      input.organizationName !== undefined ||
+      input.contactEmail !== undefined ||
+      input.bio !== undefined
+    ) {
+      updates.organizerProfile = {
+        ...(input.organizationName !== undefined ? { organizationName: input.organizationName } : {}),
+        ...(input.contactEmail !== undefined ? { contactEmail: input.contactEmail } : {}),
+        ...(input.bio !== undefined ? { bio: input.bio } : {}),
+      };
+    }
+
+    await userRef.set(updates, { merge: true });
+
+    if (input.displayName !== undefined && input.displayName.trim().length > 0) {
+      await getAdminAuth().updateUser(userId, { displayName: input.displayName.trim() });
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    logger.error('Error updating organizer profile', error);
+    return { success: false, error: error.message || 'No se pudo actualizar el perfil del organizador.' };
+  }
+}

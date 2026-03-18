@@ -17,6 +17,7 @@ import { createSessionCookie } from '@/lib/auth-actions';
 import { initializeOrganizerProfileAction } from '@/lib/auth-actions';
 import { useToast } from '@/hooks/use-toast';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
+import { Logo } from '@/components/logo';
 
 const loginSchema = z.object({
   email: z.string().email('Correo inválido.'),
@@ -132,11 +133,11 @@ export default function OrganizerLoginPage() {
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -mr-16 -mt-16 opacity-50 pointer-events-none" />
 
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20">
-            <Trophy className="h-8 w-8 text-primary" />
+          <div className="mx-auto mb-4 flex items-center justify-center rounded-2xl bg-primary/10 border border-primary/20 px-4 py-3">
+            <Logo showWordmark={true} />
           </div>
           <CardTitle className="font-headline font-black text-3xl uppercase tracking-tighter">
-            Pateá <span className="text-primary">Organizer</span>
+            <span className="text-primary">Organizer</span>
           </CardTitle>
           <CardDescription className="text-base mt-2">
             El centro de control oficial para Ligas y Copas.

@@ -4,11 +4,13 @@ import * as React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@/firebase';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
-import { LogOut, Trophy, Sun } from 'lucide-react';
+import { Logo } from '@/components/logo';
+import { LogOut, Sun, LayoutDashboard, Home, UserCog } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { ThemeBackground } from '@/components/theme-background';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export default function OrganizerLayout({
   children,
@@ -20,6 +22,12 @@ export default function OrganizerLayout({
   const auth = useAuth();
   const { user, loading } = useUser();
   const { setTheme } = useTheme();
+  const userRole = user?.role || 'player';
+  const roleLabel: Record<'player' | 'organizer' | 'admin', string> = {
+    player: 'Jugador',
+    organizer: 'Organizador',
+    admin: 'Admin',
+  };
   
   React.useEffect(() => {
     // Si la ruta es login, no lo pateamos
@@ -80,11 +88,41 @@ export default function OrganizerLayout({
       {/* Organizer Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 max-w-screen-2xl items-center px-4">
-          <div className="mr-4 flex items-center space-x-2 cursor-pointer transition-colors hover:text-primary" onClick={() => router.push('/organizer')}>
-            <Trophy className="h-6 w-6 text-primary" />
-            <span className="font-headline font-black tracking-widest text-lg uppercase hidden sm:inline-block">
-              Pateá <span className="text-primary">Organizer</span>
+          <div className="mr-4 flex items-center gap-3 cursor-pointer transition-colors hover:text-primary" onClick={() => router.push('/organizer')}>
+            <Logo showWordmark={true} />
+            <span className="text-[10px] uppercase tracking-widest font-black text-primary/80 border border-primary/20 rounded-full px-2 py-1 hidden sm:inline-flex">
+              Organizer
             </span>
+          </div>
+
+          <div className="hidden lg:flex items-center gap-1.5">
+            <Button
+              variant={pathname === '/organizer' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => router.push('/organizer')}
+            >
+              <LayoutDashboard className="mr-2 h-3.5 w-3.5" />
+              Panel
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => router.push('/dashboard')}
+            >
+              <Home className="mr-2 h-3.5 w-3.5" />
+              App Principal
+            </Button>
+            <Button
+              variant={pathname.startsWith('/organizer/profile') ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => router.push('/organizer/profile')}
+            >
+              <UserCog className="mr-2 h-3.5 w-3.5" />
+              Perfil
+            </Button>
           </div>
 
           <div className="flex flex-1 items-center justify-end space-x-4">
@@ -116,9 +154,14 @@ export default function OrganizerLayout({
                 </Button>
               </div>
 
-              <span className="text-sm font-medium text-muted-foreground hidden md:inline-block">
-                {user?.displayName}
-              </span>
+              <div className="hidden md:flex items-center gap-2">
+                <Badge variant="outline" className="uppercase tracking-widest text-[10px] font-black border-primary/20 text-primary/90 bg-primary/5">
+                  {roleLabel[userRole as 'player' | 'organizer' | 'admin']}
+                </Badge>
+                <span className="text-sm font-medium text-muted-foreground">
+                  {user?.displayName || 'Sin nombre'}
+                </span>
+              </div>
               <button 
                 onClick={handleLogout}
                 className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 w-9 text-muted-foreground hover:text-destructive"

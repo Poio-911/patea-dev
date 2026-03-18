@@ -314,7 +314,7 @@ export type Team = {
   finalScore?: number; // Score for this team in the match
 };
 
-export type JerseyType = 'plain' | 'vertical' | 'band' | 'chevron' | 'thirds' | 'lines';
+export type JerseyType = 'plain' | 'vertical' | 'band' | 'chevron' | 'thirds' | 'lines' | 'solid';
 
 export type Jersey = {
   type: JerseyType;
