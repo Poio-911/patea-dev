@@ -14,7 +14,7 @@ type DisplayCompetition = {
   createdAt: unknown;
   format: string;
   sportType?: 'f5' | 'f7' | 'f11';
-  teams: string[];
+  teams: (string | any)[];
   startDate?: string;
   competitionType: 'league' | 'cup';
   _collectionName: 'leagues' | 'cups';
@@ -406,7 +406,8 @@ export default function OrganizerDashboardPage() {
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {orderedCompetitions.map((comp) => {
             const metrics = competitionMetrics[comp.id] || defaultMetrics;
-            const teamCount = metrics.teamCount > 0 ? metrics.teamCount : (comp.teams?.length || 0);
+            const teamsArray = comp.teams || [];
+            const teamCount = metrics.teamCount > 0 ? metrics.teamCount : teamsArray.length;
             const statusLabel = getCompetitionStatusLabel(comp.status);
             const hasMatches = metrics.totalMatches > 0;
 

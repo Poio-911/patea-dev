@@ -74,6 +74,16 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
       secondary: ['#33f'],
     },
   },
+  solid: {
+    type: 'solid',
+    label: 'Sólida',
+    description: 'Camiseta de color sólido uniforme',
+    svgPath: '/jerseys/plain-pink-football-shirt-svgrepo-com.svg',
+    colorMapping: {
+      primary: ['#fbb'],
+      secondary: [],
+    },
+  },
 };
 
 /**

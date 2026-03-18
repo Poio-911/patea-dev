@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Save, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import type { OrganizerProfile } from '@/lib/types';
 
 export default function OrganizerProfilePage() {
   const { user } = useUser();
@@ -27,7 +28,7 @@ export default function OrganizerProfilePage() {
 
   React.useEffect(() => {
     if (!user) return;
-    const organizerProfile = (user as any).organizerProfile || {};
+    const organizerProfile: OrganizerProfile = user.organizerProfile || {};
     setProfileForm({
       displayName: user.displayName || '',
       phoneNumber: user.phoneNumber || '',

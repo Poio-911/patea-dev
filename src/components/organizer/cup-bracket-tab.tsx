@@ -194,6 +194,7 @@ export function CupBracketTab({ cupId }: CupBracketTabProps) {
     }
   };
   const totalMatches = cup?.bracket?.length || 0;
+  const completedMatches = cup?.bracket?.filter(m => m.winnerId).length || 0;
   const hasBracket = cup?.bracket && cup.bracket.length > 0;
 
   return (

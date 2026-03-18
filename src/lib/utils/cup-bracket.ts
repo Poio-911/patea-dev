@@ -82,8 +82,15 @@ function seedByOVR<T extends { ovr?: number }>(teams: T[]): T[] {
  * @param teams - Array of teams to seed
  * @param seedingType - 'random' for shuffle or 'ovr_based' for seeded bracket
  */
+type PartialGroupTeam = {
+  id: string;
+  name: string;
+  jersey: Jersey;
+  ovr?: number;
+};
+
 export function generateBracket(
-  teams: (GroupTeam & { ovr?: number })[],
+  teams: (PartialGroupTeam | string)[],
   seedingType: CupSeedingType = 'random'
 ): BracketMatch[] {
   const numTeams = teams.length;
@@ -93,10 +100,13 @@ export function generateBracket(
     throw new Error(`Invalid number of teams: ${numTeams}. Must be 2, 4, 8, 16, or 32.`);
   }
 
+  // Helper to ensure we have an object with at least an ID
+  const normalizedTeams = teams.map(t => typeof t === 'string' ? { id: t, name: 'TBD', jersey: { type: 'solid', primaryColor: '#CCCCCC', secondaryColor: '#FFFFFF' } } as PartialGroupTeam : t);
+
   // Seed teams based on seeding type
   const seededTeams = seedingType === 'ovr_based'
-    ? seedByOVR(teams)
-    : shuffleArray(teams);
+    ? seedByOVR(normalizedTeams as (PartialGroupTeam & { ovr?: number })[])
+    : shuffleArray(normalizedTeams);
 
   // Calculate total matches needed for entire tournament
   // For single elimination: (n-1) matches total, where n = number of teams

@@ -585,6 +585,17 @@ export type SavedLocation = {
 
 export type UserRole = 'player' | 'organizer' | 'admin';
 
+export type OrganizerProfile = {
+  organizationName?: string;
+  contactEmail?: string;
+  phoneNumber?: string;
+  bio?: string;
+  logoUrl?: string; // Para branding institucional del organizador
+  address?: string;
+  website?: string;
+  updatedAt?: string;
+};
+
 export type UserProfile = {
   uid: string;
   email: string | null;
@@ -595,6 +606,7 @@ export type UserProfile = {
   groups?: string[];
   activeGroupId?: string | null;
   organizedLeagues?: string[]; // IDs of leagues this user manages
+  organizerProfile?: OrganizerProfile; // Perfil extendido para rol organizador
   fcmTokens?: string[]; // Firebase Cloud Messaging tokens for push notifications
   notificationPreferences?: {
     matchInvites?: boolean;
@@ -810,7 +822,7 @@ export type Cup = {
   ownerUid: string;
   groupId: string; // The "home" group of the cup
   isPublic: boolean;
-  teams: string[]; // Array of teamIds
+  teams: (string | { id: string; name: string; jersey: Jersey })[]; // Array of teamIds or objects
   createdAt: string;
   logoUrl?: string; // URL to cup logo image
   // Scheduling configuration

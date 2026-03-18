@@ -229,11 +229,14 @@ export function CupTeamsTab({ cupId, cupName }: CupTeamsTabProps) {
       });
 
       // Update cup.teams array
-      const updatedTeams = (cup?.teams || []).map(t =>
-        t.id === editingTeam.id
-          ? { ...t, name: teamName, jersey }
-          : t
-      );
+      const currentTeams = cup?.teams || [];
+      const updatedTeams = currentTeams.map(t => {
+        const tId = typeof t === 'string' ? t : (t as any).id;
+        if (tId === editingTeam.id) {
+          return { id: tId, name: teamName, jersey: jersey as Jersey };
+        }
+        return t;
+      });
       await updateDoc(cupRef, { teams: updatedTeams });
 
       toast({
@@ -260,7 +263,11 @@ export function CupTeamsTab({ cupId, cupName }: CupTeamsTabProps) {
       await deleteDoc(teamDocRef);
 
       // Update cup.teams array
-      const updatedTeams = (cup?.teams || []).filter(t => t.id !== teamToDelete);
+      const currentTeams = cup?.teams || [];
+      const updatedTeams = currentTeams.filter(t => {
+        const tId = typeof t === 'string' ? t : t.id;
+        return tId !== teamToDelete;
+      });
       await updateDoc(cupRef, { teams: updatedTeams });
 
       toast({
