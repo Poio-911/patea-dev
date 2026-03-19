@@ -19,6 +19,10 @@ interface CupBracketProps {
 }
 
 export function CupBracket({ bracket, onMatchClick, onMatchSettingsClick, highlightedMatchId, currentRound, canCreate, userTeamId }: CupBracketProps) {
+  // Hooks must be called before any conditional returns
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [selectedRound, setSelectedRound] = useState<CupRound | null>(null);
+
   if (!bracket || bracket.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-24 rounded-2xl border border-dashed border-amber-500/15 bg-amber-500/3">
@@ -35,9 +39,6 @@ export function CupBracket({ bracket, onMatchClick, onMatchSettingsClick, highli
   const CARD_HEIGHT = 146;
   const GAP_X = 72;
   const BASE_GAP_Y = 36;
-
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [selectedRound, setSelectedRound] = useState<CupRound | null>(null);
 
   const scrollToRound = (round: CupRound) => {
     const roundIndex = activeRounds.indexOf(round);
