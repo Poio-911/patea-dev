@@ -25,9 +25,10 @@ import { Progress } from '@/components/ui/progress';
 import { initializeFirebase } from '@/firebase';
 import { loadGooglePlaces } from '@/lib/google-maps';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, Settings2 } from 'lucide-react';
+import { ChevronDown, Settings2, Users, DollarSign, BookTemplate, Save, Trash2 } from 'lucide-react';
 import { format as formatDate } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { saveTemplateAction, loadTemplatesAction, deleteTemplateAction, type CompetitionTemplate } from '@/lib/actions/template-actions';
 
 const competitionSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
@@ -46,6 +47,11 @@ const competitionSchema = z.object({
   tiebreaker: z.enum(['goal_difference', 'goals_for', 'head_to_head'] as const).optional(),
   yellowsForSuspension: z.number().min(1).max(20).optional(),
   seedingType: z.enum(['random', 'ovr_based'] as const).optional(),
+  // Registration
+  maxTeams: z.number().min(2).max(64).optional(),
+  registrationFee: z.number().min(0).optional(),
+  registrationDeadline: z.string().optional(),
+  allowPublicRegistration: z.boolean().optional(),
 });
 
 interface CreateCompetitionDialogProps {
@@ -356,6 +362,10 @@ export function CreateCompetitionDialog({ open, onOpenChange }: CreateCompetitio
   const [uploadProgress, setUploadProgress] = React.useState<number>(0);
   const [isUploading, setIsUploading] = React.useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = React.useState(false);
+  const [templates, setTemplates] = React.useState<CompetitionTemplate[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = React.useState(false);
+  const [isSavingTemplate, setIsSavingTemplate] = React.useState(false);
+  const [templatePopoverOpen, setTemplatePopoverOpen] = React.useState(false);
 
   const form = useForm<z.infer<typeof competitionSchema>>({
     resolver: zodResolver(competitionSchema),
@@ -372,10 +382,70 @@ export function CreateCompetitionDialog({ open, onOpenChange }: CreateCompetitio
       tiebreaker: 'goal_difference',
       yellowsForSuspension: 5,
       seedingType: 'random',
+      allowPublicRegistration: false,
     },
   });
 
   const format = form.watch('format');
+
+  React.useEffect(() => {
+    if (open && user) {
+      setLoadingTemplates(true);
+      loadTemplatesAction(user.uid).then((result) => {
+        if (result.success && result.templates) setTemplates(result.templates);
+        setLoadingTemplates(false);
+      });
+    }
+  }, [open, user]);
+
+  const applyTemplate = React.useCallback((tpl: CompetitionTemplate) => {
+    form.setValue('format', tpl.format);
+    if (tpl.subFormat) form.setValue('subFormat', tpl.subFormat);
+    if (tpl.sportType) form.setValue('sportType', tpl.sportType as 'f5' | 'f7' | 'f11');
+    if (tpl.rules?.pointsForWin !== undefined) form.setValue('pointsForWin', tpl.rules.pointsForWin);
+    if (tpl.rules?.pointsForDraw !== undefined) form.setValue('pointsForDraw', tpl.rules.pointsForDraw);
+    if (tpl.rules?.tiebreaker) form.setValue('tiebreaker', tpl.rules.tiebreaker as 'goal_difference' | 'goals_for' | 'head_to_head');
+    if (tpl.rules?.yellowsForSuspension !== undefined) form.setValue('yellowsForSuspension', tpl.rules.yellowsForSuspension);
+    if (tpl.registrationConfig?.maxTeams) form.setValue('maxTeams', tpl.registrationConfig.maxTeams);
+    if (tpl.registrationConfig?.registrationFee !== undefined) form.setValue('registrationFee', tpl.registrationConfig.registrationFee);
+    if (tpl.registrationConfig?.allowRegistrations !== undefined) form.setValue('allowPublicRegistration', tpl.registrationConfig.allowRegistrations);
+    setTemplatePopoverOpen(false);
+    toast({ title: `Plantilla “${tpl.name}” aplicada` });
+  }, [form, toast]);
+
+  const handleSaveTemplate = React.useCallback(async () => {
+    if (!user) return;
+    const data = form.getValues();
+    const name = window.prompt('Nombre para la plantilla:');
+    if (!name?.trim()) return;
+    setIsSavingTemplate(true);
+    const result = await saveTemplateAction(user.uid, {
+      name: name.trim(),
+      format: data.format,
+      subFormat: data.subFormat,
+      sportType: data.sportType,
+      rules: {
+        pointsForWin: data.pointsForWin,
+        pointsForDraw: data.pointsForDraw,
+        tiebreaker: data.tiebreaker,
+        yellowsForSuspension: data.yellowsForSuspension,
+      },
+      registrationConfig: {
+        allowRegistrations: data.allowPublicRegistration || false,
+        maxTeams: data.maxTeams,
+        registrationFee: data.registrationFee,
+        requirePayment: (data.registrationFee ?? 0) > 0,
+        requireDocuments: false,
+      },
+    });
+    setIsSavingTemplate(false);
+    if (result.success) {
+      toast({ title: 'Plantilla guardada' });
+      loadTemplatesAction(user.uid).then((r) => { if (r.success && r.templates) setTemplates(r.templates); });
+    } else {
+      toast({ variant: 'destructive', title: 'Error', description: result.error });
+    }
+  }, [form, user, toast]);
 
   const parseDateFromText = React.useCallback((value?: string): Date | undefined => {
     if (!value) return undefined;
@@ -480,6 +550,10 @@ export function CreateCompetitionDialog({ open, onOpenChange }: CreateCompetitio
             competitionType: 'league',
             groupId: 'standalone_league',
             standings: [],
+            allowPublicRegistration: data.allowPublicRegistration || false,
+            maxTeams: data.maxTeams || null,
+            registrationFee: data.registrationFee ?? null,
+            registrationDeadline: data.registrationDeadline || null,
             rules: {
               pointsForWin: data.pointsForWin || 3,
               pointsForDraw: data.pointsForDraw || 1,
@@ -528,6 +602,52 @@ export function CreateCompetitionDialog({ open, onOpenChange }: CreateCompetitio
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+            {/* Templates bar */}
+            <div className="flex items-center gap-2">
+              <Popover open={templatePopoverOpen} onOpenChange={setTemplatePopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button type="button" variant="outline" size="sm" className="text-xs gap-1.5" disabled={loadingTemplates}>
+                    {loadingTemplates ? <Loader2 className="h-3 w-3 animate-spin" /> : <BookTemplate className="h-3 w-3" />}
+                    Plantillas
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 p-2 z-[200]" align="start">
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-2 py-1">Mis plantillas</p>
+                  {templates.length === 0 ? (
+                    <p className="text-xs text-muted-foreground px-2 py-3">No hay plantillas guardadas.</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {templates.map((tpl) => (
+                        <div key={tpl.id} className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-muted/60 group">
+                          <button
+                            type="button"
+                            className="flex-1 text-left text-sm font-medium truncate"
+                            onClick={() => applyTemplate(tpl)}
+                          >
+                            {tpl.name}
+                            <span className="ml-1 text-xs text-muted-foreground font-normal">{tpl.format === 'league' ? 'Liga' : 'Copa'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive/80 transition-opacity"
+                            onClick={async () => {
+                              if (!user || !tpl.id) return;
+                              await deleteTemplateAction(user.uid, tpl.id);
+                              setTemplates((prev) => prev.filter((t) => t.id !== tpl.id));
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </PopoverContent>
+              </Popover>
+              <span className="text-xs text-muted-foreground">Cargá una configuración predefinida</span>
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-6 items-start">
               {/* Logo Section */}
               <div className="flex flex-col items-center gap-2 shrink-0 w-full sm:w-auto">
@@ -735,6 +855,7 @@ export function CreateCompetitionDialog({ open, onOpenChange }: CreateCompetitio
 
             {/* Advanced Config Section - Conditional by format */}
             {format === 'league' ? (
+            <>
             <Collapsible className="space-y-4 border-t border-border/40 pt-6">
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" className="flex w-full items-center justify-between p-0 hover:bg-transparent">
@@ -851,6 +972,106 @@ export function CreateCompetitionDialog({ open, onOpenChange }: CreateCompetitio
                 </p>
               </CollapsibleContent>
             </Collapsible>
+
+            {/* Registration Section - Leagues only */}
+            <Collapsible className="space-y-4 border-t border-border/40 pt-6">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="flex w-full items-center justify-between p-0 hover:bg-transparent">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                      Inscripciones Abiertas (Opcional)
+                    </span>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 data-[state=open]:rotate-180" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-4 pt-4">
+                <FormField
+                  control={form.control}
+                  name="allowPublicRegistration"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border border-border/40 p-3 bg-muted/20">
+                      <div>
+                        <FormLabel className="text-sm font-semibold">Permitir inscripción pública</FormLabel>
+                        <p className="text-xs text-muted-foreground mt-0.5">Los equipos podrán inscribirse desde la página pública de la liga.</p>
+                      </div>
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value || false}
+                          onChange={e => field.onChange(e.target.checked)}
+                          className="h-4 w-4 accent-primary"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="maxTeams"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="uppercase text-xs font-bold tracking-widest text-muted-foreground">Máx. equipos</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={2}
+                            max={64}
+                            placeholder="Sin límite"
+                            className="bg-background/50 border-white/10"
+                            {...field}
+                            value={field.value ?? ''}
+                            onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="registrationFee"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="uppercase text-xs font-bold tracking-widest text-muted-foreground">Arancel de inscripción ($)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={0}
+                            placeholder="Gratis"
+                            className="bg-background/50 border-white/10"
+                            {...field}
+                            value={field.value ?? ''}
+                            onChange={e => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="registrationDeadline"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="uppercase text-xs font-bold tracking-widest text-muted-foreground">Fecha límite de inscripción</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          className="bg-background/50 border-white/10"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CollapsibleContent>
+            </Collapsible>
+            </>
             ) : (
             <div className="border-t border-border/40 pt-6 space-y-4">
               <div className="flex items-center gap-2">
@@ -918,6 +1139,17 @@ export function CreateCompetitionDialog({ open, onOpenChange }: CreateCompetitio
             <DialogFooter className="pt-4 border-t border-border/40 pb-2">
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting || isUploading}>
                 Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleSaveTemplate}
+                disabled={isSavingTemplate || isSubmitting}
+                className="text-xs gap-1.5"
+              >
+                {isSavingTemplate ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                Guardar plantilla
               </Button>
               <Button type="submit" disabled={isSubmitting || isUploading} className="font-bold tracking-wide uppercase px-8">
                 {isSubmitting ? (

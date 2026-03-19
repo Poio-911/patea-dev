@@ -36,7 +36,7 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   // Original: const { data: availablePlayerData, loading: availablePlayerLoading } = useDoc<AvailablePlayer>(availablePlayerRef);
 
   React.useEffect(() => {
-    const isPublic = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname.startsWith('/organizer');
+    const isPublic = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname.startsWith('/organizer') || pathname.startsWith('/competitions/cup/') || pathname.startsWith('/competitions/league/');
     if (!userLoading && !user && !isPublic) {
       router.push('/login');
     }
@@ -76,8 +76,9 @@ export function MainNav({ children }: { children: React.ReactNode }) {
   // Allow public pages and isolated layouts (/organizer) to render without standard app wrapper
   const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
   const isOrganizerPage = pathname.startsWith('/organizer');
+  const isPublicCompetitionPage = pathname.startsWith('/competitions/cup/') || pathname.startsWith('/competitions/league/');
 
-  if (isPublicPage || isOrganizerPage) {
+  if (isPublicPage || isOrganizerPage || isPublicCompetitionPage) {
     return <>{children}</>;
   }
 

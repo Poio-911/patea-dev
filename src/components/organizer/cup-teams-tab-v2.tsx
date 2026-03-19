@@ -32,9 +32,10 @@ interface Team {
 interface CupTeamsTabProps {
   cupId: string;
   cupName: string;
+  isReadOnly?: boolean;
 }
 
-export function CupTeamsTab({ cupId, cupName }: CupTeamsTabProps) {
+export function CupTeamsTab({ cupId, cupName, isReadOnly }: CupTeamsTabProps) {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
@@ -363,15 +364,17 @@ export function CupTeamsTab({ cupId, cupName }: CupTeamsTabProps) {
           </p>
         </div>
 
-        <Button
-          onClick={() => setIsAddDialogOpen(true)}
-          disabled={!canModify || teams.length >= 32}
-          size="lg"
-          className="font-bold"
-        >
-          <Plus className="mr-2 h-5 w-5" />
-          Agregar Equipo
-        </Button>
+        {!isReadOnly && (
+          <Button
+            onClick={() => setIsAddDialogOpen(true)}
+            disabled={!canModify || teams.length >= 32}
+            size="lg"
+            className="font-bold"
+          >
+            <Plus className="mr-2 h-5 w-5" />
+            Agregar Equipo
+          </Button>
+        )}
       </div>
 
       {/* Warning if bracket exists */}
@@ -404,32 +407,36 @@ export function CupTeamsTab({ cupId, cupName }: CupTeamsTabProps) {
       {teams.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {teams.map((team) => (
-            <Card key={team.id} className="group hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <JerseyPreview jersey={team.jersey} size="md" />
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg truncate">{team.name}</CardTitle>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {team.playerCount || 0} jugador{team.playerCount !== 1 ? 'es' : ''}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Card key={team.id} className="group flex flex-col hover:shadow-lg transition-shadow overflow-hidden">
+              <CardContent className="p-4 flex flex-1 items-start gap-4">
+                <div className="flex-shrink-0 mt-1">
+                  <JerseyPreview jersey={team.jersey} size="sm" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-lg leading-tight line-clamp-2">{team.name}</h3>
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    {team.playerCount || 0} jugador{team.playerCount !== 1 ? 'es' : ''}
+                  </p>
+                </div>
+              </CardContent>
+              
+              {!isReadOnly && (
+                <div className="bg-muted/20 px-4 py-2 border-t border-border/30 flex items-center justify-between">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs font-medium"
+                    onClick={() => setRosterTeam(team)}
+                    title="Gestionar jugadores"
+                  >
+                    <Users className="h-3.5 w-3.5 mr-1.5" />
+                    Plantel
+                  </Button>
+                  <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => setRosterTeam(team)}
-                      title="Gestionar jugadores"
-                    >
-                      <Users className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                       onClick={() => openEditDialog(team)}
                       disabled={!canModify}
                       title="Editar equipo"
@@ -438,8 +445,8 @@ export function CupTeamsTab({ cupId, cupName }: CupTeamsTabProps) {
                     </Button>
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                       onClick={() => setTeamToDelete(team.id)}
                       disabled={!canModify}
                       title="Eliminar equipo"
@@ -448,7 +455,7 @@ export function CupTeamsTab({ cupId, cupName }: CupTeamsTabProps) {
                     </Button>
                   </div>
                 </div>
-              </CardHeader>
+              )}
             </Card>
           ))}
         </div>

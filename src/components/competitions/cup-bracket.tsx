@@ -3,7 +3,7 @@
 import { BracketMatch, CupRound } from '@/lib/types';
 import { getRoundName, getMatchesByRound } from '@/lib/utils/cup-bracket';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-import { Trophy, Clock } from 'lucide-react';
+import { Trophy, Clock, PlayCircle, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
@@ -319,6 +319,34 @@ function BracketMatchCard({ match, onClick, isHighlighted, isFinal, canCreate, u
             hasMatchId={!!match.matchId}
             canCreate={!!canCreate}
           />
+        </div>
+      )}
+      {match.streamingUrl && (
+        <div className="px-2.5 pb-2.5">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(match.streamingUrl, '_blank');
+            }}
+            className={cn(
+              "w-full flex items-center justify-center gap-1.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all",
+              match.isLive 
+                ? "bg-red-600/90 hover:bg-red-600 text-white animate-pulse" 
+                : "bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
+            )}
+          >
+            {match.isLive ? (
+              <>
+                <div className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                EN VIVO
+              </>
+            ) : (
+              <>
+                <ExternalLink className="w-2.5 h-2.5" />
+                VER
+              </>
+            )}
+          </button>
         </div>
       )}
     </div>

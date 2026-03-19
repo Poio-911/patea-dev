@@ -6,7 +6,7 @@ import { useUser, useDoc, useFirestore } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import type { Cup } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Trophy, Users, Grid3x3, Loader2, PlayCircle, UserPlus } from 'lucide-react';
+import { ArrowLeft, Trophy, Users, Grid3x3, Loader2, PlayCircle, UserPlus, Share2, Megaphone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,6 +14,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { HeroImageBackground } from '@/components/organizer/hero-image-background';
 import { CupBracketTab } from '@/components/organizer/cup-bracket-tab';
+import { CompetitionSponsorsTab } from '@/components/organizer/competition-sponsors-tab';
 import { CupTeamsTab } from '@/components/organizer/cup-teams-tab-v2';
 
 export default function CupDetailPage({ params }: { params: { id: string } }) {
@@ -38,6 +39,23 @@ export default function CupDetailPage({ params }: { params: { id: string } }) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cambiar el estado.' });
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleShare = () => {
+    const publicUrl = `${window.location.origin}/competitions/cup/${params.id}`;
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      navigator.share({
+        title: `Pateá - ${cup?.name}`,
+        text: `Seguí el bracket y resultados de la copa ${cup?.name} en Pateá.`,
+        url: publicUrl,
+      }).catch(() => {
+        navigator.clipboard.writeText(publicUrl);
+        toast({ title: 'Link copiado', description: 'El enlace se guardó en el portapapeles.' });
+      });
+    } else {
+      navigator.clipboard.writeText(publicUrl);
+      toast({ title: 'Link copiado', description: 'El enlace se guardó en el portapapeles.' });
     }
   };
 
@@ -121,6 +139,15 @@ export default function CupDetailPage({ params }: { params: { id: string } }) {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto shrink-0">
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto border-amber-500/30 text-amber-500 font-bold tracking-wide uppercase"
+                onClick={handleShare}
+              >
+                <Share2 className="mr-2 h-5 w-5" />
+                Compartir Público
+              </Button>
               {cup.status === 'draft' && (
                 <Button
                   size="lg"
@@ -163,13 +190,10 @@ export default function CupDetailPage({ params }: { params: { id: string } }) {
 
       <div className="max-w-6xl mx-auto space-y-8 px-4 sm:px-0">
         <Tabs defaultValue="bracket" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 lg:w-[400px] mb-8 bg-card/70 backdrop-blur-xl border border-border/40 shadow-lg shadow-black/5 dark:shadow-black/20 h-12 p-1 rounded-xl">
-            <TabsTrigger value="bracket" className="rounded-lg font-bold data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-400 data-[state=active]:shadow-md transition-all">
-              <Grid3x3 className="mr-2 h-4 w-4 hidden md:inline-block" /> Bracket
-            </TabsTrigger>
-            <TabsTrigger value="teams" className="rounded-lg font-bold data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-md transition-all">
-              <Users className="mr-2 h-4 w-4 hidden md:inline-block" /> Equipos
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 lg:w-[600px] mb-8 bg-card/70 backdrop-blur-xl border border-border/40 shadow-lg shadow-black/5 dark:shadow-black/20 h-12 p-1 rounded-xl">
+            <TabsTrigger value="teams" className="rounded-lg font-bold data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-500 data-[state=active]:shadow-md transition-all"><Users className="mr-2 h-4 w-4 hidden md:inline-block" /> Equipos</TabsTrigger>
+            <TabsTrigger value="bracket" className="rounded-lg font-bold data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-500 data-[state=active]:shadow-md transition-all"><Grid3x3 className="mr-2 h-4 w-4 hidden md:inline-block" /> Bracket</TabsTrigger>
+            <TabsTrigger value="sponsors" className="rounded-lg font-bold data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-500 data-[state=active]:shadow-md transition-all"><Megaphone className="mr-2 h-4 w-4 hidden md:inline-block" /> Sponsors</TabsTrigger>
           </TabsList>
 
           <TabsContent value="bracket">
@@ -178,6 +202,14 @@ export default function CupDetailPage({ params }: { params: { id: string } }) {
 
           <TabsContent value="teams">
             <CupTeamsTab cupId={params.id} cupName={cup.name} />
+          </TabsContent>
+
+          <TabsContent value="sponsors">
+            <CompetitionSponsorsTab 
+              competitionId={params.id} 
+              competitionType="cups" 
+              sponsors={cup.sponsors} 
+            />
           </TabsContent>
         </Tabs>
       </div>

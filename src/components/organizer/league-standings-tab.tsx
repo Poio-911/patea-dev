@@ -4,8 +4,9 @@ import * as React from 'react';
 import { useFirestore } from '@/firebase';
 import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
-import { Trophy, TrendingUp, Minus, TrendingDown } from 'lucide-react';
+import { Trophy, TrendingUp, Minus, TrendingDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Table,
   TableBody,
@@ -31,6 +32,7 @@ interface MatchObj {
 
 interface FixtureRound {
   id: string;
+  roundNumber?: number;
   matches: MatchObj[];
 }
 
@@ -52,9 +54,10 @@ interface StandingRow {
 interface LeagueStandingsTabProps {
   leagueId: string;
   rules?: { pointsForWin: number; pointsForDraw: number };
+  isReadOnly?: boolean;
 }
 
-export function LeagueStandingsTab({ leagueId, rules }: LeagueStandingsTabProps) {
+export function LeagueStandingsTab({ leagueId, rules, isReadOnly }: LeagueStandingsTabProps) {
   const firestore = useFirestore();
 
   const [teams, setTeams] = React.useState<Team[]>([]);
@@ -84,96 +87,88 @@ export function LeagueStandingsTab({ leagueId, rules }: LeagueStandingsTabProps)
     };
   }, [firestore, leagueId]);
 
-  const standings = React.useMemo(() => {
-    if (teams.length === 0) return [];
+  const { standings, previousRankMap } = React.useMemo(() => {
+    if (teams.length === 0) return { standings: [], previousRankMap: new Map<string, number>() };
 
-    // Initialize stats map
-    const statsMap: Record<string, StandingRow> = {};
-    teams.forEach(t => {
-      statsMap[t.id] = {
-        teamId: t.id,
-        teamName: t.name,
-        jersey: t.jersey,
-        pts: 0, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, dg: 0,
-        recentForm: []
-      };
-    });
+    const ptsWin = rules?.pointsForWin ?? 3;
+    const ptsDraw = rules?.pointsForDraw ?? 1;
 
-    // Process all finished matches in chronological order (by round)
-    rounds.forEach(round => {
-      round.matches.forEach(match => {
-        if (match.status !== 'finished' || match.homeScore === undefined || match.awayScore === undefined) return;
-        if (!match.homeTeamId || !match.awayTeamId) return; // Ignore BYEs
-
-        const homeTeam = statsMap[match.homeTeamId];
-        const awayTeam = statsMap[match.awayTeamId];
-
-        if (!homeTeam || !awayTeam) return;
-
-        const hScore = match.homeScore;
-        const aScore = match.awayScore;
-
-        // Matches Played
-        homeTeam.pj += 1;
-        awayTeam.pj += 1;
-
-        // Goals For
-        homeTeam.gf += hScore;
-        awayTeam.gf += aScore;
-
-        // Goals Against
-        homeTeam.gc += aScore;
-        awayTeam.gc += hScore;
-
-        // Goal Difference
-        homeTeam.dg = homeTeam.gf - homeTeam.gc;
-        awayTeam.dg = awayTeam.gf - awayTeam.gc;
-
-        // Points and Results
-        const ptsWin = rules?.pointsForWin ?? 3;
-        const ptsDraw = rules?.pointsForDraw ?? 1;
-        if (hScore > aScore) {
-          homeTeam.pts += ptsWin;
-          homeTeam.pg += 1;
-          homeTeam.recentForm.unshift('W');
-
-          awayTeam.pp += 1;
-          awayTeam.recentForm.unshift('L');
-        } else if (hScore < aScore) {
-          awayTeam.pts += ptsWin;
-          awayTeam.pg += 1;
-          awayTeam.recentForm.unshift('W');
-
-          homeTeam.pp += 1;
-          homeTeam.recentForm.unshift('L');
-        } else {
-          homeTeam.pts += ptsDraw;
-          homeTeam.pe += 1;
-          homeTeam.recentForm.unshift('D');
-
-          awayTeam.pts += ptsDraw;
-          awayTeam.pe += 1;
-          awayTeam.recentForm.unshift('D');
-        }
-
-        // Limit recent form to last 5 matches
-        if (homeTeam.recentForm.length > 5) homeTeam.recentForm.pop();
-        if (awayTeam.recentForm.length > 5) awayTeam.recentForm.pop();
+    const computeFromRounds = (roundsList: FixtureRound[]): StandingRow[] => {
+      const statsMap: Record<string, StandingRow> = {};
+      teams.forEach(t => {
+        statsMap[t.id] = {
+          teamId: t.id,
+          teamName: t.name,
+          jersey: t.jersey,
+          pts: 0, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, dg: 0,
+          recentForm: []
+        };
       });
-    });
 
-    // Convert map to array and Sort rules
-    const standingsList = Object.values(statsMap);
-    
-    standingsList.sort((a, b) => {
-      if (b.pts !== a.pts) return b.pts - a.pts; // 1. Points
-      if (b.dg !== a.dg) return b.dg - a.dg;     // 2. Goal Difference
-      if (b.gf !== a.gf) return b.gf - a.gf;     // 3. Goals For
-      return a.teamName.localeCompare(b.teamName); // 4. Alphabetical
-    });
+      roundsList.forEach(round => {
+        round.matches.forEach(match => {
+          if (match.status !== 'finished' || match.homeScore === undefined || match.awayScore === undefined) return;
+          if (!match.homeTeamId || !match.awayTeamId) return;
 
-    return standingsList;
-  }, [teams, rounds]);
+          const homeTeam = statsMap[match.homeTeamId];
+          const awayTeam = statsMap[match.awayTeamId];
+          if (!homeTeam || !awayTeam) return;
+
+          const hScore = match.homeScore;
+          const aScore = match.awayScore;
+
+          homeTeam.pj += 1;
+          awayTeam.pj += 1;
+          homeTeam.gf += hScore;
+          awayTeam.gf += aScore;
+          homeTeam.gc += aScore;
+          awayTeam.gc += hScore;
+          homeTeam.dg = homeTeam.gf - homeTeam.gc;
+          awayTeam.dg = awayTeam.gf - awayTeam.gc;
+
+          if (hScore > aScore) {
+            homeTeam.pts += ptsWin; homeTeam.pg += 1; homeTeam.recentForm.unshift('W');
+            awayTeam.pp += 1; awayTeam.recentForm.unshift('L');
+          } else if (hScore < aScore) {
+            awayTeam.pts += ptsWin; awayTeam.pg += 1; awayTeam.recentForm.unshift('W');
+            homeTeam.pp += 1; homeTeam.recentForm.unshift('L');
+          } else {
+            homeTeam.pts += ptsDraw; homeTeam.pe += 1; homeTeam.recentForm.unshift('D');
+            awayTeam.pts += ptsDraw; awayTeam.pe += 1; awayTeam.recentForm.unshift('D');
+          }
+
+          if (homeTeam.recentForm.length > 5) homeTeam.recentForm.pop();
+          if (awayTeam.recentForm.length > 5) awayTeam.recentForm.pop();
+        });
+      });
+
+      return Object.values(statsMap).sort((a, b) => {
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        if (b.dg !== a.dg) return b.dg - a.dg;
+        if (b.gf !== a.gf) return b.gf - a.gf;
+        return a.teamName.localeCompare(b.teamName);
+      });
+    };
+
+    const current = computeFromRounds(rounds);
+
+    // Compute previous standings (exclude last round with any finished match)
+    let lastFinishedRoundIdx = -1;
+    for (let i = rounds.length - 1; i >= 0; i--) {
+      if (rounds[i].matches.some(m => m.status === 'finished')) {
+        lastFinishedRoundIdx = i;
+        break;
+      }
+    }
+
+    const prevRankMap = new Map<string, number>();
+    if (lastFinishedRoundIdx > 0) {
+      const prev = computeFromRounds(rounds.slice(0, lastFinishedRoundIdx));
+      prev.forEach((row, i) => prevRankMap.set(row.teamId, i));
+    }
+
+    return { standings: current, previousRankMap: prevRankMap };
+  }, [teams, rounds, rules]);
 
   const renderFormBadge = (form: 'W' | 'D' | 'L', idx: number) => {
     switch (form) {
@@ -195,6 +190,7 @@ export function LeagueStandingsTab({ leagueId, rules }: LeagueStandingsTabProps)
   }
 
   if (standings.length === 0) {
+
     return (
       <Card className="border-dashed bg-card/40 backdrop-blur-sm">
         <CardContent className="p-12 text-center flex flex-col items-center gap-4">
@@ -214,6 +210,12 @@ export function LeagueStandingsTab({ leagueId, rules }: LeagueStandingsTabProps)
     if (index === 0) return 'border-l-4 border-l-yellow-500/70 bg-yellow-500/5';
     if (index === 1) return 'border-l-4 border-l-slate-400/70 bg-slate-400/5';
     if (index === 2) return 'border-l-4 border-l-amber-700/70 bg-amber-700/5';
+    return '';
+  };
+
+  const relegationStyle = (index: number, total: number): string => {
+    if (index < 3) return ''; // handled by podium
+    if (total >= 6 && index >= total - 2) return 'border-r-4 border-r-red-500/50 bg-red-500/5';
     return '';
   };
 
@@ -255,14 +257,25 @@ export function LeagueStandingsTab({ leagueId, rules }: LeagueStandingsTabProps)
               </TableRow>
             </TableHeader>
             <TableBody>
-              {standings.map((row, index) => (
+              {standings.map((row, index) => {
+                const prevRank = previousRankMap.get(row.teamId);
+                const rankChange = prevRank !== undefined ? prevRank - index : null; // positive = moved up
+                return (
                 <TableRow
                   key={row.teamId}
-                  className={`hover:bg-muted/20 transition-colors border-b border-border/20 last:border-0 ${podiumStyle(index)}`}
+                  className={`hover:bg-muted/20 transition-colors border-b border-border/20 last:border-0 ${podiumStyle(index)} ${relegationStyle(index, standings.length)}`}
                 >
                   <TableCell className="text-center py-3 w-12">
-                    <div className="flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-0">
                       {rankBadge(index)}
+                      {rankChange !== null && rankChange !== 0 && (
+                        <span
+                          className={`flex items-center text-[9px] font-black leading-none ${rankChange > 0 ? 'text-green-500' : 'text-red-400'}`}
+                          title={rankChange > 0 ? `Subió ${rankChange} ${rankChange === 1 ? 'puesto' : 'puestos'}` : `Bajó ${Math.abs(rankChange)} ${Math.abs(rankChange) === 1 ? 'puesto' : 'puestos'}`}
+                        >
+                          {rankChange > 0 ? <ArrowUp className="w-2.5 h-2.5" /> : <ArrowDown className="w-2.5 h-2.5" />}
+                        </span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="font-medium py-3">
@@ -296,11 +309,34 @@ export function LeagueStandingsTab({ leagueId, rules }: LeagueStandingsTabProps)
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              );
+            })}
             </TableBody>
           </Table>
         </div>
       </div>
+
+      {standings.length >= 4 && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground px-1 pt-1">
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-yellow-500/20 border-l-2 border-l-yellow-500/70 inline-block" />
+            <span>Campeón</span>
+          </span>
+          {standings.length >= 6 && (
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-red-500/10 border-r-2 border-r-red-500/50 inline-block" />
+              <span>Zona de descenso</span>
+            </span>
+          )}
+          {previousRankMap.size > 0 && (
+            <span className="flex items-center gap-1.5">
+              <ArrowUp className="w-3 h-3 text-green-500" />
+              <ArrowDown className="w-3 h-3 text-red-400" />
+              <span>Cambio vs jornada anterior</span>
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

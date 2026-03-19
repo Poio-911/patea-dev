@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, PlusCircle, Trash2, Users, Shield } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Users, Shield, Edit2 } from 'lucide-react';
 import type { Jersey } from '@/lib/types';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { ManagePlayersDialogImproved } from '@/components/organizer/manage-players-dialog-improved';
@@ -201,6 +201,9 @@ export function LeagueTeamsTab({ leagueId, leagueName }: LeagueTeamsTabProps) {
   const [rosterTeam, setRosterTeam] = React.useState<GhostTeam | null>(null);
   const [isRosterOpen, setIsRosterOpen] = React.useState(false);
 
+  const [editingTeam, setEditingTeam] = React.useState<GhostTeam | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -228,6 +231,41 @@ export function LeagueTeamsTab({ leagueId, leagueName }: LeagueTeamsTabProps) {
     }
   };
 
+  const handleEditTeam = async (teamName: string, jersey: Jersey) => {
+    if (!firestore || !editingTeam) return;
+
+    // Check for duplicate name (excluding current team)
+    const existingTeam = teams.find(
+      t => t.id !== editingTeam.id && t.name.toLowerCase().trim() === teamName.toLowerCase().trim()
+    );
+
+    if (existingTeam) {
+      toast({
+        variant: 'destructive',
+        title: 'Equipo Duplicado',
+        description: `Ya existe otro equipo con el nombre "${teamName}" en este torneo.`
+      });
+      return;
+    }
+
+    try {
+      const teamRef = doc(firestore, 'leagues', leagueId, 'teams', editingTeam.id);
+      await import('firebase/firestore').then(({ updateDoc }) => 
+        updateDoc(teamRef, {
+          name: teamName,
+          jersey
+        })
+      );
+
+      toast({ title: 'Equipo Actualizado', description: `${teamName} fue modificado exitosamente.` });
+      setIsEditDialogOpen(false);
+      setEditingTeam(null);
+    } catch (e: any) {
+      console.error('[EditTeam] Error:', e);
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar el equipo.' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -241,7 +279,7 @@ export function LeagueTeamsTab({ leagueId, leagueName }: LeagueTeamsTabProps) {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-xl font-black uppercase tracking-tight">{teams.length} Equipos Inscriptos</h2>
-          <p className="text-sm text-muted-foreground">Creá equipos fantasma sin necesidad de que los jugadores tengan cuentas.</p>
+          <p className="text-sm text-muted-foreground">Creá equipos manuales sin necesidad de que los jugadores tengan cuentas.</p>
         </div>
         <Button onClick={() => setIsAddOpen(true)}>
           <PlusCircle className="mr-2 h-4 w-4" /> Inscribir Equipo
@@ -255,7 +293,7 @@ export function LeagueTeamsTab({ leagueId, leagueName }: LeagueTeamsTabProps) {
             <div className="space-y-1">
               <h3 className="font-bold text-lg">Sin equipos todavía</h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                Empezá inscribiendo los equipos que participarán. Los equipos fantasma no necesitan cuentas de usuario.
+                Empezá inscribiendo los equipos que participarán. Los equipos manuales no necesitan cuentas de usuario para sus jugadores.
               </p>
             </div>
             <Button variant="outline" className="border-primary/20 hover:bg-primary/5 hover:text-primary" onClick={() => setIsAddOpen(true)}>
@@ -266,48 +304,74 @@ export function LeagueTeamsTab({ leagueId, leagueName }: LeagueTeamsTabProps) {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {teams.map(team => (
-            <Card key={team.id} className="group relative hover:border-primary/50 transition-colors bg-card/60 backdrop-blur-sm border-border/50 overflow-hidden">
-              <CardContent className="p-4 flex items-center gap-4">
+            <Card key={team.id} className="group flex flex-col hover:border-primary/50 transition-colors bg-card/60 backdrop-blur-sm border-border/50 overflow-hidden">
+              <CardContent className="p-4 flex flex-1 items-start gap-4">
                 {/* Jersey Mini Preview */}
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 mt-1">
                   <JerseyPreview jersey={team.jersey} size="sm" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-black text-base uppercase tracking-tight truncate group-hover:text-primary transition-colors">{team.name}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">{team.playerCount || 0} jugadores registrados</p>
-                  <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground ring-1 ring-inset ring-border mt-1">
-                    Equipo Fantasma
-                  </span>
+                  <h3 className="font-black text-base uppercase tracking-tight leading-tight group-hover:text-primary transition-colors line-clamp-2">{team.name}</h3>
+                  <p className="text-xs text-muted-foreground mt-1.5">{team.playerCount || 0} jugadores registrados</p>
                 </div>
-                
-                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              </CardContent>
+              
+              <div className="bg-muted/30 px-4 py-3 border-t border-border/50 flex items-center justify-between">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs font-bold uppercase tracking-widest bg-background"
+                  onClick={() => {
+                    setRosterTeam(team);
+                    setIsRosterOpen(true);
+                  }}
+                >
+                  <Users className="h-3.5 w-3.5 mr-1.5" />
+                  Plantel
+                </Button>
+                <div className="flex items-center gap-1">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
-                    className="h-8 text-xs font-bold uppercase tracking-widest"
+                    className="h-8 px-2 text-muted-foreground hover:text-foreground"
                     onClick={() => {
-                      setRosterTeam(team);
-                      setIsRosterOpen(true);
+                      setEditingTeam(team);
+                      setIsEditDialogOpen(true);
                     }}
                   >
-                    Plantel
+                    <Edit2 className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="flex-shrink-0 text-muted-foreground hover:text-destructive"
+                    size="sm"
+                    className="h-8 px-2 text-muted-foreground hover:text-destructive"
                     onClick={() => handleDelete(team.id, team.name)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-              </CardContent>
+              </div>
             </Card>
           ))}
         </div>
       )}
 
       <AddGhostTeamDialog leagueId={leagueId} open={isAddOpen} onOpenChange={setIsAddOpen} existingTeams={teams} />
+
+      {editingTeam && (
+        <CompactTeamDialog
+          open={isEditDialogOpen}
+          onOpenChange={(open) => {
+            setIsEditDialogOpen(open);
+            if (!open) setEditingTeam(null);
+          }}
+          onSave={handleEditTeam}
+          initialName={editingTeam.name}
+          initialJersey={editingTeam.jersey}
+          title="Editar Identidad"
+          saveButtonText="Guardar Cambios"
+        />
+      )}
       
       <ManageTeamRosterDialog 
         leagueId={leagueId} 

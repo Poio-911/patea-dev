@@ -12,14 +12,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Trophy, AlertTriangle, Sparkles, Loader2, Swords } from 'lucide-react';
-import type { Cup, BracketMatch } from '@/lib/types';
+import { Trophy, AlertTriangle, Sparkles, Loader2, Swords, PlayCircle, ExternalLink } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
+import type { Cup, BracketMatch as OriginalBracketMatch } from '@/lib/types';
+
+interface BracketMatch extends OriginalBracketMatch {
+  streamingUrl?: string;
+  isLive?: boolean;
+  team1Score?: number;
+  team2Score?: number;
+  penaltyWinnerId?: string | null;
+}
 
 interface CupBracketTabProps {
   cupId: string;
+  isReadOnly?: boolean;
 }
 
-export function CupBracketTab({ cupId }: CupBracketTabProps) {
+export function CupBracketTab({ cupId, isReadOnly }: CupBracketTabProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [showRegenerateConfirm, setShowRegenerateConfirm] = React.useState(false);
@@ -31,6 +42,8 @@ export function CupBracketTab({ cupId }: CupBracketTabProps) {
   const [team1Score, setTeam1Score] = React.useState('');
   const [team2Score, setTeam2Score] = React.useState('');
   const [penaltyWinner, setPenaltyWinner] = React.useState<string | null>(null);
+  const [streamingUrl, setStreamingUrl] = React.useState('');
+  const [isLive, setIsLive] = React.useState(false);
   const [isSubmittingResult, setIsSubmittingResult] = React.useState(false);
 
   const cupRef = React.useMemo(() => {
@@ -114,9 +127,11 @@ export function CupBracketTab({ cupId }: CupBracketTabProps) {
 
     // Open result dialog
     setSelectedMatch(match);
-    setTeam1Score('');
-    setTeam2Score('');
-    setPenaltyWinner(null);
+    setTeam1Score(match.team1Score !== undefined ? String(match.team1Score) : '');
+    setTeam2Score(match.team2Score !== undefined ? String(match.team2Score) : '');
+    setPenaltyWinner(match.penaltyWinnerId || null);
+    setStreamingUrl(match.streamingUrl || '');
+    setIsLive(match.isLive || false);
     setIsResultDialogOpen(true);
   };
 
@@ -156,7 +171,14 @@ export function CupBracketTab({ cupId }: CupBracketTabProps) {
         { team1: s1, team2: s2 }
       );
 
-      const updates: Record<string, any> = { bracket: updatedBracket };
+      const updates: Record<string, any> = { 
+        bracket: updatedBracket.map(m => {
+          if (m.id === selectedMatch.id) {
+            return { ...m, streamingUrl, isLive };
+          }
+          return m;
+        })
+      };
 
       // Advance currentRound if all matches in this round are done
       if (isRoundComplete(updatedBracket, selectedMatch.round)) {
@@ -399,6 +421,34 @@ export function CupBracketTab({ cupId }: CupBracketTabProps) {
                   </div>
                 </div>
               )}
+
+              {/* Streaming Section */}
+              <div className="space-y-4 pt-4 border-t border-border/40">
+                <div className="grid gap-2">
+                  <Label htmlFor="streamingUrl" className="flex items-center gap-2 text-amber-500 font-bold">
+                    <Sparkles className="w-4 h-4" /> Link de Transmisión
+                  </Label>
+                  <Input 
+                    id="streamingUrl" 
+                    value={streamingUrl} 
+                    onChange={(e) => setStreamingUrl(e.target.value)} 
+                    placeholder="https://youtube.com/live/..." 
+                  />
+                </div>
+                <div className="flex items-center space-x-2 bg-amber-500/5 p-3 rounded-xl border border-amber-500/20">
+                   <Checkbox 
+                     id="isLive" 
+                     checked={isLive} 
+                     onCheckedChange={(checked) => setIsLive(checked === true)} 
+                   />
+                   <label
+                     htmlFor="isLive"
+                     className="text-sm font-bold leading-none cursor-pointer text-amber-600 dark:text-amber-400"
+                   >
+                     EN VIVO AHORA
+                   </label>
+                </div>
+              </div>
             </div>
           )}
 

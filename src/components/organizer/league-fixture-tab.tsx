@@ -4,17 +4,21 @@ import * as React from 'react';
 import { useFirestore } from '@/firebase';
 import { collection, query, onSnapshot, addDoc, doc, writeBatch, getDocs, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, CalendarDays, RefreshCw, ChevronDown, Settings, MapPin, Clock, AlertTriangle } from 'lucide-react';
+import { Loader2, CalendarDays, RefreshCw, ChevronDown, Settings, MapPin, Clock, AlertTriangle, PlayCircle, ExternalLink, UserCheck, List, Calendar, Download } from 'lucide-react';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { MatchResultDialog } from '@/components/organizer/match-result-dialog';
+import { AssignRefereeDialog } from '@/components/organizer/assign-referee-dialog';
+import { LeagueCalendarView } from '@/components/organizer/league-calendar-view';
 
 interface Team {
   id: string;
@@ -34,6 +38,10 @@ interface MatchObj {
   date?: string;
   time?: string;
   venue?: string;
+  streamingUrl?: string;
+  isLive?: boolean;
+  refereeId?: string;
+  refereeName?: string;
 }
 
 interface FixtureRound {
@@ -48,20 +56,23 @@ interface LeagueFixtureTabProps {
   leagueId: string;
   leagueName: string;
   leagueFormat: string;
+  isReadOnly?: boolean;
 }
 
-export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat }: LeagueFixtureTabProps) {
+export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat, isReadOnly }: LeagueFixtureTabProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
-  
+
   const [teams, setTeams] = React.useState<Team[]>([]);
   const [rounds, setRounds] = React.useState<FixtureRound[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [isGenerating, setIsGenerating] = React.useState(false);
+  const [viewMode, setViewMode] = React.useState<'list' | 'calendar'>('list');
 
   const [selectedMatch, setSelectedMatch] = React.useState<MatchObj | null>(null);
   const [selectedFixtureId, setSelectedFixtureId] = React.useState<string>('');
   const [isResultOpen, setIsResultOpen] = React.useState(false);
+  const [isRefereeDialogOpen, setIsRefereeDialogOpen] = React.useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const [showRegenerateConfirm, setShowRegenerateConfirm] = React.useState(false);
 
@@ -268,25 +279,71 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat }: LeagueF
   // Mostrar el fixture
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h2 className="text-xl font-black uppercase tracking-tight">Fixture Generado</h2>
           <p className="text-sm text-muted-foreground">{rounds.length} fechas · {rounds.reduce((acc, r) => acc + r.matches.length, 0)} partidos</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="text-xs font-bold border-border/50 text-muted-foreground hover:text-primary"
-          onClick={handleGenerateFixture}
-          disabled={isGenerating}
-        >
-          {isGenerating ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-2 h-3 w-3" />}
-          Regenerar
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* View Mode Toggle */}
+          <div className="flex items-center gap-1 p-1 bg-muted/30 rounded-lg border border-border/40">
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              className={cn(
+                "h-8 px-3 text-xs font-bold",
+                viewMode === 'list' ? 'shadow-sm' : 'hover:bg-muted/50'
+              )}
+              onClick={() => setViewMode('list')}
+            >
+              <List className="mr-1.5 h-3.5 w-3.5" />
+              Lista
+            </Button>
+            <Button
+              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+              size="sm"
+              className={cn(
+                "h-8 px-3 text-xs font-bold",
+                viewMode === 'calendar' ? 'shadow-sm' : 'hover:bg-muted/50'
+              )}
+              onClick={() => setViewMode('calendar')}
+            >
+              <Calendar className="mr-1.5 h-3.5 w-3.5" />
+              Calendario
+            </Button>
+          </div>
+
+          {!isReadOnly && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs font-bold border-border/50 text-muted-foreground hover:text-primary"
+              onClick={handleGenerateFixture}
+              disabled={isGenerating}
+            >
+              {isGenerating ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-2 h-3 w-3" />}
+              Regenerar
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs font-bold border-border/50 text-muted-foreground hover:text-primary"
+            onClick={() => exportFixtureToICS(rounds, leagueName)}
+            title="Exportar fixture al calendario"
+          >
+            <Download className="mr-1.5 h-3 w-3" />
+            Exportar
+          </Button>
+        </div>
       </div>
 
-      <div className="space-y-3">
-        {rounds.map((round) => {
+      {/* Conditional Rendering based on viewMode */}
+      {viewMode === 'calendar' ? (
+        <LeagueCalendarView leagueId={leagueId} />
+      ) : (
+        <div className="space-y-3">
+          {rounds.map((round) => {
           const finishedCount = round.matches.filter(m => m.status === 'finished').length;
           const totalMatches = round.matches.length;
           const isRoundComplete = finishedCount === totalMatches && totalMatches > 0;
@@ -330,22 +387,24 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat }: LeagueF
                     return (
                       <div key={idx} className="relative group px-5 py-4 hover:bg-muted/10 transition-colors">
                         {/* Settings button */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-2 top-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary z-10"
-                          onClick={() => {
-                            setSelectedMatch(match);
-                            setSelectedFixtureId(round.id);
-                            setIsSettingsOpen(true);
-                          }}
-                        >
-                          <Settings className="h-3 w-3" />
-                        </Button>
+                        {!isReadOnly && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-2 top-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary z-10"
+                            onClick={() => {
+                              setSelectedMatch(match);
+                              setSelectedFixtureId(round.id);
+                              setIsSettingsOpen(true);
+                            }}
+                          >
+                            <Settings className="h-3 w-3" />
+                          </Button>
+                        )}
 
                         {/* Metadata Row */}
-                        {(match.date || match.time || match.venue) && (
-                          <div className="flex items-center justify-center gap-3 mb-3 text-[11px] text-muted-foreground font-medium">
+                        {(match.date || match.time || match.venue || match.refereeName) && (
+                          <div className="flex items-center justify-center gap-3 mb-3 text-[11px] text-muted-foreground font-medium flex-wrap">
                             {(match.date || match.time) && (
                               <span className="flex items-center gap-1">
                                 <Clock className="w-3 h-3"/>
@@ -357,6 +416,27 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat }: LeagueF
                                 <MapPin className="w-3 h-3"/>
                                 {match.venue}
                               </span>
+                            )}
+                            {match.refereeName && (
+                              <span className="flex items-center gap-1 text-primary">
+                                <UserCheck className="w-3 h-3"/>
+                                {match.refereeName}
+                              </span>
+                            )}
+                            {!isReadOnly && !match.refereeName && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 text-[10px] px-2 text-muted-foreground hover:text-primary"
+                                onClick={() => {
+                                  setSelectedMatch(match);
+                                  setSelectedFixtureId(round.id);
+                                  setIsRefereeDialogOpen(true);
+                                }}
+                              >
+                                <UserCheck className="w-3 h-3 mr-1" />
+                                Asignar Árbitro
+                              </Button>
                             )}
                           </div>
                         )}
@@ -377,6 +457,10 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat }: LeagueF
                                 <div className="text-muted-foreground/40 px-1 text-sm">–</div>
                                 <div className={`w-11 text-center py-2 ${match.awayScore! > match.homeScore! ? 'text-green-600 dark:text-green-400' : ''}`}>{match.awayScore ?? 0}</div>
                               </div>
+                            ) : isReadOnly ? (
+                              <Badge variant="outline" className="font-bold uppercase tracking-widest text-[10px] h-7 px-3 rounded-lg border-muted-foreground/30 text-muted-foreground">
+                                Pendiente
+                              </Badge>
                             ) : (
                               <Button
                                 variant="outline"
@@ -399,6 +483,36 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat }: LeagueF
                             <span className="font-bold text-sm truncate">{match.awayTeamName}</span>
                           </div>
                         </div>
+
+                        {/* Streaming Row */}
+                        {match.streamingUrl && (
+                          <div className="mt-4 flex justify-center">
+                            <Button
+                              variant={match.isLive ? "default" : "outline"}
+                              size="sm"
+                              className={cn(
+                                "rounded-full font-black text-[10px] tracking-widest uppercase h-8 px-4",
+                                match.isLive ? "bg-red-600 hover:bg-red-700 text-white animate-pulse border-none" : "border-primary/30 text-primary hover:bg-primary/5"
+                              )}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(match.streamingUrl, '_blank');
+                              }}
+                            >
+                              {match.isLive ? (
+                                <span className="flex items-center gap-1.5">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                                  EN VIVO AHORA
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1.5">
+                                  <ExternalLink className="w-3 h-3" />
+                                  VER TRANSMISIÓN
+                                </span>
+                              )}
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -407,7 +521,8 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat }: LeagueF
             </Collapsible>
           );
         })}
-      </div>
+        </div>
+      )}
 
       <MatchResultDialog
         leagueId={leagueId}
@@ -417,6 +532,14 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat }: LeagueF
         awayTeam={teams.find(t => t.id === selectedMatch?.awayTeamId)}
         open={isResultOpen}
         onOpenChange={setIsResultOpen}
+      />
+
+      <AssignRefereeDialog
+        leagueId={leagueId}
+        fixtureDocId={selectedFixtureId}
+        match={selectedMatch}
+        open={isRefereeDialogOpen}
+        onOpenChange={setIsRefereeDialogOpen}
       />
 
       {selectedMatch && (
@@ -477,6 +600,8 @@ function MatchSettingsDialog({ leagueId, fixtureDocId, match, open, onOpenChange
   const [date, setDate] = React.useState(match.date || '');
   const [time, setTime] = React.useState(match.time || '');
   const [venue, setVenue] = React.useState(match.venue || '');
+  const [streamingUrl, setStreamingUrl] = React.useState(match.streamingUrl || '');
+  const [isLive, setIsLive] = React.useState(match.isLive || false);
   const [isSaving, setIsSaving] = React.useState(false);
 
   React.useEffect(() => {
@@ -484,6 +609,8 @@ function MatchSettingsDialog({ leagueId, fixtureDocId, match, open, onOpenChange
       setDate(match.date || '');
       setTime(match.time || '');
       setVenue(match.venue || '');
+      setStreamingUrl(match.streamingUrl || '');
+      setIsLive(match.isLive || false);
     }
   }, [open, match]);
 
@@ -498,7 +625,7 @@ function MatchSettingsDialog({ leagueId, fixtureDocId, match, open, onOpenChange
         const fixtureData = fixtureSnap.data();
         const updatedMatches = (fixtureData.matches || []).map((m: MatchObj) => {
           if (m.id === match.id) {
-            return { ...m, date, time, venue };
+            return { ...m, date, time, venue, streamingUrl, isLive };
           }
           return m;
         });
@@ -539,6 +666,25 @@ function MatchSettingsDialog({ leagueId, fixtureDocId, match, open, onOpenChange
             <Label htmlFor="venue">Cancha / Sede</Label>
             <Input id="venue" value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Sede Central - Cancha 1" />
           </div>
+          <div className="grid gap-2 border-t border-border/40 pt-4 mt-2">
+            <Label htmlFor="streamingUrl" className="flex items-center gap-2 text-primary font-bold">
+              <PlayCircle className="w-4 h-4" /> Link de Transmisión (Streaming)
+            </Label>
+            <Input id="streamingUrl" value={streamingUrl} onChange={(e) => setStreamingUrl(e.target.value)} placeholder="https://youtube.com/live/..." />
+          </div>
+          <div className="flex items-center space-x-2 bg-primary/5 p-3 rounded-xl border border-primary/20">
+             <Checkbox 
+               id="isLive" 
+               checked={isLive} 
+               onCheckedChange={(checked) => setIsLive(checked === true)} 
+             />
+             <label
+               htmlFor="isLive"
+               className="text-sm font-bold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-primary"
+             >
+               ESTÁ TRANSMITIENDO EN VIVO AHORA
+             </label>
+          </div>
         </div>
 
         <DialogFooter>
@@ -550,4 +696,108 @@ function MatchSettingsDialog({ leagueId, fixtureDocId, match, open, onOpenChange
       </DialogContent>
     </Dialog>
   );
+}
+
+// ─── Google Calendar / ICS Export ─────────────────────────────────────────────
+
+function formatICSDate(dateStr: string, timeStr?: string): string {
+  let date: Date | null = null;
+
+  // DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+    const [day, month, year] = dateStr.split('/').map(Number);
+    date = new Date(year, month - 1, day);
+  }
+  // YYYY-MM-DD
+  else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    date = new Date(year, month - 1, day);
+  }
+
+  if (!date) return '';
+
+  if (timeStr && /^\d{2}:\d{2}$/.test(timeStr)) {
+    const [hh, mm] = timeStr.split(':').map(Number);
+    date.setHours(hh, mm, 0, 0);
+    // Format: YYYYMMDDTHHmmss (local time)
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
+  }
+
+  // All-day event format: YYYYMMDD
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
+}
+
+function exportFixtureToICS(rounds: FixtureRound[], leagueName: string) {
+  const events: string[] = [];
+
+  rounds.forEach((round) => {
+    round.matches.forEach((match) => {
+      if (!match.date || !match.homeTeamId || !match.awayTeamId) return;
+
+      const dtStart = formatICSDate(match.date, match.time);
+      if (!dtStart) return;
+
+      const isAllDay = !match.time;
+      const uid = `patea-${match.id}-${Date.now()}@patea.app`;
+      const summary = `${match.homeTeamName} vs ${match.awayTeamName}`;
+      const description = `Liga: ${leagueName}\\nFecha: ${round.roundName}${match.refereeName ? `\\nÁrbitro: ${match.refereeName}` : ''}`;
+
+      let dtEnd: string;
+      if (isAllDay) {
+        // All-day: end is next day
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const parts = dtStart.split('');
+        const y = parseInt(parts.slice(0, 4).join(''));
+        const mo = parseInt(parts.slice(4, 6).join('')) - 1;
+        const d = parseInt(parts.slice(6, 8).join(''));
+        const end = new Date(y, mo, d + 1);
+        dtEnd = `${end.getFullYear()}${pad(end.getMonth() + 1)}${pad(end.getDate())}`;
+      } else {
+        // 90 min duration
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const y = parseInt(dtStart.slice(0, 4));
+        const mo = parseInt(dtStart.slice(4, 6)) - 1;
+        const d = parseInt(dtStart.slice(6, 8));
+        const hh = parseInt(dtStart.slice(9, 11));
+        const mm = parseInt(dtStart.slice(11, 13));
+        const end = new Date(y, mo, d, hh, mm + 90);
+        dtEnd = `${end.getFullYear()}${pad(end.getMonth() + 1)}${pad(end.getDate())}T${pad(end.getHours())}${pad(end.getMinutes())}00`;
+      }
+
+      const lines = [
+        'BEGIN:VEVENT',
+        `UID:${uid}`,
+        isAllDay ? `DTSTART;VALUE=DATE:${dtStart}` : `DTSTART:${dtStart}`,
+        isAllDay ? `DTEND;VALUE=DATE:${dtEnd}` : `DTEND:${dtEnd}`,
+        `SUMMARY:${summary}`,
+        `DESCRIPTION:${description}`,
+        match.venue ? `LOCATION:${match.venue}` : '',
+        'END:VEVENT',
+      ].filter(Boolean).join('\r\n');
+
+      events.push(lines);
+    });
+  });
+
+  if (events.length === 0) return;
+
+  const icsContent = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Pateá//Fixture//ES',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    ...events,
+    'END:VCALENDAR',
+  ].join('\r\n');
+
+  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fixture-${leagueName.toLowerCase().replace(/\s+/g, '-')}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
 }

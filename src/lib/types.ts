@@ -715,6 +715,107 @@ export type CupFormat = 'single_elimination';
 export type CompetitionStatus = 'draft' | 'open_for_applications' | 'in_progress' | 'completed';
 export type CompetitionType = 'league' | 'cup' | 'friendly';
 
+export interface Sponsor {
+  id: string;
+  name: string;
+  logoUrl: string;
+  websiteUrl?: string;
+  order?: number;
+}
+
+// Referee management types
+export type Referee = {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  photoUrl?: string;
+  leagueId: string;
+  assignedMatches: string[]; // Array of fixture doc IDs + match IDs (format: "fixtureId:matchId")
+  rating?: number; // Average rating from 1-10
+  notes?: string;
+  createdAt: string;
+} & DocumentData;
+
+export type RefereeEvaluation = {
+  fixtureId: string;
+  matchId: string;
+  rating: number; // 1-10
+  punctuality: number; // 1-5
+  fairness: number; // 1-5
+  control: number; // 1-5
+  communication: number; // 1-5
+  evaluatedBy: string; // uid of evaluator
+  comments?: string;
+  createdAt: string;
+};
+
+// Communication system types
+export type MessageRecipientType = 'all_teams' | 'all_captains' | 'all_referees' | 'specific_teams' | 'specific_players';
+
+export type MessageTemplate = {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  category: 'match' | 'general' | 'emergency' | 'celebration';
+  variables?: string[]; // e.g., ['teamName', 'matchDate', 'venue']
+};
+
+export type CommunicationMessage = {
+  id: string;
+  leagueId: string;
+  sentBy: string; // uid of organizer
+  sentByName: string;
+  recipientType: MessageRecipientType;
+  recipientIds: string[]; // Array of team IDs, player UIDs, or referee IDs
+  subject: string;
+  body: string;
+  templateId?: string; // If using a template
+  sentAt: string;
+  deliveryMethod: ('push' | 'email')[]; // Which channels were used
+  deliveryStatus?: {
+    push: { sent: number; delivered: number; failed: number };
+    email: { sent: number; delivered: number; failed: number };
+  };
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  metadata?: {
+    relatedMatchId?: string;
+    relatedFixtureId?: string;
+  };
+} & DocumentData;
+
+// Team application for public registration
+export type TeamApplication = {
+  id: string;
+  leagueId: string;
+  teamName: string;
+  captainName: string;
+  captainEmail: string;
+  captainPhone?: string;
+  playerCount?: number; // Approximate squad size
+  message?: string; // Optional message to organizer
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string; // uid of organizer who reviewed
+  reviewNotes?: string; // Organizer notes on decision
+  paymentStatus?: 'not_required' | 'pending' | 'paid';
+} & DocumentData;
+
+// Venue / multi-cancha management
+export type CompetitionVenue = {
+  id: string;
+  name: string;
+  address: string;
+  capacity?: number;
+  cost?: number; // Cost per hour ARS
+  contact?: string; // Contact info
+  availability?: { day: string; timeSlots: string[] }[];
+  leagueId: string;
+  notes?: string;
+} & DocumentData;
+
 export type League = {
   id: string;
   name: string;
@@ -747,6 +848,20 @@ export type League = {
   finalMatchId?: string; // Reference to tiebreaker match
   // Standings table (updated after each match)
   standings?: LeagueStanding[];
+  sponsors?: Sponsor[];
+  // Referee management
+  refereeIds?: string[]; // Array of referee IDs assigned to this league
+  // Communication settings
+  communicationSettings?: {
+    emailEnabled: boolean;
+    pushEnabled: boolean;
+  };
+  // Registration / Inscription settings
+  allowPublicRegistration?: boolean; // Allow external teams to self-register
+  registrationFee?: number; // Cost to register (ARS)
+  maxTeams?: number; // Maximum teams allowed
+  registrationDeadline?: string; // ISO date string  
+  venueIds?: string[]; // Multi-venue management
 } & DocumentData;
 
 // League standings/statistics
@@ -812,6 +927,8 @@ export type BracketMatch = {
   matchId?: string; // Reference to actual Match document when played
   nextMatchNumber?: number; // Which match the winner advances to
   finalScore?: { team1: number; team2: number }; // Score of the match
+  streamingUrl?: string; // Optional streaming link
+  isLive?: boolean; // Whether the match is currently live
 };
 
 export type Cup = {
@@ -838,6 +955,7 @@ export type Cup = {
   runnerUpTeamId?: string;
   runnerUpTeamName?: string;
   completedAt?: string; // ISO date when cup was completed
+  sponsors?: Sponsor[];
 } & DocumentData;
 
 export type CompetitionApplication = {

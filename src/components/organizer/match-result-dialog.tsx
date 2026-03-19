@@ -6,6 +6,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ShieldCheck, Trophy, Goal, X, AlertTriangle } from 'lucide-react';
@@ -74,6 +75,10 @@ export function MatchResultDialog({ leagueId, fixtureDocId, match, homeTeam, awa
   // Walkover
   const [isWalkover, setIsWalkover] = React.useState(false);
 
+  // Extra match info
+  const [attendance, setAttendance] = React.useState<string>('');
+  const [matchNotes, setMatchNotes] = React.useState<string>('');
+
   React.useEffect(() => {
     if (open && match) {
       setHomeScore(match.homeScore !== undefined ? String(match.homeScore) : '');
@@ -100,6 +105,10 @@ export function MatchResultDialog({ leagueId, fixtureDocId, match, homeTeam, awa
 
       // Load walkover
       setIsWalkover(match.isWalkover || false);
+
+      // Load extra info
+      setAttendance((match as any).attendance !== undefined ? String((match as any).attendance) : '');
+      setMatchNotes((match as any).notes || '');
     }
   }, [open, match]);
 
@@ -199,6 +208,8 @@ export function MatchResultDialog({ leagueId, fixtureDocId, match, homeTeam, awa
             cards: allCards,
             mvp: mvpData,
             isWalkover: isWalkover,
+            attendance: attendance !== '' ? parseInt(attendance, 10) : undefined,
+            notes: matchNotes.trim() || undefined,
             status: 'finished',
           };
         }
@@ -599,6 +610,35 @@ export function MatchResultDialog({ leagueId, fixtureDocId, match, homeTeam, awa
           )}
         </div>
 
+        </div>
+
+        {/* Attendance & Notes */}
+        <div className="mt-4 border-t border-border/40 pt-4 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="attendance" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Asistencia de público</Label>
+              <Input
+                id="attendance"
+                type="number"
+                min={0}
+                placeholder="Ej: 250"
+                value={attendance}
+                onChange={e => setAttendance(e.target.value)}
+                className="bg-muted/30"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="match-notes" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Notas del árbitro/organizador</Label>
+            <Textarea
+              id="match-notes"
+              placeholder="Incidencias, observaciones, notas del partido..."
+              value={matchNotes}
+              onChange={e => setMatchNotes(e.target.value)}
+              rows={2}
+              className="bg-muted/30 resize-none text-sm"
+            />
+          </div>
         </div>
 
         <DialogFooter className="mt-4 shrink-0">
