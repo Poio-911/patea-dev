@@ -18,8 +18,9 @@ import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { TeamApplication } from '@/lib/types';
 
-interface LeagueApplicationsTabProps {
-  leagueId: string;
+interface CompetitionApplicationsTabProps {
+  competitionId: string;
+  competitionType?: 'leagues' | 'cups';
 }
 
 const statusConfig = {
@@ -30,11 +31,13 @@ const statusConfig = {
 
 function ApplicationCard({
   app,
-  leagueId,
+  competitionId,
+  competitionType,
   onReviewed,
 }: {
   app: TeamApplication;
-  leagueId: string;
+  competitionId: string;
+  competitionType: 'leagues' | 'cups';
   onReviewed: () => void;
 }) {
   const { toast } = useToast();
@@ -49,7 +52,8 @@ function ApplicationCard({
     setIsProcessing(true);
     try {
       const result = await reviewTeamApplicationAction({
-        leagueId,
+        competitionId,
+        competitionType,
         applicationId: app.id,
         status,
         reviewNotes,
@@ -168,7 +172,7 @@ function ApplicationCard({
   );
 }
 
-export function LeagueApplicationsTab({ leagueId }: LeagueApplicationsTabProps) {
+export function CompetitionApplicationsTab({ competitionId, competitionType = 'leagues' }: CompetitionApplicationsTabProps) {
   const firestore = useFirestore();
   const [applications, setApplications] = React.useState<TeamApplication[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -176,14 +180,14 @@ export function LeagueApplicationsTab({ leagueId }: LeagueApplicationsTabProps) 
 
   React.useEffect(() => {
     if (!firestore) return;
-    const appsRef = collection(firestore, 'leagues', leagueId, 'applications');
+    const appsRef = collection(firestore, competitionType, competitionId, 'applications');
     const q = query(appsRef, orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(q, (snap) => {
       setApplications(snap.docs.map(d => ({ id: d.id, ...d.data() } as TeamApplication)));
       setLoading(false);
     });
     return unsub;
-  }, [firestore, leagueId]);
+  }, [firestore, competitionId, competitionType]);
 
   const pendingCount = applications.filter(a => a.status === 'pending').length;
   const filtered = filter === 'all' ? applications : applications.filter(a => a.status === filter);
@@ -243,7 +247,8 @@ export function LeagueApplicationsTab({ leagueId }: LeagueApplicationsTabProps) 
             <ApplicationCard
               key={app.id}
               app={app}
-              leagueId={leagueId}
+              competitionId={competitionId}
+              competitionType={competitionType}
               onReviewed={() => {}} // real-time via onSnapshot
             />
           ))}

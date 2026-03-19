@@ -6,22 +6,39 @@ import { useUser, useDoc, useFirestore } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import type { Cup } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Trophy, Users, Grid3x3, Loader2, PlayCircle, UserPlus, Share2, Megaphone } from 'lucide-react';
+import { ArrowLeft, Trophy, Users, Grid3x3, Loader2, PlayCircle, UserPlus, Share2, Megaphone, MessageSquare, Shield, AlertTriangle, ClipboardList, MapPin, Flame, BarChart3, UserCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { HeroImageBackground } from '@/components/organizer/hero-image-background';
 import { CupBracketTab } from '@/components/organizer/cup-bracket-tab';
 import { CompetitionSponsorsTab } from '@/components/organizer/competition-sponsors-tab';
-import { CupTeamsTab } from '@/components/organizer/cup-teams-tab-v2';
+import { CompetitionRefereesTab } from '@/components/organizer/competition-referees-tab';
+import { CompetitionTeamsTab } from '@/components/organizer/competition-teams-tab';
+import { CompetitionFairPlayTab } from '@/components/organizer/competition-fair-play-tab';
+import { CompetitionDisciplineTab } from '@/components/organizer/competition-discipline-tab';
+import { CompetitionApplicationsTab } from '@/components/organizer/competition-applications-tab';
+import { CompetitionStatsTab } from '@/components/organizer/competition-stats-tab';
+import { CompetitionAnalyticsDashboard } from '@/components/organizer/competition-analytics-dashboard';
+import { CompetitionVenuesTab } from '@/components/organizer/competition-venues-tab';
+import { CompetitionCommunicationTab } from '@/components/organizer/competition-communication-tab';
+import {
+  ResponsiveDropdownMenu,
+  ResponsiveDropdownMenuContent,
+  ResponsiveDropdownMenuItem,
+  ResponsiveDropdownMenuLabel,
+  ResponsiveDropdownMenuSeparator,
+  ResponsiveDropdownMenuTrigger,
+} from '@/components/ui/responsive-dropdown-menu';
 
 export default function CupDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState('bracket');
 
   const handleStatusChange = async (newStatus: Cup['status']) => {
     if (!cupRef) return;
@@ -189,19 +206,105 @@ export default function CupDetailPage({ params }: { params: { id: string } }) {
       </div>
 
       <div className="max-w-6xl mx-auto space-y-8 px-4 sm:px-0">
-        <Tabs defaultValue="bracket" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 lg:w-[600px] mb-8 bg-card/70 backdrop-blur-xl border border-border/40 shadow-lg shadow-black/5 dark:shadow-black/20 h-12 p-1 rounded-xl">
-            <TabsTrigger value="teams" className="rounded-lg font-bold data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-500 data-[state=active]:shadow-md transition-all"><Users className="mr-2 h-4 w-4 hidden md:inline-block" /> Equipos</TabsTrigger>
-            <TabsTrigger value="bracket" className="rounded-lg font-bold data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-500 data-[state=active]:shadow-md transition-all"><Grid3x3 className="mr-2 h-4 w-4 hidden md:inline-block" /> Bracket</TabsTrigger>
-            <TabsTrigger value="sponsors" className="rounded-lg font-bold data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-500 data-[state=active]:shadow-md transition-all"><Megaphone className="mr-2 h-4 w-4 hidden md:inline-block" /> Sponsors</TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <div className="mb-8 flex flex-wrap gap-2 bg-card/70 backdrop-blur-xl border border-border/40 shadow-lg shadow-black/5 dark:shadow-black/20 p-2 rounded-xl">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setActiveTab('bracket')}
+              className={`rounded-lg font-bold transition-all text-xs lg:text-sm ${activeTab === 'bracket' ? 'bg-amber-500/10 text-amber-500 shadow-md' : ''}`}
+            >
+              <Grid3x3 className="mr-1 h-3 w-3 lg:h-4 lg:w-4" /> Bracket
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setActiveTab('teams')}
+              className={`rounded-lg font-bold transition-all text-xs lg:text-sm ${activeTab === 'teams' ? 'bg-amber-500/10 text-amber-500 shadow-md' : ''}`}
+            >
+              <Users className="mr-1 h-3 w-3 lg:h-4 lg:w-4" /> Equipos
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setActiveTab('analytics')}
+              className={`rounded-lg font-bold transition-all text-xs lg:text-sm ${activeTab === 'analytics' ? 'bg-amber-500/10 text-amber-500 shadow-md' : ''}`}
+            >
+              <BarChart3 className="mr-1 h-3 w-3 lg:h-4 lg:w-4" /> Analíticas
+            </Button>
+
+            <ResponsiveDropdownMenu>
+              <ResponsiveDropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className={`rounded-lg font-bold transition-all text-xs lg:text-sm ${['applications', 'referees', 'communication', 'venues', 'sponsors'].includes(activeTab) ? 'bg-amber-500/10 text-amber-500 shadow-md' : ''}`}
+                >
+                  Gestión
+                </Button>
+              </ResponsiveDropdownMenuTrigger>
+              <ResponsiveDropdownMenuContent align="start" className="min-w-52">
+                <ResponsiveDropdownMenuLabel>Operativa</ResponsiveDropdownMenuLabel>
+                <ResponsiveDropdownMenuSeparator />
+                <ResponsiveDropdownMenuItem className="gap-2" onClick={() => setActiveTab('applications')}>
+                  <ClipboardList className="h-4 w-4" /> Inscripciones
+                </ResponsiveDropdownMenuItem>
+                <ResponsiveDropdownMenuItem className="gap-2" onClick={() => setActiveTab('referees')}>
+                  <UserCheck className="h-4 w-4" /> Árbitros
+                </ResponsiveDropdownMenuItem>
+                <ResponsiveDropdownMenuItem className="gap-2" onClick={() => setActiveTab('communication')}>
+                  <MessageSquare className="h-4 w-4" /> Mensajes
+                </ResponsiveDropdownMenuItem>
+                <ResponsiveDropdownMenuItem className="gap-2" onClick={() => setActiveTab('venues')}>
+                  <MapPin className="h-4 w-4" /> Sedes
+                </ResponsiveDropdownMenuItem>
+                <ResponsiveDropdownMenuSeparator />
+                <ResponsiveDropdownMenuItem className="gap-2" onClick={() => setActiveTab('sponsors')}>
+                  <Megaphone className="h-4 w-4" /> Sponsors
+                </ResponsiveDropdownMenuItem>
+              </ResponsiveDropdownMenuContent>
+            </ResponsiveDropdownMenu>
+
+            <ResponsiveDropdownMenu>
+              <ResponsiveDropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className={`rounded-lg font-bold transition-all text-xs lg:text-sm ${['stats', 'discipline', 'fairplay'].includes(activeTab) ? 'bg-amber-500/10 text-amber-500 shadow-md' : ''}`}
+                >
+                  Rendimiento
+                </Button>
+              </ResponsiveDropdownMenuTrigger>
+              <ResponsiveDropdownMenuContent align="start" className="min-w-52">
+                <ResponsiveDropdownMenuLabel>Análisis</ResponsiveDropdownMenuLabel>
+                <ResponsiveDropdownMenuSeparator />
+                <ResponsiveDropdownMenuItem className="gap-2" onClick={() => setActiveTab('stats')}>
+                  <Flame className="h-4 w-4" /> Goleadores
+                </ResponsiveDropdownMenuItem>
+                <ResponsiveDropdownMenuItem className="gap-2" onClick={() => setActiveTab('discipline')}>
+                  <AlertTriangle className="h-4 w-4" /> Disciplina
+                </ResponsiveDropdownMenuItem>
+                <ResponsiveDropdownMenuItem className="gap-2" onClick={() => setActiveTab('fairplay')}>
+                  <Shield className="h-4 w-4" /> Fair Play
+                </ResponsiveDropdownMenuItem>
+              </ResponsiveDropdownMenuContent>
+            </ResponsiveDropdownMenu>
+          </div>
 
           <TabsContent value="bracket">
             <CupBracketTab cupId={params.id} />
           </TabsContent>
 
           <TabsContent value="teams">
-            <CupTeamsTab cupId={params.id} cupName={cup.name} />
+            <CompetitionTeamsTab competitionId={params.id} competitionType="cups" competitionName={cup.name} />
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <CompetitionAnalyticsDashboard competitionId={params.id} competitionType="cups" />
+          </TabsContent>
+
+          <TabsContent value="stats">
+            <CompetitionStatsTab competitionId={params.id} competitionType="cups" />
           </TabsContent>
 
           <TabsContent value="sponsors">
@@ -210,6 +313,30 @@ export default function CupDetailPage({ params }: { params: { id: string } }) {
               competitionType="cups" 
               sponsors={cup.sponsors} 
             />
+          </TabsContent>
+
+          <TabsContent value="applications">
+            <CompetitionApplicationsTab competitionId={params.id} competitionType="cups" />
+          </TabsContent>
+
+          <TabsContent value="venues">
+            <CompetitionVenuesTab competitionId={params.id} competitionType="cups" />
+          </TabsContent>
+
+          <TabsContent value="referees">
+            <CompetitionRefereesTab competitionId={params.id} competitionType="cups" />
+          </TabsContent>
+
+          <TabsContent value="fairplay">
+            <CompetitionFairPlayTab competitionId={params.id} competitionType="cups" />
+          </TabsContent>
+
+          <TabsContent value="discipline">
+            <CompetitionDisciplineTab competitionId={params.id} competitionType="cups" />
+          </TabsContent>
+
+          <TabsContent value="communication">
+            <CompetitionCommunicationTab competitionId={params.id} competitionName={cup.name} competitionType="cups" />
           </TabsContent>
         </Tabs>
       </div>

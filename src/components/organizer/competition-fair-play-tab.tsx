@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Shield, Star, TrendingDown } from 'lucide-react';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
@@ -11,13 +11,12 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { Team, BracketMatch, MatchCard } from '@/lib/types';
 
-interface Team { id: string; name: string; jersey: any; }
-interface MatchObj {
-  status: 'pending' | 'finished';
-  cards?: { playerId: string; playerName: string; teamId: string; color: 'yellow' | 'red' }[];
+interface CompetitionFairPlayTabProps {
+  competitionId: string;
+  competitionType?: 'leagues' | 'cups';
 }
-interface FixtureRound { id: string; matches: MatchObj[]; }
 
 interface TeamFairPlay {
   teamId: string;
@@ -25,8 +24,6 @@ interface TeamFairPlay {
   jersey: any;
   yellows: number;
   reds: number;
-  pj: number;
-  // lower is better
   score: number;
 }
 
@@ -41,30 +38,49 @@ interface PlayerFairPlay {
   score: number;
 }
 
-interface LeagueFairPlayTabProps { leagueId: string; }
-
 const YELLOW_PTS = 1;
 const RED_PTS = 3;
 
-export function LeagueFairPlayTab({ leagueId }: LeagueFairPlayTabProps) {
+export function CompetitionFairPlayTab({ competitionId, competitionType = 'leagues' }: CompetitionFairPlayTabProps) {
   const firestore = useFirestore();
   const [teams, setTeams] = React.useState<Team[]>([]);
-  const [rounds, setRounds] = React.useState<FixtureRound[]>([]);
+  const [matchesData, setMatchesData] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     if (!firestore) return;
-    const teamsRef = collection(firestore, 'leagues', leagueId, 'teams');
+
+    // 1. Fetch Teams (common for both)
+    const teamsRef = collection(firestore, competitionType, competitionId, 'teams');
     const unsubTeams = onSnapshot(query(teamsRef), snap => {
       setTeams(snap.docs.map(d => ({ id: d.id, ...d.data() } as Team)));
     });
-    const fixturesRef = collection(firestore, 'leagues', leagueId, 'fixtures');
-    const unsubFixtures = onSnapshot(query(fixturesRef), snap => {
-      setRounds(snap.docs.map(d => ({ id: d.id, ...d.data() } as FixtureRound)));
-      setLoading(false);
-    });
-    return () => { unsubTeams(); unsubFixtures(); };
-  }, [firestore, leagueId]);
+
+    // 2. Fetch Match Data based on type
+    let unsubMatches = () => {};
+
+    if (competitionType === 'leagues') {
+      const fixturesRef = collection(firestore, 'leagues', competitionId, 'fixtures');
+      unsubMatches = onSnapshot(query(fixturesRef), snap => {
+        // Flatten matches from all rounds (fixtures)
+        const allMatches = snap.docs.flatMap(d => (d.data().matches || []) as any[]);
+        setMatchesData(allMatches);
+        setLoading(false);
+      });
+    } else {
+      // For Cups, match data is in the 'bracket' field of the cup document
+      const cupRef = doc(firestore, 'cups', competitionId);
+      unsubMatches = onSnapshot(cupRef, snap => {
+        if (snap.exists()) {
+          const bracket = (snap.data().bracket || []) as BracketMatch[];
+          setMatchesData(bracket);
+        }
+        setLoading(false);
+      });
+    }
+
+    return () => { unsubTeams(); unsubMatches(); };
+  }, [firestore, competitionId, competitionType]);
 
   const { teamRanking, playerRanking } = React.useMemo(() => {
     const teamMap: Record<string, TeamFairPlay> = {};
@@ -73,40 +89,58 @@ export function LeagueFairPlayTab({ leagueId }: LeagueFairPlayTabProps) {
     const teamName: Record<string, string> = {};
 
     teams.forEach(t => {
-      teamJersey[t.id] = t.jersey;
-      teamName[t.id] = t.name;
-      teamMap[t.id] = { teamId: t.id, teamName: t.name, jersey: t.jersey, yellows: 0, reds: 0, pj: 0, score: 0 };
+      const tid = t.id;
+      if (tid) {
+        teamJersey[tid] = t.jersey;
+        teamName[tid] = t.name;
+        teamMap[tid] = { teamId: tid, teamName: t.name, jersey: t.jersey, yellows: 0, reds: 0, score: 0 };
+      }
     });
 
-    rounds.forEach(round => {
-      round.matches.forEach(match => {
-        if (match.status !== 'finished') return;
-        const teamsInMatch = new Set<string>();
-        (match.cards || []).forEach(card => {
-          const team = teamMap[card.teamId];
-          if (!team) return;
-          if (card.color === 'yellow') { team.yellows++; team.score += YELLOW_PTS; }
-          else { team.reds++; team.score += RED_PTS; }
-          teamsInMatch.add(card.teamId);
+    matchesData.forEach(match => {
+      // leagues matches have 'status', cup matches have 'winnerId' (or just check if played)
+      const isFinished = competitionType === 'leagues' 
+        ? match.status === 'finished' 
+        : !!match.winnerId;
+      
+      if (!isFinished) return;
 
-          const pid = `${card.playerId}_${card.teamId}`;
-          if (!playerMap[pid]) {
-            playerMap[pid] = {
-              playerId: card.playerId, playerName: card.playerName,
-              teamId: card.teamId, teamName: teamName[card.teamId] || '',
-              jersey: teamJersey[card.teamId], yellows: 0, reds: 0, score: 0,
-            };
-          }
-          if (card.color === 'yellow') { playerMap[pid].yellows++; playerMap[pid].score += YELLOW_PTS; }
-          else { playerMap[pid].reds++; playerMap[pid].score += RED_PTS; }
-        });
+      const cards = (match.cards || []) as any[];
+      cards.forEach(card => {
+        if (!card.teamId || !card.playerId) return;
+
+        // Map card color/type (MatchCard uses cardType: 'yellow'|'red', leagues uses color: 'yellow'|'red')
+        const type = card.cardType || card.color;
+        const team = teamMap[card.teamId];
+        
+        if (team) {
+          if (type === 'yellow') { team.yellows++; team.score += YELLOW_PTS; }
+          else { team.reds++; team.score += RED_PTS; }
+        }
+
+        const pid = `${card.playerId}_${card.teamId}`;
+        if (!playerMap[pid]) {
+          playerMap[pid] = {
+            playerId: card.playerId,
+            playerName: card.playerName || 'Jugador',
+            teamId: card.teamId,
+            teamName: teamName[card.teamId] || 'TBD',
+            jersey: teamJersey[card.teamId],
+            yellows: 0,
+            reds: 0,
+            score: 0,
+          };
+        }
+        
+        if (type === 'yellow') { playerMap[pid].yellows++; playerMap[pid].score += YELLOW_PTS; }
+        else { playerMap[pid].reds++; playerMap[pid].score += RED_PTS; }
       });
     });
 
     const teamRanking = Object.values(teamMap).sort((a, b) => a.score - b.score);
     const playerRanking = Object.values(playerMap).sort((a, b) => b.score - a.score).slice(0, 20);
     return { teamRanking, playerRanking };
-  }, [teams, rounds]);
+  }, [teams, matchesData, competitionType]);
 
   const medalEmoji = (i: number) => {
     if (i === 0) return '🥇';
@@ -116,7 +150,7 @@ export function LeagueFairPlayTab({ leagueId }: LeagueFairPlayTabProps) {
   };
 
   if (loading) return (
-    <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
+    <div className="space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
   );
 
   if (teamRanking.length === 0) return (

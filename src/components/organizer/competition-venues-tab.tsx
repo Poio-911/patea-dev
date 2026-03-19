@@ -55,11 +55,12 @@ interface VenueFormData {
 
 const EMPTY_FORM: VenueFormData = { name: '', address: '', capacity: '', costPerMatch: '', notes: '' };
 
-interface LeagueVenuesTabProps {
-  leagueId: string;
+interface CompetitionVenuesTabProps {
+  competitionId: string;
+  competitionType?: 'leagues' | 'cups';
 }
 
-export function LeagueVenuesTab({ leagueId }: LeagueVenuesTabProps) {
+export function CompetitionVenuesTab({ competitionId, competitionType = 'leagues' }: CompetitionVenuesTabProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -73,15 +74,15 @@ export function LeagueVenuesTab({ leagueId }: LeagueVenuesTabProps) {
 
   // Real-time listener
   React.useEffect(() => {
-    if (!firestore || !leagueId) return;
-    const ref = collection(firestore, 'leagues', leagueId, 'venues');
+    if (!firestore || !competitionId) return;
+    const ref = collection(firestore, competitionType, competitionId, 'venues');
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Venue, 'id'>) }));
       setVenues(data);
       setLoading(false);
     });
     return unsub;
-  }, [firestore, leagueId]);
+  }, [firestore, competitionId, competitionType]);
 
   const openCreate = () => {
     setEditingVenue(null);
@@ -115,10 +116,10 @@ export function LeagueVenuesTab({ leagueId }: LeagueVenuesTabProps) {
 
     try {
       if (editingVenue) {
-        await updateDoc(doc(firestore, 'leagues', leagueId, 'venues', editingVenue.id), payload);
+        await updateDoc(doc(firestore, competitionType, competitionId, 'venues', editingVenue.id), payload);
         toast({ title: 'Sede actualizada' });
       } else {
-        await addDoc(collection(firestore, 'leagues', leagueId, 'venues'), {
+        await addDoc(collection(firestore, competitionType, competitionId, 'venues'), {
           ...payload,
           createdAt: serverTimestamp(),
         });
@@ -135,7 +136,7 @@ export function LeagueVenuesTab({ leagueId }: LeagueVenuesTabProps) {
   const handleDelete = async () => {
     if (!firestore || !deleteVenue) return;
     try {
-      await deleteDoc(doc(firestore, 'leagues', leagueId, 'venues', deleteVenue.id));
+      await deleteDoc(doc(firestore, competitionType, competitionId, 'venues', deleteVenue.id));
       toast({ title: 'Sede eliminada' });
     } catch {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar la sede.' });
@@ -164,7 +165,7 @@ export function LeagueVenuesTab({ leagueId }: LeagueVenuesTabProps) {
         <div className="text-center py-16 space-y-3">
           <MapPin className="h-12 w-12 text-muted-foreground/30 mx-auto" />
           <p className="text-muted-foreground font-medium">No hay sedes registradas</p>
-          <p className="text-xs text-muted-foreground">Agregá las canchas o instalaciones donde se juega la liga</p>
+          <p className="text-xs text-muted-foreground">Agregá las canchas o instalaciones donde se juega</p>
           <Button size="sm" variant="outline" onClick={openCreate} className="mt-2 gap-2">
             <Plus className="h-4 w-4" /> Agregar primera sede
           </Button>

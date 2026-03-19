@@ -16,6 +16,9 @@ import { Trophy, AlertTriangle, Sparkles, Loader2, Swords, PlayCircle, ExternalL
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import type { Cup, BracketMatch as OriginalBracketMatch } from '@/lib/types';
+import { CompetitionMatchResultDialog } from '@/components/organizer/competition-match-result-dialog';
+import { BracketMatchSettingsDialog } from '@/components/organizer/bracket-match-settings-dialog';
+import { motion } from 'framer-motion';
 
 interface BracketMatch extends OriginalBracketMatch {
   streamingUrl?: string;
@@ -30,21 +33,23 @@ interface CupBracketTabProps {
   isReadOnly?: boolean;
 }
 
+import { JerseyPreview } from '@/components/team-builder/jersey-preview';
+
 export function CupBracketTab({ cupId, isReadOnly }: CupBracketTabProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const isEditable = !isReadOnly;
   const [showRegenerateConfirm, setShowRegenerateConfirm] = React.useState(false);
   const [isGenerating, setIsGenerating] = React.useState(false);
 
   // Result dialog state
   const [selectedMatch, setSelectedMatch] = React.useState<BracketMatch | null>(null);
   const [isResultDialogOpen, setIsResultDialogOpen] = React.useState(false);
-  const [team1Score, setTeam1Score] = React.useState('');
-  const [team2Score, setTeam2Score] = React.useState('');
-  const [penaltyWinner, setPenaltyWinner] = React.useState<string | null>(null);
-  const [streamingUrl, setStreamingUrl] = React.useState('');
-  const [isLive, setIsLive] = React.useState(false);
-  const [isSubmittingResult, setIsSubmittingResult] = React.useState(false);
+  const [isSubmittingResult, setIsSubmittingResult] = React.useState(false); // Mantengo para regenerar si es necesario
+
+  // Settings dialog state
+  const [selectedMatchForSettings, setSelectedMatchForSettings] = React.useState<BracketMatch | null>(null);
+  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = React.useState(false);
 
   const cupRef = React.useMemo(() => {
     if (!firestore || !cupId) return null;
@@ -98,6 +103,8 @@ export function CupBracketTab({ cupId, isReadOnly }: CupBracketTabProps) {
   };
 
   const handleMatchClick = (match: BracketMatch) => {
+    if (!isEditable) return;
+
     // Si no tiene equipos, no hacer nada
     if (!match.team1Id || !match.team2Id) {
       toast({
@@ -127,93 +134,7 @@ export function CupBracketTab({ cupId, isReadOnly }: CupBracketTabProps) {
 
     // Open result dialog
     setSelectedMatch(match);
-    setTeam1Score(match.team1Score !== undefined ? String(match.team1Score) : '');
-    setTeam2Score(match.team2Score !== undefined ? String(match.team2Score) : '');
-    setPenaltyWinner(match.penaltyWinnerId || null);
-    setStreamingUrl(match.streamingUrl || '');
-    setIsLive(match.isLive || false);
     setIsResultDialogOpen(true);
-  };
-
-  const handleResultSubmit = async () => {
-    if (!cupRef || !cup?.bracket || !selectedMatch) return;
-
-    const s1 = parseInt(team1Score, 10);
-    const s2 = parseInt(team2Score, 10);
-
-    if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) {
-      toast({ variant: 'destructive', title: 'Puntaje inválido', description: 'Ingresá puntajes válidos (números enteros ≥ 0).' });
-      return;
-    }
-
-    const isTied = s1 === s2;
-    if (isTied && !penaltyWinner) {
-      toast({ variant: 'destructive', title: 'Empate', description: 'Seleccioná el ganador por penales.' });
-      return;
-    }
-
-    const winnerId = s1 > s2
-      ? selectedMatch.team1Id!
-      : s2 > s1
-        ? selectedMatch.team2Id!
-        : penaltyWinner!;
-    const winnerName = winnerId === selectedMatch.team1Id ? selectedMatch.team1Name! : selectedMatch.team2Name!;
-    const winnerJersey = winnerId === selectedMatch.team1Id ? selectedMatch.team1Jersey! : selectedMatch.team2Jersey!;
-
-    setIsSubmittingResult(true);
-    try {
-      const updatedBracket = advanceWinner(
-        cup.bracket,
-        selectedMatch.id,
-        winnerId,
-        winnerName,
-        winnerJersey,
-        { team1: s1, team2: s2 }
-      );
-
-      const updates: Record<string, any> = { 
-        bracket: updatedBracket.map(m => {
-          if (m.id === selectedMatch.id) {
-            return { ...m, streamingUrl, isLive };
-          }
-          return m;
-        })
-      };
-
-      // Advance currentRound if all matches in this round are done
-      if (isRoundComplete(updatedBracket, selectedMatch.round)) {
-        const nextRound = getNextRound(selectedMatch.round);
-        if (nextRound) updates.currentRound = nextRound;
-      }
-
-      // Close out tournament if final is complete
-      if (isTournamentComplete(updatedBracket)) {
-        const champion = getChampion(updatedBracket);
-        if (champion) {
-          updates.status = 'completed';
-          updates.championTeamId = champion.teamId;
-          updates.championTeamName = champion.teamName;
-          updates.completedAt = new Date().toISOString();
-        }
-      }
-
-      await updateDoc(cupRef, updates);
-
-      toast({
-        title: isTournamentComplete(updatedBracket) ? '🏆 Torneo Finalizado' : '✅ Resultado Registrado',
-        description: isTournamentComplete(updatedBracket)
-          ? `¡${winnerName} es el campeón!`
-          : `${winnerName} avanza a la siguiente ronda.`,
-      });
-
-      setIsResultDialogOpen(false);
-      setSelectedMatch(null);
-    } catch (error: any) {
-      console.error('[CupBracketTab] Error saving result:', error);
-      toast({ variant: 'destructive', title: 'Error', description: error.message || 'No se pudo guardar el resultado.' });
-    } finally {
-      setIsSubmittingResult(false);
-    }
   };
   const totalMatches = cup?.bracket?.length || 0;
   const completedMatches = cup?.bracket?.filter(m => m.winnerId).length || 0;
@@ -242,7 +163,7 @@ export function CupBracketTab({ cupId, isReadOnly }: CupBracketTabProps) {
               )}
             </div>
 
-            {!hasBracket ? (
+            {isEditable && !hasBracket ? (
               <Button
                 onClick={handleGenerateBracket}
                 disabled={isGenerating || !cup?.teams || cup.teams.length === 0}
@@ -261,7 +182,7 @@ export function CupBracketTab({ cupId, isReadOnly }: CupBracketTabProps) {
                   </>
                 )}
               </Button>
-            ) : (
+            ) : isEditable ? (
               <Button
                 variant="outline"
                 onClick={() => setShowRegenerateConfirm(true)}
@@ -270,7 +191,7 @@ export function CupBracketTab({ cupId, isReadOnly }: CupBracketTabProps) {
                 <AlertTriangle className="mr-2 h-4 w-4" />
                 Regenerar Bracket
               </Button>
-            )}
+            ) : null}
           </div>
         </CardHeader>
 
@@ -298,15 +219,20 @@ export function CupBracketTab({ cupId, isReadOnly }: CupBracketTabProps) {
           <CardContent className="p-6">
             <CupBracket
               bracket={cup.bracket}
-              onMatchClick={handleMatchClick}
+              onMatchClick={isEditable ? handleMatchClick : undefined}
+              onMatchSettingsClick={isEditable ? (match) => {
+                setSelectedMatchForSettings(match);
+                setIsSettingsDialogOpen(true);
+              } : undefined}
               currentRound={cup.currentRound}
-              canCreate={true}
+              canCreate={isEditable}
             />
           </CardContent>
         </Card>
       )}
 
       {/* Regenerate Confirmation Dialog */}
+      {isEditable && (
       <AlertDialog open={showRegenerateConfirm} onOpenChange={setShowRegenerateConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -338,142 +264,50 @@ export function CupBracketTab({ cupId, isReadOnly }: CupBracketTabProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      )}
 
-      {/* Match Result Dialog */}
-      <Dialog open={isResultDialogOpen} onOpenChange={(open) => { if (!isSubmittingResult) setIsResultDialogOpen(open); }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg font-black uppercase tracking-tight">
-              <Swords className="h-5 w-5 text-amber-500" />
-              Registrar Resultado
-            </DialogTitle>
-          </DialogHeader>
+      {isEditable && selectedMatch && (
+        <CompetitionMatchResultDialog
+          competitionId={cupId}
+          competitionType="cups"
+          match={{
+            id: selectedMatch.id,
+            homeTeamId: selectedMatch.team1Id,
+            awayTeamId: selectedMatch.team2Id,
+            homeTeamName: selectedMatch.team1Name || 'Libre',
+            awayTeamName: selectedMatch.team2Name || 'Libre',
+            homeTeamJersey: selectedMatch.team1Jersey,
+            awayTeamJersey: selectedMatch.team2Jersey,
+            homeScore: selectedMatch.team1Score,
+            awayScore: selectedMatch.team2Score,
+            status: selectedMatch.winnerId ? 'finished' : 'pending',
+            round: selectedMatch.round,
+            matchNumber: selectedMatch.matchNumber,
+            nextMatchNumber: selectedMatch.nextMatchNumber,
+            penaltyWinnerId: selectedMatch.penaltyWinnerId,
+            streamingUrl: selectedMatch.streamingUrl,
+            isLive: selectedMatch.isLive,
+          } as any}
+          homeTeam={cup?.teams?.find((t: any) => t.id === selectedMatch.team1Id) as any}
+          awayTeam={cup?.teams?.find((t: any) => t.id === selectedMatch.team2Id) as any}
+          open={isResultDialogOpen}
+          onOpenChange={setIsResultDialogOpen}
+          onSuccess={() => {
+            // No need to do anything, the dialog handles advancement and Firebase update
+            setSelectedMatch(null);
+          }}
+        />
+      )}
 
-          {selectedMatch && (
-            <div className="space-y-6 py-2">
-              {/* Teams face-off */}
-              <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center">
-                {/* Team 1 */}
-                <div className="text-center space-y-2">
-                  <p className="font-bold text-sm leading-tight truncate">{selectedMatch.team1Name}</p>
-                  <div>
-                    <Label htmlFor="score-team1" className="sr-only">Goles {selectedMatch.team1Name}</Label>
-                    <Input
-                      id="score-team1"
-                      type="number"
-                      min="0"
-                      value={team1Score}
-                      onChange={e => { setTeam1Score(e.target.value); setPenaltyWinner(null); }}
-                      placeholder="0"
-                      className="text-center text-2xl font-black h-16 w-full"
-                    />
-                  </div>
-                </div>
-
-                <span className="text-xl font-black text-muted-foreground pb-6">VS</span>
-
-                {/* Team 2 */}
-                <div className="text-center space-y-2">
-                  <p className="font-bold text-sm leading-tight truncate">{selectedMatch.team2Name}</p>
-                  <div>
-                    <Label htmlFor="score-team2" className="sr-only">Goles {selectedMatch.team2Name}</Label>
-                    <Input
-                      id="score-team2"
-                      type="number"
-                      min="0"
-                      value={team2Score}
-                      onChange={e => { setTeam2Score(e.target.value); setPenaltyWinner(null); }}
-                      placeholder="0"
-                      className="text-center text-2xl font-black h-16 w-full"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Penalty tiebreaker — shown only when tied */}
-              {team1Score !== '' && team2Score !== '' &&
-               !isNaN(parseInt(team1Score, 10)) && !isNaN(parseInt(team2Score, 10)) &&
-               parseInt(team1Score, 10) === parseInt(team2Score, 10) && (
-                <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
-                  <p className="text-sm font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
-                    <Trophy className="h-4 w-4" />
-                    Empate — Ganador por penales
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      type="button"
-                      variant={penaltyWinner === selectedMatch.team1Id ? 'default' : 'outline'}
-                      size="sm"
-                      className="w-full font-bold"
-                      onClick={() => setPenaltyWinner(selectedMatch.team1Id!)}
-                    >
-                      {selectedMatch.team1Name}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={penaltyWinner === selectedMatch.team2Id ? 'default' : 'outline'}
-                      size="sm"
-                      className="w-full font-bold"
-                      onClick={() => setPenaltyWinner(selectedMatch.team2Id!)}
-                    >
-                      {selectedMatch.team2Name}
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Streaming Section */}
-              <div className="space-y-4 pt-4 border-t border-border/40">
-                <div className="grid gap-2">
-                  <Label htmlFor="streamingUrl" className="flex items-center gap-2 text-amber-500 font-bold">
-                    <Sparkles className="w-4 h-4" /> Link de Transmisión
-                  </Label>
-                  <Input 
-                    id="streamingUrl" 
-                    value={streamingUrl} 
-                    onChange={(e) => setStreamingUrl(e.target.value)} 
-                    placeholder="https://youtube.com/live/..." 
-                  />
-                </div>
-                <div className="flex items-center space-x-2 bg-amber-500/5 p-3 rounded-xl border border-amber-500/20">
-                   <Checkbox 
-                     id="isLive" 
-                     checked={isLive} 
-                     onCheckedChange={(checked) => setIsLive(checked === true)} 
-                   />
-                   <label
-                     htmlFor="isLive"
-                     className="text-sm font-bold leading-none cursor-pointer text-amber-600 dark:text-amber-400"
-                   >
-                     EN VIVO AHORA
-                   </label>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter className="gap-2">
-            <Button
-              variant="ghost"
-              onClick={() => setIsResultDialogOpen(false)}
-              disabled={isSubmittingResult}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleResultSubmit}
-              disabled={isSubmittingResult || team1Score === '' || team2Score === ''}
-              className="bg-amber-500 hover:bg-amber-600 text-black font-bold"
-            >
-              {isSubmittingResult ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</>
-              ) : (
-                'Confirmar Resultado'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Settings Dialog */}
+      {isEditable && (
+        <BracketMatchSettingsDialog
+          cupId={cupId}
+          match={selectedMatchForSettings}
+          open={isSettingsDialogOpen}
+          onOpenChange={setIsSettingsDialogOpen}
+        />
+      )}
     </div>
   );
 }

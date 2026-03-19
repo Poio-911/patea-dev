@@ -14,7 +14,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { HeroImageBackground } from '@/components/organizer/hero-image-background';
 import { CupBracketTab } from '@/components/organizer/cup-bracket-tab';
-import { CupTeamsTab } from '@/components/organizer/cup-teams-tab-v2';
+import { CompetitionTeamsTab } from '@/components/organizer/competition-teams-tab';
 import { CompetitionSponsorsMarquee } from '@/components/organizer/competition-sponsors-marquee';
 
 export default function PublicCupDetailPage({ params }: { params: { id: string } }) {
@@ -142,7 +142,7 @@ export default function PublicCupDetailPage({ params }: { params: { id: string }
 
           <TabsContent value="teams" className="mt-0 outline-none">
              {/* We use a readonly version of teams tab or simply pass a flag if supported */}
-            <CupTeamsTab cupId={params.id} cupName={cup.name} isReadOnly={true} />
+            <CompetitionTeamsTab competitionId={params.id} competitionType="cups" competitionName={cup.name} isReadOnly={true} />
           </TabsContent>
         </Tabs>
       </div>

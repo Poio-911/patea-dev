@@ -5,7 +5,8 @@ import type { CommunicationMessage, MessageRecipientType } from '@/lib/types';
 import { replaceVariables } from '@/lib/message-templates';
 
 interface SendMessageParams {
-  leagueId: string;
+  competitionId: string;
+  competitionType: 'leagues' | 'cups';
   recipientType: MessageRecipientType;
   recipientIds: string[];
   subject: string;
@@ -20,7 +21,7 @@ interface SendMessageParams {
   };
 }
 
-export async function sendLeagueMessageAction(params: SendMessageParams) {
+export async function sendCompetitionMessageAction(params: SendMessageParams) {
   try {
     const auth = await getAdminAuth();
     const adminDb = getAdminDb();
@@ -29,11 +30,11 @@ export async function sendLeagueMessageAction(params: SendMessageParams) {
       return { success: false, error: 'Error de inicialización' };
     }
 
-    // TODO: Get current user from context/session
-    const currentUser = { uid: 'temp', displayName: 'Organizador' }; // This should come from auth context
+    const currentUser = { uid: 'temp', displayName: 'Organizador' }; 
 
     const {
-      leagueId,
+      competitionId,
+      competitionType,
       recipientType,
       recipientIds,
       subject,
@@ -45,32 +46,24 @@ export async function sendLeagueMessageAction(params: SendMessageParams) {
       metadata,
     } = params;
 
-    // Verify user is owner of the league
-    const leagueDoc = await adminDb.collection('leagues').doc(leagueId).get();
-    if (!leagueDoc.exists) {
-      return { success: false, error: 'Liga no encontrada' };
+    const competitionDoc = await adminDb.collection(competitionType).doc(competitionId).get();
+    if (!competitionDoc.exists) {
+      return { success: false, error: 'Competición no encontrada' };
     }
 
-    const leagueData = leagueDoc.data();
-    // TODO: Verify ownership when auth is properly implemented
-    // if (leagueData?.ownerUid !== currentUser.uid) {
-    //   return { success: false, error: 'No tenés permisos para enviar mensajes en esta liga' };
-    // }
-
-    // Replace variables in subject and body if provided
     const finalSubject = variables ? replaceVariables(subject, variables) : subject;
     const finalBody = variables ? replaceVariables(body, variables) : body;
 
-    // Get recipient user IDs based on recipient type
-    const recipientUids = await getRecipientUids(leagueId, recipientType, recipientIds);
+    const recipientUids = await getRecipientUids(competitionId, competitionType, recipientType, recipientIds);
 
     if (recipientUids.length === 0) {
       return { success: false, error: 'No se encontraron destinatarios' };
     }
 
-    // Create message document
     const messageData: Partial<CommunicationMessage> = {
-      leagueId,
+      leagueId: competitionId, // legacy support 
+      competitionId,
+      competitionType,
       sentBy: currentUser.uid,
       sentByName: currentUser.displayName || 'Organizador',
       recipientType,
@@ -88,15 +81,13 @@ export async function sendLeagueMessageAction(params: SendMessageParams) {
       },
     };
 
-    const messageRef = await adminDb.collection('leagues').doc(leagueId).collection('messages').add(messageData);
+    const messageRef = await adminDb.collection(competitionType).doc(competitionId).collection('messages').add(messageData);
 
-    // Send push notifications if enabled
     if (deliveryMethod.includes('push')) {
-      const pushResult = await sendPushNotifications(recipientUids, finalSubject, finalBody, leagueId);
+      const pushResult = await sendPushNotifications(recipientUids, finalSubject, finalBody, competitionId, competitionType);
       messageData.deliveryStatus!.push = pushResult;
     }
 
-    // Update delivery status
     await messageRef.update({ deliveryStatus: messageData.deliveryStatus });
 
     return {
@@ -105,13 +96,14 @@ export async function sendLeagueMessageAction(params: SendMessageParams) {
       recipientCount: recipientUids.length,
     };
   } catch (error: any) {
-    console.error('[sendLeagueMessageAction] Error:', error);
+    console.error('[sendCompetitionMessageAction] Error:', error);
     return { success: false, error: error.message || 'Error al enviar mensaje' };
   }
 }
 
 async function getRecipientUids(
-  leagueId: string,
+  competitionId: string,
+  competitionType: 'leagues' | 'cups',
   recipientType: MessageRecipientType,
   recipientIds: string[]
 ): Promise<string[]> {
@@ -123,12 +115,10 @@ async function getRecipientUids(
   try {
     switch (recipientType) {
       case 'all_teams': {
-        // Get all teams in the league
-        const teamsSnapshot = await adminDb.collection('leagues').doc(leagueId).collection('teams').get();
+        const teamsSnapshot = await adminDb.collection(competitionType).doc(competitionId).collection('teams').get();
 
         for (const teamDoc of teamsSnapshot.docs) {
           const teamData = teamDoc.data();
-          // Add all players from the team (assuming teams have a players array)
           if (teamData.players && Array.isArray(teamData.players)) {
             teamData.players.forEach((player: any) => {
               if (player.uid) uids.add(player.uid);
@@ -139,8 +129,7 @@ async function getRecipientUids(
       }
 
       case 'all_captains': {
-        // Get all teams and their captains
-        const teamsSnapshot = await adminDb.collection('leagues').doc(leagueId).collection('teams').get();
+        const teamsSnapshot = await adminDb.collection(competitionType).doc(competitionId).collection('teams').get();
 
         for (const teamDoc of teamsSnapshot.docs) {
           const teamData = teamDoc.data();
@@ -152,12 +141,10 @@ async function getRecipientUids(
       }
 
       case 'all_referees': {
-        // Get all referees in the league
-        const refereesSnapshot = await adminDb.collection('leagues').doc(leagueId).collection('referees').get();
+        const refereesSnapshot = await adminDb.collection(competitionType).doc(competitionId).collection('referees').get();
 
         for (const refereeDoc of refereesSnapshot.docs) {
           const refereeData = refereeDoc.data();
-          // Assuming referees might have a uid field
           if (refereeData.uid) {
             uids.add(refereeData.uid);
           }
@@ -166,9 +153,8 @@ async function getRecipientUids(
       }
 
       case 'specific_teams': {
-        // Get players from specific teams
         for (const teamId of recipientIds) {
-          const teamDoc = await adminDb.collection('leagues').doc(leagueId).collection('teams').doc(teamId).get();
+          const teamDoc = await adminDb.collection(competitionType).doc(competitionId).collection('teams').doc(teamId).get();
           const teamData = teamDoc.data();
 
           if (teamData?.players && Array.isArray(teamData.players)) {
@@ -181,7 +167,6 @@ async function getRecipientUids(
       }
 
       case 'specific_players': {
-        // recipientIds are already UIDs
         recipientIds.forEach(uid => uids.add(uid));
         break;
       }
@@ -198,7 +183,8 @@ async function sendPushNotifications(
   recipientUids: string[],
   title: string,
   body: string,
-  leagueId: string
+  competitionId: string,
+  competitionType: 'leagues' | 'cups'
 ): Promise<{ sent: number; delivered: number; failed: number }> {
   const result = { sent: 0, delivered: 0, failed: 0 };
   const adminDb = getAdminDb();
@@ -206,24 +192,20 @@ async function sendPushNotifications(
   if (!adminDb) return result;
 
   try {
-    // Get FCM tokens for all recipients
     const usersSnapshot = await adminDb.collection('users').where('__name__', 'in', recipientUids.slice(0, 10)).get();
-
     const notifications: Promise<any>[] = [];
 
     for (const userDoc of usersSnapshot.docs) {
-      const userData = userDoc.data();
-
-      // Create notification document for each user
       const notificationData = {
-        type: 'league_message',
+        type: 'competition_message',
         title,
         body,
         read: false,
         createdAt: new Date().toISOString(),
         data: {
-          leagueId,
-          screen: 'LeagueDetail',
+          competitionId,
+          competitionType,
+          screen: 'CompetitionDetail',
         },
       };
 
@@ -232,11 +214,10 @@ async function sendPushNotifications(
       );
     }
 
-    // Execute all notification creations in parallel
     await Promise.all(notifications);
 
     result.sent = notifications.length;
-    result.delivered = notifications.length; // Assume all were delivered (we don't have FCM confirmation)
+    result.delivered = notifications.length;
 
     return result;
   } catch (error) {
@@ -246,59 +227,61 @@ async function sendPushNotifications(
   }
 }
 
-export async function getLeagueMessagesAction(leagueId: string, limit = 50) {
+export async function getCompetitionMessagesAction(competitionId: string, competitionType: 'leagues' | 'cups', limit = 50) {
   try {
     const adminDb = getAdminDb();
     if (!adminDb) {
       return { success: false, error: 'Error de inicialización' };
     }
 
-    // Verify user has access to this league
-    const leagueDoc = await adminDb.collection('leagues').doc(leagueId).get();
-    if (!leagueDoc.exists) {
-      return { success: false, error: 'Liga no encontrada' };
+    const competitionDoc = await adminDb.collection(competitionType).doc(competitionId).get();
+    if (!competitionDoc.exists) {
+      return { success: false, error: 'Competición no encontrada' };
     }
 
     const messagesSnapshot = await adminDb
-      .collection('leagues')
-      .doc(leagueId)
+      .collection(competitionType)
+      .doc(competitionId)
       .collection('messages')
       .orderBy('sentAt', 'desc')
       .limit(limit)
       .get();
 
-    const messages = messagesSnapshot.docs.map((doc: any) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as CommunicationMessage[];
+    const messages = messagesSnapshot.docs.map((docSnap: any) => {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        ...data,
+        // Ensure common date fields are strings if they happen to be Timestamps
+        sentAt: data.sentAt?.toDate ? data.sentAt.toDate().toISOString() : data.sentAt,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
+      };
+    }) as CommunicationMessage[];
 
     return { success: true, messages };
   } catch (error: any) {
-    console.error('[getLeagueMessagesAction] Error:', error);
+    console.error('[getCompetitionMessagesAction] Error:', error);
     return { success: false, error: error.message || 'Error al obtener mensajes' };
   }
 }
 
-export async function deleteLeagueMessageAction(leagueId: string, messageId: string) {
+export async function deleteCompetitionMessageAction(competitionId: string, competitionType: 'leagues' | 'cups', messageId: string) {
   try {
     const adminDb = getAdminDb();
     if (!adminDb) {
       return { success: false, error: 'Error de inicialización' };
     }
 
-    // Verify user is owner of the league
-    const leagueDoc = await adminDb.collection('leagues').doc(leagueId).get();
-    if (!leagueDoc.exists) {
-      return { success: false, error: 'Liga no encontrada' };
+    const competitionDoc = await adminDb.collection(competitionType).doc(competitionId).get();
+    if (!competitionDoc.exists) {
+      return { success: false, error: 'Competición no encontrada' };
     }
 
-    // TODO: Add ownership verification when auth is properly implemented
-
-    await adminDb.collection('leagues').doc(leagueId).collection('messages').doc(messageId).delete();
+    await adminDb.collection(competitionType).doc(competitionId).collection('messages').doc(messageId).delete();
 
     return { success: true };
   } catch (error: any) {
-    console.error('[deleteLeagueMessageAction] Error:', error);
+    console.error('[deleteCompetitionMessageAction] Error:', error);
     return { success: false, error: error.message || 'Error al eliminar mensaje' };
   }
 }

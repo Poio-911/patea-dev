@@ -13,18 +13,19 @@ import { Loader2, Send, MessageSquare, Users, UserCheck, Sparkles, History, Tras
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { sendLeagueMessageAction, getLeagueMessagesAction, deleteLeagueMessageAction } from '@/lib/actions/communication-actions';
+import { sendCompetitionMessageAction, getCompetitionMessagesAction, deleteCompetitionMessageAction } from '@/lib/actions/communication-actions';
 import { MESSAGE_TEMPLATES, getTemplatesByCategory, replaceVariables } from '@/lib/message-templates';
 import type { CommunicationMessage, MessageRecipientType, MessageTemplate } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-interface LeagueCommunicationTabProps {
-  leagueId: string;
-  leagueName: string;
+interface CompetitionCommunicationTabProps {
+  competitionId: string;
+  competitionName: string;
+  competitionType?: 'leagues' | 'cups';
 }
 
-export function LeagueCommunicationTab({ leagueId, leagueName }: LeagueCommunicationTabProps) {
+export function CompetitionCommunicationTab({ competitionId, competitionName, competitionType = 'leagues' }: CompetitionCommunicationTabProps) {
   const { toast } = useToast();
   const [isSending, setIsSending] = React.useState(false);
   const [messages, setMessages] = React.useState<CommunicationMessage[]>([]);
@@ -38,18 +39,18 @@ export function LeagueCommunicationTab({ leagueId, leagueName }: LeagueCommunica
   const [showTemplates, setShowTemplates] = React.useState(false);
 
   // Load messages
-  React.useEffect(() => {
-    loadMessages();
-  }, [leagueId]);
-
-  const loadMessages = async () => {
+  const loadMessages = React.useCallback(async () => {
     setLoadingMessages(true);
-    const result = await getLeagueMessagesAction(leagueId);
+    const result = await getCompetitionMessagesAction(competitionId, competitionType);
     if (result.success && result.messages) {
       setMessages(result.messages);
     }
     setLoadingMessages(false);
-  };
+  }, [competitionId, competitionType]);
+
+  React.useEffect(() => {
+    loadMessages();
+  }, [loadMessages]);
 
   const handleSend = async () => {
     if (!subject.trim() || !body.trim()) {
@@ -59,8 +60,9 @@ export function LeagueCommunicationTab({ leagueId, leagueName }: LeagueCommunica
 
     setIsSending(true);
     try {
-      const result = await sendLeagueMessageAction({
-        leagueId,
+      const result = await sendCompetitionMessageAction({
+        competitionId,
+        competitionType,
         recipientType,
         recipientIds: [], // Simplified: will be calculated in server action
         subject,
@@ -97,7 +99,7 @@ export function LeagueCommunicationTab({ leagueId, leagueName }: LeagueCommunica
   };
 
   const handleDeleteMessage = async (messageId: string) => {
-    const result = await deleteLeagueMessageAction(leagueId, messageId);
+    const result = await deleteCompetitionMessageAction(competitionId, competitionType, messageId);
     if (result.success) {
       toast({ title: 'Mensaje eliminado' });
       loadMessages();
@@ -230,7 +232,7 @@ export function LeagueCommunicationTab({ leagueId, leagueName }: LeagueCommunica
                             {message.recipientType.replace('_', ' ')}
                           </Badge>
                           {message.priority === 'urgent' && (
-                            <Badge variant="destructive" className="text-xs">URGENTE</Badge>
+                           <Badge variant="destructive" className="text-xs">URGENTE</Badge>
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground line-clamp-2">{message.body}</p>

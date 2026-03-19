@@ -13,19 +13,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { HeroImageBackground } from '@/components/organizer/hero-image-background';
-import { LeagueTeamsTab } from '@/components/organizer/league-teams-tab';
+import { CompetitionTeamsTab } from '@/components/organizer/competition-teams-tab';
 import { LeagueFixtureTab } from '@/components/organizer/league-fixture-tab';
 import { LeagueStandingsTab } from '@/components/organizer/league-standings-tab';
-import { LeagueStatsTab } from '@/components/organizer/league-stats-tab';
-import { LeagueDisciplineTab } from '@/components/organizer/league-discipline-tab';
+import { CompetitionStatsTab } from '@/components/organizer/competition-stats-tab';
 import { LeagueNextMatchesWidget } from '@/components/organizer/league-next-matches-widget';
 import { CompetitionSponsorsTab } from '@/components/organizer/competition-sponsors-tab';
-import { LeagueRefereesTab } from '@/components/organizer/league-referees-tab';
-import { LeagueCommunicationTab } from '@/components/organizer/league-communication-tab';
-import { LeagueApplicationsTab } from '@/components/organizer/league-applications-tab';
-import { LeagueFairPlayTab } from '@/components/organizer/league-fair-play-tab';
-import { LeagueAnalyticsDashboard } from '@/components/organizer/league-analytics-dashboard';
-import { LeagueVenuesTab } from '@/components/organizer/league-venues-tab';
+import { CompetitionRefereesTab } from '@/components/organizer/competition-referees-tab';
+import { CompetitionCommunicationTab } from '@/components/organizer/competition-communication-tab';
+import { CompetitionApplicationsTab } from '@/components/organizer/competition-applications-tab';
+import { CompetitionFairPlayTab } from '@/components/organizer/competition-fair-play-tab';
+import { CompetitionDisciplineTab } from '@/components/organizer/competition-discipline-tab';
+import { CompetitionAnalyticsDashboard } from '@/components/organizer/competition-analytics-dashboard';
+import { CompetitionVenuesTab } from '@/components/organizer/competition-venues-tab';
 import {
   ResponsiveDropdownMenu,
   ResponsiveDropdownMenuContent,
@@ -302,9 +302,9 @@ export default function CompetitionDetailPage({ params }: { params: { id: string
           </div>
         </TabsContent>
 
-        <TabsContent value="teams">
-          <LeagueTeamsTab leagueId={params.id} leagueName={league.name} />
-        </TabsContent>
+          <TabsContent value="teams">
+            <CompetitionTeamsTab competitionId={params.id} competitionType="leagues" competitionName={league.name} />
+          </TabsContent>
 
         <TabsContent value="fixture">
           <LeagueFixtureTab
@@ -315,23 +315,23 @@ export default function CompetitionDetailPage({ params }: { params: { id: string
         </TabsContent>
 
         <TabsContent value="referees">
-          <LeagueRefereesTab leagueId={params.id} />
+          <CompetitionRefereesTab competitionId={params.id} competitionType="leagues" />
         </TabsContent>
 
         <TabsContent value="communication">
-          <LeagueCommunicationTab leagueId={params.id} leagueName={league.name} />
+          <CompetitionCommunicationTab competitionId={params.id} competitionName={league.name} competitionType="leagues" />
         </TabsContent>
 
-        <TabsContent value="applications">
-          <LeagueApplicationsTab leagueId={params.id} />
-        </TabsContent>
+          <TabsContent value="applications">
+            <CompetitionApplicationsTab competitionId={params.id} competitionType="leagues" />
+          </TabsContent>
 
-        <TabsContent value="stats">
-          <LeagueStatsTab leagueId={params.id} />
-        </TabsContent>
+          <TabsContent value="stats">
+            <CompetitionStatsTab competitionId={params.id} competitionType="leagues" />
+          </TabsContent>
 
           <TabsContent value="discipline">
-            <LeagueDisciplineTab leagueId={params.id} />
+            <CompetitionDisciplineTab competitionId={params.id} competitionType="leagues" />
           </TabsContent>
 
           <TabsContent value="sponsors">
@@ -343,15 +343,15 @@ export default function CompetitionDetailPage({ params }: { params: { id: string
           </TabsContent>
 
           <TabsContent value="fairplay">
-            <LeagueFairPlayTab leagueId={params.id} />
+            <CompetitionFairPlayTab competitionId={params.id} competitionType="leagues" />
           </TabsContent>
 
           <TabsContent value="analytics">
-            <LeagueAnalyticsDashboard leagueId={params.id} />
+            <CompetitionAnalyticsDashboard competitionId={params.id} competitionType="leagues" />
           </TabsContent>
 
           <TabsContent value="venues">
-            <LeagueVenuesTab leagueId={params.id} />
+            <CompetitionVenuesTab competitionId={params.id} competitionType="leagues" />
           </TabsContent>
         </Tabs>
       </div>

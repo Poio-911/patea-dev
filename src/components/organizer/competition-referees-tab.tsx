@@ -15,11 +15,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import type { Referee } from '@/lib/types';
 
-interface LeagueRefereesTabProps {
-  leagueId: string;
+interface CompetitionRefereesTabProps {
+  competitionId: string;
+  competitionType?: 'leagues' | 'cups';
 }
 
-export function LeagueRefereesTab({ leagueId }: LeagueRefereesTabProps) {
+export function CompetitionRefereesTab({ competitionId, competitionType = 'leagues' }: CompetitionRefereesTabProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -32,7 +33,7 @@ export function LeagueRefereesTab({ leagueId }: LeagueRefereesTabProps) {
   React.useEffect(() => {
     if (!firestore) return;
 
-    const refereesRef = collection(firestore, 'leagues', leagueId, 'referees');
+    const refereesRef = collection(firestore, competitionType, competitionId, 'referees');
     const q = query(refereesRef);
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -40,18 +41,18 @@ export function LeagueRefereesTab({ leagueId }: LeagueRefereesTabProps) {
       setReferees(data);
       setLoading(false);
     }, (err) => {
-      console.error('[LeagueReferees] Error:', err);
+      console.error('[CompetitionReferees] Error:', err);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [firestore, leagueId]);
+  }, [firestore, competitionId, competitionType]);
 
   const handleDelete = async (refereeId: string, refereeName: string) => {
     if (!firestore) return;
 
     try {
-      await deleteDoc(doc(firestore, 'leagues', leagueId, 'referees', refereeId));
+      await deleteDoc(doc(firestore, competitionType, competitionId, 'referees', refereeId));
       toast({ title: 'Árbitro eliminado', description: `${refereeName} fue removido de la lista.` });
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el árbitro.' });
@@ -75,7 +76,7 @@ export function LeagueRefereesTab({ leagueId }: LeagueRefereesTabProps) {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-xl font-black uppercase tracking-tight">{referees.length} Árbitros Registrados</h2>
-          <p className="text-sm text-muted-foreground">Gestioná los árbitros que dirigirán los partidos de esta liga.</p>
+          <p className="text-sm text-muted-foreground">Gestioná los árbitros que dirigirán los partidos de esta competición.</p>
         </div>
         <Button onClick={() => setIsAddOpen(true)}>
           <PlusCircle className="mr-2 h-4 w-4" /> Agregar Árbitro
@@ -89,7 +90,7 @@ export function LeagueRefereesTab({ leagueId }: LeagueRefereesTabProps) {
             <div className="space-y-1">
               <h3 className="font-bold text-lg">No hay árbitros todavía</h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                Agregá árbitros para asignarlos a los partidos del fixture y llevar un control profesional del torneo.
+                Agregá árbitros para asignarlos a los partidos del torneo y llevar un control profesional.
               </p>
             </div>
             <Button variant="outline" className="border-primary/20 hover:bg-primary/5 hover:text-primary" onClick={() => setIsAddOpen(true)}>
@@ -167,7 +168,7 @@ export function LeagueRefereesTab({ leagueId }: LeagueRefereesTabProps) {
 
                 {referee.notes && (
                   <p className="text-xs text-muted-foreground italic border-t border-border/30 pt-2">
-                    "{referee.notes}"
+                    &quot;{referee.notes}&quot;
                   </p>
                 )}
               </CardContent>
@@ -178,7 +179,8 @@ export function LeagueRefereesTab({ leagueId }: LeagueRefereesTabProps) {
 
       {/* Add/Edit Dialog */}
       <AddEditRefereeDialog
-        leagueId={leagueId}
+        competitionId={competitionId}
+        competitionType={competitionType}
         open={isAddOpen || !!editingReferee}
         onOpenChange={(open) => {
           if (!open) {
@@ -193,13 +195,14 @@ export function LeagueRefereesTab({ leagueId }: LeagueRefereesTabProps) {
 }
 
 interface AddEditRefereeDialogProps {
-  leagueId: string;
+  competitionId: string;
+  competitionType: 'leagues' | 'cups';
   open: boolean;
   onOpenChange: (open: boolean) => void;
   referee: Referee | null;
 }
 
-function AddEditRefereeDialog({ leagueId, open, onOpenChange, referee }: AddEditRefereeDialogProps) {
+function AddEditRefereeDialog({ competitionId, competitionType, open, onOpenChange, referee }: AddEditRefereeDialogProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = React.useState(false);
@@ -233,11 +236,11 @@ function AddEditRefereeDialog({ leagueId, open, onOpenChange, referee }: AddEdit
 
     setIsSaving(true);
     try {
-      const refereesRef = collection(firestore, 'leagues', leagueId, 'referees');
+      const refereesRef = collection(firestore, competitionType, competitionId, 'referees');
 
       if (referee) {
         // Update existing referee
-        await updateDoc(doc(firestore, 'leagues', leagueId, 'referees', referee.id), {
+        await updateDoc(doc(firestore, competitionType, competitionId, 'referees', referee.id), {
           name: name.trim(),
           email: email.trim() || null,
           phone: phone.trim() || null,
@@ -251,7 +254,8 @@ function AddEditRefereeDialog({ leagueId, open, onOpenChange, referee }: AddEdit
           email: email.trim() || null,
           phone: phone.trim() || null,
           notes: notes.trim() || null,
-          leagueId,
+          leagueId: competitionId, // legacy compat
+          competitionId,
           assignedMatches: [],
           createdAt: new Date().toISOString(),
         });
@@ -276,7 +280,7 @@ function AddEditRefereeDialog({ leagueId, open, onOpenChange, referee }: AddEdit
             {referee ? 'Editar Árbitro' : 'Nuevo Árbitro'}
           </DialogTitle>
           <DialogDescription>
-            {referee ? 'Modificá los datos del árbitro.' : 'Agregá un árbitro para asignarlo a los partidos del fixture.'}
+            {referee ? 'Modificá los datos del árbitro.' : 'Agregá un árbitro para asignarlo a los partidos de la competición.'}
           </DialogDescription>
         </DialogHeader>
 

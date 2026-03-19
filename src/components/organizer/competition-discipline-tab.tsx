@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { ShieldAlert, AlertTriangle } from 'lucide-react';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
@@ -14,21 +14,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { Team, BracketMatch } from '@/lib/types';
 
-interface Team {
-  id: string;
-  name: string;
-  jersey: any;
-}
-
-interface MatchObj {
-  status: 'pending' | 'finished';
-  cards?: { playerId: string, playerName: string, teamId: string, color: 'yellow' | 'red' }[];
-}
-
-interface FixtureRound {
-  id: string;
-  matches: MatchObj[];
+interface CompetitionDisciplineTabProps {
+  competitionId: string;
+  competitionType?: 'leagues' | 'cups';
 }
 
 interface SanctionStat {
@@ -41,65 +32,86 @@ interface SanctionStat {
   reds: number;
 }
 
-interface LeagueDisciplineTabProps {
-  leagueId: string;
-}
-
-export function LeagueDisciplineTab({ leagueId }: LeagueDisciplineTabProps) {
+export function CompetitionDisciplineTab({ competitionId, competitionType = 'leagues' }: CompetitionDisciplineTabProps) {
   const firestore = useFirestore();
 
   const [teams, setTeams] = React.useState<Team[]>([]);
-  const [rounds, setRounds] = React.useState<FixtureRound[]>([]);
+  const [matchesData, setMatchesData] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     if (!firestore) return;
     
-    const teamsRef = collection(firestore, 'leagues', leagueId, 'teams');
+    // 1. Fetch Teams
+    const teamsRef = collection(firestore, competitionType, competitionId, 'teams');
     const unsubTeams = onSnapshot(query(teamsRef), (snap) => {
       setTeams(snap.docs.map(d => ({ id: d.id, ...d.data() } as Team)));
     });
 
-    const fixturesRef = collection(firestore, 'leagues', leagueId, 'fixtures');
-    const unsubFixtures = onSnapshot(query(fixturesRef), (snap) => {
-      setRounds(snap.docs.map(d => ({ id: d.id, ...d.data() } as FixtureRound)));
-      setLoading(false);
-    });
+    // 2. Fetch Match Data
+    let unsubMatches = () => {};
+
+    if (competitionType === 'leagues') {
+      const fixturesRef = collection(firestore, 'leagues', competitionId, 'fixtures');
+      unsubMatches = onSnapshot(query(fixturesRef), (snap) => {
+        const allMatches = snap.docs.flatMap(d => (d.data().matches || []) as any[]);
+        setMatchesData(allMatches);
+        setLoading(false);
+      });
+    } else {
+      const cupRef = doc(firestore, 'cups', competitionId);
+      unsubMatches = onSnapshot(cupRef, (snap) => {
+        if (snap.exists()) {
+          const bracket = (snap.data().bracket || []) as BracketMatch[];
+          setMatchesData(bracket);
+        }
+        setLoading(false);
+      });
+    }
 
     return () => {
       unsubTeams();
-      unsubFixtures();
+      unsubMatches();
     };
-  }, [firestore, leagueId]);
+  }, [firestore, competitionId, competitionType]);
 
   const sanctions = React.useMemo(() => {
-    if (teams.length === 0 || rounds.length === 0) return [];
+    if (teams.length === 0 || matchesData.length === 0) return [];
 
     const statsMap: Record<string, SanctionStat> = {};
+    const teamInfoMap: Record<string, { name: string, jersey: any }> = {};
+    
+    teams.forEach(t => {
+      const tid = t.id;
+      if (tid) {
+        teamInfoMap[tid] = { name: t.name, jersey: t.jersey };
+      }
+    });
 
-    rounds.forEach(round => {
-      round.matches.forEach(match => {
-        if (match.status !== 'finished' || !match.cards) return;
+    matchesData.forEach(match => {
+      const isFinished = competitionType === 'leagues' ? match.status === 'finished' : !!match.winnerId;
+      if (!isFinished || !match.cards) return;
 
-        match.cards.forEach(card => {
-          if (!card.playerId) return; 
-          
-          if (!statsMap[card.playerId]) {
-            const teamInfo = teams.find(t => t.id === card.teamId);
-            statsMap[card.playerId] = {
-              playerId: card.playerId,
-              playerName: card.playerName || 'Jugador',
-              teamId: card.teamId,
-              teamName: teamInfo?.name || 'Desconocido',
-              teamJersey: teamInfo?.jersey || null,
-              yellows: 0,
-              reds: 0
-            };
-          }
-          
-          if (card.color === 'yellow') statsMap[card.playerId].yellows += 1;
-          if (card.color === 'red') statsMap[card.playerId].reds += 1;
-        });
+      const cards = (match.cards || []) as any[];
+      cards.forEach(card => {
+        if (!card.playerId || !card.teamId) return; 
+        
+        if (!statsMap[card.playerId]) {
+          const teamInfo = teamInfoMap[card.teamId];
+          statsMap[card.playerId] = {
+            playerId: card.playerId,
+            playerName: card.playerName || 'Jugador',
+            teamId: card.teamId,
+            teamName: teamInfo?.name || 'Desconocido',
+            teamJersey: teamInfo?.jersey || null,
+            yellows: 0,
+            reds: 0
+          };
+        }
+        
+        const type = card.cardType || card.color;
+        if (type === 'yellow') statsMap[card.playerId].yellows += 1;
+        if (type === 'red') statsMap[card.playerId].reds += 1;
       });
     });
 
@@ -113,13 +125,11 @@ export function LeagueDisciplineTab({ leagueId }: LeagueDisciplineTabProps) {
     });
 
     return sanctionList;
-  }, [teams, rounds]);
+  }, [teams, matchesData, competitionType]);
 
   if (loading) {
     return (
-      <Card className="animate-pulse bg-muted/20">
-        <CardContent className="h-64"></CardContent>
-      </Card>
+      <div className="space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
     );
   }
 

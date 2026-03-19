@@ -62,7 +62,8 @@ export default function LeagueRegistrationPage({ params }: { params: { id: strin
     setIsSubmitting(true);
     try {
       const result = await submitTeamApplicationAction({
-        leagueId: params.id,
+        competitionId: params.id,
+        competitionType: 'leagues',
         teamName,
         captainName,
         captainEmail,

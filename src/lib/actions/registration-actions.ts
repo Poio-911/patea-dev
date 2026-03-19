@@ -18,7 +18,8 @@ if (getApps().length === 0) {
 const db = getFirestore();
 
 export interface SubmitApplicationInput {
-  leagueId: string;
+  competitionId: string;
+  competitionType: 'leagues' | 'cups';
   teamName: string;
   captainName: string;
   captainEmail: string;
@@ -31,8 +32,10 @@ export async function submitTeamApplicationAction(
   input: SubmitApplicationInput
 ): Promise<{ success: boolean; applicationId?: string; error?: string }> {
   try {
+    const { competitionId, competitionType } = input;
+    
     // Basic input validation
-    if (!input.leagueId || !input.teamName?.trim() || !input.captainName?.trim() || !input.captainEmail?.trim()) {
+    if (!competitionId || !competitionType || !input.teamName?.trim() || !input.captainName?.trim() || !input.captainEmail?.trim()) {
       return { success: false, error: 'Faltan datos requeridos.' };
     }
 
@@ -42,21 +45,21 @@ export async function submitTeamApplicationAction(
       return { success: false, error: 'El email no es válido.' };
     }
 
-    // Check league exists and has registration open
-    const leagueRef = db.collection('leagues').doc(input.leagueId);
-    const leagueDoc = await leagueRef.get();
-    if (!leagueDoc.exists) {
-      return { success: false, error: 'La liga no existe.' };
+    // Check competition exists and has registration open
+    const compRef = db.collection(competitionType).doc(competitionId);
+    const compDoc = await compRef.get();
+    if (!compDoc.exists) {
+      return { success: false, error: `${competitionType === 'leagues' ? 'La liga' : 'La copa'} no existe.` };
     }
 
-    const leagueData = leagueDoc.data()!;
-    if (!leagueData.allowPublicRegistration) {
-      return { success: false, error: 'Esta liga no tiene inscripciones abiertas.' };
+    const compData = compDoc.data()!;
+    if (!compData.allowPublicRegistration) {
+      return { success: false, error: 'Inscripciones cerradas para esta competición.' };
     }
 
     // Check registration deadline
-    if (leagueData.registrationDeadline) {
-      const deadline = new Date(leagueData.registrationDeadline);
+    if (compData.registrationDeadline) {
+      const deadline = new Date(compData.registrationDeadline);
       if (new Date() > deadline) {
         return { success: false, error: 'El período de inscripción ya cerró.' };
       }
@@ -64,8 +67,8 @@ export async function submitTeamApplicationAction(
 
     // Check if team name already applied
     const existing = await db
-      .collection('leagues')
-      .doc(input.leagueId)
+      .collection(competitionType)
+      .doc(competitionId)
       .collection('applications')
       .where('teamName', '==', input.teamName.trim())
       .limit(1)
@@ -76,26 +79,27 @@ export async function submitTeamApplicationAction(
     }
 
     // Check maxTeams (count approved applications)
-    if (leagueData.maxTeams) {
+    if (compData.maxTeams) {
       const approvedCount = await db
-        .collection('leagues')
-        .doc(input.leagueId)
+        .collection(competitionType)
+        .doc(competitionId)
         .collection('applications')
         .where('status', '==', 'approved')
         .count()
         .get();
 
-      if (approvedCount.data().count >= leagueData.maxTeams) {
-        return { success: false, error: 'La liga ya alcanzó el máximo de equipos.' };
+      if (approvedCount.data().count >= compData.maxTeams) {
+        return { success: false, error: 'Se alcanzó el máximo de equipos permitidos.' };
       }
     }
 
     const docRef = await db
-      .collection('leagues')
-      .doc(input.leagueId)
+      .collection(competitionType)
+      .doc(competitionId)
       .collection('applications')
       .add({
-        leagueId: input.leagueId,
+        competitionId,
+        competitionType,
         teamName: input.teamName.trim(),
         captainName: input.captainName.trim(),
         captainEmail: input.captainEmail.trim().toLowerCase(),
@@ -103,7 +107,7 @@ export async function submitTeamApplicationAction(
         playerCount: input.playerCount || null,
         message: input.message?.trim() || null,
         status: 'pending',
-        paymentStatus: leagueData.registrationFee ? 'pending' : 'not_required',
+        paymentStatus: compData.registrationFee ? 'pending' : 'not_required',
         submittedAt: new Date().toISOString(),
         createdAt: FieldValue.serverTimestamp(),
       });
@@ -111,12 +115,13 @@ export async function submitTeamApplicationAction(
     return { success: true, applicationId: docRef.id };
   } catch (error: any) {
     console.error('[registration-actions] submitTeamApplicationAction error:', error);
-    return { success: false, error: 'Hubo un problema al enviar la solicitud. Intentá de nuevo.' };
+    return { success: false, error: 'Hubo un problema al enviar la solicitud.' };
   }
 }
 
 export async function reviewTeamApplicationAction(input: {
-  leagueId: string;
+  competitionId: string;
+  competitionType: 'leagues' | 'cups';
   applicationId: string;
   status: 'approved' | 'rejected';
   reviewNotes?: string;
@@ -127,19 +132,21 @@ export async function reviewTeamApplicationAction(input: {
       return { success: false, error: 'No autenticado.' };
     }
 
-    const leagueRef = db.collection('leagues').doc(input.leagueId);
-    const leagueDoc = await leagueRef.get();
-    if (!leagueDoc.exists) {
-      return { success: false, error: 'Liga no encontrada.' };
+    const { competitionId, competitionType } = input;
+    const compRef = db.collection(competitionType).doc(competitionId);
+    const compDoc = await compRef.get();
+    
+    if (!compDoc.exists) {
+      return { success: false, error: 'Competición no encontrada.' };
     }
 
-    if (leagueDoc.data()!.ownerUid !== session.user.uid) {
-      return { success: false, error: 'Sin permiso para gestionar esta liga.' };
+    if (compDoc.data()!.ownerUid !== session.user.uid) {
+      return { success: false, error: 'Sin permiso para gestionar esta competición.' };
     }
 
     await db
-      .collection('leagues')
-      .doc(input.leagueId)
+      .collection(competitionType)
+      .doc(competitionId)
       .collection('applications')
       .doc(input.applicationId)
       .update({

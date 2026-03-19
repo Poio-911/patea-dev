@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Trophy, Medal, Flame } from 'lucide-react';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
@@ -14,21 +14,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { Team, BracketMatch } from '@/lib/types';
 
-interface Team {
-  id: string;
-  name: string;
-  jersey: any;
-}
-
-interface MatchObj {
-  status: 'pending' | 'finished';
-  scorers?: { playerId: string, playerName: string, teamId: string }[];
-}
-
-interface FixtureRound {
-  id: string;
-  matches: MatchObj[];
+interface CompetitionStatsTabProps {
+  competitionId: string;
+  competitionType?: 'leagues' | 'cups';
 }
 
 interface ScorerStat {
@@ -40,63 +31,82 @@ interface ScorerStat {
   goals: number;
 }
 
-interface LeagueStatsTabProps {
-  leagueId: string;
-}
-
-export function LeagueStatsTab({ leagueId }: LeagueStatsTabProps) {
+export function CompetitionStatsTab({ competitionId, competitionType = 'leagues' }: CompetitionStatsTabProps) {
   const firestore = useFirestore();
 
   const [teams, setTeams] = React.useState<Team[]>([]);
-  const [rounds, setRounds] = React.useState<FixtureRound[]>([]);
+  const [matchesData, setMatchesData] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     if (!firestore) return;
     
-    const teamsRef = collection(firestore, 'leagues', leagueId, 'teams');
+    // 1. Fetch Teams
+    const teamsRef = collection(firestore, competitionType, competitionId, 'teams');
     const unsubTeams = onSnapshot(query(teamsRef), (snap) => {
       setTeams(snap.docs.map(d => ({ id: d.id, ...d.data() } as Team)));
     });
 
-    const fixturesRef = collection(firestore, 'leagues', leagueId, 'fixtures');
-    const unsubFixtures = onSnapshot(query(fixturesRef), (snap) => {
-      setRounds(snap.docs.map(d => ({ id: d.id, ...d.data() } as FixtureRound)));
-      setLoading(false);
-    });
+    // 2. Fetch Match Data
+    let unsubMatches = () => {};
+
+    if (competitionType === 'leagues') {
+      const fixturesRef = collection(firestore, 'leagues', competitionId, 'fixtures');
+      unsubMatches = onSnapshot(query(fixturesRef), (snap) => {
+        const allMatches = snap.docs.flatMap(d => (d.data().matches || []) as any[]);
+        setMatchesData(allMatches);
+        setLoading(false);
+      });
+    } else {
+      const cupRef = doc(firestore, 'cups', competitionId);
+      unsubMatches = onSnapshot(cupRef, (snap) => {
+        if (snap.exists()) {
+          const bracket = (snap.data().bracket || []) as BracketMatch[];
+          setMatchesData(bracket);
+        }
+        setLoading(false);
+      });
+    }
 
     return () => {
       unsubTeams();
-      unsubFixtures();
+      unsubMatches();
     };
-  }, [firestore, leagueId]);
+  }, [firestore, competitionId, competitionType]);
 
   const topScorers = React.useMemo(() => {
-    if (teams.length === 0 || rounds.length === 0) return [];
+    if (teams.length === 0 || matchesData.length === 0) return [];
 
     const statsMap: Record<string, ScorerStat> = {};
+    const teamInfoMap: Record<string, { name: string, jersey: any }> = {};
+    
+    teams.forEach(t => {
+      if (t.id) {
+        teamInfoMap[t.id] = { name: t.name, jersey: t.jersey };
+      }
+    });
 
-    rounds.forEach(round => {
-      round.matches.forEach(match => {
-        if (match.status !== 'finished' || !match.scorers) return;
+    matchesData.forEach(match => {
+      const isFinished = competitionType === 'leagues' ? match.status === 'finished' : !!match.winnerId;
+      if (!isFinished || !match.scorers) return;
 
-        match.scorers.forEach(scorer => {
-          if (!scorer.playerId) return; // Ignore missing players
-          
-          if (!statsMap[scorer.playerId]) {
-            const teamInfo = teams.find(t => t.id === scorer.teamId);
-            statsMap[scorer.playerId] = {
-              playerId: scorer.playerId,
-              playerName: scorer.playerName || 'Jugador',
-              teamId: scorer.teamId,
-              teamName: teamInfo?.name || 'Desconocido',
-              teamJersey: teamInfo?.jersey || null,
-              goals: 0
-            };
-          }
-          
-          statsMap[scorer.playerId].goals += 1;
-        });
+      const scorers = (match.scorers || []) as any[];
+      scorers.forEach(scorer => {
+        if (!scorer.playerId || !scorer.teamId) return; 
+        
+        if (!statsMap[scorer.playerId]) {
+          const teamInfo = teamInfoMap[scorer.teamId];
+          statsMap[scorer.playerId] = {
+            playerId: scorer.playerId,
+            playerName: scorer.playerName || 'Jugador',
+            teamId: scorer.teamId,
+            teamName: teamInfo?.name || 'Desconocido',
+            teamJersey: teamInfo?.jersey || null,
+            goals: 0
+          };
+        }
+        
+        statsMap[scorer.playerId].goals += 1;
       });
     });
 
@@ -109,7 +119,7 @@ export function LeagueStatsTab({ leagueId }: LeagueStatsTabProps) {
     });
 
     return scorersList;
-  }, [teams, rounds]);
+  }, [teams, matchesData, competitionType]);
 
   const renderRankIcon = (index: number) => {
     if (index === 0) return <Trophy className="w-5 h-5 text-yellow-500 fill-yellow-500/20" />;
@@ -120,9 +130,7 @@ export function LeagueStatsTab({ leagueId }: LeagueStatsTabProps) {
 
   if (loading) {
     return (
-      <Card className="animate-pulse bg-muted/20">
-        <CardContent className="h-64"></CardContent>
-      </Card>
+      <div className="space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
     );
   }
 
@@ -162,8 +170,8 @@ export function LeagueStatsTab({ leagueId }: LeagueStatsTabProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {topScorers.map((scorer, index) => (
-              <TableRow key={scorer.playerId} className="hover:bg-muted/30 transition-colors">
+            {topScorers.slice(0, 50).map((scorer, index) => (
+              <TableRow key={`${scorer.playerId}_${scorer.teamId}`} className="hover:bg-muted/30 transition-colors">
                 <TableCell className="text-center font-black">
                   <div className="flex justify-center">{renderRankIcon(index)}</div>
                 </TableCell>

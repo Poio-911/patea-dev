@@ -1,0 +1,182 @@
+'use client';
+
+import * as React from 'react';
+import { useFirestore } from '@/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, Settings, PlayCircle, UserCheck } from 'lucide-react';
+import type { BracketMatch, Cup } from '@/lib/types';
+import { AssignRefereeDialog } from './assign-referee-dialog';
+
+interface BracketMatchSettingsDialogProps {
+  cupId: string;
+  match: BracketMatch | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function BracketMatchSettingsDialog({ cupId, match, open, onOpenChange }: BracketMatchSettingsDialogProps) {
+  const firestore = useFirestore();
+  const { toast } = useToast();
+
+  const [date, setDate] = React.useState('');
+  const [time, setTime] = React.useState('');
+  const [venue, setVenue] = React.useState('');
+  const [streamingUrl, setStreamingUrl] = React.useState('');
+  const [isLive, setIsLive] = React.useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [isRefereeDialogOpen, setIsRefereeDialogOpen] = React.useState(false);
+
+  // Load match data when dialog opens
+  React.useEffect(() => {
+    if (open && match) {
+      setDate(match.date || '');
+      setTime(match.time || '');
+      setVenue(match.venue || '');
+      setStreamingUrl(match.streamingUrl || '');
+      setIsLive(match.isLive || false);
+    }
+  }, [open, match]);
+
+  const handleSave = async () => {
+    if (!firestore || !match) return;
+    setIsSaving(true);
+    try {
+      const cupRef = doc(firestore, 'cups', cupId);
+      const cupSnap = await getDoc(cupRef);
+
+      if (cupSnap.exists()) {
+        const cupData = cupSnap.data() as Cup;
+        const updatedBracket = (cupData.bracket || []).map((m) => {
+          if (m.id === match.id) {
+            return { ...m, date, time, venue, streamingUrl, isLive };
+          }
+          return m;
+        });
+
+        await updateDoc(cupRef, { bracket: updatedBracket });
+        toast({ title: 'Datos actualizados', description: 'La programación del partido fue guardada.' });
+        onOpenChange(false);
+      }
+    } catch (e: any) {
+      console.error('[BracketMatchSettings] Error:', e);
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar el partido.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!match) return null;
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 uppercase font-black">
+              <Settings className="h-4 w-4 text-primary" />
+              Configurar Partido
+            </DialogTitle>
+            <DialogDescription>
+              {match.team1Name} vs {match.team2Name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            {/* Árbitro Section */}
+            <div className="grid gap-2 border-b border-border/40 pb-4">
+              <Label className="flex items-center gap-2 font-bold">
+                <UserCheck className="w-4 h-4 text-primary" />
+                Árbitro
+              </Label>
+              {match.refereeName ? (
+                <div className="flex items-center justify-between bg-muted/30 rounded-lg p-3 border border-border/40">
+                  <span className="text-sm font-medium">{match.refereeName}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsRefereeDialogOpen(true)}
+                    className="h-7 text-xs"
+                  >
+                    Cambiar
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => setIsRefereeDialogOpen(true)}
+                  className="w-full justify-start text-muted-foreground"
+                >
+                  <UserCheck className="mr-2 h-4 w-4" />
+                  Asignar Árbitro
+                </Button>
+              )}
+            </div>
+
+            {/* Fecha y Hora */}
+            <div className="grid gap-2">
+              <Label htmlFor="date">Fecha (Ej: 12/05/2026)</Label>
+              <Input id="date" value={date} onChange={(e) => setDate(e.target.value)} placeholder="DD/MM/YYYY" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="time">Hora (Ej: 20:30)</Label>
+              <Input id="time" value={time} onChange={(e) => setTime(e.target.value)} placeholder="HH:MM" />
+            </div>
+
+            {/* Cancha/Sede */}
+            <div className="grid gap-2">
+              <Label htmlFor="venue">Cancha / Sede</Label>
+              <Input id="venue" value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Estadio Principal" />
+            </div>
+
+            {/* Streaming Section */}
+            <div className="grid gap-2 border-t border-border/40 pt-4 mt-2">
+              <Label htmlFor="streamingUrl" className="flex items-center gap-2 text-primary font-bold">
+                <PlayCircle className="w-4 h-4" /> Link de Transmisión (Streaming)
+              </Label>
+              <Input id="streamingUrl" value={streamingUrl} onChange={(e) => setStreamingUrl(e.target.value)} placeholder="https://youtube.com/live/..." />
+            </div>
+
+            {/* En Vivo Toggle */}
+            <div className="flex items-center space-x-2 bg-primary/5 p-3 rounded-xl border border-primary/20">
+              <Checkbox
+                id="isLive"
+                checked={isLive}
+                onCheckedChange={(checked) => setIsLive(checked === true)}
+              />
+              <label
+                htmlFor="isLive"
+                className="text-sm font-bold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-primary"
+              >
+                ESTÁ TRANSMITIENDO EN VIVO AHORA
+              </label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isSaving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Guardar Datos'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Referee Dialog */}
+      <AssignRefereeDialog
+        competitionId={cupId}
+        competitionType="cups"
+        matchForBracket={match}
+        open={isRefereeDialogOpen}
+        onOpenChange={setIsRefereeDialogOpen}
+      />
+    </>
+  );
+}

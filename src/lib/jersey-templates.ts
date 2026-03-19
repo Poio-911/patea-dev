@@ -84,6 +84,96 @@ export const JERSEY_TEMPLATES: Record<JerseyType, JerseyTemplate> = {
       secondary: [],
     },
   },
+  hoops: {
+    type: 'hoops',
+    label: 'Aros horizontales',
+    description: 'Camiseta con franjas horizontales múltiples',
+    svgPath: '/jerseys/hoops.svg',
+    colorMapping: {
+      primary: ['#33f'],
+      secondary: ['#ffffff'],
+    },
+  },
+  halves: {
+    type: 'halves',
+    label: 'Mitades',
+    description: 'Camiseta dividida en dos mitades',
+    svgPath: '/jerseys/halves.svg',
+    colorMapping: {
+      primary: ['#33f'],
+      secondary: ['#ffffff'],
+    },
+  },
+  cross: {
+    type: 'cross',
+    label: 'Cruz',
+    description: 'Camiseta con cruz en el torso',
+    svgPath: '/jerseys/cross.svg',
+    colorMapping: {
+      primary: ['#33f'],
+      secondary: ['#ffffff'],
+    },
+  },
+  sash: {
+    type: 'sash',
+    label: 'Banda Diagonal',
+    description: 'Camiseta con franja diagonal (sash)',
+    svgPath: '/jerseys/sash.svg',
+    colorMapping: {
+      primary: ['#33f'],
+      secondary: ['#ffffff'],
+    },
+  },
+  checkers: {
+    type: 'checkers',
+    label: 'Cuadros',
+    description: 'Camiseta a cuadros estilo ajedrez',
+    svgPath: '/jerseys/checkers.svg',
+    colorMapping: {
+      primary: ['#33f'],
+      secondary: ['#ffffff'],
+    },
+  },
+  quarters: {
+    type: 'quarters',
+    label: 'Cuartos',
+    description: 'Camiseta dividida en cuatro cuadrantes alternados',
+    svgPath: '/jerseys/quarters.svg',
+    colorMapping: {
+      primary: ['#33f'],
+      secondary: ['#ffffff'],
+    },
+  },
+  diagonal_half: {
+    type: 'diagonal_half',
+    label: 'Mitad Diagonal',
+    description: 'Camiseta dividida diagonalmente',
+    svgPath: '/jerseys/diagonal_half.svg',
+    colorMapping: {
+      primary: ['#33f'],
+      secondary: ['#ffffff'],
+    },
+  },
+  central_panel: {
+    type: 'central_panel',
+    label: 'Panel Central',
+    description: 'Camiseta con panel central ancho vertical',
+    svgPath: '/jerseys/central_panel.svg',
+    colorMapping: {
+      primary: ['#33f'],
+      secondary: ['#ffffff'],
+    },
+  },
+  v_pinstripes: {
+    type: 'v_pinstripes',
+    label: 'Pinstripes',
+    description: 'Múltiples líneas finas verticales',
+    svgPath: '/jerseys/v_pinstripes.svg',
+    colorMapping: {
+      primary: ['#33f'],
+      secondary: ['#ffffff'],
+    },
+  },
 };
 
 /**

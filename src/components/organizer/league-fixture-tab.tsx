@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { MatchResultDialog } from '@/components/organizer/match-result-dialog';
+import { CompetitionMatchResultDialog } from '@/components/organizer/competition-match-result-dialog';
 import { AssignRefereeDialog } from '@/components/organizer/assign-referee-dialog';
 import { LeagueCalendarView } from '@/components/organizer/league-calendar-view';
 
@@ -524,10 +524,11 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat, isReadOnl
         </div>
       )}
 
-      <MatchResultDialog
-        leagueId={leagueId}
+      <CompetitionMatchResultDialog
+        competitionId={leagueId}
+        competitionType="leagues"
         fixtureDocId={selectedFixtureId}
-        match={selectedMatch}
+        match={selectedMatch as any}
         homeTeam={teams.find(t => t.id === selectedMatch?.homeTeamId)}
         awayTeam={teams.find(t => t.id === selectedMatch?.awayTeamId)}
         open={isResultOpen}

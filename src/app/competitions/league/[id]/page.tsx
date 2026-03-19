@@ -18,6 +18,7 @@ import { LeagueFixtureTab } from '@/components/organizer/league-fixture-tab';
 import { CompetitionSponsorsMarquee } from '@/components/organizer/competition-sponsors-marquee';
 import { CountdownTimer } from '@/components/organizer/countdown-timer';
 import { ShareQrCard } from '@/components/organizer/share-qr-card';
+import { CompetitionTeamsTab } from '@/components/organizer/competition-teams-tab';
 
 export default function PublicLeagueDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -147,6 +148,9 @@ export default function PublicLeagueDetailPage({ params }: { params: { id: strin
                 <TabsTrigger value="fixture" className="rounded-xl font-black text-xs uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">
                   Fixture
                 </TabsTrigger>
+                <TabsTrigger value="teams" className="rounded-xl font-black text-xs uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">
+                  Equipos
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="standings" className="mt-0 outline-none">
@@ -160,6 +164,10 @@ export default function PublicLeagueDetailPage({ params }: { params: { id: strin
                   leagueFormat={league.format || 'round_robin'}
                   isReadOnly={true}
                 />
+              </TabsContent>
+
+              <TabsContent value="teams" className="mt-0 outline-none">
+                <CompetitionTeamsTab competitionId={params.id} competitionType="leagues" competitionName={league.name} isReadOnly={true} />
               </TabsContent>
             </Tabs>
           </div>

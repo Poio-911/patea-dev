@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import type { League, Cup, CompetitionStatus } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 type DisplayCompetition = {
   id: string;
@@ -21,7 +22,7 @@ type DisplayCompetition = {
 };
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trophy, MoreVertical, Trash2, CalendarDays, Users } from 'lucide-react';
+import { PlusCircle, Trophy, MoreVertical, Trash2, CalendarDays, Users, Clock, Target, Activity, Calendar, LayoutGrid, Info } from 'lucide-react';
 import { CreateCompetitionDialog } from '@/components/organizer/create-competition-dialog';
 import { HeroImageBackground } from '@/components/organizer/hero-image-background';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -427,24 +428,24 @@ export default function OrganizerDashboardPage() {
               
               <CardHeader className="pb-4 relative z-10 flex flex-row items-start justify-between">
                 <div className="flex items-center gap-4">
-                  <Avatar className="h-14 w-14 rounded-xl shadow-lg border-2 border-background bg-muted">
+                  <Avatar className="h-16 w-16 rounded-2xl shadow-xl border-2 border-background bg-secondary transition-transform group-hover:scale-105 duration-500">
                     <AvatarImage src={comp.logoUrl || undefined} className="object-cover" />
-                    <AvatarFallback className="rounded-xl bg-primary/10">
-                      <Trophy className="h-6 w-6 text-primary drop-shadow-[0_0_8px_rgba(200,255,0,0.5)]" />
+                    <AvatarFallback className="rounded-2xl bg-primary/10">
+                      <Trophy className="h-7 w-7 text-primary drop-shadow-[0_0_12px_rgba(200,255,0,0.6)]" />
                     </AvatarFallback>
                   </Avatar>
                   <div className="space-y-1">
                     <CardTitle className="font-headline font-black uppercase text-xl xl:text-2xl tracking-tight leading-none group-hover:text-primary transition-colors line-clamp-2">
                       {comp.name}
                     </CardTitle>
-                    <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-muted-foreground/80 uppercase flex-wrap">
-                      <span>{comp.competitionType === 'cup' ? 'Copa' : 'Liga'}</span>
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.1em] text-muted-foreground/60 uppercase flex-wrap">
+                      <span className="bg-muted/50 px-1.5 py-0.5 rounded text-[9px] border border-border/30">{comp.competitionType === 'cup' ? 'Copa' : 'Liga'}</span>
                       <span>•</span>
                       <span>{String(comp.format) === 'single_elimination' ? 'Eliminación' : 'Puntos'}</span>
                       {comp.sportType && (
                         <>
                           <span>•</span>
-                          <span>{comp.sportType.toUpperCase()}</span>
+                          <span className="text-foreground/70">{comp.sportType.toUpperCase()}</span>
                         </>
                       )}
                     </div>
@@ -471,51 +472,68 @@ export default function OrganizerDashboardPage() {
                 </div>
               </CardHeader>
               <CardContent className="relative z-10 pt-0">
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="flex flex-col p-3 rounded-lg bg-background/50 border border-white/5">
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-1 flex items-center gap-1">
-                      <Users className="w-3 h-3"/> Equipos
+                <div className="grid grid-cols-3 gap-2.5 mb-5">
+                  <div className="flex flex-col p-2.5 rounded-xl bg-muted/20 border border-white/5 transition-colors group-hover:bg-muted/30">
+                    <span className="text-[9px] uppercase font-black tracking-[0.15em] text-muted-foreground/60 mb-1 flex items-center gap-1">
+                      <Users className="w-3 h-3 text-primary/70"/> Equipos
                     </span>
-                    <span className="text-xl font-black font-mono">{teamCount}</span>
+                    <span className="text-xl font-black font-mono leading-none">{teamCount}</span>
                   </div>
-                  <div className="flex flex-col p-3 rounded-lg bg-background/50 border border-white/5">
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-1">Partidos</span>
-                    <span className="text-sm font-black mt-0.5 truncate text-foreground">
-                      {hasMatches ? `${metrics.finishedMatches}/${metrics.totalMatches}` : 'Sin fixture'}
+                  <div className="flex flex-col p-2.5 rounded-xl bg-muted/20 border border-white/5 transition-colors group-hover:bg-muted/30">
+                    <span className="text-[9px] uppercase font-black tracking-[0.15em] text-muted-foreground/60 mb-1 flex items-center gap-1">
+                      <LayoutGrid className="w-3 h-3 text-primary/70"/> Partidos
+                    </span>
+                    <span className="text-xl font-black font-mono leading-none">
+                      {hasMatches ? `${metrics.finishedMatches}/${metrics.totalMatches}` : '—'}
                     </span>
                   </div>
-                  <div className="flex flex-col p-3 rounded-lg bg-background/50 border border-white/5">
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-1 flex items-center gap-1">
-                      <CalendarDays className="w-3 h-3"/> Estado
+                  <div className="flex flex-col p-2.5 rounded-xl bg-muted/20 border border-white/5 transition-colors group-hover:bg-muted/30">
+                    <span className="text-[9px] uppercase font-black tracking-[0.15em] text-muted-foreground/60 mb-1 flex items-center gap-1">
+                      <Activity className="w-3 h-3 text-primary/70"/> Estado
                     </span>
-                    <span className="text-sm font-black mt-0.5 truncate text-primary">
+                    <span className={cn(
+                      "text-[10px] font-black uppercase tracking-tighter truncate",
+                      comp.status === 'in_progress' ? "text-primary animate-pulse" : "text-foreground/80"
+                    )}>
                       {statusLabel}
                     </span>
                   </div>
                 </div>
 
-                <div className="space-y-1.5 text-xs text-muted-foreground border-t border-border/30 pt-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="uppercase tracking-wider">Próximo partido</span>
-                    <span className="font-medium text-foreground truncate max-w-[65%] text-right">
-                      {metrics.nextMatchLabel || 'Sin programar'}
+                <div className="space-y-2 text-xs text-muted-foreground border-t border-border/20 pt-4">
+                  <div className="flex items-center justify-between gap-3 group/row">
+                    <div className="flex items-center gap-1.5 text-muted-foreground/50 uppercase tracking-[0.15em] font-black text-[9px]">
+                      <Clock className="w-3 h-3 group-hover/row:text-primary transition-colors" />
+                      <span>Próximo partido</span>
+                    </div>
+                    <span className="font-bold text-foreground/80 truncate max-w-[55%] text-right transition-colors group-hover/row:text-foreground">
+                      {metrics.nextMatchLabel || 'No programado'}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="uppercase tracking-wider">Fecha activa</span>
-                    <span className="font-medium text-foreground truncate max-w-[65%] text-right">
+                  <div className="flex items-center justify-between gap-3 group/row">
+                    <div className="flex items-center gap-1.5 text-muted-foreground/50 uppercase tracking-[0.15em] font-black text-[9px]">
+                      <CalendarDays className="w-3 h-3 group-hover/row:text-primary transition-colors" />
+                      <span>Fecha activa</span>
+                    </div>
+                    <span className="font-bold text-foreground/80 truncate max-w-[55%] text-right transition-colors group-hover/row:text-foreground">
                       {metrics.activeRoundLabel || 'Sin fecha activa'}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="uppercase tracking-wider">Último resultado</span>
-                    <span className="font-medium text-foreground truncate max-w-[65%] text-right">
+                  <div className="flex items-center justify-between gap-3 group/row">
+                    <div className="flex items-center gap-1.5 text-muted-foreground/50 uppercase tracking-[0.15em] font-black text-[9px]">
+                      <Target className="w-3 h-3 group-hover/row:text-primary transition-colors" />
+                      <span>Último resultado</span>
+                    </div>
+                    <span className="font-bold text-foreground/80 truncate max-w-[55%] text-right transition-colors group-hover/row:text-foreground">
                       {metrics.lastResultLabel || 'Sin resultados'}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="uppercase tracking-wider">Inicio torneo</span>
-                    <span className="font-medium text-foreground truncate max-w-[65%] text-right">
+                  <div className="flex items-center justify-between gap-3 group/row">
+                    <div className="flex items-center gap-1.5 text-muted-foreground/50 uppercase tracking-[0.15em] font-black text-[9px]">
+                      <Calendar className="w-3 h-3 group-hover/row:text-primary transition-colors" />
+                      <span>Inicio torneo</span>
+                    </div>
+                    <span className="font-bold text-foreground/80 truncate max-w-[55%] text-right transition-colors group-hover/row:text-foreground">
                       {comp.startDate || 'A definir'}
                     </span>
                   </div>

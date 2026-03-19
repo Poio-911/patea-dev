@@ -113,7 +113,7 @@ export function CompetitionSponsorsTab({ competitionId, competitionType, sponsor
                   <div className="flex gap-2">
                     <Input id="logo" value={newLogoUrl} onChange={(e) => setNewLogoUrl(e.target.value)} placeholder="https://..." />
                     <div className="w-10 h-10 rounded-md border bg-muted flex items-center justify-center shrink-0 overflow-hidden">
-                      {newLogoUrl ? <img src={newLogoUrl} className="w-full h-full object-contain" /> : <ImageIcon className="w-4 h-4 text-muted-foreground" />}
+                      {newLogoUrl ? <img src={newLogoUrl} alt="Logo preview" className="w-full h-full object-contain" /> : <ImageIcon className="w-4 h-4 text-muted-foreground" />}
                     </div>
                   </div>
                 </div>

@@ -1,22 +1,24 @@
 'use client';
 
-import { BracketMatch, CupRound } from '@/lib/types';
-import { getRoundName, getMatchesByRound } from '@/lib/utils/cup-bracket';
+import { useRef, useState } from 'react';
+import { BracketMatch, CupRound, Jersey } from '@/lib/types';
+import { getRoundName, getMatchesByRound, getNextRound } from '@/lib/utils/cup-bracket';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
-import { Trophy, Clock, PlayCircle, ExternalLink } from 'lucide-react';
+import { Trophy, PlayCircle, ExternalLink, Settings, Clock, MapPin, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
 interface CupBracketProps {
   bracket: BracketMatch[];
   onMatchClick?: (match: BracketMatch) => void;
+  onMatchSettingsClick?: (match: BracketMatch) => void;
   highlightedMatchId?: string;
   currentRound?: CupRound;
   canCreate?: boolean;
   userTeamId?: string;
 }
 
-export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentRound, canCreate, userTeamId }: CupBracketProps) {
+export function CupBracket({ bracket, onMatchClick, onMatchSettingsClick, highlightedMatchId, currentRound, canCreate, userTeamId }: CupBracketProps) {
   if (!bracket || bracket.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-24 rounded-2xl border border-dashed border-amber-500/15 bg-amber-500/3">
@@ -29,17 +31,25 @@ export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentR
     );
   }
 
-  // Constants for layout
-  const CARD_WIDTH = 260;
-  const CARD_HEIGHT = 112;
-  const GAP_X = 110;
+  const CARD_WIDTH = 244;
+  const CARD_HEIGHT = 146;
+  const GAP_X = 72;
   const BASE_GAP_Y = 36;
 
-  // Get rounds
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [selectedRound, setSelectedRound] = useState<CupRound | null>(null);
+
+  const scrollToRound = (round: CupRound) => {
+    const roundIndex = activeRounds.indexOf(round);
+    if (roundIndex < 0 || !scrollContainerRef.current) return;
+    const x = roundIndex * (CARD_WIDTH + GAP_X);
+    scrollContainerRef.current.scrollTo({ left: Math.max(0, x - 16), behavior: 'smooth' });
+    setSelectedRound(round);
+  };
+
   const allRounds: CupRound[] = ['round_of_32', 'round_of_16', 'round_of_8', 'semifinals', 'final'];
   const activeRounds = allRounds.filter(round => bracket.some(m => m.round === round));
 
-  // Calculate positions
   const matchPositions = new Map<string, { x: number; y: number }>();
   const roundsMap = new Map<CupRound, BracketMatch[]>();
 
@@ -49,13 +59,13 @@ export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentR
 
   activeRounds.forEach((round, roundIndex) => {
     const matches = roundsMap.get(round) || [];
-    const x = roundIndex * (CARD_WIDTH + GAP_X) + 20;
+    const x = roundIndex * (CARD_WIDTH + GAP_X) + 24;
 
     matches.forEach((match, index) => {
       let y = 0;
 
       if (roundIndex === 0) {
-        y = index * (CARD_HEIGHT + BASE_GAP_Y) + 60;
+        y = index * (CARD_HEIGHT + BASE_GAP_Y) + 48;
       } else {
         const prevRound = activeRounds[roundIndex - 1];
         const prevMatches = roundsMap.get(prevRound) || [];
@@ -66,7 +76,7 @@ export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentR
           const maxY = Math.max(...feeders.map(m => matchPositions.get(m.id)?.y || 0));
           y = (minY + maxY) / 2;
         } else {
-          y = index * (CARD_HEIGHT + BASE_GAP_Y) * Math.pow(2, roundIndex) + 60;
+          y = index * (CARD_HEIGHT + BASE_GAP_Y) * Math.pow(2, roundIndex) + 48;
         }
       }
 
@@ -74,21 +84,41 @@ export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentR
     });
   });
 
-  const totalWidth = activeRounds.length * (CARD_WIDTH + GAP_X) + 40;
-  const maxHeight = Math.max(...Array.from(matchPositions.values()).map(p => p.y)) + CARD_HEIGHT + 40;
+  const totalWidth = activeRounds.length * (CARD_WIDTH + GAP_X) + 48;
+  const maxHeight = Math.max(...Array.from(matchPositions.values()).map(p => p.y)) + CARD_HEIGHT + 60;
 
   return (
-    <div
-      className="w-full overflow-x-auto pb-6 scrollbar-hide"
-      style={{ scrollSnapType: 'x proximity', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+    <div className="w-full">
+      {/* Round navigation chips */}
+      {activeRounds.length > 1 && (
+        <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+          {activeRounds.map((round) => (
+            <button
+              key={round}
+              onClick={() => scrollToRound(round)}
+              className={cn(
+                "flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide transition-all border",
+                (selectedRound ?? currentRound) === round
+                  ? "bg-foreground text-background border-foreground/80 shadow-sm"
+                  : "bg-card border-border/50 text-muted-foreground/60 hover:border-foreground/30 hover:text-foreground/80"
+              )}
+            >
+              {getRoundName(round)}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div
+        ref={scrollContainerRef}
+        className="w-full overflow-x-auto pb-6"
+        style={{ scrollSnapType: 'x proximity', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
     >
       <div
         className="relative mx-auto"
         style={{
           width: totalWidth,
           height: maxHeight,
-          backgroundImage: `radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)`,
-          backgroundSize: '24px 24px',
         }}
       >
         {/* SVG Layer for Connectors */}
@@ -98,15 +128,15 @@ export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentR
         >
           <defs>
             <linearGradient id="grad-winner" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#f59e0b" stopOpacity="1" />
-              <stop offset="100%" stopColor="#fbbf24" stopOpacity="0.5" />
+              <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.7" />
+              <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0.2" />
             </linearGradient>
             <linearGradient id="grad-user" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#fcd34d" stopOpacity="1" />
-              <stop offset="100%" stopColor="#fef3c7" stopOpacity="0.7" />
+              <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0.4" />
             </linearGradient>
-            <filter id="glow-amber" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <filter id="glow-amber" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="2" result="blur" />
               <feMerge>
                 <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />
@@ -117,23 +147,25 @@ export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentR
           {bracket.map(match => {
             if (!match.nextMatchNumber) return null;
             const currentPos = matchPositions.get(match.id);
-            const nextMatch = bracket.find(m => m.matchNumber === match.nextMatchNumber && m.round !== match.round);
+            const nextRound = getNextRound(match.round);
+            const nextMatch = nextRound 
+              ? bracket.find(m => m.matchNumber === match.nextMatchNumber && m.round === nextRound)
+              : null;
+            
             if (!currentPos || !nextMatch) return null;
             const nextPos = matchPositions.get(nextMatch.id);
             if (!nextPos) return null;
 
+            const isNextFinal = nextMatch.round === 'final';
             const startX = currentPos.x + CARD_WIDTH;
             const startY = currentPos.y + (CARD_HEIGHT / 2);
-            const endX = nextPos.x;
+            // Adjust endX by -6 if the next card is the final (to match its visual offset)
+            const endX = nextPos.x + (isNextFinal ? -6 : 0);
             const endY = nextPos.y + (CARD_HEIGHT / 2);
-            const cp1x = startX + (GAP_X / 2);
-            const cp1y = startY;
-            const cp2x = endX - (GAP_X / 2);
-            const cp2y = endY;
+            const midX = startX + (endX - startX) * 0.5;
 
-            const path = `M ${startX} ${startY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${endX} ${endY}`;
+            const path = `M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`;
             const isCompleted = !!match.winnerId;
-
             const isUserPath = !!(userTeamId &&
               (match.team1Id === userTeamId || match.team2Id === userTeamId) &&
               match.winnerId === userTeamId);
@@ -146,13 +178,13 @@ export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentR
                 d={path}
                 fill="none"
                 stroke={isUserPath ? "url(#grad-user)" : isCompleted ? "url(#grad-winner)" : "hsl(var(--border))"}
-                strokeWidth={isUserPath ? 3 : isCompleted ? 2.5 : 1}
-                strokeOpacity={isUserPath ? 1 : isCompleted ? 1 : 0.35}
-                strokeDasharray={isCompleted || isUserPath ? "0" : "5 7"}
-                filter={isUserPath || isCompleted ? "url(#glow-amber)" : undefined}
+                strokeWidth={isUserPath ? 2 : isCompleted ? 1.5 : 1}
+                strokeOpacity={isUserPath ? 1 : isCompleted ? 1 : 0.6}
+                strokeDasharray={isCompleted || isUserPath ? "0" : "4 6"}
+                filter={undefined}
                 initial={{ pathLength: 0, opacity: 0 }}
                 animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 1.2, ease: "easeInOut", delay }}
+                transition={{ duration: 1.0, ease: "easeInOut", delay }}
               />
             );
           })}
@@ -164,23 +196,24 @@ export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentR
           return (
             <motion.div
               key={`header-${round}`}
-              initial={{ opacity: 0, y: -8 }}
+              initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.08 }}
-              className={cn(
-                "absolute top-0 text-center text-[10px] font-bold tracking-[0.18em] uppercase px-4 py-1.5 rounded-full border sport-text",
-                isCurrentRound
-                  ? "bg-amber-500/15 border-amber-500/30 text-amber-400"
-                  : "bg-muted/40 border-border/30 text-muted-foreground/70"
-              )}
+              transition={{ delay: index * 0.07 }}
+              className="absolute top-0 flex items-center gap-2"
               style={{
-                left: index * (CARD_WIDTH + GAP_X) + 20,
+                left: index * (CARD_WIDTH + GAP_X) + 24,
                 width: CARD_WIDTH,
-                ...(isCurrentRound && { boxShadow: "0 0 12px rgba(245,158,11,0.25), 0 0 4px rgba(245,158,11,0.15)" })
               }}
             >
-              {isCurrentRound && <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 animate-pulse" />}
-              {getRoundName(round)}
+              <div className={cn("h-px flex-1", isCurrentRound ? "bg-foreground/50" : "bg-border/40")} />
+              <span className={cn(
+                "text-[10px] font-bold tracking-[0.18em] uppercase whitespace-nowrap",
+                isCurrentRound ? "text-foreground/70" : "text-muted-foreground/35"
+              )}>
+                {isCurrentRound && <span className="inline-block w-1 h-1 rounded-full bg-foreground/60 mr-1.5 align-middle animate-pulse" />}
+                {getRoundName(round)}
+              </span>
+              <div className={cn("h-px flex-1", isCurrentRound ? "bg-foreground/50" : "bg-border/40")} />
             </motion.div>
           );
         })}
@@ -196,22 +229,23 @@ export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentR
           return (
             <motion.div
               key={match.id}
-              initial={{ opacity: 0, scale: 0.92, y: 8 }}
+              initial={{ opacity: 0, scale: 0.93, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: "easeOut", delay: roundIndex * 0.12 + (matchIndex % 8) * 0.04 }}
+              transition={{ duration: 0.4, ease: "easeOut", delay: roundIndex * 0.1 + (matchIndex % 8) * 0.04 }}
               className="absolute"
               style={{
                 left: pos.x,
                 top: pos.y,
-                width: isFinal ? CARD_WIDTH + 20 : CARD_WIDTH,
-                height: isFinal ? CARD_HEIGHT + 10 : CARD_HEIGHT,
-                marginLeft: isFinal ? -10 : 0,
-                marginTop: isFinal ? -5 : 0,
+                width: isFinal ? CARD_WIDTH + 12 : CARD_WIDTH,
+                height: isFinal ? CARD_HEIGHT + 8 : CARD_HEIGHT,
+                marginLeft: isFinal ? -6 : 0,
+                marginTop: isFinal ? -4 : 0,
               }}
             >
               <BracketMatchCard
                 match={match}
                 onClick={onMatchClick}
+                onSettingsClick={onMatchSettingsClick}
                 isHighlighted={highlightedMatchId === match.id || isUserMatch}
                 isFinal={isFinal}
                 canCreate={!!canCreate}
@@ -222,25 +256,29 @@ export function CupBracket({ bracket, onMatchClick, highlightedMatchId, currentR
         })}
       </div>
     </div>
+    </div>
   );
 }
 
 interface BracketMatchCardProps {
   match: BracketMatch;
   onClick?: (match: BracketMatch) => void;
+  onSettingsClick?: (match: BracketMatch) => void;
   isHighlighted?: boolean;
   isFinal?: boolean;
   canCreate?: boolean;
   userTeamId?: string;
 }
 
-function BracketMatchCard({ match, onClick, isHighlighted, isFinal, canCreate, userTeamId }: BracketMatchCardProps) {
-  const hasTeams = match.team1Id && match.team2Id;
+function BracketMatchCard({ match, onClick, onSettingsClick, isHighlighted, isFinal, canCreate, userTeamId }: BracketMatchCardProps) {
+  const hasTeams = !!(match.team1Id && match.team2Id);
   const isCompleted = !!match.winnerId;
+  const isClickable = !!onClick;
+  const isEmpty = !match.team1Id && !match.team2Id;
 
   const TeamRow = ({ name, jersey, isWinner, score, teamId }: {
     name?: string;
-    jersey?: any;
+    jersey?: Jersey;
     isWinner?: boolean;
     score?: number;
     teamId?: string;
@@ -250,33 +288,34 @@ function BracketMatchCard({ match, onClick, isHighlighted, isFinal, canCreate, u
 
     return (
       <div className={cn(
-        "flex items-center justify-between px-2.5 py-1.5 transition-colors",
-        isWinner && "bg-gradient-to-r from-amber-500/12 to-transparent border-l-[2.5px] border-amber-400",
-        isLoser && "opacity-45 grayscale",
-        isUser && !isWinner && "border-l-[2.5px] border-primary/60",
-        !isWinner && !isLoser && !isUser && "border-l-[2.5px] border-transparent",
+        "flex items-center gap-2.5 px-3 py-3 min-w-0 transition-colors",
+        isWinner && "bg-muted/60 dark:bg-white/5",
+        isLoser && "opacity-35",
+        isUser && !isWinner && "bg-primary/5",
       )}>
-        <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+        {/* Jersey */}
+        <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center">
           {jersey ? (
-            <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center">
-              <JerseyPreview jersey={jersey} size="xs" className="scale-110" />
-            </div>
+            <JerseyPreview jersey={jersey} size="xs" />
           ) : (
-            <div className="w-6 h-6 flex-shrink-0 rounded-full bg-muted/30 border border-dashed border-border/50" />
+            <div className="w-5 h-5 rounded-full border border-dashed border-border/50" />
           )}
+        </div>
+        {/* Team name */}
+        <div className="flex-1 min-w-0">
           <span className={cn(
-            "text-xs truncate sport-text",
-            isWinner ? "text-amber-300 font-bold" : "text-foreground/80 font-medium",
-            !name && "text-muted-foreground/40 italic text-[11px]"
+            "text-[13px] truncate leading-none block sport-text",
+            isWinner ? "font-black text-foreground" : name ? "font-semibold text-foreground/65" : "font-normal italic text-muted-foreground/30 text-xs",
           )}>
             {name ?? "Por definir"}
           </span>
         </div>
+        {/* Score */}
         <span className={cn(
-          "text-sm font-black tabular-nums sport-text ml-1.5",
-          isWinner ? "text-amber-400" : "text-muted-foreground/30"
+          "tabular-nums font-black leading-none text-right sport-text flex-shrink-0 w-8",
+          isWinner ? "text-2xl text-amber-500" : "text-xl text-muted-foreground/20",
         )}>
-          {name ? (score ?? "—") : ""}
+          {name ? (score !== undefined && score !== null ? score : "–") : ""}
         </span>
       </div>
     );
@@ -284,18 +323,61 @@ function BracketMatchCard({ match, onClick, isHighlighted, isFinal, canCreate, u
 
   return (
     <div
-      onClick={() => onClick?.(match)}
+      onClick={() => isClickable && !isEmpty && onClick?.(match)}
       className={cn(
-        "h-full flex flex-col justify-center overflow-hidden cursor-pointer rounded-xl border transition-all duration-300",
-        "bg-card/60 dark:bg-black/40 backdrop-blur-sm border-white/8 dark:border-white/6",
-        "shadow-sm hover:shadow-md hover:-translate-y-0.5",
-        isHighlighted && !isFinal && "ring-1 ring-amber-400/50 border-amber-500/20",
-        isFinal && "ring-2 ring-amber-400/60 border-amber-500/25 shadow-[0_0_20px_rgba(245,158,11,0.18)]",
+        "h-full flex flex-col overflow-hidden rounded-xl border transition-all duration-200 relative group",
+        isEmpty
+          ? "bg-muted/5 border-dashed border-border/30"
+          : "bg-card border-border/70 shadow-sm",
+        isClickable && !isEmpty && "cursor-pointer hover:shadow-md hover:border-foreground/20 hover:-translate-y-px active:translate-y-0",
+        isFinal && !isEmpty && "border-foreground/40 shadow-md",
+        isHighlighted && !isFinal && !isEmpty && "border-foreground/30",
       )}
     >
-      {isFinal && (
-        <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+      {/* Settings button (hover) */}
+      {onSettingsClick && hasTeams && !isEmpty && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onSettingsClick(match);
+          }}
+          className="absolute right-1.5 top-1.5 h-6 w-6 rounded-md bg-background/90 border border-border/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted z-10"
+          title="Configurar partido"
+        >
+          <Settings className="h-3 w-3 text-muted-foreground" />
+        </button>
       )}
+
+      {/* Final top bar */}
+      {isFinal && !isEmpty && (
+        <div className="h-[3px] w-full bg-foreground flex-shrink-0" />
+      )}
+
+      {/* Metadata Row (Date/Time/Venue/Referee) */}
+      {!isEmpty && (match.date || match.time || match.venue || match.refereeName) && (
+        <div className="px-2.5 pt-2 pb-1 flex flex-wrap items-center justify-center gap-1.5 text-[9px] text-muted-foreground/70 border-b border-border/20">
+          {(match.date || match.time) && (
+            <span className="flex items-center gap-0.5">
+              <Clock className="w-2.5 h-2.5" />
+              {[match.date, match.time].filter(Boolean).join(' ')}
+            </span>
+          )}
+          {match.venue && (
+            <span className="flex items-center gap-0.5">
+              <MapPin className="w-2.5 h-2.5" />
+              {match.venue}
+            </span>
+          )}
+          {match.refereeName && (
+            <span className="flex items-center gap-0.5 text-primary/70">
+              <UserCheck className="w-2.5 h-2.5" />
+              {match.refereeName}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Team 1 */}
       <TeamRow
         name={match.team1Name}
         jersey={match.team1Jersey}
@@ -303,7 +385,11 @@ function BracketMatchCard({ match, onClick, isHighlighted, isFinal, canCreate, u
         score={match.finalScore?.team1}
         teamId={match.team1Id}
       />
-      <div className="h-px mx-3 bg-white/6" />
+
+      {/* Divider */}
+      <div className={cn("mx-3 border-t flex-shrink-0", isEmpty ? "border-dashed border-border/25" : "border-border/40")} />
+
+      {/* Team 2 */}
       <TeamRow
         name={match.team2Name}
         jersey={match.team2Jersey}
@@ -311,39 +397,53 @@ function BracketMatchCard({ match, onClick, isHighlighted, isFinal, canCreate, u
         score={match.finalScore?.team2}
         teamId={match.team2Id}
       />
-      {(hasTeams || isFinal) && (
-        <div className="flex justify-center pb-1.5 pt-0.5">
-          <StatusPill
-            isCompleted={isCompleted}
-            isFinal={isFinal}
-            hasMatchId={!!match.matchId}
-            canCreate={!!canCreate}
-          />
-        </div>
+
+      {/* CTA / status footer */}
+      {!isEmpty && (
+        <>
+          {hasTeams && !isCompleted && canCreate ? (
+            <div className="px-2.5 pb-2.5 pt-1.5 flex-shrink-0">
+              <div className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-foreground text-background text-[11px] font-bold uppercase tracking-wide">
+                <PlayCircle className="w-3.5 h-3.5" />
+                Cargar resultado
+              </div>
+            </div>
+          ) : isCompleted ? (
+            <div className="flex items-center justify-center pb-2 pt-1.5 flex-shrink-0">
+              <StatusPill isCompleted={isCompleted} isFinal={isFinal} hasMatchId={!!match.matchId} />
+            </div>
+          ) : !!match.matchId ? (
+            <div className="flex items-center justify-center pb-2 pt-1.5 flex-shrink-0">
+              <StatusPill isCompleted={false} isFinal={isFinal} hasMatchId={true} />
+            </div>
+          ) : null}
+        </>
       )}
-      {match.streamingUrl && (
-        <div className="px-2.5 pb-2.5">
+
+      {/* Streaming button */}
+      {(match as any).streamingUrl && (
+        <div className="px-3 pb-2.5 flex-shrink-0">
           <button
             onClick={(e) => {
               e.stopPropagation();
-              window.open(match.streamingUrl, '_blank');
+              window.open((match as any).streamingUrl, '_blank');
             }}
             className={cn(
-              "w-full flex items-center justify-center gap-1.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all",
-              match.isLive 
-                ? "bg-red-600/90 hover:bg-red-600 text-white animate-pulse" 
+              "w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all",
+              (match as any).isLive
+                ? "bg-red-600/90 hover:bg-red-600 text-white animate-pulse"
                 : "bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
             )}
           >
-            {match.isLive ? (
+            {(match as any).isLive ? (
               <>
                 <div className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
                 EN VIVO
               </>
             ) : (
               <>
-                <ExternalLink className="w-2.5 h-2.5" />
-                VER
+                <ExternalLink className="w-3 h-3" />
+                VER TRANSMISIÓN
               </>
             )}
           </button>
@@ -353,44 +453,32 @@ function BracketMatchCard({ match, onClick, isHighlighted, isFinal, canCreate, u
   );
 }
 
-function StatusPill({ isCompleted, isFinal, hasMatchId, canCreate }: {
+function StatusPill({ isCompleted, isFinal, hasMatchId }: {
   isCompleted: boolean;
   isFinal?: boolean;
   hasMatchId: boolean;
-  canCreate: boolean;
 }) {
   if (isCompleted && isFinal) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wide sport-text bg-amber-500/15 text-amber-400 border-amber-500/20">
-        <Trophy className="w-2.5 h-2.5" /> Campeón
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wide sport-text bg-amber-500/10 text-amber-500 border-amber-500/20">
+        <Trophy className="w-3 h-3" /> Campeón
       </span>
     );
   }
   if (isCompleted) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9px] font-medium uppercase tracking-wide sport-text text-muted-foreground/60 border-white/6">
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-medium uppercase tracking-wide sport-text text-muted-foreground/40 border-border/30">
         Finalizado
       </span>
     );
   }
   if (hasMatchId) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wide sport-text bg-primary/15 text-primary border-primary/20">
-        <span className="w-1 h-1 rounded-full bg-primary animate-pulse" />
-        Jugar
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-semibold uppercase tracking-wide sport-text bg-primary/10 text-primary border-primary/20">
+        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+        En juego
       </span>
     );
   }
-  if (canCreate) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9px] font-medium uppercase tracking-wide sport-text text-amber-400/80 border-amber-500/15">
-        <Clock className="w-2.5 h-2.5" /> Generar
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium sport-text text-muted-foreground/40">
-      Pendiente
-    </span>
-  );
+  return null;
 }

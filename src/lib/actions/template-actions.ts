@@ -69,10 +69,16 @@ export async function loadTemplatesAction(
       .limit(20)
       .get();
 
-    const templates: CompetitionTemplate[] = snap.docs.map((d: FirebaseFirestore.QueryDocumentSnapshot) => ({
-      id: d.id,
-      ...(d.data() as Omit<CompetitionTemplate, 'id'>),
-    }));
+    const templates: CompetitionTemplate[] = snap.docs.map((docSnap) => {
+      const data = docSnap.data();
+      // Ensure all Timestamps are converted to plain data (ISO strings)
+      return {
+        id: docSnap.id,
+        ...data,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : data.updatedAt,
+      } as CompetitionTemplate;
+    });
 
     return { success: true, templates };
   } catch (e: unknown) {

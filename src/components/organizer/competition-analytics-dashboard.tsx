@@ -2,28 +2,18 @@
 
 import * as React from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   BarChart3, Goal, Swords, ShieldAlert, Trophy, TrendingUp, Users, Activity,
 } from 'lucide-react';
+import type { Team, BracketMatch } from '@/lib/types';
 
-interface MatchObj {
-  status: 'pending' | 'finished';
-  homeScore?: number;
-  awayScore?: number;
-  homeTeamId?: string | null;
-  awayTeamId?: string | null;
-  scorers?: { playerId: string; playerName: string; teamId: string }[];
-  cards?: { playerId: string; playerName: string; teamId: string; color: 'yellow' | 'red' }[];
-  mvp?: { playerId: string; playerName: string; teamId: string };
-  attendance?: number;
+interface CompetitionAnalyticsDashboardProps {
+  competitionId: string;
+  competitionType?: 'leagues' | 'cups';
 }
-interface FixtureRound { id: string; matches: MatchObj[]; }
-interface Team { id: string; name: string; }
-
-interface LeagueAnalyticsDashboardProps { leagueId: string; }
 
 interface StatCard { label: string; value: string | number; sub?: string; icon: React.ReactNode; color: string; }
 
@@ -44,32 +34,51 @@ function KpiCard({ label, value, sub, icon, color }: StatCard) {
   );
 }
 
-export function LeagueAnalyticsDashboard({ leagueId }: LeagueAnalyticsDashboardProps) {
+export function CompetitionAnalyticsDashboard({ competitionId, competitionType = 'leagues' }: CompetitionAnalyticsDashboardProps) {
   const firestore = useFirestore();
   const [teams, setTeams] = React.useState<Team[]>([]);
-  const [rounds, setRounds] = React.useState<FixtureRound[]>([]);
+  const [matchesData, setMatchesData] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     if (!firestore) return;
-    const teamsRef = collection(firestore, 'leagues', leagueId, 'teams');
-    const unsubTeams = onSnapshot(query(teamsRef), snap => {
+    
+    // 1. Fetch Teams
+    const teamsRef = collection(firestore, competitionType, competitionId, 'teams');
+    const unsubTeams = onSnapshot(query(teamsRef), (snap) => {
       setTeams(snap.docs.map(d => ({ id: d.id, ...d.data() } as Team)));
     });
-    const fixturesRef = collection(firestore, 'leagues', leagueId, 'fixtures');
-    const unsubFixtures = onSnapshot(query(fixturesRef), snap => {
-      setRounds(snap.docs.map(d => ({ id: d.id, ...d.data() } as FixtureRound)));
-      setLoading(false);
-    });
-    return () => { unsubTeams(); unsubFixtures(); };
-  }, [firestore, leagueId]);
+
+    // 2. Fetch Match Data
+    let unsubMatches = () => {};
+
+    if (competitionType === 'leagues') {
+      const fixturesRef = collection(firestore, 'leagues', competitionId, 'fixtures');
+      unsubMatches = onSnapshot(query(fixturesRef), (snap) => {
+        const allMatches = snap.docs.flatMap(d => (d.data().matches || []) as any[]);
+        setMatchesData(allMatches);
+        setLoading(false);
+      });
+    } else {
+      const cupRef = doc(firestore, 'cups', competitionId);
+      unsubMatches = onSnapshot(cupRef, (snap) => {
+        if (snap.exists()) {
+          const bracket = (snap.data().bracket || []) as BracketMatch[];
+          setMatchesData(bracket);
+        }
+        setLoading(false);
+      });
+    }
+
+    return () => {
+      unsubTeams();
+      unsubMatches();
+    };
+  }, [firestore, competitionId, competitionType]);
 
   const stats = React.useMemo(() => {
-    const allMatches = rounds.flatMap(r => r.matches);
-    const finished = allMatches.filter(m => m.status === 'finished');
+    const finished = matchesData.filter(m => competitionType === 'leagues' ? m.status === 'finished' : !!m.winnerId);
     const totalMatches = finished.length;
-    const totalRounds = rounds.length;
-    const playedRounds = rounds.filter(r => r.matches.some(m => m.status === 'finished')).length;
 
     let totalGoals = 0;
     let draws = 0;
@@ -81,42 +90,38 @@ export function LeagueAnalyticsDashboard({ leagueId }: LeagueAnalyticsDashboardP
     let highestMatch = '';
     let totalAttendance = 0;
     let attendanceCount = 0;
-    const goalsByRound: { round: number; avg: number }[] = [];
 
     // Per-team goals
     const teamGoals: Record<string, number> = {};
-    teams.forEach(t => { teamGoals[t.id] = 0; });
-
-    rounds.forEach((round, ri) => {
-      let roundGoals = 0;
-      let roundFinished = 0;
-      round.matches.forEach(m => {
-        if (m.status !== 'finished' || m.homeScore === undefined || m.awayScore === undefined) return;
-        const total = m.homeScore + m.awayScore;
-        roundGoals += total;
-        roundFinished++;
-        totalGoals += total;
-        if (m.homeScore > m.awayScore) homeWins++;
-        else if (m.awayScore > m.homeScore) awayWins++;
-        else draws++;
-        if (total > highestScore) {
-          highestScore = total;
-          highestMatch = `${m.homeScore}-${m.awayScore}`;
-        }
-        if (m.homeTeamId) teamGoals[m.homeTeamId] = (teamGoals[m.homeTeamId] || 0) + m.homeScore;
-        if (m.awayTeamId) teamGoals[m.awayTeamId] = (teamGoals[m.awayTeamId] || 0) + m.awayScore;
-        if (typeof m.attendance === 'number' && m.attendance > 0) {
-          totalAttendance += m.attendance;
-          attendanceCount++;
-        }
-      });
-      if (roundFinished > 0) goalsByRound.push({ round: ri + 1, avg: Math.round((roundGoals / roundFinished) * 10) / 10 });
-    });
+    teams.forEach(t => { if (t.id) teamGoals[t.id] = 0; });
 
     finished.forEach(m => {
-      (m.cards || []).forEach(c => {
-        if (c.color === 'yellow') totalYellows++;
-        else totalReds++;
+      const hScore = m.homeScore ?? 0;
+      const aScore = m.awayScore ?? 0;
+      const total = hScore + aScore;
+      
+      totalGoals += total;
+      if (hScore > aScore) homeWins++;
+      else if (aScore > hScore) awayWins++;
+      else draws++;
+
+      if (total > highestScore) {
+        highestScore = total;
+        highestMatch = `${hScore}-${aScore}`;
+      }
+
+      if (m.homeTeamId) teamGoals[m.homeTeamId] = (teamGoals[m.homeTeamId] || 0) + hScore;
+      if (m.awayTeamId) teamGoals[m.awayTeamId] = (teamGoals[m.awayTeamId] || 0) + aScore;
+      
+      if (typeof m.attendance === 'number' && m.attendance > 0) {
+        totalAttendance += m.attendance;
+        attendanceCount++;
+      }
+
+      (m.cards || []).forEach((c: any) => {
+        const type = c.cardType || c.color;
+        if (type === 'yellow') totalYellows++;
+        else if (type === 'red') totalReds++;
       });
     });
 
@@ -131,12 +136,11 @@ export function LeagueAnalyticsDashboard({ leagueId }: LeagueAnalyticsDashboardP
     const topScoringGoals = sortedTeamGoals[0]?.[1] || 0;
 
     return {
-      totalMatches, totalRounds, playedRounds, totalGoals, draws, homeWins, awayWins,
+      totalMatches, totalGoals, draws, homeWins, awayWins,
       totalYellows, totalReds, highestScore, highestMatch, avgGoalsPerMatch, avgYellowsPerMatch,
-      avgAttendance, topScoringTeam, topScoringGoals, goalsByRound,
-      completionPct: totalRounds > 0 ? Math.round((playedRounds / totalRounds) * 100) : 0,
+      avgAttendance, topScoringTeam, topScoringGoals,
     };
-  }, [rounds, teams]);
+  }, [matchesData, teams, competitionType]);
 
   if (loading) return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -157,7 +161,7 @@ export function LeagueAnalyticsDashboard({ leagueId }: LeagueAnalyticsDashboardP
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-black uppercase tracking-tight">Analíticas</h2>
-        <p className="text-sm text-muted-foreground">{stats.totalMatches} partidos jugados · {stats.completionPct}% del torneo completado</p>
+        <p className="text-sm text-muted-foreground">{stats.totalMatches} partidos finalizados registrados.</p>
       </div>
 
       {/* KPI grid */}
@@ -172,14 +176,13 @@ export function LeagueAnalyticsDashboard({ leagueId }: LeagueAnalyticsDashboardP
         <KpiCard
           label="Partidos jugados"
           value={stats.totalMatches}
-          sub={`de ${rounds.flatMap(r => r.matches).length} programados`}
           icon={<Swords className="h-5 w-5 text-primary" />}
           color="bg-primary/10"
         />
         <KpiCard
-          label="Victorias local"
-          value={`${stats.homeWins}`}
-          sub={`Visita: ${stats.awayWins} · Empate: ${stats.draws}`}
+          label="Victorias"
+          value={`${stats.homeWins + stats.awayWins}`}
+          sub={`Empates: ${stats.draws}`}
           icon={<Trophy className="h-5 w-5 text-yellow-500" />}
           color="bg-yellow-500/10"
         />
@@ -223,40 +226,11 @@ export function LeagueAnalyticsDashboard({ leagueId }: LeagueAnalyticsDashboardP
         )}
       </div>
 
-      {/* Goals by round bar */}
-      {stats.goalsByRound.length > 1 && (
-        <Card className="border-border/40 bg-card/70 backdrop-blur-xl">
-          <CardHeader className="pb-2 pt-5">
-            <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" /> Promedio de goles por jornada
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pb-5">
-            <div className="flex items-end gap-1.5 h-24">
-              {(() => {
-                const maxVal = Math.max(...stats.goalsByRound.map(r => r.avg), 1);
-                return stats.goalsByRound.map(r => (
-                  <div key={r.round} className="flex flex-col items-center gap-1 flex-1 min-w-0">
-                    <span className="text-[10px] text-muted-foreground font-bold">{r.avg}</span>
-                    <div
-                      className="w-full rounded-t-md bg-primary/60 transition-all"
-                      style={{ height: `${Math.max(4, (r.avg / maxVal) * 64)}px` }}
-                    />
-                    <span className="text-[9px] text-muted-foreground truncate w-full text-center">{r.round}</span>
-                  </div>
-                ));
-              })()}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2 text-center">Jornada</p>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Result distribution */}
       <Card className="border-border/40 bg-card/70 backdrop-blur-xl">
         <CardHeader className="pb-2 pt-5">
           <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-            <Swords className="h-4 w-4" /> Resultados
+            <Swords className="h-4 w-4" /> Distribución de Resultados
           </CardTitle>
         </CardHeader>
         <CardContent className="pb-5">

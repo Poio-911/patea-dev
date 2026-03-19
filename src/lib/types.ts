@@ -314,7 +314,7 @@ export type Team = {
   finalScore?: number; // Score for this team in the match
 };
 
-export type JerseyType = 'plain' | 'vertical' | 'band' | 'chevron' | 'thirds' | 'lines' | 'solid';
+export type JerseyType = 'plain' | 'vertical' | 'band' | 'chevron' | 'thirds' | 'lines' | 'solid' | 'hoops' | 'halves' | 'cross' | 'sash' | 'checkers' | 'quarters' | 'diagonal_half' | 'central_panel' | 'v_pinstripes';
 
 export type Jersey = {
   type: JerseyType;
@@ -788,7 +788,8 @@ export type CommunicationMessage = {
 // Team application for public registration
 export type TeamApplication = {
   id: string;
-  leagueId: string;
+  competitionId: string;
+  competitionType: 'leagues' | 'cups';
   teamName: string;
   captainName: string;
   captainEmail: string;
@@ -929,6 +930,11 @@ export type BracketMatch = {
   finalScore?: { team1: number; team2: number }; // Score of the match
   streamingUrl?: string; // Optional streaming link
   isLive?: boolean; // Whether the match is currently live
+  date?: string; // Match date (DD/MM/YYYY format)
+  time?: string; // Match time (HH:MM format)
+  venue?: string; // Venue/location name
+  refereeId?: string; // Assigned referee ID
+  refereeName?: string; // Assigned referee name
 };
 
 export type Cup = {
