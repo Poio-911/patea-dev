@@ -204,7 +204,7 @@ export default function CompetitionDetailPage({ params }: { params: { id: string
 
       <div className="max-w-6xl mx-auto space-y-8 px-4 sm:px-0">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="mb-8 flex flex-wrap gap-2 bg-card/70 backdrop-blur-xl border border-border/40 shadow-lg shadow-black/5 dark:shadow-black/20 p-2 rounded-xl">
+          <div className="mb-8 flex flex-wrap gap-2 bg-card/40 backdrop-blur-xl border border-border/40 shadow-lg shadow-black/5 dark:shadow-black/20 p-2 rounded-xl">
             <Button
               type="button"
               variant="ghost"

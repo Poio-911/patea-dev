@@ -46,11 +46,11 @@ interface ResumenTabProps {
 }
 
 const statusConfig: Record<Match['status'], { label: string; className: string }> = {
-    planning: { label: 'A Confirmar', className: 'bg-primary/5 text-primary border border-primary/20 rounded-full backdrop-blur-sm' },
-    upcoming: { label: 'Próximo', className: 'bg-primary/10 text-foreground border border-primary/30 rounded-full backdrop-blur-sm' },
-    active: { label: 'Activo', className: 'bg-foreground/10 text-foreground border border-foreground/30 rounded-full backdrop-blur-sm' },
-    completed: { label: 'Finalizado', className: 'bg-muted/40 text-muted-foreground border border-muted/50 rounded-full backdrop-blur-sm' },
-    evaluated: { label: 'Evaluado', className: 'bg-card/60 text-foreground border border-border rounded-full backdrop-blur-sm' },
+    planning: { label: 'A Confirmar', className: 'bg-primary/5 text-primary border border-primary/20 rounded-full backdrop-blur-xl' },
+    upcoming: { label: 'Próximo', className: 'bg-primary/10 text-foreground border border-primary/30 rounded-full backdrop-blur-xl' },
+    active: { label: 'Activo', className: 'bg-foreground/10 text-foreground border border-foreground/30 rounded-full backdrop-blur-xl' },
+    completed: { label: 'Finalizado', className: 'bg-muted/40 text-muted-foreground border border-muted/50 rounded-full backdrop-blur-xl' },
+    evaluated: { label: 'Evaluado', className: 'bg-card/40 text-foreground border border-border/40 rounded-full backdrop-blur-xl' },
 };
 
 function LiveMatchRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
@@ -58,7 +58,7 @@ function LiveMatchRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
     const isHalfTime = match.liveStatus === 'half_time';
 
     return (
-        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50 gap-3 hover:bg-muted/50 transition-colors">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-card/40 backdrop-blur-xl border border-border/40 gap-3 hover:bg-card/50 transition-colors">
             <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div className="relative flex shrink-0 h-2.5 w-2.5">
                     {!isHalfTime && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>}
@@ -105,7 +105,7 @@ export function ResumenTab({ nextMatch, liveMatches, liveLoading, player, recent
                 )}
 
                 <motion.div variants={cardVariants}>
-                    <Card>
+                    <Card className="bg-card/40 border-border/40 backdrop-blur-xl">
                         <CardHeader className="pb-3 px-4 pt-4 sm:px-6 sm:pt-6">
                             <CardTitle className="flex items-center gap-2 text-base">
                                 <PlayCircle className="h-5 w-5 text-primary" />
@@ -143,7 +143,7 @@ export function ResumenTab({ nextMatch, liveMatches, liveLoading, player, recent
                 )}
 
                 <motion.div variants={cardVariants}>
-                    <Card>
+                    <Card className="bg-card/40 border-border/40 backdrop-blur-xl">
                         <CardHeader>
                             <CardTitle>Partidos Anteriores</CardTitle>
                         </CardHeader>

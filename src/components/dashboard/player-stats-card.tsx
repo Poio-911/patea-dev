@@ -95,7 +95,7 @@ export function PlayerStatsCard({ player }: PlayerStatsCardProps) {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.1, duration: 0.4, type: "sping", stiffness: 100 }}
-          className="flex flex-col items-center justify-center p-4 sm:p-5 rounded-2xl bg-card/60 backdrop-blur-md border border-white/10 dark:border-white/5 shadow-xl relative overflow-hidden"
+          className="flex flex-col items-center justify-center p-4 sm:p-5 rounded-2xl bg-card/40 backdrop-blur-xl border border-border/40 shadow-xl relative overflow-hidden"
         >
           <div className={`absolute top-0 right-0 w-16 h-16 ${stat.bgColor.replace('bg-', 'bg-').replace('/10', '/20')} rounded-full blur-2xl -mr-8 -mt-8 opacity-50`}></div>
           <div className={`absolute bottom-0 left-0 w-16 h-16 ${stat.color.replace('text-', 'bg-')}/10 rounded-full blur-2xl -ml-8 -mb-8 opacity-50`}></div>

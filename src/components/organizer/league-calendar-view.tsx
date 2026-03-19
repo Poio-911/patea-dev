@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { CalendarDays, Clock, MapPin, AlertTriangle, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarDays, Clock, MapPin, AlertTriangle, Check, X, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { format, parse, addMonths, subMonths, startOfMonth, endOfMonth, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -71,6 +72,7 @@ export function LeagueCalendarView({ leagueId }: LeagueCalendarViewProps) {
   const [newDate, setNewDate] = React.useState('');
   const [newTime, setNewTime] = React.useState('');
   const [isSaving, setIsSaving] = React.useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!firestore) return;
@@ -395,12 +397,33 @@ export function LeagueCalendarView({ leagueId }: LeagueCalendarViewProps) {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="newDate">Nueva Fecha</Label>
-                <Input
-                  id="newDate"
-                  type="date"
-                  value={newDate}
-                  onChange={(e) => setNewDate(e.target.value)}
-                />
+                <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-between bg-background/50 border-border/40 hover:bg-background/80 font-normal"
+                    >
+                      <span className={newDate ? 'text-foreground font-bold' : 'text-muted-foreground'}>
+                        {newDate || 'Seleccioná una fecha'}
+                      </span>
+                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-[9999]" align="start">
+                    <Calendar
+                      mode="single"
+                      locale={es}
+                      selected={parseMatchDate(newDate) || undefined}
+                      onSelect={(selectedDate) => {
+                        if (!selectedDate) return;
+                        setNewDate(format(selectedDate, 'dd/MM/yyyy'));
+                        setIsDatePickerOpen(false);
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="space-y-2">

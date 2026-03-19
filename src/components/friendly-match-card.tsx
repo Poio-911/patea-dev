@@ -27,8 +27,8 @@ export function FriendlyMatchCard({ match }: FriendlyMatchCardProps) {
     const matchTheme = getMatchTheme(match.type);
 
     return (
-        <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-            <CardHeader className="gradient-primary p-4">
+        <Card className="overflow-hidden bg-card/40 border-border/40 backdrop-blur-xl hover:shadow-lg transition-all">
+            <CardHeader className="bg-primary/5 p-4 border-b border-border/40">
                 <div className="flex items-center justify-around gap-2 text-center">
                     {/* Team 1 */}
                     <div className="flex flex-col items-center gap-2 flex-1 min-w-0">

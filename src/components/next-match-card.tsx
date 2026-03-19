@@ -140,7 +140,7 @@ export function NextMatchCard({ matches, allPlayers = [] }: NextMatchCardProps) 
 
     return (
         <div className={cn(
-            "relative overflow-hidden rounded-xl border-2 shadow-2xl isolate next-match-banner bg-card border-white/10 group h-[380px] md:h-[480px]",
+            "relative overflow-hidden rounded-xl border-2 shadow-2xl isolate next-match-banner bg-card/40 border-border/40 backdrop-blur-xl group h-[380px] md:h-[480px]",
             matchTheme.border
         )}>
             {/* Background Container (Animated) */}

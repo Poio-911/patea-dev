@@ -78,8 +78,7 @@ export function CompactMatchCard({ match, className, distance }: CompactMatchCar
       <div
         className={cn(
           'group relative flex flex-col gap-2 p-3 rounded-lg overflow-hidden transition-all',
-          'bg-gradient-to-br',
-          matchTheme.gradient,
+          'bg-card/40 backdrop-blur-xl',
           matchTheme.border,
           'border shadow-md',
           'hover:shadow-lg hover:brightness-105',
@@ -87,7 +86,7 @@ export function CompactMatchCard({ match, className, distance }: CompactMatchCar
         )}
       >
         {/* Background Image Overlay (Tema Game) - Hidden in Light mode, visible in Dark/Game */}
-        <div className="absolute inset-0 z-0 overflow-hidden rounded-lg hidden dark:block game:block bg-card/90 backdrop-blur-sm">
+        <div className="absolute inset-0 z-0 overflow-hidden rounded-lg hidden dark:block game:block bg-card/40 backdrop-blur-xl">
           <Image
             src={getMatchBackgroundImage(match.id)}
             alt=""
@@ -116,7 +115,7 @@ export function CompactMatchCard({ match, className, distance }: CompactMatchCar
             {/* Type Indicator - Stylized Glow Dot */}
             <div className={cn(
               'inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-wider border shadow-sm flex-shrink-0',
-              'bg-background/80 dark:bg-black/50 game:bg-black/50 backdrop-blur-md border-border/50 dark:border-white/10 game:border-white/10 text-foreground'
+              'bg-card/60 backdrop-blur-xl border-border/40 text-foreground'
             )}>
               <div className={cn(
                 "w-1.5 h-1.5 rounded-full shrink-0 bg-current shadow-[0_0_6px_currentColor] brightness-125",

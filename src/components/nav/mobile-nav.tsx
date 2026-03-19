@@ -47,7 +47,7 @@ export function MobileNav() {
     const isMatchesActive = pathname.startsWith('/matches') || pathname.startsWith('/competitions');
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-card/90 backdrop-blur-lg shadow-lg md:hidden pb-[var(--safe-area-bottom,env(safe-area-inset-bottom))]">
+        <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-card/40 backdrop-blur-xl shadow-lg md:hidden pb-[var(--safe-area-bottom,env(safe-area-inset-bottom))]">
             <div className="relative w-full px-2">
                 <div className="flex h-14 w-full items-center justify-around font-medium">
                     {/* Left: Panel & Jugadores */}
@@ -87,7 +87,7 @@ export function MobileNav() {
                                             animate={{ opacity: 1 }}
                                             exit={{ opacity: 0 }}
                                             transition={{ duration: 0.2 }}
-                                            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md"
+                                            className="fixed inset-0 z-50 bg-black/20 backdrop-blur-xl"
                                             onClick={() => setMatchesMenuOpen(false)}
                                         />,
                                         document.body
@@ -155,7 +155,7 @@ const BottomSheetMenu = React.forwardRef<HTMLDivElement, { pathname: string, onC
     >
         <div
             ref={ref}
-            className="rounded-t-[2.5rem] bg-card/95 backdrop-blur-2xl border-t border-border shadow-[0_-8px_32px_rgba(0,0,0,0.4)] pt-3 pb-[calc(env(safe-area-inset-bottom)+20px)] sm:px-4"
+            className="rounded-t-[2.5rem] bg-card/40 backdrop-blur-xl border-t border-border/40 shadow-[0_-8px_32px_rgba(0,0,0,0.4)] pt-3 pb-[calc(env(safe-area-inset-bottom)+20px)] sm:px-4"
         >
             {/* Drag handle */}
             <div className="mx-auto h-1.5 w-12 rounded-full bg-muted-foreground/20 mb-6" />

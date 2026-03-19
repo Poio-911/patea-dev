@@ -160,7 +160,7 @@ export default function GroupsPage() {
             {/* Columna Izquierda (Principal - Equipos y Últimos Partidos) */}
             <div className="lg:col-span-8 space-y-4 sm:space-y-6">
               {/* Equipos */}
-              <div className="relative overflow-hidden rounded-2xl bg-card/60 backdrop-blur-md border border-white/10 dark:border-white/5 shadow-xl transition-all">
+              <div className="relative overflow-hidden rounded-2xl bg-card/40 backdrop-blur-xl border border-border/40 shadow-xl transition-all">
                 <div className="p-4 sm:p-5 border-b border-border/50 flex items-center gap-2 text-base uppercase tracking-widest text-primary font-black drop-shadow-sm bg-muted/20">
                   <Shield className="h-5 w-5" />
                   Equipos Guardados
@@ -179,7 +179,7 @@ export default function GroupsPage() {
                   </div>
                   <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {safeRecentMatches.slice(0, 2).map((match) => (
-                      <div key={match.id} className="relative overflow-hidden rounded-xl bg-card border border-border shadow-sm hover:border-primary/40 transition-colors duration-300 group p-4 flex flex-col gap-3">
+                      <div key={match.id} className="relative overflow-hidden rounded-xl bg-card/40 backdrop-blur-xl border border-border/40 shadow-sm hover:border-primary/40 transition-colors duration-300 group p-4 flex flex-col gap-3">
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
                         <div className="flex justify-between items-start z-10 gap-2">
@@ -230,7 +230,7 @@ export default function GroupsPage() {
             <div className="lg:col-span-4 space-y-4 sm:space-y-6">
 
               {/* Quick Stats Group */}
-              <div className="relative overflow-hidden rounded-2xl bg-card/60 backdrop-blur-md border border-white/10 dark:border-white/5 shadow-xl transition-all">
+              <div className="relative overflow-hidden rounded-2xl bg-card/40 backdrop-blur-xl border border-border/40 shadow-xl transition-all">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl -mr-8 -mt-8 opacity-70 pointer-events-none" />
                 <div className="p-4 sm:p-5 flex flex-col gap-4">
                   <h3 className="font-headline text-sm uppercase tracking-widest text-primary font-black drop-shadow-sm flex items-center gap-2">
@@ -271,7 +271,7 @@ export default function GroupsPage() {
               </div>
 
               {/* Próximos Partidos */}
-              <div className="relative overflow-hidden rounded-2xl bg-card/60 backdrop-blur-md border border-white/10 dark:border-white/5 shadow-xl transition-all">
+              <div className="relative overflow-hidden rounded-2xl bg-card/40 backdrop-blur-xl border border-border/40 shadow-xl transition-all">
                 <div className="p-4 sm:p-5 border-b border-border/50 flex items-center gap-2 text-base uppercase tracking-widest text-primary font-black drop-shadow-sm bg-muted/20">
                   <Newspaper className="h-5 w-5" />
                   En Agenda

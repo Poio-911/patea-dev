@@ -31,7 +31,7 @@ export function GroupHeroCard({ group, compact }: GroupHeroCardProps) {
 
     return (
         <div className={cn(
-            "relative w-full rounded-xl overflow-hidden shadow-2xl border-2 border-border/50 group isolate",
+            "relative w-full rounded-xl overflow-hidden shadow-2xl border-2 border-border/40 group isolate",
             compact ? "min-h-[200px] h-auto" : "h-[280px] md:h-[320px]"
         )}>
             {/* Video Background */}
@@ -58,7 +58,7 @@ export function GroupHeroCard({ group, compact }: GroupHeroCardProps) {
 
                 {/* Top Right: Group Switcher & Actions */}
                 <div className="absolute top-4 right-4 flex items-center gap-2">
-                    <div className="bg-black/40 backdrop-blur-md rounded-lg p-1 border border-white/10 shadow-lg">
+                    <div className="bg-card/40 backdrop-blur-xl rounded-lg p-1 border border-border/40 shadow-lg">
                         <GroupSwitcher />
                     </div>
                 </div>
@@ -84,7 +84,7 @@ export function GroupHeroCard({ group, compact }: GroupHeroCardProps) {
 
                     {/* Invitation Code Ticket */}
                     <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-                        <div className="flex items-center gap-0 bg-white/10 backdrop-blur-md border border-white/20 rounded-md overflow-hidden group/code transition-all hover:bg-white/20">
+                        <div className="flex items-center gap-0 bg-card/40 backdrop-blur-xl border border-border/40 rounded-md overflow-hidden group/code transition-all hover:bg-card/60">
                             <div className="px-2 sm:px-3 py-1.5 sm:py-2 border-r border-white/10">
                                 <span className="text-[10px] sm:text-xs text-white/70 font-semibold uppercase tracking-wider">Código</span>
                             </div>

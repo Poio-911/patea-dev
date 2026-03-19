@@ -362,6 +362,7 @@ export function CreateCompetitionDialog({ open, onOpenChange }: CreateCompetitio
   const [uploadProgress, setUploadProgress] = React.useState<number>(0);
   const [isUploading, setIsUploading] = React.useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = React.useState(false);
+  const [isDeadlinePickerOpen, setIsDeadlinePickerOpen] = React.useState(false);
   const [templates, setTemplates] = React.useState<CompetitionTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = React.useState(false);
   const [isSavingTemplate, setIsSavingTemplate] = React.useState(false);
@@ -810,7 +811,7 @@ export function CreateCompetitionDialog({ open, onOpenChange }: CreateCompetitio
                             <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent className="w-auto p-0 z-[9999]" align="start">
                           <Calendar
                             mode="single"
                             locale={es}
@@ -1059,11 +1060,33 @@ export function CreateCompetitionDialog({ open, onOpenChange }: CreateCompetitio
                     <FormItem>
                       <FormLabel className="uppercase text-xs font-bold tracking-widest text-muted-foreground">Fecha límite de inscripción</FormLabel>
                       <FormControl>
-                        <Input
-                          type="date"
-                          className="bg-background/50 border-white/10"
-                          {...field}
-                        />
+                        <Popover open={isDeadlinePickerOpen} onOpenChange={setIsDeadlinePickerOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="w-full justify-between bg-background/50 border-white/10 hover:bg-background/70 font-normal"
+                            >
+                              <span className={field.value ? 'text-foreground font-bold' : 'text-muted-foreground'}>
+                                {field.value || 'Seleccioná una fecha'}
+                              </span>
+                              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0 z-[9999]" align="start">
+                            <Calendar
+                              mode="single"
+                              locale={es}
+                              selected={parseDateFromText(field.value)}
+                              onSelect={(selectedDate) => {
+                                if (!selectedDate) return;
+                                field.onChange(formatDate(selectedDate, 'dd/MM/yyyy'));
+                                setIsDeadlinePickerOpen(false);
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

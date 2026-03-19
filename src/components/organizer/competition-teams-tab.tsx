@@ -191,7 +191,7 @@ export function CompetitionTeamsTab({ competitionId, competitionType, competitio
 
   const hasBracket = competitionType === 'cups' && compData?.bracket && compData.bracket.length > 0;
 
-  if (loading) return <div className="grid gap-4 md:grid-cols-3">{[1, 2, 3].map(i => <Card key={i} className="animate-pulse h-32" />)}</div>;
+  if (loading) return <div className="grid gap-4 md:grid-cols-3">{[1, 2, 3].map(i => <Card key={i} className="animate-pulse h-32 bg-card/40 border-border/40 backdrop-blur-xl" />)}</div>;
 
   return (
     <div className="space-y-6">
@@ -215,7 +215,7 @@ export function CompetitionTeamsTab({ competitionId, competitionType, competitio
       )}
 
       {teams.length === 0 ? (
-        <Card className="border-dashed py-12 text-center">
+        <Card className="border-dashed bg-card/40 backdrop-blur-xl border-border/40 py-12 text-center">
           <Users className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
           <h3 className="font-bold text-lg">Sin equipos todavía</h3>
           <Button variant="outline" className="mt-4" onClick={() => setIsAddOpen(true)}>Inscribir Primer Equipo</Button>
@@ -223,7 +223,7 @@ export function CompetitionTeamsTab({ competitionId, competitionType, competitio
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {teams.map(team => (
-            <Card key={team.id} className="group hover:border-primary/50 transition-colors bg-card/60 backdrop-blur-sm border-border/50 overflow-hidden">
+            <Card key={team.id} className="group hover:border-primary/50 transition-colors bg-card/40 backdrop-blur-xl border-border/40 overflow-hidden">
               <CardContent className="p-4 flex items-start gap-4">
                 <JerseyPreview jersey={team.jersey} size="sm" />
                 <div className="flex-1 min-w-0">

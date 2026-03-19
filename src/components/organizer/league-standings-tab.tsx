@@ -183,7 +183,7 @@ export function LeagueStandingsTab({ leagueId, rules, isReadOnly }: LeagueStandi
 
   if (loading) {
     return (
-      <Card className="animate-pulse">
+      <Card className="animate-pulse bg-card/40 border-border/40 backdrop-blur-xl">
         <CardContent className="h-64"></CardContent>
       </Card>
     );
@@ -192,7 +192,7 @@ export function LeagueStandingsTab({ leagueId, rules, isReadOnly }: LeagueStandi
   if (standings.length === 0) {
 
     return (
-      <Card className="border-dashed bg-card/40 backdrop-blur-sm">
+      <Card className="border-dashed bg-card/40 backdrop-blur-xl border-border/40">
         <CardContent className="p-12 text-center flex flex-col items-center gap-4">
           <Trophy className="h-16 w-16 text-muted-foreground/30" />
           <div className="space-y-1">
@@ -238,7 +238,7 @@ export function LeagueStandingsTab({ leagueId, rules, isReadOnly }: LeagueStandi
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border/40 bg-card/70 backdrop-blur-xl overflow-hidden shadow-lg shadow-black/5 dark:shadow-black/20">
+      <div className="rounded-2xl border border-border/40 bg-card/40 backdrop-blur-xl overflow-hidden shadow-lg shadow-black/5 dark:shadow-black/20">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>

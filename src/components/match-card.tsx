@@ -193,8 +193,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             className={cn(
                 "flex flex-col shadow-none hover:shadow-none relative",
                 "transition-all duration-300",
-                "bg-gradient-to-br",
-                matchTheme.gradient,
+                "bg-card/40 backdrop-blur-xl",
                 matchTheme.border,
             )}
         >
@@ -240,7 +239,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
                     {/* Match Type - Stylized Glow Dot Tag */}
                     <div className={cn(
                         "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black tracking-[0.1em] uppercase border transition-all shadow-sm",
-                        "bg-background/80 dark:bg-black/40 game:bg-black/40 backdrop-blur-md border-border/50 dark:border-white/10 game:border-white/10 text-foreground",
+                        "bg-card/60 backdrop-blur-xl border-border/40 text-foreground",
                     )}>
                         <div className={cn(
                             "w-2 h-2 rounded-full shrink-0 bg-current shadow-[0_0_8px_currentColor] brightness-125",
@@ -261,7 +260,7 @@ export function MatchCard({ match, allPlayers }: MatchCardProps) {
             </CardHeader>
 
             {/* Content area - Adaptive glass look - Aligned with header padding */}
-            <div className="relative z-10 mx-0 rounded-xl bg-background/40 dark:bg-black/20 backdrop-blur-md border border-border/50 dark:border-white/5 p-4 py-3 mb-0 flex-grow space-y-3">
+            <div className="relative z-10 mx-0 rounded-xl bg-card/40 backdrop-blur-xl border border-border/40 p-4 py-3 mb-0 flex-grow space-y-3">
                 <div className="grid grid-cols-2 gap-4">
                     <div className="flex items-center gap-3">
                         <Calendar className="h-5 w-5 text-muted-foreground" />

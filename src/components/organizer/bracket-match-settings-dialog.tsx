@@ -9,7 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Settings, PlayCircle, UserCheck } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format as formatDate, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { Calendar as CalendarIcon, Loader2, Settings, PlayCircle, UserCheck } from 'lucide-react';
 import type { BracketMatch, Cup } from '@/lib/types';
 import { AssignRefereeDialog } from './assign-referee-dialog';
 
@@ -31,6 +35,7 @@ export function BracketMatchSettingsDialog({ cupId, match, open, onOpenChange }:
   const [isLive, setIsLive] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
   const [isRefereeDialogOpen, setIsRefereeDialogOpen] = React.useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = React.useState(false);
 
   // Load match data when dialog opens
   React.useEffect(() => {
@@ -42,6 +47,26 @@ export function BracketMatchSettingsDialog({ cupId, match, open, onOpenChange }:
       setIsLive(match.isLive || false);
     }
   }, [open, match]);
+
+  const parseDateFromText = React.useCallback((value?: string): Date | undefined => {
+    if (!value) return undefined;
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+      const [day, month, year] = trimmed.split('/').map(Number);
+      const date = new Date(year, month - 1, day);
+      if (!Number.isNaN(date.getTime())) return date;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      const [year, month, day] = trimmed.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      if (!Number.isNaN(date.getTime())) return date;
+    }
+
+    return undefined;
+  }, []);
 
   const handleSave = async () => {
     if (!firestore || !match) return;
@@ -118,10 +143,35 @@ export function BracketMatchSettingsDialog({ cupId, match, open, onOpenChange }:
               )}
             </div>
 
-            {/* Fecha y Hora */}
             <div className="grid gap-2">
-              <Label htmlFor="date">Fecha (Ej: 12/05/2026)</Label>
-              <Input id="date" value={date} onChange={(e) => setDate(e.target.value)} placeholder="DD/MM/YYYY" />
+              <Label htmlFor="date">Fecha</Label>
+              <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-between bg-background/50 border-border/40 hover:bg-background/80 font-normal"
+                  >
+                    <span className={date ? 'text-foreground font-bold' : 'text-muted-foreground'}>
+                      {date || 'Seleccioná una fecha'}
+                    </span>
+                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 z-[9999]" align="start">
+                  <Calendar
+                    mode="single"
+                    locale={es}
+                    selected={parseDateFromText(date)}
+                    onSelect={(selectedDate) => {
+                      if (!selectedDate) return;
+                      setDate(formatDate(selectedDate, 'dd/MM/yyyy'));
+                      setIsDatePickerOpen(false);
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="time">Hora (Ej: 20:30)</Label>

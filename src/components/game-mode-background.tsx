@@ -1,22 +1,35 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
+
 export function GameModeBackground() {
+  const [bgIndex, setBgIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Pick a random image from fondo_1 to fondo_9
+    setBgIndex(Math.floor(Math.random() * 9) + 1);
+  }, []);
+
+  if (!bgIndex) return <div className="fixed inset-0 bg-[#020617] -z-10" />;
+
   return (
-    <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute min-w-full min-h-full w-auto h-auto top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 object-cover opacity-40"
-        style={{
-          filter: 'brightness(0.8) contrast(1.2) saturate(1.3)',
-        }}
-      >
-        <source src="/videos/20488160-hd_720_1280_30fps.mp4" type="video/mp4" />
-      </video>
-      {/* Overlay gradient for better contrast */}
-      <div className="absolute inset-0 bg-gradient-to-b from-blue-950/50 via-blue-900/30 to-blue-950/50" />
+    <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none bg-[#020617]">
+      <div className="absolute inset-0 opacity-40">
+        <Image
+          src={`/images/backgrounds/fondo_${bgIndex}.jpg`}
+          alt="Game Background"
+          fill
+          className="object-cover"
+          priority
+          style={{
+            filter: 'brightness(0.7) contrast(1.1) saturate(1.2)',
+          }}
+        />
+      </div>
+      {/* Overlay gradient for better contrast and depth */}
+      <div className="absolute inset-0 bg-gradient-to-b from-blue-950/40 via-transparent to-blue-950/60" />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-background/80" />
     </div>
   );
 }

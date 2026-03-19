@@ -68,7 +68,7 @@ export function DashboardTabs({
 
     return (
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="flex w-full mb-6 h-auto p-1.5 gap-1.5 bg-muted/60 rounded-xl backdrop-blur-md border border-border/50">
+            <TabsList className="flex w-full mb-6 h-auto p-1.5 gap-1.5 bg-card/40 rounded-xl backdrop-blur-xl border border-border/40">
                 <TabsTrigger value="resumen" className="relative flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 sm:py-2.5 text-[10px] sm:text-sm min-h-[48px] text-muted-foreground data-[state=active]:text-foreground transition-colors duration-300 z-0 overflow-hidden rounded-lg">
                     {activeTab === 'resumen' && (
                         <motion.div

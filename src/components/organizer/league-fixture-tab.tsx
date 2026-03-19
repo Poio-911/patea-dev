@@ -7,7 +7,11 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, CalendarDays, RefreshCw, ChevronDown, Settings, MapPin, Clock, AlertTriangle, PlayCircle, ExternalLink, UserCheck, List, Calendar, Download } from 'lucide-react';
+import { Loader2, CalendarDays, RefreshCw, ChevronDown, Settings, MapPin, Clock, AlertTriangle, PlayCircle, ExternalLink, UserCheck, List, Calendar as CalendarIcon, Download } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format as formatDate } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
@@ -242,7 +246,7 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat, isReadOnl
 
   if (loading) {
     return (
-      <Card className="animate-pulse">
+      <Card className="animate-pulse bg-card/40 border-border/40 backdrop-blur-xl">
         <CardContent className="h-48"></CardContent>
       </Card>
     );
@@ -251,7 +255,7 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat, isReadOnl
   // Si no hay fixture generado
   if (rounds.length === 0) {
     return (
-      <Card className="border-dashed bg-card/40 backdrop-blur-sm">
+      <Card className="border-dashed bg-card/40 border-border/40 backdrop-blur-xl">
         <CardContent className="p-12 text-center flex flex-col items-center gap-4">
           <CalendarDays className="h-16 w-16 text-muted-foreground/30" />
           <div className="space-y-1">
@@ -308,7 +312,7 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat, isReadOnl
               )}
               onClick={() => setViewMode('calendar')}
             >
-              <Calendar className="mr-1.5 h-3.5 w-3.5" />
+              <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
               Calendario
             </Button>
           </div>
@@ -349,7 +353,7 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat, isReadOnl
           const isRoundComplete = finishedCount === totalMatches && totalMatches > 0;
 
           return (
-            <Collapsible key={round.id} className="rounded-2xl border border-border/40 bg-card/70 backdrop-blur-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            <Collapsible key={round.id} className="rounded-2xl border border-border/40 bg-card/40 backdrop-blur-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               <CollapsibleTrigger className="flex justify-between items-center w-full px-5 py-4 hover:bg-muted/30 transition-colors group">
                 <div className="flex items-center gap-3">
                   <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${isRoundComplete ? 'bg-green-500' : finishedCount > 0 ? 'bg-yellow-500' : 'bg-muted-foreground/30'}`}/>
@@ -604,6 +608,27 @@ function MatchSettingsDialog({ leagueId, fixtureDocId, match, open, onOpenChange
   const [streamingUrl, setStreamingUrl] = React.useState(match.streamingUrl || '');
   const [isLive, setIsLive] = React.useState(match.isLive || false);
   const [isSaving, setIsSaving] = React.useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = React.useState(false);
+
+  const parseDateFromText = React.useCallback((value?: string): Date | undefined => {
+    if (!value) return undefined;
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+      const [day, month, year] = trimmed.split('/').map(Number);
+      const date = new Date(year, month - 1, day);
+      if (!Number.isNaN(date.getTime())) return date;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      const [year, month, day] = trimmed.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      if (!Number.isNaN(date.getTime())) return date;
+    }
+
+    return undefined;
+  }, []);
 
   React.useEffect(() => {
     if (open) {
@@ -656,8 +681,34 @@ function MatchSettingsDialog({ leagueId, fixtureDocId, match, open, onOpenChange
         
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="date">Fecha (Ej: 12/05/2026)</Label>
-            <Input id="date" value={date} onChange={(e) => setDate(e.target.value)} placeholder="DD/MM/YYYY" />
+            <Label htmlFor="date">Fecha</Label>
+            <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-between bg-background/50 border-border/40 hover:bg-background/80 font-normal"
+                >
+                  <span className={date ? 'text-foreground font-bold' : 'text-muted-foreground'}>
+                    {date || 'Seleccioná una fecha'}
+                  </span>
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 z-[9999]" align="start">
+                <Calendar
+                  mode="single"
+                  locale={es}
+                  selected={parseDateFromText(date)}
+                  onSelect={(selectedDate) => {
+                    if (!selectedDate) return;
+                    setDate(formatDate(selectedDate, 'dd/MM/yyyy'));
+                    setIsDatePickerOpen(false);
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="time">Hora (Ej: 20:30)</Label>

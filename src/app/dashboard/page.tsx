@@ -301,7 +301,7 @@ function DashboardContent() {
             {/* Pulsing neon backlight behind icon */}
             <div className="absolute inset-0 bg-primary/30 blur-3xl rounded-full scale-150 animate-pulse"></div>
             <motion.div
-              className="relative bg-gradient-to-br from-primary/20 to-primary/5 p-8 rounded-[2.5rem] border border-primary/20 shadow-2xl backdrop-blur-md"
+              className="relative bg-gradient-to-br from-primary/10 to-primary/5 p-8 rounded-[2.5rem] border border-primary/20 shadow-2xl backdrop-blur-xl"
               initial={{ scale: 0, rotate: -20 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
@@ -353,7 +353,7 @@ function DashboardContent() {
           <div className="relative mb-4">
             <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full scale-125 animate-pulse"></div>
             <motion.div
-              className="relative bg-card/60 p-8 rounded-full border border-border/50 shadow-xl backdrop-blur-sm"
+              className="relative bg-card/40 p-8 rounded-full border border-border/40 shadow-xl backdrop-blur-xl"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: 'spring', stiffness: 200, damping: 15 }}

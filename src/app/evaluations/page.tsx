@@ -84,7 +84,7 @@ function IdentityRevealRequestCard({
     };
 
     return (
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm game:border-primary/30 game:bg-card/80 flex flex-col gap-4">
+        <div className="rounded-xl border border-border/40 bg-card/40 p-5 shadow-sm backdrop-blur-xl flex flex-col gap-4">
             <div className="flex items-center gap-3">
                 <Avatar className="h-12 w-12 ring-2 ring-background shadow-md">
                     {request.fromPlayerPhotoUrl ? (
@@ -382,7 +382,7 @@ export default function EvaluationsPage() {
                 key={item.match.id}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] transition-all hover:shadow-lg game:border-primary/30 game:bg-card/80 game:backdrop-blur-md game:shadow-[0_0_20px_rgba(170,254,72,0.08)] game:hover:border-primary/80"
+                className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/40 bg-card/40 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] transition-all hover:shadow-lg backdrop-blur-xl game:shadow-[0_0_20px_rgba(170,254,72,0.08)] game:hover:border-primary/80"
             >
                 {/* Top accent strip by type */}
                 <div className={cn(
@@ -578,11 +578,11 @@ export default function EvaluationsPage() {
 
                 {/* Stats row */}
                 <div className="grid grid-cols-3 gap-3">
-                    <div className="rounded-xl border border-border bg-card px-4 py-3 text-center game:border-primary/20 game:bg-card/80">
+                    <div className="rounded-xl border border-border/40 bg-card/40 px-4 py-3 text-center backdrop-blur-xl">
                         <p className="text-2xl font-black text-foreground game:text-white">{pendingCount}</p>
                         <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">Pendientes</p>
                     </div>
-                    <div className="rounded-xl border border-border bg-card px-4 py-3 text-center game:border-primary/20 game:bg-card/80">
+                    <div className="rounded-xl border border-border/40 bg-card/40 px-4 py-3 text-center backdrop-blur-xl">
                         <p className="text-2xl font-black text-emerald-600 game:text-emerald-400">{totalCompleted}</p>
                         <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">Completadas</p>
                     </div>

@@ -143,7 +143,7 @@ export function CupBracketTab({ cupId, isReadOnly }: CupBracketTabProps) {
   return (
     <div className="space-y-6">
       {/* Header Controls */}
-      <Card className="border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
+      <Card className="bg-card/40 border-border/40 backdrop-blur-xl shadow-xl overflow-hidden mb-6">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="space-y-1">
@@ -215,7 +215,7 @@ export function CupBracketTab({ cupId, isReadOnly }: CupBracketTabProps) {
 
       {/* Bracket Visualization */}
       {hasBracket && cup.bracket && (
-        <Card>
+        <Card className="bg-card/40 border-border/40 backdrop-blur-xl">
           <CardContent className="p-6">
             <CupBracket
               bracket={cup.bracket}

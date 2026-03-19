@@ -30,7 +30,7 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
             <div className="space-y-3">
                 {matches.map(match => (
                     <Link key={match.id} href={`/matches`} passHref>
-                        <div className="group relative overflow-hidden bg-card rounded-xl border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-sm">
+                        <div className="group relative overflow-hidden bg-card/40 backdrop-blur-xl rounded-xl border border-border/40 hover:border-primary/50 transition-all duration-300 hover:shadow-sm">
                             {/* Accent Bar */}
                             <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/50 group-hover:bg-primary transition-colors" />
 
@@ -45,7 +45,7 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
                                 </div>
 
                                 <div className="flex items-center gap-3 mt-1">
-                                    <div className="flex flex-col items-center justify-center bg-muted/50 rounded p-1.5 min-w-[3rem] border border-border group-hover:bg-primary/5 group-hover:border-primary/20 transition-colors">
+                                    <div className="flex flex-col items-center justify-center bg-card/40 rounded p-1.5 min-w-[3rem] border border-border/40 group-hover:bg-primary/5 group-hover:border-primary/20 transition-colors">
                                         {match.status === 'planning' || !match.date ? (
                                             <span className="text-[9px] font-bold text-muted-foreground uppercase text-center leading-tight">Por confirmar</span>
                                         ) : (
@@ -102,7 +102,7 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
                             // Si no es un partido entre dos equipos, mostramos la card normal
                             return (
                                 <Link key={match.id} href={`/matches`} passHref>
-                                    <Card className="h-full hover:bg-muted/50 transition-colors">
+                                <Card className="h-full bg-card/40 border-border/40 backdrop-blur-xl hover:bg-card/50 transition-colors">
                                         <CardHeader>
                                             <CardTitle className="text-base">{match.title}</CardTitle>
                                             <CardDescription className="text-xs">
@@ -129,7 +129,7 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
 
                         return (
                             <Link key={match.id} href={`/matches`} passHref>
-                                <Card className="h-full hover:bg-muted/50 transition-colors p-3">
+                                <Card className="h-full bg-card/40 border-border/40 backdrop-blur-xl hover:bg-card/50 transition-colors p-3">
                                     <div className="flex justify-around items-center text-center">
                                         <div className="flex flex-col items-center gap-1 w-2/5">
                                             <JerseyPreview jersey={ourTeam.jersey} size="sm" />
@@ -170,7 +170,7 @@ export function UpcomingMatchesFeed({ matches, teamName, compact = false }: Upco
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {matches.map(match => (
                     <Link key={match.id} href={`/matches`} passHref>
-                        <Card className="h-full hover:bg-muted/50 transition-colors">
+                        <Card className="h-full bg-card/40 border-border/40 backdrop-blur-xl hover:bg-card/50 transition-colors">
                             <CardHeader>
                                 <CardTitle className="text-base">{match.title}</CardTitle>
                                 <CardDescription className="text-xs">

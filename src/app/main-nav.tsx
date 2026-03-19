@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { isToday, parseISO } from 'date-fns';
 import { Header } from '@/components/nav/header';
 import { MobileNav } from '@/components/nav/mobile-nav';
+import { ThemeBackground } from '@/components/theme-background';
 
 export function MainNav({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
@@ -101,8 +102,9 @@ export function MainNav({ children }: { children: React.ReactNode }) {
         onRequestPermission={requestPermission}
       />
 
-      <main className="min-h-screen pt-16 pb-[env(safe-area-inset-bottom)]">
-        <div className="min-h-full p-4 md:p-6 pb-[calc(5rem+env(safe-area-inset-bottom))]">
+      <main className="relative z-10 min-h-screen pt-16 pb-[env(safe-area-inset-bottom)]">
+        <ThemeBackground />
+        <div className="relative z-10 min-h-full p-4 md:p-6 pb-[calc(5rem+env(safe-area-inset-bottom))]">
           {children}
         </div>
       </main>
