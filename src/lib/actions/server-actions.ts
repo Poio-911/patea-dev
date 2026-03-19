@@ -2075,46 +2075,38 @@ export async function getPublicCompetitionsAction(userId?: string): Promise<{
     error?: string;
 }> {
     try {
-        // Fetch public leagues (open_for_applications OR in_progress)
-        // Note: Firestore doesn't support OR queries directly, so we need to fetch both and merge
-        const leaguesOpenSnapshot = await getAdminDb()
+        console.log('[getPublicCompetitionsAction] Starting query...');
+
+        // Fetch all public leagues regardless of status (except completed)
+        // Then filter on the client side for better flexibility
+        const allLeaguesSnapshot = await getAdminDb()
             .collection('leagues')
             .where('isPublic', '==', true)
-            .where('status', '==', 'open_for_applications')
             .get();
 
-        const leaguesInProgressSnapshot = await getAdminDb()
-            .collection('leagues')
-            .where('isPublic', '==', true)
-            .where('status', '==', 'in_progress')
-            .get();
+        console.log('[getPublicCompetitionsAction] All public leagues found:', allLeaguesSnapshot.size);
 
-        // Merge and deduplicate leagues
-        const leaguesMap = new Map();
-        [...leaguesOpenSnapshot.docs, ...leaguesInProgressSnapshot.docs].forEach(doc => {
-            leaguesMap.set(doc.id, { id: doc.id, ...doc.data() } as League);
-        });
-        const leagues = Array.from(leaguesMap.values());
+        // Filter out only completed leagues (show draft, open_for_applications, in_progress)
+        const leagues = allLeaguesSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as League))
+            .filter(league => league.status !== 'completed');
 
-        // Fetch public cups (open_for_applications OR in_progress)
-        const cupsOpenSnapshot = await getAdminDb()
+        console.log('[getPublicCompetitionsAction] After filtering out completed:', leagues.length);
+
+        // Fetch all public cups (except completed)
+        const allCupsSnapshot = await getAdminDb()
             .collection('cups')
             .where('isPublic', '==', true)
-            .where('status', '==', 'open_for_applications')
             .get();
 
-        const cupsInProgressSnapshot = await getAdminDb()
-            .collection('cups')
-            .where('isPublic', '==', true)
-            .where('status', '==', 'in_progress')
-            .get();
+        console.log('[getPublicCompetitionsAction] All public cups found:', allCupsSnapshot.size);
 
-        // Merge and deduplicate cups
-        const cupsMap = new Map();
-        [...cupsOpenSnapshot.docs, ...cupsInProgressSnapshot.docs].forEach(doc => {
-            cupsMap.set(doc.id, { id: doc.id, ...doc.data() } as Cup);
-        });
-        const cups = Array.from(cupsMap.values());
+        // Filter out only completed cups
+        const cups = allCupsSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as Cup))
+            .filter(cup => cup.status !== 'completed');
+
+        console.log('[getPublicCompetitionsAction] After filtering out completed cups:', cups.length);
 
         // Fetch user applications if userId is provided
         let applications: CompetitionApplication[] = [];
