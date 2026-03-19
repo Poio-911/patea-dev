@@ -2075,29 +2075,46 @@ export async function getPublicCompetitionsAction(userId?: string): Promise<{
     error?: string;
 }> {
     try {
-        // Fetch public leagues
-        const leaguesSnapshot = await getAdminDb()
+        // Fetch public leagues (open_for_applications OR in_progress)
+        // Note: Firestore doesn't support OR queries directly, so we need to fetch both and merge
+        const leaguesOpenSnapshot = await getAdminDb()
             .collection('leagues')
             .where('isPublic', '==', true)
             .where('status', '==', 'open_for_applications')
             .get();
 
-        const leagues = leaguesSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        } as League));
+        const leaguesInProgressSnapshot = await getAdminDb()
+            .collection('leagues')
+            .where('isPublic', '==', true)
+            .where('status', '==', 'in_progress')
+            .get();
 
-        // Fetch public cups
-        const cupsSnapshot = await getAdminDb()
+        // Merge and deduplicate leagues
+        const leaguesMap = new Map();
+        [...leaguesOpenSnapshot.docs, ...leaguesInProgressSnapshot.docs].forEach(doc => {
+            leaguesMap.set(doc.id, { id: doc.id, ...doc.data() } as League);
+        });
+        const leagues = Array.from(leaguesMap.values());
+
+        // Fetch public cups (open_for_applications OR in_progress)
+        const cupsOpenSnapshot = await getAdminDb()
             .collection('cups')
             .where('isPublic', '==', true)
             .where('status', '==', 'open_for_applications')
             .get();
 
-        const cups = cupsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        } as Cup));
+        const cupsInProgressSnapshot = await getAdminDb()
+            .collection('cups')
+            .where('isPublic', '==', true)
+            .where('status', '==', 'in_progress')
+            .get();
+
+        // Merge and deduplicate cups
+        const cupsMap = new Map();
+        [...cupsOpenSnapshot.docs, ...cupsInProgressSnapshot.docs].forEach(doc => {
+            cupsMap.set(doc.id, { id: doc.id, ...doc.data() } as Cup);
+        });
+        const cups = Array.from(cupsMap.values());
 
         // Fetch user applications if userId is provided
         let applications: CompetitionApplication[] = [];
