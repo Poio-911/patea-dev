@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import type { Player, AttributeKey, PlayerPosition } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { getPlayerPhoto } from '@/lib/player-photo';
 import { DelIcon, MedIcon, DefIcon, PorIcon } from './icons/positions';
 
 import {
@@ -249,7 +250,7 @@ export function PlayerPhoto({ player, size = 'standard', className }: PlayerPhot
   const sizeMap = { compact: 'h-16 w-16', standard: 'h-24 w-24', profile: 'h-32 w-32' };
   const pixelSizeMap = { compact: 64, standard: 96, profile: 128 };
 
-  const src = player.photoURL || (player as any).photoUrl;
+  const src = getPlayerPhoto(player as any);
   const name = player.name || 'Jugador';
   const level = getOvrLevel(player.ovr);
   const borderClass = photoBorderClasses[level];

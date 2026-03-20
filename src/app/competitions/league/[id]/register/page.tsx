@@ -68,7 +68,7 @@ export default function LeagueRegistrationPage({ params }: { params: { id: strin
         captainName,
         captainEmail,
         captainPhone: captainPhone || undefined,
-        playerCount: playerCount ? parseInt(playerCount) : undefined,
+        playerCount: playerCount && !isNaN(parseInt(playerCount, 10)) ? parseInt(playerCount, 10) : undefined,
         message: message || undefined,
       });
 
@@ -113,6 +113,25 @@ export default function LeagueRegistrationPage({ params }: { params: { id: strin
         <Button variant="ghost" className="mt-4" onClick={() => router.push(`/competitions/league/${params.id}`)}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Ver liga
         </Button>
+      </div>
+    );
+  }
+
+  if (registrationClosed) {
+    return (
+      <div className="container mx-auto p-6 max-w-lg">
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="p-12 text-center">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h3 className="font-bold text-xl">Inscripciones cerradas</h3>
+            <p className="text-muted-foreground mt-2">
+              El período de inscripción para esta competición ha finalizado.
+            </p>
+            <Button variant="outline" className="mt-6" onClick={() => router.push(`/competitions/league/${params.id}`)}>
+              <ArrowLeft className="mr-2 h-4 w-4" /> Volver a la liga
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

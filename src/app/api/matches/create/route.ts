@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
       const selectedPlayers = playerIds
         .map(id => playersMap.get(id))
         .filter((p): p is Player => !!p);
-      baseData.players = selectedPlayers.map(p => ({ uid: p.id, displayName: p.name, ovr: p.ovr, position: p.position, photoURL: (p as any).photoUrl || p.photoURL || '' }));
+      baseData.players = selectedPlayers.map(p => ({ uid: p.id, displayName: p.name, ovr: p.ovr, position: p.position, photoURL: (p as any).photoUrl || (p as any).photoURL || '' }));
       baseData.playerUids = selectedPlayers.map(p => p.id);
 
       if (selectedPlayers.length === input.matchSize) {

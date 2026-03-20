@@ -19,6 +19,7 @@ import type { Cup, BracketMatch as OriginalBracketMatch } from '@/lib/types';
 import { CompetitionMatchResultDialog } from '@/components/organizer/competition-match-result-dialog';
 import { BracketMatchSettingsDialog } from '@/components/organizer/bracket-match-settings-dialog';
 import { motion } from 'framer-motion';
+import { useCompetitionTeams } from '@/hooks/use-competition-teams';
 
 interface BracketMatch extends OriginalBracketMatch {
   streamingUrl?: string;
@@ -57,25 +58,26 @@ export function CupBracketTab({ cupId, isReadOnly }: CupBracketTabProps) {
   }, [firestore, cupId]);
 
   const { data: cup } = useDoc<Cup>(cupRef);
+  const { teams, loading: loadingTeams } = useCompetitionTeams(cupId, 'cups', cup);
 
   const handleGenerateBracket = async () => {
-    if (!cup?.teams || !cupRef) return;
+    if (teams.length === 0 || !cupRef) return;
 
     setIsGenerating(true);
     try {
       // Validar número de equipos (2, 4, 8, 16, 32)
       const validSizes = [2, 4, 8, 16, 32];
-      if (!validSizes.includes(cup.teams.length)) {
+      if (!validSizes.includes(teams.length)) {
         toast({
           variant: 'destructive',
           title: 'Cantidad Inválida',
-          description: `Necesitás 2, 4, 8, 16 o 32 equipos para generar el bracket. Actualmente hay ${cup.teams.length}.`
+          description: `Necesitás 2, 4, 8, 16 o 32 equipos para generar el bracket. Actualmente hay ${teams.length}.`
         });
         return;
       }
 
-      // Generar bracket
-      const bracket = generateBracket(cup.teams, cup.seedingType || 'random');
+      // Generar bracket using the loaded teams with proper data
+      const bracket = generateBracket(teams, cup?.seedingType || 'random');
 
       // Guardar en Firestore
       await updateDoc(cupRef, {
@@ -166,7 +168,7 @@ export function CupBracketTab({ cupId, isReadOnly }: CupBracketTabProps) {
             {isEditable && !hasBracket ? (
               <Button
                 onClick={handleGenerateBracket}
-                disabled={isGenerating || !cup?.teams || cup.teams.length === 0}
+                disabled={isGenerating || teams.length === 0}
                 size="lg"
                 className="bg-amber-500 hover:bg-amber-600 text-black font-bold shadow-lg shadow-amber-500/20"
               >
@@ -204,8 +206,8 @@ export function CupBracketTab({ cupId, isReadOnly }: CupBracketTabProps) {
               <div>
                 <h3 className="text-lg font-bold text-foreground mb-1">No hay bracket generado</h3>
                 <p className="text-sm text-muted-foreground max-w-md">
-                  Asegurate de tener {[2, 4, 8, 16, 32].includes(cup?.teams?.length || 0) ? '' : 'exactamente 2, 4, 8, 16 o 32 '}equipos inscriptos antes de generar el bracket.
-                  {cup?.teams && <span className="block mt-1 font-medium">Actualmente hay {cup.teams.length} equipos.</span>}
+                  Asegurate de tener {[2, 4, 8, 16, 32].includes(teams.length) ? '' : 'exactamente 2, 4, 8, 16 o 32 '}equipos inscriptos antes de generar el bracket.
+                  {teams.length > 0 && <span className="block mt-1 font-medium">Actualmente hay {teams.length} equipos.</span>}
                 </p>
               </div>
             </div>
@@ -288,8 +290,8 @@ export function CupBracketTab({ cupId, isReadOnly }: CupBracketTabProps) {
             streamingUrl: selectedMatch.streamingUrl,
             isLive: selectedMatch.isLive,
           } as any}
-          homeTeam={cup?.teams?.find((t: any) => t.id === selectedMatch.team1Id) as any}
-          awayTeam={cup?.teams?.find((t: any) => t.id === selectedMatch.team2Id) as any}
+          homeTeam={teams.find((t: any) => t.id === selectedMatch.team1Id) as any}
+          awayTeam={teams.find((t: any) => t.id === selectedMatch.team2Id) as any}
           open={isResultDialogOpen}
           onOpenChange={setIsResultDialogOpen}
           onSuccess={() => {

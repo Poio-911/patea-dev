@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,11 +12,24 @@ import { reviewTeamApplicationAction } from '@/lib/actions/registration-actions'
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   CheckCircle2, XCircle, Clock, Users, Mail, Phone,
-  MessageSquare, ChevronDown, ChevronUp, ClipboardList
+  MessageSquare, ChevronDown, ChevronUp, ClipboardList, Loader2, MinusCircle
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import type { TeamApplication } from '@/lib/types';
+// Local interface supporting both TeamApplication and CompetitionApplication shapes
+interface ApplicationDisplay {
+  id: string;
+  teamName: string;
+  status: 'pending' | 'approved' | 'rejected' | 'revoked';
+  submittedAt: string;
+  reviewNotes?: string;
+  captainName?: string;
+  captainEmail?: string;
+  captainPhone?: string;
+  playerCount?: number;
+  message?: string;
+  [key: string]: any;
+}
 
 interface CompetitionApplicationsTabProps {
   competitionId: string;
@@ -27,6 +40,7 @@ const statusConfig = {
   pending: { label: 'Pendiente', icon: Clock, className: 'bg-yellow-500/15 text-yellow-600 border-yellow-500/30 dark:text-yellow-400' },
   approved: { label: 'Aprobado', icon: CheckCircle2, className: 'bg-green-500/15 text-green-600 border-green-500/30 dark:text-green-400' },
   rejected: { label: 'Rechazado', icon: XCircle, className: 'bg-red-500/15 text-red-600 border-red-500/30 dark:text-red-400' },
+  revoked: { label: 'Revocada', icon: MinusCircle, className: 'bg-slate-500/15 text-slate-600 border-slate-500/30 dark:text-slate-300' },
 } as const;
 
 function ApplicationCard({
@@ -35,7 +49,7 @@ function ApplicationCard({
   competitionType,
   onReviewed,
 }: {
-  app: TeamApplication;
+  app: ApplicationDisplay;
   competitionId: string;
   competitionType: 'leagues' | 'cups';
   onReviewed: () => void;
@@ -84,7 +98,7 @@ function ApplicationCard({
           </div>
           <div className="min-w-0">
             <p className="font-bold truncate">{app.teamName}</p>
-            <p className="text-xs text-muted-foreground">{app.captainName}</p>
+            {app.captainName && <p className="text-xs text-muted-foreground">{app.captainName}</p>}
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -99,12 +113,14 @@ function ApplicationCard({
       {expanded && (
         <div className="px-4 pb-4 space-y-3 border-t border-border/30">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-3 text-sm">
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <Mail className="h-3.5 w-3.5 shrink-0" />
-              <a href={`mailto:${app.captainEmail}`} className="truncate hover:underline text-foreground">
-                {app.captainEmail}
-              </a>
-            </span>
+            {app.captainEmail && (
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <Mail className="h-3.5 w-3.5 shrink-0" />
+                <a href={`mailto:${app.captainEmail}`} className="truncate hover:underline text-foreground">
+                  {app.captainEmail}
+                </a>
+              </span>
+            )}
             {app.captainPhone && (
               <span className="flex items-center gap-2 text-muted-foreground">
                 <Phone className="h-3.5 w-3.5 shrink-0" />
@@ -146,7 +162,8 @@ function ApplicationCard({
                   disabled={isProcessing}
                   onClick={() => handleReview('approved')}
                 >
-                  <CheckCircle2 className="h-4 w-4 mr-1.5" /> Aprobar
+                  {isProcessing ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-1.5" />}
+                  Aprobar
                 </Button>
                 <Button
                   size="sm"
@@ -155,7 +172,8 @@ function ApplicationCard({
                   disabled={isProcessing}
                   onClick={() => handleReview('rejected')}
                 >
-                  <XCircle className="h-4 w-4 mr-1.5" /> Rechazar
+                  {isProcessing ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <XCircle className="h-4 w-4 mr-1.5" />}
+                  Rechazar
                 </Button>
               </div>
             </div>
@@ -174,19 +192,44 @@ function ApplicationCard({
 
 export function CompetitionApplicationsTab({ competitionId, competitionType = 'leagues' }: CompetitionApplicationsTabProps) {
   const firestore = useFirestore();
-  const [applications, setApplications] = React.useState<TeamApplication[]>([]);
+  // Two sources: root collection (from public explorer) + subcollection (from registration form)
+  const [rootApps, setRootApps] = React.useState<ApplicationDisplay[]>([]);
+  const [subApps, setSubApps] = React.useState<ApplicationDisplay[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [filter, setFilter] = React.useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [filter, setFilter] = React.useState<'all' | 'pending' | 'approved' | 'rejected' | 'revoked'>('all');
+
+  // Merge and deduplicate by ID, root apps take precedence
+  const applications = React.useMemo(() => {
+    const rootIds = new Set(rootApps.map(a => a.id));
+    return [...rootApps, ...subApps.filter(a => !rootIds.has(a.id))].sort(
+      (a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || '')
+    );
+  }, [rootApps, subApps]);
 
   React.useEffect(() => {
     if (!firestore) return;
-    const appsRef = collection(firestore, competitionType, competitionId, 'applications');
-    const q = query(appsRef, orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(q, (snap) => {
-      setApplications(snap.docs.map(d => ({ id: d.id, ...d.data() } as TeamApplication)));
-      setLoading(false);
+
+    let rootLoaded = false;
+    let subLoaded = false;
+
+    // Query 1: root competitionApplications collection (from public explorer)
+    const rootRef = collection(firestore, 'competitionApplications');
+    const rootQuery = query(rootRef, where('competitionId', '==', competitionId));
+    const unsubRoot = onSnapshot(rootQuery, (snap) => {
+      setRootApps(snap.docs.map(d => ({ id: d.id, ...d.data() } as ApplicationDisplay)));
+      rootLoaded = true;
+      if (rootLoaded && subLoaded) setLoading(false);
     });
-    return unsub;
+
+    // Query 2: subcollection (from registration form)
+    const subRef = collection(firestore, competitionType, competitionId, 'applications');
+    const unsubSub = onSnapshot(query(subRef), (snap) => {
+      setSubApps(snap.docs.map(d => ({ id: d.id, ...d.data() } as ApplicationDisplay)));
+      subLoaded = true;
+      if (rootLoaded && subLoaded) setLoading(false);
+    });
+
+    return () => { unsubRoot(); unsubSub(); };
   }, [firestore, competitionId, competitionType]);
 
   const pendingCount = applications.filter(a => a.status === 'pending').length;
@@ -213,7 +256,7 @@ export function CompetitionApplicationsTab({ competitionId, competitionType = 'l
           </p>
         </div>
         <div className="flex gap-1.5 flex-wrap">
-          {(['all', 'pending', 'approved', 'rejected'] as const).map(f => (
+          {(['all', 'pending', 'approved', 'rejected', 'revoked'] as const).map(f => (
             <Button
               key={f}
               size="sm"

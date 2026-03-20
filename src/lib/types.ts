@@ -42,6 +42,7 @@ export type Player = {
   def: number;
   phy: number;
   photoURL?: string;
+  photoUrl?: string; // Legacy alias for Firestore consistency
   stats: PlayerStats;
   ownerUid: string; // The UID of the user who created this player
   groupId: string | null;
@@ -83,7 +84,7 @@ export type AvailablePlayer = {
 } & DocumentData;
 
 
-export type MatchStatus = 'planning' | 'upcoming' | 'active' | 'completed' | 'evaluated';
+export type MatchStatus = 'planning' | 'upcoming' | 'active' | 'completed' | 'evaluated' | 'delayed';
 export type MatchType = 'manual' | 'collaborative' | 'by_teams' | 'intergroup_friendly' | 'league' | 'cup' | 'league_final';
 export type MatchSize = 10 | 14 | 22;
 
@@ -164,6 +165,8 @@ export type Match = {
 
   // Game Data
   finalScore?: { team1: number; team2: number };
+  liveStatus?: LiveMatchStatus;
+  currentMinute?: number;
   scorers?: MatchGoalScorer[];
   cards?: MatchCard[];
   startedAt?: string;
@@ -796,7 +799,7 @@ export type TeamApplication = {
   captainPhone?: string;
   playerCount?: number; // Approximate squad size
   message?: string; // Optional message to organizer
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'revoked';
   submittedAt: string;
   reviewedAt?: string;
   reviewedBy?: string; // uid of organizer who reviewed
@@ -821,6 +824,10 @@ export type League = {
   id: string;
   name: string;
   format: LeagueFormat;
+  rules?: {
+    pointsForWin: number;
+    pointsForDraw: number;
+  };
   status: CompetitionStatus;
   ownerUid: string;
   groupId: string; // The "home" group of the league
@@ -862,6 +869,7 @@ export type League = {
   registrationFee?: number; // Cost to register (ARS)
   maxTeams?: number; // Maximum teams allowed
   registrationDeadline?: string; // ISO date string  
+  hasRelegation?: boolean;
   venueIds?: string[]; // Multi-venue management
 } & DocumentData;
 
@@ -945,7 +953,7 @@ export type Cup = {
   ownerUid: string;
   groupId: string; // The "home" group of the cup
   isPublic: boolean;
-  teams: (string | { id: string; name: string; jersey: Jersey })[]; // Array of teamIds or objects
+  teams: string[]; // Array of teamIds (ghost team IDs from subcollection or real team IDs)
   createdAt: string;
   logoUrl?: string; // URL to cup logo image
   // Scheduling configuration
@@ -971,10 +979,16 @@ export type CompetitionApplication = {
   teamId: string;
   teamName: string;
   teamJersey: Jersey;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'revoked';
   submittedAt: string;
   submittedBy: string; // userId of team owner
 } & DocumentData;
+
+export const toCollectionName = (type: CompetitionFormat): 'leagues' | 'cups' =>
+  type === 'league' ? 'leagues' : 'cups';
+
+export const toCompetitionFormat = (collection: 'leagues' | 'cups'): CompetitionFormat =>
+  collection === 'leagues' ? 'league' : 'cup';
 
 // ============================================================================
 // HEALTH & FITNESS INTEGRATION (Smartwatch)

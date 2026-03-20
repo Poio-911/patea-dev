@@ -1,11 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { useFirestore } from '@/firebase';
-import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { useFirestore, useDoc } from '@/firebase';
+import { collection, query, onSnapshot, orderBy, doc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarDays, Clock, MapPin } from 'lucide-react';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
+import { useCompetitionTeams } from '@/hooks/use-competition-teams';
 
 interface MatchObj {
   id: string;
@@ -33,17 +34,19 @@ interface Team {
 export function LeagueNextMatchesWidget({ leagueId }: { leagueId: string }) {
   const firestore = useFirestore();
 
-  const [teams, setTeams] = React.useState<Team[]>([]);
   const [rounds, setRounds] = React.useState<FixtureRound[]>([]);
   const [loading, setLoading] = React.useState(true);
 
+  const compRef = React.useMemo(() => {
+    if (!firestore || !leagueId) return null;
+    return doc(firestore, 'leagues', leagueId);
+  }, [firestore, leagueId]);
+
+  const { data: compData } = useDoc<any>(compRef);
+  const { teams } = useCompetitionTeams(leagueId, 'leagues', compData);
+
   React.useEffect(() => {
     if (!firestore) return;
-    
-    const teamsRef = collection(firestore, 'leagues', leagueId, 'teams');
-    const unsubTeams = onSnapshot(query(teamsRef), (snap) => {
-      setTeams(snap.docs.map(d => ({ id: d.id, ...d.data() } as Team)));
-    });
 
     const fixturesRef = collection(firestore, 'leagues', leagueId, 'fixtures');
     const qFixtures = query(fixturesRef, orderBy('roundNumber', 'asc'));
@@ -53,7 +56,6 @@ export function LeagueNextMatchesWidget({ leagueId }: { leagueId: string }) {
     });
 
     return () => {
-      unsubTeams();
       unsubFixtures();
     };
   }, [firestore, leagueId]);

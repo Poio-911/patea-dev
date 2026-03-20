@@ -69,25 +69,20 @@ export function BracketMatchSettingsDialog({ cupId, match, open, onOpenChange }:
   }, []);
 
   const handleSave = async () => {
-    if (!firestore || !match) return;
+    if (!match) return;
     setIsSaving(true);
     try {
-      const cupRef = doc(firestore, 'cups', cupId);
-      const cupSnap = await getDoc(cupRef);
-
-      if (cupSnap.exists()) {
-        const cupData = cupSnap.data() as Cup;
-        const updatedBracket = (cupData.bracket || []).map((m) => {
-          if (m.id === match.id) {
-            return { ...m, date, time, venue, streamingUrl, isLive };
-          }
-          return m;
-        });
-
-        await updateDoc(cupRef, { bracket: updatedBracket });
-        toast({ title: 'Datos actualizados', description: 'La programación del partido fue guardada.' });
-        onOpenChange(false);
-      }
+      const { updateBracketMatchSettingsAction } = await import('@/lib/actions/server-actions');
+      const res = await updateBracketMatchSettingsAction(cupId, match.id, {
+        date,
+        time,
+        venue,
+        streamingUrl,
+        isLive,
+      });
+      if (!res?.success) throw new Error(res?.error || 'Error');
+      toast({ title: 'Datos actualizados', description: 'La programación del partido fue guardada.' });
+      onOpenChange(false);
     } catch (e: any) {
       console.error('[BracketMatchSettings] Error:', e);
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar el partido.' });

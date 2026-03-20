@@ -19,6 +19,7 @@ type DisplayCompetition = {
   startDate?: string;
   competitionType: 'league' | 'cup';
   _collectionName: 'leagues' | 'cups';
+  bracket?: any[]; // Cup bracket matches for metrics
 };
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,10 +28,12 @@ import { CreateCompetitionDialog } from '@/components/organizer/create-competiti
 import { HeroImageBackground } from '@/components/organizer/hero-image-background';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { deleteDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { deleteCompetitionAction } from '@/lib/actions/server-actions';
 
 type DashboardMatch = {
   status: 'pending' | 'finished';
@@ -112,7 +115,6 @@ export default function OrganizerDashboardPage() {
   const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
   const [competitionToDelete, setCompetitionToDelete] = React.useState<{ id: string; collectionName: 'leagues' | 'cups' } | null>(null);
-  const [competitionMetrics, setCompetitionMetrics] = React.useState<Record<string, CompetitionMetrics>>({});
 
   const leaguesQuery = React.useMemo(() => {
     if (!firestore || !user?.uid) return null;
@@ -160,135 +162,11 @@ export default function OrganizerDashboardPage() {
       startDate: c.startDate,
       competitionType: 'cup',
       _collectionName: 'cups',
+      bracket: c.bracket || [],
     }));
     return [...leagueItems, ...cupItems];
   }, [leagues, cups]);
 
-  React.useEffect(() => {
-    if (!firestore || !allCompetitions || allCompetitions.length === 0) {
-      setCompetitionMetrics({});
-      return;
-    }
-
-    const unsubscribers: Array<() => void> = [];
-
-    allCompetitions.forEach((comp) => {
-      const compId = comp.id;
-      const collPath = comp._collectionName;
-
-      const teamsRef = collection(firestore, collPath, compId, 'teams');
-      const unsubscribeTeams = onSnapshot(teamsRef, (snapshot) => {
-        setCompetitionMetrics((prev) => ({
-          ...prev,
-          [compId]: {
-            ...(prev[compId] || defaultMetrics),
-            teamCount: snapshot.size,
-          },
-        }));
-      });
-      unsubscribers.push(unsubscribeTeams);
-
-      // Cups use bracket structure — no fixtures subcollection
-      if (collPath !== 'leagues') return;
-
-      const fixturesRef = collection(firestore, 'leagues', compId, 'fixtures');
-      const unsubscribeFixtures = onSnapshot(fixturesRef, (snapshot) => {
-        const leagueId = compId;
-        let totalMatches = 0;
-        let finishedMatches = 0;
-        let pendingMatches = 0;
-        let closestTimestamp: number | null = null;
-        let closestLabel: string | null = null;
-        let firstPendingRoundLabel: string | null = null;
-
-        let lastFinishedTimestamp: number | null = null;
-        let lastFinishedRoundNumber = -1;
-        let lastFinishedResultLabel: string | null = null;
-
-        type NormalizedRound = {
-          roundNumber: number;
-          roundName: string;
-          matches: DashboardMatch[];
-        };
-
-        const normalizedRounds: NormalizedRound[] = snapshot.docs.map((docSnap, index) => {
-          const round = docSnap.data() as DashboardFixtureRound;
-          const inferredRoundNumber = Number.isFinite(round.roundNumber) ? Number(round.roundNumber) : index + 1;
-          return {
-            roundNumber: inferredRoundNumber,
-            roundName: round.roundName || `Fecha ${inferredRoundNumber}`,
-            matches: Array.isArray(round.matches) ? round.matches : [],
-          };
-        }).sort((a, b) => a.roundNumber - b.roundNumber);
-
-        normalizedRounds.forEach((round) => {
-          let roundHasPending = false;
-
-          round.matches.forEach((match) => {
-            totalMatches += 1;
-
-            if (match.status === 'finished') {
-              finishedMatches += 1;
-
-              const finishedTimestamp = parseMatchDate(match.date, match.time);
-              const homeScore = typeof match.homeScore === 'number' ? match.homeScore : 0;
-              const awayScore = typeof match.awayScore === 'number' ? match.awayScore : 0;
-              const homeName = match.homeTeamName || 'Local';
-              const awayName = match.awayTeamName || 'Visita';
-              const resultLabel = `${homeName} ${homeScore}-${awayScore} ${awayName}`;
-
-              if (
-                (finishedTimestamp !== null && (lastFinishedTimestamp === null || finishedTimestamp > lastFinishedTimestamp)) ||
-                (finishedTimestamp === null && lastFinishedTimestamp === null && round.roundNumber >= lastFinishedRoundNumber)
-              ) {
-                lastFinishedTimestamp = finishedTimestamp;
-                lastFinishedRoundNumber = round.roundNumber;
-                lastFinishedResultLabel = resultLabel;
-              }
-
-              return;
-            }
-
-            pendingMatches += 1;
-            roundHasPending = true;
-
-            const timestamp = parseMatchDate(match.date, match.time);
-            if (timestamp !== null && (closestTimestamp === null || timestamp < closestTimestamp)) {
-              closestTimestamp = timestamp;
-              closestLabel = [match.date, match.time].filter(Boolean).join(' · ');
-            }
-          });
-
-          if (!firstPendingRoundLabel && roundHasPending) {
-            firstPendingRoundLabel = round.roundName;
-          }
-        });
-
-        if (!closestLabel && pendingMatches > 0) {
-          closestLabel = 'Pendiente de programación';
-        }
-
-        setCompetitionMetrics((prev) => ({
-          ...prev,
-          [leagueId]: {
-            ...(prev[leagueId] || defaultMetrics),
-            totalMatches,
-            finishedMatches,
-            pendingMatches,
-            nextMatchLabel: closestLabel,
-            activeRoundLabel: firstPendingRoundLabel,
-            lastResultLabel: lastFinishedResultLabel,
-          },
-        }));
-      });
-
-      unsubscribers.push(unsubscribeFixtures);
-    });
-
-    return () => {
-      unsubscribers.forEach((unsubscribe) => unsubscribe());
-    };
-  }, [firestore, allCompetitions]);
 
   const orderedCompetitions = React.useMemo(() => {
     const statusPriority: Record<CompetitionStatus, number> = {
@@ -330,9 +208,13 @@ export default function OrganizerDashboardPage() {
   }, [orderedCompetitions]);
 
   const handleDeleteCompetition = async () => {
-    if (!firestore || !competitionToDelete) return;
+    if (!competitionToDelete) return;
     try {
-      await deleteDoc(doc(firestore, competitionToDelete.collectionName, competitionToDelete.id));
+      const result = await deleteCompetitionAction(competitionToDelete.id, competitionToDelete.collectionName);
+      if (!result.success) {
+        toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo eliminar la competición.' });
+        return;
+      }
       toast({ title: 'Competición eliminada', description: 'La competición ha sido borrada permanentemente.' });
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar la competición.' });
@@ -404,146 +286,17 @@ export default function OrganizerDashboardPage() {
           ))}
         </div>
       ) : orderedCompetitions.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {orderedCompetitions.map((comp) => {
-            const metrics = competitionMetrics[comp.id] || defaultMetrics;
-            const teamsArray = comp.teams || [];
-            const teamCount = metrics.teamCount > 0 ? metrics.teamCount : teamsArray.length;
-            const statusLabel = getCompetitionStatusLabel(comp.status);
-            const hasMatches = metrics.totalMatches > 0;
-
-            return (
-            <Card
-              key={comp.id}
-              className="group relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/20 cursor-pointer bg-card/40 border-border/40 backdrop-blur-xl"
-              onClick={() => {
-                const path = comp._collectionName === 'cups'
-                  ? `/organizer/cup/${comp.id}`
-                  : `/organizer/league/${comp.id}`;
-                router.push(path);
-              }}
-            >
-              {/* Subtle gradient background based on hover */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-              
-              <CardHeader className="pb-4 relative z-10 flex flex-row items-start justify-between">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-16 w-16 rounded-2xl shadow-xl border-2 border-background bg-secondary transition-transform group-hover:scale-105 duration-500">
-                    <AvatarImage src={comp.logoUrl || undefined} className="object-cover" />
-                    <AvatarFallback className="rounded-2xl bg-primary/10">
-                      <Trophy className="h-7 w-7 text-primary drop-shadow-[0_0_12px_rgba(200,255,0,0.6)]" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-1">
-                    <CardTitle className="font-headline font-black uppercase text-xl xl:text-2xl tracking-tight leading-none group-hover:text-primary transition-colors line-clamp-2">
-                      {comp.name}
-                    </CardTitle>
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.1em] text-muted-foreground/60 uppercase flex-wrap">
-                      <span className="bg-muted/50 px-1.5 py-0.5 rounded text-[9px] border border-border/30">{comp.competitionType === 'cup' ? 'Copa' : 'Liga'}</span>
-                      <span>•</span>
-                      <span>{String(comp.format) === 'single_elimination' ? 'Eliminación' : 'Puntos'}</span>
-                      {comp.sportType && (
-                        <>
-                          <span>•</span>
-                          <span className="text-foreground/70">{comp.sportType.toUpperCase()}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative z-20" onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 -mr-2">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem 
-                        className="text-destructive focus:text-destructive cursor-pointer"
-                        onClick={() => setCompetitionToDelete({ id: comp.id, collectionName: comp._collectionName })}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Eliminar Competición
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-              <CardContent className="relative z-10 pt-0">
-                <div className="grid grid-cols-3 gap-2.5 mb-5">
-                  <div className="flex flex-col p-2.5 rounded-xl bg-muted/20 border border-white/5 transition-colors group-hover:bg-muted/30">
-                    <span className="text-[9px] uppercase font-black tracking-[0.15em] text-muted-foreground/60 mb-1 flex items-center gap-1">
-                      <Users className="w-3 h-3 text-primary/70"/> Equipos
-                    </span>
-                    <span className="text-xl font-black font-mono leading-none">{teamCount}</span>
-                  </div>
-                  <div className="flex flex-col p-2.5 rounded-xl bg-muted/20 border border-white/5 transition-colors group-hover:bg-muted/30">
-                    <span className="text-[9px] uppercase font-black tracking-[0.15em] text-muted-foreground/60 mb-1 flex items-center gap-1">
-                      <LayoutGrid className="w-3 h-3 text-primary/70"/> Partidos
-                    </span>
-                    <span className="text-xl font-black font-mono leading-none">
-                      {hasMatches ? `${metrics.finishedMatches}/${metrics.totalMatches}` : '—'}
-                    </span>
-                  </div>
-                  <div className="flex flex-col p-2.5 rounded-xl bg-muted/20 border border-white/5 transition-colors group-hover:bg-muted/30">
-                    <span className="text-[9px] uppercase font-black tracking-[0.15em] text-muted-foreground/60 mb-1 flex items-center gap-1">
-                      <Activity className="w-3 h-3 text-primary/70"/> Estado
-                    </span>
-                    <span className={cn(
-                      "text-[10px] font-black uppercase tracking-tighter truncate",
-                      comp.status === 'in_progress' ? "text-primary animate-pulse" : "text-foreground/80"
-                    )}>
-                      {statusLabel}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2 text-xs text-muted-foreground border-t border-border/20 pt-4">
-                  <div className="flex items-center justify-between gap-3 group/row">
-                    <div className="flex items-center gap-1.5 text-muted-foreground/50 uppercase tracking-[0.15em] font-black text-[9px]">
-                      <Clock className="w-3 h-3 group-hover/row:text-primary transition-colors" />
-                      <span>Próximo partido</span>
-                    </div>
-                    <span className="font-bold text-foreground/80 truncate max-w-[55%] text-right transition-colors group-hover/row:text-foreground">
-                      {metrics.nextMatchLabel || 'No programado'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3 group/row">
-                    <div className="flex items-center gap-1.5 text-muted-foreground/50 uppercase tracking-[0.15em] font-black text-[9px]">
-                      <CalendarDays className="w-3 h-3 group-hover/row:text-primary transition-colors" />
-                      <span>Fecha activa</span>
-                    </div>
-                    <span className="font-bold text-foreground/80 truncate max-w-[55%] text-right transition-colors group-hover/row:text-foreground">
-                      {metrics.activeRoundLabel || 'Sin fecha activa'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3 group/row">
-                    <div className="flex items-center gap-1.5 text-muted-foreground/50 uppercase tracking-[0.15em] font-black text-[9px]">
-                      <Target className="w-3 h-3 group-hover/row:text-primary transition-colors" />
-                      <span>Último resultado</span>
-                    </div>
-                    <span className="font-bold text-foreground/80 truncate max-w-[55%] text-right transition-colors group-hover/row:text-foreground">
-                      {metrics.lastResultLabel || 'Sin resultados'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3 group/row">
-                    <div className="flex items-center gap-1.5 text-muted-foreground/50 uppercase tracking-[0.15em] font-black text-[9px]">
-                      <Calendar className="w-3 h-3 group-hover/row:text-primary transition-colors" />
-                      <span>Inicio torneo</span>
-                    </div>
-                    <span className="font-bold text-foreground/80 truncate max-w-[55%] text-right transition-colors group-hover/row:text-foreground">
-                      {comp.startDate || 'A definir'}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )})}
-        </div>
-      ) : (
-        <Card className="border-dashed py-12 flex flex-col items-center justify-center gap-4 bg-transparent shadow-none">
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {orderedCompetitions.map((comp) => (
+              <CompetitionCard 
+                key={comp.id} 
+                comp={comp} 
+                onDelete={(id, coll) => setCompetitionToDelete({ id, collectionName: coll })}
+              />
+            ))}
+          </div>
+        ) : (
+          <Card className="border-dashed py-12 flex flex-col items-center justify-center gap-4 bg-transparent shadow-none">
           <Trophy className="h-12 w-12 text-muted-foreground/30" />
           <div className="text-center space-y-1">
             <h3 className="font-bold text-lg">No administras ninguna competición</h3>
@@ -569,6 +322,14 @@ export default function OrganizerDashboardPage() {
             <AlertDialogDescription>
               Esta acción no se puede deshacer. Se borrarán todos los equipos, fixtures, actas, tarjetas y posiciones asociadas.
             </AlertDialogDescription>
+            {competitionToDelete && allCompetitions.find(c => c.id === competitionToDelete.id)?.status === 'in_progress' && (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 mt-3">
+                <p className="font-bold text-destructive">⚠️ Esta competición está en curso</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Tiene partidos en progreso. Se perderán todos los resultados y datos irreversiblemente.
+                </p>
+              </div>
+            )}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -579,5 +340,249 @@ export default function OrganizerDashboardPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+function CompetitionCard({ comp, onDelete }: { comp: DisplayCompetition; onDelete: (id: string, coll: 'leagues' | 'cups') => void }) {
+  const router = useRouter();
+  const firestore = useFirestore();
+  const [metrics, setMetrics] = React.useState<CompetitionMetrics>(defaultMetrics);
+
+  React.useEffect(() => {
+    if (!firestore || !comp.id) return;
+
+    const unsubscribers: Array<() => void> = [];
+
+    // 1. Listen for teams
+    const teamsRef = collection(firestore, comp._collectionName, comp.id, 'teams');
+    const unsubscribeTeams = onSnapshot(teamsRef, (snapshot) => {
+      setMetrics((prev) => ({ ...prev, teamCount: snapshot.size }));
+    });
+    unsubscribers.push(unsubscribeTeams);
+
+    // 2. Listen for matches (Fixtures for leagues, bracket for cups)
+    if (comp._collectionName === 'cups') {
+      // Cups metrics come from bracket data which is already in the comp object, 
+      // but if we want live updates we should ideally listen to the cup document too.
+      // However, for now, we use the bracket data passed in comp.
+      const bracket: any[] = comp.bracket || [];
+      if (bracket.length > 0) {
+        const totalMatches = bracket.length;
+        const finishedMatches = bracket.filter((m: any) => m.status === 'finished').length;
+        const pendingMatches = totalMatches - finishedMatches;
+        const lastFinished = [...bracket].filter((m: any) => m.status === 'finished').pop();
+        const lastResultLabel = lastFinished
+          ? `${lastFinished.team1Name || 'Local'} ${lastFinished.team1Score ?? 0}-${lastFinished.team2Score ?? 0} ${lastFinished.team2Name || 'Visita'}`
+          : null;
+        const nextPending = bracket.find((m: any) => m.status !== 'finished');
+        const nextMatchLabel = nextPending?.date
+          ? [nextPending.date, nextPending.time].filter(Boolean).join(' · ')
+          : pendingMatches > 0 ? 'Pendiente de programación' : null;
+          
+        setMetrics(prev => ({
+          ...prev,
+          totalMatches,
+          finishedMatches,
+          pendingMatches,
+          nextMatchLabel,
+          lastResultLabel,
+        }));
+      }
+    } else {
+      // Leagues: Listen to fixtures subcollection
+      const fixturesRef = collection(firestore, 'leagues', comp.id, 'fixtures');
+      const unsubscribeFixtures = onSnapshot(fixturesRef, (snapshot) => {
+        let totalMatches = 0;
+        let finishedMatches = 0;
+        let pendingMatches = 0;
+        let closestTimestamp: number | null = null;
+        let closestLabel: string | null = null;
+        let firstPendingRoundLabel: string | null = null;
+        let lastFinishedTimestamp: number | null = null;
+        let lastFinishedRoundNumber = -1;
+        let lastFinishedResultLabel: string | null = null;
+
+        const normalizedRounds = snapshot.docs.map((docSnap, index) => {
+          const round = docSnap.data() as DashboardFixtureRound;
+          const inferredRoundNumber = Number.isFinite(round.roundNumber) ? Number(round.roundNumber) : index + 1;
+          return {
+            roundNumber: inferredRoundNumber,
+            roundName: round.roundName || `Fecha ${inferredRoundNumber}`,
+            matches: Array.isArray(round.matches) ? round.matches : [],
+          };
+        }).sort((a, b) => a.roundNumber - b.roundNumber);
+
+        normalizedRounds.forEach((round) => {
+          let roundHasPending = false;
+          round.matches.forEach((match) => {
+            totalMatches += 1;
+            if (match.status === 'finished') {
+              finishedMatches += 1;
+              const finishedTimestamp = parseMatchDate(match.date, match.time);
+              const resultLabel = `${match.homeTeamName || 'Local'} ${match.homeScore ?? 0}-${match.awayScore ?? 0} ${match.awayTeamName || 'Visita'}`;
+              if ((finishedTimestamp !== null && (lastFinishedTimestamp === null || finishedTimestamp > lastFinishedTimestamp)) ||
+                  (finishedTimestamp === null && lastFinishedTimestamp === null && round.roundNumber >= lastFinishedRoundNumber)) {
+                lastFinishedTimestamp = finishedTimestamp;
+                lastFinishedRoundNumber = round.roundNumber;
+                lastFinishedResultLabel = resultLabel;
+              }
+              return;
+            }
+            pendingMatches += 1;
+            roundHasPending = true;
+            const timestamp = parseMatchDate(match.date, match.time);
+            if (timestamp !== null && (closestTimestamp === null || timestamp < closestTimestamp)) {
+              closestTimestamp = timestamp;
+              closestLabel = [match.date, match.time].filter(Boolean).join(' · ');
+            }
+          });
+          if (!firstPendingRoundLabel && roundHasPending) firstPendingRoundLabel = round.roundName;
+        });
+
+        if (!closestLabel && pendingMatches > 0) closestLabel = 'Pendiente de programación';
+        
+        setMetrics((prev) => ({
+          ...prev,
+          totalMatches,
+          finishedMatches,
+          pendingMatches,
+          nextMatchLabel: closestLabel,
+          activeRoundLabel: firstPendingRoundLabel,
+          lastResultLabel: lastFinishedResultLabel,
+        }));
+      });
+      unsubscribers.push(unsubscribeFixtures);
+    }
+
+    return () => unsubscribers.forEach(unsub => unsub());
+  }, [firestore, comp.id, comp._collectionName]); // Stable dependencies
+
+  const teamsArray = comp.teams || [];
+  const teamCount = metrics.teamCount > 0 ? metrics.teamCount : teamsArray.length;
+  const statusLabel = getCompetitionStatusLabel(comp.status);
+  const hasMatches = metrics.totalMatches > 0;
+  const showCupNoBracketHint = comp._collectionName === 'cups' && !hasMatches && comp.status !== 'completed';
+
+  return (
+    <Card
+      className="group relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/20 cursor-pointer bg-card/40 border-border/40 backdrop-blur-xl"
+      onClick={() => {
+        const path = comp._collectionName === 'cups' ? `/organizer/cup/${comp.id}` : `/organizer/league/${comp.id}`;
+        router.push(path);
+      }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      <CardHeader className="pb-4 relative z-10 flex flex-row items-start justify-between">
+        <div className="flex items-center gap-4">
+          <Avatar className="h-16 w-16 rounded-2xl shadow-xl border-2 border-background bg-secondary transition-transform group-hover:scale-105 duration-500">
+            <AvatarImage src={comp.logoUrl || undefined} className="object-cover" />
+            <AvatarFallback className="rounded-2xl bg-primary/10">
+              <Trophy className="h-7 w-7 text-primary drop-shadow-[0_0_12px_rgba(200,255,0,0.6)]" />
+            </AvatarFallback>
+          </Avatar>
+          <div className="space-y-1">
+            <CardTitle className="font-headline font-black uppercase text-xl xl:text-2xl tracking-tight leading-none group-hover:text-primary transition-colors line-clamp-2">
+              {comp.name}
+            </CardTitle>
+            <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.1em] text-muted-foreground/60 uppercase flex-wrap">
+              <span className="bg-muted/50 px-1.5 py-0.5 rounded text-[9px] border border-border/30">{comp.competitionType === 'cup' ? 'Copa' : 'Liga'}</span>
+              <span>•</span>
+              <span>{String(comp.format) === 'single_elimination' ? 'Eliminación' : 'Puntos'}</span>
+              {comp.sportType && (
+                <>
+                  <span>•</span>
+                  <span className="text-foreground/70">{comp.sportType.toUpperCase()}</span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="relative z-20" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 -mr-2">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem 
+                className="text-destructive focus:text-destructive cursor-pointer"
+                onClick={() => onDelete(comp.id, comp._collectionName)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Eliminar Competición
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </CardHeader>
+      <CardContent className="relative z-10 pt-0">
+        <div className="grid grid-cols-3 gap-2.5 mb-5">
+          <div className="flex flex-col p-2.5 rounded-xl bg-muted/20 border border-white/5 transition-colors group-hover:bg-muted/30">
+            <span className="text-[9px] uppercase font-black tracking-[0.15em] text-muted-foreground/60 mb-1 flex items-center gap-1">
+              <Users className="w-3 h-3 text-primary/70"/> Equipos
+            </span>
+            <span className="text-xl font-black font-mono leading-none">{teamCount}</span>
+          </div>
+          <div className="flex flex-col p-2.5 rounded-xl bg-muted/20 border border-white/5 transition-colors group-hover:bg-muted/30">
+            <span className="text-[9px] uppercase font-black tracking-[0.15em] text-muted-foreground/60 mb-1 flex items-center gap-1">
+              <LayoutGrid className="w-3 h-3 text-primary/70"/> Partidos
+            </span>
+            <span className="text-xl font-black font-mono leading-none">
+              {hasMatches ? `${metrics.finishedMatches}/${metrics.totalMatches}` : '—'}
+            </span>
+          </div>
+          <div className="flex flex-col p-2.5 rounded-xl bg-muted/20 border border-white/5 transition-colors group-hover:bg-muted/30">
+            <span className="text-[9px] uppercase font-black tracking-[0.15em] text-muted-foreground/60 mb-1 flex items-center gap-1">
+              <Activity className="w-3 h-3 text-primary/70"/> Estado
+            </span>
+            <span className={cn(
+              "text-[10px] font-black uppercase tracking-tighter truncate",
+              comp.status === 'in_progress' ? "text-primary animate-pulse" : "text-foreground/80"
+            )}>
+              {statusLabel}
+            </span>
+          </div>
+        </div>
+        <div className="space-y-2 text-xs text-muted-foreground border-t border-border/20 pt-4">
+          {showCupNoBracketHint && <div className="text-xs text-muted-foreground italic">Generá el bracket para ver el progreso</div>}
+          <div className="flex items-center justify-between gap-3 group/row">
+            <div className="flex items-center gap-1.5 text-muted-foreground/50 uppercase tracking-[0.15em] font-black text-[9px]">
+              <Clock className="w-3 h-3 group-hover/row:text-primary transition-colors" />
+              <span>Próximo partido</span>
+            </div>
+            <span className="font-bold text-foreground/80 truncate max-w-[55%] text-right transition-colors group-hover/row:text-foreground">
+              {showCupNoBracketHint ? 'Generar bracket' : (metrics.nextMatchLabel || 'No programado')}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3 group/row">
+            <div className="flex items-center gap-1.5 text-muted-foreground/50 uppercase tracking-[0.15em] font-black text-[9px]">
+              <CalendarDays className="w-3 h-3 group-hover/row:text-primary transition-colors" />
+              <span>Fecha activa</span>
+            </div>
+            <span className="font-bold text-foreground/80 truncate max-w-[55%] text-right transition-colors group-hover/row:text-foreground">
+              {metrics.activeRoundLabel || 'Sin fecha activa'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3 group/row">
+            <div className="flex items-center gap-1.5 text-muted-foreground/50 uppercase tracking-[0.15em] font-black text-[9px]">
+              <Target className="w-3 h-3 group-hover/row:text-primary transition-colors" />
+              <span>Último resultado</span>
+            </div>
+            <span className="font-bold text-foreground/80 truncate max-w-[55%] text-right transition-colors group-hover/row:text-foreground">
+              {metrics.lastResultLabel || 'Sin resultados'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3 group/row">
+            <div className="flex items-center gap-1.5 text-muted-foreground/50 uppercase tracking-[0.15em] font-black text-[9px]">
+              <Calendar className="w-3 h-3 group-hover/row:text-primary transition-colors" />
+              <span>Inicio torneo</span>
+            </div>
+            <span className="font-bold text-foreground/80 truncate max-w-[55%] text-right transition-colors group-hover/row:text-foreground">
+              {comp.startDate ? (() => { try { return format(parseISO(comp.startDate!), "d MMM yyyy", { locale: es }); } catch { return comp.startDate; } })() : 'A definir'}
+            </span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

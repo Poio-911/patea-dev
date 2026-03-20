@@ -523,6 +523,20 @@
       ]
     },
     {
+      "collectionGroup": "competitionApplications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "competitionId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "submittedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "socialActivities",
       "queryScope": "COLLECTION",
       "fields": [

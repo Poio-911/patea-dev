@@ -1,24 +1,12 @@
 'use server';
 
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { getServerSession } from '@/lib/auth/get-server-session';
 import { hasPermission } from '@/lib/group-permissions';
 import type { MatchInvitationResponse, MatchInvitation, MatchDateProposal } from '@/lib/types';
+import { getAdminDb } from '@/firebase/admin-init';
 
-// Initialize Firebase Admin
-if (getApps().length === 0) {
-  const serviceAccountJson = JSON.parse(
-    process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}'
-  );
-
-  initializeApp({
-    credential: cert(serviceAccountJson),
-    projectId: serviceAccountJson.project_id,
-  });
-}
-
-const db = getFirestore();
+const db = getAdminDb();
 
 async function canManageMatchInvitations(matchId: string, userId: string): Promise<{ allowed: boolean; match?: any; error?: string }> {
   const matchRef = db.collection('matches').doc(matchId);

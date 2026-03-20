@@ -141,7 +141,7 @@ export default function PublicLeagueDetailPage({ params }: { params: { id: strin
           {/* Main tabs */}
           <div className="flex-1 min-w-0">
             <Tabs defaultValue="standings" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 lg:w-[400px] mb-8 bg-card/40 backdrop-blur-xl border border-border/40 shadow-xl p-1 rounded-2xl h-14">
+              <TabsList className="grid w-full grid-cols-3 lg:w-[550px] mb-8 bg-card/40 backdrop-blur-xl border border-border/40 shadow-xl p-1 rounded-2xl h-14">
                 <TabsTrigger value="standings" className="rounded-xl font-black text-xs uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">
                   Tabla
                 </TabsTrigger>

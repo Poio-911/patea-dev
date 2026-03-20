@@ -1,24 +1,12 @@
 'use server';
 
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { getServerSession } from '@/lib/auth/get-server-session';
 import type { Venue } from '@/lib/types';
 import { checkGroupPermissionAction } from '@/lib/actions/group-role-actions';
+import { getAdminDb } from '@/firebase/admin-init';
 
-// Initialize Firebase Admin
-if (getApps().length === 0) {
-  const serviceAccountJson = JSON.parse(
-    process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}'
-  );
-
-  initializeApp({
-    credential: cert(serviceAccountJson),
-    projectId: serviceAccountJson.project_id,
-  });
-}
-
-const db = getFirestore();
+const db = getAdminDb();
 
 /**
  * Crear una nueva cancha para un grupo

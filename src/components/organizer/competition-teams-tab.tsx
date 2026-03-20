@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useFirestore, useDoc } from '@/firebase';
-import { collection, addDoc, query, onSnapshot, deleteDoc, doc, writeBatch, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -12,6 +12,9 @@ import { JerseyPreview } from '@/components/team-builder/jersey-preview';
 import { ManagePlayersDialogImproved } from '@/components/organizer/manage-players-dialog-improved';
 import { CompactTeamDialog } from '@/components/organizer/compact-team-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useCompetitionTeams } from '@/hooks/use-competition-teams';
+import { useUser } from '@/firebase';
+import { removeTeamFromCupAction, removeTeamFromLeagueAction } from '@/lib/actions/server-actions';
 
 interface GhostPlayer {
   id: string;
@@ -37,11 +40,10 @@ interface CompetitionTeamsTabProps {
 
 export function CompetitionTeamsTab({ competitionId, competitionType, competitionName, isReadOnly }: CompetitionTeamsTabProps) {
   const firestore = useFirestore();
+  const { user } = useUser();
   const { toast } = useToast();
-  
-  const [teams, setTeams] = React.useState<GhostTeam[]>([]);
-  const [loading, setLoading] = React.useState(true);
   const [isAddOpen, setIsAddOpen] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
   
   const [rosterTeam, setRosterTeam] = React.useState<GhostTeam | null>(null);
   const [isRosterOpen, setIsRosterOpen] = React.useState(false);
@@ -55,28 +57,23 @@ export function CompetitionTeamsTab({ competitionId, competitionType, competitio
   }, [firestore, competitionId, competitionType]);
 
   const { data: compData } = useDoc<any>(compRef);
+  const { teams: loadedTeams, loading } = useCompetitionTeams(competitionId, competitionType, compData);
 
-  React.useEffect(() => {
-    if (!firestore) return;
-    const teamsRef = collection(firestore, competitionType, competitionId, 'teams');
-    const unsub = onSnapshot(query(teamsRef), (snap) => {
-      setTeams(snap.docs.map(d => ({ id: d.id, ...d.data() } as GhostTeam)));
-      setLoading(false);
-    }, (err) => {
-      console.error('[CompetitionTeams] Error:', err);
-      setLoading(false);
-    });
-    return () => unsub();
-  }, [firestore, competitionId, competitionType]);
+  const teams = React.useMemo<GhostTeam[]>(() => {
+    return loadedTeams.map((team: any) => ({
+      id: team.id,
+      name: team.name,
+      jersey: team.jersey,
+      playerCount: typeof team.playerCount === 'number' ? team.playerCount : (team.playerIds?.length || 0),
+      players: Array.isArray(team.players) ? team.players : [],
+      isGhost: team.isGhost,
+    }));
+  }, [loadedTeams]);
 
   const syncCupTeamsArray = async (updatedTeams: GhostTeam[]) => {
     if (competitionType !== 'cups' || !compRef) return;
-    const arrayForCup = updatedTeams.map(t => ({
-      id: t.id,
-      name: t.name,
-      jersey: t.jersey
-    }));
-    await updateDoc(compRef, { teams: arrayForCup });
+    // Store only string IDs in cup.teams — objects cause issues with startCupAction queries
+    await updateDoc(compRef, { teams: updatedTeams.map(t => t.id) });
   };
 
   const handleSaveTeam = async (teamName: string, jersey: Jersey) => {
@@ -137,15 +134,31 @@ export function CompetitionTeamsTab({ competitionId, competitionType, competitio
   };
 
   const handleDelete = async (teamId: string, teamName: string) => {
-    if (!firestore) return;
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Debes estar autenticado.' });
+      return;
+    }
+
+    setIsDeleting(teamId);
     try {
-      await deleteDoc(doc(firestore, competitionType, competitionId, 'teams', teamId));
-      if (competitionType === 'cups') {
-        await syncCupTeamsArray(teams.filter(t => t.id !== teamId));
+      const result = competitionType === 'leagues' 
+        ? await removeTeamFromLeagueAction(competitionId, teamId, user.uid)
+        : await removeTeamFromCupAction(competitionId, teamId, user.uid);
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      // Close roster dialog if the deleted team was open
+      if (rosterTeam?.id === teamId) {
+        setIsRosterOpen(false);
+        setRosterTeam(null);
       }
       toast({ title: 'Equipo eliminado', description: `${teamName} fue removido.` });
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el equipo.' });
+      toast({ variant: 'destructive', title: 'Error', description: e.message || 'No se pudo eliminar el equipo.' });
+    } finally {
+      setIsDeleting(null);
     }
   };
 
@@ -168,25 +181,41 @@ export function CompetitionTeamsTab({ competitionId, competitionType, competitio
 
   const handleAddPlayer = async (name: string, number: string) => {
     if (!firestore || !rosterTeam) return;
-    const newPlayer = { id: `gp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`, name, number: number ? parseInt(number, 10) : '' };
-    const updatedPlayers = [...(rosterTeam.players || []), newPlayer];
-    const teamRef = doc(firestore, competitionType, competitionId, 'teams', rosterTeam.id);
-    await updateDoc(teamRef, { players: updatedPlayers, playerCount: updatedPlayers.length });
+    try {
+      const newPlayer = { id: `gp_${crypto.randomUUID()}`, name, number: number ? parseInt(number, 10) : '' };
+      const updatedPlayers = [...(rosterTeam.players || []), newPlayer];
+      const teamRef = doc(firestore, competitionType, competitionId, 'teams', rosterTeam.id);
+      await updateDoc(teamRef, { players: updatedPlayers, playerCount: updatedPlayers.length });
+    } catch {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo agregar el jugador.' });
+    }
   };
 
   const handleAddPlayersBulk = async (players: Array<{ name: string; number: string }>) => {
     if (!firestore || !rosterTeam) return;
-    const newPs = players.map(p => ({ id: `gp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`, name: p.name, number: p.number ? parseInt(p.number, 10) : '' }));
-    const updatedPlayers = [...(rosterTeam.players || []), ...newPs];
-    const teamRef = doc(firestore, competitionType, competitionId, 'teams', rosterTeam.id);
-    await updateDoc(teamRef, { players: updatedPlayers, playerCount: updatedPlayers.length });
+    try {
+      const newPs = players.map(p => ({
+        id: `gp_${crypto.randomUUID()}`,
+        name: p.name,
+        number: p.number ? parseInt(p.number, 10) : '',
+      }));
+      const updatedPlayers = [...(rosterTeam.players || []), ...newPs];
+      const teamRef = doc(firestore, competitionType, competitionId, 'teams', rosterTeam.id);
+      await updateDoc(teamRef, { players: updatedPlayers, playerCount: updatedPlayers.length });
+    } catch {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron agregar los jugadores.' });
+    }
   };
 
   const handleRemovePlayer = async (pid: string) => {
     if (!firestore || !rosterTeam) return;
-    const updated = (rosterTeam.players || []).filter(p => p.id !== pid);
-    const teamRef = doc(firestore, competitionType, competitionId, 'teams', rosterTeam.id);
-    await updateDoc(teamRef, { players: updated, playerCount: updated.length });
+    try {
+      const updated = (rosterTeam.players || []).filter(p => p.id !== pid);
+      const teamRef = doc(firestore, competitionType, competitionId, 'teams', rosterTeam.id);
+      await updateDoc(teamRef, { players: updated, playerCount: updated.length });
+    } catch {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el jugador.' });
+    }
   };
 
   const hasBracket = competitionType === 'cups' && compData?.bracket && compData.bracket.length > 0;
@@ -232,15 +261,22 @@ export function CompetitionTeamsTab({ competitionId, competitionType, competitio
                 </div>
               </CardContent>
               <div className="bg-muted/30 px-4 py-3 border-t border-border/50 flex items-center justify-between">
-                <Button variant="outline" size="sm" className="h-8 text-xs font-bold" onClick={() => { setRosterTeam(team); setIsRosterOpen(true); }}>
-                  <Users className="h-3.5 w-3.5 mr-1.5" /> Plantel
-                </Button>
-                {!isReadOnly && (
+                {team.isGhost !== false ? (
+                  <Button variant="outline" size="sm" className="h-8 text-xs font-bold" onClick={() => { setRosterTeam(team); setIsRosterOpen(true); }}>
+                    <Users className="h-3.5 w-3.5 mr-1.5" /> Plantel
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Shield className="h-3.5 w-3.5" />
+                    <span>Equipo Real</span>
+                  </div>
+                )}
+                {!isReadOnly && team.isGhost !== false && (
                   <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => { setEditingTeam(team); setIsEditDialogOpen(true); }} disabled={hasBracket && competitionType === 'cups'}>
+                    <Button aria-label="Editar equipo" variant="ghost" size="sm" className="h-8 px-2" onClick={() => { setEditingTeam(team); setIsEditDialogOpen(true); }} disabled={hasBracket && competitionType === 'cups'}>
                       <Edit2 className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleDelete(team.id, team.name)} disabled={hasBracket && competitionType === 'cups'}>
+                    <Button aria-label="Eliminar equipo" variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleDelete(team.id, team.name)} disabled={hasBracket && competitionType === 'cups'}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>

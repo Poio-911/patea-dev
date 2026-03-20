@@ -87,7 +87,7 @@ export function AssignRefereeDialog({
   }, [open, activeMatch]);
 
   const handleAssign = async () => {
-    if (!firestore || !activeMatch) return;
+    if (!activeMatch) return;
 
     if (!selectedRefereeId) {
       toast({ variant: 'destructive', title: 'Seleccioná un árbitro', description: 'Tenés que elegir un árbitro para asignar.' });
@@ -97,15 +97,16 @@ export function AssignRefereeDialog({
     setIsSaving(true);
     try {
       const selectedReferee = referees.find(r => r.id === selectedRefereeId);
-      if (!selectedReferee) throw new Error('Referee not found');
+      if (!selectedReferee) throw new Error('Árbitro no encontrado');
 
-      if (isCup && matchForBracket) {
-        // CUP LOGIC: Update bracket array
-        await handleCupAssignment(selectedReferee);
-      } else if (leagueId && fixtureDocId && match) {
-        // LEAGUE LOGIC: Update fixture document
-        await handleLeagueAssignment(selectedReferee);
-      }
+      const { assignRefereeAction } = await import('@/lib/actions/server-actions');
+      const res = await assignRefereeAction(finalCompetitionType, finalCompetitionId, selectedRefereeId, {
+        matchId: activeMatch.id,
+        fixtureDocId: fixtureDocId || undefined,
+        isCup,
+      });
+      
+      if (!res?.success) throw new Error(res?.error || 'Error al asignar');
 
       toast({
         title: 'Árbitro asignado',

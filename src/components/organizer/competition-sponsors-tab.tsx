@@ -32,7 +32,7 @@ export function CompetitionSponsorsTab({ competitionId, competitionType, sponsor
   const [newWebsiteUrl, setNewWebsiteUrl] = React.useState('');
 
   const handleAddSponsor = async () => {
-    if (!firestore || !competitionId) return;
+    if (!competitionId) return;
     if (!newName || !newLogoUrl) {
       toast({ variant: 'destructive', title: 'Faltan datos', description: 'Nombre y Logo son obligatorios.' });
       return;
@@ -40,25 +40,21 @@ export function CompetitionSponsorsTab({ competitionId, competitionType, sponsor
 
     setIsSaving(true);
     try {
-      const docRef = doc(firestore, competitionType, competitionId);
-      const newSponsor: Sponsor = {
-        id: Math.random().toString(36).substring(2, 11),
+      const { manageSponsorAction } = await import('@/lib/actions/server-actions');
+      const res = await manageSponsorAction(competitionType, competitionId, 'add', {
         name: newName,
         logoUrl: newLogoUrl,
         websiteUrl: newWebsiteUrl,
         order: sponsors.length
-      };
-
-      await updateDoc(docRef, {
-        sponsors: arrayUnion(newSponsor)
       });
+      if (!res?.success) throw new Error(res?.error || 'Error');
 
       toast({ title: 'Sponsor agregado', description: `${newName} ahora aparece en la competición.` });
       setIsOpen(false);
       setNewName('');
       setNewLogoUrl('');
       setNewWebsiteUrl('');
-    } catch (error) {
+    } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo agregar el sponsor.' });
     } finally {
       setIsSaving(false);
@@ -66,15 +62,12 @@ export function CompetitionSponsorsTab({ competitionId, competitionType, sponsor
   };
 
   const handleDeleteSponsor = async (sponsor: Sponsor) => {
-    if (!firestore || !competitionId) return;
-
     try {
-      const docRef = doc(firestore, competitionType, competitionId);
-      await updateDoc(docRef, {
-        sponsors: arrayRemove(sponsor)
-      });
+      const { manageSponsorAction } = await import('@/lib/actions/server-actions');
+      const res = await manageSponsorAction(competitionType, competitionId, 'remove', sponsor);
+      if (!res?.success) throw new Error(res?.error || 'Error');
       toast({ title: 'Sponsor eliminado' });
-    } catch (error) {
+    } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el sponsor.' });
     }
   };

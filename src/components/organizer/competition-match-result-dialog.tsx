@@ -143,7 +143,7 @@ export function CompetitionMatchResultDialog({
   }, [open, match]);
 
   const handleSave = async () => {
-    if (!firestore || !match) return;
+    if (!match) return;
     if (homeScore === '' || awayScore === '') {
       toast({ variant: 'destructive', title: 'Faltan datos', description: 'Tenés que poner los goles de ambos equipos.' });
       return;
@@ -207,91 +207,25 @@ export function CompetitionMatchResultDialog({
       const safeAttendance = Number.isFinite(parsedAttendance) && parsedAttendance !== null ? parsedAttendance : null;
       const trimmedNotes = matchNotes.trim();
 
-      // 2. Save logic based on competition type
-      if (competitionType === 'leagues') {
-        if (!fixtureDocId) throw new Error('Falta el ID del documento de fixture.');
-        const fixtureRef = doc(firestore, 'leagues', competitionId, 'fixtures', fixtureDocId);
-        const fixtureSnap = await getDoc(fixtureRef);
-        if (!fixtureSnap.exists()) throw new Error('No se encontró el fixture.');
+      const { saveMatchResultAction } = await import('@/lib/actions/server-actions');
+      const res = await saveMatchResultAction(competitionType, competitionId, {
+        matchId: match.id,
+        fixtureDocId,
+        homeScore: homeVal,
+        awayScore: awayVal,
+        scorers: allScorers,
+        cards: allCards,
+        mvp: mvpData,
+        isWalkover,
+        penaltyWinnerId: penaltyWinner || null,
+        streamingUrl,
+        isLive,
+        attendance: safeAttendance,
+        notes: trimmedNotes || undefined,
+        isCup: competitionType === 'cups',
+      });
 
-        const fixtureData = fixtureSnap.data();
-        const updatedMatches = (fixtureData.matches || []).map((m: any) => {
-          if (m.id === match.id) {
-            const updated: any = { ...m, homeScore: homeVal, awayScore: awayVal, scorers: allScorers, cards: allCards, isWalkover, status: 'finished' };
-            if (mvpData) updated.mvp = mvpData;
-            if (safeAttendance !== null) updated.attendance = safeAttendance;
-            if (trimmedNotes) updated.notes = trimmedNotes;
-            return updated;
-          }
-          return m;
-        });
-        await updateDoc(fixtureRef, { matches: updatedMatches });
-      } else {
-        // CUP LOGIC (Knockout)
-        const cupRef = doc(firestore, 'cups', competitionId);
-        const cupSnap = await getDoc(cupRef);
-        if (!cupSnap.exists()) throw new Error('No se encontró la copa.');
-        const cupData = cupSnap.data();
-
-        // Determine winner
-        const winnerId = isWalkover ? match.homeTeamId! : (homeVal > awayVal ? match.homeTeamId! : (awayVal > homeVal ? match.awayTeamId! : penaltyWinner!));
-        const winnerName = winnerId === match.homeTeamId ? match.homeTeamName : match.awayTeamName;
-        const winnerJersey = winnerId === match.homeTeamId ? match.homeTeamJersey : match.awayTeamJersey;
-
-        // Use utility to advance winner in bracket array
-        const updatedBracket = advanceWinner(
-          cupData.bracket || [],
-          match.id,
-          winnerId,
-          winnerName,
-          winnerJersey,
-          { team1: homeVal, team2: awayVal }
-        );
-
-        // Update match-specific fields in the bracket array
-        const finalBracket = updatedBracket.map((bm: any) => {
-          if (bm.id === match.id) {
-            const updated: any = { 
-              ...bm, 
-              homeScore: homeVal, 
-              awayScore: awayVal, 
-              scorers: allScorers, 
-              cards: allCards, 
-              isWalkover, 
-              status: 'finished',
-              penaltyWinnerId: penaltyWinner,
-              streamingUrl,
-              isLive,
-              winnerId: winnerId // Already set by advanceWinner but just in case
-            };
-            if (mvpData) updated.mvp = mvpData;
-            if (safeAttendance !== null) updated.attendance = safeAttendance;
-            if (trimmedNotes) updated.notes = trimmedNotes;
-            return updated;
-          }
-          return bm;
-        });
-
-        const updates: any = { bracket: finalBracket };
-
-        // Rounds and tournament completion logic
-        if (isRoundComplete(finalBracket, match.round)) {
-          const nextRound = getNextRound(match.round);
-          if (nextRound) updates.currentRound = nextRound;
-        }
-
-        if (isTournamentComplete(finalBracket)) {
-          const champion = getChampion(finalBracket);
-          if (champion) {
-            updates.status = 'completed';
-            updates.championTeamId = champion.teamId;
-            updates.championTeamName = champion.teamName;
-            updates.completedAt = new Date().toISOString();
-          }
-        }
-
-        await updateDoc(cupRef, updates);
-      }
+      if (!res?.success) throw new Error(res?.error || 'Error al guardar');
 
       toast({ title: '¡Acta Cerrada!', description: `Resultado guardado: ${homeVal}-${awayVal}` });
       if (onSuccess) onSuccess();

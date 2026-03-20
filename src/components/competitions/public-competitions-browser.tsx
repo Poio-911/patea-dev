@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { League, Cup, GroupTeam, CompetitionApplication } from '@/lib/types';
 import { getPublicCompetitionsAction, submitCompetitionApplicationAction } from '@/lib/actions/server-actions';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -47,7 +47,7 @@ export function PublicCompetitionsBrowser({ userId, userTeams }: PublicCompetiti
           description: result.error || 'No se pudieron cargar las competiciones públicas.',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -86,6 +86,7 @@ export function PublicCompetitionsBrowser({ userId, userTeams }: PublicCompetiti
           title: 'Postulación enviada',
           description: 'Tu equipo ha sido postulado. El organizador revisará tu solicitud.',
         });
+        loadPublicCompetitions();
       } else {
         toast({
           variant: 'destructive',
@@ -136,6 +137,15 @@ export function PublicCompetitionsBrowser({ userId, userTeams }: PublicCompetiti
 
   return (
     <div className="space-y-8">
+      {applying !== null && (
+        <Alert>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <AlertDescription>
+            Enviando postulación... Esperá un momento antes de intentar otra acción.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Ligas Públicas */}
       {leagues.length > 0 && (
         <div className="space-y-4">
@@ -150,6 +160,7 @@ export function PublicCompetitionsBrowser({ userId, userTeams }: PublicCompetiti
                 applications={applications}
                 onApply={handleApply}
                 isApplying={applying === league.id}
+                isApplyingAny={applying !== null}
               />
             ))}
           </div>
@@ -170,6 +181,7 @@ export function PublicCompetitionsBrowser({ userId, userTeams }: PublicCompetiti
                 applications={applications}
                 onApply={handleApply}
                 isApplying={applying === cup.id}
+                isApplyingAny={applying !== null}
               />
             ))}
           </div>
@@ -186,26 +198,30 @@ interface CompetitionCardProps {
   applications: CompetitionApplication[];
   onApply: (competitionId: string, type: 'league' | 'cup', teamId: string) => void;
   isApplying: boolean;
+  isApplyingAny: boolean;
 }
 
-function CompetitionCard({ competition, type, userTeams, applications, onApply, isApplying }: CompetitionCardProps) {
+function CompetitionCard({ competition, type, userTeams, applications, onApply, isApplying, isApplyingAny }: CompetitionCardProps) {
   const [selectedTeam, setSelectedTeam] = useState<string>('');
 
-  const eligibleTeams = useState(() => {
+  const eligibleTeams = useMemo(() => {
     return userTeams.filter(team => {
-      // 1. Not already in the competition
       if (competition.teams.includes(team.id || '')) return false;
-
-      // 2. No pending or approved application for this competition
       const hasApplication = applications.some(app =>
         app.teamId === team.id &&
         app.competitionId === competition.id &&
         (app.status === 'pending' || app.status === 'approved')
       );
-
       return !hasApplication;
     });
-  })[0];
+  }, [userTeams, applications, competition.id, competition.teams]);
+
+  // Reset selection if the selected team is no longer eligible (e.g. after applying)
+  useEffect(() => {
+    if (selectedTeam && !eligibleTeams.some(t => t.id === selectedTeam)) {
+      setSelectedTeam('');
+    }
+  }, [eligibleTeams, selectedTeam]);
 
   return (
     <Card>
@@ -245,7 +261,7 @@ function CompetitionCard({ competition, type, userTeams, applications, onApply, 
         {competition.startDate && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />
-            <span>Inicia: {new Date(competition.startDate).toLocaleDateString()}</span>
+            <span>Inicia: {new Date(competition.startDate).toLocaleDateString('es-UY')}</span>
           </div>
         )}
 
@@ -285,7 +301,7 @@ function CompetitionCard({ competition, type, userTeams, applications, onApply, 
         <Button
           className="w-full"
           onClick={() => onApply(competition.id, type, selectedTeam)}
-          disabled={!selectedTeam || isApplying}
+          disabled={!selectedTeam || isApplyingAny}
         >
           {isApplying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Postularse

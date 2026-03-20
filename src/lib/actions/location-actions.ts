@@ -1,24 +1,11 @@
 'use server';
 
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
 import { getServerSession } from '@/lib/auth/get-server-session';
 import type { SavedLocation } from '@/lib/types';
 import * as geohash from 'ngeohash';
+import { getAdminDb } from '@/firebase/admin-init';
 
-// Initialize Firebase Admin
-if (getApps().length === 0) {
-  const serviceAccountJson = JSON.parse(
-    process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}'
-  );
-
-  initializeApp({
-    credential: cert(serviceAccountJson),
-    projectId: serviceAccountJson.project_id,
-  });
-}
-
-const db = getFirestore();
+const db = getAdminDb();
 
 /**
  * Save user's location for availability feature.

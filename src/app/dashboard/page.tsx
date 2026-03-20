@@ -439,7 +439,7 @@ function DashboardContent() {
           onClose={() => setShowVisualizer(false)}
           isAdmin={false}
           onEventLogged={undefined}
-          currentMinute={selectedLive.currentMinute || 0}
+          currentMinute={selectedLive.currentMinute ?? 0}
           currentSecond={0}
         />
       )}

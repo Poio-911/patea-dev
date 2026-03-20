@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/responsive-dropdown-menu';
 import { ChevronLeft, Play, Trophy, Trash2, MoreVertical, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getPlayerPhoto } from '@/lib/player-photo';
 
 type LeagueTab = 'standings' | 'fixture' | 'teams' | 'scorers' | 'applications' | 'my-team';
 
@@ -163,10 +164,10 @@ export function LeagueHeader({
               <div className="flex items-center gap-2 justify-start pt-1">
                 <span className="text-muted-foreground text-sm">Organizado por</span>
                 <div className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded-full">
-                  {organizer.photoURL || organizer.photoUrl ? (
+                  {getPlayerPhoto(organizer as any) ? (
                     <div className="relative w-4 h-4 rounded-full overflow-hidden">
                       <Image
-                        src={organizer.photoURL || organizer.photoUrl}
+                        src={getPlayerPhoto(organizer as any)!}
                         alt={organizer.displayName || 'Organizador'}
                         fill
                         className="object-cover"

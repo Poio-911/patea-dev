@@ -2,12 +2,14 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useDoc, useFirestore } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { useDoc, useFirestore, useCollection } from '@/firebase';
+import { collection, doc, query } from 'firebase/firestore';
 import type { League } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Trophy, Users, CalendarDays, ShieldAlert, Loader2, PlayCircle, UserPlus, Share2, Megaphone, UserCheck, MessageSquare, ClipboardList, Star, BarChart3, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -34,6 +36,7 @@ import {
   ResponsiveDropdownMenuSeparator,
   ResponsiveDropdownMenuTrigger,
 } from '@/components/ui/responsive-dropdown-menu';
+import { updateLeagueStatusAction } from '@/lib/actions/server-actions';
 
 export default function CompetitionDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -42,11 +45,21 @@ export default function CompetitionDetailPage({ params }: { params: { id: string
   const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState('overview');
 
+  const teamsSubQuery = React.useMemo(() => {
+    if (!firestore || !params.id) return null;
+    return query(collection(firestore, 'leagues', params.id, 'teams'));
+  }, [firestore, params.id]);
+
+  const { data: ghostTeams } = useCollection<any>(teamsSubQuery);
+
   const handleStatusChange = async (newStatus: League['status']) => {
-    if (!leagueRef) return;
     setIsUpdatingStatus(true);
     try {
-      await updateDoc(leagueRef, { status: newStatus });
+      const result = await updateLeagueStatusAction(params.id, newStatus);
+      if (!result.success) {
+        toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo cambiar el estado.' });
+        return;
+      }
       const labels: Record<League['status'], string> = {
         draft: 'Borrador',
         open_for_applications: 'Inscripciones abiertas',
@@ -84,6 +97,15 @@ export default function CompetitionDetailPage({ params }: { params: { id: string
   }, [firestore, params.id]);
 
   const { data: league, loading } = useDoc<League>(leagueRef);
+
+  const totalTeams = React.useMemo(() => {
+    const ids = new Set<string>();
+    (league?.teams || []).forEach((teamId) => teamId && ids.add(String(teamId)));
+    (ghostTeams || []).forEach((team: any) => team?.id && ids.add(String(team.id)));
+    return ids.size;
+  }, [league?.teams, ghostTeams]);
+
+  const canStartLeague = totalTeams >= 2;
 
   if (loading) {
     return (
@@ -146,7 +168,7 @@ export default function CompetitionDetailPage({ params }: { params: { id: string
                 {(league.location || league.startDate) && (
                   <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground/80 font-medium mt-2">
                     {league.location && <span className="flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5"/> Sede: {league.location}</span>}
-                    {league.startDate && <span className="flex items-center gap-1.5"><CalendarDays className="w-3.5 h-3.5"/> Inicio: {league.startDate}</span>}
+                    {league.startDate && <span className="flex items-center gap-1.5"><CalendarDays className="w-3.5 h-3.5"/> Inicio: {(() => { try { return format(parseISO(league.startDate!), "d MMM yyyy", { locale: es }); } catch { return league.startDate; } })()}</span>}
                   </div>
                 )}
               </div>
@@ -179,7 +201,8 @@ export default function CompetitionDetailPage({ params }: { params: { id: string
                   size="lg"
                   className="w-full sm:w-auto shadow-[0_0_30px_-5px] shadow-primary/40 font-bold tracking-wide uppercase group"
                   onClick={() => handleStatusChange('in_progress')}
-                  disabled={isUpdatingStatus}
+                  disabled={isUpdatingStatus || !canStartLeague}
+                  title={!canStartLeague ? 'Se necesitan al menos 2 equipos para iniciar la liga.' : undefined}
                 >
                   {isUpdatingStatus ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <PlayCircle className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />}
                   Iniciar Liga
@@ -294,7 +317,7 @@ export default function CompetitionDetailPage({ params }: { params: { id: string
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <LeagueStandingsTab leagueId={params.id} rules={league.rules} />
+              <LeagueStandingsTab leagueId={params.id} rules={league.rules} showRelegation={league.hasRelegation} />
             </div>
             <div className="space-y-6">
               <LeagueNextMatchesWidget leagueId={params.id} />

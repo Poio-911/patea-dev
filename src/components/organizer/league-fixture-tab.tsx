@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useDoc } from '@/firebase';
 import { collection, query, onSnapshot, addDoc, doc, writeBatch, getDocs, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { CompetitionMatchResultDialog } from '@/components/organizer/competition-match-result-dialog';
 import { AssignRefereeDialog } from '@/components/organizer/assign-referee-dialog';
 import { LeagueCalendarView } from '@/components/organizer/league-calendar-view';
+import { useCompetitionTeams } from '@/hooks/use-competition-teams';
 
 interface Team {
   id: string;
@@ -67,11 +68,18 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat, isReadOnl
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const [teams, setTeams] = React.useState<Team[]>([]);
   const [rounds, setRounds] = React.useState<FixtureRound[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [viewMode, setViewMode] = React.useState<'list' | 'calendar'>('list');
+
+  const compRef = React.useMemo(() => {
+    if (!firestore || !leagueId) return null;
+    return doc(firestore, 'leagues', leagueId);
+  }, [firestore, leagueId]);
+
+  const { data: compData } = useDoc<any>(compRef);
+  const { teams } = useCompetitionTeams(leagueId, 'leagues', compData);
 
   const [selectedMatch, setSelectedMatch] = React.useState<MatchObj | null>(null);
   const [selectedFixtureId, setSelectedFixtureId] = React.useState<string>('');
@@ -91,27 +99,16 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat, isReadOnl
     return count;
   }, [rounds]);
 
+  // Fixtures listener
   React.useEffect(() => {
     if (!firestore) return;
-    
-    // Listen to teams
-    const teamsRef = collection(firestore, 'leagues', leagueId, 'teams');
-    const unsubTeams = onSnapshot(query(teamsRef), (snap) => {
-      setTeams(snap.docs.map(d => ({ id: d.id, ...d.data() } as Team)));
-    });
-
-    // Listen to fixtures
     const fixturesRef = collection(firestore, 'leagues', leagueId, 'fixtures');
     const qFixtures = query(fixturesRef, orderBy('roundNumber', 'asc'));
-    const unsubFixtures = onSnapshot(qFixtures, (snap) => {
+    const unsub = onSnapshot(qFixtures, (snap) => {
       setRounds(snap.docs.map(d => ({ id: d.id, ...d.data() } as FixtureRound)));
       setLoading(false);
     });
-
-    return () => {
-      unsubTeams();
-      unsubFixtures();
-    };
+    return () => unsub();
   }, [firestore, leagueId]);
 
   const handleGenerateFixture = () => {
@@ -176,7 +173,7 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat, isReadOnl
           const awayTeam = matchTeams[awayIdx];
 
           currentRoundMatches.push({
-            id: `match_${r}_${i}`,
+            id: `match_${r}_${i}_${crypto.randomUUID().slice(0, 8)}`,
             homeTeamId: homeTeam.id === 'BYE' ? null : homeTeam.id,
             awayTeamId: awayTeam.id === 'BYE' ? null : awayTeam.id,
             homeTeamName: homeTeam.name,
@@ -203,7 +200,7 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat, isReadOnl
           const originalRound = generatedRounds[r];
           const invertedMatches = originalRound.matches.map(m => ({
             ...m,
-            id: `match_${r + numRounds}_${Math.random()}`,
+            id: `match_${r + numRounds}_${crypto.randomUUID().slice(0, 8)}`,
             homeTeamId: m.awayTeamId,
             awayTeamId: m.homeTeamId,
             homeTeamName: m.awayTeamName,
@@ -219,23 +216,24 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat, isReadOnl
         }
       }
 
-      // Batch Write
-      const batch = writeBatch(firestore);
-      const fixturesRef = collection(firestore, 'leagues', leagueId, 'fixtures');
-      
-      generatedRounds.forEach((gr) => {
-        const newDocRef = doc(fixturesRef);
-        batch.set(newDocRef, {
-          roundNumber: gr.roundNumber,
-          roundName: gr.roundName,
-          matches: gr.matches,
-          createdAt: gr.createdAt
-        });
-      });
-
-      await batch.commit();
-
-      toast({ title: 'Fixture Generado', description: 'Partidos creados automáticamente.' });
+      // Persist via server action to keep writes secure
+      try {
+        const { saveLeagueFixturesAction } = await import('@/lib/actions/server-actions');
+        const payload = generatedRounds.map(r => ({
+          roundNumber: r.roundNumber,
+          roundName: r.roundName,
+          matches: r.matches,
+          createdAt: r.createdAt,
+        }));
+        const res = await saveLeagueFixturesAction(leagueId, payload);
+        if (!res?.success) {
+          throw new Error(res?.error || 'No se pudo guardar el fixture.');
+        }
+        toast({ title: 'Fixture Generado', description: 'Partidos creados automáticamente.' });
+      } catch (e: any) {
+        console.error(e);
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo guardar el fixture en el servidor.' });
+      }
     } catch (e: any) {
       console.error(e);
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo generar el fixture.' });
@@ -386,16 +384,15 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat, isReadOnl
                       );
                     }
 
-                    const isHome = (homeId: string | null) => homeId === match.homeTeamId;
-
                     return (
-                      <div key={idx} className="relative group px-5 py-4 hover:bg-muted/10 transition-colors">
+                      <div key={idx} className="relative group px-4 py-4 md:px-6 md:py-5 hover:bg-muted/10 transition-colors">
                         {/* Settings button */}
                         {!isReadOnly && (
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="absolute right-2 top-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary z-10"
+                            aria-label="Configurar partido"
+                            className="absolute right-2 top-2 h-6 w-6 opacity-50 sm:opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary z-10"
                             onClick={() => {
                               setSelectedMatch(match);
                               setSelectedFixtureId(round.id);
@@ -407,69 +404,62 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat, isReadOnl
                         )}
 
                         {/* Metadata Row */}
-                        {(match.date || match.time || match.venue || match.refereeName) && (
-                          <div className="flex items-center justify-center gap-3 mb-3 text-[11px] text-muted-foreground font-medium flex-wrap">
+                        {(match.date || match.time || match.venue || match.refereeName || !isReadOnly) && (
+                          <div className="mb-3 md:mb-4 flex items-center justify-center md:justify-start gap-2 md:gap-2.5 text-[10px] md:text-[11px] flex-wrap md:flex-nowrap">
                             {(match.date || match.time) && (
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3"/>
+                              <span className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-background/50 px-2.5 md:px-3 py-1 text-muted-foreground font-semibold whitespace-nowrap">
+                                <Clock className="w-3 h-3" />
                                 {[match.date, match.time].filter(Boolean).join(' · ')}
                               </span>
                             )}
                             {match.venue && (
-                              <span className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3"/>
+                              <span className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-background/50 px-2.5 md:px-3 py-1 text-muted-foreground font-semibold whitespace-nowrap">
+                                <MapPin className="w-3 h-3" />
                                 {match.venue}
                               </span>
                             )}
-                            {match.refereeName && (
-                              <span className="flex items-center gap-1 text-primary">
-                                <UserCheck className="w-3 h-3"/>
-                                {match.refereeName}
+                            {match.refereeName ? (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-2.5 md:px-3 py-1 text-primary font-semibold whitespace-nowrap">
+                                <UserCheck className="w-3 h-3" />
+                                Árbitro: {match.refereeName}
                               </span>
-                            )}
-                            {!isReadOnly && !match.refereeName && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 text-[10px] px-2 text-muted-foreground hover:text-primary"
-                                onClick={() => {
-                                  setSelectedMatch(match);
-                                  setSelectedFixtureId(round.id);
-                                  setIsRefereeDialogOpen(true);
-                                }}
-                              >
-                                <UserCheck className="w-3 h-3 mr-1" />
-                                Asignar Árbitro
-                              </Button>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-border/30 bg-muted/30 px-2.5 md:px-3 py-1 text-muted-foreground/70 font-semibold whitespace-nowrap">
+                                <UserCheck className="w-3 h-3" />
+                                Sin árbitro
+                              </span>
                             )}
                           </div>
                         )}
 
                         {/* Match Row */}
-                        <div className="flex items-center gap-3">
+                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-5">
                           {/* Home Team */}
-                          <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
-                            <span className="font-bold text-sm truncate text-right">{match.homeTeamName}</span>
+                          <div className="flex items-center gap-2 md:gap-2.5 flex-1 justify-end min-w-0">
+                            <span className="font-bold text-sm md:text-base truncate text-right">{match.homeTeamName}</span>
                             {homeTeam ? <JerseyPreview jersey={homeTeam.jersey} size="sm" /> : <div className="w-10 h-10 rounded-full bg-muted flex-shrink-0"/>}
                           </div>
 
                           {/* Scoreboard */}
                           <div className="flex-shrink-0 flex flex-col items-center gap-1.5">
                             {match.status === 'finished' ? (
-                              <div className="flex items-center bg-background/80 border border-border/50 rounded-xl overflow-hidden shadow-inner text-xl font-black tracking-tighter">
-                                <div className={`w-11 text-center py-2 ${match.homeScore! > match.awayScore! ? 'text-green-600 dark:text-green-400' : ''}`}>{match.homeScore ?? 0}</div>
+                              <>
+                                <div className="flex items-center bg-background/90 border border-border/60 rounded-xl overflow-hidden shadow-inner text-xl md:text-2xl font-black tracking-tighter">
+                                <div className={`w-11 md:w-12 text-center py-2 md:py-2.5 ${match.homeScore! > match.awayScore! ? 'text-green-600 dark:text-green-400' : ''}`}>{match.homeScore ?? 0}</div>
                                 <div className="text-muted-foreground/40 px-1 text-sm">–</div>
-                                <div className={`w-11 text-center py-2 ${match.awayScore! > match.homeScore! ? 'text-green-600 dark:text-green-400' : ''}`}>{match.awayScore ?? 0}</div>
-                              </div>
+                                <div className={`w-11 md:w-12 text-center py-2 md:py-2.5 ${match.awayScore! > match.homeScore! ? 'text-green-600 dark:text-green-400' : ''}`}>{match.awayScore ?? 0}</div>
+                                </div>
+                                <span className="text-[10px] md:text-[11px] uppercase tracking-widest font-bold text-green-600/80 dark:text-green-400/80">Finalizado</span>
+                              </>
                             ) : isReadOnly ? (
-                              <Badge variant="outline" className="font-bold uppercase tracking-widest text-[10px] h-7 px-3 rounded-lg border-muted-foreground/30 text-muted-foreground">
+                              <Badge variant="outline" className="font-bold uppercase tracking-widest text-[10px] md:text-[11px] h-8 md:h-9 px-3.5 md:px-4 rounded-lg border-muted-foreground/30 text-muted-foreground bg-background/40">
                                 Pendiente
                               </Badge>
                             ) : (
                               <Button
-                                variant="outline"
+                                variant="default"
                                 size="sm"
-                                className="font-bold uppercase tracking-widest text-[10px] h-9 px-4 rounded-xl border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
+                                className="font-bold uppercase tracking-widest text-[10px] md:text-[11px] h-9 md:h-10 px-4 md:px-5 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-all shadow-sm"
                                 onClick={() => {
                                   setSelectedMatch(match);
                                   setSelectedFixtureId(round.id);
@@ -482,20 +472,37 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat, isReadOnl
                           </div>
 
                           {/* Away Team */}
-                          <div className="flex items-center gap-2 flex-1 justify-start min-w-0">
+                          <div className="flex items-center gap-2 md:gap-2.5 flex-1 justify-start min-w-0">
                             {awayTeam ? <JerseyPreview jersey={awayTeam.jersey} size="sm" /> : <div className="w-10 h-10 rounded-full bg-muted flex-shrink-0"/>}
-                            <span className="font-bold text-sm truncate">{match.awayTeamName}</span>
+                            <span className="font-bold text-sm md:text-base truncate">{match.awayTeamName}</span>
                           </div>
                         </div>
 
-                        {/* Streaming Row */}
-                        {match.streamingUrl && (
-                          <div className="mt-4 flex justify-center">
+                        {/* Actions Row */}
+                        {(!isReadOnly || match.streamingUrl) && (
+                          <div className="mt-3 md:mt-4 flex justify-center md:justify-end gap-2 flex-wrap">
+                            {!isReadOnly && !match.refereeName && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="rounded-full font-bold text-[10px] md:text-[11px] tracking-widest uppercase h-8 md:h-9 px-3 md:px-4 border-border/50 text-muted-foreground hover:text-primary"
+                                onClick={() => {
+                                  setSelectedMatch(match);
+                                  setSelectedFixtureId(round.id);
+                                  setIsRefereeDialogOpen(true);
+                                }}
+                              >
+                                <UserCheck className="w-3 h-3 mr-1" />
+                                Asignar Árbitro
+                              </Button>
+                            )}
+
+                            {match.streamingUrl && (
                             <Button
                               variant={match.isLive ? "default" : "outline"}
                               size="sm"
                               className={cn(
-                                "rounded-full font-black text-[10px] tracking-widest uppercase h-8 px-4",
+                                "rounded-full font-black text-[10px] md:text-[11px] tracking-widest uppercase h-8 md:h-9 px-4 md:px-5",
                                 match.isLive ? "bg-red-600 hover:bg-red-700 text-white animate-pulse border-none" : "border-primary/30 text-primary hover:bg-primary/5"
                               )}
                               onClick={(e) => {
@@ -515,6 +522,7 @@ export function LeagueFixtureTab({ leagueId, leagueName, leagueFormat, isReadOnl
                                 </span>
                               )}
                             </Button>
+                            )}
                           </div>
                         )}
                       </div>

@@ -26,6 +26,7 @@ import { generateBracket, advanceWinner, isTournamentComplete, getChampion, getR
 import { publishMatchPlayedActivity, publishOvrChangeActivity } from './social-actions';
 import { notifyMatchUpdatedAction } from './notification-actions';
 import { CREDITS } from '../constants';
+import { getServerSession } from '@/lib/auth/get-server-session';
 
 // --- Server Actions ---
 
@@ -1392,8 +1393,8 @@ export async function revokeApplicationAction(
             return { success: false, error: 'La aplicación no está aprobada' };
         }
 
-        // 1. Update application status back to pending
-        await applicationRef.update({ status: 'pending' });
+        // 1. Mark application as revoked (preserve historical state)
+        await applicationRef.update({ status: 'revoked' });
 
         // 2. Remove team from competition
         const competitionCollection = application.competitionType === 'cup' ? 'cups' : 'leagues';
@@ -1415,7 +1416,8 @@ export async function revokeApplicationAction(
  */
 export async function removeTeamFromCupAction(
     cupId: string,
-    teamId: string
+    teamId: string,
+    userId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const cupRef = getAdminDb().collection('cups').doc(cupId);
@@ -1427,17 +1429,29 @@ export async function removeTeamFromCupAction(
 
         const cup = cupDoc.data() as Cup;
 
+        if (cup.ownerUid !== userId) {
+            return { success: false, error: 'No tienes permiso para modificar esta copa.' };
+        }
+
         // Only allow removal if not completed
         if (cup.status === 'completed') {
             return { success: false, error: 'No se puede remover equipos de una copa finalizada.' };
         }
 
-        // 1. Remove team from cup teams array
+        // 1. Check if it's a ghost team (in subcollection)
+        const ghostTeamRef = cupRef.collection('teams').doc(teamId);
+        const ghostTeamDoc = await ghostTeamRef.get();
+
+        if (ghostTeamDoc.exists) {
+            await ghostTeamRef.delete();
+        }
+
+        // 2. Remove team from cup teams array (for real teams)
         await cupRef.update({
             teams: FieldValue.arrayRemove(teamId)
         });
 
-        // 2. Find and update related approved application to 'pending'
+        // 3. Find and update related approved application to 'revoked'
         const applicationsSnapshot = await getAdminDb().collection('competitionApplications')
             .where('competitionId', '==', cupId)
             .where('teamId', '==', teamId)
@@ -1447,7 +1461,68 @@ export async function removeTeamFromCupAction(
         if (!applicationsSnapshot.empty) {
             const batch = getAdminDb().batch();
             applicationsSnapshot.docs.forEach(doc => {
-                batch.update(doc.ref, { status: 'pending' });
+                batch.update(doc.ref, { status: 'revoked' });
+            });
+            await batch.commit();
+        }
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Remove a team from a league. Handles both ghost teams and real teams.
+ */
+export async function removeTeamFromLeagueAction(
+    leagueId: string,
+    teamId: string,
+    userId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const leagueRef = getAdminDb().collection('leagues').doc(leagueId);
+        const leagueDoc = await leagueRef.get();
+
+        if (!leagueDoc.exists) {
+            return { success: false, error: 'Liga no encontrada.' };
+        }
+
+        const league = leagueDoc.data() as League;
+        if (league.ownerUid !== userId) {
+            return { success: false, error: 'No tienes permiso para modificar esta liga.' };
+        }
+
+        // Only allow removal if not completed
+        if (league.status === 'completed') {
+            return { success: false, error: 'No se puede remover equipos de una liga finalizada.' };
+        }
+
+        // 1. Check if it's a ghost team (in subcollection)
+        const ghostTeamRef = leagueRef.collection('teams').doc(teamId);
+        const ghostTeamDoc = await ghostTeamRef.get();
+
+        if (ghostTeamDoc.exists) {
+            await ghostTeamRef.delete();
+        }
+
+        // 2. Remove team from league teams array (for real teams)
+        await leagueRef.update({
+            teams: FieldValue.arrayRemove(teamId)
+        });
+
+        // 3. Find and update related approved application to 'revoked'
+        const applicationsSnapshot = await getAdminDb().collection('competitionApplications')
+            .where('competitionId', '==', leagueId)
+            .where('teamId', '==', teamId)
+            .where('status', '==', 'approved')
+            .get();
+
+        if (!applicationsSnapshot.empty) {
+            const batch = getAdminDb().batch();
+            applicationsSnapshot.docs.forEach(doc => {
+                batch.update(doc.ref, { status: 'revoked' });
             });
             await batch.commit();
         }
@@ -1567,15 +1642,527 @@ export async function updateLeagueStatusAction(
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const leagueRef = getAdminDb().collection('leagues').doc(leagueId);
+        const leagueDoc = await leagueRef.get();
 
-        await leagueRef.update({
-            status: newStatus,
-        });
+        if (!leagueDoc.exists) {
+            return { success: false, error: 'Liga no encontrada.' };
+        }
+
+        const leagueData = leagueDoc.data() as League;
+
+        if (newStatus === 'in_progress') {
+            const ghostTeamsCount = (await getAdminDb().collection('leagues').doc(leagueId).collection('teams').count().get()).data().count;
+            const realTeamCount = Array.isArray(leagueData.teams) ? leagueData.teams.length : 0;
+            const totalTeams = ghostTeamsCount + realTeamCount;
+
+            if (totalTeams < 2) {
+                return { success: false, error: 'Se necesitan al menos 2 equipos para iniciar la liga.' };
+            }
+        }
+
+        await leagueRef.update({ status: newStatus });
 
         // Generate fixture if starting the league
         if (newStatus === 'in_progress') {
             await generateLeagueFixtureAction(leagueId);
         }
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Save rounds into leagues/{leagueId}/fixtures with ownership check
+ */
+export async function saveLeagueFixturesAction(leagueId: string, rounds: Array<any>): Promise<{ success: boolean; error?: string }> {
+    try {
+        const session = await getServerSession();
+        const currentUserId = session?.user?.uid;
+
+        if (!currentUserId) return { success: false, error: 'No autenticado.' };
+
+        const leagueRef = getAdminDb().collection('leagues').doc(leagueId);
+        const leagueDoc = await leagueRef.get();
+        if (!leagueDoc.exists) return { success: false, error: 'Liga no encontrada.' };
+
+        const leagueData = leagueDoc.data() as League;
+        if (leagueData.ownerUid !== currentUserId) return { success: false, error: 'No tienes permisos para modificar este fixture.' };
+
+        // Remove existing fixtures
+        const fixturesSnap = await leagueRef.collection('fixtures').get();
+        if (!fixturesSnap.empty) {
+            const delBatch = getAdminDb().batch();
+            fixturesSnap.docs.forEach(d => delBatch.delete(d.ref));
+            await delBatch.commit();
+        }
+
+        // Write new rounds
+        if (rounds && rounds.length > 0) {
+            const writeBatch = getAdminDb().batch();
+            const fixturesCol = leagueRef.collection('fixtures');
+            rounds.forEach((r) => {
+                const newRef = fixturesCol.doc();
+                writeBatch.set(newRef, {
+                    roundNumber: r.roundNumber,
+                    roundName: r.roundName,
+                    matches: r.matches,
+                    createdAt: r.createdAt || new Date().toISOString(),
+                });
+            });
+            await writeBatch.commit();
+        }
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Referee management actions: add / update / delete
+ */
+export async function addRefereeAction(competitionType: 'leagues' | 'cups', competitionId: string, data: { name: string; email?: string | null; phone?: string | null; notes?: string | null; photoUrl?: string | null; }): Promise<{ success: boolean; id?: string; error?: string }> {
+    try {
+        const session = await getServerSession();
+        const uid = session?.user?.uid;
+        if (!uid) return { success: false, error: 'No autenticado.' };
+
+        const compRef = getAdminDb().collection(competitionType).doc(competitionId);
+        const compSnap = await compRef.get();
+        if (!compSnap.exists) return { success: false, error: 'Competición no encontrada.' };
+
+        const compData = compSnap.data() as any;
+        if (compData.ownerUid !== uid) return { success: false, error: 'No tienes permisos para añadir árbitros.' };
+
+        const refCol = compRef.collection('referees');
+        const newRef = await refCol.add({
+            name: data.name,
+            email: data.email || null,
+            phone: data.phone || null,
+            notes: data.notes || null,
+            photoUrl: data.photoUrl || null,
+            competitionId,
+            createdAt: new Date().toISOString(),
+            assignedMatches: [],
+        });
+
+        return { success: true, id: newRef.id };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+export async function updateRefereeAction(competitionType: 'leagues' | 'cups', competitionId: string, refereeId: string, updates: { name?: string; email?: string | null; phone?: string | null; notes?: string | null; photoUrl?: string | null; }): Promise<{ success: boolean; error?: string }> {
+    try {
+        const session = await getServerSession();
+        const uid = session?.user?.uid;
+        if (!uid) return { success: false, error: 'No autenticado.' };
+
+        const compRef = getAdminDb().collection(competitionType).doc(competitionId);
+        const compSnap = await compRef.get();
+        if (!compSnap.exists) return { success: false, error: 'Competición no encontrada.' };
+
+        const compData = compSnap.data() as any;
+        if (compData.ownerUid !== uid) return { success: false, error: 'No tienes permisos para editar árbitros.' };
+
+        const refDoc = compRef.collection('referees').doc(refereeId);
+        await refDoc.update({
+            ...(updates.name !== undefined ? { name: updates.name } : {}),
+            ...(updates.email !== undefined ? { email: updates.email } : {}),
+            ...(updates.phone !== undefined ? { phone: updates.phone } : {}),
+            ...(updates.notes !== undefined ? { notes: updates.notes } : {}),
+            ...(updates.photoUrl !== undefined ? { photoUrl: updates.photoUrl } : {}),
+            updatedAt: new Date().toISOString(),
+        });
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+export async function deleteRefereeAction(competitionType: 'leagues' | 'cups', competitionId: string, refereeId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        const session = await getServerSession();
+        const uid = session?.user?.uid;
+        if (!uid) return { success: false, error: 'No autenticado.' };
+
+        const compRef = getAdminDb().collection(competitionType).doc(competitionId);
+        const compSnap = await compRef.get();
+        if (!compSnap.exists) return { success: false, error: 'Competición no encontrada.' };
+
+        const compData = compSnap.data() as any;
+        if (compData.ownerUid !== uid) return { success: false, error: 'No tienes permisos para eliminar árbitros.' };
+
+        const refDoc = compRef.collection('referees').doc(refereeId);
+        await refDoc.delete();
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Assign referee to a match (league fixture or cup bracket)
+ */
+export async function assignRefereeAction(competitionType: 'leagues' | 'cups', competitionId: string, refereeId: string, matchData: { matchId: string; fixtureDocId?: string; isCup: boolean }): Promise<{ success: boolean; error?: string }> {
+    try {
+        const session = await getServerSession();
+        const uid = session?.user?.uid;
+        if (!uid) return { success: false, error: 'No autenticado.' };
+
+        const compRef = getAdminDb().collection(competitionType).doc(competitionId);
+        const compSnap = await compRef.get();
+        if (!compSnap.exists) return { success: false, error: 'Competición no encontrada.' };
+
+        const compData = compSnap.data() as any;
+        if (compData.ownerUid !== uid) return { success: false, error: 'No tienes permisos para asignar árbitros.' };
+
+        const refereeSnap = await compRef.collection('referees').doc(refereeId).get();
+        if (!refereeSnap.exists) return { success: false, error: 'Árbitro no encontrado.' };
+        const refereeData = refereeSnap.data() as any;
+
+        const batch = getAdminDb().batch();
+
+        if (matchData.isCup) {
+            // Cup assignment
+            const bracketArray = compData.bracket || [];
+            const updatedBracket = bracketArray.map((m: any) => {
+                if (m.id === matchData.matchId) {
+                    return { ...m, refereeId, refereeName: refereeData.name };
+                }
+                return m;
+            });
+            batch.update(compRef, { bracket: updatedBracket });
+
+            // Update referee's assignedMatches
+            const assignmentKey = `bracket:${matchData.matchId}`;
+            const currentAssignments = refereeData.assignedMatches || [];
+            if (!currentAssignments.includes(assignmentKey)) {
+                batch.update(compRef.collection('referees').doc(refereeId), {
+                    assignedMatches: [...currentAssignments, assignmentKey],
+                });
+            }
+        } else {
+            // League assignment (fixture)
+            if (!matchData.fixtureDocId) return { success: false, error: 'Falta fixtureDocId para ligas.' };
+            const fixtureRef = compRef.collection('fixtures').doc(matchData.fixtureDocId);
+            const fixtureSnap = await fixtureRef.get();
+            if (!fixtureSnap.exists) return { success: false, error: 'Fixture no encontrado.' };
+
+            const fixtureData = fixtureSnap.data() as any;
+            const updatedMatches = (fixtureData.matches || []).map((m: any) => {
+                if (m.id === matchData.matchId) {
+                    return { ...m, refereeId, refereeName: refereeData.name };
+                }
+                return m;
+            });
+            batch.update(fixtureRef, { matches: updatedMatches });
+
+            // Update referee's assignedMatches
+            const assignmentKey = `${matchData.fixtureDocId}:${matchData.matchId}`;
+            const currentAssignments = refereeData.assignedMatches || [];
+            if (!currentAssignments.includes(assignmentKey)) {
+                batch.update(compRef.collection('referees').doc(refereeId), {
+                    assignedMatches: [...currentAssignments, assignmentKey],
+                });
+            }
+        }
+
+        await batch.commit();
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Save match result (handles both league and cup logic)
+ */
+export async function saveMatchResultAction(competitionType: 'leagues' | 'cups', competitionId: string, matchData: { matchId: string; fixtureDocId?: string; homeScore: number; awayScore: number; scorers: any[]; cards: any[]; mvp?: any; isWalkover: boolean; penaltyWinnerId?: string | null; streamingUrl?: string; isLive?: boolean; attendance?: number | null; notes?: string; isCup: boolean }): Promise<{ success: boolean; error?: string }> {
+    try {
+        const session = await getServerSession();
+        const uid = session?.user?.uid;
+        if (!uid) return { success: false, error: 'No autenticado.' };
+
+        const compRef = getAdminDb().collection(competitionType).doc(competitionId);
+        const compSnap = await compRef.get();
+        if (!compSnap.exists) return { success: false, error: 'Competición no encontrada.' };
+
+        const compData = compSnap.data() as any;
+        if (compData.ownerUid !== uid) return { success: false, error: 'No tienes permisos para guardar resultados.' };
+
+        if (matchData.isCup) {
+            // CUP LOGIC (Keep existing for now, but could be enhanced later if cups get global stats)
+            const updates: any = { bracket: compData.bracket || [] };
+            
+            // Update match in bracket array
+            updates.bracket = (updates.bracket).map((bm: any) => {
+                if (bm.id === matchData.matchId) {
+                    return {
+                        ...bm,
+                        homeScore: matchData.homeScore,
+                        awayScore: matchData.awayScore,
+                        scorers: matchData.scorers,
+                        cards: matchData.cards,
+                        isWalkover: matchData.isWalkover,
+                        status: 'finished',
+                        penaltyWinnerId: matchData.penaltyWinnerId || null,
+                        streamingUrl: matchData.streamingUrl || null,
+                        isLive: matchData.isLive || false,
+                        ...(matchData.mvp ? { mvp: matchData.mvp } : {}),
+                        ...(matchData.attendance !== null && matchData.attendance !== undefined ? { attendance: matchData.attendance } : {}),
+                        ...(matchData.notes ? { notes: matchData.notes } : {}),
+                    };
+                }
+                return bm;
+            });
+
+            await compRef.update(updates);
+        } else {
+            // LEAGUE LOGIC
+            if (!matchData.fixtureDocId) return { success: false, error: 'Falta fixtureDocId para ligas.' };
+            const fixtureRef = compRef.collection('fixtures').doc(matchData.fixtureDocId);
+            const fixtureSnap = await fixtureRef.get();
+            if (!fixtureSnap.exists) return { success: false, error: 'Fixture no encontrado.' };
+
+            const fixtureData = fixtureSnap.data() as any;
+            const previousMatch = (fixtureData.matches || []).find((m: any) => m.id === matchData.matchId);
+            
+            // --- PLAYER STATS SYNC (Real Players only) ---
+            const db = getAdminDb();
+            const playerStatsBatch = db.batch();
+            const statsUpdatedPlayers = new Set<string>();
+
+            // Helper to get stats delta
+            const getDeltas = (prevScorers: any[] = [], nextScorers: any[] = []) => {
+                const deltas = new Map<string, { goals: number; assists: number }>();
+                
+                prevScorers.forEach(s => {
+                    if (s.playerId && !s.playerId.startsWith('gp_')) {
+                        const d = deltas.get(s.playerId) || { goals: 0, assists: 0 };
+                        d.goals -= 1;
+                        deltas.set(s.playerId, d);
+                    }
+                    if (s.assistantId && !s.assistantId.startsWith('gp_')) {
+                        const d = deltas.get(s.assistantId) || { goals: 0, assists: 0 };
+                        d.assists -= 1;
+                        deltas.set(s.assistantId, d);
+                    }
+                });
+
+                nextScorers.forEach(s => {
+                    if (s.playerId && !s.playerId.startsWith('gp_')) {
+                        const d = deltas.get(s.playerId) || { goals: 0, assists: 0 };
+                        d.goals += 1;
+                        deltas.set(s.playerId, d);
+                    }
+                    if (s.assistantId && !s.assistantId.startsWith('gp_')) {
+                        const d = deltas.get(s.assistantId) || { goals: 0, assists: 0 };
+                        d.assists += 1;
+                        deltas.set(s.assistantId, d);
+                    }
+                });
+
+                return deltas;
+            };
+
+            const deltas = getDeltas(previousMatch?.scorers, matchData.scorers);
+            deltas.forEach((val, pid) => {
+                if (val.goals !== 0 || val.assists !== 0) {
+                    const pRef = db.collection('players').doc(pid);
+                    const updates: any = {};
+                    if (val.goals !== 0) updates['stats.goals'] = FieldValue.increment(val.goals);
+                    if (val.assists !== 0) updates['stats.assists'] = FieldValue.increment(val.assists);
+                    playerStatsBatch.update(pRef, updates);
+                    statsUpdatedPlayers.add(pid);
+                }
+            });
+
+
+            const updatedMatches = (fixtureData.matches || []).map((m: any) => {
+                if (m.id === matchData.matchId) {
+                    return {
+                        ...m,
+                        homeScore: matchData.homeScore,
+                        awayScore: matchData.awayScore,
+                        scorers: matchData.scorers,
+                        cards: matchData.cards,
+                        isWalkover: matchData.isWalkover,
+                        status: 'finished',
+                        ...(matchData.mvp ? { mvp: matchData.mvp } : {}),
+                        ...(matchData.attendance !== null && matchData.attendance !== undefined ? { attendance: matchData.attendance } : {}),
+                        ...(matchData.notes ? { notes: matchData.notes } : {}),
+                    };
+                }
+                return m;
+            });
+            
+            await fixtureRef.update({ matches: updatedMatches });
+            
+            // Commit stats updates
+            await playerStatsBatch.commit();
+
+            // --- STANDINGS SYNC ---
+            await updateLeagueStandingsAction(competitionId);
+        }
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Update bracket match settings (date, time, venue, streaming, etc)
+ */
+export async function updateBracketMatchSettingsAction(cupId: string, matchId: string, settings: { date?: string; time?: string; venue?: string; streamingUrl?: string; isLive?: boolean }): Promise<{ success: boolean; error?: string }> {
+    try {
+        const session = await getServerSession();
+        const uid = session?.user?.uid;
+        if (!uid) return { success: false, error: 'No autenticado.' };
+
+        const cupRef = getAdminDb().collection('cups').doc(cupId);
+        const cupSnap = await cupRef.get();
+        if (!cupSnap.exists) return { success: false, error: 'Copa no encontrada.' };
+
+        const cupData = cupSnap.data() as any;
+        if (cupData.ownerUid !== uid) return { success: false, error: 'No tienes permisos para editar este torneo.' };
+
+        const updatedBracket = (cupData.bracket || []).map((m: any) => {
+            if (m.id === matchId) {
+                return { 
+                    ...m, 
+                    ...(settings.date !== undefined ? { date: settings.date } : {}),
+                    ...(settings.time !== undefined ? { time: settings.time } : {}),
+                    ...(settings.venue !== undefined ? { venue: settings.venue } : {}),
+                    ...(settings.streamingUrl !== undefined ? { streamingUrl: settings.streamingUrl } : {}),
+                    ...(settings.isLive !== undefined ? { isLive: settings.isLive } : {}),
+                };
+            }
+            return m;
+        });
+
+        await cupRef.update({ bracket: updatedBracket });
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Update cup status
+ */
+export async function updateCupStatusAction(cupId: string, newStatus: CompetitionStatus): Promise<{ success: boolean; error?: string }> {
+    try {
+        const session = await getServerSession();
+        const uid = session?.user?.uid;
+        if (!uid) return { success: false, error: 'No autenticado.' };
+
+        const cupRef = getAdminDb().collection('cups').doc(cupId);
+        const cupSnap = await cupRef.get();
+        if (!cupSnap.exists) return { success: false, error: 'Copa no encontrada.' };
+
+        const cupData = cupSnap.data() as any;
+        if (cupData.ownerUid !== uid) return { success: false, error: 'No tienes permisos para editar esta copa.' };
+
+        await cupRef.update({ status: newStatus });
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+/**
+ * Add/Remove sponsors from competition
+ */
+export async function manageSponsorAction(competitionType: 'leagues' | 'cups', competitionId: string, action: 'add' | 'remove', sponsor: { id?: string; name: string; logoUrl: string; websiteUrl?: string; order?: number }): Promise<{ success: boolean; error?: string }> {
+    try {
+        const session = await getServerSession();
+        const uid = session?.user?.uid;
+        if (!uid) return { success: false, error: 'No autenticado.' };
+
+        const compRef = getAdminDb().collection(competitionType).doc(competitionId);
+        const compSnap = await compRef.get();
+        if (!compSnap.exists) return { success: false, error: 'Competición no encontrada.' };
+
+        const compData = compSnap.data() as any;
+        if (compData.ownerUid !== uid) return { success: false, error: 'No tienes permisos para editar sponsors.' };
+
+        const sponsorWithId = {
+            ...sponsor,
+            id: sponsor.id || Math.random().toString(36).substring(2, 11),
+        };
+
+        if (action === 'add') {
+            const sponsors = compData.sponsors || [];
+            if (!sponsors.find((s: any) => s.id === sponsorWithId.id)) {
+                await compRef.update({
+                    sponsors: [...sponsors, sponsorWithId],
+                });
+            }
+        } else if (action === 'remove') {
+            const sponsors = compData.sponsors || [];
+            await compRef.update({
+                sponsors: sponsors.filter((s: any) => s.id !== sponsor.id),
+            });
+        }
+
+        return { success: true };
+    } catch (error) {
+        const err = handleServerActionError(error);
+        return { success: false, error: err.error };
+    }
+}
+
+export async function deleteCompetitionAction(
+    competitionId: string,
+    competitionType: 'leagues' | 'cups'
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const session = await getServerSession();
+        const currentUserId = session?.user?.uid;
+
+        if (!currentUserId) {
+            return { success: false, error: 'No autenticado.' };
+        }
+
+        const compRef = getAdminDb().collection(competitionType).doc(competitionId);
+        const compDoc = await compRef.get();
+
+        if (!compDoc.exists) {
+            return { success: false, error: 'Competición no encontrada.' };
+        }
+
+        const compData = compDoc.data() as League | Cup;
+        if (compData.ownerUid !== currentUserId) {
+            return { success: false, error: 'No tienes permisos para eliminar esta competición.' };
+        }
+
+        const subcollections = ['teams', 'applications', ...(competitionType === 'leagues' ? ['fixtures'] : [])];
+
+        for (const subcollectionName of subcollections) {
+            const snapshot = await compRef.collection(subcollectionName).get();
+            if (snapshot.empty) continue;
+
+            const batch = getAdminDb().batch();
+            snapshot.docs.forEach((docSnap) => batch.delete(docSnap.ref));
+            await batch.commit();
+        }
+
+        await compRef.delete();
 
         return { success: true };
     } catch (error) {
@@ -1869,10 +2456,15 @@ export async function startCupAction(
             };
         }
 
+        // Normalize cup.teams to string IDs (handle legacy object format)
+        const teamIds: string[] = (cup.teams as any[]).map((t: any) =>
+            typeof t === 'string' ? t : t?.id
+        ).filter(Boolean);
+
         // Get teams data
         const teamsSnapshot = await getAdminDb()
             .collection('teams')
-            .where('__name__', 'in', cup.teams)
+            .where('__name__', 'in', teamIds)
             .get();
 
         const teams = teamsSnapshot.docs.map(doc => ({
@@ -1921,22 +2513,6 @@ export async function startCupAction(
             seedingType,
         });
 
-        return { success: true };
-    } catch (error) {
-        const err = handleServerActionError(error);
-        return { success: false, error: err.error };
-    }
-}
-
-/**
- * Update cup status
- */
-export async function updateCupStatusAction(
-    cupId: string,
-    status: CompetitionStatus
-): Promise<{ success: boolean; error?: string }> {
-    try {
-        await getAdminDb().collection('cups').doc(cupId).update({ status });
         return { success: true };
     } catch (error) {
         const err = handleServerActionError(error);
@@ -2065,6 +2641,19 @@ export async function updateMatchLocationAction(
 // ============================================================================
 
 /**
+ * Deep serialize Firestore data to plain objects
+ * Converts Timestamps and removes any Firestore metadata
+ */
+function deepSerialize(obj: any): any {
+    return JSON.parse(JSON.stringify(obj, (_key, value) => {
+        if (value && typeof value === 'object' && typeof value.toDate === 'function') {
+            return value.toDate().toISOString();
+        }
+        return value;
+    }));
+}
+
+/**
  * Get all public leagues and cups that are open for applications
  */
 export async function getPublicCompetitionsAction(userId?: string): Promise<{
@@ -2087,8 +2676,13 @@ export async function getPublicCompetitionsAction(userId?: string): Promise<{
         console.log('[getPublicCompetitionsAction] All public leagues found:', allLeaguesSnapshot.size);
 
         // Filter out only completed leagues (show draft, open_for_applications, in_progress)
+        // Serialize Firestore data to plain objects (convert Timestamps to strings)
         const leagues = allLeaguesSnapshot.docs
-            .map(doc => ({ id: doc.id, ...doc.data() } as League))
+            .map(doc => {
+                const data = doc.data();
+                const serialized = deepSerialize(data);
+                return { id: doc.id, ...serialized } as League;
+            })
             .filter(league => league.status !== 'completed');
 
         console.log('[getPublicCompetitionsAction] After filtering out completed:', leagues.length);
@@ -2102,8 +2696,13 @@ export async function getPublicCompetitionsAction(userId?: string): Promise<{
         console.log('[getPublicCompetitionsAction] All public cups found:', allCupsSnapshot.size);
 
         // Filter out only completed cups
+        // Serialize Firestore data to plain objects
         const cups = allCupsSnapshot.docs
-            .map(doc => ({ id: doc.id, ...doc.data() } as Cup))
+            .map(doc => {
+                const data = doc.data();
+                const serialized = deepSerialize(data);
+                return { id: doc.id, ...serialized } as Cup;
+            })
             .filter(cup => cup.status !== 'completed');
 
         console.log('[getPublicCompetitionsAction] After filtering out completed cups:', cups.length);
@@ -2116,13 +2715,21 @@ export async function getPublicCompetitionsAction(userId?: string): Promise<{
                 .where('submittedBy', '==', userId)
                 .get();
 
-            applications = appsSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            } as CompetitionApplication));
+            // Serialize applications to plain objects
+            applications = appsSnapshot.docs.map(doc => {
+                const data = doc.data();
+                const serialized = deepSerialize(data);
+                return { id: doc.id, ...serialized } as CompetitionApplication;
+            });
         }
 
-        return { success: true, leagues, cups, applications };
+        // Final serialization to ensure no Firestore metadata leaks
+        return JSON.parse(JSON.stringify({
+            success: true,
+            leagues,
+            cups,
+            applications
+        }));
     } catch (error) {
         const err = handleServerActionError(error);
         return { success: false, error: err.error };
@@ -2189,7 +2796,7 @@ export async function submitCompetitionApplicationAction(
                     type: notificationType,
                     title: `Nueva postulación para ${competition.name}`,
                     message: `El equipo ${team.name} quiere unirse.`,
-                    link: `/competitions/${competitionType === 'cup' ? 'cups' : 'leagues'}/${competitionId}?tab=applications`,
+                    link: `/organizer/${competitionType === 'cup' ? 'cup' : 'league'}/${competitionId}?tab=applications`,
                     isRead: false,
                     createdAt: new Date().toISOString(),
                     metadata: {
@@ -2606,143 +3213,154 @@ export async function updateLeagueStandingsAction(
     leagueId: string
 ): Promise<{ success: boolean; standings?: any[]; error?: string }> {
     try {
+        const db = getAdminDb();
         // Get league data
-        const leagueDoc = await getAdminDb().collection('leagues').doc(leagueId).get();
+        const leagueRef = db.collection('leagues').doc(leagueId);
+        const leagueDoc = await leagueRef.get();
         if (!leagueDoc.exists) {
             return { success: false, error: 'Liga no encontrada.' };
         }
         const league = { id: leagueDoc.id, ...leagueDoc.data() } as League;
 
-        // Get all league matches that are completed or evaluated
-        const matchesSnapshot = await getAdminDb()
+        // 1. COLLECT ALL MATCHES
+        const allMatchesMap = new Map<string, Match>();
+
+        // 1a. From root 'matches' collection (evaluated league matches)
+        const rootMatchesSnapshot = await db
             .collection('matches')
             .where('leagueInfo.leagueId', '==', leagueId)
-            .where('status', 'in', ['completed', 'evaluated'])
+            .where('status', 'in', ['completed', 'evaluated', 'finished'])
             .get();
+        
+        rootMatchesSnapshot.docs.forEach(doc => {
+            allMatchesMap.set(doc.id, { id: doc.id, ...doc.data() } as Match);
+        });
 
-        const matches = matchesSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        } as Match));
-
-        // Get team data to include jersey info
-        const teamsSnapshot = await getAdminDb()
-            .collection('teams')
-            .where('__name__', 'in', league.teams)
-            .get();
-
-        const teamsMap = new Map(
-            teamsSnapshot.docs.map(doc => [doc.id, { id: doc.id, ...doc.data() } as GroupTeam])
-        );
-
-        // Initialize standings for each team
-        const standingsMap = new Map<string, {
-            teamId: string;
-            teamName: string;
-            teamJersey: any;
-            matchesPlayed: number;
-            wins: number;
-            draws: number;
-            losses: number;
-            goalsFor: number;
-            goalsAgainst: number;
-            goalDifference: number;
-            points: number;
-        }>();
-
-        // Initialize all teams with zero stats
-        league.teams.forEach(teamId => {
-            const team = teamsMap.get(teamId);
-            if (team) {
-                standingsMap.set(teamId, {
-                    teamId,
-                    teamName: team.name,
-                    teamJersey: team.jersey,
-                    matchesPlayed: 0,
-                    wins: 0,
-                    draws: 0,
-                    losses: 0,
-                    goalsFor: 0,
-                    goalsAgainst: 0,
-                    goalDifference: 0,
-                    points: 0,
+        // 1b. From 'fixtures' subcollection (organizer-managed matches)
+        const fixturesSnapshot = await leagueRef.collection('fixtures').get();
+        fixturesSnapshot.docs.forEach(doc => {
+            const data = doc.data();
+            if (data.matches && Array.isArray(data.matches)) {
+                data.matches.forEach((m: any) => {
+                    if (m.status === 'completed' || m.status === 'evaluated' || m.status === 'finished') {
+                        // De-duplicate: Prefer root match if it exists (usually has more info)
+                        if (!allMatchesMap.has(m.id)) {
+                            allMatchesMap.set(m.id, m as Match);
+                        }
+                    }
                 });
             }
         });
 
-        // Process each completed match
-        matches.forEach(match => {
-            if (!match.participantTeamIds || match.participantTeamIds.length !== 2) return;
-            if (!match.finalScore) return;
+        const allMatches = Array.from(allMatchesMap.values());
 
-            const team1Id = match.participantTeamIds[0];
-            const team2Id = match.participantTeamIds[1];
+        // 2. COLLECT TEAM DATA (Real & Ghost)
 
-            // Ensure scores are numbers, default to 0 if invalid
-            const team1Score = typeof match.finalScore.team1 === 'number' ? match.finalScore.team1 : Number(match.finalScore.team1) || 0;
-            const team2Score = typeof match.finalScore.team2 === 'number' ? match.finalScore.team2 : Number(match.finalScore.team2) || 0;
+        // 2. COLLECT TEAM DATA (Real & Ghost)
+        const teamsMap = new Map<string, { name: string; jersey: any }>();
+
+        // 2a. Real Teams (Root collection)
+        if (league.teams && league.teams.length > 0) {
+            // Firestore 'in' query limited to 30 items. If more, we'd need chunks.
+            const chunks = [];
+            for (let i = 0; i < league.teams.length; i += 30) {
+                chunks.push(league.teams.slice(i, i + 30));
+            }
+
+            for (const chunk of chunks) {
+                const teamsSnapshot = await db.collection('teams').where('__name__', 'in', chunk).get();
+                teamsSnapshot.docs.forEach(doc => {
+                    const data = doc.data();
+                    teamsMap.set(doc.id, { name: data.name, jersey: data.jersey });
+                });
+            }
+        }
+
+        // 2b. Ghost Teams (Subcollection)
+        const ghostTeamsSnapshot = await leagueRef.collection('teams').get();
+        ghostTeamsSnapshot.docs.forEach(doc => {
+            const data = doc.data();
+            teamsMap.set(doc.id, { name: data.name, jersey: data.jersey });
+        });
+
+        // 3. CALCULATE STANDINGS
+        const standingsMap = new Map<string, any>();
+
+        // Initialize all teams present in the map (or in league.teams)
+        teamsMap.forEach((data, id) => {
+            standingsMap.set(id, {
+                teamId: id,
+                teamName: data.name,
+                teamJersey: data.jersey,
+                matchesPlayed: 0,
+                wins: 0,
+                draws: 0,
+                losses: 0,
+                goalsFor: 0,
+                goalsAgainst: 0,
+                goalDifference: 0,
+                points: 0,
+            });
+        });
+
+        // Process each match
+        allMatches.forEach(match => {
+            const team1Id = match.participantTeamIds?.[0] || (match as any).team1Id || (match as any).homeTeamId;
+            const team2Id = match.participantTeamIds?.[1] || (match as any).team2Id || (match as any).awayTeamId;
+
+            if (!team1Id || !team2Id) return;
+
+            // Extract scores with fallbacks
+            const team1Score = Number(match.finalScore?.team1 ?? (match as any).homeScore ?? 0);
+            const team2Score = Number(match.finalScore?.team2 ?? (match as any).awayScore ?? 0);
 
             const team1Stats = standingsMap.get(team1Id);
             const team2Stats = standingsMap.get(team2Id);
 
             if (!team1Stats || !team2Stats) return;
 
-            // Update matches played
             team1Stats.matchesPlayed++;
             team2Stats.matchesPlayed++;
-
-            // Update goals
             team1Stats.goalsFor += team1Score;
             team1Stats.goalsAgainst += team2Score;
             team2Stats.goalsFor += team2Score;
             team2Stats.goalsAgainst += team1Score;
 
-            // Update results
             if (team1Score > team2Score) {
-                // Team 1 wins
                 team1Stats.wins++;
-                team1Stats.points += 3;
+                team1Stats.points += (league.pointsForWin ?? 3);
                 team2Stats.losses++;
             } else if (team2Score > team1Score) {
-                // Team 2 wins
                 team2Stats.wins++;
-                team2Stats.points += 3;
+                team2Stats.points += (league.pointsForWin ?? 3);
                 team1Stats.losses++;
             } else {
-                // Draw
                 team1Stats.draws++;
                 team2Stats.draws++;
-                team1Stats.points++;
-                team2Stats.points++;
+                team1Stats.points += (league.pointsForDraw ?? 1);
+                team2Stats.points += (league.pointsForDraw ?? 1);
             }
 
-            // Update goal difference
             team1Stats.goalDifference = team1Stats.goalsFor - team1Stats.goalsAgainst;
             team2Stats.goalDifference = team2Stats.goalsFor - team2Stats.goalsAgainst;
         });
 
-        // Convert to array and sort
+        // 4. SORT AND SAVE
         const standings = Array.from(standingsMap.values()).sort((a, b) => {
-            // 1. Sort by points (descending)
             if (b.points !== a.points) return b.points - a.points;
-            // 2. Sort by goal difference (descending)
             if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
-            // 3. Sort by goals for (descending)
             if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-            // 4. Alphabetically by team name
             return a.teamName.localeCompare(b.teamName);
         });
 
-        // Add position
         const standingsWithPosition = standings.map((team, index) => ({
             ...team,
             position: index + 1,
         }));
 
-        // Save standings to league document
-        await getAdminDb().collection('leagues').doc(leagueId).update({
-            standings: standingsWithPosition,
-        });
+        await leagueRef.update({ standings: standingsWithPosition });
+
+        return { success: true, standings: standingsWithPosition };
 
         return { success: true, standings: standingsWithPosition };
     } catch (error) {

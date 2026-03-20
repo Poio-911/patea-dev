@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useFirestore } from '@/firebase';
-import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { useFirestore, useDoc } from '@/firebase';
+import { collection, query, onSnapshot, orderBy, doc } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Trophy, TrendingUp, Minus, TrendingDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { JerseyPreview } from '@/components/team-builder/jersey-preview';
@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useCompetitionTeams } from '@/hooks/use-competition-teams';
 
 interface Team {
   id: string;
@@ -28,6 +29,8 @@ interface MatchObj {
   homeScore?: number;
   awayScore?: number;
   status: 'pending' | 'finished';
+  date?: string;
+  time?: string;
 }
 
 interface FixtureRound {
@@ -55,39 +58,77 @@ interface LeagueStandingsTabProps {
   leagueId: string;
   rules?: { pointsForWin: number; pointsForDraw: number };
   isReadOnly?: boolean;
+  showRelegation?: boolean;
 }
 
-export function LeagueStandingsTab({ leagueId, rules, isReadOnly }: LeagueStandingsTabProps) {
+export function LeagueStandingsTab({ leagueId, rules, isReadOnly, showRelegation = false }: LeagueStandingsTabProps) {
   const firestore = useFirestore();
 
-  const [teams, setTeams] = React.useState<Team[]>([]);
   const [rounds, setRounds] = React.useState<FixtureRound[]>([]);
   const [loading, setLoading] = React.useState(true);
 
+  const compRef = React.useMemo(() => {
+    if (!firestore || !leagueId) return null;
+    return doc(firestore, 'leagues', leagueId);
+  }, [firestore, leagueId]);
+
+  const { data: compData } = useDoc<any>(compRef);
+  const { teams } = useCompetitionTeams(leagueId, 'leagues', compData);
+
+  // Effect 3: Fixtures listener
   React.useEffect(() => {
     if (!firestore) return;
-    
-    // Listen to teams
-    const teamsRef = collection(firestore, 'leagues', leagueId, 'teams');
-    const unsubTeams = onSnapshot(query(teamsRef), (snap) => {
-      setTeams(snap.docs.map(d => ({ id: d.id, ...d.data() } as Team)));
-    });
-
-    // Listen to fixtures
     const fixturesRef = collection(firestore, 'leagues', leagueId, 'fixtures');
     const qFixtures = query(fixturesRef, orderBy('roundNumber', 'asc'));
-    const unsubFixtures = onSnapshot(qFixtures, (snap) => {
+    const unsub = onSnapshot(qFixtures, (snap) => {
       setRounds(snap.docs.map(d => ({ id: d.id, ...d.data() } as FixtureRound)));
       setLoading(false);
     });
-
-    return () => {
-      unsubTeams();
-      unsubFixtures();
-    };
+    return () => unsub();
   }, [firestore, leagueId]);
 
   const { standings, previousRankMap } = React.useMemo(() => {
+    // 1. If we have server-calculated standings, use them as primary (better performance)
+    if (compData?.standings && Array.isArray(compData.standings) && compData.standings.length > 0) {
+      // Map server stats to local StandingRow interface
+      const serverStandings: StandingRow[] = compData.standings.map((s: any) => ({
+        teamId: s.teamId,
+        teamName: s.teamName,
+        jersey: s.teamJersey,
+        pts: s.points,
+        pj: s.matchesPlayed,
+        pg: s.wins,
+        pe: s.draws,
+        pp: s.losses,
+        gf: s.goalsFor,
+        gc: s.goalsAgainst,
+        dg: s.goalDifference,
+        recentForm: [] // We'll enrich this below
+      }));
+
+      // Enrich with recent form from rounds if available
+      const allMatches = rounds.flatMap(r => r.matches.map(m => ({ ...m, __round: r.roundNumber || 0 })));
+      serverStandings.forEach(row => {
+          const teamMatches = allMatches
+            .filter(m => (m.homeTeamId === row.teamId || m.awayTeamId === row.teamId) && m.status === 'finished')
+            .sort((a, b) => (b as any).__round - (a as any).__round) // newest first
+            .slice(0, 5);
+          
+          row.recentForm = teamMatches.map(m => {
+              const IS_HOME = m.homeTeamId === row.teamId;
+              const h = m.homeScore ?? 0;
+              const a = m.awayScore ?? 0;
+              if (h === a) return 'D';
+              return (IS_HOME ? h > a : a > h) ? 'W' : 'L';
+          });
+      });
+
+      // For previous rank comparison, we still need a "partial" calculation or we can just skip it for server standings
+      // For now, let's keep it simple: server standings = current truth.
+      return { standings: serverStandings, previousRankMap: new Map<string, number>() };
+    }
+
+    // 2. FALLBACK: Client-side calculation (for legacy leagues or in-memory updates)
     if (teams.length === 0) return { standings: [], previousRankMap: new Map<string, number>() };
 
     const ptsWin = rules?.pointsForWin ?? 3;
@@ -105,8 +146,25 @@ export function LeagueStandingsTab({ leagueId, rules, isReadOnly }: LeagueStandi
         };
       });
 
-      roundsList.forEach(round => {
-        round.matches.forEach(match => {
+      const allMatches = roundsList
+        .flatMap((round) => round.matches.map((match, matchIndex) => ({
+          ...match,
+          __roundNumber: round.roundNumber ?? 0,
+          __matchIndex: matchIndex,
+        })))
+        .sort((a, b) => {
+          const aHasDate = !!a.date;
+          const bHasDate = !!b.date;
+          if (aHasDate && bHasDate) {
+            const aTs = Date.parse(`${a.date}${a.time ? ` ${a.time}` : ''}`);
+            const bTs = Date.parse(`${b.date}${b.time ? ` ${b.time}` : ''}`);
+            if (!Number.isNaN(aTs) && !Number.isNaN(bTs) && aTs !== bTs) return aTs - bTs;
+          }
+          if (a.__roundNumber !== b.__roundNumber) return a.__roundNumber - b.__roundNumber;
+          return a.__matchIndex - b.__matchIndex;
+        });
+
+      allMatches.forEach((match) => {
           if (match.status !== 'finished' || match.homeScore === undefined || match.awayScore === undefined) return;
           if (!match.homeTeamId || !match.awayTeamId) return;
 
@@ -139,7 +197,6 @@ export function LeagueStandingsTab({ leagueId, rules, isReadOnly }: LeagueStandi
 
           if (homeTeam.recentForm.length > 5) homeTeam.recentForm.pop();
           if (awayTeam.recentForm.length > 5) awayTeam.recentForm.pop();
-        });
       });
 
       return Object.values(statsMap).sort((a, b) => {
@@ -168,7 +225,7 @@ export function LeagueStandingsTab({ leagueId, rules, isReadOnly }: LeagueStandi
     }
 
     return { standings: current, previousRankMap: prevRankMap };
-  }, [teams, rounds, rules]);
+  }, [teams, rounds, rules, compData]);
 
   const renderFormBadge = (form: 'W' | 'D' | 'L', idx: number) => {
     switch (form) {
@@ -214,6 +271,7 @@ export function LeagueStandingsTab({ leagueId, rules, isReadOnly }: LeagueStandi
   };
 
   const relegationStyle = (index: number, total: number): string => {
+    if (!showRelegation) return '';
     if (index < 3) return ''; // handled by podium
     if (total >= 6 && index >= total - 2) return 'border-r-4 border-r-red-500/50 bg-red-500/5';
     return '';

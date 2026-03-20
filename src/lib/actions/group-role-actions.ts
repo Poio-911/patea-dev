@@ -1,25 +1,13 @@
 'use server';
 
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { getServerSession } from '@/lib/auth/get-server-session';
 import type { GroupMember, Group } from '@/lib/types';
 import type { GroupRole } from '@/lib/group-permissions';
 import { hasPermission, canAssignRole, canRemoveMember } from '@/lib/group-permissions';
+import { getAdminDb } from '@/firebase/admin-init';
 
-// Initialize Firebase Admin
-if (getApps().length === 0) {
-  const serviceAccountJson = JSON.parse(
-    process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}'
-  );
-
-  initializeApp({
-    credential: cert(serviceAccountJson),
-    projectId: serviceAccountJson.project_id,
-  });
-}
-
-const db = getFirestore();
+const db = getAdminDb();
 
 /**
  * Obtener el rol de un usuario en un grupo

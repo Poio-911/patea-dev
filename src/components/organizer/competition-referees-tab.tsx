@@ -49,12 +49,13 @@ export function CompetitionRefereesTab({ competitionId, competitionType = 'leagu
   }, [firestore, competitionId, competitionType]);
 
   const handleDelete = async (refereeId: string, refereeName: string) => {
-    if (!firestore) return;
-
     try {
-      await deleteDoc(doc(firestore, competitionType, competitionId, 'referees', refereeId));
+      const { deleteRefereeAction } = await import('@/lib/actions/server-actions');
+      const res = await deleteRefereeAction(competitionType, competitionId, refereeId);
+      if (!res?.success) throw new Error(res?.error || 'Error');
       toast({ title: 'Árbitro eliminado', description: `${refereeName} fue removido de la lista.` });
     } catch (e: any) {
+      console.error('[DeleteReferee] Error:', e);
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el árbitro.' });
     }
   };
@@ -239,26 +240,24 @@ function AddEditRefereeDialog({ competitionId, competitionType, open, onOpenChan
       const refereesRef = collection(firestore, competitionType, competitionId, 'referees');
 
       if (referee) {
-        // Update existing referee
-        await updateDoc(doc(firestore, competitionType, competitionId, 'referees', referee.id), {
+        const { updateRefereeAction } = await import('@/lib/actions/server-actions');
+        const res = await updateRefereeAction(competitionType, competitionId, referee.id, {
           name: name.trim(),
           email: email.trim() || null,
           phone: phone.trim() || null,
           notes: notes.trim() || null,
         });
+        if (!res?.success) throw new Error(res?.error || 'Error');
         toast({ title: 'Árbitro actualizado', description: `${name} fue actualizado correctamente.` });
       } else {
-        // Create new referee
-        await addDoc(refereesRef, {
+        const { addRefereeAction } = await import('@/lib/actions/server-actions');
+        const res = await addRefereeAction(competitionType, competitionId, {
           name: name.trim(),
           email: email.trim() || null,
           phone: phone.trim() || null,
           notes: notes.trim() || null,
-          leagueId: competitionId, // legacy compat
-          competitionId,
-          assignedMatches: [],
-          createdAt: new Date().toISOString(),
         });
+        if (!res?.success) throw new Error(res?.error || 'Error');
         toast({ title: 'Árbitro agregado', description: `${name} fue agregado a la lista de árbitros.` });
       }
 

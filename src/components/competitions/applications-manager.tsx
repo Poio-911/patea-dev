@@ -260,12 +260,14 @@ function ApplicationCard({ application, onApprove, onReject, onRevoke, isProcess
     pending: 'bg-warning/20 text-warning-foreground',
     approved: 'bg-success/20 text-success-foreground',
     rejected: 'bg-destructive/20 text-destructive-foreground',
+    revoked: 'bg-muted text-muted-foreground',
   };
 
   const statusLabels = {
     pending: 'Pendiente',
     approved: 'Aprobada',
     rejected: 'Rechazada',
+    revoked: 'Revocada',
   };
 
   return (

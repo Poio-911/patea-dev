@@ -1,21 +1,10 @@
 'use server';
 
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { getServerSession } from '@/lib/auth/get-server-session';
+import { getAdminDb } from '@/firebase/admin-init';
 
-// Initialize Firebase Admin
-if (getApps().length === 0) {
-  const serviceAccountJson = JSON.parse(
-    process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}'
-  );
-  initializeApp({
-    credential: cert(serviceAccountJson),
-    projectId: serviceAccountJson.project_id,
-  });
-}
-
-const db = getFirestore();
+const db = getAdminDb();
 
 export interface SubmitApplicationInput {
   competitionId: string;
@@ -135,7 +124,7 @@ export async function reviewTeamApplicationAction(input: {
     const { competitionId, competitionType } = input;
     const compRef = db.collection(competitionType).doc(competitionId);
     const compDoc = await compRef.get();
-    
+
     if (!compDoc.exists) {
       return { success: false, error: 'Competición no encontrada.' };
     }
@@ -144,17 +133,56 @@ export async function reviewTeamApplicationAction(input: {
       return { success: false, error: 'Sin permiso para gestionar esta competición.' };
     }
 
-    await db
-      .collection(competitionType)
-      .doc(competitionId)
-      .collection('applications')
-      .doc(input.applicationId)
-      .update({
+    // Try to find the application in the root collection first (from public explorer)
+    const rootAppRef = db.collection('competitionApplications').doc(input.applicationId);
+    const rootAppDoc = await rootAppRef.get();
+
+    if (rootAppDoc.exists) {
+      // Application from public explorer - update in root collection
+      await rootAppRef.update({
         status: input.status,
         reviewNotes: input.reviewNotes?.trim() || null,
         reviewedAt: new Date().toISOString(),
         reviewedBy: session.user.uid,
       });
+
+      // If approved, add the team to the competition
+      if (input.status === 'approved') {
+        const appData = rootAppDoc.data()!;
+        await compRef.update({
+          teams: FieldValue.arrayUnion(appData.teamId),
+        });
+      }
+
+      return { success: true };
+    }
+
+    // If not found in root collection, try the subcollection (from registration form)
+    const subAppRef = db
+      .collection(competitionType)
+      .doc(competitionId)
+      .collection('applications')
+      .doc(input.applicationId);
+
+    const subAppDoc = await subAppRef.get();
+    if (!subAppDoc.exists) {
+      return { success: false, error: 'Solicitud no encontrada.' };
+    }
+
+    await subAppRef.update({
+      status: input.status,
+      reviewNotes: input.reviewNotes?.trim() || null,
+      reviewedAt: new Date().toISOString(),
+      reviewedBy: session.user.uid,
+    });
+
+    // If approved and application has a teamId, add team to competition
+    if (input.status === 'approved') {
+      const subAppData = subAppDoc.data()!;
+      if (subAppData.teamId) {
+        await compRef.update({ teams: FieldValue.arrayUnion(subAppData.teamId) });
+      }
+    }
 
     return { success: true };
   } catch (error: any) {

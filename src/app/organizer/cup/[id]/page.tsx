@@ -41,10 +41,11 @@ export default function CupDetailPage({ params }: { params: { id: string } }) {
   const [activeTab, setActiveTab] = React.useState('bracket');
 
   const handleStatusChange = async (newStatus: Cup['status']) => {
-    if (!cupRef) return;
     setIsUpdatingStatus(true);
     try {
-      await updateDoc(cupRef, { status: newStatus });
+      const { updateCupStatusAction } = await import('@/lib/actions/server-actions');
+      const res = await updateCupStatusAction(params.id, newStatus);
+      if (!res?.success) throw new Error(res?.error || 'Error');
       const labels: Record<Cup['status'], string> = {
         draft: 'Borrador',
         open_for_applications: 'Inscripciones abiertas',
@@ -52,7 +53,7 @@ export default function CupDetailPage({ params }: { params: { id: string } }) {
         completed: 'Copa finalizada',
       };
       toast({ title: labels[newStatus] || 'Estado actualizado' });
-    } catch {
+    } catch (e: any) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cambiar el estado.' });
     } finally {
       setIsUpdatingStatus(false);
