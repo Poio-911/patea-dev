@@ -281,10 +281,14 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
   Widget build(BuildContext context) {
     final matchesAsync = ref.watch(matchesStreamProvider(null));
     final uid = ref.watch(authStateProvider).valueOrNull?.uid;
-    final topPadding = MediaQuery.of(context).padding.top + 60.0;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: Text(
+          'PARTIDOS',
+          style: AppTypography.headline(size: 20, weight: FontWeight.w800),
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.voltNeon,
         foregroundColor: Colors.black,
@@ -370,23 +374,10 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
           return CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(16, topPadding + 14, 16, 12),
-                sliver: SliverToBoxAdapter(
-                  child: Text(
-                    'PARTIDOS',
-                    style: AppTypography.headline(
-                      size: 24,
-                      weight: FontWeight.w900,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
               if (allMatches.isNotEmpty && _timeFilter != TimeFilter.history)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                     child: _NextMatchBanner(matches: bannerMatches),
                   ),
                 ),

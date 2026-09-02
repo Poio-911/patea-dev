@@ -58,10 +58,14 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
   @override
   Widget build(BuildContext context) {
     final playersAsync = ref.watch(playersStreamProvider(null));
-    final topPadding = MediaQuery.of(context).padding.top + 60.0;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: Text(
+          'PLANTEL',
+          style: AppTypography.headline(size: 20, weight: FontWeight.w800),
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.voltNeon,
         foregroundColor: Colors.black,
@@ -98,24 +102,13 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
             return CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                // 1. Título y Controles de la sección (PLANTEL, Búsqueda y Chips)
+                // 1. Controles de la sección (Búsqueda y Chips)
                 SliverPadding(
-                  padding: EdgeInsets.fromLTRB(16, topPadding + 14, 16, 10),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
                   sliver: SliverToBoxAdapter(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Título de la sección
-                        Text(
-                          'PLANTEL',
-                          style: AppTypography.headline(
-                            size: 24,
-                            weight: FontWeight.w900,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
                         // Barra de Búsqueda
                         Container(
                           decoration: BoxDecoration(
