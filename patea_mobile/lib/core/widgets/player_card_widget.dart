@@ -5,11 +5,12 @@ import '../models/player_model.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
-/// Carta de Jugador idéntica a PlayerCard de la webapp (src/components/player-card.tsx)
+/// Carta de Jugador 100% idéntica a PlayerCard de la webapp (src/components/player-card.tsx)
+/// Con auras radiales por rareza, borde sutil con glow, badge de posición estilizado y OVR por tier.
 class PlayerCardWidget extends StatefulWidget {
   final Player player;
   final VoidCallback? onTap;
-  final String? matchStatusText; // ej: "Sin chaleco vs Con chaleco | 🕥 1:00"
+  final String? matchStatusText;
 
   const PlayerCardWidget({
     super.key,
@@ -33,16 +34,16 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
     return 'bronze';
   }
 
-  Color _getTierBorderColor(String tier) {
+  Color _getOvrColor(String tier) {
     switch (tier) {
       case 'elite':
-        return const Color(0xE0F8FAFC);
+        return const Color(0xFFF8FAFC); // Platinum
       case 'gold':
-        return const Color(0xCCFFD700);
+        return const Color(0xFFFACC15); // Gold
       case 'silver':
-        return const Color(0xB3CBD5E1);
+        return const Color(0xFFCBD5E1); // Silver
       default:
-        return const Color(0x99CD7F32);
+        return const Color(0xFFCD7F32); // Bronze amber
     }
   }
 
@@ -78,11 +79,11 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
   Widget build(BuildContext context) {
     final player = widget.player;
     final tier = _getOvrTier(player.ovr);
-    final tierBorderColor = _getTierBorderColor(tier);
+    final ovrColor = _getOvrColor(tier);
     final posColor = _getPositionColor(player.position);
     final keyStats = _getKeyStats(player.position);
 
-    // Identificar el atributo más alto para resaltarlo como en la web
+    // Identificar el atributo más alto para resaltarlo
     final statsList = [
       {'key': 'PAC', 'label': 'RIT', 'val': player.pac},
       {'key': 'SHO', 'label': 'TIR', 'val': player.sho},
@@ -100,14 +101,78 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
       }
     }
 
+    // Configuración visual por tier según src/app/globals.css
+    Border cardBorder;
+    List<BoxShadow> cardShadows;
+    RadialGradient auraGradient;
+    Color avatarBorderColor;
+
+    switch (tier) {
+      case 'elite':
+        cardBorder = Border.all(color: const Color(0xFFBED2FF).withValues(alpha: 0.65), width: 1.5);
+        cardShadows = [
+          BoxShadow(color: const Color(0xFFBED2FF).withValues(alpha: 0.28), blurRadius: 16),
+          const BoxShadow(color: Color(0x99000000), blurRadius: 10, offset: Offset(0, 4)),
+        ];
+        auraGradient = const RadialGradient(
+          center: Alignment.topCenter,
+          radius: 1.2,
+          colors: [Color(0x52BED2FF), Colors.transparent],
+        );
+        avatarBorderColor = const Color(0xFFBED2FF);
+        break;
+
+      case 'gold':
+        cardBorder = Border.all(color: const Color(0xFFFACC15).withValues(alpha: 0.45), width: 1.0);
+        cardShadows = [
+          BoxShadow(color: const Color(0xFFFACC15).withValues(alpha: 0.16), blurRadius: 8),
+          const BoxShadow(color: Color(0x99000000), blurRadius: 10, offset: Offset(0, 4)),
+        ];
+        auraGradient = const RadialGradient(
+          center: Alignment.topRight,
+          radius: 1.3,
+          colors: [Color(0x40FACC15), Colors.transparent],
+        );
+        avatarBorderColor = const Color(0xFFFACC15);
+        break;
+
+      case 'silver':
+        cardBorder = Border.all(color: const Color(0xFFCBD5E1).withValues(alpha: 0.38), width: 1.0);
+        cardShadows = [
+          BoxShadow(color: const Color(0xFFCBD5E1).withValues(alpha: 0.12), blurRadius: 6),
+          const BoxShadow(color: Color(0x99000000), blurRadius: 10, offset: Offset(0, 4)),
+        ];
+        auraGradient = const RadialGradient(
+          center: Alignment.topCenter,
+          radius: 1.1,
+          colors: [Color(0x33CBD5E1), Colors.transparent],
+        );
+        avatarBorderColor = const Color(0xFFCBD5E1);
+        break;
+
+      default: // bronze
+        cardBorder = Border.all(color: const Color(0xFFCD7F32).withValues(alpha: 0.35), width: 1.0);
+        cardShadows = [
+          BoxShadow(color: const Color(0xFFCD7F32).withValues(alpha: 0.14), blurRadius: 6),
+          const BoxShadow(color: Color(0x99000000), blurRadius: 10, offset: Offset(0, 4)),
+        ];
+        auraGradient = const RadialGradient(
+          center: Alignment.bottomLeft,
+          radius: 1.4,
+          colors: [Color(0x38CD7F32), Colors.transparent],
+        );
+        avatarBorderColor = const Color(0xFFCD7F32);
+        break;
+    }
+
     return GestureDetector(
       onTap: widget.onTap,
       onPanUpdate: (details) {
         setState(() {
           _rotateY += details.delta.dx * 0.003;
           _rotateX -= details.delta.dy * 0.003;
-          _rotateX = _rotateX.clamp(-0.2, 0.2);
-          _rotateY = _rotateY.clamp(-0.2, 0.2);
+          _rotateX = _rotateX.clamp(-0.15, 0.15);
+          _rotateY = _rotateY.clamp(-0.15, 0.15);
         });
       },
       onPanEnd: (_) {
@@ -127,37 +192,32 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
           aspectRatio: 2.0 / 3.0,
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF141923),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: tierBorderColor.withValues(alpha: 0.55),
-                width: 1.2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: tierBorderColor.withValues(alpha: 0.12),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-                const BoxShadow(
-                  color: Color(0x80000000),
-                  blurRadius: 12,
-                  offset: Offset(0, 4),
-                ),
-              ],
+              color: const Color(0xFF141923), // bg-card
+              borderRadius: BorderRadius.circular(16),
+              border: cardBorder,
+              boxShadow: cardShadows,
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(19),
+              borderRadius: BorderRadius.circular(15),
               child: Stack(
                 children: [
-                  // 1. Marca de agua vectorial oficial según posición (DEL, MED, DEF, POR) de la webapp
+                  // 1. Efecto Aura por Tier
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: auraGradient,
+                      ),
+                    ),
+                  ),
+
+                  // 2. Marca de agua vectorial oficial según posición (DEL, MED, DEF, POR)
                   Positioned(
                     right: -6,
                     bottom: -6,
-                    width: 105,
-                    height: 105,
+                    width: 110,
+                    height: 110,
                     child: Opacity(
-                      opacity: 0.10,
+                      opacity: 0.08,
                       child: SvgPicture.asset(
                         'assets/icons-pos/pos-${player.position.toLowerCase()}.svg',
                         colorFilter: ColorFilter.mode(
@@ -170,47 +230,55 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                     ),
                   ),
 
-                  // 2. Contenido de la Carta
+                  // 3. Contenido de la Carta
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Fila Superior: Posición (texto puro blanco) y OVR (número grande)
+                        // Fila Superior: Badge de Posición y OVR clasificado por color
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Posición en texto puro sin caja (idéntico a la web)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2, left: 2),
+                            // Badge de posición con borde y fondo translúcido (web exacto)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: posColor.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: posColor.withValues(alpha: 0.45),
+                                  width: 1,
+                                ),
+                              ),
                               child: Text(
                                 player.position.toUpperCase(),
                                 style: AppTypography.headline(
-                                  size: 14,
-                                  weight: FontWeight.w900,
-                                  color: Colors.white,
+                                  size: 11,
+                                  weight: FontWeight.w800,
+                                  color: posColor,
                                 ),
                               ),
                             ),
 
-                            // OVR + etiqueta "OVR"
+                            // OVR clasificado por color (Bronze, Silver, Gold, Elite) + label OVR
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
                                   '${player.ovr}',
                                   style: AppTypography.sportNumber(
-                                    size: 28,
-                                    color: Colors.white,
+                                    size: 26,
+                                    color: ovrColor,
                                   ),
                                 ),
                                 Text(
                                   'OVR',
                                   style: AppTypography.code(
-                                    size: 9,
+                                    size: 8,
                                     weight: FontWeight.w800,
-                                    color: Colors.white60,
+                                    color: Colors.white54,
                                   ),
                                 ),
                               ],
@@ -218,24 +286,24 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                           ],
                         ),
 
-                        // Avatar Circular con borde de tier
+                        // Avatar Circular con aro brillante según el Tier de OVR
                         Stack(
                           alignment: Alignment.bottomCenter,
                           clipBehavior: Clip.none,
                           children: [
                             Container(
-                              width: 76,
-                              height: 76,
+                              width: 72,
+                              height: 72,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: tierBorderColor,
-                                  width: 3.5,
+                                  color: avatarBorderColor.withValues(alpha: 0.75),
+                                  width: 2.5,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: tierBorderColor.withValues(alpha: 0.35),
-                                    blurRadius: 10,
+                                    color: avatarBorderColor.withValues(alpha: 0.35),
+                                    blurRadius: 8,
                                   ),
                                 ],
                               ),
@@ -249,7 +317,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                                           child: Center(
                                             child: Text(
                                               player.name.isNotEmpty ? player.name[0] : 'P',
-                                              style: AppTypography.sportNumber(size: 24, color: Colors.white),
+                                              style: AppTypography.sportNumber(size: 22, color: ovrColor),
                                             ),
                                           ),
                                         ),
@@ -258,7 +326,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                                           child: Center(
                                             child: Text(
                                               player.name.isNotEmpty ? player.name[0] : 'P',
-                                              style: AppTypography.sportNumber(size: 24, color: Colors.white),
+                                              style: AppTypography.sportNumber(size: 22, color: ovrColor),
                                             ),
                                           ),
                                         ),
@@ -268,30 +336,12 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                                         child: Center(
                                           child: Text(
                                             player.name.isNotEmpty ? player.name[0] : 'P',
-                                            style: AppTypography.sportNumber(size: 24, color: Colors.white),
+                                            style: AppTypography.sportNumber(size: 22, color: ovrColor),
                                           ),
                                         ),
                                       ),
                               ),
                             ),
-
-                            // Píldora de estado de partido si aplica (ej: "Sin chaleco vs Con chaleco")
-                            if (widget.matchStatusText != null)
-                              Positioned(
-                                bottom: -8,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xEB0D131F),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: Colors.white24, width: 0.8),
-                                  ),
-                                  child: Text(
-                                    widget.matchStatusText!,
-                                    style: const TextStyle(fontSize: 8, color: Colors.white70, fontWeight: FontWeight.w600),
-                                  ),
-                                ),
-                              ),
                           ],
                         ),
 
@@ -300,43 +350,43 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           child: Text(
                             player.name,
-                            style: AppTypography.headline(
-                              size: 13,
-                              weight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
+                            style: AppTypography.headline(
+                              size: 13,
+                              weight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
 
-                        // Grid 2x3 de Atributos (idéntico a AttributesGrid de la webapp)
+                        // Grilla de 6 Atributos (2 columnas x 3 filas) con cajas translúcidas
                         Padding(
-                          padding: const EdgeInsets.only(top: 2),
+                          padding: const EdgeInsets.only(bottom: 2),
                           child: Column(
                             children: [
                               Row(
                                 children: [
-                                  _buildStatPill(statsList[0], keyStats, topKey, posColor),
-                                  const SizedBox(width: 4),
-                                  _buildStatPill(statsList[1], keyStats, topKey, posColor),
+                                  Expanded(child: _buildAttributeBox(statsList[0], topKey, posColor, keyStats)),
+                                  const SizedBox(width: 5),
+                                  Expanded(child: _buildAttributeBox(statsList[1], topKey, posColor, keyStats)),
                                 ],
                               ),
-                              const SizedBox(height: 3),
+                              const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  _buildStatPill(statsList[2], keyStats, topKey, posColor),
-                                  const SizedBox(width: 4),
-                                  _buildStatPill(statsList[3], keyStats, topKey, posColor),
+                                  Expanded(child: _buildAttributeBox(statsList[2], topKey, posColor, keyStats)),
+                                  const SizedBox(width: 5),
+                                  Expanded(child: _buildAttributeBox(statsList[3], topKey, posColor, keyStats)),
                                 ],
                               ),
-                              const SizedBox(height: 3),
+                              const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  _buildStatPill(statsList[4], keyStats, topKey, posColor),
-                                  const SizedBox(width: 4),
-                                  _buildStatPill(statsList[5], keyStats, topKey, posColor),
+                                  Expanded(child: _buildAttributeBox(statsList[4], topKey, posColor, keyStats)),
+                                  const SizedBox(width: 5),
+                                  Expanded(child: _buildAttributeBox(statsList[5], topKey, posColor, keyStats)),
                                 ],
                               ),
                             ],
@@ -354,65 +404,76 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
     );
   }
 
-  Widget _buildStatPill(Map<String, dynamic> stat, List<String> keyStats, String topKey, Color posColor) {
+  Widget _buildAttributeBox(
+    Map<String, dynamic> stat,
+    String topKey,
+    Color posColor,
+    List<String> keyStats,
+  ) {
     final key = stat['key'] as String;
     final label = stat['label'] as String;
     final val = stat['val'] as int;
-    final isKey = keyStats.contains(key);
     final isTop = key == topKey;
-    final pct = (val / 99.0).clamp(0.0, 1.0);
+    final isKeyStat = keyStats.contains(key);
 
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3.5),
-        decoration: BoxDecoration(
-          color: isTop ? AppColors.voltNeon.withValues(alpha: 0.08) : const Color(0x14FFFFFF),
-          borderRadius: BorderRadius.circular(6),
-          border: isTop ? Border.all(color: AppColors.voltNeon.withValues(alpha: 0.25), width: 0.8) : null,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+      decoration: BoxDecoration(
+        color: isTop ? AppColors.voltNeon.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(
+          color: isTop ? AppColors.voltNeon.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05),
+          width: 0.8,
         ),
-        child: Row(
-          children: [
-            // Sigla del atributo (coloreada si es key stat para la posición)
-            Text(
+      ),
+      child: Row(
+        children: [
+          // Etiqueta (ej: RIT)
+          SizedBox(
+            width: 22,
+            child: Text(
               label,
               style: AppTypography.code(
                 size: 9,
                 weight: FontWeight.w800,
-                color: isKey ? posColor : const Color(0x99FFFFFF),
+                color: isKeyStat ? posColor : const Color(0xFF94A3B8),
               ),
             ),
-            const SizedBox(width: 4),
+          ),
+          const SizedBox(width: 3),
 
-            // Mini barra horizontal
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(2),
-                child: Container(
-                  height: 2.5,
-                  color: const Color(0x24FFFFFF),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: pct,
-                    child: Container(
-                      color: isTop ? posColor.withValues(alpha: 0.7) : const Color(0x55FFFFFF),
+          // Mini Barra de Progreso
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(2),
+              child: Container(
+                height: 3.5,
+                color: Colors.white.withValues(alpha: 0.12),
+                child: FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: (val / 99.0).clamp(0.05, 1.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isTop ? posColor : (isKeyStat ? posColor.withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.45)),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 4),
+          ),
+          const SizedBox(width: 4),
 
-            // Valor numérico
-            Text(
-              '$val',
-              style: AppTypography.code(
-                size: 10,
-                weight: FontWeight.w800,
-                color: Colors.white,
-              ),
+          // Valor Numérico
+          Text(
+            '$val',
+            style: AppTypography.code(
+              size: 10,
+              weight: FontWeight.w800,
+              color: isTop ? AppColors.voltNeon : Colors.white,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

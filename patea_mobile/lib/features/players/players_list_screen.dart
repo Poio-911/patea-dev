@@ -5,7 +5,6 @@ import '../../core/services/firestore_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/patea_background.dart';
-import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/player_card_widget.dart';
 import 'create_player_dialog.dart';
 
@@ -17,91 +16,41 @@ class PlayersListScreen extends ConsumerStatefulWidget {
 }
 
 class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
-  String? _selectedPosition;
+  String _selectedPosition = 'ALL';
+  String _searchQuery = '';
 
-  void _showAddPlayerDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const CreatePlayerDialog(),
-    );
-  }
-
-  void _showFiltersModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF141923),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Filtrar Jugadores',
-                        style: AppTypography.headline(size: 18, weight: FontWeight.w800),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: AppColors.textMuted),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'POSICIÓN',
-                    style: AppTypography.headline(size: 11, weight: FontWeight.w800, color: AppColors.textMuted),
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildFilterChip('TODOS', null, setModalState),
-                      _buildFilterChip('DELANTEROS', 'DEL', setModalState),
-                      _buildFilterChip('MEDIOCAMPISTAS', 'MED', setModalState),
-                      _buildFilterChip('DEFENSORES', 'DEF', setModalState),
-                      _buildFilterChip('PORTEROS', 'POR', setModalState),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                ],
+  Widget _buildFilterChip(String label, String value) {
+    final isSelected = _selectedPosition == value;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedPosition = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF2E3D1E) : const Color(0xFF141A24),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? AppColors.voltNeon : Colors.white.withValues(alpha: 0.15),
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isSelected) ...[
+              const Icon(Icons.check, size: 13, color: AppColors.voltNeon),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              label,
+              style: AppTypography.headline(
+                size: 11,
+                weight: FontWeight.w800,
+                color: isSelected ? AppColors.voltNeon : Colors.white70,
               ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildFilterChip(String label, String? position, StateSetter setModalState) {
-    final isSelected = _selectedPosition == position;
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        setModalState(() {
-          _selectedPosition = selected ? position : null;
-        });
-        setState(() {
-          _selectedPosition = selected ? position : null;
-        });
-        Navigator.pop(context);
-      },
-      selectedColor: AppColors.voltNeon,
-      backgroundColor: const Color(0xFF1E2636),
-      labelStyle: TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w800,
-        color: isSelected ? Colors.black : Colors.white,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -111,95 +60,157 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
     final playersAsync = ref.watch(playersStreamProvider(null));
     final topPadding = MediaQuery.of(context).padding.top + 60.0;
 
-    return PateaBackground(
-      child: playersAsync.when(
-        data: (players) {
-          var sorted = [...players]..sort((a, b) => b.ovr.compareTo(a.ovr));
-          if (_selectedPosition != null) {
-            sorted = sorted.where((p) => p.position.toUpperCase() == _selectedPosition!.toUpperCase()).toList();
-          }
-
-          return CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(16, topPadding + 14, 16, 12),
-                sliver: SliverToBoxAdapter(
-                  child: PateaPageHeader(
-                    title: 'Plantel',
-                    description: 'Gestioná la plantilla de tu equipo y las estadísticas de los jugadores.',
-                    currentCount: sorted.length,
-                    totalCount: players.length,
-                    onHelpTap: () {},
-                    onFiltersTap: () => _showFiltersModal(context),
-                    actionButton: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _showAddPlayerDialog(context),
-                        icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.black, size: 20),
-                        label: Text(
-                          'Agregar Jugador',
-                          style: AppTypography.headline(
-                            size: 14,
-                            weight: FontWeight.w900,
-                            color: Colors.black,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.voltNeon,
-                          foregroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          elevation: 0,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // Grilla de 2 columnas de Cartas
-              if (sorted.isEmpty)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32.0),
-                    child: Center(
-                      child: Text(
-                        'No hay jugadores que coincidan con el filtro.',
-                        style: AppTypography.body(size: 13, color: AppColors.textMuted),
-                      ),
-                    ),
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(14, 4, 14, 90),
-                  sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 2.0 / 3.0,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 14,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final player = sorted[index];
-                        return PlayerCardWidget(
-                          player: player,
-                          onTap: () => context.push('/players/${player.id}'),
-                        );
-                      },
-                      childCount: sorted.length,
-                    ),
-                  ),
-                ),
-            ],
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.voltNeon,
+        foregroundColor: Colors.black,
+        elevation: 6,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (_) => const CreatePlayerDialog(),
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.voltNeon),
+        child: const Icon(Icons.person_add_rounded, size: 26),
+      ),
+      body: PateaBackground(
+        child: playersAsync.when(
+          data: (players) {
+            var filtered = [...players];
+
+            // Filtro de posición
+            if (_selectedPosition != 'ALL') {
+              filtered = filtered
+                  .where((p) => p.position.toUpperCase() == _selectedPosition.toUpperCase())
+                  .toList();
+            }
+
+            // Filtro de búsqueda
+            if (_searchQuery.trim().isNotEmpty) {
+              final q = _searchQuery.toLowerCase();
+              filtered = filtered.where((p) => p.name.toLowerCase().contains(q)).toList();
+            }
+
+            filtered.sort((a, b) => b.ovr.compareTo(a.ovr));
+
+            return CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                // 1. Título y Controles de la sección (PLANTEL, Búsqueda y Chips)
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(16, topPadding + 14, 16, 10),
+                  sliver: SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Título de la sección
+                        Text(
+                          'PLANTEL',
+                          style: AppTypography.headline(
+                            size: 24,
+                            weight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Barra de Búsqueda
+                        Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF141A24),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.12),
+                            ),
+                          ),
+                          child: TextField(
+                            onChanged: (val) => setState(() => _searchQuery = val),
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            decoration: InputDecoration(
+                              hintText: 'Buscar jugador...',
+                              hintStyle: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.35),
+                                fontSize: 13,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.search,
+                                size: 20,
+                                color: Colors.white.withValues(alpha: 0.4),
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Fila de Chips de Posición (ALL, DEL, MED, DEF, POR)
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _buildFilterChip('ALL', 'ALL'),
+                              const SizedBox(width: 8),
+                              _buildFilterChip('DEL', 'DEL'),
+                              const SizedBox(width: 8),
+                              _buildFilterChip('MED', 'MED'),
+                              const SizedBox(width: 8),
+                              _buildFilterChip('DEF', 'DEF'),
+                              const SizedBox(width: 8),
+                              _buildFilterChip('POR', 'POR'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 2. Grilla de Cartas de Jugadores
+                if (filtered.isEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(40.0),
+                      child: Center(
+                        child: Text(
+                          'No hay jugadores que coincidan con la búsqueda.',
+                          style: AppTypography.body(size: 13, color: AppColors.textMuted),
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(14, 6, 14, 100),
+                    sliver: SliverGrid(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 2.0 / 3.0,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 12,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final player = filtered[index];
+                          return PlayerCardWidget(
+                            player: player,
+                            onTap: () => context.push('/players/${player.id}'),
+                          );
+                        },
+                        childCount: filtered.length,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.voltNeon),
+          ),
+          error: (err, stack) => Center(child: Text('Error: $err', style: const TextStyle(color: Colors.white))),
         ),
-        error: (err, stack) => Center(child: Text('Error: $err', style: const TextStyle(color: Colors.white))),
       ),
     );
   }

@@ -281,19 +281,17 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
   Widget build(BuildContext context) {
     final matchesAsync = ref.watch(matchesStreamProvider(null));
     final uid = ref.watch(authStateProvider).valueOrNull?.uid;
+    final topPadding = MediaQuery.of(context).padding.top + 60.0;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'PARTIDOS',
-          style: AppTypography.headline(size: 20, weight: FontWeight.w800),
-        ),
-      ),
+      backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.voltNeon,
         foregroundColor: Colors.black,
+        elevation: 6,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         onPressed: () => context.push('/matches/create'),
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, size: 26),
       ),
       body: matchesAsync.when(
         data: (allMatches) {
@@ -370,11 +368,25 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
           });
 
           return CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(16, topPadding + 14, 16, 12),
+                sliver: SliverToBoxAdapter(
+                  child: Text(
+                    'PARTIDOS',
+                    style: AppTypography.headline(
+                      size: 24,
+                      weight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
               if (allMatches.isNotEmpty && _timeFilter != TimeFilter.history)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                     child: _NextMatchBanner(matches: bannerMatches),
                   ),
                 ),
@@ -781,29 +793,51 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        height: 300,
+        height: 320,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: theme.brandColor.withValues(alpha: 0.5), width: 2),
+          border: Border.all(color: theme.brandColor.withValues(alpha: 0.5), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Stack(
           fit: StackFit.expand,
           children: [
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 600),
-              child: Image.asset(
-                'assets/backgrounds/fondo_$photoIndex.jpg',
+              layoutBuilder: (currentChild, previousChildren) => Stack(
+                fit: StackFit.expand,
+                children: [
+                  ...previousChildren,
+                  if (currentChild != null) currentChild,
+                ],
+              ),
+              child: SizedBox.expand(
                 key: ValueKey(match.id),
-                fit: BoxFit.cover,
+                child: Image.asset(
+                  'assets/backgrounds/fondo_$photoIndex.jpg',
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                ),
               ),
             ),
-            Container(color: Colors.black.withValues(alpha: 0.5)),
+            Container(color: Colors.black.withValues(alpha: 0.45)),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
-                  colors: [Colors.black.withValues(alpha: 0.9), Colors.black.withValues(alpha: 0.2), Colors.transparent],
+                  colors: [
+                    Colors.black.withValues(alpha: 0.95),
+                    Colors.black.withValues(alpha: 0.35),
+                    Colors.transparent,
+                  ],
                 ),
               ),
             ),
@@ -1019,23 +1053,60 @@ class _MatchCard extends StatelessWidget {
             match.type == 'league_final') &&
         match.teamA != null &&
         match.teamB != null;
+    final photoIndex = (match.id.codeUnits.fold<int>(0, (acc, c) => acc + c).abs() % 9) + 1;
 
     return InkWell(
       onTap: () => context.push('/matches/${match.id}'),
       borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isLive ? AppColors.destructive : theme.brandColor.withValues(alpha: 0.35),
-            width: isLive ? 1.5 : 1.0,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF141A24),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isLive ? AppColors.destructive : theme.brandColor.withValues(alpha: 0.35),
+              width: isLive ? 1.5 : 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          child: Stack(
+            children: [
+              // Fondo de estadio del partido
+              Positioned.fill(
+                child: Opacity(
+                  opacity: 0.22,
+                  child: Image.asset(
+                    'assets/backgrounds/fondo_$photoIndex.jpg',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        const Color(0xFF141A24).withValues(alpha: 0.95),
+                        const Color(0xFF141A24).withValues(alpha: 0.65),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
             Text(
               match.title,
               style: AppTypography.headline(size: 17, weight: FontWeight.w800),
@@ -1193,8 +1264,12 @@ class _MatchCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ],
+  ),
+),
+),
+);
+}
 }
 
 /// Port de CompactMatchCard (src/components/compact-match-card.tsx).
@@ -1210,21 +1285,58 @@ class _CompactMatchCard extends StatelessWidget {
     final hasScore = match.status == 'completed' || match.status == 'evaluated';
     final statusLabel = _statusLabels[match.status] ?? 'Finalizado';
     final isPlanning = match.status == 'planning';
+    final photoIndex = (match.id.codeUnits.fold<int>(0, (acc, c) => acc + c).abs() % 9) + 1;
 
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () => context.push('/matches/${match.id}'),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: theme.brandColor.withValues(alpha: 0.35)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF141A24),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: theme.brandColor.withValues(alpha: 0.35)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Fondo de estadio
+              Positioned.fill(
+                child: Opacity(
+                  opacity: 0.22,
+                  child: Image.asset(
+                    'assets/backgrounds/fondo_$photoIndex.jpg',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        const Color(0xFF141A24).withValues(alpha: 0.95),
+                        const Color(0xFF141A24).withValues(alpha: 0.65),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
             Row(
               children: [
                 Expanded(
@@ -1355,11 +1467,15 @@ class _CompactMatchCard extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: Icon(Icons.chevron_right, size: 14, color: AppColors.textMuted),
             ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
-  }
+      ],
+    ),
+  ),
+),
+);
+}
 }
 
 class _CompactInfoRow extends StatelessWidget {
