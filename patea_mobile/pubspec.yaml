@@ -81,6 +81,7 @@ flutter:
     - assets/jerseys/
     - assets/backgrounds/
     - assets/images/backgrounds/
+    - assets/icons-pos/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

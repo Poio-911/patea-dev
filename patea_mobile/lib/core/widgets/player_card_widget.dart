@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../models/player_model.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
@@ -149,16 +150,22 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
               borderRadius: BorderRadius.circular(19),
               child: Stack(
                 children: [
-                  // 1. Marca de agua vectorial de jugador pateando (esquina inferior derecha)
+                  // 1. Marca de agua vectorial oficial según posición (DEL, MED, DEF, POR) de la webapp
                   Positioned(
-                    right: -10,
-                    bottom: -10,
-                    width: 110,
-                    height: 110,
+                    right: -6,
+                    bottom: -6,
+                    width: 105,
+                    height: 105,
                     child: Opacity(
-                      opacity: 0.08,
-                      child: CustomPaint(
-                        painter: _PlayerWatermarkPainter(color: posColor),
+                      opacity: 0.10,
+                      child: SvgPicture.asset(
+                        'assets/icons-pos/pos-${player.position.toLowerCase()}.svg',
+                        colorFilter: ColorFilter.mode(
+                          posColor,
+                          BlendMode.srcIn,
+                        ),
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => const SizedBox(),
                       ),
                     ),
                   ),
@@ -408,54 +415,5 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
         ),
       ),
     );
-  }
-}
-
-/// Painter para la silueta vectorial del jugador en la marca de agua
-class _PlayerWatermarkPainter extends CustomPainter {
-  final Color color;
-
-  _PlayerWatermarkPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final scale = size.width / 100.0;
-    canvas.scale(scale, scale);
-
-    // Cabeza
-    canvas.drawCircle(const Offset(60, 10), 10, paint);
-
-    // Cuerpo en movimiento de remate
-    final path = Path();
-    path.moveTo(58, 22);
-    path.lineTo(48, 40);
-    path.lineTo(25, 48);
-    path.lineTo(30, 56);
-    path.lineTo(45, 50);
-    path.lineTo(40, 75);
-    path.lineTo(20, 88);
-    path.lineTo(25, 96);
-    path.lineTo(52, 78);
-    path.lineTo(60, 52);
-    path.lineTo(72, 60);
-    path.lineTo(82, 85);
-    path.lineTo(92, 82);
-    path.lineTo(78, 52);
-    path.lineTo(68, 30);
-    path.close();
-
-    canvas.drawPath(path, paint);
-
-    // Pelota
-    canvas.drawCircle(const Offset(88, 92), 7, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _PlayerWatermarkPainter oldDelegate) {
-    return oldDelegate.color != color;
   }
 }
