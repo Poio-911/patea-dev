@@ -35,6 +35,35 @@ class PlayerStats {
   }
 }
 
+/// Port de OvrHistory (src/lib/types.ts) — un asiento en la subcolección
+/// `players/{id}/ovrHistory`, escrito cada vez que se evalúa un partido.
+class OvrHistoryEntry {
+  final DateTime date;
+  final int oldOVR;
+  final int newOVR;
+  final String? matchId;
+
+  OvrHistoryEntry({required this.date, required this.oldOVR, required this.newOVR, this.matchId});
+
+  factory OvrHistoryEntry.fromMap(Map<String, dynamic> map) {
+    final rawDate = map['date'];
+    DateTime parsed;
+    if (rawDate is String) {
+      parsed = DateTime.tryParse(rawDate) ?? DateTime.now();
+    } else if (rawDate != null && rawDate.runtimeType.toString() == 'Timestamp') {
+      parsed = (rawDate as dynamic).toDate() as DateTime;
+    } else {
+      parsed = DateTime.now();
+    }
+    return OvrHistoryEntry(
+      date: parsed,
+      oldOVR: (map['oldOVR'] as num?)?.toInt() ?? 0,
+      newOVR: (map['newOVR'] as num?)?.toInt() ?? 0,
+      matchId: map['matchId'] as String?,
+    );
+  }
+}
+
 class PlayerModel {
   final String id;
   final String name;
@@ -112,3 +141,6 @@ class PlayerModel {
     return 'bronze';
   }
 }
+
+typedef Player = PlayerModel;
+

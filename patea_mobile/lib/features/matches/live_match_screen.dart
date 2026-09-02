@@ -149,11 +149,7 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
     );
 
     if (confirm == true) {
-      await ref.read(matchServiceProvider).finishMatch(
-        matchId: match.id,
-        teamAScore: scoreA,
-        teamBScore: scoreB,
-      );
+      await ref.read(matchServiceProvider).finishMatch(match.id);
     }
   }
 

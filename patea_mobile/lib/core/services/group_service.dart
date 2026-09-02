@@ -1,117 +1,53 @@
-import 'dart:math';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/group_model.dart';
+import 'callable_functions.dart';
 
 final groupServiceProvider = Provider<GroupService>((ref) {
-  return GroupService(FirebaseFirestore.instance);
+  return GroupService();
 });
 
+/// Port de src/lib/actions/{group-actions,team-actions}.ts. `groups` y
+/// `teams` tienen `allow create/update/delete: if false` en firestore.rules
+/// a propósito — toda escritura pasa por estas Cloud Functions
+/// (functions/src/callable/group-management.ts).
 class GroupService {
-  final FirebaseFirestore _firestore;
-
-  GroupService(this._firestore);
-
-  String _generateInviteCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    final random = Random();
-    return String.fromCharCodes(Iterable.generate(6, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
+  Future<String> createGroup(String name) async {
+    final result = await callFunction('createGroup', {'name': name});
+    return result['groupId'] as String;
   }
 
-  /// Crea un grupo nuevo con código de invitación único
-  Future<String> createGroup({
-    required String name,
-    required String ownerUid,
-  }) async {
-    final inviteCode = _generateInviteCode();
-    final docRef = _firestore.collection('groups').doc();
-
-    await docRef.set({
-      'name': name,
-      'ownerUid': ownerUid,
-      'inviteCode': inviteCode,
-      'members': [ownerUid],
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-
-    return docRef.id;
+  Future<String> joinGroupByInviteCode(String inviteCode) async {
+    final result = await callFunction('joinGroupByInviteCode', {'inviteCode': inviteCode});
+    return result['groupId'] as String;
   }
 
-  /// Unirse a un grupo mediante código de invitación de 6 caracteres
-  Future<String> joinGroupWithCode({
-    required String inviteCode,
-    required String userId,
-  }) async {
-    final snap = await _firestore
-        .collection('groups')
-        .where('inviteCode', isEqualTo: inviteCode.trim().toUpperCase())
-        .limit(1)
-        .get();
-
-    if (snap.docs.isEmpty) {
-      throw Exception('Código de grupo no encontrado.');
-    }
-
-    final groupDoc = snap.docs.first;
-    await groupDoc.reference.update({
-      'members': FieldValue.arrayUnion([userId]),
-    });
-
-    return groupDoc.id;
+  Future<void> setActiveGroup(String groupId) async {
+    await callFunction('setActiveGroup', {'groupId': groupId});
   }
 
-  /// Crea un jugador manual/"fantasma" para el grupo
-  Future<String> createManualPlayer({
+  Future<String> createTeam({
     required String groupId,
-    required String ownerUid,
     required String name,
-    required String position,
-    int ovr = 70,
-    int pac = 70,
-    int sho = 70,
-    int pas = 70,
-    int dri = 70,
-    int def = 70,
-    int phy = 70,
-    String? photoUrl,
+    required Map<String, dynamic> jersey,
+    required List<Map<String, dynamic>> members,
   }) async {
-    final docRef = _firestore.collection('players').doc();
-
-    await docRef.set({
-      'name': name,
-      'position': position.toUpperCase(),
-      'ovr': ovr,
-      'pac': pac,
-      'sho': sho,
-      'pas': pas,
-      'dri': dri,
-      'def': def,
-      'phy': phy,
-      'photoUrl': photoUrl,
-      'ownerUid': ownerUid,
+    final result = await callFunction('createTeam', {
       'groupId': groupId,
-      'isManual': true,
-      'createdAt': FieldValue.serverTimestamp(),
-      'stats': {
-        'matchesPlayed': 0,
-        'goals': 0,
-        'assists': 0,
-        'averageRating': 0.0,
-        'mvpCount': 0,
-      },
+      'name': name,
+      'jersey': jersey,
+      'members': members,
     });
-
-    return docRef.id;
+    return result['id'] as String;
   }
 
-  /// Actualiza la indumentaria/camiseta de un equipo
-  Future<void> updateTeamJersey({
-    required String groupId,
-    required String teamId,
-    required JerseyModel jersey,
-  }) async {
-    await _firestore.collection('groups').doc(groupId).collection('teams').doc(teamId).set({
-      'jersey': jersey.toMap(),
-    }, SetOptions(merge: true));
+  Future<void> updateTeam({required String teamId, required String name, required Map<String, dynamic> jersey}) async {
+    await callFunction('updateTeam', {'teamId': teamId, 'name': name, 'jersey': jersey});
+  }
+
+  Future<void> updateTeamMembers({required String teamId, required List<Map<String, dynamic>> members}) async {
+    await callFunction('updateTeamMembers', {'teamId': teamId, 'members': members});
+  }
+
+  Future<void> deleteTeam(String teamId) async {
+    await callFunction('deleteTeam', {'teamId': teamId});
   }
 }

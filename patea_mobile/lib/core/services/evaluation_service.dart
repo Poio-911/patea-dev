@@ -1,124 +1,201 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'callable_functions.dart';
 import '../models/player_model.dart';
-import '../constants/performance_tags.dart';
-import '../utils/ovr_calculator.dart';
+import '../models/match_model.dart';
+import '../models/evaluation_models.dart';
 
 final evaluationServiceProvider = Provider<EvaluationService>((ref) {
   return EvaluationService(FirebaseFirestore.instance);
 });
 
+final evaluationInboxItemsProvider = FutureProvider.family<List<EvaluationInboxItem>, String>((ref, uid) {
+  return ref.watch(evaluationServiceProvider).loadInboxItems(uid);
+});
+
+final identityRevealRequestsProvider = FutureProvider.family<List<IdentityRevealRequest>, String>((ref, uid) {
+  return ref.watch(evaluationServiceProvider).loadIdentityRequests(uid);
+});
+
+/// Port de src/lib/actions/evaluation-actions.ts + src/app/evaluations/*.
+/// La escritura real de `evaluations`/`evaluationSubmissions`/`assignments`
+/// está bloqueada para el cliente en firestore.rules a propósito ("las
+/// evaluaciones las crea el servidor") — todo acá pasa por Cloud Functions.
+/// El procesamiento de una submission en `evaluations` + `selfEvaluations` +
+/// `processedSubmissions` lo hace automáticamente el trigger
+/// `processEvaluationSubmission` (ya desplegado, no requiere llamada extra).
 class EvaluationService {
   final FirebaseFirestore _firestore;
 
   EvaluationService(this._firestore);
 
-  /// Envía una evaluación peer-to-peer y recalcula los atributos y OVR del jugador en tiempo real
-  Future<void> submitEvaluation({
-    required String matchId,
-    required String evaluatorId,
-    required String targetPlayerId,
-    required double rating,
-    required List<String> tagIds,
-    String? comment,
-  }) async {
-    final batch = _firestore.batch();
+  Future<List<EvaluationAssignmentModel>> getPendingAssignmentsForMatch(String matchId, String evaluatorId) async {
+    final snap = await _firestore
+        .collection('matches/$matchId/assignments')
+        .where('evaluatorId', isEqualTo: evaluatorId)
+        .where('status', isEqualTo: 'pending')
+        .get();
+    return snap.docs.map((d) => EvaluationAssignmentModel.fromMap(d.data(), d.id)).toList();
+  }
 
-    // 1. Crear documento de evaluación
-    final evalRef = _firestore.collection('evaluations').doc();
-    final selectedTags = PerformanceTagsData.allTags.where((t) => tagIds.contains(t.id)).toList();
+  Future<bool> hasSubmittedFor(String matchId, String evaluatorId) async {
+    final snap = await _firestore
+        .collection('evaluationSubmissions')
+        .where('matchId', isEqualTo: matchId)
+        .where('evaluatorId', isEqualTo: evaluatorId)
+        .limit(1)
+        .get();
+    return snap.docs.isNotEmpty;
+  }
 
-    batch.set(evalRef, {
-      'matchId': matchId,
-      'evaluatorId': evaluatorId,
-      'targetPlayerId': targetPlayerId,
-      'rating': rating,
-      'tags': tagIds,
-      'comment': comment,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+  Future<List<PlayerModel>> getPlayersByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    final results = <PlayerModel>[];
+    for (var i = 0; i < ids.length; i += 10) {
+      final chunk = ids.sublist(i, i + 10 > ids.length ? ids.length : i + 10);
+      final snap = await _firestore.collection('players').where(FieldPath.documentId, whereIn: chunk).get();
+      results.addAll(snap.docs.map((d) => PlayerModel.fromFirestore(d.data(), d.id)));
+    }
+    return results;
+  }
 
-    // 2. Obtener datos actuales del jugador
-    final playerDocRef = _firestore.collection('players').doc(targetPlayerId);
-    final playerSnap = await playerDocRef.get();
+  Future<List<MatchModel>> getMatchesByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    final results = <MatchModel>[];
+    for (var i = 0; i < ids.length; i += 10) {
+      final chunk = ids.sublist(i, i + 10 > ids.length ? ids.length : i + 10);
+      final snap = await _firestore.collection('matches').where(FieldPath.documentId, whereIn: chunk).get();
+      results.addAll(snap.docs.map((d) => MatchModel.fromFirestore(d.data(), d.id)));
+    }
+    return results;
+  }
 
-    if (!playerSnap.exists || playerSnap.data() == null) {
-      await batch.commit();
-      return;
+  /// Arma el inbox: matches con assignments pendientes (a evaluar) o con una
+  /// evaluación ya enviada y procesada (historial), igual que
+  /// src/app/evaluations/page.tsx pero simplificado a fetch único en vez de
+  /// listeners en vivo por partido (el pull-to-refresh cubre la reactividad).
+  Future<List<EvaluationInboxItem>> loadInboxItems(String uid) async {
+    final pendingSnap = await _firestore
+        .collectionGroup('assignments')
+        .where('evaluatorId', isEqualTo: uid)
+        .where('status', isEqualTo: 'pending')
+        .get();
+    final completedSnap = await _firestore
+        .collectionGroup('assignments')
+        .where('evaluatorId', isEqualTo: uid)
+        .where('status', isEqualTo: 'completed')
+        .get();
+
+    final pendingByMatch = <String, List<EvaluationAssignmentModel>>{};
+    for (final d in pendingSnap.docs) {
+      final a = EvaluationAssignmentModel.fromMap(d.data(), d.id);
+      (pendingByMatch[a.matchId] ??= []).add(a);
+    }
+    final completedMatchIds = completedSnap.docs.map((d) => (d.data()['matchId'] as String?) ?? '').where((s) => s.isNotEmpty).toSet();
+
+    final allMatchIds = {...pendingByMatch.keys, ...completedMatchIds}.toList();
+    if (allMatchIds.isEmpty) return [];
+
+    final matches = {for (final m in await getMatchesByIds(allMatchIds)) m.id: m};
+
+    final subjectIds = pendingByMatch.values.expand((l) => l.map((a) => a.subjectId)).toSet().toList();
+    final players = {for (final p in await getPlayersByIds(subjectIds)) p.id: p};
+
+    final processedByMatch = <String, Map<String, dynamic>>{};
+    for (final matchId in completedMatchIds) {
+      final snap = await _firestore
+          .collection('matches/$matchId/processedSubmissions')
+          .where('evaluatorId', isEqualTo: uid)
+          .limit(1)
+          .get();
+      if (snap.docs.isNotEmpty) processedByMatch[matchId] = snap.docs.first.data();
     }
 
-    final player = PlayerModel.fromFirestore(playerSnap.data()!, playerSnap.id);
+    final items = <EvaluationInboxItem>[];
+    for (final matchId in allMatchIds) {
+      final match = matches[matchId];
+      if (match == null) continue;
+      final processed = processedByMatch[matchId];
+      final pending = pendingByMatch[matchId] ?? [];
 
-    // 3. Calcular cambio de OVR y deltas de atributos
-    final double ovrChange = OvrCalculator.calculateOvrChange(player.ovr, rating);
+      if (processed == null && pending.isEmpty) continue;
 
-    // Aplicar distribución por puntos según posición
-    final attrsFromPoints = OvrCalculator.calculateAttributeChangesFromPoints(
-      player: player,
-      ovrChange: ovrChange,
-    );
+      final submission = processed?['submission'] as Map<String, dynamic>?;
+      items.add(EvaluationInboxItem(
+        matchId: matchId,
+        matchTitle: match.title,
+        matchDate: match.date,
+        isSubmitted: processed != null,
+        submittedAt: processed?['submittedAt'] as String?,
+        submittedEvaluationsCount: (submission?['evaluations'] as List?)?.length,
+        submittedGoals: (submission?['evaluatorGoals'] as num?)?.toInt(),
+        submittedAssists: (submission?['evaluatorAssists'] as num?)?.toInt(),
+        assignedPlayers: pending
+            .map((a) => players[a.subjectId])
+            .whereType<PlayerModel>()
+            .map((p) => AssignedPlayerInfo(id: p.id, name: p.name, photoURL: p.photoUrl, position: p.position))
+            .toList(),
+      ));
+    }
 
-    // Aplicar efectos directos de los tags de rendimiento
-    final finalAttrs = OvrCalculator.calculateAttributeChangesFromTags(
-      currentAttributes: attrsFromPoints,
-      tags: selectedTags,
-    );
+    items.sort((a, b) => b.matchDate.compareTo(a.matchDate));
+    return items;
+  }
 
-    final int newOvr = OvrCalculator.computeOvr(finalAttrs);
+  Future<List<IdentityRevealRequest>> loadIdentityRequests(String uid) async {
+    final snap = await _firestore
+        .collection('evaluations')
+        .where('evaluatorId', isEqualTo: uid)
+        .where('identityRequestStatus', isEqualTo: 'pending')
+        .get();
 
-    // 4. Actualizar estadísticas del jugador
-    final newMatchesPlayed = player.stats.matchesPlayed + 1;
-    final newAvgRating = player.stats.matchesPlayed > 0
-        ? ((player.stats.averageRating * player.stats.matchesPlayed) + rating) / newMatchesPlayed
-        : rating;
+    final requests = <IdentityRevealRequest>[];
+    for (final d in snap.docs) {
+      final data = d.data();
+      final playerId = data['playerId'] as String? ?? '';
+      final matchId = data['matchId'] as String? ?? '';
+      final playerSnap = playerId.isNotEmpty ? await _firestore.collection('players').doc(playerId).get() : null;
+      final matchSnap = matchId.isNotEmpty ? await _firestore.collection('matches').doc(matchId).get() : null;
+      final playerData = playerSnap?.data();
+      final matchData = matchSnap?.data();
+      requests.add(IdentityRevealRequest(
+        evaluationId: d.id,
+        fromPlayerName: (playerData?['name'] as String?) ?? 'Jugador',
+        fromPlayerPhotoUrl: (playerData?['photoUrl'] as String?) ?? (playerData?['photoURL'] as String?) ?? '',
+        matchTitle: (matchData?['title'] as String?) ?? 'Partido',
+      ));
+    }
+    return requests;
+  }
 
-    batch.update(playerDocRef, {
-      'ovr': newOvr,
-      'pac': finalAttrs['pac'],
-      'sho': finalAttrs['sho'],
-      'pas': finalAttrs['pas'],
-      'dri': finalAttrs['dri'],
-      'def': finalAttrs['def'],
-      'phy': finalAttrs['phy'],
-      'stats.matchesPlayed': newMatchesPlayed,
-      'stats.averageRating': double.parse(newAvgRating.toStringAsFixed(2)),
-    });
-
-    // 5. Registrar en subcolección ovrHistory
-    final historyRef = playerDocRef.collection('ovrHistory').doc();
-    batch.set(historyRef, {
-      'oldOVR': player.ovr,
-      'newOVR': newOvr,
-      'change': newOvr - player.ovr,
-      'rating': rating,
+  Future<void> submitEvaluation({
+    required String matchId,
+    required int evaluatorGoals,
+    required int evaluatorAssists,
+    String? mvpVote,
+    String? personalChronicle,
+    required List<PlayerEvaluationDraft> evaluations,
+  }) async {
+    await callFunction('submitEvaluationSubmission', {
       'matchId': matchId,
-      'date': DateTime.now().toIso8601String(),
-      'attributeChanges': {
-        'pac': (finalAttrs['pac'] ?? player.pac) - player.pac,
-        'sho': (finalAttrs['sho'] ?? player.sho) - player.sho,
-        'pas': (finalAttrs['pas'] ?? player.pas) - player.pas,
-        'dri': (finalAttrs['dri'] ?? player.dri) - player.dri,
-        'def': (finalAttrs['def'] ?? player.def) - player.def,
-        'phy': (finalAttrs['phy'] ?? player.phy) - player.phy,
+      'submission': {
+        'evaluatorGoals': evaluatorGoals,
+        'evaluatorAssists': evaluatorAssists,
+        if (mvpVote != null) 'mvpVote': mvpVote,
+        if (personalChronicle != null && personalChronicle.isNotEmpty) 'personalChronicle': personalChronicle,
+        'evaluations': evaluations.map((e) => e.toSubmissionMap()).toList(),
       },
     });
+  }
 
-    // 6. Publicar actividad en el feed social
-    final activityRef = _firestore.collection('feedActivities').doc();
-    batch.set(activityRef, {
-      'type': 'ovr_updated',
-      'playerId': targetPlayerId,
-      'playerName': player.name,
-      'oldOvr': player.ovr,
-      'newOvr': newOvr,
-      'change': newOvr - player.ovr,
-      'matchId': matchId,
-      'createdAt': FieldValue.serverTimestamp(),
-      'likesCount': 0,
-      'commentsCount': 0,
-    });
+  Future<void> respondToIdentityReveal(String evaluationId, String response) async {
+    await callFunction('respondToIdentityReveal', {'evaluationId': evaluationId, 'response': response});
+  }
 
-    // Ejecutar todas las mutaciones atómicamente
-    await batch.commit();
+  /// Solo el organizador; agrega los assignments incompletos con el
+  /// promedio del partido y actualiza OVR/atributos/stats reales.
+  Future<int> finalizeMatchEvaluation(String matchId) async {
+    final result = await callFunction('finalizeMatchEvaluation', {'matchId': matchId}, timeout: const Duration(seconds: 45));
+    return (result['playersUpdated'] as num?)?.toInt() ?? 0;
   }
 }

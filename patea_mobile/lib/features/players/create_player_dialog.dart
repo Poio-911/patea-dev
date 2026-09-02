@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/services/group_service.dart';
+import '../../core/services/player_service.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/firestore_service.dart';
 
 class CreatePlayerDialog extends ConsumerStatefulWidget {
   const CreatePlayerDialog({super.key});
@@ -39,9 +40,13 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
     setState(() => _isLoading = true);
 
     try {
-      await ref.read(groupServiceProvider).createManualPlayer(
-        groupId: 'default_group',
-        ownerUid: user.uid,
+      final groupId = await ref.read(activeGroupIdStreamProvider(user.uid).future);
+      if (groupId == null) {
+        throw Exception('No tenés un grupo activo. Elegí uno en "Mis Grupos" primero.');
+      }
+
+      await ref.read(playerServiceProvider).createManualPlayer(
+        groupId: groupId,
         name: _nameController.text.trim(),
         position: _position,
         ovr: _ovr,

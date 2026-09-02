@@ -1,150 +1,139 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'callable_functions.dart';
 import '../models/match_model.dart';
 
 final matchServiceProvider = Provider<MatchService>((ref) {
-  return MatchService(FirebaseFirestore.instance);
+  return MatchService();
 });
 
 class MatchService {
-  final FirebaseFirestore _firestore;
-
-  MatchService(this._firestore);
-
-  /// Crea un nuevo partido en Firestore
+  /// Crea un partido vía la Cloud Function `createMatch`.
+  ///
+  /// No se puede escribir 'matches' directo desde el cliente: firestore.rules
+  /// tiene `allow create: if false` a propósito (igual que la web, que
+  /// siempre pasa por su API route con el Admin SDK) — ver
+  /// functions/src/callable/create-match.ts.
   Future<String> createMatch({
     required String title,
-    required String date,
     required String type,
     required String ownerUid,
+    required int matchSize,
+    String date = '',
+    String time = '',
     String? groupId,
-    String? location,
-    String? teamAName,
-    String? teamBName,
-    List<String> teamAPlayerIds = const [],
-    List<String> teamBPlayerIds = const [],
+    String locationName = '',
+    String locationAddress = '',
+    double locationLat = 0,
+    double locationLng = 0,
+    String locationPlaceId = '',
+    bool isPublic = false,
+    List<Map<String, dynamic>> players = const [],
+    List<String> playerUids = const [],
+    List<dynamic> teams = const [],
   }) async {
-    final docRef = _firestore.collection('matches').doc();
-
-    final allPlayerUids = [...teamAPlayerIds, ...teamBPlayerIds];
-
-    final matchData = {
+    final result = await callFunction('createMatch', {
       'title': title,
-      'date': date,
-      'status': 'upcoming',
       'type': type,
-      'ownerUid': ownerUid,
-      'groupId': groupId,
-      'location': location,
-      'createdAt': FieldValue.serverTimestamp(),
-      'playerUids': allPlayerUids,
-      'teams': [
-        {
-          'name': teamAName ?? 'Equipo A',
-          'score': 0,
-          'players': teamAPlayerIds.map((id) => {'uid': id}).toList(),
-          'playerIds': teamAPlayerIds,
-        },
-        {
-          'name': teamBName ?? 'Equipo B',
-          'score': 0,
-          'players': teamBPlayerIds.map((id) => {'uid': id}).toList(),
-          'playerIds': teamBPlayerIds,
-        },
-      ],
-      'events': [],
-    };
+      'matchSize': matchSize,
+      'date': date,
+      'time': time,
+      'locationName': locationName,
+      'locationAddress': locationAddress,
+      'locationLat': locationLat,
+      'locationLng': locationLng,
+      'locationPlaceId': locationPlaceId,
+      'players': players,
+      'playerUids': playerUids,
+      'teams': teams,
+    });
 
-    await docRef.set(matchData);
-    return docRef.id;
+    return result['matchId'] as String;
   }
 
-  /// Inicia el partido (estado: active)
+  /// Inicia el partido (estado: active). Vía Cloud Function: ver nota arriba.
   Future<void> startMatch(String matchId) async {
-    await _firestore.collection('matches').doc(matchId).update({
-      'status': 'active',
-      'liveStatus': 'first_half',
-      'currentMinute': 1,
-      'startedAt': FieldValue.serverTimestamp(),
-    });
+    await callFunction('startMatch', {'matchId': matchId});
   }
 
-  /// Actualiza el minuto en vivo y el tiempo
+  /// Actualiza el minuto en vivo y el estado del tiempo.
   Future<void> updateLiveMinute(String matchId, int minute, String liveStatus) async {
-    await _firestore.collection('matches').doc(matchId).update({
-      'currentMinute': minute,
-      'liveStatus': liveStatus,
-    });
+    await callFunction('updateLiveMinute', {'matchId': matchId, 'minute': minute, 'liveStatus': liveStatus});
   }
 
-  /// Registra un evento en vivo (gol, tarjeta, sustitución, etc.) y actualiza el marcador
+  /// Registra un evento en vivo (gol, tarjeta, sustitución, etc.) y actualiza el marcador.
   Future<void> recordLiveEvent({
     required String matchId,
     required MatchEvent event,
     int? teamAScore,
     int? teamBScore,
   }) async {
-    final matchRef = _firestore.collection('matches').doc(matchId);
-
-    final updates = <String, dynamic>{
-      'events': FieldValue.arrayUnion([event.toMap()]),
-    };
-
-    if (event.type == 'goal' && (teamAScore != null || teamBScore != null)) {
-      final docSnap = await matchRef.get();
-      if (docSnap.exists) {
-        final data = docSnap.data();
-        final teams = List<Map<String, dynamic>>.from(data?['teams'] ?? []);
-        if (teams.length >= 2) {
-          if (teamAScore != null) teams[0]['score'] = teamAScore;
-          if (teamBScore != null) teams[1]['score'] = teamBScore;
-          updates['teams'] = teams;
-        }
-      }
-    }
-
-    await matchRef.update(updates);
+    await callFunction('recordLiveEvent', {
+      'matchId': matchId,
+      'event': event.toMap(),
+      if (teamAScore != null) 'teamAScore': teamAScore,
+      if (teamBScore != null) 'teamBScore': teamBScore,
+    });
   }
 
-  /// Finaliza el partido (estado: completed)
-  Future<void> finishMatch({
-    required String matchId,
-    required int teamAScore,
-    required int teamBScore,
-  }) async {
-    final matchRef = _firestore.collection('matches').doc(matchId);
-    final docSnap = await matchRef.get();
-
-    final updates = <String, dynamic>{
-      'status': 'completed',
-      'liveStatus': 'finished',
-      'completedAt': FieldValue.serverTimestamp(),
-    };
-
-    if (docSnap.exists) {
-      final data = docSnap.data();
-      final teams = List<Map<String, dynamic>>.from(data?['teams'] ?? []);
-      if (teams.length >= 2) {
-        teams[0]['score'] = teamAScore;
-        teams[1]['score'] = teamBScore;
-        updates['teams'] = teams;
-      }
-    }
-
-    await matchRef.update(updates);
+  /// Finaliza el partido (estado: completed). No recibe score: el marcador
+  /// final ya quedó guardado en `teams[].score` vía los eventos en vivo
+  /// (recordLiveEvent). Igual que `finishMatchAction` en la web, esto además
+  /// genera los equipos con IA si todavía no existen y genera las
+  /// asignaciones de evaluación de pares.
+  Future<void> finishMatch(String matchId) async {
+    await callFunction('finishMatch', {'matchId': matchId});
   }
 
-  /// Unirse a un partido colaborativo
+  /// Finaliza en lote partidos vencidos que quedaron en 'upcoming'
+  /// (PendingFinalizationDialog en la web).
+  Future<int> finalizePendingMatches(List<String> matchIds) async {
+    final result = await callFunction('finalizePendingMatches', {'matchIds': matchIds});
+    return (result['finalizedCount'] as num?)?.toInt() ?? 0;
+  }
+
+  /// Unirse a un partido colaborativo/manual.
   Future<void> joinMatch(String matchId, String playerId) async {
-    await _firestore.collection('matches').doc(matchId).update({
-      'playerUids': FieldValue.arrayUnion([playerId]),
+    await callFunction('joinMatch', {'matchId': matchId});
+  }
+
+  /// Darse de baja de un partido colaborativo/manual.
+  Future<void> leaveMatch(String matchId, String playerId) async {
+    await callFunction('leaveMatch', {'matchId': matchId});
+  }
+
+  /// Elimina el partido (solo el organizador). Port de deleteMatchAction.
+  Future<void> deleteMatch(String matchId) async {
+    await callFunction('deleteMatch', {'matchId': matchId});
+  }
+
+  /// Reprograma fecha/hora (solo el organizador). Port de updateMatchDateAction.
+  Future<void> updateMatchDate(String matchId, String date, String time) async {
+    await callFunction('updateMatchDate', {'matchId': matchId, 'date': date, 'time': time});
+  }
+
+  /// Cambia la cancha (solo el organizador). Port de updateMatchLocationAction.
+  Future<void> updateMatchLocation({
+    required String matchId,
+    required String locationName,
+    String locationAddress = '',
+    double locationLat = 0,
+    double locationLng = 0,
+    String locationPlaceId = '',
+  }) async {
+    await callFunction('updateMatchLocation', {
+      'matchId': matchId,
+      'locationName': locationName,
+      'locationAddress': locationAddress,
+      'locationLat': locationLat,
+      'locationLng': locationLng,
+      'locationPlaceId': locationPlaceId,
     });
   }
 
-  /// Darse de baja de un partido colaborativo
-  Future<void> leaveMatch(String matchId, String playerId) async {
-    await _firestore.collection('matches').doc(matchId).update({
-      'playerUids': FieldValue.arrayRemove([playerId]),
-    });
+  /// Vuelve a sortear los equipos con IA (solo el organizador). Port de
+  /// shuffleMatchTeamsAction. Gemini en frío puede tardar 30s+, igual que
+  /// generateBalancedTeams — mismo timeout ampliado.
+  Future<void> shuffleTeams(String matchId) async {
+    await callFunction('shuffleTeams', {'matchId': matchId}, timeout: const Duration(seconds: 60));
   }
 }
