@@ -1,9 +1,11 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import '../widgets/patea_top_header.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/players/players_list_screen.dart';
@@ -155,7 +157,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 /// Port de nav-config.ts + mobile-nav.tsx (web): 5 slots reales —
 /// Panel, Jugadores, Partidos (botón central que abre un bottom sheet con
 /// "Mis Partidos" / "Competiciones"), Explorar, Evaluaciones.
-class _ScaffoldWithNavBar extends StatelessWidget {
+class _ScaffoldWithNavBar extends ConsumerWidget {
   final Widget child;
 
   const _ScaffoldWithNavBar({required this.child});
@@ -211,60 +213,80 @@ class _ScaffoldWithNavBar extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).uri.toString();
     final isMatchesActive = location.startsWith('/matches') || location.startsWith('/competitions');
 
     return Scaffold(
+      extendBody: true,
+      extendBodyBehindAppBar: true,
+      appBar: const PateaTopHeader(),
       body: child,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xF210151E),
-          border: Border(top: BorderSide(color: AppColors.border.withValues(alpha: 0.35), width: 1.0)),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, -4))],
-        ),
-        child: SafeArea(
-          child: SizedBox(
-            height: 60,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _NavItem(
-                  icon: Icons.dashboard_outlined,
-                  activeIcon: Icons.dashboard_rounded,
-                  label: 'Panel',
-                  isSelected: location == '/',
-                  onTap: () => context.go('/'),
+      bottomNavigationBar: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xB3090E17), // 70% dark carbon glass
+              border: Border(
+                top: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  width: 1.0,
                 ),
-                _NavItem(
-                  icon: Icons.person_outline,
-                  activeIcon: Icons.person,
-                  label: 'Jugadores',
-                  isSelected: location.startsWith('/players'),
-                  onTap: () => context.go('/players'),
-                ),
-                _NavItem(
-                  icon: Icons.calendar_today_outlined,
-                  activeIcon: Icons.calendar_today,
-                  label: 'Partidos',
-                  isSelected: isMatchesActive,
-                  onTap: () => _openPartidosSheet(context),
-                ),
-                _NavItem(
-                  icon: Icons.public_outlined,
-                  activeIcon: Icons.public,
-                  label: 'Explorar',
-                  isSelected: location.startsWith('/explorar'),
-                  onTap: () => context.go('/explorar'),
-                ),
-                _NavItem(
-                  icon: Icons.checklist_rtl_outlined,
-                  activeIcon: Icons.checklist_rtl,
-                  label: 'Evaluaciones',
-                  isSelected: location.startsWith('/evaluations'),
-                  onTap: () => context.go('/evaluations'),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  blurRadius: 16,
+                  offset: const Offset(0, -4),
                 ),
               ],
+            ),
+            child: SafeArea(
+              top: false,
+              child: SizedBox(
+                height: 60,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _NavItem(
+                      icon: Icons.dashboard_outlined,
+                      activeIcon: Icons.dashboard_rounded,
+                      label: 'Panel',
+                      isSelected: location == '/',
+                      onTap: () => context.go('/'),
+                    ),
+                    _NavItem(
+                      icon: Icons.person_outline,
+                      activeIcon: Icons.person,
+                      label: 'Jugadores',
+                      isSelected: location.startsWith('/players'),
+                      onTap: () => context.go('/players'),
+                    ),
+                    _NavItem(
+                      icon: Icons.calendar_today_outlined,
+                      activeIcon: Icons.calendar_today,
+                      label: 'Partidos',
+                      isSelected: isMatchesActive,
+                      onTap: () => _openPartidosSheet(context),
+                    ),
+                    _NavItem(
+                      icon: Icons.public_outlined,
+                      activeIcon: Icons.public,
+                      label: 'Explorar',
+                      isSelected: location.startsWith('/explorar'),
+                      onTap: () => context.go('/explorar'),
+                    ),
+                    _NavItem(
+                      icon: Icons.checklist_rtl_outlined,
+                      activeIcon: Icons.checklist_rtl,
+                      label: 'Evaluaciones',
+                      isSelected: location.startsWith('/evaluations'),
+                      onTap: () => context.go('/evaluations'),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
