@@ -288,22 +288,24 @@ class _ResumenTabBody extends ConsumerWidget {
               const SizedBox(height: 22),
             ],
 
-            _SectionCard(
-              icon: Icons.play_circle_outline,
-              title: 'Partidos en Vivo',
-              subtitle: 'Partidos de tu grupo que están en curso.',
-              child: liveMatches.isEmpty
-                  ? Text('No hay partidos en vivo ahora.', style: AppTypography.body(size: 12, color: AppColors.textMuted))
-                  : Column(
-                      children: liveMatches
-                          .map((m) => Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: _LiveMatchRow(match: m),
-                              ))
-                          .toList(),
-                    ),
-            ),
-            const SizedBox(height: 22),
+            // Sólo aparece si hay algo en curso. Antes ocupaba lugar en cada
+            // carga para decir "no hay partidos en vivo ahora", que es el caso
+            // normal el 99% del tiempo.
+            if (liveMatches.isNotEmpty) ...[
+              _SectionCard(
+                icon: Icons.play_circle_outline,
+                title: 'En vivo ahora',
+                child: Column(
+                  children: liveMatches
+                      .map((m) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _LiveMatchRow(match: m),
+                          ))
+                      .toList(),
+                ),
+              ),
+              const SizedBox(height: 22),
+            ],
 
             playerAsync.when(
               data: (player) {
@@ -408,98 +410,172 @@ class _NextMatchCard extends StatelessWidget {
     final theme = getMatchTypeTheme(match.type);
     final isLive = match.status == 'active';
     final hasTeams = match.teamA != null && match.teamB != null;
+    final kickoff = _kickoffOf(match);
+    final photoIndex = (match.id.codeUnits.fold<int>(0, (a, c) => a + c).abs() % 9) + 1;
 
     return InkWell(
       onTap: () => context.push('/matches/${match.id}'),
       borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isLive ? AppColors.destructive : theme.brandColor.withValues(alpha: 0.5), width: 1.5),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Sin pildora con contorno: una barra de acento y el texto.
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 3,
-                      height: 13,
-                      margin: const EdgeInsets.only(right: 7),
-                      color: isLive ? AppColors.destructive : theme.brandColor,
-                    ),
-                    Text(
-                      isLive
-                          ? 'EN VIVO \u00b7 ${match.currentMinute ?? 1}\''
-                          : 'PROXIMO PARTIDO',
-                      style: AppTypography.code(
-                        size: 10,
-                        weight: FontWeight.w700,
+            // La cancha de fondo, no un gris plano.
+            Positioned.fill(
+              child: Opacity(
+                opacity: isLive ? 0.30 : 0.20,
+                child: Image.asset(
+                  'assets/backgrounds/fondo_$photoIndex.jpg',
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      const Color(0xFF0E131C).withValues(alpha: 0.72),
+                      const Color(0xFF0E131C).withValues(alpha: 0.94),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Franja superior: estado y fecha.
+                  Row(
+                    children: [
+                      Container(
+                        width: 3,
+                        height: 12,
+                        margin: const EdgeInsets.only(right: 7),
                         color: isLive ? AppColors.destructive : theme.brandColor,
                       ),
-                    ),
-                  ],
-                ),
-                Text(_fmtDate(match.date), style: AppTypography.code(size: 11, color: AppColors.textSecondary)),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Text(match.title, style: AppTypography.headline(size: 18, weight: FontWeight.w800)),
+                      Text(
+                        isLive ? 'EN VIVO' : 'DÍA DE PARTIDO',
+                        style: AppTypography.code(
+                          size: 10,
+                          weight: FontWeight.w700,
+                          color: isLive ? AppColors.destructive : theme.brandColor,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        _fmtDate(match.date),
+                        style: AppTypography.code(size: 10, color: AppColors.textMuted),
+                      ),
+                    ],
+                  ),
 
-            // Cuánto falta, corriendo. Es el dato por el que se abre la app un
-            // jueves a la tarde; antes había que leer la fecha y hacer la
-            // cuenta mental.
-            if (!isLive) ...[
-              const SizedBox(height: 12),
-              Builder(builder: (context) {
-                final kickoff = _kickoffOf(match);
-                if (kickoff == null) return const SizedBox.shrink();
-                return MatchCountdown(kickoff: kickoff);
-              }),
-            ],
-            if (match.location != null) ...[
-              const SizedBox(height: 4),
-              Row(children: [
-                Icon(Icons.location_on_outlined, size: 14, color: AppColors.textMuted),
-                const SizedBox(width: 4),
-                Expanded(child: Text(match.location!, style: AppTypography.body(size: 12, color: AppColors.textMuted), maxLines: 1, overflow: TextOverflow.ellipsis)),
-              ]),
-            ],
-            const SizedBox(height: 16),
-            if (hasTeams)
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: AppColors.cardSurface.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(14)),
-                child: Row(
-                  children: [
-                    if (match.teamA!.jersey != null) JerseyWidget(jersey: match.teamA!.jersey!, size: 36),
-                    Expanded(child: Text(match.teamA!.name, style: AppTypography.headline(size: 14, weight: FontWeight.w700), textAlign: TextAlign.center)),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.border)),
-                      child: Text('${match.teamA!.score} : ${match.teamB!.score}', style: AppTypography.sportNumber(size: 18, color: isLive ? AppColors.destructive : AppColors.voltNeon)),
+                  const SizedBox(height: 16),
+
+                  // Los dos equipos enfrentados. Es lo primero que se mira en
+                  // cualquier app de fútbol; antes estaba abajo, chiquito y
+                  // dentro de otra caja con borde.
+                  if (hasTeams)
+                    Row(
+                      children: [
+                        Expanded(child: _Side(team: match.teamA!, alignEnd: false)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Text(
+                            isLive
+                                ? '${match.teamA!.score}-${match.teamB!.score}'
+                                : 'VS',
+                            style: AppTypography.sportNumber(
+                              size: isLive ? 30 : 20,
+                              color: isLive ? AppColors.voltNeon : AppColors.textMuted,
+                            ),
+                          ),
+                        ),
+                        Expanded(child: _Side(team: match.teamB!, alignEnd: true)),
+                      ],
+                    )
+                  else
+                    Text(
+                      match.title,
+                      style: AppTypography.headline(size: 20, weight: FontWeight.w900),
                     ),
-                    Expanded(child: Text(match.teamB!.name, style: AppTypography.headline(size: 14, weight: FontWeight.w700), textAlign: TextAlign.center)),
-                    if (match.teamB!.jersey != null) JerseyWidget(jersey: match.teamB!.jersey!, size: 36),
+
+                  const SizedBox(height: 18),
+
+                  // Cuánto falta, corriendo.
+                  if (!isLive && kickoff != null) ...[
+                    Text(
+                      'ARRANCA EN',
+                      style: AppTypography.code(size: 9, color: AppColors.textMuted),
+                    ),
+                    const SizedBox(height: 4),
+                    MatchCountdown(kickoff: kickoff),
+                    const SizedBox(height: 16),
                   ],
-                ),
-              )
-            else
-              Row(children: [
-                Icon(Icons.groups_outlined, size: 18, color: AppColors.textMuted),
-                const SizedBox(width: 6),
-                Text('${match.playerUids.length}${match.matchSize > 0 ? ' / ${match.matchSize}' : ''} jugadores', style: AppTypography.body(size: 13, color: AppColors.textSecondary)),
-              ]),
+
+                  if (match.location != null)
+                    Row(
+                      children: [
+                        Icon(Icons.place_outlined, size: 14, color: AppColors.textMuted),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            match.location!,
+                            style: AppTypography.body(size: 12, color: AppColors.textSecondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          '${match.playerUids.length}${match.matchSize > 0 ? '/${match.matchSize}' : ''}',
+                          style: AppTypography.code(size: 11, color: AppColors.textSecondary),
+                        ),
+                        const SizedBox(width: 3),
+                        Icon(Icons.person_outline, size: 13, color: AppColors.textMuted),
+                      ],
+                    ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Un lado del enfrentamiento: camiseta y nombre del equipo.
+class _Side extends StatelessWidget {
+  final MatchTeam team;
+  final bool alignEnd;
+
+  const _Side({required this.team, required this.alignEnd});
+
+  @override
+  Widget build(BuildContext context) {
+    final jersey = team.jersey;
+    final children = [
+      if (jersey != null)
+        JerseyWidget(jersey: jersey, size: 46)
+      else
+        const Icon(Icons.checkroom, size: 40, color: AppColors.textMuted),
+      const SizedBox(height: 7),
+      Text(
+        team.name,
+        textAlign: alignEnd ? TextAlign.right : TextAlign.left,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: AppTypography.headline(size: 12, weight: FontWeight.w700),
+      ),
+    ];
+    return Column(
+      crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: children,
     );
   }
 }
