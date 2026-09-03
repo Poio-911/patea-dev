@@ -14,8 +14,8 @@
 
 #### `.env.local` (Desarrollo Local)
 Se actualizó con:
-- ✅ **Nueva API Key de Gemini**: `AIzaSyDDN2IFxzPbAHJRpnLUbQ6lnCFs3Ua4O-k`
-- ✅ **Nueva API Key de Google Maps**: `AIzaSyBnjKt571ZEUlRmK4lAnrdNJxYKZ-0Pnhk`
+- ✅ **Nueva API Key de Gemini**: `<REDACTADA — ver Secret Manager: GOOGLE_GENAI_API_KEY>`
+- ✅ **Nueva API Key de Google Maps**: `<clave pública de Maps — ver apphosting.yaml>`
   - Acceso a: Places API, Maps JavaScript API, Maps Embed API
 - ✅ **Service Account**: `mil-disculpis@appspot.gserviceaccount.com`
 
@@ -214,7 +214,7 @@ Firebase App Hosting redesplega automáticamente.
 
 **Login**: ✅ Funcionando correctamente
 
-**Google Maps**: ✅ Nueva API key configurada (AIzaSyBnjKt571ZEUlRmK4lAnrdNJxYKZ-0Pnhk)
+**Google Maps**: ✅ Nueva API key configurada (<clave pública de Maps — ver apphosting.yaml>)
 
 **Configuración Local**: ✅ Completa y probada
 

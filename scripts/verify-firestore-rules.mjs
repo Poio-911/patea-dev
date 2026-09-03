@@ -12,9 +12,25 @@ import {
   getDocs, doc, getDoc,
 } from 'firebase/firestore';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { config } from 'dotenv';
+
+config({ path: '.env.local' });
+
+// La key de la web está restringida por referrer y Node no manda ninguno
+// (`auth/requests-from-referer-<empty>-are-blocked`), así que este script usa
+// una key propia limitada a identitytoolkit + securetoken + firestore.
+//
+// No otorga privilegios por sí sola: se autentica igual con usuario y
+// contraseña, y lo que decide qué puede leer son las reglas — que es
+// justamente lo que este script comprueba.
+const API_KEY = process.env.VERIFY_RULES_API_KEY;
+if (!API_KEY) {
+  console.error('Falta VERIFY_RULES_API_KEY en .env.local');
+  process.exit(1);
+}
 
 const app = initializeApp({
-  apiKey: 'AIzaSyAes7EVn8hQswS8XgvDMJfN6U4IT_ZL_WY',
+  apiKey: API_KEY,
   authDomain: 'mil-disculpis.firebaseapp.com',
   projectId: 'mil-disculpis',
   storageBucket: 'mil-disculpis.firebasestorage.app',
