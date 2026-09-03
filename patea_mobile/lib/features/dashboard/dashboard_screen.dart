@@ -172,53 +172,61 @@ class _DashboardTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget tab(String label, IconData icon, int index) {
+    // Antes eran dos cajas redondeadas metidas dentro de otra caja
+    // redondeada, con borde las tres. Ahora es un subrayado: el estándar de
+    // cualquier app deportiva, y ocupa la mitad de alto.
+    Widget tab(String label, int index) {
       final selected = active == index;
       return Expanded(
-        child: InkWell(
-          onTap: () => onChanged(index),
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: selected ? AppColors.background : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
-              border: selected ? Border.all(color: AppColors.border.withValues(alpha: 0.5)) : null,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 16, color: selected ? AppColors.textPrimary : AppColors.textMuted),
-                const SizedBox(width: 6),
-                Text(label, style: AppTypography.body(size: 13, weight: FontWeight.w700, color: selected ? AppColors.textPrimary : AppColors.textMuted)),
-              ],
-            ),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onChanged(index);
+          },
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 9),
+                child: Text(
+                  label.toUpperCase(),
+                  style: AppTypography.headline(
+                    size: 13,
+                    weight: selected ? FontWeight.w900 : FontWeight.w600,
+                    color: selected ? AppColors.textPrimary : AppColors.textMuted,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                height: 2.5,
+                decoration: BoxDecoration(
+                  color: selected ? AppColors.voltNeon : Colors.transparent,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ],
           ),
         ),
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        children: [
-          tab('Mi Resumen', Icons.bar_chart_rounded, 0),
-          const SizedBox(width: 6),
-          tab('Mi Grupo', Icons.groups_2_outlined, 1),
-        ],
-      ),
+    return Column(
+      children: [
+        Row(
+          children: [
+            tab('Mi Resumen', 0),
+            tab('Mi Grupo', 1),
+          ],
+        ),
+        Container(height: 1, color: Colors.white.withValues(alpha: 0.07)),
+      ],
     );
   }
 }
 
-// ---------------------------------------------------------------------
-// Tab 1: Mi Resumen (ResumenTab)
-// ---------------------------------------------------------------------
 class _ResumenTab extends ConsumerWidget {
   final String uid;
 
@@ -271,7 +279,7 @@ class _ResumenTabBody extends ConsumerWidget {
           children: [
             if (nextMatch != null) ...[
               Row(children: [
-                Icon(Icons.calendar_today, size: 15, color: AppColors.voltNeon),
+                Container(width: 3, height: 13, color: AppColors.voltNeon),
                 const SizedBox(width: 8),
                 Text('PRÓXIMO PARTIDO', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.textSecondary)),
               ]),
@@ -304,7 +312,7 @@ class _ResumenTabBody extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Row(children: [
-                      Icon(Icons.star, size: 15, color: AppColors.voltNeon),
+                      Container(width: 3, height: 13, color: AppColors.voltNeon),
                       const SizedBox(width: 8),
                       Text('MIS ESTADÍSTICAS', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.textSecondary)),
                     ]),
@@ -1031,35 +1039,67 @@ class _EvaluatedMatchCard extends StatelessWidget {
 // ---------------------------------------------------------------------
 // Widgets compartidos
 // ---------------------------------------------------------------------
+/// Bloque de sección: barra de acento, título y contenido apoyado sobre el
+/// fondo.
+///
+/// Antes cada sección era una tarjeta con fondo propio y borde. Apiladas —
+/// próximo partido, en vivo, estadísticas, progresión, anteriores— la pantalla
+/// terminaba siendo una pila de recuadros grises, todos del mismo peso, sin
+/// que ninguno destacara sobre otro.
 class _SectionCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
   final Widget child;
 
-  const _SectionCard({required this.icon, required this.title, this.subtitle, required this.child});
+  const _SectionCard({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.card.withValues(alpha: 0.4), borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            Icon(icon, size: 18, color: AppColors.voltNeon),
-            const SizedBox(width: 8),
-            Text(title, style: AppTypography.headline(size: 15)),
-          ]),
-          if (subtitle != null) ...[
-            const SizedBox(height: 2),
-            Text(subtitle!, style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 3,
+              height: 15,
+              margin: const EdgeInsets.only(top: 1, right: 9),
+              color: AppColors.voltNeon,
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title.toUpperCase(),
+                    style: AppTypography.headline(
+                      size: 13,
+                      weight: FontWeight.w900,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      style: AppTypography.body(size: 11, color: AppColors.textMuted),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ],
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+        child,
+      ],
     );
   }
 }
