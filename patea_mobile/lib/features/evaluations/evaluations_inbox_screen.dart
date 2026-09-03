@@ -70,7 +70,11 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
     final uid = ref.watch(authServiceProvider).currentUser?.uid;
     if (uid == null) {
       return Scaffold(
-        appBar: AppBar(title: Text('EVALUACIONES', style: AppTypography.headline(size: 20, weight: FontWeight.w800))),
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          title: Text('EVALUACIONES', style: AppTypography.headline(size: 20, weight: FontWeight.w800)),
+        ),
         body: Center(child: Text('Debés iniciar sesión.', style: AppTypography.body(color: AppColors.textMuted))),
       );
     }
@@ -84,7 +88,9 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
     }
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: Text('EVALUACIONES', style: AppTypography.headline(size: 20, weight: FontWeight.w800)),
         actions: [IconButton(onPressed: refresh, icon: const Icon(Icons.refresh))],
       ),

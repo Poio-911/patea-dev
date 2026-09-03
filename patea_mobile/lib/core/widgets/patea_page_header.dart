@@ -8,8 +8,13 @@ class PateaPageHeader extends StatelessWidget {
   final Widget? actionButton;
   final int currentCount;
   final int totalCount;
+  final String countLabel;
   final VoidCallback? onHelpTap;
   final VoidCallback? onFiltersTap;
+  // Algunas secciones (ej. Partidos) ya arman su propia fila de
+  // contador/filtros más abajo con datos reales — para esas, esta fila del
+  // header (pensada para Jugadores) se apaga en vez de duplicarla.
+  final bool showCountRow;
 
   const PateaPageHeader({
     super.key,
@@ -18,8 +23,10 @@ class PateaPageHeader extends StatelessWidget {
     this.actionButton,
     this.currentCount = 0,
     this.totalCount = 0,
+    this.countLabel = 'jugadores',
     this.onHelpTap,
     this.onFiltersTap,
+    this.showCountRow = true,
   });
 
   @override
@@ -84,7 +91,9 @@ class PateaPageHeader extends StatelessWidget {
           const SizedBox(height: 14),
         ],
 
-        // 3. Fila de Contador y Filtros
+        // 3. Fila de Contador y Filtros (opcional — algunas secciones ya
+        // arman la suya propia con datos reales, ver `showCountRow`)
+        if (showCountRow)
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -92,7 +101,7 @@ class PateaPageHeader extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  '$currentCount/$totalCount jugadores',
+                  '$currentCount/$totalCount $countLabel',
                   style: AppTypography.body(
                     size: 12,
                     weight: FontWeight.w600,

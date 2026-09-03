@@ -29,9 +29,21 @@ class DefaultFirebaseOptions {
     measurementId: 'G-56F70EMSVB',
   );
 
+  // App Android REAL, registrada en el proyecto el 2026-09-03.
+  //
+  // Antes acá había un appId fabricado a mano: `1:5614567933:android:6d7b...`,
+  // que era el appId de la app WEB con `:web:` cambiado por `:android:`. No
+  // existía ninguna app Android en el proyecto Firebase. Firestore y Auth
+  // funcionaban igual porque autentican por API key + proyecto, pero todo lo
+  // que necesita una app Android registrada era imposible: FCM (push),
+  // Crashlytics, Analytics y App Check.
+  // La API key es la PROPIA de la app Android, no la de web. Tienen que
+  // coincidir exactamente con android/app/google-services.json: el SDK nativo
+  // inicializa la app por defecto desde ese archivo antes de que corra Dart, y
+  // si las opciones difieren, `Firebase.initializeApp` tira `duplicate-app`.
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAes7EVn8hQswS8XgvDMJfN6U4IT_ZL_WY',
-    appId: '1:5614567933:android:6d7b7dde5f994c36861994',
+    apiKey: 'AIzaSyBKF7WTOuXmqzaww2V2j51BTW1iUye5R0Q',
+    appId: '1:5614567933:android:4b0b919482aa0dc5861994',
     messagingSenderId: '5614567933',
     projectId: 'mil-disculpis',
     storageBucket: 'mil-disculpis.firebasestorage.app',

@@ -2,9 +2,20 @@ import '../models/player_model.dart';
 import '../constants/performance_tags.dart';
 
 class OvrCalculator {
+  // ⚠️ Estas constantes DEBEN coincidir con las del servidor, que es quien
+  // realmente calcula y escribe el OVR:
+  //   - functions/src/callable/evaluations.ts   (OVR_PROGRESSION)
+  //   - src/lib/actions/server-actions.ts       (OVR_PROGRESSION)
+  //
+  // `minAttribute` estaba en 30 acá y en 20 en los otros dos: un jugador
+  // castigado hasta el fondo mostraba un número distinto en la app que en la
+  // web, y la web era la que mandaba porque es la que escribe.
+  //
+  // Este archivo existe SÓLO para previsualizar el cambio en la UI antes de
+  // que el servidor confirme. Nunca debe ser la fuente de verdad.
   static const int minOvr = 40;
   static const int maxOvr = 99;
-  static const int minAttribute = 30;
+  static const int minAttribute = 20;
   static const int maxAttribute = 99;
   static const double maxStep = 1.5;
 

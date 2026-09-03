@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/widgets/patea_background.dart';
+import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/player_card_widget.dart';
 import 'create_player_dialog.dart';
 
@@ -57,30 +57,21 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final playersAsync = ref.watch(playersStreamProvider(null));
+    // Jugadores del grupo activo, no de toda la plataforma. Sin grupo activo
+    // no se consulta nada — igual que `players/page.tsx:44` en la web.
+    final playersAsync = ref.watch(activeGroupPlayersProvider);
 
+    // Sin `Scaffold.appBar` ni FAB flotante a propósito: la web real
+    // (`src/app/players/page.tsx`) pone el botón "Agregar Jugador" como
+    // contenido normal DEBAJO del título dentro de `PageHeader`
+    // (`flex-col` en mobile), no como una acción fija/flotante — y el
+    // título mismo scrollea con la página, no queda pegado arriba.
+    // El fondo de cancha (PateaBackground) ahora se aplica una sola vez en
+    // el shell (_ScaffoldWithNavBar), compartido por las 5 pestañas — no
+    // hace falta repetirlo acá.
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'PLANTEL',
-          style: AppTypography.headline(size: 20, weight: FontWeight.w800),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.voltNeon,
-        foregroundColor: Colors.black,
-        elevation: 6,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (_) => const CreatePlayerDialog(),
-          );
-        },
-        child: const Icon(Icons.person_add_rounded, size: 26),
-      ),
-      body: PateaBackground(
-        child: playersAsync.when(
+      backgroundColor: Colors.transparent,
+      body: playersAsync.when(
           data: (players) {
             var filtered = [...players];
 
@@ -102,9 +93,48 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
             return CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
+                // 0. Header real (título + descripción + "Agregar Jugador"
+                // debajo, igual que PageHeader en la web). Medido en vivo
+                // con uiautomator (no a ojo): el body YA arranca justo
+                // debajo del alto propio del header (60dp) — solo falta
+                // compensar el status bar, no los 60dp de nuevo.
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 12, 16, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: PateaPageHeader(
+                      title: 'Plantel',
+                      description: 'Gestioná la plantilla de tu equipo y las estadísticas de los jugadores.',
+                      currentCount: filtered.length,
+                      totalCount: players.length,
+                      actionButton: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => const CreatePlayerDialog(),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.voltNeon,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.add_circle, size: 18),
+                          label: Text(
+                            'Agregar Jugador',
+                            style: AppTypography.headline(size: 13, weight: FontWeight.w700, color: Colors.black),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
                 // 1. Controles de la sección (Búsqueda y Chips)
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
                   sliver: SliverToBoxAdapter(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,7 +234,6 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
           ),
           error: (err, stack) => Center(child: Text('Error: $err', style: const TextStyle(color: Colors.white))),
         ),
-      ),
     );
   }
 }

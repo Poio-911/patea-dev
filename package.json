@@ -16,7 +16,8 @@
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
     "migrate:cups": "tsx scripts/migrate-cup-brackets.ts",
-    "init:packages": "tsx scripts/init-credit-packages.ts"
+    "init:packages": "tsx scripts/init-credit-packages.ts",
+    "verify:rules": "node scripts/verify-firestore-rules.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

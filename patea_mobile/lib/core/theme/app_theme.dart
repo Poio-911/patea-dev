@@ -30,6 +30,14 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.background,
         elevation: 0,
+        // Material 3 por defecto tiñe el AppBar con un overlay del color
+        // primario cuando el contenido de abajo scrollea debajo de él
+        // (`scrolledUnderElevation`) — eso es el "fondo raro" que aparecía
+        // detrás de títulos como PLANTEL/PARTIDOS al deslizar. La web no
+        // tiene ese efecto, así que se apaga acá a nivel de tema (no por
+        // pantalla) para que quede igual en todas las secciones.
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: false,
         titleTextStyle: AppTypography.headline(size: 20, weight: FontWeight.w700),
         iconTheme: const IconThemeData(color: AppColors.textPrimary),

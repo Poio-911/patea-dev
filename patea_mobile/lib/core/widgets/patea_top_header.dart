@@ -228,6 +228,8 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                                         ? CachedNetworkImage(
                                             imageUrl: userPhotoUrl,
                                             fit: BoxFit.cover,
+                                            memCacheWidth: 128,
+                                            maxWidthDiskCache: 256,
                                             placeholder: (context, url) => Container(
                                               color: const Color(0xFF1E293B),
                                               child: Center(

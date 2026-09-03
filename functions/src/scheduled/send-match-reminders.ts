@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { getTokensForUser } from '../lib/fcm-tokens';
 
 /**
  * Cloud Function que envía recordatorios de partido:
@@ -24,15 +25,16 @@ function buildMatchDateTime(date: string, time: string): Date | null {
     return isNaN(parsed.getTime()) ? null : parsed;
 }
 
-/** Recolecta todos los tokens FCM de una lista de UIDs */
-async function getTokensForUsers(db: admin.firestore.Firestore, uids: string[]): Promise<string[]> {
-    const tokens: string[] = [];
-    for (const uid of uids) {
-        const userSnap = await db.collection('users').doc(uid).get();
-        const userTokens: string[] = userSnap.data()?.fcmTokens || [];
-        tokens.push(...userTokens);
-    }
-    return tokens;
+/**
+ * Recolecta todos los tokens FCM de una lista de UIDs.
+ *
+ * Lee de la subcolección `users/{uid}/fcmTokens` (ver lib/fcm-tokens.ts).
+ * Antes leía el campo array del documento de usuario, que es legible por
+ * cualquier autenticado, y además lo hacía en serie: un `await` por jugador.
+ */
+async function getTokensForUsers(uids: string[]): Promise<string[]> {
+    const perUser = await Promise.all(uids.map((uid) => getTokensForUser(uid)));
+    return [...new Set(perUser.flat())];
 }
 
 /** Envía una notificación FCM multicast */
@@ -114,7 +116,7 @@ export const sendMatchReminders = onSchedule({
         // ── RECORDATORIO 2 HORAS ──────────────────────────────────────
         // Ventana: entre 110 y 130 minutos antes del partido
         if (minutesUntilMatch >= 110 && minutesUntilMatch <= 130 && !match.reminderSent2h) {
-            const tokens = await getTokensForUsers(db, playerUids);
+            const tokens = await getTokensForUsers(playerUids);
             const body = matchTime
                 ? `Tu partido "${matchTitle}" empieza en ~2hs, a las ${matchTime}${matchLocation ? ` en ${matchLocation}` : ''}. ¡Preparate!`
                 : `Tu partido "${matchTitle}" empieza en aproximadamente 2 horas. ¡Preparate!`;
@@ -126,7 +128,7 @@ export const sendMatchReminders = onSchedule({
         // ── RECORDATORIO 30 MINUTOS ───────────────────────────────────
         // Ventana: entre 20 y 40 minutos antes del partido
         if (minutesUntilMatch >= 20 && minutesUntilMatch <= 40 && !match.reminderSent30m) {
-            const tokens = await getTokensForUsers(db, playerUids);
+            const tokens = await getTokensForUsers(playerUids);
             const body = matchTime
                 ? `¡Ya falta poco! "${matchTitle}" empieza a las ${matchTime}${matchLocation ? ` en ${matchLocation}` : ''}. ¡No llegues tarde! 🏃`
                 : `¡Ya falta poco! Tu partido "${matchTitle}" empieza en 30 minutos.`;

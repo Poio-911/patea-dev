@@ -34,29 +34,20 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
     return 'bronze';
   }
 
-  Color _getOvrColor(String tier) {
-    switch (tier) {
-      case 'elite':
-        return const Color(0xFFF8FAFC); // Platinum
-      case 'gold':
-        return const Color(0xFFFACC15); // Gold
-      case 'silver':
-        return const Color(0xFFCBD5E1); // Silver
-      default:
-        return const Color(0xFFCD7F32); // Bronze amber
-    }
-  }
-
+  /// Colores por posición EXACTOS del tema `.game` (`--pos-del/med/def/por`
+  /// en globals.css: hues más pastel/claros que `AppColors.posDel` etc.,
+  /// que son del tema claro por defecto y se usan en otras pantallas — acá
+  /// se define aparte a propósito, para no tocar ese constante global.
   Color _getPositionColor(String pos) {
     switch (pos.toUpperCase()) {
       case 'DEL':
-        return AppColors.posDel;
+        return const Color(0xFFF47171); // hsl(0,85%,70%)
       case 'MED':
-        return AppColors.posMed;
+        return const Color(0xFFB87BF4); // hsl(270,85%,72%)
       case 'DEF':
-        return AppColors.posDef;
+        return const Color(0xFF7BB8F4); // hsl(210,85%,72%)
       case 'POR':
-        return AppColors.posPor;
+        return const Color(0xFFF7B36E); // hsl(30,90%,70%)
       default:
         return AppColors.voltNeon;
     }
@@ -79,7 +70,6 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
   Widget build(BuildContext context) {
     final player = widget.player;
     final tier = _getOvrTier(player.ovr);
-    final ovrColor = _getOvrColor(tier);
     final posColor = _getPositionColor(player.position);
     final keyStats = _getKeyStats(player.position);
 
@@ -101,67 +91,73 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
       }
     }
 
-    // Configuración visual por tier según src/app/globals.css
+    // Configuración visual por tier — valores exactos de `.game .aura-*` y
+    // `photoBorderClasses` en src/app/globals.css / player-styles.tsx (no
+    // aproximados: mismo hue/alpha que la web para ese tier). Este color NO
+    // se usa para el texto de OVR ni de posición: en `globals.css`,
+    // `.game .player-card [class*="font-bold"] { color: rgba(255,255,255,.95) !important }`
+    // pisa cualquier color-por-tier en elementos con `font-bold` (OVR y
+    // posición lo son), así que en el tema game ambos quedan blancos siempre.
     Border cardBorder;
     List<BoxShadow> cardShadows;
-    RadialGradient auraGradient;
+    Alignment auraAlignment;
+    List<Color> auraColors;
     Color avatarBorderColor;
+    double avatarBorderAlpha;
+    BoxShadow? avatarGlow; // solo gold y elite tienen drop-shadow real
 
     switch (tier) {
       case 'elite':
-        cardBorder = Border.all(color: const Color(0xFFBED2FF).withValues(alpha: 0.65), width: 1.5);
+        cardBorder = Border.all(color: const Color(0xFFC8D2F0).withValues(alpha: 0.65), width: 1.5);
         cardShadows = [
-          BoxShadow(color: const Color(0xFFBED2FF).withValues(alpha: 0.28), blurRadius: 16),
+          BoxShadow(color: const Color(0xFFC8D2F0).withValues(alpha: 0.28), blurRadius: 16),
           const BoxShadow(color: Color(0x99000000), blurRadius: 10, offset: Offset(0, 4)),
         ];
-        auraGradient = const RadialGradient(
-          center: Alignment.topCenter,
-          radius: 1.2,
-          colors: [Color(0x52BED2FF), Colors.transparent],
-        );
-        avatarBorderColor = const Color(0xFFBED2FF);
+        // .game .aura-elite: dos capas (bloom superior + relleno central)
+        auraAlignment = Alignment.topCenter;
+        auraColors = [const Color(0xFFD2DEFF).withValues(alpha: 0.62), Colors.transparent];
+        avatarBorderColor = const Color(0xFFC8D2F0);
+        avatarBorderAlpha = 0.88;
+        avatarGlow = BoxShadow(color: const Color(0xFFC8D2F0).withValues(alpha: 0.60), blurRadius: 8);
         break;
 
       case 'gold':
-        cardBorder = Border.all(color: const Color(0xFFFACC15).withValues(alpha: 0.45), width: 1.0);
+        cardBorder = Border.all(color: const Color(0xFFFBC437).withValues(alpha: 0.45), width: 1.0);
         cardShadows = [
-          BoxShadow(color: const Color(0xFFFACC15).withValues(alpha: 0.16), blurRadius: 8),
+          BoxShadow(color: const Color(0xFFFBC437).withValues(alpha: 0.16), blurRadius: 8),
           const BoxShadow(color: Color(0x99000000), blurRadius: 10, offset: Offset(0, 4)),
         ];
-        auraGradient = const RadialGradient(
-          center: Alignment.topRight,
-          radius: 1.3,
-          colors: [Color(0x40FACC15), Colors.transparent],
-        );
-        avatarBorderColor = const Color(0xFFFACC15);
+        auraAlignment = Alignment.topRight;
+        auraColors = [const Color(0xFFFBC437).withValues(alpha: 0.38), Colors.transparent];
+        avatarBorderColor = const Color(0xFFFBC437);
+        avatarBorderAlpha = 0.8;
+        avatarGlow = BoxShadow(color: const Color(0xFFFBBF24).withValues(alpha: 0.4), blurRadius: 4);
         break;
 
       case 'silver':
-        cardBorder = Border.all(color: const Color(0xFFCBD5E1).withValues(alpha: 0.38), width: 1.0);
+        cardBorder = Border.all(color: const Color(0xFFC4C9D4).withValues(alpha: 0.38), width: 1.0);
         cardShadows = [
-          BoxShadow(color: const Color(0xFFCBD5E1).withValues(alpha: 0.12), blurRadius: 6),
+          BoxShadow(color: const Color(0xFFC4C9D4).withValues(alpha: 0.12), blurRadius: 6),
           const BoxShadow(color: Color(0x99000000), blurRadius: 10, offset: Offset(0, 4)),
         ];
-        auraGradient = const RadialGradient(
-          center: Alignment.topCenter,
-          radius: 1.1,
-          colors: [Color(0x33CBD5E1), Colors.transparent],
-        );
-        avatarBorderColor = const Color(0xFFCBD5E1);
+        auraAlignment = Alignment.topCenter;
+        auraColors = [const Color(0xFFC4C9D4).withValues(alpha: 0.32), Colors.transparent];
+        avatarBorderColor = const Color(0xFFC4C9D4);
+        avatarBorderAlpha = 0.7;
+        avatarGlow = null; // silver no tiene drop-shadow en la web
         break;
 
       default: // bronze
-        cardBorder = Border.all(color: const Color(0xFFCD7F32).withValues(alpha: 0.35), width: 1.0);
+        cardBorder = Border.all(color: const Color(0xFFD18C47).withValues(alpha: 0.35), width: 1.0);
         cardShadows = [
-          BoxShadow(color: const Color(0xFFCD7F32).withValues(alpha: 0.14), blurRadius: 6),
+          BoxShadow(color: const Color(0xFFD18C47).withValues(alpha: 0.14), blurRadius: 6),
           const BoxShadow(color: Color(0x99000000), blurRadius: 10, offset: Offset(0, 4)),
         ];
-        auraGradient = const RadialGradient(
-          center: Alignment.bottomLeft,
-          radius: 1.4,
-          colors: [Color(0x38CD7F32), Colors.transparent],
-        );
-        avatarBorderColor = const Color(0xFFCD7F32);
+        auraAlignment = Alignment.bottomLeft;
+        auraColors = [const Color(0xFFCD7F32).withValues(alpha: 0.28), Colors.transparent];
+        avatarBorderColor = const Color(0xFFD18C47);
+        avatarBorderAlpha = 0.6;
+        avatarGlow = null; // bronze no tiene drop-shadow en la web
         break;
     }
 
@@ -201,31 +197,54 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
               borderRadius: BorderRadius.circular(15),
               child: Stack(
                 children: [
-                  // 1. Efecto Aura por Tier
+                  // 1. Efecto Aura por Tier (radial-gradient de `.game .aura-*`)
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
-                        gradient: auraGradient,
+                        gradient: RadialGradient(center: auraAlignment, radius: 1.2, colors: auraColors),
                       ),
                     ),
                   ),
-
-                  // 2. Marca de agua vectorial oficial según posición (DEL, MED, DEF, POR)
-                  Positioned(
-                    right: -6,
-                    bottom: -6,
-                    width: 110,
-                    height: 110,
-                    child: Opacity(
-                      opacity: 0.08,
-                      child: SvgPicture.asset(
-                        'assets/icons-pos/pos-${player.position.toLowerCase()}.svg',
-                        colorFilter: ColorFilter.mode(
-                          posColor,
-                          BlendMode.srcIn,
+                  // Élite tiene una 2da capa de relleno central más tenue en la web
+                  if (tier == 'elite')
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: RadialGradient(
+                            center: Alignment.center,
+                            radius: 1.4,
+                            colors: [const Color(0xFFD7E0FF).withValues(alpha: 0.22), Colors.transparent],
+                          ),
                         ),
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                      ),
+                    ),
+
+                  // 2. Marca de agua vectorial por posición — la web usa
+                  // `h-2/5 w-2/5` (40% del card, proporcional, no un tamaño
+                  // fijo en px) desplazada `-bottom-2 -right-2` (~8px fuera
+                  // del borde) al 10% de opacidad con el color pastel real
+                  // de esa posición en el tema game.
+                  Positioned.fill(
+                    child: Align(
+                      alignment: Alignment.bottomRight,
+                      child: FractionallySizedBox(
+                        widthFactor: 0.4,
+                        heightFactor: 0.4,
+                        child: Transform.translate(
+                          offset: const Offset(8, 8),
+                          child: Opacity(
+                            opacity: 0.10,
+                            child: SvgPicture.asset(
+                              'assets/icons-pos/pos-${player.position.toLowerCase()}.svg',
+                              colorFilter: ColorFilter.mode(
+                                posColor,
+                                BlendMode.srcIn,
+                              ),
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -236,41 +255,33 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Fila Superior: Badge de Posición y OVR clasificado por color
+                        // Fila Superior: Posición (texto puro, sin caja — la web
+                        // usa PlayerPositionBadge textOnly=true, y en el tema
+                        // game el color por posición queda pisado a blanco por
+                        // `.game .player-card [class*="font-bold"]`) y OVR.
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Badge de posición con borde y fondo translúcido (web exacto)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: posColor.withValues(alpha: 0.14),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: posColor.withValues(alpha: 0.45),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Text(
-                                player.position.toUpperCase(),
-                                style: AppTypography.headline(
-                                  size: 11,
-                                  weight: FontWeight.w800,
-                                  color: posColor,
-                                ),
+                            Text(
+                              player.position.toUpperCase(),
+                              style: AppTypography.headline(
+                                size: 14,
+                                weight: FontWeight.w700,
+                                color: Colors.white,
                               ),
                             ),
 
-                            // OVR clasificado por color (Bronze, Silver, Gold, Elite) + label OVR
+                            // OVR — también texto blanco puro en tema game (no
+                            // coloreado por tier: mismo pisado de `font-bold`).
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
                                   '${player.ovr}',
                                   style: AppTypography.sportNumber(
-                                    size: 26,
-                                    color: ovrColor,
+                                    size: 36,
+                                    color: Colors.white,
                                   ),
                                 ),
                                 Text(
@@ -286,38 +297,41 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                           ],
                         ),
 
-                        // Avatar Circular con aro brillante según el Tier de OVR
+                        // Avatar Circular — 96x96 (h-24 w-24 real) con borde de
+                        // 4px (border-4 real) coloreado por tier; glow solo en
+                        // gold/elite, igual que `photoBorderClasses` en la web.
                         Stack(
                           alignment: Alignment.bottomCenter,
                           clipBehavior: Clip.none,
                           children: [
                             Container(
-                              width: 72,
-                              height: 72,
+                              width: 96,
+                              height: 96,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: avatarBorderColor.withValues(alpha: 0.75),
-                                  width: 2.5,
+                                  color: avatarBorderColor.withValues(alpha: avatarBorderAlpha),
+                                  width: 4,
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: avatarBorderColor.withValues(alpha: 0.35),
-                                    blurRadius: 8,
-                                  ),
-                                ],
+                                boxShadow: avatarGlow != null ? [avatarGlow] : null,
                               ),
                               child: ClipOval(
                                 child: player.photoUrl != null && player.photoUrl!.isNotEmpty
                                     ? CachedNetworkImage(
                                         imageUrl: player.photoUrl!,
                                         fit: BoxFit.cover,
+                                        // El avatar se dibuja a 96 px. Sin estos
+                                        // límites, una foto de 5 MB subida desde
+                                        // un celular se decodificaba entera en
+                                        // memoria por cada carta de la grilla.
+                                        memCacheWidth: 288, // 96 * 3 (densidad máx.)
+                                        maxWidthDiskCache: 512,
                                         placeholder: (context, url) => Container(
                                           color: const Color(0xFF1E2636),
                                           child: Center(
                                             child: Text(
                                               player.name.isNotEmpty ? player.name[0] : 'P',
-                                              style: AppTypography.sportNumber(size: 22, color: ovrColor),
+                                              style: AppTypography.sportNumber(size: 28, color: Colors.white),
                                             ),
                                           ),
                                         ),
@@ -326,7 +340,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                                           child: Center(
                                             child: Text(
                                               player.name.isNotEmpty ? player.name[0] : 'P',
-                                              style: AppTypography.sportNumber(size: 22, color: ovrColor),
+                                              style: AppTypography.sportNumber(size: 28, color: Colors.white),
                                             ),
                                           ),
                                         ),
@@ -336,7 +350,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                                         child: Center(
                                           child: Text(
                                             player.name.isNotEmpty ? player.name[0] : 'P',
-                                            style: AppTypography.sportNumber(size: 22, color: ovrColor),
+                                            style: AppTypography.sportNumber(size: 28, color: Colors.white),
                                           ),
                                         ),
                                       ),
@@ -416,13 +430,20 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
     final isTop = key == topKey;
     final isKeyStat = keyStats.contains(key);
 
+    // `.game .player-card [class*="grid"]>div { background: rgba(255,255,255,.08) !important; border-color: rgba(255,255,255,.1) !important; }`
+    // pisa el fondo/borde propio del componente (que en la web distingue
+    // isTop) — en el tema game TODAS las cajas quedan iguales, sin importar
+    // si son el atributo más alto. La distinción real sobrevive solo en el
+    // color de la barra (isTop = color de posición, resto = gris) y en la
+    // etiqueta (isKey = color de posición, resto = gris) — el valor
+    // numérico también tiene `font-bold`, así que siempre es blanco.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
       decoration: BoxDecoration(
-        color: isTop ? AppColors.voltNeon.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.04),
+        color: Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(5),
         border: Border.all(
-          color: isTop ? AppColors.voltNeon.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05),
+          color: Colors.white.withValues(alpha: 0.10),
           width: 0.8,
         ),
       ),
@@ -448,13 +469,13 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
               borderRadius: BorderRadius.circular(2),
               child: Container(
                 height: 3.5,
-                color: Colors.white.withValues(alpha: 0.12),
+                color: Colors.white.withValues(alpha: 0.15),
                 child: FractionallySizedBox(
                   alignment: Alignment.centerLeft,
                   widthFactor: (val / 99.0).clamp(0.05, 1.0),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isTop ? posColor : (isKeyStat ? posColor.withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.45)),
+                      color: isTop ? posColor.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.30),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -464,13 +485,13 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
           ),
           const SizedBox(width: 4),
 
-          // Valor Numérico
+          // Valor Numérico — siempre blanco (font-bold pisado a blanco)
           Text(
             '$val',
             style: AppTypography.code(
               size: 10,
               weight: FontWeight.w800,
-              color: isTop ? AppColors.voltNeon : Colors.white,
+              color: Colors.white,
             ),
           ),
         ],

@@ -1,5 +1,6 @@
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import * as admin from 'firebase-admin';
+import { getTokensForUser } from '../lib/fcm-tokens';
 
 /**
  * Cloud Function that sends notifications when a match invitation is created.
@@ -49,9 +50,10 @@ export const onInvitationCreate = onDocumentCreated({
             metadata: { matchId },
         });
 
-        // Push notification
-        const userSnap = await db.collection('users').doc(playerId).get();
-        const tokens: string[] = userSnap.data()?.fcmTokens || [];
+        // Push notification — los tokens salen de la subcolección privada
+        // `users/{uid}/fcmTokens`, no del campo array del documento de usuario
+        // (que es legible por cualquier autenticado). Ver lib/fcm-tokens.ts.
+        const tokens = await getTokensForUser(playerId);
 
         if (tokens.length > 0) {
             await messaging.sendEachForMulticast({

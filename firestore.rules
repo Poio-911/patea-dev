@@ -1,10 +1,31 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // ═══════════════════════════════════════════════════════════════════
+    // NOTA IMPORTANTE SOBRE CÓMO SE EVALÚAN ESTAS REGLAS
+    //
+    // Las reglas de Firestore son ADITIVAS: si CUALQUIER bloque concede
+    // acceso, el acceso se concede. No se pueden "restringir" desde abajo.
+    //
+    // Por eso este archivo NO tiene una regla comodín final
+    // (`match /{document=**} { allow read: if isAuthenticated(); }`).
+    // Esa regla existía hasta 2026-09-03 y anulaba en silencio TODAS las
+    // reglas de privacidad de más arriba: cualquier usuario autenticado
+    // podía leer transacciones de compra ajenas, el caché de IA declarado
+    // como `if false`, y los borradores de evaluación de otros.
+    //
+    // Firestore deniega por defecto lo que no matchea ninguna regla, así
+    // que toda colección leída desde un cliente TIENE que estar declarada
+    // acá abajo explícitamente. Si se agrega una colección nueva que se
+    // lee desde la web o desde Flutter, agregar su regla o va a fallar.
+    // Las Server Actions y las Cloud Functions usan el Admin SDK, que
+    // ignora estas reglas por completo — no necesitan entrada acá.
+    // ═══════════════════════════════════════════════════════════════════
+
+    // ---------- Helpers ----------
+
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -31,83 +52,125 @@ service cloud.firestore {
       );
     }
 
-    // --- REGLAS PRINCIPALES ---
+    // Sólo cambian las claves listadas y ninguna otra.
+    function onlyChanges(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
 
-    // Colección de Usuarios
+    // ---------- Usuarios ----------
+
     match /users/{userId} {
-      // ✅ CORRECCIÓN: Cualquier usuario autenticado puede leer perfiles.
-      // Esto es necesario para mostrar nombres, avatares, etc. en toda la app.
+      // Lectura abierta a autenticados: la app muestra nombres y avatares
+      // de otros usuarios en todas las pantallas.
+      //
+      // ⚠️ Las reglas de Firestore no saben denegar campos sueltos de un
+      // documento. Todo lo que se guarde acá es legible por cualquier
+      // usuario autenticado. Los datos sensibles (tokens FCM, ubicación
+      // exacta, integraciones de salud) van en subcolecciones privadas,
+      // nunca como campos de este documento.
       allow read: if isAuthenticated();
-      // Escrituras sensibles migradas a Server Actions.
       allow create, update, delete: if false;
 
-      // Subcolección de tokens FCM por usuario
+      // Tokens FCM del usuario — privados, sólo el dueño.
       match /fcmTokens/{tokenId} {
-        allow read: if isOwner(userId);
-        allow write: if isOwner(userId);
+        allow read, write: if isOwner(userId);
       }
 
-      // Subcolección de notificaciones por usuario
+      // Notificaciones del usuario.
       match /notifications/{notificationId} {
-        // Solo el dueño puede leer sus notificaciones
         allow read: if isOwner(userId);
-        // El cliente solo puede marcar/borrar sus propias notificaciones.
+        // El cliente sólo marca como leída / borra las propias.
         allow update, delete: if isOwner(userId);
         allow create: if false;
       }
+
+      // Espejo privado de las evaluaciones que ESTE usuario emitió.
+      // Permite al evaluador consultar sus propias evaluaciones sin que
+      // `evaluatorId` tenga que ser legible en el documento público.
+      match /myEvaluations/{evaluationId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+
+      // Integraciones de salud (Google Fit): privadas del dueño.
+      match /healthConnections/{connectionId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
     }
-    
-    // Colección de Jugadores
+
+    // ---------- Jugadores ----------
+
     match /players/{playerId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if false;
+
+      match /ovrHistory/{historyId} {
+        allow read: if isAuthenticated();
+        allow write: if false;
+      }
+
+      // Cualquier otra subcolección de jugador: lectura, escritura server-side.
+      match /{subcollection}/{docId} {
+        allow read: if isAuthenticated();
+        allow write: if false;
+      }
     }
 
-    // Subcolección de historial de OVR (solo escritura desde el servidor)
-    match /players/{playerId}/ovrHistory/{historyId} {
+    match /playerAchievements/{achievementId} {
       allow read: if isAuthenticated();
-      allow write: if false; 
-    }
-
-    // Colección de Grupos
-    match /groups/{groupId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if false;
-    }
-
-    // Colección de Canchas (Venues)
-    match /venues/{venueId} {
-      // Cualquier usuario autenticado puede leer canchas
-      allow read: if isAuthenticated();
-      // La creación/edición/eliminación se maneja en Server Actions con permisos de grupo
       allow write: if false;
     }
 
-    // Colección de Jugadores Disponibles (para fichajes)
+    // ---------- Grupos, equipos y canchas ----------
+
+    match /groups/{groupId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+
+      match /{subcollection}/{docId} {
+        allow read: if isAuthenticated();
+        allow write: if false;
+      }
+    }
+
+    match /teams/{teamId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+
+      match /invitations/{invitationId} {
+        allow read: if isAuthenticated();
+        allow write: if false;
+      }
+
+      match /{subcollection}/{docId} {
+        allow read: if isAuthenticated();
+        allow write: if false;
+      }
+    }
+
+    match /groupTeams/{groupTeamId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /venues/{venueId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
     match /availablePlayers/{playerId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if false;
     }
-    
-    // Colección de Equipos Persistentes
-    match /teams/{teamId} {
-        allow read: if isAuthenticated();
-      allow create, update, delete: if false;
 
-        // Subcolección de invitaciones
-        match /invitations/{invitationId} {
-            allow read: if isAuthenticated();
-        allow write: if false;
-        }
-    }
+    // ---------- Partidos ----------
 
-    // Colección de Partidos
     match /matches/{matchId} {
       allow read: if isAuthenticated();
-      allow create: if false; 
-      allow update, delete: if false;
+      allow create, update, delete: if false;
 
-      // Chat en vivo del partido: lectura/escritura para participantes y organizador.
+      // Chat en vivo: participantes y organizador.
       match /messages/{messageId} {
         allow read: if isMatchParticipant(matchId);
         allow create: if isMatchParticipant(matchId)
@@ -116,14 +179,14 @@ service cloud.firestore {
         allow delete: if false;
       }
 
-      // Presencia en visualización del partido: cada usuario escribe sólo su propio heartbeat.
+      // Presencia: cada uno escribe sólo su propio heartbeat.
       match /presence/{viewerId} {
         allow read: if isMatchParticipant(matchId);
-        allow create, update: if isMatchParticipant(matchId) && request.auth.uid == viewerId;
-        allow delete: if isMatchParticipant(matchId) && request.auth.uid == viewerId;
+        allow create, update, delete: if isMatchParticipant(matchId)
+          && request.auth.uid == viewerId;
       }
 
-      // Invitaciones del partido: lectura para organizador y jugador invitado; mutaciones server-side.
+      // Invitaciones del partido: organizador o invitado.
       match /invitations/{invitationId} {
         allow read: if isAuthenticated() && (
           isMatchOwner(matchId)
@@ -132,93 +195,99 @@ service cloud.firestore {
         allow write: if false;
       }
 
-      // Asignaciones y artefactos de evaluación: lectura autenticada, escritura server-side.
-      match /assignments/{assignmentId} {
-        allow read: if isAuthenticated();
-        allow write: if false;
-      }
-
+      // Asignaciones de evaluación, submissions procesadas, performance, etc.
       match /{subcollection}/{docId} {
         allow read: if isAuthenticated();
         allow write: if false;
       }
     }
 
-    // Colección de Evaluaciones Temporales (las que envía el usuario desde la UI)
-    match /evaluationSubmissions/{submissionId} {
-      allow read: if isOwner(resource.data.evaluatorId);
-      allow create, update, delete: if false; 
-    }
+    // ---------- Consultas collectionGroup ----------
+    //
+    // Una collectionGroup query NO se evalúa contra la regla por ruta
+    // (`/matches/{id}/assignments/{aid}`), sino contra su propio patrón
+    // `/{path=**}/assignments/{aid}`. Sin estas reglas la consulta falla con
+    // PERMISSION_DENIED aunque la ruta concreta esté permitida.
+    //
+    // Antes funcionaban por el comodín global; al sacarlo hay que declararlas.
+    // Estas tres son TODAS las collectionGroup del proyecto (web + Flutter):
+    // assignments, invitations y selfEvaluations.
 
-    // --- MONETIZACIÓN ---
-
-    // Paquetes de créditos (solo lectura para usuarios)
-    match /creditPackages/{packageId} {
-      allow read: if true;  // Públicos para mostrar en la tienda
-      allow write: if false; // Solo admin/server puede crear/modificar
-    }
-
-    // Transacciones de compra (privadas, solo server-side)
-    match /creditTransactions/{transactionId} {
-      // Solo el usuario dueño puede leer su propia transacción
-      allow read: if isAuthenticated() &&
-                     request.auth.uid == resource.data.userId;
-      // Solo server-side puede crear/actualizar
-      allow write: if false;
-    }
-
-    // Colección de Caché de IA
-    match /ai_cache/{cacheId} {
-      // Solo accesible desde Server Actions (Cloud Functions)
-      // Los clientes no deben leer ni escribir directamente
-      allow read, write: if false;
-    }
-
-    // Social Activities - Public read for authenticated users
-    match /socialActivities/{activityId} {
+    // Bandeja de invitaciones y badge del header (matches/ y teams/).
+    match /{path=**}/invitations/{invitationId} {
       allow read: if isAuthenticated();
-      // Writes handled by server actions
+      allow write: if false;
+    }
+
+    // Bandeja de evaluaciones: `where evaluatorId == uid and status == pending`.
+    match /{path=**}/assignments/{assignmentId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /{path=**}/selfEvaluations/{selfEvaluationId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /invitations/{invitationId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /dateProposals/{proposalId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // ---------- Evaluaciones ----------
+
+    // Contenido de la evaluación: nota, etiquetas, jugador evaluado.
+    //
+    // La lectura es abierta a autenticados a propósito: el historial de
+    // partidos de un jugador (player-match-history.tsx, player-recent-activity.tsx)
+    // consulta `where('playerId', '==', X)` para CUALQUIER jugador cuyo
+    // perfil se abra, y eso es una función central del producto.
+    //
+    // El anonimato NO se sostiene con esta regla, se sostiene con la forma
+    // del documento: `evaluatorId` NO vive acá. Vive en la subcolección
+    // privada `private/` de abajo, denegada a todo cliente, y se copia al
+    // documento público sólo cuando el evaluador acepta revelar su identidad.
+    match /evaluations/{evaluationId} {
+      allow read: if isAuthenticated();
       allow write: if false;
 
-      // Comments subcollection
-      match /comments/{commentId} {
-        allow read: if isAuthenticated();
-        // Create: any authenticated user can comment
-        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-        // Update: only comment owner can update (for likes)
-        allow update: if isAuthenticated();
-        // Delete: only comment owner can delete
-        allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Identidad del evaluador — jamás legible desde un cliente.
+      // Sólo el Admin SDK (Cloud Functions) accede acá.
+      match /private/{docId} {
+        allow read, write: if false;
       }
     }
 
-    // --- PRIVACY & EVALUATIONS ---
-
-    // Colección de Evaluaciones
-    match /evaluations/{evaluationId} {
-      // ✅ REGLA DE PRIVACIDAD: Solo pueden leer la evaluación:
-      // 1. El evaluador.
-      // 2. El jugador evaluado (sujeto).
-      // 3. Cualquier usuario SI la identidad ya fue revelada explícitamente.
-      allow read: if isAuthenticated() && (
-        request.auth.uid == resource.data.evaluatorId ||
-        request.auth.uid == resource.data.playerId ||
-        (resource.data.identityRevealed == true)
-      );
-      // Las evaluaciones las crea el servidor (Admin SDK) o el sistema de transacciones.
+    match /selfEvaluations/{selfEvaluationId} {
+      allow read: if isAuthenticated();
       allow write: if false;
     }
 
-    // --- LIGAS Y COPAS (ORGANIZADOR) ---
+    // Borradores enviados desde la UI: sólo su autor los lee.
+    // Las consultas del cliente deben incluir `where('evaluatorId','==',uid)`
+    // o Firestore las rechaza por no poder garantizar el filtro.
+    match /evaluationSubmissions/{submissionId} {
+      allow read: if isAuthenticated() && resource.data.evaluatorId == request.auth.uid;
+      allow create, update, delete: if false;
+    }
+
+    // ---------- Competiciones ----------
+
     match /leagues/{leagueId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.ownerUid == request.auth.uid;
       allow update, delete: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
-      
-      // Subcolecciones (fixtures, equipos fantasma, etc)
+
       match /{subcollection}/{docId} {
         allow read: if isAuthenticated();
-        allow write: if isAuthenticated() && get(/databases/$(database)/documents/leagues/$(leagueId)).data.ownerUid == request.auth.uid;
+        allow write: if isAuthenticated()
+          && get(/databases/$(database)/documents/leagues/$(leagueId)).data.ownerUid == request.auth.uid;
       }
     }
 
@@ -227,18 +296,98 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.ownerUid == request.auth.uid;
       allow update, delete: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
 
-      // Subcolecciones (teams, bracket docs, etc)
       match /{subcollection}/{docId} {
         allow read: if isAuthenticated();
-        allow write: if isAuthenticated() && get(/databases/$(database)/documents/cups/$(cupId)).data.ownerUid == request.auth.uid;
+        allow write: if isAuthenticated()
+          && get(/databases/$(database)/documents/cups/$(cupId)).data.ownerUid == request.auth.uid;
       }
     }
 
-    // Regla de comodín final: solo lectura para autenticados.
-    // Escriben solo las colecciones con reglas explícitas.
-    match /{document=**} {
+    match /competitionTemplates/{templateId} {
       allow read: if isAuthenticated();
       allow write: if false;
+    }
+
+    match /competitionApplications/{applicationId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /applications/{applicationId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /teamAvailabilityPosts/{postId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /referees/{refereeId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // ---------- Social ----------
+
+    match /socialActivities/{activityId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated()
+          && request.resource.data.userId == request.auth.uid;
+        // El update existe sólo para los likes: cualquier autenticado puede
+        // dar like, pero no puede reescribir el texto ni robar la autoría
+        // de un comentario ajeno.
+        allow update: if isAuthenticated() && onlyChanges(['likes', 'likedBy']);
+        allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      }
+    }
+
+    match /feedActivities/{activityId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /follows/{followId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /following/{followingId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // ---------- Monetización ----------
+
+    match /creditPackages/{packageId} {
+      // Públicos: se muestran en la tienda.
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /creditTransactions/{transactionId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    // ---------- Sólo servidor ----------
+    // Declaradas explícitamente para dejar la intención por escrito.
+    // El Admin SDK las usa igual: ignora estas reglas.
+
+    match /ai_cache/{cacheId} {
+      allow read, write: if false;
+    }
+
+    match /systemLogs/{logId} {
+      allow read, write: if false;
+    }
+
+    match /healthConnections/{connectionId} {
+      allow read, write: if false;
     }
   }
 }

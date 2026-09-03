@@ -1,48 +1,67 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow public read access to all files.
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Hasta 2026-09-03 este archivo tenía `match /{allPaths=**} { allow read; }`
+    // — sin condición. Eso hacía que TODA foto de jugador, carta generada
+    // por IA y logo de liga fuera legible por cualquiera en internet, sin
+    // sesión. Ahora la lectura pide sesión.
+    //
+    // Ojo: las download URLs de Firebase Storage (las que llevan
+    // `?alt=media&token=...` y son las que se guardan en `photoUrl`)
+    // siguen funcionando sin sesión por diseño — el token ES la
+    // credencial. Esta regla protege el acceso por SDK y el listado del
+    // bucket, que es por donde se podía enumerar.
+    // ═══════════════════════════════════════════════════════════════════
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidImage() {
+      return request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Piso general: leer requiere sesión, escribir requiere regla explícita.
     match /{allPaths=**} {
-      allow read;
+      allow read: if isSignedIn();
+      allow write: if false;
     }
 
-    // Allow authenticated users to write to the 'profile-images' folder.
-    // The file name must start with their user ID.
+    // Contenido deliberadamente público (compartir una carta por WhatsApp
+    // a alguien que no tiene la app, por ejemplo).
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Fotos de perfil: cada quien escribe y borra sólo la suya.
     match /profile-images/{userId}/{allPaths=**} {
-      allow write: if request.auth != null
-        && request.auth.uid == userId
-        && request.resource.size <= 5 * 1024 * 1024  // 5MB max
-        && request.resource.contentType.matches('image/.*');
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == userId && isValidImage();
+      allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 
-    // Allow authenticated users to upload league logos (path: league-logos/{uid}/...)
+    // Logos de liga (ruta vieja, por compatibilidad).
     match /league-logos/{userId}/{allPaths=**} {
-      allow write: if request.auth != null
-        && request.auth.uid == userId
-        && request.resource.size <= 5 * 1024 * 1024  // 5MB max
-        && request.resource.contentType.matches('image/.*');
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == userId && isValidImage();
+      allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 
-    // Allow authenticated users to upload league logos to their own folder
     match /leagues/{groupId}/{userId}/{allPaths=**} {
-      allow write: if request.auth != null
-        && request.auth.uid == userId
-        && request.resource.size <= 5 * 1024 * 1024  // 5MB max
-        && request.resource.contentType.matches('image/.*');
-      allow read;
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == userId && isValidImage();
+      allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 
-    // Allow authenticated users to upload cup logos to their own folder
     match /cups/{groupId}/{userId}/{allPaths=**} {
-      allow write: if request.auth != null
-        && request.auth.uid == userId
-        && request.resource.size <= 5 * 1024 * 1024  // 5MB max
-        && request.resource.contentType.matches('image/.*');
-      allow read;
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == userId && isValidImage();
+      allow delete: if isSignedIn() && request.auth.uid == userId;
     }
   }
 }
-
-    

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:ui';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +8,7 @@ import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/patea_top_header.dart';
+import '../widgets/patea_background.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/players/players_list_screen.dart';
@@ -27,57 +30,114 @@ import '../../features/groups/groups_screen.dart';
 import '../../features/groups/create_team_screen.dart';
 import '../../features/groups/team_detail_screen.dart';
 
+/// Estado de sesión expuesto como `Listenable` para `GoRouter`.
+///
+/// Antes el provider del router hacía `ref.watch(authStateProvider)`, así que
+/// cualquier refresh de token reconstruía el `GoRouter` entero y tiraba la
+/// pila de navegación. Ahora el router se construye UNA vez y sólo se le
+/// avisa que reevalúe el redirect.
+///
+/// `initialized` distingue "todavía no sé si hay sesión" de "no hay sesión".
+/// Sin esa distinción, en cada arranque en frío el usuario con sesión válida
+/// era mandado a /login y devuelto un instante después — el parpadeo que se
+/// veía al abrir la app.
+class AuthRouterState extends ChangeNotifier {
+  AuthRouterState(Stream<User?> stream) {
+    _sub = stream.listen((user) {
+      _user = user;
+      _initialized = true;
+      notifyListeners();
+    });
+  }
+
+  StreamSubscription<User?>? _sub;
+  User? _user;
+  bool _initialized = false;
+
+  User? get user => _user;
+  bool get initialized => _initialized;
+  bool get isLoggedIn => _user != null;
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+}
+
+final authRouterStateProvider = Provider<AuthRouterState>((ref) {
+  final notifier = AuthRouterState(ref.watch(authServiceProvider).authStateChanges);
+  ref.onDispose(notifier.dispose);
+  return notifier;
+});
+
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
+  // `read`, no `watch`: el router no debe reconstruirse nunca.
+  final auth = ref.read(authRouterStateProvider);
 
   return GoRouter(
     initialLocation: '/',
+    refreshListenable: auth,
     redirect: (context, state) {
-      final isLoggedIn = authState.value != null;
-      final isLoggingIn = state.uri.toString() == '/login';
+      final loc = state.uri.path;
 
-      if (!isLoggedIn && !isLoggingIn) return '/login';
-      if (isLoggedIn && isLoggingIn) return '/';
+      // Todavía no llegó el primer evento de Firebase Auth: no decidir nada.
+      if (!auth.initialized) {
+        return loc == '/splash' ? null : '/splash';
+      }
+
+      final isLoggedIn = auth.isLoggedIn;
+
+      if (loc == '/splash') {
+        return isLoggedIn ? '/' : '/login';
+      }
+      if (!isLoggedIn && loc != '/login') return '/login';
+      if (isLoggedIn && loc == '/login') return '/';
       return null;
     },
     routes: [
       GoRoute(
+        path: '/splash',
+        builder: (context, state) => const _SplashScreen(),
+      ),
+      GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
       ),
-      ShellRoute(
-        builder: (context, state, child) => _ScaffoldWithNavBar(child: child),
-        routes: [
-          GoRoute(
-            path: '/',
-            builder: (context, state) => const DashboardScreen(),
-          ),
-          GoRoute(
-            path: '/players',
-            builder: (context, state) => const PlayersListScreen(),
-          ),
-          GoRoute(
-            path: '/matches',
-            builder: (context, state) => const MatchesScreen(),
-          ),
-          GoRoute(
-            path: '/competitions',
-            builder: (context, state) => const CompetitionsScreen(),
-          ),
-          GoRoute(
-            path: '/social',
-            builder: (context, state) => const SocialFeedScreen(),
-          ),
-          GoRoute(
-            path: '/explorar',
-            builder: (context, state) => const ExplorarScreen(),
-          ),
-          GoRoute(
-            path: '/evaluations',
-            builder: (context, state) => const EvaluationsInboxScreen(),
-          ),
+
+      // `StatefulShellRoute.indexedStack` en vez de `ShellRoute`: cada
+      // pestaña conserva su estado, su scroll y su pila de navegación al
+      // cambiar de sección. Con `ShellRoute` cada toque en la barra inferior
+      // destruía la pantalla y volvía a suscribir todos los listeners de
+      // Firestore — es decir, se volvían a cobrar todas las lecturas.
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            _ScaffoldWithNavBar(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/', builder: (context, state) => const DashboardScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/players', builder: (context, state) => const PlayersListScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/matches', builder: (context, state) => const MatchesScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/competitions', builder: (context, state) => const CompetitionsScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/social', builder: (context, state) => const SocialFeedScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/explorar', builder: (context, state) => const ExplorarScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/evaluations', builder: (context, state) => const EvaluationsInboxScreen()),
+          ]),
         ],
       ),
+
       GoRoute(
         path: '/matches/create',
         builder: (context, state) => const CreateMatchScreen(),
@@ -100,6 +160,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return TeamDetailScreen(teamId: id);
         },
       ),
+      // Las pantallas de detalle son de nivel superior a propósito: se abren
+      // a pantalla completa, sin la barra inferior, igual que en la web.
       GoRoute(
         path: '/players/:id',
         builder: (context, state) {
@@ -154,17 +216,53 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
+/// Pantalla de arranque mientras Firebase Auth resuelve si hay sesión.
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: AppColors.background,
+      body: Center(
+        child: CircularProgressIndicator(color: AppColors.voltNeon),
+      ),
+    );
+  }
+}
+
+/// Índices de las ramas del `StatefulShellRoute`, en el mismo orden que
+/// `branches` de arriba.
+class _Branch {
+  static const panel = 0;
+  static const players = 1;
+  static const matches = 2;
+  static const competitions = 3;
+  static const explorar = 5;
+  static const evaluations = 6;
+}
+
 /// Port de nav-config.ts + mobile-nav.tsx (web): 5 slots reales —
 /// Panel, Jugadores, Partidos (botón central que abre un bottom sheet con
 /// "Mis Partidos" / "Competiciones"), Explorar, Evaluaciones.
 class _ScaffoldWithNavBar extends ConsumerWidget {
-  final Widget child;
+  final StatefulNavigationShell navigationShell;
 
-  const _ScaffoldWithNavBar({required this.child});
+  const _ScaffoldWithNavBar({required this.navigationShell});
+
+  /// `goBranch` con `initialLocation: true` cuando se vuelve a tocar la
+  /// pestaña activa — el gesto estándar de "volver al inicio de la sección".
+  void _goBranch(int index) {
+    navigationShell.goBranch(
+      index,
+      initialLocation: index == navigationShell.currentIndex,
+    );
+  }
 
   void _openPartidosSheet(BuildContext context) {
-    final isMatchesActive = GoRouterState.of(context).uri.toString().startsWith('/matches');
-    final isCompetitionsActive = GoRouterState.of(context).uri.toString().startsWith('/competitions');
+    final current = navigationShell.currentIndex;
+    final isMatchesActive = current == _Branch.matches;
+    final isCompetitionsActive = current == _Branch.competitions;
 
     showModalBottomSheet(
       context: context,
@@ -193,7 +291,7 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
               isActive: isMatchesActive,
               onTap: () {
                 Navigator.pop(sheetContext);
-                context.go('/matches');
+                _goBranch(_Branch.matches);
               },
             ),
             const SizedBox(height: 8),
@@ -203,7 +301,7 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
               isActive: isCompetitionsActive,
               onTap: () {
                 Navigator.pop(sheetContext);
-                context.go('/competitions');
+                _goBranch(_Branch.competitions);
               },
             ),
           ],
@@ -214,14 +312,19 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final location = GoRouterState.of(context).uri.toString();
-    final isMatchesActive = location.startsWith('/matches') || location.startsWith('/competitions');
+    final current = navigationShell.currentIndex;
+    final isMatchesActive = current == _Branch.matches || current == _Branch.competitions;
 
     return Scaffold(
       extendBody: true,
       extendBodyBehindAppBar: true,
       appBar: const PateaTopHeader(),
-      body: child,
+      // `GameModeBackground` en la web se monta una sola vez, arriba de
+      // todas las pestañas — acá va en el shell (no por pantalla) para que
+      // las 5 secciones compartan la misma foto random y no haga falta
+      // repetirlo en cada una (antes solo lo tenían Panel y Jugadores;
+      // Partidos/Explorar/Evaluaciones se quedaban sin fondo).
+      body: PateaBackground(child: navigationShell),
       bottomNavigationBar: ClipRect(
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
@@ -253,15 +356,15 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
                       icon: Icons.dashboard_outlined,
                       activeIcon: Icons.dashboard_rounded,
                       label: 'Panel',
-                      isSelected: location == '/',
-                      onTap: () => context.go('/'),
+                      isSelected: current == _Branch.panel,
+                      onTap: () => _goBranch(_Branch.panel),
                     ),
                     _NavItem(
                       icon: Icons.person_outline,
                       activeIcon: Icons.person,
                       label: 'Jugadores',
-                      isSelected: location.startsWith('/players'),
-                      onTap: () => context.go('/players'),
+                      isSelected: current == _Branch.players,
+                      onTap: () => _goBranch(_Branch.players),
                     ),
                     _NavItem(
                       icon: Icons.calendar_today_outlined,
@@ -274,15 +377,15 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
                       icon: Icons.public_outlined,
                       activeIcon: Icons.public,
                       label: 'Explorar',
-                      isSelected: location.startsWith('/explorar'),
-                      onTap: () => context.go('/explorar'),
+                      isSelected: current == _Branch.explorar,
+                      onTap: () => _goBranch(_Branch.explorar),
                     ),
                     _NavItem(
                       icon: Icons.checklist_rtl_outlined,
                       activeIcon: Icons.checklist_rtl,
                       label: 'Evaluaciones',
-                      isSelected: location.startsWith('/evaluations'),
-                      onTap: () => context.go('/evaluations'),
+                      isSelected: current == _Branch.evaluations,
+                      onTap: () => _goBranch(_Branch.evaluations),
                     ),
                   ],
                 ),

@@ -1,5 +1,6 @@
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import * as admin from 'firebase-admin';
+import { getTokensForUsers, pruneInvalidTokens, isDeadTokenError } from '../lib/fcm-tokens';
 
 /**
  * Cloud Function that processes notifications off the main thread when a match is created.
@@ -67,25 +68,20 @@ export const onMatchCreate = onDocumentCreated({
 
     try {
         // 2. Push notifications (FCM)
+        //
+        // Los tokens salen de la subcolección privada `users/{uid}/fcmTokens`
+        // (ver lib/fcm-tokens.ts). Antes se leían del campo array del documento
+        // de usuario, que cualquier autenticado puede leer.
         const tokens: string[] = [];
         const tokenToUserId = new Map<string, string>();
 
-        // Firestore 'in' query supports max 30 items
-        const chunkSize = 30;
-        for (let i = 0; i < participantIds.length; i += chunkSize) {
-            const chunk = participantIds.slice(i, i + chunkSize);
-            const usersSnap = await db.collection('users').where(admin.firestore.FieldPath.documentId(), 'in', chunk).get();
-
-            usersSnap.forEach(doc => {
-                const userData = doc.data();
-                if (userData.fcmTokens && Array.isArray(userData.fcmTokens)) {
-                    userData.fcmTokens.forEach(token => {
-                        tokens.push(token);
-                        tokenToUserId.set(token, doc.id);
-                    });
-                }
+        const tokensByUser = await getTokensForUsers(participantIds);
+        tokensByUser.forEach((userTokens, uid) => {
+            userTokens.forEach((token) => {
+                tokens.push(token);
+                tokenToUserId.set(token, uid);
             });
-        }
+        });
 
         if (tokens.length > 0) {
             const response = await messaging.sendEachForMulticast({
@@ -115,32 +111,24 @@ export const onMatchCreate = onDocumentCreated({
             // Cleanup invalid tokens silently
             const tokensToRemoveByUserId = new Map<string, string[]>();
             response.responses.forEach((resp, idx) => {
-                if (!resp.success && resp.error) {
-                    const errorCode = resp.error.code;
-                    if (
-                        errorCode === 'messaging/invalid-registration-token' ||
-                        errorCode === 'messaging/registration-token-not-registered'
-                    ) {
-                        const badToken = tokens[idx];
-                        const uId = tokenToUserId.get(badToken);
-                        if (uId) {
-                            if (!tokensToRemoveByUserId.has(uId)) {
-                                tokensToRemoveByUserId.set(uId, []);
-                            }
-                            tokensToRemoveByUserId.get(uId)!.push(badToken);
+                if (!resp.success && isDeadTokenError(resp.error?.code)) {
+                    const badToken = tokens[idx];
+                    const uId = tokenToUserId.get(badToken);
+                    if (uId) {
+                        if (!tokensToRemoveByUserId.has(uId)) {
+                            tokensToRemoveByUserId.set(uId, []);
                         }
+                        tokensToRemoveByUserId.get(uId)!.push(badToken);
                     }
                 }
             });
 
             if (tokensToRemoveByUserId.size > 0) {
-                const cleanupBatch = db.batch();
-                tokensToRemoveByUserId.forEach((badTokens, uid) => {
-                    cleanupBatch.update(db.collection('users').doc(uid), {
-                        fcmTokens: admin.firestore.FieldValue.arrayRemove(...badTokens)
-                    });
-                });
-                await cleanupBatch.commit();
+                await Promise.all(
+                    [...tokensToRemoveByUserId].map(([uid, badTokens]) =>
+                        pruneInvalidTokens(uid, badTokens)
+                    )
+                );
                 console.info(`[OnMatchCreate] Cleaned up ${response.failureCount} stale FCM tokens.`);
             }
         } else {

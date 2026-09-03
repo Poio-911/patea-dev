@@ -97,6 +97,8 @@ class PateaUserMenuSheet extends ConsumerWidget {
                           ? CachedNetworkImage(
                               imageUrl: photoUrl,
                               fit: BoxFit.cover,
+                              memCacheWidth: 192,
+                              maxWidthDiskCache: 384,
                               errorWidget: (context, url, error) => _initialsAvatar(displayName),
                             )
                           : _initialsAvatar(displayName),

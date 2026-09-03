@@ -1,72 +1,56 @@
-import * as functions from 'firebase-functions';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import * as admin from 'firebase-admin';
 
 /**
- * HTTP Function para limpiar entradas antiguas del caché de IA
- * Puede ser llamada manualmente o configurada en Cloud Scheduler
- * 
- * Para configurar en Cloud Scheduler:
- * 1. Ir a https://console.cloud.google.com/cloudscheduler
- * 2. Crear job con schedule: "0 0 * * 0" (domingos 00:00)
- * 3. Target: HTTP
- * 4. URL: https://us-central1-mil-disculpis.cloudfunctions.net/cleanupAiCache
- * 5. Auth: Add OIDC token
+ * Limpieza semanal del caché de IA: borra las entradas de más de 30 días.
+ *
+ * Antes era un `functions.https.onRequest` sin verificación de identidad. El
+ * comentario del archivo asumía un token OIDC de Cloud Scheduler configurado a
+ * mano en la consola, pero la función nunca lo validaba: cualquiera que
+ * conociera la URL podía invocarla, y cada invocación leía la colección entera
+ * dos veces. Servía tanto para borrar como para inflar la factura.
+ *
+ * Como `onSchedule`, Cloud Scheduler queda declarado en el código, deja de
+ * haber superficie HTTP pública, y el conteo final usa `count()` — una lectura
+ * facturada en vez de N.
  */
-export const cleanupAiCache = functions.https.onRequest(async (req, res) => {
-    const db = admin.firestore();
-    const now = Date.now();
-    const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+export const cleanupAiCache = onSchedule(
+    {
+        schedule: 'every sunday 00:00',
+        timeZone: 'America/Argentina/Buenos_Aires',
+        region: 'us-central1',
+    },
+    async () => {
+        const db = admin.firestore();
+        const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
-    try {
-        // Obtener entradas antiguas
         const oldEntriesSnapshot = await db
             .collection('ai_cache')
             .where('timestamp', '<', thirtyDaysAgo)
             .get();
 
         if (oldEntriesSnapshot.empty) {
-            console.log('No hay entradas antiguas para eliminar');
-            res.status(200).json({
-                success: true,
-                message: 'No hay entradas antiguas para eliminar',
-                deletedCount: 0
-            });
+            console.log('[CleanupAiCache] No hay entradas antiguas para eliminar.');
             return;
         }
 
-        // Eliminar en lotes de 500 (límite de Firestore)
         const batchSize = 500;
         let deletedCount = 0;
 
         for (let i = 0; i < oldEntriesSnapshot.docs.length; i += batchSize) {
             const batch = db.batch();
-            const docsToDelete = oldEntriesSnapshot.docs.slice(i, i + batchSize);
-
-            docsToDelete.forEach((doc) => {
-                batch.delete(doc.ref);
-            });
-
+            oldEntriesSnapshot.docs
+                .slice(i, i + batchSize)
+                .forEach((doc) => batch.delete(doc.ref));
             await batch.commit();
-            deletedCount += docsToDelete.length;
+            deletedCount += Math.min(batchSize, oldEntriesSnapshot.docs.length - i);
         }
 
-        console.log(`✅ Limpieza completada: ${deletedCount} entradas eliminadas`);
+        // `count()` factura una lectura, no una por documento.
+        const remaining = await db.collection('ai_cache').count().get();
 
-        // Estadísticas de caché restante
-        const remainingSnapshot = await db.collection('ai_cache').get();
-        console.log(`📊 Entradas restantes en caché: ${remainingSnapshot.size}`);
-
-        res.status(200).json({
-            success: true,
-            deletedCount,
-            remainingCount: remainingSnapshot.size,
-            message: `Limpieza completada: ${deletedCount} entradas eliminadas`
-        });
-    } catch (error: any) {
-        console.error('❌ Error en limpieza de caché:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        console.log(
+            `[CleanupAiCache] ${deletedCount} entradas eliminadas. Quedan ${remaining.data().count}.`
+        );
     }
-});
+);

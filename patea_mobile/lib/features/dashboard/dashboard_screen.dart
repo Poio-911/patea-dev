@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -14,7 +15,6 @@ import '../../core/services/firestore_service.dart';
 import '../../core/models/match_model.dart';
 import '../../core/models/player_model.dart';
 import '../../core/models/group_model.dart';
-import '../../core/widgets/patea_background.dart';
 import '../../core/widgets/jersey_painter.dart';
 
 const _spanishMonths = [
@@ -93,27 +93,49 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final currentUser = ref.watch(authServiceProvider).currentUser;
     final uid = currentUser?.uid;
 
+    // El fondo de cancha ahora se aplica una sola vez en el shell
+    // (_ScaffoldWithNavBar), no hace falta repetirlo por pantalla.
     return Scaffold(
-      body: PateaBackground(
-        child: SafeArea(
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
           child: CustomScrollView(
             slivers: [
+              // Título real de la web (src/app/dashboard/page.tsx): ícono
+              // de mate + "El Vestuario" — no "PATEÁ / ¡Hola X!" (eso no
+              // existe en la web, era invención de una pasada anterior).
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
                 sliver: SliverToBoxAdapter(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('PATEÁ', style: AppTypography.headline(size: 11, weight: FontWeight.w900, color: AppColors.voltNeon)),
-                          const SizedBox(height: 2),
-                          Text(
-                            currentUser?.displayName != null ? '¡Hola, ${currentUser!.displayName!.split(' ').first}!' : '¡Bienvenido, Crack!',
-                            style: AppTypography.headline(size: 22, weight: FontWeight.w900),
-                          ),
-                        ],
+                      Expanded(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/mate.svg',
+                              width: 32,
+                              height: 32,
+                              colorFilter: const ColorFilter.mode(AppColors.voltNeon, BlendMode.srcIn),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('El Vestuario', style: AppTypography.headline(size: 22, weight: FontWeight.w900)),
+                                  Text(
+                                    'Un pantallazo de cómo está el cuadro.',
+                                    style: AppTypography.body(size: 12, color: AppColors.textSecondary),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       Row(
                         children: [
@@ -159,7 +181,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ],
           ),
-        ),
       ),
     );
   }

@@ -67,7 +67,11 @@ class _ExplorarScreenState extends ConsumerState<ExplorarScreen> {
     final uid = ref.watch(authServiceProvider).currentUser?.uid;
 
     return Scaffold(
-      appBar: AppBar(title: Text('EXPLORAR', style: AppTypography.headline(size: 20, weight: FontWeight.w800))),
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: Text('EXPLORAR', style: AppTypography.headline(size: 20, weight: FontWeight.w800)),
+      ),
       body: Column(
         children: [
           Padding(

@@ -13,6 +13,7 @@ import '../../core/services/match_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/models/match_model.dart';
 import '../../core/widgets/jersey_painter.dart';
+import '../../core/widgets/patea_page_header.dart';
 
 const _spanishMonths = [
   'ene', 'feb', 'mar', 'abr', 'may', 'jun',
@@ -279,24 +280,16 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final matchesAsync = ref.watch(matchesStreamProvider(null));
+    // Partidos del grupo activo, acotados y ordenados en el servidor.
+    final matchesAsync = ref.watch(activeGroupMatchesProvider);
     final uid = ref.watch(authStateProvider).valueOrNull?.uid;
 
+    // Sin `Scaffold.appBar` ni FAB flotante a propósito — igual que en
+    // players_list_screen.dart: la web real (`src/app/matches/page.tsx`)
+    // pone "Armar Partido" como contenido normal debajo del título dentro
+    // de `PageHeader`, no como acción flotante fija.
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'PARTIDOS',
-          style: AppTypography.headline(size: 20, weight: FontWeight.w800),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.voltNeon,
-        foregroundColor: Colors.black,
-        elevation: 6,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        onPressed: () => context.push('/matches/create'),
-        child: const Icon(Icons.add, size: 26),
-      ),
+      backgroundColor: Colors.transparent,
       body: matchesAsync.when(
         data: (allMatches) {
           final now = DateTime.now();
@@ -374,6 +367,37 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
           return CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
+              // 0. Header real (título + descripción + "Armar Partido"
+              // debajo). Medido en vivo con uiautomator (no a ojo): el body
+              // ya arranca justo debajo del alto propio del header (60dp) —
+              // solo falta compensar el status bar, no los 60dp de nuevo.
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 12, 16, 0),
+                sliver: SliverToBoxAdapter(
+                  child: PateaPageHeader(
+                    title: 'Partidos',
+                    description: 'Organizá y gestioná todos tus partidos.',
+                    showCountRow: false,
+                    actionButton: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => context.push('/matches/create'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.voltNeon,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: const Icon(Icons.add_circle, size: 18),
+                        label: Text(
+                          'Armar Partido',
+                          style: AppTypography.headline(size: 13, weight: FontWeight.w700, color: Colors.black),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               if (allMatches.isNotEmpty && _timeFilter != TimeFilter.history)
                 SliverToBoxAdapter(
                   child: Padding(

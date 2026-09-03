@@ -76,11 +76,11 @@ class PateaNotificationsSheet extends ConsumerWidget {
                           .collection('users')
                           .doc(uid)
                           .collection('notifications')
-                          .where('read', isEqualTo: false)
+                          .where('isRead', isEqualTo: false)
                           .limit(20)
                           .get();
                       for (final doc in unreadSnap.docs) {
-                        batch.update(doc.reference, {'read': true});
+                        batch.update(doc.reference, {'isRead': true});
                       }
                       await batch.commit();
                     }
@@ -150,7 +150,7 @@ class PateaNotificationsSheet extends ConsumerWidget {
                       final data = docs[index].data();
                       final title = data['title'] ?? 'Aviso de Pateá';
                       final body = data['body'] ?? data['message'] ?? '';
-                      final isRead = data['read'] == true;
+                      final isRead = data['isRead'] == true;
                       final type = data['type'] as String?;
 
                       IconData itemIcon;

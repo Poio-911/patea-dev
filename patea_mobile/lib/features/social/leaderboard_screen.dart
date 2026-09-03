@@ -10,7 +10,7 @@ class LeaderboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playersAsync = ref.watch(playersStreamProvider(null));
+    final playersAsync = ref.watch(activeGroupPlayersProvider);
 
     return Scaffold(
       appBar: AppBar(

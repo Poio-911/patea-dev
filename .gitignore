@@ -53,3 +53,9 @@ nul
 
 # claude code local settings
 .claude/settings.local.json
+
+# IDE
+.idea/
+
+# Caché de Gradle que se cuela desde docs/
+**/.gradle/

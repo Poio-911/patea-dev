@@ -274,7 +274,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final playersAsync = ref.watch(playersStreamProvider(null));
+    final playersAsync = ref.watch(activeGroupPlayersProvider);
 
     return Scaffold(
       appBar: AppBar(

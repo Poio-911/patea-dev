@@ -10,4 +10,12 @@ export { processEvaluationSubmission } from './triggers/process-evaluation-submi
 export { onMatchCreate } from './triggers/on-match-create';
 export { onInvitationCreate } from './triggers/on-invitation-create';
 export { cleanupAiCache } from './cleanup-ai-cache';
+export { generateBalancedTeams } from './callable/generate-balanced-teams';
+export { createMatch } from './callable/create-match';
+export { startMatch, updateLiveMinute, joinMatch, leaveMatch, recordLiveEvent, finishMatch, finalizePendingMatches } from './callable/match-lifecycle';
+export { deleteMatch, updateMatchDate, updateMatchLocation, shuffleTeams } from './callable/match-management';
+export { createGroup, joinGroupByInviteCode, setActiveGroup, createTeam, updateTeam, updateTeamMembers, deleteTeam } from './callable/group-management';
+export { createManualPlayer } from './callable/player-management';
+export { saveUserLocation, enableAvailability, disableAvailability, updateAvailabilityPreferences, getAvailableLocalPlayers, sendMatchInvitations } from './callable/explore';
+export { submitEvaluationSubmission, respondToIdentityReveal, finalizeMatchEvaluation } from './callable/evaluations';
 // NOTE: onUserCreate requires GCIP (paid plan). Client-side rollback in register/page.tsx is used instead.
