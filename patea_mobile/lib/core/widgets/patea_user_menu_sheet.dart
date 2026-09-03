@@ -200,7 +200,7 @@ class PateaUserMenuSheet extends ConsumerWidget {
               onTap: () {
                 Navigator.pop(context);
                 if (uid.isNotEmpty) {
-                  context.push('/players/$uid');
+                  context.push('/profile');
                 }
               },
             ),

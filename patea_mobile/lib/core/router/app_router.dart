@@ -13,6 +13,8 @@ import '../../features/auth/login_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/players/players_list_screen.dart';
 import '../../features/players/player_detail_screen.dart';
+import '../../features/players/player_history_screen.dart';
+import '../../features/players/player_progression_screen.dart';
 import '../../features/matches/matches_screen.dart';
 import '../../features/matches/live_match_screen.dart';
 import '../../features/matches/match_detail_screen.dart';
@@ -140,24 +142,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       GoRoute(
         path: '/matches/create',
-        builder: (context, state) => const CreateMatchScreen(),
+        builder: (context, state) => _withBackground(const CreateMatchScreen()),
       ),
       GoRoute(
         path: '/groups',
-        builder: (context, state) => const GroupsScreen(),
+        builder: (context, state) => _withBackground(const GroupsScreen()),
       ),
       GoRoute(
         path: '/groups/teams/new',
         builder: (context, state) {
           final groupId = state.uri.queryParameters['groupId'] ?? '';
-          return CreateTeamScreen(groupId: groupId);
+          return _withBackground(CreateTeamScreen(groupId: groupId));
         },
       ),
       GoRoute(
         path: '/groups/teams/:id',
         builder: (context, state) {
           final id = state.pathParameters['id'] ?? '';
-          return TeamDetailScreen(teamId: id);
+          return _withBackground(TeamDetailScreen(teamId: id));
         },
       ),
       // Las pantallas de detalle son de nivel superior a propósito: se abren
@@ -166,55 +168,85 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/players/:id',
         builder: (context, state) {
           final id = state.pathParameters['id'] ?? '';
-          return PlayerDetailScreen(playerId: id);
+          return _withBackground(PlayerDetailScreen(playerId: id));
+        },
+      ),
+      GoRoute(
+        path: '/players/:id/historial',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return _withBackground(PlayerHistoryScreen(playerId: id));
+        },
+      ),
+      GoRoute(
+        path: '/players/:id/progression',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return _withBackground(PlayerProgressionScreen(playerId: id));
+        },
+      ),
+      // `/profile` en la web es el MISMO contenido que `/players/[id]`
+      // (ambos renderizan PlayerProfileView), sólo cambia el encabezado.
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) {
+          final uid = auth.user?.uid ?? '';
+          return _withBackground(PlayerDetailScreen(playerId: uid, asOwnProfile: true));
         },
       ),
       GoRoute(
         path: '/matches/:id',
         builder: (context, state) {
           final id = state.pathParameters['id'] ?? '';
-          return MatchDetailScreen(matchId: id);
+          return _withBackground(MatchDetailScreen(matchId: id));
         },
       ),
       GoRoute(
         path: '/matches/:id/live',
         builder: (context, state) {
           final id = state.pathParameters['id'] ?? '';
-          return LiveMatchScreen(matchId: id);
+          return _withBackground(LiveMatchScreen(matchId: id));
         },
       ),
       GoRoute(
         path: '/matches/:id/evaluate',
         builder: (context, state) {
           final id = state.pathParameters['id'] ?? '';
-          return MatchEvaluateScreen(matchId: id);
+          return _withBackground(MatchEvaluateScreen(matchId: id));
         },
       ),
       GoRoute(
         path: '/competitions/cup/:id',
         builder: (context, state) {
           final id = state.pathParameters['id'] ?? '';
-          return CupBracketScreen(cupId: id);
+          return _withBackground(CupBracketScreen(cupId: id));
         },
       ),
       GoRoute(
         path: '/evaluations/:matchId',
         builder: (context, state) {
           final matchId = state.pathParameters['matchId'] ?? '';
-          return EvaluationFormScreen(matchId: matchId);
+          return _withBackground(EvaluationFormScreen(matchId: matchId));
         },
       ),
       GoRoute(
         path: '/leaderboard',
-        builder: (context, state) => const LeaderboardScreen(),
+        builder: (context, state) => _withBackground(const LeaderboardScreen()),
       ),
       GoRoute(
         path: '/coach',
-        builder: (context, state) => const AICoachScreen(),
+        builder: (context, state) => _withBackground(const AICoachScreen()),
       ),
     ],
   );
 });
+
+/// Envuelve una pantalla de nivel superior con el fondo de cancha.
+///
+/// Las rutas dentro del `StatefulShellRoute` lo heredan del shell, pero las de
+/// nivel superior (detalles, perfil, crear partido) quedaban con el fondo negro
+/// del tema. En la web el fondo está en la raíz y se ve en TODAS las páginas.
+Widget _withBackground(Widget child) => PateaBackground(child: child);
 
 /// Pantalla de arranque mientras Firebase Auth resuelve si hay sesión.
 class _SplashScreen extends StatelessWidget {
