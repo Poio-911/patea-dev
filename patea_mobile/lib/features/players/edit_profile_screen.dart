@@ -11,6 +11,7 @@ import '../../core/services/profile_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/player_card_widget.dart';
+import 'crop_photo_screen.dart';
 
 /// Edición del perfil propio.
 ///
@@ -51,7 +52,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   bool _initialised = false;
   bool _saving = false;
+  bool _generating = false;
   String? _error;
+  String? _notice;
 
   @override
   void dispose() {
@@ -133,8 +136,68 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   _pickPhoto(ImageSource.gallery);
                 },
               ),
+              const SizedBox(height: 8),
+              _SheetAction(
+                icon: Icons.auto_awesome_outlined,
+                label: 'Generar con IA',
+                subtitle: 'Convierte tu foto en un retrato de estudio. Usa 1 crédito.',
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _generateWithAi();
+                },
+              ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _generateWithAi() async {
+    setState(() {
+      _generating = true;
+      _error = null;
+      _notice = null;
+    });
+    try {
+      final res = await ref.read(profileServiceProvider).generateAiPhoto();
+      await HapticFeedback.mediumImpact();
+      if (!mounted) return;
+      setState(() {
+        _generating = false;
+        // La foto nueva ya quedó guardada del lado servidor; el stream del
+        // jugador la trae solo. Se limpia la local para no taparla.
+        _pickedPhoto = null;
+        _notice = res.creditsRemaining != null
+            ? 'Foto generada. Te ${res.creditsRemaining == 1 ? 'queda' : 'quedan'} ${res.creditsRemaining} crédito${res.creditsRemaining == 1 ? '' : 's'}.'
+            : 'Foto generada.';
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _generating = false;
+          _error = e.toString().replaceFirst('Exception: ', '');
+        });
+      }
+    }
+  }
+
+  Future<void> _openCrop(PlayerModel player) async {
+    if (player.photoUrl == null || player.photoUrl!.isEmpty) {
+      setState(() => _error = 'Primero elegí una foto.');
+      return;
+    }
+    if (_pickedPhoto != null) {
+      setState(() => _error = 'Guardá la foto nueva antes de ajustar el encuadre.');
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute<bool>(
+        builder: (_) => CropPhotoScreen(
+          photoUrl: player.photoUrl!,
+          initialX: player.cropX,
+          initialY: player.cropY,
+          initialZoom: player.cropZoom,
         ),
       ),
     );
@@ -276,6 +339,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             photoUrl: player.photoUrl,
             ownerUid: player.ownerUid,
             groupId: player.groupId,
+            cropX: player.cropX,
+            cropY: player.cropY,
+            cropZoom: player.cropZoom,
             stats: player.stats,
           );
 
@@ -320,10 +386,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           ),
                           const SizedBox(height: 12),
                           OutlinedButton.icon(
-                            onPressed: _saving ? null : _openPhotoSheet,
-                            icon: const Icon(Icons.photo_camera_outlined, size: 16),
+                            onPressed: (_saving || _generating) ? null : _openPhotoSheet,
+                            icon: _generating
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: AppColors.voltNeon),
+                                  )
+                                : const Icon(Icons.photo_camera_outlined, size: 16),
                             label: Text(
-                              _pickedPhoto != null ? 'Cambiar foto' : 'Cambiar foto',
+                              _generating ? 'Generando…' : 'Cambiar foto',
+                              style: AppTypography.body(size: 12, weight: FontWeight.w600),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          OutlinedButton.icon(
+                            onPressed: (_saving || _generating) ? null : () => _openCrop(player),
+                            icon: const Icon(Icons.crop_free, size: 16),
+                            label: Text(
+                              'Ajustar encuadre',
                               style: AppTypography.body(size: 12, weight: FontWeight.w600),
                             ),
                           ),
@@ -333,6 +415,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               child: Text(
                                 'Foto nueva sin guardar',
                                 style: AppTypography.code(size: 9, color: AppColors.voltNeon),
+                              ),
+                            ),
+                          if (_notice != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(
+                                _notice!,
+                                style: AppTypography.code(size: 9, color: AppColors.success),
                               ),
                             ),
                         ],
@@ -630,9 +720,15 @@ class _ChoiceChip extends StatelessWidget {
 class _SheetAction extends StatelessWidget {
   final IconData icon;
   final String label;
+  final String? subtitle;
   final VoidCallback onTap;
 
-  const _SheetAction({required this.icon, required this.label, required this.onTap});
+  const _SheetAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -653,7 +749,19 @@ class _SheetAction extends StatelessWidget {
               child: Icon(icon, size: 20, color: AppColors.voltNeon),
             ),
             const SizedBox(width: 14),
-            Text(label, style: AppTypography.headline(size: 15, weight: FontWeight.w600)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: AppTypography.headline(size: 15, weight: FontWeight.w600)),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(subtitle!,
+                        style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+                  ],
+                ],
+              ),
+            ),
           ],
         ),
       ),

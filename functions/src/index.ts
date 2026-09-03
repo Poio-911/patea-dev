@@ -20,4 +20,5 @@ export { saveUserLocation, enableAvailability, disableAvailability, updateAvaila
 export { submitEvaluationSubmission, respondToIdentityReveal, finalizeMatchEvaluation } from './callable/evaluations';
 export { getPlayerEvaluations } from './callable/player-profile';
 export { updateProfile } from './callable/update-profile';
+export { generatePlayerPhoto } from './callable/generate-player-photo';
 // NOTE: onUserCreate requires GCIP (paid plan). Client-side rollback in register/page.tsx is used instead.

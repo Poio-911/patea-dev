@@ -324,7 +324,17 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                                 boxShadow: avatarGlow != null ? [avatarGlow] : null,
                               ),
                               child: ClipOval(
-                                child: widget.localPhoto != null
+                                // El encuadre guardado (cropX/cropY en % y
+                                // cropZoom) se aplica con Transform: es el
+                                // mismo modelo que usa la web con object-position
+                                // y scale sobre la imagen.
+                                child: Transform.scale(
+                                  scale: player.cropZoom,
+                                  alignment: Alignment(
+                                    (player.cropX / 50) - 1,
+                                    (player.cropY / 50) - 1,
+                                  ),
+                                  child: widget.localPhoto != null
                                     ? Image.file(
                                         widget.localPhoto!,
                                         fit: BoxFit.cover,
@@ -368,6 +378,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                                           ),
                                         ),
                                       ),
+                                ),
                               ),
                             ),
                           ],

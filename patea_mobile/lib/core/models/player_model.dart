@@ -87,6 +87,12 @@ class PlayerModel {
   final int? birthYear;
   final String? nationality;
 
+  /// Encuadre de la foto dentro del círculo de la carta.
+  /// `cropX`/`cropY` son porcentajes 0-100 (50,50 = centrada).
+  final double cropX;
+  final double cropY;
+  final double cropZoom;
+
   PlayerModel({
     required this.id,
     required this.name,
@@ -105,6 +111,9 @@ class PlayerModel {
     this.bio,
     this.birthYear,
     this.nationality,
+    this.cropX = 50,
+    this.cropY = 50,
+    this.cropZoom = 1,
     PlayerStats? stats,
   }) : stats = stats ?? PlayerStats();
 
@@ -134,6 +143,9 @@ class PlayerModel {
       bio: data['bio'] as String?,
       birthYear: (data['birthYear'] as num?)?.toInt(),
       nationality: data['nationality'] as String?,
+      cropX: (data['cropPosition']?['x'] as num?)?.toDouble() ?? 50,
+      cropY: (data['cropPosition']?['y'] as num?)?.toDouble() ?? 50,
+      cropZoom: (data['cropZoom'] as num?)?.toDouble() ?? 1,
       stats: PlayerStats.fromMap(data['stats'] as Map<String, dynamic>?),
     );
   }
@@ -156,6 +168,8 @@ class PlayerModel {
       'bio': bio,
       'birthYear': birthYear,
       'nationality': nationality,
+      'cropPosition': {'x': cropX, 'y': cropY},
+      'cropZoom': cropZoom,
       'stats': stats.toMap(),
     };
   }

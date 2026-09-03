@@ -38,6 +38,38 @@ class ProfileService {
     return ref.getDownloadURL();
   }
 
+  /// Genera la foto de la carta con IA a partir de la foto actual.
+  ///
+  /// Consume un crédito. Tarda entre 10 y 30 segundos, así que el timeout es
+  /// generoso: cortar del lado del cliente no cancela el trabajo del servidor,
+  /// sólo hace perder el crédito sin mostrar el resultado.
+  ///
+  /// Devuelve la URL nueva y cuántos créditos quedan (null si el jugador no
+  /// tiene el campo, o sea sin límite).
+  Future<({String photoUrl, int? creditsRemaining})> generateAiPhoto() async {
+    final result = await callFunction(
+      'generatePlayerPhoto',
+      const {},
+      timeout: const Duration(seconds: 120),
+    );
+    return (
+      photoUrl: result['photoUrl'] as String,
+      creditsRemaining: (result['creditsRemaining'] as num?)?.toInt(),
+    );
+  }
+
+  /// Guarda sólo el encuadre de la foto.
+  Future<void> updateCrop({required double x, required double y, required double zoom}) async {
+    await callFunction(
+      'updateProfile',
+      {
+        'cropPosition': {'x': x, 'y': y},
+        'cropZoom': zoom,
+      },
+      timeout: const Duration(seconds: 30),
+    );
+  }
+
   /// Guarda los campos del perfil. Sólo se mandan los que cambiaron.
   Future<void> updateProfile({
     String? displayName,
