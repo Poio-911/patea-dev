@@ -8,7 +8,6 @@ import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/widgets/attributes_radar_chart.dart';
 import '../../core/widgets/player_card_widget.dart';
 import 'widgets/player_match_debrief.dart';
 import 'widgets/player_teams_list.dart';
@@ -129,21 +128,9 @@ class PlayerDetailScreen extends ConsumerWidget {
                 ),
               ],
 
-              const SizedBox(height: 28),
-              Text(
-                'POLÍGONO DE RENDIMIENTO',
-                style: AppTypography.headline(size: 14, weight: FontWeight.w700),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: AttributesRadarChart(player: player),
-              ),
+              // Acá había un "POLÍGONO DE RENDIMIENTO" (gráfico radar) que no
+              // existe en la web: era un invento del port. Además duplicaba los
+              // seis atributos que la carta ya muestra con sus barras.
 
               const SizedBox(height: 28),
               Text(
@@ -277,7 +264,7 @@ class _StatsRow extends StatelessWidget {
         const SizedBox(width: 10),
         _StatCard(title: 'Goles', value: '${player.stats.goals}'),
         const SizedBox(width: 10),
-        _StatCard(title: 'Asistencias', value: '${player.stats.assists}'),
+        _StatCard(title: 'Asist.', value: '${player.stats.assists}'),
         const SizedBox(width: 10),
         _StatCard(title: 'Rating', value: player.stats.averageRating.toStringAsFixed(1)),
       ],
