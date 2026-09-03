@@ -51,6 +51,7 @@ const statusConfig: Record<Match['status'], { label: string; className: string }
     active: { label: 'Activo', className: 'bg-foreground/10 text-foreground border border-foreground/30 rounded-full backdrop-blur-xl' },
     completed: { label: 'Finalizado', className: 'bg-muted/40 text-muted-foreground border border-muted/50 rounded-full backdrop-blur-xl' },
     evaluated: { label: 'Evaluado', className: 'bg-card/40 text-foreground border border-border/40 rounded-full backdrop-blur-xl' },
+    delayed: { label: 'Demorado', className: 'bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30 rounded-full backdrop-blur-xl' },
 };
 
 function LiveMatchRow({ match, onOpen }: { match: Match; onOpen: () => void }) {

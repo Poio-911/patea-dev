@@ -72,3 +72,11 @@ env:
     value: production
     availability:
       - RUNTIME
+  # App Check — clave de sitio de reCAPTCHA Enterprise. Es pública por diseño
+  # (va embebida en el cliente); lo que la protege es la lista de dominios
+  # permitidos de la clave, no el secreto.
+  - variable: NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+    value: 6Lc-GqctAAAAAK4abHj7VsaGhYZ9U3BsY2QPsJIW
+    availability:
+      - BUILD
+      - RUNTIME

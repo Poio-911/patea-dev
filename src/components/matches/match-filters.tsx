@@ -30,6 +30,7 @@ const matchStatusLabels: Record<MatchStatus, string> = {
   active: 'Activo',
   completed: 'Finalizado',
   evaluated: 'Evaluado',
+  delayed: 'Demorado',
 };
 
 // Tipos de amistosos (los que se muestran en esta pagina)

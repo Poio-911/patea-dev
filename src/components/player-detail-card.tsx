@@ -155,7 +155,7 @@ export function PlayerDetailCard({ player, onPhotoUpdate, isCurrentUserProfile, 
                     <DialogTitle className="sr-only">Imagen de perfil de {playerName}</DialogTitle>
                     <div className="relative w-full aspect-square">
                       <Image
-                        src={player.photoUrl}
+                        src={player.photoUrl ?? '/icons/icon-192x192.png'}
                         alt={player.name}
                         fill
                         className="object-contain rounded-lg"

@@ -74,11 +74,14 @@ export default function CupDetailPage() {
   // ... Cup and Teams fetching logic ...
 
   const handleRemoveTeam = async () => {
-    if (!cup || !teamToRemove) return;
+    if (!cup || !teamToRemove || !user) return;
 
     setIsRemovingTeam(true);
     try {
-      const result = await removeTeamFromCupAction(cup.id, teamToRemove.id);
+      // El tercer argumento es obligatorio: la server action lo usa para
+      // verificar que quien remueve es el dueño de la copa. Se estaba
+      // llamando sin él, así que la verificación recibía undefined.
+      const result = await removeTeamFromCupAction(cup.id, teamToRemove.id, user.uid);
       if (!isErrorResponse(result) && result.success) {
         toast({
           title: 'Equipo removido',

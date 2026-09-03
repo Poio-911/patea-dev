@@ -30,6 +30,11 @@ export const matchStatusConfig: Record<Match['status'], { label: string; classNa
         className:
             'bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-400/30',
     },
+    delayed: {
+        label: 'Demorado',
+        className:
+            'bg-amber-500/10 text-amber-700 border-amber-500/20 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-400/30',
+    },
 };
 
 /**
@@ -45,6 +50,8 @@ export function getMatchActionLabel(status: Match['status']): string {
             return 'Ver Resumen';
         case 'planning':
             return 'Ver y Confirmar';
+        case 'delayed':
+            return 'Ver Novedades';
         case 'upcoming':
         default:
             return 'Ver Detalles';
