@@ -142,9 +142,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: _DashboardTabBar(active: _tab, onChanged: _saveTab),
                 ),
               ),
+              // SliverFillRemaining en vez de SliverToBoxAdapter: le da al
+              // contenido la altura que sobra, para que las piezas del tablero
+              // la ocupen en vez de dejar media pantalla vacía. Con
+              // hasScrollBody en false, si el contenido es más alto igual
+              // scrollea.
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
-                sliver: SliverToBoxAdapter(
+                padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
+                sliver: SliverFillRemaining(
+                  hasScrollBody: false,
                   child: uid == null
                       ? const SizedBox()
                       : (_tab == 0 ? _ResumenTab(uid: uid) : _GrupoTab(uid: uid)),
@@ -305,24 +311,23 @@ class _ResumenTabBody extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ── Pieza principal ──────────────────────────────────────────
-            if (next != null)
-              _KickoffTile(match: next, isLive: live.isNotEmpty)
-            else
-              const _EmptyTile(
-                label: 'SIN PARTIDOS',
-                value: 'Nada agendado',
-                hint: 'Armá uno desde Partidos.',
-              ),
+            Expanded(
+              flex: 5,
+              child: next != null
+                  ? _KickoffTile(match: next, isLive: live.isNotEmpty)
+                  : const _EmptyTile(
+                      label: 'SIN PARTIDOS',
+                      value: 'Nada agendado',
+                      hint: 'Armá uno desde Partidos.',
+                    ),
+            ),
 
             const SizedBox(height: 5),
 
             // ── Dónde · Anotados ─────────────────────────────────────────
             if (next != null)
-              // IntrinsicHeight es obligatorio acá: sin él, un Row con
-              // crossAxisAlignment.stretch dentro de una Column sin altura
-              // acotada deja a los hijos en altura cero y las piezas
-              // desaparecen sin lanzar error.
-              IntrinsicHeight(
+              Expanded(
+                flex: 3,
                 child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -352,7 +357,8 @@ class _ResumenTabBody extends ConsumerWidget {
 
             // ── Tu OVR · Tus números ─────────────────────────────────────
             if (player != null)
-              IntrinsicHeight(
+              Expanded(
+                flex: 4,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -373,14 +379,16 @@ class _ResumenTabBody extends ConsumerWidget {
             const SizedBox(height: 5),
 
             // ── Último resultado ─────────────────────────────────────────
-            if (lastPlayed != null)
-              _LastResultTile(match: lastPlayed)
-            else
-              const _EmptyTile(
-                label: 'ÚLTIMO RESULTADO',
-                value: 'Todavía nada',
-                hint: 'Acá va a aparecer cuando jueguen el primero.',
-              ),
+            Expanded(
+              flex: 3,
+              child: lastPlayed != null
+                  ? _LastResultTile(match: lastPlayed)
+                  : const _EmptyTile(
+                      label: 'ÚLTIMO RESULTADO',
+                      value: 'Todavía nada',
+                      hint: 'Acá va a aparecer cuando jueguen el primero.',
+                    ),
+            ),
           ],
         );
       },
@@ -535,6 +543,7 @@ class _KickoffTile extends StatelessWidget {
               : null,
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -544,7 +553,6 @@ class _KickoffTile extends StatelessWidget {
                 color: isLive ? AppColors.destructive : AppColors.textMuted,
               ),
             ),
-            const SizedBox(height: 5),
 
             if (isLive && a != null && b != null)
               Text(
@@ -555,8 +563,6 @@ class _KickoffTile extends StatelessWidget {
               MatchCountdown(kickoff: kickoff)
             else
               Text(match.title, style: AppTypography.headline(size: 20, weight: FontWeight.w800)),
-
-            const SizedBox(height: 9),
 
             // Quién juega contra quién, en una línea.
             if (a != null && b != null)
@@ -634,6 +640,7 @@ class _OvrTile extends StatelessWidget {
       color: _tileBg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text('TU OVR', style: AppTypography.code(size: 8, color: AppColors.textMuted)),
           const SizedBox(height: 3),
@@ -719,6 +726,7 @@ class _TotalsTile extends StatelessWidget {
       color: _tileBg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text('PARTIDOS', style: AppTypography.code(size: 8, color: AppColors.textMuted)),
           Text('$matches', style: AppTypography.sportNumber(size: 24)),
@@ -763,6 +771,7 @@ class _LastResultTile extends StatelessWidget {
         color: _tileBg,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             Row(
               children: [
