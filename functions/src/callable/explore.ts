@@ -196,15 +196,9 @@ export const getAvailableLocalPlayers = onCall({ region: 'us-central1' }, async 
     snap.docs.forEach((doc) => byId.set(doc.id, { id: doc.id, ...doc.data() }))
   );
 
-  // Respaldo para documentos escritos antes de que existiera el campo
-  // `geohash`: si el índice no devolvió nada, se cae al escaneo viejo. Se
-  // puede borrar una vez que la migración (scripts/backfill-geohash.ts) haya
-  // corrido en todos los documentos.
-  if (byId.size === 0) {
-    const legacySnap = await db.collection('availablePlayers').where('geohash', '==', null).get();
-    legacySnap.docs.forEach((doc) => byId.set(doc.id, { id: doc.id, ...doc.data() }));
-  }
-
+  // Los documentos previos al campo `geohash` ya se migraron con
+  // scripts/backfill-geohash.ts (22/22 el 2026-09-03), y desde entonces
+  // `upsertAvailabilityDocument` lo escribe siempre — no hace falta respaldo.
   let players = [...byId.values()];
 
   players = players.filter((p: any) => {

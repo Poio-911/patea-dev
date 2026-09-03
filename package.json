@@ -81,8 +81,6 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "eslint": "^8.57.1",
-    "eslint-config-next": "^14.2.35",
     "@playwright/test": "^1.56.1",
     "@testing-library/react": "^16.3.2",
     "@types/canvas-confetti": "^1.9.0",
@@ -93,7 +91,10 @@
     "@types/react-dom": "^18.3.1",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^5.1.4",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
     "genkit-cli": "^1.28.0",
+    "geofire-common": "^6.0.0",
     "jsdom": "^28.0.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",

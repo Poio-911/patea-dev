@@ -11,8 +11,16 @@
  *   npx tsx scripts/backfill-geohash.ts --apply   # escribe
  */
 
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 import { geohashForLocation } from 'geofire-common';
-import { adminDb } from '../src/firebase/admin-init';
+import { config } from 'dotenv';
+import { join } from 'path';
+
+config({ path: join(process.cwd(), '.env.local') });
+const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY!);
+if (!getApps().length) initializeApp({ credential: cert(sa), projectId: sa.project_id });
+const adminDb = getFirestore();
 
 const APPLY = process.argv.includes('--apply');
 
