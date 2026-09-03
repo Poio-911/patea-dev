@@ -553,17 +553,15 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
     final key = stat['key'] as String;
     final label = stat['label'] as String;
     final val = stat['val'] as int;
-    final isTop = key == topKey;
-    final isKeyStat = keyStats.contains(key);
     final isSorted = widget.highlightStat == key;
 
-    // `.game .player-card [class*="grid"]>div { background: rgba(255,255,255,.08) !important; border-color: rgba(255,255,255,.1) !important; }`
-    // pisa el fondo/borde propio del componente (que en la web distingue
-    // isTop) — en el tema game TODAS las cajas quedan iguales, sin importar
-    // si son el atributo más alto. La distinción real sobrevive solo en el
-    // color de la barra (isTop = color de posición, resto = gris) y en la
-    // etiqueta (isKey = color de posición, resto = gris) — el valor
-    // numérico también tiene `font-bold`, así que siempre es blanco.
+    // Antes se coloreaban dos cosas más, heredadas de la web: la barra del
+    // atributo más alto y la etiqueta de los atributos "clave" de la posición.
+    // Se sacaron porque no comunicaban nada: en un delantero, RIT y TIR salían
+    // los dos en rojo sin que ese rojo significara algo, y con los atributos
+    // parejos el "más alto" caía siempre en el mismo por orden de la lista.
+    // El único resaltado que queda es el del criterio de orden, que sí dice
+    // algo: por qué está ordenada la grilla así.
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
@@ -589,7 +587,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
               style: AppTypography.code(
                 size: 9,
                 weight: FontWeight.w800,
-                color: isKeyStat ? posColor : const Color(0xFF94A3B8),
+                color: const Color(0xFF94A3B8),
               ),
             ),
           ),
@@ -607,7 +605,9 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                   widthFactor: (val / 99.0).clamp(0.05, 1.0),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isTop ? posColor.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.30),
+                      color: isSorted
+                          ? AppColors.voltNeon.withValues(alpha: 0.75)
+                          : Colors.white.withValues(alpha: 0.30),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
