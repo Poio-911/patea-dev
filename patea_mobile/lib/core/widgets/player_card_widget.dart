@@ -50,13 +50,6 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
   double _fromX = 0;
   double _fromY = 0;
 
-  /// Brillo ambiente que recorre la carta. Sólo corre en oro y élite: en
-  /// bronce y plata la web no tiene ningún brillo y agregarlo sería inventar.
-  late final AnimationController _shimmer = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 2600),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -67,22 +60,17 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
         _rotateY = _fromY * (1 - t);
       });
     });
-    if (_getOvrTier(widget.player.ovr) == 'gold' ||
-        _getOvrTier(widget.player.ovr) == 'elite') {
-      _shimmer.repeat();
-    }
   }
 
   @override
   void dispose() {
     _settle.dispose();
-    _shimmer.dispose();
     super.dispose();
   }
 
   String _getOvrTier(int ovr) {
     if (ovr >= 86) return 'elite';
-    if (ovr >= 75) return 'gold';
+    if (ovr >= 76) return 'gold';
     if (ovr >= 65) return 'silver';
     return 'bronze';
   }
