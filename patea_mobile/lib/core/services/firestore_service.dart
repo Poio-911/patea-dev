@@ -48,15 +48,22 @@ final playersStreamProvider = StreamProvider.family<List<PlayerModel>, String?>(
 
 /// Jugadores del grupo activo — la forma que deberían usar las pantallas.
 /// Resuelve el grupo por sí solo en vez de recibir `null` y leer todo.
+///
+/// Mientras el grupo activo todavía se está resolviendo NO devuelve lista
+/// vacía: se queda en `loading`. Si no, la pantalla mostraba "No hay
+/// jugadores" durante un instante en cada apertura, como si el grupo estuviera
+/// vacío — un estado vacío falso.
 final activeGroupPlayersProvider = StreamProvider<List<PlayerModel>>((ref) {
-  final groupId = ref.watch(activeGroupIdProvider).value;
-  return ref.watch(firestoreServiceProvider).getPlayersStream(groupId: groupId);
+  final groupAsync = ref.watch(activeGroupIdProvider);
+  if (groupAsync.isLoading) return const Stream<List<PlayerModel>>.empty();
+  return ref.watch(firestoreServiceProvider).getPlayersStream(groupId: groupAsync.value);
 });
 
-/// Partidos del grupo activo.
+/// Partidos del grupo activo. Mismo criterio de carga que los jugadores.
 final activeGroupMatchesProvider = StreamProvider<List<MatchModel>>((ref) {
-  final groupId = ref.watch(activeGroupIdProvider).value;
-  return ref.watch(firestoreServiceProvider).getMatchesStream(groupId: groupId);
+  final groupAsync = ref.watch(activeGroupIdProvider);
+  if (groupAsync.isLoading) return const Stream<List<MatchModel>>.empty();
+  return ref.watch(firestoreServiceProvider).getMatchesStream(groupId: groupAsync.value);
 });
 
 final singlePlayerStreamProvider = StreamProvider.family<PlayerModel?, String>((ref, playerId) {
