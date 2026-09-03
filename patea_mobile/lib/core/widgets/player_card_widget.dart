@@ -1,11 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../models/player_model.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import 'card_foil.dart';
 
 /// Carta de Jugador 100% idéntica a PlayerCard de la webapp (src/components/player-card.tsx)
 /// Con auras radiales por rareza, borde sutil con glow, badge de posición estilizado y OVR por tier.
@@ -31,9 +33,52 @@ class PlayerCardWidget extends StatefulWidget {
   State<PlayerCardWidget> createState() => _PlayerCardWidgetState();
 }
 
-class _PlayerCardWidgetState extends State<PlayerCardWidget> {
+class _PlayerCardWidgetState extends State<PlayerCardWidget>
+    with TickerProviderStateMixin {
+  static const _maxTilt = 0.16;
+
   double _rotateX = 0;
   double _rotateY = 0;
+  bool _holding = false;
+
+  /// Vuelta al centro con rebote. Antes la carta volvía de golpe con un
+  /// AnimatedContainer lineal; una carta física tiene inercia.
+  late final AnimationController _settle = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
+  double _fromX = 0;
+  double _fromY = 0;
+
+  /// Brillo ambiente que recorre la carta. Sólo corre en oro y élite: en
+  /// bronce y plata la web no tiene ningún brillo y agregarlo sería inventar.
+  late final AnimationController _shimmer = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2600),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _settle.addListener(() {
+      final t = Curves.elasticOut.transform(_settle.value);
+      setState(() {
+        _rotateX = _fromX * (1 - t);
+        _rotateY = _fromY * (1 - t);
+      });
+    });
+    if (_getOvrTier(widget.player.ovr) == 'gold' ||
+        _getOvrTier(widget.player.ovr) == 'elite') {
+      _shimmer.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _settle.dispose();
+    _shimmer.dispose();
+    super.dispose();
+  }
 
   String _getOvrTier(int ovr) {
     if (ovr >= 86) return 'elite';
@@ -171,27 +216,35 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
 
     return GestureDetector(
       onTap: widget.onTap,
+      onPanDown: (_) {
+        _settle.stop();
+        _holding = true;
+        HapticFeedback.selectionClick();
+      },
       onPanUpdate: (details) {
         setState(() {
-          _rotateY += details.delta.dx * 0.003;
-          _rotateX -= details.delta.dy * 0.003;
-          _rotateX = _rotateX.clamp(-0.15, 0.15);
-          _rotateY = _rotateY.clamp(-0.15, 0.15);
+          _rotateY = (_rotateY + details.delta.dx * 0.003).clamp(-_maxTilt, _maxTilt);
+          _rotateX = (_rotateX - details.delta.dy * 0.003).clamp(-_maxTilt, _maxTilt);
         });
       },
       onPanEnd: (_) {
-        setState(() {
-          _rotateX = 0;
-          _rotateY = 0;
-        });
+        _holding = false;
+        _fromX = _rotateX;
+        _fromY = _rotateY;
+        _settle.forward(from: 0);
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+      onPanCancel: () {
+        _holding = false;
+        _fromX = _rotateX;
+        _fromY = _rotateY;
+        _settle.forward(from: 0);
+      },
+      child: Transform(
         transform: Matrix4.identity()
           ..setEntry(3, 2, 0.0012)
           ..rotateX(_rotateX)
           ..rotateY(_rotateY),
-        transformAlignment: Alignment.center,
+        alignment: Alignment.center,
         child: AspectRatio(
           aspectRatio: 2.0 / 3.0,
           child: Container(
@@ -205,11 +258,17 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
               borderRadius: BorderRadius.circular(15),
               child: Stack(
                 children: [
-                  // 1. Efecto Aura por Tier (radial-gradient de `.game .aura-*`)
+                  // 1. Efecto Aura por Tier (radial-gradient de `.game .aura-*`).
+                  // Se desplaza con la inclinación pero MENOS que el resto: es
+                  // la capa del fondo, y esa diferencia de recorrido entre
+                  // capas es lo que da la sensación de profundidad real.
                   Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: RadialGradient(center: auraAlignment, radius: 1.2, colors: auraColors),
+                    child: Transform.translate(
+                      offset: Offset(_rotateY * 90, -_rotateX * 90),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: RadialGradient(center: auraAlignment, radius: 1.2, colors: auraColors),
+                        ),
                       ),
                     ),
                   ),
@@ -227,7 +286,22 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                       ),
                     ),
 
-                  // 2. Marca de agua vectorial por posición — la web usa
+                  // 2. Material de la carta según el tier (fragment shader).
+                  // Bronce mate, plata cepillada, oro pulido, élite holográfico.
+                  // Es lo que hace que se distingan de un vistazo en la grilla:
+                  // antes los cuatro eran el mismo fondo con otro borde.
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CardFoil(
+                        tier: tier,
+                        tiltX: _rotateX / _maxTilt,
+                        tiltY: _rotateY / _maxTilt,
+                        seed: (player.id.hashCode % 1000) / 1000.0 * 6.28,
+                      ),
+                    ),
+                  ),
+
+                  // 3. Marca de agua vectorial por posición — la web usa
                   // `h-2/5 w-2/5` (40% del card, proporcional, no un tamaño
                   // fijo en px) desplazada `-bottom-2 -right-2` (~8px fuera
                   // del borde) al 10% de opacidad con el color pastel real
@@ -239,7 +313,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                         widthFactor: 0.4,
                         heightFactor: 0.4,
                         child: Transform.translate(
-                          offset: const Offset(8, 8),
+                          offset: Offset(8 - _rotateY * 40, 8 + _rotateX * 40),
                           child: Opacity(
                             opacity: 0.10,
                             child: SvgPicture.asset(
@@ -257,7 +331,40 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                     ),
                   ),
 
-                  // 3. Contenido de la Carta
+                  // 4. Brillo especular. Es lo que hace que la carta se
+                  // sienta un objeto físico: la franja de luz se corre según
+                  // hacia dónde la inclinás, como el reflejo en una lámina.
+                  // Necesita el dato del gesto en tiempo real, así que en la
+                  // web no existe.
+                  if (_holding || _settle.isAnimating)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment(
+                                (-_rotateY / _maxTilt) - 0.9,
+                                (_rotateX / _maxTilt) - 0.9,
+                              ),
+                              end: Alignment(
+                                (-_rotateY / _maxTilt) + 0.9,
+                                (_rotateX / _maxTilt) + 0.9,
+                              ),
+                              colors: [
+                                Colors.transparent,
+                                Colors.white.withValues(
+                                  alpha: 0.10 * (_rotateX.abs() + _rotateY.abs()) / _maxTilt,
+                                ),
+                                Colors.transparent,
+                              ],
+                              stops: const [0.32, 0.5, 0.68],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // 5. Contenido de la Carta
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                     child: Column(

@@ -81,6 +81,11 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Shaders GLSL. Es lo que permite darle a cada tier un material propio
+  # (holográfico, metal pulido, cepillado) en vez de sólo cambiar un borde.
+  shaders:
+    - shaders/card_foil.frag
+
   assets:
     - assets/jerseys/
     - assets/backgrounds/
