@@ -41,13 +41,6 @@ DateTime? _matchDateTime(MatchModel m) {
   return DateTime(local.year, local.month, local.day, hh, mm);
 }
 
-const Map<String, String> _statusLabels = {
-  'planning': 'A Confirmar',
-  'upcoming': 'Próximo',
-  'active': 'Activo',
-  'completed': 'Finalizado',
-  'evaluated': 'Evaluado',
-};
 
 /// Port de src/app/dashboard/page.tsx + components/dashboard/*: 2 tabs
 /// ("Mi Resumen"/"Mi Grupo"), persistidos localmente (SharedPreferences ~
@@ -244,6 +237,16 @@ class _ResumenTab extends ConsumerWidget {
   }
 }
 
+/// "Mi Resumen" como tablero: todo en una pantalla, sin scroll.
+///
+/// Mosaico de piezas de distinto peso, como el gráfico de una transmisión. La
+/// pieza más grande es la que contesta la pregunta por la que se abre la app:
+/// cuánto falta para el próximo partido. Si hay uno en curso, esa pieza pasa a
+/// ser el partido en vivo.
+///
+/// Rehecho de cero: antes era una pila de secciones con tarjeta y borde, cada
+/// una del mismo peso, que obligaba a scrollear para llegar a los datos
+/// propios.
 class _ResumenTabBody extends ConsumerWidget {
   final String uid;
   final String? groupId;
@@ -257,135 +260,146 @@ class _ResumenTabBody extends ConsumerWidget {
     final ovrHistoryAsync = ref.watch(ovrHistoryStreamProvider(uid));
 
     return matchesAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 48),
+        child: Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
+      ),
+      error: (e, _) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        child: Text('No se pudo cargar tu panel.',
+            style: AppTypography.body(size: 13, color: AppColors.textMuted)),
+      ),
       data: (matches) {
         final now = DateTime.now();
+
+        final live = matches.where((m) => m.status == 'active').toList();
+
         final upcoming = matches.where((m) {
-          if (m.status == 'active') return true;
           if (m.status != 'upcoming') return false;
           final dt = _matchDateTime(m);
           return dt != null && !dt.isBefore(now);
         }).toList()
-          ..sort((a, b) => (_matchDateTime(a) ?? DateTime(9999)).compareTo(_matchDateTime(b) ?? DateTime(9999)));
-        final nextMatch = upcoming.isNotEmpty ? upcoming.first : null;
+          ..sort((a, b) => (_matchDateTime(a) ?? DateTime(9999))
+              .compareTo(_matchDateTime(b) ?? DateTime(9999)));
 
-        final liveMatches = matches.where((m) => m.status == 'active').toList();
+        final next = live.isNotEmpty
+            ? live.first
+            : (upcoming.isNotEmpty ? upcoming.first : null);
 
-        final recentMatches = matches.where((m) => m.status != 'upcoming').toList()
-          ..sort((a, b) => (DateTime.tryParse(b.date) ?? DateTime(0)).compareTo(DateTime.tryParse(a.date) ?? DateTime(0)));
-        final lastTwo = recentMatches.take(2).toList();
+        // Último partido con resultado real, para la pieza de abajo.
+        final played = matches
+            .where((m) =>
+                (m.status == 'completed' || m.status == 'evaluated') &&
+                m.teamA != null &&
+                m.teamB != null)
+            .toList()
+          ..sort((a, b) => (DateTime.tryParse(b.date) ?? DateTime(0))
+              .compareTo(DateTime.tryParse(a.date) ?? DateTime(0)));
+        final lastPlayed = played.isNotEmpty ? played.first : null;
+
+        final player = playerAsync.value;
+        final history = ovrHistoryAsync.value ?? const <OvrHistoryEntry>[];
+        final trend = history.isEmpty ? 0 : history.last.newOVR - history.first.oldOVR;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (nextMatch != null) ...[
-              Row(children: [
-                Container(width: 3, height: 13, color: AppColors.voltNeon),
-                const SizedBox(width: 8),
-                Text('PRÓXIMO PARTIDO', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.textSecondary)),
-              ]),
-              const SizedBox(height: 10),
-              _NextMatchCard(match: nextMatch),
-              const SizedBox(height: 22),
-            ],
+            // ── Pieza principal ──────────────────────────────────────────
+            if (next != null)
+              _KickoffTile(match: next, isLive: live.isNotEmpty)
+            else
+              const _EmptyTile(
+                label: 'SIN PARTIDOS',
+                value: 'Nada agendado',
+                hint: 'Armá uno desde Partidos.',
+              ),
 
-            // Sólo aparece si hay algo en curso. Antes ocupaba lugar en cada
-            // carga para decir "no hay partidos en vivo ahora", que es el caso
-            // normal el 99% del tiempo.
-            if (liveMatches.isNotEmpty) ...[
-              _SectionCard(
-                icon: Icons.play_circle_outline,
-                title: 'En vivo ahora',
-                child: Column(
-                  children: liveMatches
-                      .map((m) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: _LiveMatchRow(match: m),
-                          ))
-                      .toList(),
+            const SizedBox(height: 5),
+
+            // ── Dónde · Anotados ─────────────────────────────────────────
+            if (next != null)
+              // IntrinsicHeight es obligatorio acá: sin él, un Row con
+              // crossAxisAlignment.stretch dentro de una Column sin altura
+              // acotada deja a los hijos en altura cero y las piezas
+              // desaparecen sin lanzar error.
+              IntrinsicHeight(
+                child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: _Tile(
+                      label: 'DÓNDE',
+                      value: next.location ?? 'A definir',
+                      valueSize: 15,
+                      hint: _whenLine(next),
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    flex: 2,
+                    child: _Tile(
+                      label: 'ANOTADOS',
+                      value: '${next.playerUids.length}',
+                      suffix: next.matchSize > 0 ? '/${next.matchSize}' : null,
+                    ),
+                  ),
+                ],
                 ),
               ),
-              const SizedBox(height: 22),
-            ],
 
-            playerAsync.when(
-              data: (player) {
-                if (player == null) return const SizedBox();
-                return Column(
+            const SizedBox(height: 5),
+
+            // ── Tu OVR · Tus números ─────────────────────────────────────
+            if (player != null)
+              IntrinsicHeight(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(children: [
-                      Container(width: 3, height: 13, color: AppColors.voltNeon),
-                      const SizedBox(width: 8),
-                      Text('MIS ESTADÍSTICAS', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.textSecondary)),
-                    ]),
-                    const SizedBox(height: 10),
-                    ovrHistoryAsync.when(
-                      data: (history) => _PlayerStatsGrid(player: player, ovrHistory: history),
-                      loading: () => _PlayerStatsGrid(player: player, ovrHistory: const []),
-                      error: (e, _) => _PlayerStatsGrid(player: player, ovrHistory: const []),
+                    Expanded(
+                      child: _OvrTile(ovr: player.ovr, trend: trend, history: history),
                     ),
-                    const SizedBox(height: 22),
-                    ovrHistoryAsync.when(
-                      data: (history) => _OvrProgressionChart(player: player, history: history),
-                      loading: () => const SizedBox(height: 200, child: Center(child: CircularProgressIndicator())),
-                      error: (e, _) => const SizedBox(),
-                    ),
-                    const SizedBox(height: 22),
-                  ],
-                );
-              },
-              loading: () => const SizedBox(),
-              error: (e, _) => const SizedBox(),
-            ),
-
-            _SectionCard(
-              icon: Icons.history,
-              title: 'Partidos Anteriores',
-              child: lastTwo.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Text('Aún no hay partidos jugados en este grupo.', style: AppTypography.body(size: 12, color: AppColors.textMuted)),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: _TotalsTile(
+                        matches: player.stats.matchesPlayed,
+                        goals: player.stats.goals,
                       ),
-                    )
-                  : Column(
-                      children: lastTwo
-                          .map((m) => InkWell(
-                                onTap: () => context.push('/matches/${m.id}'),
-                                borderRadius: BorderRadius.circular(10),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(m.title, style: AppTypography.body(size: 14, weight: FontWeight.w700)),
-                                            Text(_fmtDate(m.date), style: AppTypography.body(size: 12, color: AppColors.textMuted)),
-                                          ],
-                                        ),
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(20)),
-                                        child: Text(_statusLabels[m.status] ?? m.status, style: AppTypography.code(size: 10, weight: FontWeight.w700)),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ))
-                          .toList(),
                     ),
-            ),
+                  ],
+                ),
+              ),
+
+            const SizedBox(height: 5),
+
+            // ── Último resultado ─────────────────────────────────────────
+            if (lastPlayed != null)
+              _LastResultTile(match: lastPlayed)
+            else
+              const _EmptyTile(
+                label: 'ÚLTIMO RESULTADO',
+                value: 'Todavía nada',
+                hint: 'Acá va a aparecer cuando jueguen el primero.',
+              ),
           ],
         );
       },
-      loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
-      error: (e, _) => Center(child: Text('Error: $e')),
     );
   }
 }
+
+/// Cuándo y hora en una línea.
+String _whenLine(MatchModel m) {
+  final d = _fmtDate(m.date);
+  final t = m.time;
+  return t == null ? d : '$d · $t';
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Piezas del tablero
+// ─────────────────────────────────────────────────────────────────────────
+
+const _tileBg = Color(0xFF151C27);
 
 /// Combina `date` (ISO) con `time` ("21:00" o "21:00 hs") para saber a qué
 /// hora arranca. Sin hora, se asume el arranque del día.
@@ -400,148 +414,188 @@ DateTime? _kickoffOf(MatchModel m) {
   return DateTime(local.year, local.month, local.day, hh, mm);
 }
 
-class _NextMatchCard extends StatelessWidget {
-  final MatchModel match;
+class _Tile extends StatelessWidget {
+  final String label;
+  final String value;
+  final String? suffix;
+  final String? hint;
+  final double valueSize;
+  final Color? valueColor;
 
-  const _NextMatchCard({required this.match});
+  const _Tile({
+    required this.label,
+    required this.value,
+    this.suffix,
+    this.hint,
+    this.valueSize = 24,
+    this.valueColor,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final theme = getMatchTypeTheme(match.type);
-    final isLive = match.status == 'active';
-    final hasTeams = match.teamA != null && match.teamB != null;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(11, 9, 11, 11),
+      color: _tileBg,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: AppTypography.code(size: 8, color: AppColors.textMuted)),
+          const SizedBox(height: 3),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Flexible(
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.sportNumber(
+                    size: valueSize,
+                    color: valueColor ?? AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              if (suffix != null)
+                Text(
+                  suffix!,
+                  style: AppTypography.sportNumber(size: 13, color: AppColors.textMuted),
+                ),
+            ],
+          ),
+          if (hint != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              hint!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.code(size: 9, color: AppColors.textMuted),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final String hint;
+
+  const _EmptyTile({required this.label, required this.value, required this.hint});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(13, 11, 13, 13),
+      color: _tileBg,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: AppTypography.code(size: 8, color: AppColors.textMuted)),
+          const SizedBox(height: 4),
+          Text(value, style: AppTypography.headline(size: 16, weight: FontWeight.w700)),
+          const SizedBox(height: 2),
+          Text(hint, style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+        ],
+      ),
+    );
+  }
+}
+
+/// La pieza grande: cuánto falta, o el marcador si ya está jugándose.
+class _KickoffTile extends StatelessWidget {
+  final MatchModel match;
+  final bool isLive;
+
+  const _KickoffTile({required this.match, required this.isLive});
+
+  @override
+  Widget build(BuildContext context) {
     final kickoff = _kickoffOf(match);
-    final photoIndex = (match.id.codeUnits.fold<int>(0, (a, c) => a + c).abs() % 9) + 1;
+    final a = match.teamA;
+    final b = match.teamB;
 
     return InkWell(
       onTap: () => context.push('/matches/${match.id}'),
-      borderRadius: BorderRadius.circular(20),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Stack(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(13, 11, 13, 13),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF17202E), Color(0xFF131A26)],
+          ),
+          border: isLive
+              ? Border.all(color: AppColors.destructive.withValues(alpha: 0.55))
+              : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // La cancha de fondo, no un gris plano.
-            Positioned.fill(
-              child: Opacity(
-                opacity: isLive ? 0.30 : 0.20,
-                child: Image.asset(
-                  'assets/backgrounds/fondo_$photoIndex.jpg',
-                  fit: BoxFit.cover,
-                ),
+            Text(
+              isLive ? 'EN VIVO · ${match.currentMinute ?? 1}\'' : 'ARRANCA EN',
+              style: AppTypography.code(
+                size: 8,
+                color: isLive ? AppColors.destructive : AppColors.textMuted,
               ),
             ),
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      const Color(0xFF0E131C).withValues(alpha: 0.72),
-                      const Color(0xFF0E131C).withValues(alpha: 0.94),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            const SizedBox(height: 5),
 
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+            if (isLive && a != null && b != null)
+              Text(
+                '${a.score} — ${b.score}',
+                style: AppTypography.sportNumber(size: 40, color: AppColors.voltNeon),
+              )
+            else if (kickoff != null)
+              MatchCountdown(kickoff: kickoff)
+            else
+              Text(match.title, style: AppTypography.headline(size: 20, weight: FontWeight.w800)),
+
+            const SizedBox(height: 9),
+
+            // Quién juega contra quién, en una línea.
+            if (a != null && b != null)
+              Row(
                 children: [
-                  // Franja superior: estado y fecha.
-                  Row(
-                    children: [
-                      Container(
-                        width: 3,
-                        height: 12,
-                        margin: const EdgeInsets.only(right: 7),
-                        color: isLive ? AppColors.destructive : theme.brandColor,
-                      ),
-                      Text(
-                        isLive ? 'EN VIVO' : 'DÍA DE PARTIDO',
-                        style: AppTypography.code(
-                          size: 10,
-                          weight: FontWeight.w700,
-                          color: isLive ? AppColors.destructive : theme.brandColor,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        _fmtDate(match.date),
-                        style: AppTypography.code(size: 10, color: AppColors.textMuted),
-                      ),
-                    ],
+                  _MiniKit(jersey: a.jersey),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      a.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+                    ),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // Los dos equipos enfrentados. Es lo primero que se mira en
-                  // cualquier app de fútbol; antes estaba abajo, chiquito y
-                  // dentro de otra caja con borde.
-                  if (hasTeams)
-                    Row(
-                      children: [
-                        Expanded(child: _Side(team: match.teamA!, alignEnd: false)),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: Text(
-                            isLive
-                                ? '${match.teamA!.score}-${match.teamB!.score}'
-                                : 'VS',
-                            style: AppTypography.sportNumber(
-                              size: isLive ? 30 : 20,
-                              color: isLive ? AppColors.voltNeon : AppColors.textMuted,
-                            ),
-                          ),
-                        ),
-                        Expanded(child: _Side(team: match.teamB!, alignEnd: true)),
-                      ],
-                    )
-                  else
-                    Text(
-                      match.title,
-                      style: AppTypography.headline(size: 20, weight: FontWeight.w900),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text('VS',
+                        style: AppTypography.code(size: 9, color: AppColors.textMuted)),
+                  ),
+                  Flexible(
+                    child: Text(
+                      b.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.body(size: 11, color: AppColors.textSecondary),
                     ),
-
-                  const SizedBox(height: 18),
-
-                  // Cuánto falta, corriendo.
-                  if (!isLive && kickoff != null) ...[
-                    Text(
-                      'ARRANCA EN',
-                      style: AppTypography.code(size: 9, color: AppColors.textMuted),
-                    ),
-                    const SizedBox(height: 4),
-                    MatchCountdown(kickoff: kickoff),
-                    const SizedBox(height: 16),
-                  ],
-
-                  if (match.location != null)
-                    Row(
-                      children: [
-                        Icon(Icons.place_outlined, size: 14, color: AppColors.textMuted),
-                        const SizedBox(width: 5),
-                        Expanded(
-                          child: Text(
-                            match.location!,
-                            style: AppTypography.body(size: 12, color: AppColors.textSecondary),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Text(
-                          '${match.playerUids.length}${match.matchSize > 0 ? '/${match.matchSize}' : ''}',
-                          style: AppTypography.code(size: 11, color: AppColors.textSecondary),
-                        ),
-                        const SizedBox(width: 3),
-                        Icon(Icons.person_outline, size: 13, color: AppColors.textMuted),
-                      ],
-                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  _MiniKit(jersey: b.jersey),
                 ],
+              )
+            else
+              Text(
+                match.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.body(size: 11, color: AppColors.textSecondary),
               ),
-            ),
           ],
         ),
       ),
@@ -549,69 +603,202 @@ class _NextMatchCard extends StatelessWidget {
   }
 }
 
-/// Un lado del enfrentamiento: camiseta y nombre del equipo.
-class _Side extends StatelessWidget {
-  final MatchTeam team;
-  final bool alignEnd;
+class _MiniKit extends StatelessWidget {
+  final JerseyModel? jersey;
 
-  const _Side({required this.team, required this.alignEnd});
+  const _MiniKit({required this.jersey});
 
   @override
   Widget build(BuildContext context) {
-    final jersey = team.jersey;
-    final children = [
-      if (jersey != null)
-        JerseyWidget(jersey: jersey, size: 46)
-      else
-        const Icon(Icons.checkroom, size: 40, color: AppColors.textMuted),
-      const SizedBox(height: 7),
-      Text(
-        team.name,
-        textAlign: alignEnd ? TextAlign.right : TextAlign.left,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: AppTypography.headline(size: 12, weight: FontWeight.w700),
+    final j = jersey;
+    if (j == null) {
+      return Icon(Icons.checkroom, size: 17, color: AppColors.textMuted);
+    }
+    return JerseyWidget(jersey: j, size: 20);
+  }
+}
+
+/// OVR con su línea de evolución de fondo.
+class _OvrTile extends StatelessWidget {
+  final int ovr;
+  final int trend;
+  final List<OvrHistoryEntry> history;
+
+  const _OvrTile({required this.ovr, required this.trend, required this.history});
+
+  @override
+  Widget build(BuildContext context) {
+    final up = trend > 0;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(11, 9, 11, 9),
+      color: _tileBg,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('TU OVR', style: AppTypography.code(size: 8, color: AppColors.textMuted)),
+          const SizedBox(height: 3),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text('$ovr', style: AppTypography.sportNumber(size: 30)),
+              const SizedBox(width: 6),
+              if (trend != 0)
+                Text(
+                  '${up ? '+' : ''}$trend',
+                  style: AppTypography.sportNumber(
+                    size: 14,
+                    color: up ? AppColors.success : AppColors.destructive,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          // La progresión como línea chica, no como sección aparte: mostrar un
+          // gráfico de media pantalla para decir que pasaste de 51 a 53 no se
+          // justifica.
+          SizedBox(
+            height: 22,
+            width: double.infinity,
+            child: history.length < 2
+                ? const SizedBox.shrink()
+                : CustomPaint(painter: _Sparkline(history.map((e) => e.newOVR).toList())),
+          ),
+        ],
       ),
-    ];
-    return Column(
-      crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      children: children,
     );
   }
 }
 
-class _LiveMatchRow extends StatelessWidget {
-  final MatchModel match;
+class _Sparkline extends CustomPainter {
+  final List<int> values;
 
-  const _LiveMatchRow({required this.match});
+  _Sparkline(this.values);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.length < 2 || size.isEmpty) return;
+    final lo = values.reduce((a, b) => a < b ? a : b).toDouble();
+    final hi = values.reduce((a, b) => a > b ? a : b).toDouble();
+    final span = (hi - lo).abs() < 0.5 ? 1.0 : hi - lo;
+
+    final path = Path();
+    for (var i = 0; i < values.length; i++) {
+      final x = size.width * (i / (values.length - 1));
+      final y = size.height - ((values[i] - lo) / span) * size.height;
+      i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
+    }
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = AppColors.voltNeon
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.8
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_Sparkline old) => old.values != values;
+}
+
+/// Partidos y goles juntos: son la misma pregunta.
+class _TotalsTile extends StatelessWidget {
+  final int matches;
+  final int goals;
+
+  const _TotalsTile({required this.matches, required this.goals});
 
   @override
   Widget build(BuildContext context) {
-    final isHalfTime = match.liveStatus == 'half_time';
-    return InkWell(
-      onTap: () => context.push('/matches/${match.id}/live'),
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: AppColors.cardSurface.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(10)),
-        child: Row(
-          children: [
-            Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: isHalfTime ? AppColors.warning : AppColors.success)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(match.title, style: AppTypography.body(size: 13, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  if (match.teamA != null && match.teamB != null)
-                    Text('${match.teamA!.name} vs ${match.teamB!.name}', style: AppTypography.body(size: 11, color: AppColors.textMuted), maxLines: 1, overflow: TextOverflow.ellipsis),
-                ],
+    final avg = matches > 0 ? (goals / matches).toStringAsFixed(1) : '0.0';
+    return Container(
+      padding: const EdgeInsets.fromLTRB(11, 9, 11, 9),
+      color: _tileBg,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('PARTIDOS', style: AppTypography.code(size: 8, color: AppColors.textMuted)),
+          Text('$matches', style: AppTypography.sportNumber(size: 24)),
+          const SizedBox(height: 7),
+          Text('GOLES', style: AppTypography.code(size: 8, color: AppColors.textMuted)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text('$goals', style: AppTypography.sportNumber(size: 24)),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  '$avg por partido',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.code(size: 9, color: AppColors.textMuted),
+                ),
               ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LastResultTile extends StatelessWidget {
+  final MatchModel match;
+
+  const _LastResultTile({required this.match});
+
+  @override
+  Widget build(BuildContext context) {
+    final a = match.teamA!;
+    final b = match.teamB!;
+    return InkWell(
+      onTap: () => context.push('/matches/${match.id}'),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(11, 9, 11, 11),
+        color: _tileBg,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text('ÚLTIMO RESULTADO',
+                    style: AppTypography.code(size: 8, color: AppColors.textMuted)),
+                const Spacer(),
+                Text(_fmtDate(match.date),
+                    style: AppTypography.code(size: 8, color: AppColors.textMuted)),
+              ],
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(color: (isHalfTime ? AppColors.warning : AppColors.success).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
-              child: Text(isHalfTime ? 'ET' : 'Vivo', style: AppTypography.code(size: 10, weight: FontWeight.w700, color: isHalfTime ? AppColors.warning : AppColors.success)),
+            const SizedBox(height: 5),
+            Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    a.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.body(size: 12, weight: FontWeight.w600),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Text('${a.score} — ${b.score}',
+                      style: AppTypography.sportNumber(size: 20)),
+                ),
+                Flexible(
+                  child: Text(
+                    b.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: AppTypography.body(size: 12, weight: FontWeight.w600),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -624,146 +811,6 @@ class _LiveMatchRow extends StatelessWidget {
 /// dashboard viejo tenía: Partidos/Goles/Asistencias/Rating no eran datos
 /// reales). Coinciden exactamente con la web: Partidos Jugados, Goles,
 /// Promedio de Goles por partido, y Tendencia de OVR (de ovrHistory).
-class _PlayerStatsGrid extends StatelessWidget {
-  final PlayerModel player;
-  final List<OvrHistoryEntry> ovrHistory;
-
-  const _PlayerStatsGrid({required this.player, required this.ovrHistory});
-
-  @override
-  Widget build(BuildContext context) {
-    final totalMatches = player.stats.matchesPlayed;
-    final totalGoals = player.stats.goals;
-    final avgGoals = totalMatches > 0 ? (totalGoals / totalMatches).toStringAsFixed(1) : '0.0';
-    int ovrTrend = 0;
-    if (ovrHistory.isNotEmpty) {
-      ovrTrend = ovrHistory.last.newOVR - ovrHistory.first.oldOVR;
-    }
-
-    // Sin cajas ni íconos de colores: el número es el dato, la etiqueta lo
-    // nombra y una línea fina los separa. Cuatro recuadros con borde y un
-    // ícono de otro color cada uno competían entre sí y con todo lo demás.
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _BigStat(label: 'PARTIDOS', value: '$totalMatches'),
-          const _StatDivider(),
-          _BigStat(label: 'GOLES', value: '$totalGoals'),
-          const _StatDivider(),
-          _BigStat(label: 'PROM.', value: avgGoals),
-          const _StatDivider(),
-          _BigStat(
-            label: 'OVR',
-            value: ovrTrend > 0 ? '+$ovrTrend' : '$ovrTrend',
-            // Único color semántico que queda: si subiste o bajaste.
-            valueColor: ovrTrend == 0
-                ? null
-                : (ovrTrend > 0 ? AppColors.success : AppColors.destructive),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OvrProgressionChart extends StatelessWidget {
-  final PlayerModel player;
-  final List<OvrHistoryEntry> history;
-
-  const _OvrProgressionChart({required this.player, required this.history});
-
-  @override
-  Widget build(BuildContext context) {
-    if (history.isEmpty) {
-      return _SectionCard(
-        icon: Icons.trending_up,
-        title: 'Progresión de OVR',
-        subtitle: 'Tu evolución a lo largo de los partidos evaluados.',
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Text(
-              'Aún no tenés partidos evaluados. ¡Jugá y evaluá tus partidos para ver tu progresión!',
-              style: AppTypography.body(size: 12, color: AppColors.textMuted),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ),
-      );
-    }
-
-    final ovrs = history.map((e) => e.newOVR).toList();
-    final change = ovrs.last - ovrs.first;
-    final highest = [...ovrs, player.ovr].reduce((a, b) => a > b ? a : b);
-    final lowest = [...ovrs, player.ovr].reduce((a, b) => a < b ? a : b);
-
-    return _SectionCard(
-      icon: Icons.trending_up,
-      title: 'Progresión de OVR',
-      subtitle: 'Tu evolución a lo largo de los partidos evaluados.',
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _MiniStat(label: 'Cambio', value: change > 0 ? '+$change' : '$change'),
-              _MiniStat(label: 'Máximo', value: '$highest'),
-              _MiniStat(label: 'Mínimo', value: '$lowest'),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 200,
-            child: LineChart(
-              LineChartData(
-                gridData: const FlGridData(show: true, drawVerticalLine: false),
-                titlesData: const FlTitlesData(
-                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 32)),
-                ),
-                borderData: FlBorderData(show: false),
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: [for (var i = 0; i < ovrs.length; i++) FlSpot(i.toDouble(), ovrs[i].toDouble())],
-                    isCurved: true,
-                    color: AppColors.voltNeon,
-                    barWidth: 3,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(show: true, color: AppColors.voltNeon.withValues(alpha: 0.15)),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MiniStat extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _MiniStat({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(label, style: AppTypography.body(size: 11, color: AppColors.textMuted)),
-        Text(value, style: AppTypography.headline(size: 20, weight: FontWeight.w800)),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------
-// Tab 2: Mi Grupo (GrupoTab)
-// ---------------------------------------------------------------------
 class _GrupoTab extends ConsumerWidget {
   final String uid;
 
@@ -1176,53 +1223,6 @@ class _SectionCard extends StatelessWidget {
         const SizedBox(height: 12),
         child,
       ],
-    );
-  }
-}
-
-class _BigStat extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  const _BigStat({required this.label, required this.value, this.valueColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            label,
-            style: AppTypography.code(size: 8, weight: FontWeight.w700, color: AppColors.textMuted),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 3),
-          Text(
-            value,
-            style: AppTypography.sportNumber(
-              size: 30,
-              color: valueColor ?? AppColors.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatDivider extends StatelessWidget {
-  const _StatDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      color: Colors.white.withValues(alpha: 0.08),
     );
   }
 }
