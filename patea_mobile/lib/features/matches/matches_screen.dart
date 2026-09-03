@@ -13,6 +13,7 @@ import '../../core/services/match_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/models/match_model.dart';
 import '../../core/widgets/jersey_painter.dart';
+import '../../core/widgets/parallax_background.dart';
 import '../../core/widgets/patea_page_header.dart';
 
 const _spanishMonths = [
@@ -1052,15 +1053,54 @@ class _BannerOrganizerBadge extends StatelessWidget {
   }
 }
 
-class _MatchCard extends StatelessWidget {
+class _MatchCard extends StatefulWidget {
   final MatchModel match;
 
   const _MatchCard({required this.match});
 
   @override
+  State<_MatchCard> createState() => _MatchCardState();
+}
+
+class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMixin {
+  /// Late sólo si el partido está en curso. Un partido en vivo tiene que
+  /// sentirse vivo en la lista, no distinguirse por el color de un borde.
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.match.status == 'active') _pulse.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(_MatchCard old) {
+    super.didUpdateWidget(old);
+    final live = widget.match.status == 'active';
+    if (live && !_pulse.isAnimating) {
+      _pulse.repeat(reverse: true);
+    } else if (!live && _pulse.isAnimating) {
+      _pulse.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final match = widget.match;
     final theme = getMatchTypeTheme(match.type);
     final isLive = match.status == 'active';
+    // Un partido ya jugado se apaga: no compite por atención con los que
+    // todavía importan.
+    final isPast = match.status == 'completed' || match.status == 'evaluated';
     final statusLabel = _statusLabels[match.status] ?? 'Finalizado';
     final hasTeams = (match.type == 'by_teams' ||
             match.type == 'league' ||
@@ -1070,7 +1110,28 @@ class _MatchCard extends StatelessWidget {
         match.teamB != null;
     final photoIndex = (match.id.codeUnits.fold<int>(0, (acc, c) => acc + c).abs() % 9) + 1;
 
-    return InkWell(
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (context, child) {
+        // El halo respira alrededor de la tarjeta en vivo.
+        final glow = isLive ? (0.18 + _pulse.value * 0.32) : 0.0;
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: isLive
+                ? [
+                    BoxShadow(
+                      color: AppColors.destructive.withValues(alpha: glow),
+                      blurRadius: 18 + _pulse.value * 10,
+                      spreadRadius: _pulse.value * 2,
+                    ),
+                  ]
+                : null,
+          ),
+          child: child,
+        );
+      },
+      child: InkWell(
       onTap: () => context.push('/matches/${match.id}'),
       borderRadius: BorderRadius.circular(16),
       child: ClipRRect(
@@ -1093,14 +1154,14 @@ class _MatchCard extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              // Fondo de estadio del partido
+              // Fondo de estadio con parallax: se desplaza según dónde está
+              // la tarjeta en la pantalla. Un partido en vivo lo muestra más
+              // fuerte y uno ya jugado más apagado, así el estado se lee
+              // antes de leer el texto.
               Positioned.fill(
-                child: Opacity(
-                  opacity: 0.22,
-                  child: Image.asset(
-                    'assets/backgrounds/fondo_$photoIndex.jpg',
-                    fit: BoxFit.cover,
-                  ),
+                child: ParallaxBackground(
+                  asset: 'assets/backgrounds/fondo_$photoIndex.jpg',
+                  opacity: isLive ? 0.34 : (isPast ? 0.10 : 0.22),
                 ),
               ),
               Positioned.fill(
@@ -1171,11 +1232,17 @@ class _MatchCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (isLive) ...[
-                        Container(
-                          width: 6,
-                          height: 6,
-                          margin: const EdgeInsets.only(right: 5),
-                          decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.green),
+                        // Antes era verde con el texto al lado en rojo.
+                        // Ahora late en el mismo rojo que el resto del estado.
+                        FadeTransition(
+                          opacity: Tween<double>(begin: 0.35, end: 1.0).animate(_pulse),
+                          child: Container(
+                            width: 6,
+                            height: 6,
+                            margin: const EdgeInsets.only(right: 5),
+                            decoration: const BoxDecoration(
+                                shape: BoxShape.circle, color: AppColors.destructive),
+                          ),
                         ),
                       ],
                       Text(
@@ -1281,6 +1348,7 @@ class _MatchCard extends StatelessWidget {
       ),
     ],
   ),
+),
 ),
 ),
 );
