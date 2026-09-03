@@ -19,4 +19,5 @@ export { createManualPlayer } from './callable/player-management';
 export { saveUserLocation, enableAvailability, disableAvailability, updateAvailabilityPreferences, getAvailableLocalPlayers, sendMatchInvitations } from './callable/explore';
 export { submitEvaluationSubmission, respondToIdentityReveal, finalizeMatchEvaluation } from './callable/evaluations';
 export { getPlayerEvaluations } from './callable/player-profile';
+export { updateProfile } from './callable/update-profile';
 // NOTE: onUserCreate requires GCIP (paid plan). Client-side rollback in register/page.tsx is used instead.

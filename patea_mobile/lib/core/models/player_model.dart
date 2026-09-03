@@ -80,6 +80,13 @@ class PlayerModel {
   final String? groupId;
   final PlayerStats stats;
 
+  // Datos del perfil que el jugador edita. Opcionales: un jugador creado a
+  // mano por un organizador no los tiene.
+  final String? preferredFoot; // derecho | izquierdo | ambidiestro
+  final String? bio;
+  final int? birthYear;
+  final String? nationality;
+
   PlayerModel({
     required this.id,
     required this.name,
@@ -94,8 +101,19 @@ class PlayerModel {
     this.photoUrl,
     this.ownerUid,
     this.groupId,
+    this.preferredFoot,
+    this.bio,
+    this.birthYear,
+    this.nationality,
     PlayerStats? stats,
   }) : stats = stats ?? PlayerStats();
+
+  /// Edad calculada a partir del año de nacimiento.
+  int? get age {
+    if (birthYear == null) return null;
+    final years = DateTime.now().year - birthYear!;
+    return years > 0 && years < 120 ? years : null;
+  }
 
   factory PlayerModel.fromFirestore(Map<String, dynamic> data, String id) {
     return PlayerModel(
@@ -112,6 +130,10 @@ class PlayerModel {
       photoUrl: data['photoUrl'] ?? data['photoURL'],
       ownerUid: data['ownerUid'],
       groupId: data['groupId'],
+      preferredFoot: data['preferredFoot'] as String?,
+      bio: data['bio'] as String?,
+      birthYear: (data['birthYear'] as num?)?.toInt(),
+      nationality: data['nationality'] as String?,
       stats: PlayerStats.fromMap(data['stats'] as Map<String, dynamic>?),
     );
   }
@@ -130,6 +152,10 @@ class PlayerModel {
       'photoUrl': photoUrl,
       'ownerUid': ownerUid,
       'groupId': groupId,
+      'preferredFoot': preferredFoot,
+      'bio': bio,
+      'birthYear': birthYear,
+      'nationality': nationality,
       'stats': stats.toMap(),
     };
   }

@@ -13,6 +13,7 @@ import '../../features/auth/login_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/players/players_list_screen.dart';
 import '../../features/players/player_detail_screen.dart';
+import '../../features/players/edit_profile_screen.dart';
 import '../../features/players/player_history_screen.dart';
 import '../../features/players/player_progression_screen.dart';
 import '../../features/matches/matches_screen.dart';
@@ -183,6 +184,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final id = state.pathParameters['id'] ?? '';
           return _withBackground(PlayerProgressionScreen(playerId: id));
+        },
+      ),
+      GoRoute(
+        path: '/profile/edit',
+        builder: (context, state) {
+          final uid = auth.user?.uid ?? '';
+          return _withBackground(EditProfileScreen(playerId: uid));
         },
       ),
       // `/profile` en la web es el MISMO contenido que `/players/[id]`

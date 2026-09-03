@@ -89,6 +89,17 @@ class PlayerDetailScreen extends ConsumerWidget {
                 ),
               ),
 
+              if (isOwnProfile && hasOwnAccount) ...[
+                const SizedBox(height: 14),
+                Center(
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.push('/profile/edit'),
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    label: const Text('Editar perfil'),
+                  ),
+                ),
+              ],
+
               if (!isOwnProfile) ...[
                 const SizedBox(height: 14),
                 Center(

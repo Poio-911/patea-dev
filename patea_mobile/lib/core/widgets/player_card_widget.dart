@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -12,11 +14,17 @@ class PlayerCardWidget extends StatefulWidget {
   final VoidCallback? onTap;
   final String? matchStatusText;
 
+  /// Foto recién elegida del teléfono, todavía sin subir. Cuando está, se
+  /// dibuja en lugar de `player.photoUrl`: es lo que permite ver la carta con
+  /// la foto nueva antes de guardar.
+  final File? localPhoto;
+
   const PlayerCardWidget({
     super.key,
     required this.player,
     this.onTap,
     this.matchStatusText,
+    this.localPhoto,
   });
 
   @override
@@ -316,7 +324,13 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                                 boxShadow: avatarGlow != null ? [avatarGlow] : null,
                               ),
                               child: ClipOval(
-                                child: player.photoUrl != null && player.photoUrl!.isNotEmpty
+                                child: widget.localPhoto != null
+                                    ? Image.file(
+                                        widget.localPhoto!,
+                                        fit: BoxFit.cover,
+                                        cacheWidth: 288,
+                                      )
+                                    : player.photoUrl != null && player.photoUrl!.isNotEmpty
                                     ? CachedNetworkImage(
                                         imageUrl: player.photoUrl!,
                                         fit: BoxFit.cover,
