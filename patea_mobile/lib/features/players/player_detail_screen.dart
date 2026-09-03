@@ -85,7 +85,14 @@ class PlayerDetailScreen extends ConsumerWidget {
                 child: SizedBox(
                   width: 260,
                   height: 380,
-                  child: PlayerCardWidget(player: player),
+                  // Otro extremo del Hero de la grilla: la carta crece desde
+                  // su lugar en el plantel hasta acá.
+                  child: Hero(
+                    tag: 'player-card-${player.id}',
+                    flightShuttleBuilder: (_, _, _, _, _) =>
+                        PlayerCardWidget(player: player),
+                    child: PlayerCardWidget(player: player),
+                  ),
                 ),
               ),
 

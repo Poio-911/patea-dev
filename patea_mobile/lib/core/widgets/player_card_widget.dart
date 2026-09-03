@@ -16,6 +16,11 @@ class PlayerCardWidget extends StatefulWidget {
   final VoidCallback? onTap;
   final String? matchStatusText;
 
+  /// Atributo por el que está ordenada la grilla ('PAC','SHO',...). Cuando
+  /// está, esa caja se resalta en todas las cartas: al ordenar por tiro querés
+  /// ver de un vistazo el tiro de cada uno, no buscarlo.
+  final String? highlightStat;
+
   /// Foto recién elegida del teléfono, todavía sin subir. Cuando está, se
   /// dibuja en lugar de `player.photoUrl`: es lo que permite ver la carta con
   /// la foto nueva antes de guardar.
@@ -27,6 +32,7 @@ class PlayerCardWidget extends StatefulWidget {
     this.onTap,
     this.matchStatusText,
     this.localPhoto,
+    this.highlightStat,
   });
 
   @override
@@ -502,25 +508,25 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                             children: [
                               Row(
                                 children: [
-                                  Expanded(child: _buildAttributeBox(statsList[0], topKey, posColor, keyStats)),
+                                  Expanded(child: _attributeBox(statsList[0], topKey, posColor, keyStats)),
                                   const SizedBox(width: 5),
-                                  Expanded(child: _buildAttributeBox(statsList[1], topKey, posColor, keyStats)),
+                                  Expanded(child: _attributeBox(statsList[1], topKey, posColor, keyStats)),
                                 ],
                               ),
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  Expanded(child: _buildAttributeBox(statsList[2], topKey, posColor, keyStats)),
+                                  Expanded(child: _attributeBox(statsList[2], topKey, posColor, keyStats)),
                                   const SizedBox(width: 5),
-                                  Expanded(child: _buildAttributeBox(statsList[3], topKey, posColor, keyStats)),
+                                  Expanded(child: _attributeBox(statsList[3], topKey, posColor, keyStats)),
                                 ],
                               ),
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  Expanded(child: _buildAttributeBox(statsList[4], topKey, posColor, keyStats)),
+                                  Expanded(child: _attributeBox(statsList[4], topKey, posColor, keyStats)),
                                   const SizedBox(width: 5),
-                                  Expanded(child: _buildAttributeBox(statsList[5], topKey, posColor, keyStats)),
+                                  Expanded(child: _attributeBox(statsList[5], topKey, posColor, keyStats)),
                                 ],
                               ),
                             ],
@@ -538,7 +544,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
     );
   }
 
-  Widget _buildAttributeBox(
+  Widget _attributeBox(
     Map<String, dynamic> stat,
     String topKey,
     Color posColor,
@@ -549,6 +555,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
     final val = stat['val'] as int;
     final isTop = key == topKey;
     final isKeyStat = keyStats.contains(key);
+    final isSorted = widget.highlightStat == key;
 
     // `.game .player-card [class*="grid"]>div { background: rgba(255,255,255,.08) !important; border-color: rgba(255,255,255,.1) !important; }`
     // pisa el fondo/borde propio del componente (que en la web distingue
@@ -557,14 +564,19 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
     // color de la barra (isTop = color de posición, resto = gris) y en la
     // etiqueta (isKey = color de posición, resto = gris) — el valor
     // numérico también tiene `font-bold`, así que siempre es blanco.
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
+        color: isSorted
+            ? AppColors.voltNeon.withValues(alpha: 0.16)
+            : Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(5),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.10),
-          width: 0.8,
+          color: isSorted
+              ? AppColors.voltNeon.withValues(alpha: 0.65)
+              : Colors.white.withValues(alpha: 0.10),
+          width: isSorted ? 1.2 : 0.8,
         ),
       ),
       child: Row(

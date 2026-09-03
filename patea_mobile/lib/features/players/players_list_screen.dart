@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/models/player_model.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -18,6 +21,63 @@ class PlayersListScreen extends ConsumerStatefulWidget {
 class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
   String _selectedPosition = 'ALL';
   String _searchQuery = '';
+
+  /// Atributo por el que se ordena. 'OVR' es el default y el único criterio
+  /// que tenía la web (siempre descendente, fijo).
+  String _sortBy = 'OVR';
+
+  static const _sortOptions = <String, String>{
+    'OVR': 'OVR',
+    'PAC': 'RIT',
+    'SHO': 'TIR',
+    'PAS': 'PAS',
+    'DRI': 'REG',
+    'DEF': 'DEF',
+    'PHY': 'FIS',
+  };
+
+  int _statOf(PlayerModel p, String key) => switch (key) {
+        'PAC' => p.pac,
+        'SHO' => p.sho,
+        'PAS' => p.pas,
+        'DRI' => p.dri,
+        'DEF' => p.def,
+        'PHY' => p.phy,
+        _ => p.ovr,
+      };
+
+  Widget _buildSortChip(String key) {
+    final isSelected = _sortBy == key;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          setState(() => _sortBy = key);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.voltNeon.withValues(alpha: 0.16) : const Color(0xFF141A24),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected ? AppColors.voltNeon : Colors.white.withValues(alpha: 0.12),
+              width: isSelected ? 1.4 : 1,
+            ),
+          ),
+          child: Text(
+            _sortOptions[key]!,
+            style: AppTypography.headline(
+              size: 11,
+              weight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              color: isSelected ? AppColors.voltNeon : Colors.white70,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildFilterChip(String label, String value) {
     final isSelected = _selectedPosition == value;
@@ -88,7 +148,13 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
               filtered = filtered.where((p) => p.name.toLowerCase().contains(q)).toList();
             }
 
-            filtered.sort((a, b) => b.ovr.compareTo(a.ovr));
+            // Orden por el atributo elegido, siempre de mayor a menor. Con
+            // el OVR como desempate para que el orden sea estable entre
+            // jugadores con el mismo valor y no salte al reordenar.
+            filtered.sort((a, b) {
+              final byStat = _statOf(b, _sortBy).compareTo(_statOf(a, _sortBy));
+              return byStat != 0 ? byStat : b.ovr.compareTo(a.ovr);
+            });
 
             return CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -186,6 +252,29 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                             ],
                           ),
                         ),
+                        const SizedBox(height: 12),
+
+                        // Ordenar por atributo. La web ordena siempre por OVR
+                        // y no se puede cambiar.
+                        Row(
+                          children: [
+                            Text(
+                              'ORDENAR',
+                              style: AppTypography.code(size: 9, color: AppColors.textMuted),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    for (final key in _sortOptions.keys) _buildSortChip(key),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -217,10 +306,26 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
                           final player = filtered[index];
-                          return PlayerCardWidget(
-                            player: player,
-                            onTap: () => context.push('/players/${player.id}'),
-                          );
+                          return Hero(
+                            // La carta vuela de la grilla a la ficha en vez de
+                            // cortar. El tag lleva el criterio de orden porque
+                            // si no, al reordenar quedan dos Heros con el
+                            // mismo tag en el árbol durante la transición.
+                            tag: 'player-card-${player.id}',
+                            flightShuttleBuilder: (_, _, _, _, _) =>
+                                PlayerCardWidget(player: player),
+                            child: PlayerCardWidget(
+                              player: player,
+                              highlightStat: _sortBy == 'OVR' ? null : _sortBy,
+                              onTap: () => context.push('/players/${player.id}'),
+                            ),
+                          )
+                              // Al cambiar el orden las cartas entran
+                              // escalonadas: se lee como que el plantel se
+                              // reacomodó, no como un salto de contenido.
+                              .animate(key: ValueKey('$_sortBy-${player.id}'))
+                              .fadeIn(duration: 220.ms, delay: (index * 22).ms)
+                              .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic);
                         },
                         childCount: filtered.length,
                       ),
