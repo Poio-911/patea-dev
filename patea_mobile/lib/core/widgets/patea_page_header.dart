@@ -11,6 +11,11 @@ class PateaPageHeader extends StatelessWidget {
   final String countLabel;
   final VoidCallback? onHelpTap;
   final VoidCallback? onFiltersTap;
+
+  /// Cuántos filtros hay aplicados. Si los filtros están escondidos detrás del
+  /// botón, sin este número el usuario no tiene forma de saber que la lista
+  /// está recortada.
+  final int activeFilterCount;
   // Algunas secciones (ej. Partidos) ya arman su propia fila de
   // contador/filtros más abajo con datos reales — para esas, esta fila del
   // header (pensada para Jugadores) se apaga en vez de duplicarla.
@@ -26,6 +31,7 @@ class PateaPageHeader extends StatelessWidget {
     this.countLabel = 'jugadores',
     this.onHelpTap,
     this.onFiltersTap,
+    this.activeFilterCount = 0,
     this.showCountRow = true,
   });
 
@@ -130,22 +136,44 @@ class PateaPageHeader extends StatelessWidget {
                   color: const Color(0xB3141923),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: AppColors.border.withValues(alpha: 0.6),
+                    color: activeFilterCount > 0
+                        ? AppColors.voltNeon.withValues(alpha: 0.7)
+                        : AppColors.border.withValues(alpha: 0.6),
                     width: 1,
                   ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.filter_list_rounded, size: 15, color: Colors.white),
+                    Icon(
+                      Icons.filter_list_rounded,
+                      size: 15,
+                      color: activeFilterCount > 0 ? AppColors.voltNeon : Colors.white,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       'Filtros',
                       style: AppTypography.headline(
                         size: 12,
                         weight: FontWeight.w700,
-                        color: Colors.white,
+                        color: activeFilterCount > 0 ? AppColors.voltNeon : Colors.white,
                       ),
                     ),
+                    if (activeFilterCount > 0) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        width: 17,
+                        height: 17,
+                        alignment: Alignment.center,
+                        decoration: const BoxDecoration(
+                          color: AppColors.voltNeon,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '$activeFilterCount',
+                          style: AppTypography.code(size: 9, color: Colors.black),
+                        ),
+                      ),
+                    ],
                     const SizedBox(width: 2),
                     const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Colors.white70),
                   ],

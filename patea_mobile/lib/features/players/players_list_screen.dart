@@ -26,6 +26,14 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
   /// que tenía la web (siempre descendente, fijo).
   String _sortBy = 'OVR';
 
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   static const _sortOptions = <String, String>{
     'OVR': 'OVR',
     'PAC': 'RIT',
@@ -46,74 +54,188 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
         _ => p.ovr,
       };
 
-  Widget _buildSortChip(String key) {
-    final isSelected = _sortBy == key;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          setState(() => _sortBy = key);
+
+  /// Cuántos filtros hay puestos, para avisarlo en el botón.
+  int get _activeFilterCount =>
+      (_selectedPosition != 'ALL' ? 1 : 0) +
+      (_searchQuery.trim().isNotEmpty ? 1 : 0) +
+      (_sortBy != 'OVR' ? 1 : 0);
+
+  /// Buscador, posición y orden viven acá adentro.
+  ///
+  /// Antes estaban los tres siempre a la vista: entre el título, el botón de
+  /// agregar, el buscador, los chips de posición y la fila de ordenar había
+  /// cinco bloques de chrome antes de ver un jugador. El default —todos, por
+  /// OVR— es el que casi siempre se quiere.
+  void _openFilters() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheetState) {
+          void update(VoidCallback fn) {
+            setSheetState(fn);
+            setState(() {});
+          }
+
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+            ),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+              decoration: const BoxDecoration(
+                color: Color(0xFF141B27),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 48,
+                        height: 5,
+                        margin: const EdgeInsets.only(bottom: 18),
+                        decoration: BoxDecoration(
+                          color: AppColors.textMuted.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Text('Filtros',
+                            style: AppTypography.headline(size: 18, weight: FontWeight.w700)),
+                        const Spacer(),
+                        if (_activeFilterCount > 0)
+                          TextButton(
+                            onPressed: () => update(() {
+                              _selectedPosition = 'ALL';
+                              _searchQuery = '';
+                              _searchController.clear();
+                              _sortBy = 'OVR';
+                            }),
+                            child: Text('Limpiar',
+                                style: AppTypography.body(
+                                    size: 13, color: AppColors.textSecondary)),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F141D),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (val) => update(() => _searchQuery = val),
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: 'Buscar jugador...',
+                          hintStyle: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.35),
+                            fontSize: 13,
+                          ),
+                          prefixIcon: Icon(Icons.search,
+                              size: 20, color: Colors.white.withValues(alpha: 0.4)),
+                          border: InputBorder.none,
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text('POSICIÓN',
+                        style: AppTypography.code(size: 10, color: AppColors.textMuted)),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final pos in ['ALL', 'DEL', 'MED', 'DEF', 'POR'])
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              update(() => _selectedPosition = pos);
+                            },
+                            child: _chip(pos, _selectedPosition == pos),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Text('ORDENAR POR',
+                        style: AppTypography.code(size: 10, color: AppColors.textMuted)),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final entry in _sortOptions.entries)
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              update(() => _sortBy = entry.key);
+                            },
+                            child: _chip(entry.value, _sortBy == entry.key),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(sheetContext),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.voltNeon,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text('Ver jugadores',
+                            style: AppTypography.headline(
+                                size: 14, weight: FontWeight.w700, color: Colors.black)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
         },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.voltNeon.withValues(alpha: 0.16) : const Color(0xFF141A24),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isSelected ? AppColors.voltNeon : Colors.white.withValues(alpha: 0.12),
-              width: isSelected ? 1.4 : 1,
-            ),
-          ),
-          child: Text(
-            _sortOptions[key]!,
-            style: AppTypography.headline(
-              size: 11,
-              weight: isSelected ? FontWeight.w800 : FontWeight.w600,
-              color: isSelected ? AppColors.voltNeon : Colors.white70,
-            ),
-          ),
-        ),
       ),
     );
   }
 
-  Widget _buildFilterChip(String label, String value) {
-    final isSelected = _selectedPosition == value;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedPosition = value),
-      child: AnimatedContainer(
+  Widget _chip(String label, bool selected) => AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF2E3D1E) : const Color(0xFF141A24),
-          borderRadius: BorderRadius.circular(8),
+          color: selected
+              ? AppColors.voltNeon.withValues(alpha: 0.16)
+              : const Color(0xFF0F141D),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? AppColors.voltNeon : Colors.white.withValues(alpha: 0.15),
-            width: isSelected ? 1.5 : 1.0,
+            color: selected ? AppColors.voltNeon : Colors.white.withValues(alpha: 0.12),
+            width: selected ? 1.4 : 1,
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isSelected) ...[
-              const Icon(Icons.check, size: 13, color: AppColors.voltNeon),
-              const SizedBox(width: 4),
-            ],
-            Text(
-              label,
-              style: AppTypography.headline(
-                size: 11,
-                weight: FontWeight.w800,
-                color: isSelected ? AppColors.voltNeon : Colors.white70,
-              ),
-            ),
-          ],
+        child: Text(
+          label,
+          style: AppTypography.headline(
+            size: 12,
+            weight: selected ? FontWeight.w800 : FontWeight.w600,
+            color: selected ? AppColors.voltNeon : Colors.white70,
+          ),
         ),
-      ),
-    );
-  }
+      );
+
 
   @override
   Widget build(BuildContext context) {
@@ -172,6 +294,8 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                       description: 'Gestioná la plantilla de tu equipo y las estadísticas de los jugadores.',
                       currentCount: filtered.length,
                       totalCount: players.length,
+                      activeFilterCount: _activeFilterCount,
+                      onFiltersTap: _openFilters,
                       actionButton: SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -194,88 +318,6 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                ),
-
-                // 1. Controles de la sección (Búsqueda y Chips)
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-                  sliver: SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Barra de Búsqueda
-                        Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF141A24),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.12),
-                            ),
-                          ),
-                          child: TextField(
-                            onChanged: (val) => setState(() => _searchQuery = val),
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
-                            decoration: InputDecoration(
-                              hintText: 'Buscar jugador...',
-                              hintStyle: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.35),
-                                fontSize: 13,
-                              ),
-                              prefixIcon: Icon(
-                                Icons.search,
-                                size: 20,
-                                color: Colors.white.withValues(alpha: 0.4),
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Fila de Chips de Posición (ALL, DEL, MED, DEF, POR)
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              _buildFilterChip('ALL', 'ALL'),
-                              const SizedBox(width: 8),
-                              _buildFilterChip('DEL', 'DEL'),
-                              const SizedBox(width: 8),
-                              _buildFilterChip('MED', 'MED'),
-                              const SizedBox(width: 8),
-                              _buildFilterChip('DEF', 'DEF'),
-                              const SizedBox(width: 8),
-                              _buildFilterChip('POR', 'POR'),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Ordenar por atributo. La web ordena siempre por OVR
-                        // y no se puede cambiar.
-                        Row(
-                          children: [
-                            Text(
-                              'ORDENAR',
-                              style: AppTypography.code(size: 9, color: AppColors.textMuted),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
-                                  children: [
-                                    for (final key in _sortOptions.keys) _buildSortChip(key),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                     ),
                   ),
                 ),
