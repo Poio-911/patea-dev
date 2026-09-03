@@ -34,8 +34,7 @@ function initializeAppCheckIfBrowser(app: FirebaseApp) {
   // En desarrollo, un token de depuración evita tener que pasar por
   // reCAPTCHA en localhost. Se registra en Firebase Console → App Check.
   if (process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_APPCHECK_DEBUG_TOKEN) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (globalThis as any).FIREBASE_APPCHECK_DEBUG_TOKEN =
+    (globalThis as unknown as Record<string, string>).FIREBASE_APPCHECK_DEBUG_TOKEN =
       process.env.NEXT_PUBLIC_APPCHECK_DEBUG_TOKEN;
   }
 
