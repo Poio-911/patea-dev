@@ -13,6 +13,7 @@ import '../../core/theme/match_theme.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/models/match_model.dart';
+import '../../core/widgets/match_countdown.dart';
 import '../../core/models/player_model.dart';
 import '../../core/models/group_model.dart';
 import '../../core/widgets/jersey_painter.dart';
@@ -107,59 +108,36 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
                 sliver: SliverToBoxAdapter(
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      SvgPicture.asset(
+                        'assets/icons/mate.svg',
+                        width: 34,
+                        height: 34,
+                        colorFilter: const ColorFilter.mode(AppColors.voltNeon, BlendMode.srcIn),
+                      ),
+                      const SizedBox(width: 13),
                       Expanded(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SvgPicture.asset(
-                              'assets/icons/mate.svg',
-                              width: 32,
-                              height: 32,
-                              colorFilter: const ColorFilter.mode(AppColors.voltNeon, BlendMode.srcIn),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('El Vestuario', style: AppTypography.headline(size: 22, weight: FontWeight.w900)),
-                                  Text(
-                                    'Un pantallazo de cómo está el cuadro.',
-                                    style: AppTypography.body(size: 12, color: AppColors.textSecondary),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
+                            Text(
+                              'EL VESTUARIO',
+                              style: AppTypography.headline(
+                                size: 24,
+                                weight: FontWeight.w900,
+                                letterSpacing: -0.5,
                               ),
+                            ),
+                            const SizedBox(height: 1),
+                            Text(
+                              'Un pantallazo de cómo está el cuadro.',
+                              style: AppTypography.body(size: 12, color: AppColors.textSecondary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
-                      ),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.smart_toy_outlined, color: AppColors.voltNeon),
-                            tooltip: 'DT Virtual IA',
-                            onPressed: () => context.push('/coach'),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.leaderboard_outlined, color: AppColors.textSecondary),
-                            tooltip: 'Rankings',
-                            onPressed: () => context.push('/leaderboard'),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.groups_2_outlined, color: AppColors.textSecondary),
-                            tooltip: 'Mis Grupos',
-                            onPressed: () => context.push('/groups'),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.logout_rounded, color: AppColors.destructive, size: 20),
-                            tooltip: 'Cerrar Sesión',
-                            onPressed: () async => ref.read(authServiceProvider).signOut(),
-                          ),
-                        ],
                       ),
                     ],
                   ),
@@ -399,6 +377,19 @@ class _ResumenTabBody extends ConsumerWidget {
   }
 }
 
+/// Combina `date` (ISO) con `time` ("21:00" o "21:00 hs") para saber a qué
+/// hora arranca. Sin hora, se asume el arranque del día.
+DateTime? _kickoffOf(MatchModel m) {
+  final d = DateTime.tryParse(m.date);
+  if (d == null) return null;
+  final local = d.toLocal();
+  final clean = (m.time ?? '').replaceAll('hs', '').trim();
+  final parts = clean.split(':');
+  final hh = parts.isNotEmpty ? int.tryParse(parts[0]) ?? 0 : 0;
+  final mm = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+  return DateTime(local.year, local.month, local.day, hh, mm);
+}
+
 class _NextMatchCard extends StatelessWidget {
   final MatchModel match;
 
@@ -426,23 +417,45 @@ class _NextMatchCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: (isLive ? AppColors.destructive : theme.brandColor).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: isLive ? AppColors.destructive : theme.brandColor),
-                  ),
-                  child: Text(
-                    isLive ? 'EN VIVO • MINUTO ${match.currentMinute ?? 1}\'' : 'PRÓXIMO PARTIDO',
-                    style: AppTypography.headline(size: 10, weight: FontWeight.w800, color: isLive ? AppColors.destructive : theme.brandColor),
-                  ),
+                // Sin pildora con contorno: una barra de acento y el texto.
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 3,
+                      height: 13,
+                      margin: const EdgeInsets.only(right: 7),
+                      color: isLive ? AppColors.destructive : theme.brandColor,
+                    ),
+                    Text(
+                      isLive
+                          ? 'EN VIVO \u00b7 ${match.currentMinute ?? 1}\''
+                          : 'PROXIMO PARTIDO',
+                      style: AppTypography.code(
+                        size: 10,
+                        weight: FontWeight.w700,
+                        color: isLive ? AppColors.destructive : theme.brandColor,
+                      ),
+                    ),
+                  ],
                 ),
                 Text(_fmtDate(match.date), style: AppTypography.code(size: 11, color: AppColors.textSecondary)),
               ],
             ),
             const SizedBox(height: 14),
             Text(match.title, style: AppTypography.headline(size: 18, weight: FontWeight.w800)),
+
+            // Cuánto falta, corriendo. Es el dato por el que se abre la app un
+            // jueves a la tarde; antes había que leer la fecha y hacer la
+            // cuenta mental.
+            if (!isLive) ...[
+              const SizedBox(height: 12),
+              Builder(builder: (context) {
+                final kickoff = _kickoffOf(match);
+                if (kickoff == null) return const SizedBox.shrink();
+                return MatchCountdown(kickoff: kickoff);
+              }),
+            ],
             if (match.location != null) ...[
               const SizedBox(height: 4),
               Row(children: [
@@ -543,21 +556,29 @@ class _PlayerStatsGrid extends StatelessWidget {
       ovrTrend = ovrHistory.last.newOVR - ovrHistory.first.oldOVR;
     }
 
-    return Row(
-      children: [
-        _StatCard(label: 'PARTIDOS', value: '$totalMatches', icon: Icons.calendar_today_outlined, color: AppColors.info),
-        const SizedBox(width: 8),
-        _StatCard(label: 'GOLES', value: '$totalGoals', icon: Icons.adjust, color: AppColors.warning),
-        const SizedBox(width: 8),
-        _StatCard(label: 'PROM. GOLES', value: avgGoals, icon: Icons.emoji_events_outlined, color: AppColors.success),
-        const SizedBox(width: 8),
-        _StatCard(
-          label: 'TEND. OVR',
-          value: ovrTrend > 0 ? '+$ovrTrend' : '$ovrTrend',
-          icon: Icons.trending_up,
-          color: ovrTrend >= 0 ? AppColors.success : AppColors.destructive,
-        ),
-      ],
+    // Sin cajas ni íconos de colores: el número es el dato, la etiqueta lo
+    // nombra y una línea fina los separa. Cuatro recuadros con borde y un
+    // ícono de otro color cada uno competían entre sí y con todo lo demás.
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _BigStat(label: 'PARTIDOS', value: '$totalMatches'),
+          const _StatDivider(),
+          _BigStat(label: 'GOLES', value: '$totalGoals'),
+          const _StatDivider(),
+          _BigStat(label: 'PROM.', value: avgGoals),
+          const _StatDivider(),
+          _BigStat(
+            label: 'OVR',
+            value: ovrTrend > 0 ? '+$ovrTrend' : '$ovrTrend',
+            // Único color semántico que queda: si subiste o bajaste.
+            valueColor: ovrTrend == 0
+                ? null
+                : (ovrTrend > 0 ? AppColors.success : AppColors.destructive),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1043,30 +1064,50 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
+class _BigStat extends StatelessWidget {
   final String label;
   final String value;
-  final IconData icon;
-  final Color? color;
+  final Color? valueColor;
 
-  const _StatCard({required this.label, required this.value, required this.icon, this.color});
+  const _BigStat({required this.label, required this.value, this.valueColor});
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
-        decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border.withValues(alpha: 0.5))),
-        child: Column(
-          children: [
-            Icon(icon, size: 16, color: color ?? AppColors.textSecondary),
-            const SizedBox(height: 4),
-            Text(value, style: AppTypography.sportNumber(size: 18, color: color ?? AppColors.textPrimary)),
-            const SizedBox(height: 2),
-            Text(label, style: AppTypography.code(size: 8, weight: FontWeight.w700, color: AppColors.textMuted), maxLines: 1, overflow: TextOverflow.ellipsis),
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            style: AppTypography.code(size: 8, weight: FontWeight.w700, color: AppColors.textMuted),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: AppTypography.sportNumber(
+              size: 30,
+              color: valueColor ?? AppColors.textPrimary,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
+
+class _StatDivider extends StatelessWidget {
+  const _StatDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      color: Colors.white.withValues(alpha: 0.08),
+    );
+  }
+}
+
