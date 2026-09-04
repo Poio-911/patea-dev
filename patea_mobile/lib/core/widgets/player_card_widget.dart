@@ -9,6 +9,15 @@ import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import 'card_foil.dart';
 
+/// Estilo de visualización de la foto del jugador en la tarjeta.
+enum CardPhotoStyle {
+  /// Avatar circular central con borde y glow según el Tier (estilo web).
+  circular,
+
+  /// Foto expandida en la mitad superior con degradado suave hacia la base.
+  halfTop,
+}
+
 /// Carta de Jugador 100% idéntica a PlayerCard de la webapp (src/components/player-card.tsx)
 /// Con auras radiales por rareza, borde sutil con glow, badge de posición estilizado y OVR por tier.
 class PlayerCardWidget extends StatefulWidget {
@@ -26,6 +35,18 @@ class PlayerCardWidget extends StatefulWidget {
   /// la foto nueva antes de guardar.
   final File? localPhoto;
 
+  /// Estilo de foto: circular o mitad superior.
+  final CardPhotoStyle photoStyle;
+
+  /// Foto opcional desde assets locales.
+  final String? assetPhoto;
+
+  /// Inclinación X forzada opcional (para previews, pruebas o animaciones guiadas).
+  final double? manualTiltX;
+
+  /// Inclinación Y forzada opcional (para previews, pruebas o animaciones guiadas).
+  final double? manualTiltY;
+
   const PlayerCardWidget({
     super.key,
     required this.player,
@@ -33,6 +54,10 @@ class PlayerCardWidget extends StatefulWidget {
     this.matchStatusText,
     this.localPhoto,
     this.highlightStat,
+    this.photoStyle = CardPhotoStyle.circular,
+    this.assetPhoto,
+    this.manualTiltX,
+    this.manualTiltY,
   });
 
   @override
@@ -46,6 +71,9 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
   double _rotateX = 0;
   double _rotateY = 0;
   bool _holding = false;
+
+  double get _curX => (widget.manualTiltX ?? _rotateX).clamp(-_maxTilt, _maxTilt);
+  double get _curY => (widget.manualTiltY ?? _rotateY).clamp(-_maxTilt, _maxTilt);
 
   /// Vuelta al centro con rebote. Antes la carta volvía de golpe con un
   /// AnimatedContainer lineal; una carta física tiene inercia.
@@ -117,7 +145,6 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
     ];
 
     // Configuración visual por tier (OVR)
-    Color tierColor;
     Border cardBorder;
     Alignment auraAlignment;
     List<Color> auraColors;
@@ -127,7 +154,6 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
 
     switch (tier) {
       case 'elite':
-        tierColor = const Color(0xFFC8D2F0); // Platino
         cardBorder = Border.all(color: const Color(0xFFC8D2F0).withValues(alpha: 0.65), width: 1.5);
         auraAlignment = Alignment.topCenter;
         auraColors = [const Color(0xFFD2DEFF).withValues(alpha: 0.62), Colors.transparent];
@@ -137,7 +163,6 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
         break;
 
       case 'gold':
-        tierColor = const Color(0xFFFBC437); // Gold
         cardBorder = Border.all(color: const Color(0xFFFBC437).withValues(alpha: 0.55), width: 1.2);
         auraAlignment = Alignment.topRight;
         auraColors = [const Color(0xFFFBC437).withValues(alpha: 0.32), Colors.transparent];
@@ -147,7 +172,6 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
         break;
 
       case 'silver':
-        tierColor = const Color(0xFFCBD5E1); // Silver
         cardBorder = Border.all(color: const Color(0xFFCBD5E1).withValues(alpha: 0.45), width: 1.0);
         auraAlignment = Alignment.topCenter;
         auraColors = [const Color(0xFFCBD5E1).withValues(alpha: 0.25), Colors.transparent];
@@ -157,7 +181,6 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
         break;
 
       default: // bronze
-        tierColor = const Color(0xFFCD7F32); // Bronze
         cardBorder = Border.all(color: const Color(0xFFCD7F32).withValues(alpha: 0.45), width: 1.0);
         auraAlignment = Alignment.bottomLeft;
         auraColors = [const Color(0xFFCD7F32).withValues(alpha: 0.28), Colors.transparent];
@@ -214,62 +237,90 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
         child: Transform(
           transform: Matrix4.identity()
             ..setEntry(3, 2, 0.0012)
-            ..rotateX(_rotateX)
-            ..rotateY(_rotateY),
+            ..rotateX(_curX)
+            ..rotateY(_curY),
           alignment: Alignment.center,
           child: ClipPath(
             clipper: const _CardClipper(),
             clipBehavior: Clip.antiAliasWithSaveLayer,
-            child: ColoredBox(
-              color: const Color(0xFF141923), // bg-card
-              child: Stack(
-                children: [
-                  // 1. Efecto Aura por Tier (radial-gradient de `.game .aura-*`).
-                  // El centro del gradiente se desplaza con la inclinación para
-                  // dar sensación de profundidad física sin mover el contenedor
-                  // ni generar cortes rectangulares en los bordes.
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: RadialGradient(
-                          center: Alignment(
-                            (auraAlignment.x + (_rotateY / _maxTilt) * 0.35).clamp(-1.0, 1.0),
-                            (auraAlignment.y - (_rotateX / _maxTilt) * 0.35).clamp(-1.0, 1.0),
-                          ),
-                          radius: 1.2,
-                          colors: auraColors,
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Élite tiene una 2da capa de relleno central más tenue en la web
-                  if (tier == 'elite')
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: RadialGradient(
-                            center: Alignment.center,
-                            radius: 1.4,
-                            colors: [const Color(0xFFD7E0FF).withValues(alpha: 0.22), Colors.transparent],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final cardH = constraints.maxHeight;
+                return ColoredBox(
+                  color: const Color(0xFF141923), // bg-card
+                  child: Stack(
+                    children: [
+                      // 1. Efecto Aura por Tier (radial-gradient de `.game .aura-*`).
+                      // El centro del gradiente se desplaza con la inclinación para
+                      // dar sensación de profundidad física sin mover el contenedor
+                      // ni generar cortes rectangulares en los bordes.
+                      Positioned.fill(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: RadialGradient(
+                              center: Alignment(
+                                (auraAlignment.x + (_curY / _maxTilt) * 0.35).clamp(-1.0, 1.0),
+                                (auraAlignment.y - (_curX / _maxTilt) * 0.35).clamp(-1.0, 1.0),
+                              ),
+                              radius: 1.2,
+                              colors: auraColors,
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                      // Élite tiene una 2da capa de relleno central más tenue en la web
+                      if (tier == 'elite')
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: RadialGradient(
+                                center: Alignment.center,
+                                radius: 1.4,
+                                colors: [const Color(0xFFD7E0FF).withValues(alpha: 0.22), Colors.transparent],
+                              ),
+                            ),
+                          ),
+                        ),
 
-                  // 2. Material de la carta según el tier (fragment shader).
-                  // Bronce mate, plata cepillada, oro pulido, élite holográfico.
-                  // Es lo que hace que se distingan de un vistazo en la grilla:
-                  // antes los cuatro eran el mismo fondo con otro borde.
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: CardFoil(
-                        tier: tier,
-                        tiltX: _rotateX / _maxTilt,
-                        tiltY: _rotateY / _maxTilt,
-                        seed: (player.id.hashCode % 1000) / 1000.0 * 6.28,
+                      // 2. Material de la carta según el tier (fragment shader).
+                      // Bronce mate, plata cepillada, oro pulido, élite holográfico.
+                      // Es lo que hace que se distingan de un vistazo en la grilla:
+                      // antes los cuatro eran el mismo fondo con otro borde.
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: CardFoil(
+                            tier: tier,
+                            tiltX: _curX / _maxTilt,
+                            tiltY: _curY / _maxTilt,
+                            seed: (player.id.hashCode % 1000) / 1000.0 * 6.28,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
+
+                      // 2.5. Foto en la mitad superior con degradado suave hacia abajo (halfTop)
+                      if (widget.photoStyle == CardPhotoStyle.halfTop)
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: cardH * 0.54,
+                          child: ShaderMask(
+                            shaderCallback: (rect) {
+                              return const LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.white,
+                                  Colors.white,
+                                  Colors.transparent,
+                                ],
+                                stops: [0.0, 0.65, 1.0],
+                              ).createShader(rect);
+                            },
+                            blendMode: BlendMode.dstIn,
+                            child: _buildPhotoImage(cacheWidth: 380),
+                          ),
+                        ),
 
                   // 3. Marca de agua vectorial por posición — la web usa
                   // `h-2/5 w-2/5` (40% del card, proporcional, no un tamaño
@@ -283,7 +334,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                         widthFactor: 0.4,
                         heightFactor: 0.4,
                         child: Transform.translate(
-                          offset: Offset(8 - _rotateY * 40, 8 + _rotateX * 40),
+                          offset: Offset(8 - _curY * 40, 8 + _curX * 40),
                           child: Opacity(
                             opacity: 0.10,
                             child: SvgPicture.asset(
@@ -306,24 +357,25 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                   // hacia dónde la inclinás, como el reflejo en una lámina.
                   // Necesita el dato del gesto en tiempo real, así que en la
                   // web no existe.
-                  if (_holding || _settle.isAnimating)
+                  if ((_holding || _settle.isAnimating || widget.manualTiltX != null || widget.manualTiltY != null) &&
+                      (_curX != 0 || _curY != 0))
                     Positioned.fill(
                       child: IgnorePointer(
                         child: Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment(
-                                (-_rotateY / _maxTilt) - 0.9,
-                                (_rotateX / _maxTilt) - 0.9,
+                                (-_curY / _maxTilt) - 0.9,
+                                (_curX / _maxTilt) - 0.9,
                               ),
                               end: Alignment(
-                                (-_rotateY / _maxTilt) + 0.9,
-                                (_rotateX / _maxTilt) + 0.9,
+                                (-_curY / _maxTilt) + 0.9,
+                                (_curX / _maxTilt) + 0.9,
                               ),
                               colors: [
                                 Colors.transparent,
                                 Colors.white.withValues(
-                                  alpha: 0.10 * (_rotateX.abs() + _rotateY.abs()) / _maxTilt,
+                                  alpha: 0.10 * (_curX.abs() + _curY.abs()) / _maxTilt,
                                 ),
                                 Colors.transparent,
                               ],
@@ -375,26 +427,52 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                                 weight: FontWeight.w800,
                                 color: Colors.white,
                                 letterSpacing: 0.5,
+                              ).copyWith(
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.8),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
                               ),
                             ),
 
-                            // OVR protagónico coloreado por Tier
+                            // OVR protagónico en blanco y más grande
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
                                   '${player.ovr}',
                                   style: AppTypography.sportNumber(
-                                    size: 34,
-                                    color: tierColor,
+                                    size: 38,
+                                    color: Colors.white,
+                                  ).copyWith(
+                                    height: 0.92,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withValues(alpha: 0.9),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 1),
+                                      ),
+                                    ],
                                   ),
                                 ),
+                                const SizedBox(height: 1),
                                 Text(
                                   'OVR',
                                   style: AppTypography.code(
-                                    size: 8,
+                                    size: 8.5,
                                     weight: FontWeight.w800,
-                                    color: Colors.white54,
+                                    color: Colors.white70,
+                                  ).copyWith(
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withValues(alpha: 0.9),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 1),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
@@ -402,95 +480,54 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                           ],
                         ),
 
-                        // Avatar Circular — 96x96 con aro y glow del Tier
-                        Stack(
-                          alignment: Alignment.bottomCenter,
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              width: 96,
-                              height: 96,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: avatarBorderColor.withValues(alpha: avatarBorderAlpha),
-                                  width: 3,
-                                ),
-                                boxShadow: avatarGlow != null ? [avatarGlow] : null,
-                              ),
-                              child: ClipOval(
-                                // El encuadre guardado (cropX/cropY en % y
-                                // cropZoom) se aplica con Transform: es el
-                                // mismo modelo que usa la web con object-position
-                                // y scale sobre la imagen.
-                                child: Transform.scale(
-                                  scale: player.cropZoom,
-                                  alignment: Alignment(
-                                    (player.cropX / 50) - 1,
-                                    (player.cropY / 50) - 1,
+                        // Avatar Circular — 96x96 con aro y glow del Tier (si circular)
+                        // O espacio libre para la foto en la mitad superior (si halfTop)
+                        if (widget.photoStyle == CardPhotoStyle.circular)
+                          Stack(
+                            alignment: Alignment.bottomCenter,
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                width: 96,
+                                height: 96,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: avatarBorderColor.withValues(alpha: avatarBorderAlpha),
+                                    width: 3,
                                   ),
-                                  child: widget.localPhoto != null
-                                    ? Image.file(
-                                        widget.localPhoto!,
-                                        fit: BoxFit.cover,
-                                        cacheWidth: 288,
-                                      )
-                                    : player.photoUrl != null && player.photoUrl!.isNotEmpty
-                                    ? CachedNetworkImage(
-                                        imageUrl: player.photoUrl!,
-                                        fit: BoxFit.cover,
-                                        // El avatar se dibuja a 96 px. Sin estos
-                                        // límites, una foto de 5 MB subida desde
-                                        // un celular se decodificaba entera en
-                                        // memoria por cada carta de la grilla.
-                                        memCacheWidth: 288, // 96 * 3 (densidad máx.)
-                                        maxWidthDiskCache: 512,
-                                        placeholder: (context, url) => Container(
-                                          color: const Color(0xFF1E2636),
-                                          child: Center(
-                                            child: Text(
-                                              player.name.isNotEmpty ? player.name[0] : 'P',
-                                              style: AppTypography.sportNumber(size: 28, color: Colors.white),
-                                            ),
-                                          ),
-                                        ),
-                                        errorWidget: (context, url, error) => Container(
-                                          color: const Color(0xFF1E2636),
-                                          child: Center(
-                                            child: Text(
-                                              player.name.isNotEmpty ? player.name[0] : 'P',
-                                              style: AppTypography.sportNumber(size: 28, color: Colors.white),
-                                            ),
-                                          ),
-                                        ),
-                                      )
-                                    : Container(
-                                        color: const Color(0xFF1E2636),
-                                        child: Center(
-                                          child: Text(
-                                            player.name.isNotEmpty ? player.name[0] : 'P',
-                                            style: AppTypography.sportNumber(size: 28, color: Colors.white),
-                                          ),
-                                        ),
-                                      ),
+                                  boxShadow: avatarGlow != null ? [avatarGlow] : null,
+                                ),
+                                child: ClipOval(
+                                  child: _buildPhotoImage(cacheWidth: 288),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          )
+                        else
+                          const SizedBox(height: 50),
 
-                        // Nombre del Jugador
+                        // Nombre del Jugador — siempre en mayúsculas y más protagónico
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           child: Text(
-                            player.name,
+                            player.name.toUpperCase(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
                             style: AppTypography.headline(
-                              size: 13,
-                              weight: FontWeight.w700,
+                              size: 15,
+                              weight: FontWeight.w800,
                               color: Colors.white,
+                              letterSpacing: 0.6,
+                            ).copyWith(
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withValues(alpha: 0.85),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -531,10 +568,80 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                   ),
                 ],
               ),
+            );
+          },
+        ),
+      ),
+    ),
+  ),
+);
+}
+
+  Widget _buildPhotoImage({
+    required double? cacheWidth,
+    BoxFit fit = BoxFit.cover,
+    Alignment alignment = Alignment.topCenter,
+  }) {
+    Widget imageWidget;
+    if (widget.assetPhoto != null && widget.assetPhoto!.isNotEmpty) {
+      imageWidget = Image.asset(
+        widget.assetPhoto!,
+        fit: fit,
+        alignment: alignment,
+        cacheWidth: cacheWidth?.toInt(),
+      );
+    } else if (widget.localPhoto != null) {
+      imageWidget = Image.file(
+        widget.localPhoto!,
+        fit: fit,
+        alignment: alignment,
+        cacheWidth: cacheWidth?.toInt(),
+      );
+    } else if (widget.player.photoUrl != null && widget.player.photoUrl!.isNotEmpty) {
+      imageWidget = CachedNetworkImage(
+        imageUrl: widget.player.photoUrl!,
+        fit: fit,
+        alignment: alignment,
+        memCacheWidth: cacheWidth?.toInt(),
+        maxWidthDiskCache: 512,
+        placeholder: (context, url) => Container(
+          color: const Color(0xFF1E2636),
+          child: Center(
+            child: Text(
+              widget.player.name.isNotEmpty ? widget.player.name[0] : 'P',
+              style: AppTypography.sportNumber(size: 28, color: Colors.white),
             ),
           ),
         ),
+        errorWidget: (context, url, error) => Container(
+          color: const Color(0xFF1E2636),
+          child: Center(
+            child: Text(
+              widget.player.name.isNotEmpty ? widget.player.name[0] : 'P',
+              style: AppTypography.sportNumber(size: 28, color: Colors.white),
+            ),
+          ),
+        ),
+      );
+    } else {
+      imageWidget = Container(
+        color: const Color(0xFF1E2636),
+        child: Center(
+          child: Text(
+            widget.player.name.isNotEmpty ? widget.player.name[0] : 'P',
+            style: AppTypography.sportNumber(size: 28, color: Colors.white),
+          ),
+        ),
+      );
+    }
+
+    return Transform.scale(
+      scale: widget.player.cropZoom,
+      alignment: Alignment(
+        (widget.player.cropX / 50) - 1,
+        (widget.player.cropY / 50) - 1,
       ),
+      child: imageWidget,
     );
   }
 
