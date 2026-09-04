@@ -25,6 +25,13 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
+    /// Un clip de partido: 30 segundos de teléfono. 40 MB deja margen para
+    /// 1080p sin habilitar la subida de un archivo cualquiera.
+    function isValidClip() {
+      return request.resource.size <= 40 * 1024 * 1024
+        && request.resource.contentType.matches('video/.*');
+    }
+
     // Piso general: leer requiere sesión, escribir requiere regla explícita.
     match /{allPaths=**} {
       allow read: if isSignedIn();
@@ -61,6 +68,14 @@ service firebase.storage {
     match /cups/{groupId}/{userId}/{allPaths=**} {
       allow read: if isSignedIn();
       allow write: if isSignedIn() && request.auth.uid == userId && isValidImage();
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Clips del partido: el gol de Nico al 23'. El uid va en la ruta para que
+    // cada uno pueda borrar lo suyo y nada más.
+    match /match-clips/{matchId}/{userId}/{allPaths=**} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == userId && isValidClip();
       allow delete: if isSignedIn() && request.auth.uid == userId;
     }
   }

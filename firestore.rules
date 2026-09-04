@@ -180,10 +180,37 @@ service cloud.firestore {
       }
 
       // Presencia: cada uno escribe sólo su propio heartbeat.
+      //
+      // Abierto a cualquiera autenticado, no sólo a los que juegan: el
+      // contador de "quién está mirando" existe justamente para el que NO
+      // está en la cancha. Con `isMatchParticipant` el espectador no podía
+      // anotarse y el contador contaba sólo jugadores.
+      //
+      // El id del documento es el uid, así que nadie puede inflar el número:
+      // cada persona ocupa una sola fila, y sólo la suya. De paso sale más
+      // barato — `isMatchParticipant` hace un get() del partido en cada
+      // evaluación de la regla, y esto no lee nada.
       match /presence/{viewerId} {
-        allow read: if isMatchParticipant(matchId);
-        allow create, update, delete: if isMatchParticipant(matchId)
+        allow read: if isAuthenticated();
+        allow create, update, delete: if isAuthenticated()
           && request.auth.uid == viewerId;
+      }
+
+      // Clips del partido. El archivo vive en Storage; acá va la ficha:
+      // minuto, quién lo subió y a qué jugador corresponde.
+      //
+      // Sólo suben los que están en el partido (el organizador incluido).
+      // Es la línea más razonable: el que filma desde el costado suele ser
+      // uno de ellos, y abrirlo a cualquiera autenticado convierte esto en
+      // un buzón donde cualquiera puede tirar video en el partido ajeno.
+      // Cada uno borra lo suyo; nadie edita lo de nadie.
+      match /clips/{clipId} {
+        allow read: if isAuthenticated();
+        allow create: if isMatchParticipant(matchId)
+          && request.resource.data.uploadedBy == request.auth.uid;
+        allow update: if false;
+        allow delete: if isAuthenticated()
+          && resource.data.uploadedBy == request.auth.uid;
       }
 
       // Invitaciones del partido: organizador o invitado.

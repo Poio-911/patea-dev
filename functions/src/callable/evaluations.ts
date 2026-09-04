@@ -357,6 +357,10 @@ export const finalizeMatchEvaluation = onCall({ region: 'us-central1' }, async (
       status: 'evaluated',
       finalScore: { team1: team1CalculatedScore, team2: team2CalculatedScore },
       finalizedAt: new Date().toISOString(),
+      // El más votado del partido. Se calculaba más arriba para sumarle el
+      // voto al jugador y después se perdía; sin esto no hay forma de saber
+      // quién fue la figura sin releer todas las autoevaluaciones.
+      ...(matchMvpId ? { bestPlayerId: matchMvpId } : {}),
     });
   });
 

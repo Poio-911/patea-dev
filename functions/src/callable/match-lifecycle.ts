@@ -33,12 +33,25 @@ export const startMatch = onCall({ region: 'us-central1' }, async (request) => {
   await ref.update({
     status: 'active',
     liveStatus: 'first_half',
-    currentMinute: 1,
+    // `currentMinute` es el minuto BASE del período, no el minuto que se
+    // muestra: el reloj real es `currentMinute + (ahora - periodStartTs)`.
+    // Arranca en 0, igual que `handleStatusChange('first_half')` en la web.
+    currentMinute: 0,
+    periodStartTs: admin.firestore.FieldValue.serverTimestamp(),
+    timerPaused: false,
     startedAt: admin.firestore.FieldValue.serverTimestamp(),
   });
   return { ok: true };
 });
 
+/**
+ * @deprecated Quedó para no romper las builds ya instaladas.
+ *
+ * Las versiones del móvil hasta la 1.0.1 mandaban el minuto escrito a mano con
+ * un botón de "+5 min". Si se borra esta función, en esos teléfonos ese botón
+ * empieza a tirar error. Se puede sacar cuando no queden instalaciones
+ * anteriores a la 1.0.2.
+ */
 export const updateLiveMinute = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
   const matchId = String(request.data?.matchId ?? '');
@@ -48,7 +61,70 @@ export const updateLiveMinute = onCall({ region: 'us-central1' }, async (request
   if (data.ownerUid !== uid) {
     throw new HttpsError('permission-denied', 'Solo el organizador puede actualizar el minuto en vivo.');
   }
-  await ref.update({ currentMinute: minute, liveStatus });
+  // Se congela el reloj en el minuto que mandó el cliente: es lo único
+  // coherente, porque esas versiones no saben de `periodStartTs`.
+  await ref.update({ currentMinute: minute, liveStatus, timerPaused: true });
+  return { ok: true };
+});
+
+/**
+ * Cambia el período del partido en vivo, o pausa/reanuda el cronómetro.
+ *
+ * Port de `updateLiveStateAction` en src/lib/actions/server-actions.ts. El
+ * contrato del reloj, que comparten web y móvil:
+ *
+ *   minuto mostrado = currentMinute + (ahora - periodStartTs)   si corre
+ *   minuto mostrado = currentMinute                             si está pausado
+ *
+ * O sea que `currentMinute` guarda el minuto BASE del tramo actual y
+ * `periodStartTs` cuándo empezó a correr ese tramo. Nadie tiene que estar
+ * mirando la pantalla para que el tiempo avance, y el cronómetro sobrevive a
+ * que se cierre la app.
+ *
+ * `finished` no se maneja acá: eso es `finishMatch`, que además dispara las
+ * evaluaciones.
+ */
+export const updateLiveState = onCall({ region: 'us-central1' }, async (request) => {
+  const uid = requireAuth(request);
+  const matchId = String(request.data?.matchId ?? '');
+  const liveStatus = String(request.data?.liveStatus ?? '');
+  const baseMinute = Number(request.data?.baseMinute ?? 0);
+  const paused = request.data?.paused === true;
+
+  const VALID = [
+    'not_started',
+    'first_half',
+    'half_time',
+    'second_half',
+    'extra_time_first',
+    'extra_time_break',
+    'extra_time_second',
+    'penalty_shootout',
+  ];
+  if (!VALID.includes(liveStatus)) {
+    throw new HttpsError('invalid-argument', `Estado en vivo desconocido: ${liveStatus}`);
+  }
+
+  const { ref, data } = await getMatchOrThrow(matchId);
+  if (data.ownerUid !== uid) {
+    throw new HttpsError('permission-denied', 'Solo el organizador puede controlar el partido en vivo.');
+  }
+
+  const updates: Record<string, unknown> = {
+    liveStatus,
+    currentMinute: baseMinute,
+    timerPaused: paused,
+    status: 'active',
+  };
+
+  // El reloj sólo se reancla cuando efectivamente arranca a correr. Si está
+  // pausado, `currentMinute` ya trae el minuto congelado y `periodStartTs`
+  // deja de importar hasta la próxima reanudación.
+  if (!paused) {
+    updates.periodStartTs = admin.firestore.FieldValue.serverTimestamp();
+  }
+
+  await ref.update(updates);
   return { ok: true };
 });
 

@@ -79,6 +79,10 @@ export const ROLE_PERMISSIONS: Record<GroupRole, GroupPermission[]> = {
     'members.view',
     'matches.view',
     'teams.view',
+    // Cualquier miembro puede armar su equipo dentro del grupo. Queda con su
+    // uid en `createdBy`, y por eso después puede editarlo y borrarlo aunque
+    // no tenga 'teams.edit' — sobre equipos ajenos sigue sin poder.
+    'teams.create',
     'stats.view',
   ],
 };

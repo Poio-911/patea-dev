@@ -10,14 +10,17 @@ import * as admin from 'firebase-admin';
 type GroupRole = 'admin' | 'moderator' | 'member';
 type GroupPermission = 'teams.create' | 'teams.edit' | 'teams.delete';
 
-// Port 1:1 del subconjunto de ROLE_PERMISSIONS (src/lib/group-permissions.ts)
-// que necesitan estas Cloud Functions — 'member' (rol por default al unirse
-// con código de invitación) NO tiene permiso para crear/editar/borrar
-// equipos, solo admin/moderator.
+// Subconjunto de ROLE_PERMISSIONS (src/lib/group-permissions.ts) que necesitan
+// estas Cloud Functions.
+//
+// Cualquier miembro puede crear equipos: el equipo queda del grupo y con
+// `createdBy` en quien lo creó, y por `getTeamPermissionOrThrow` el creador
+// después puede editarlo y borrarlo aunque no tenga 'teams.edit' por rol.
+// Editar o borrar equipos *ajenos* sigue siendo de admin/moderator.
 const ROLE_PERMISSIONS: Record<GroupRole, GroupPermission[]> = {
   admin: ['teams.create', 'teams.edit', 'teams.delete'],
   moderator: ['teams.create', 'teams.edit'],
-  member: [],
+  member: ['teams.create'],
 };
 
 function hasPermission(role: GroupRole, permission: GroupPermission): boolean {

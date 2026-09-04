@@ -39,6 +39,75 @@ async function getOwnedMatchOrThrow(matchId: string, uid: string) {
   return { db, ref, data };
 }
 
+/**
+ * Mover jugadores entre los dos equipos.
+ *
+ * Port de `updateMatchTeamsAction` + `EditableTeamsDialog`, que en la web es
+ * un drag & drop: sólo cambia QUIÉN está en cada equipo, no los nombres ni
+ * las camisetas.
+ *
+ * Diferencia deliberada con la web, y a favor: la web recibe el array
+ * `teams` entero armado por el cliente y lo escribe tal cual, así que un
+ * cliente modificado podría meter un jugador inventado con el OVR que
+ * quiera. Acá el cliente manda sólo `{playerUid: 0|1}` y el equipo se
+ * reconstruye desde `match.players`, que ya está del lado del servidor.
+ */
+export const updateMatchTeams = onCall({ region: 'us-central1' }, async (request) => {
+  const uid = requireAuth(request);
+  const matchId = String(request.data?.matchId ?? '');
+  const rawAssignments = request.data?.assignments;
+  if (!rawAssignments || typeof rawAssignments !== 'object') {
+    throw new HttpsError('invalid-argument', 'Falta el reparto de jugadores.');
+  }
+
+  const { ref, data: match } = await getOwnedMatchOrThrow(matchId, uid);
+
+  const teams: Array<Record<string, any>> = Array.isArray(match.teams) ? match.teams : [];
+  if (teams.length !== 2) {
+    throw new HttpsError('failed-precondition', 'El partido todavía no tiene dos equipos.');
+  }
+
+  const roster: Array<Record<string, any>> = Array.isArray(match.players) ? match.players : [];
+  // Los partidos viejos pueden tener jugadores dentro de los equipos que no
+  // están en `players`; se toman de ahí para no perderlos al guardar.
+  const byUid = new Map<string, Record<string, any>>();
+  for (const p of roster) if (p?.uid) byUid.set(String(p.uid), p);
+  for (const team of teams) {
+    for (const p of (Array.isArray(team.players) ? team.players : [])) {
+      if (p?.uid && !byUid.has(String(p.uid))) byUid.set(String(p.uid), p);
+    }
+  }
+
+  const assignments = rawAssignments as Record<string, unknown>;
+  const buckets: Array<Array<Record<string, any>>> = [[], []];
+
+  for (const [playerUid, rawSide] of Object.entries(assignments)) {
+    const player = byUid.get(playerUid);
+    if (!player) {
+      throw new HttpsError('invalid-argument', `${playerUid} no juega este partido.`);
+    }
+    const side = Number(rawSide);
+    if (side !== 0 && side !== 1) {
+      throw new HttpsError('invalid-argument', 'Un jugador va al equipo 0 o al 1.');
+    }
+    buckets[side].push(player);
+  }
+
+  const updatedTeams = teams.map((team, index) => {
+    const players = buckets[index];
+    const totalOVR = players.reduce((acc, p) => acc + Number(p.ovr ?? 0), 0);
+    return {
+      ...team,
+      players,
+      totalOVR,
+      averageOVR: players.length ? totalOVR / players.length : 0,
+    };
+  });
+
+  await ref.update({ teams: updatedTeams });
+  return { ok: true };
+});
+
 /** Port de deleteMatchAction. */
 export const deleteMatch = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
