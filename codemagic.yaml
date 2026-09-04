@@ -1,26 +1,61 @@
-# Build de iOS para TestFlight.
+# Builds de Pateá móvil: iOS a TestFlight y Android a Firebase App
+# Distribution, las dos disparadas por un push.
 #
 # Vive en la raíz del repo porque Codemagic sólo busca `codemagic.yaml` ahí,
 # aunque la app Flutter esté en `patea_mobile/` — de eso se encarga el
-# `working_directory` del workflow. En Codemagic hay que elegir
-# "codemagic.yaml" como fuente de la configuración del workflow.
+# `working_directory` de cada workflow. En Codemagic hay que elegir
+# "codemagic.yaml" como fuente de la configuración.
 #
-# Lo que tiene que estar cargado en Codemagic para que esto corra:
+# El detalle de por qué cada cosa está donde está (y qué se rompió antes de
+# llegar acá) está en docs/technical/DEPLOYS_Y_VERSIONES.md.
 #
-#   1. Integración de App Store Connect llamada `patea`, con la clave de API
-#      "codemagic" (rol "Gestor de apps", Key ID A2R79NVDJ3) generada en App
-#      Store Connect > Usuarios y acceso > Integraciones.
-#
-#   2. Grupo de variables `patea_ios` con:
-#        APP_STORE_APPLE_ID -> 6808798274 (el "Apple ID" numérico de la app en
-#                              App Store Connect, el que aparece en la URL)
-#
-#   3. En Team settings > Code signing identities:
-#        - certificado `patea_distribution` (generado por Codemagic, que se
-#          queda con la clave privada)
-#        - perfil `patea_appstore` (App Store, com.patea.app)
+# ── Numeración ──────────────────────────────────────────────────────────────
+# El *nombre* de versión (1.0.2) sale de `version:` en pubspec.yaml y es el
+# mismo para las dos plataformas. El *número* de build NO sale de ahí: cada
+# tienda tiene su propia regla y se calcula en la corrida, así que no hay que
+# acordarse de subir el `+N` a mano.
+
+definitions:
+  email_notification: &email_notification
+    email:
+      recipients:
+        - santiago.lopez@agileworks.com.uy
+      notify:
+        success: true
+        failure: true
+
+  # Sólo interesa compilar cuando cambió la app o esta receta. Un commit que
+  # toca la webapp o las Cloud Functions no tiene por qué gastar minutos de
+  # build ni mandarle una entrega nueva a los testers.
+  mobile_changes: &mobile_changes
+    changeset:
+      includes:
+        - patea_mobile
+        - codemagic.yaml
+
+  push_to_branch: &push_to_branch
+    events:
+      - push
+    branch_patterns:
+      - pattern: feat/flutter-mobile-app
+        include: true
+        source: true
+    cancel_previous_builds: true
 
 workflows:
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # iOS → TestFlight
+  #
+  # Requisitos cargados en Codemagic (una sola vez):
+  #   · Integración de App Store Connect `patea` (clave de API "codemagic",
+  #     rol "Gestor de apps", Key ID A2R79NVDJ3).
+  #   · Grupo de variables `patea_ios` con APP_STORE_APPLE_ID=6808798274.
+  #   · Team settings > Code signing identities:
+  #       - certificado `patea_distribution` (generado por Codemagic, que se
+  #         queda con la clave privada)
+  #       - perfil `patea_appstore` (App Store, com.patea.app)
+  # ──────────────────────────────────────────────────────────────────────────
   ios-testflight:
     name: iOS · TestFlight
     max_build_duration: 60
@@ -28,6 +63,11 @@ workflows:
 
     # La app Flutter no está en la raíz del repo: todo el workflow corre acá.
     working_directory: patea_mobile
+
+    triggering:
+      <<: *push_to_branch
+    when:
+      <<: *mobile_changes
 
     integrations:
       app_store_connect: patea
@@ -39,13 +79,12 @@ workflows:
       xcode: latest
       cocoapods: default
 
-      # Firma con material guardado en Codemagic (Team settings > Code signing
-      # identities), no emitido al vuelo. Se llegó acá porque el equipo de Apple
-      # ya tenía un certificado de distribución de otra app cuya clave privada
-      # Codemagic no tiene: `fetch-signing-files --create` lo encontraba, no
-      # podía usarlo ("Cannot save Signing Certificates without certificate
-      # private key") y entonces tampoco emitía el perfil. El certificado
-      # `patea_distribution` lo generó Codemagic, así que sí tiene su clave.
+      # Firma con material guardado en Codemagic, no emitido al vuelo. Se
+      # llegó acá porque el equipo de Apple ya tenía un certificado de
+      # distribución de otra app cuya clave privada Codemagic no tiene:
+      # `fetch-signing-files --create` lo encontraba, no podía usarlo
+      # ("Cannot save Signing Certificates without certificate private key")
+      # y entonces tampoco emitía el perfil.
       ios_signing:
         certificates:
           - patea_distribution
@@ -67,12 +106,10 @@ workflows:
           find . -name "Podfile" -execdir pod install \;
 
       - name: Número de build
-        # El build number lo manda TestFlight, no el pubspec: dos subidas con
-        # el mismo número se rechazan, y acá se toma el último publicado y se
-        # le suma uno. Así no hay que acordarse de subirlo a mano.
+        # TestFlight rechaza dos subidas con el mismo número, así que el que
+        # manda es el último publicado + 1. La primera vez no hay ninguno y el
+        # comando falla: ahí se arranca en 1.
         script: |
-          # La primera vez no hay ninguna build publicada y el comando falla:
-          # ahí se arranca en 1.
           LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || true)
           if [ -z "$LATEST" ]; then
             BUILD_NUMBER=1
@@ -82,7 +119,6 @@ workflows:
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $CM_ENV
 
       - name: Compilar el IPA
-        # El export_options.plist lo deja `xcode-project use-profiles`.
         script: |
           flutter build ipa --release \
             --build-number="$BUILD_NUMBER" \
@@ -91,18 +127,100 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
-      - flutter_drive.log
 
     publishing:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
-        # Sin grupos: la build queda disponible para los testers internos.
-        # Para probadores externos hay que agregar `beta_groups:` con el
-        # nombre del grupo, y esos sí pasan por revisión de Apple.
-      email:
-        recipients:
-          - santiago.lopez@agileworks.com.uy
-        notify:
-          success: true
-          failure: true
+        # Sin `beta_groups`: la build queda para los testers internos. Los
+        # externos pasan por revisión de Apple.
+      <<: *email_notification
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Android → Firebase App Distribution
+  #
+  # Requisitos cargados en Codemagic (una sola vez; los dos son secretos y los
+  # tiene que subir una persona):
+  #   · Team settings > Code signing identities > Android keystores: el
+  #     keystore de subida con nombre de referencia `patea_upload`
+  #     (~/.patea-keys/patea-upload.jks, alias `patea-upload`).
+  #   · Grupo de variables `patea_android` con FIREBASE_SERVICE_ACCOUNT = el
+  #     JSON de una cuenta de servicio de mil-disculpis con el rol
+  #     "Firebase App Distribution Admin", marcado como secreto.
+  # ──────────────────────────────────────────────────────────────────────────
+  android-app-distribution:
+    name: Android · App Distribution
+    max_build_duration: 45
+    # Se podría usar `linux_x2`, más barato para Android, si el plan lo
+    # habilita; se deja en la máquina que ya se sabe que funciona en esta
+    # cuenta.
+    instance_type: mac_mini_m2
+
+    working_directory: patea_mobile
+
+    triggering:
+      <<: *push_to_branch
+    when:
+      <<: *mobile_changes
+
+    environment:
+      groups:
+        - patea_android
+      android_signing:
+        - patea_upload
+      flutter: stable
+      java: 17
+
+    scripts:
+      - name: Dependencias de Flutter
+        script: flutter pub get
+
+      - name: Escribir key.properties
+        # `android/app/build.gradle.kts` lee la firma de `key.properties`, no
+        # de variables de entorno, y si el archivo no existe cae en silencio a
+        # la firma de debug: saldría un APK que instala pero rompe el login
+        # con Google y App Check, porque el SHA no sería el registrado en
+        # Firebase. Por eso se arma acá con lo que inyecta `android_signing`.
+        script: |
+          cat > android/key.properties <<PROPS
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=$CM_KEYSTORE_PATH
+          PROPS
+
+      - name: Compilar el APK
+        # APK y no AAB porque App Distribution lo instala directo en el
+        # teléfono. Para Play hace falta `flutter build appbundle`.
+        #
+        # El versionCode es el número de build de Codemagic, que sólo sube.
+        # Si se usara el `+N` del pubspec, todas las entregas le aparecerían
+        # iguales al tester en la lista.
+        script: |
+          flutter build apk --release --build-number=$PROJECT_BUILD_NUMBER
+
+      - name: Verificar que no salió firmado con la clave de debug
+        # El fallback silencioso de Gradle es justo el error que no se nota
+        # hasta que un tester no puede entrar con Google. El SHA-256 esperado
+        # es el de la clave de subida (ver ANDROID_RELEASE_SIGNING.md).
+        script: |
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          APKSIGNER=$(find "$ANDROID_SDK_ROOT/build-tools" -name apksigner | sort | tail -1)
+          "$APKSIGNER" verify --print-certs "$APK" | tee /tmp/certs.txt
+          ESPERADO=DF:CE:3E:9B:E7:A6:40:9C:EE:E9:18:0C:D8:64:35:5F:2B:FA:78:98:0E:43:65:6A:B9:53:FB:1D:46:A8:59:7E
+          if ! grep -qi "$ESPERADO" /tmp/certs.txt; then
+            echo "El APK NO esta firmado con la clave de subida de Patea"
+            exit 1
+          fi
+
+    artifacts:
+      - build/app/outputs/flutter-apk/app-release.apk
+
+    publishing:
+      firebase:
+        firebase_service_account: $FIREBASE_SERVICE_ACCOUNT
+        android:
+          app_id: 1:5614567933:android:4b0b919482aa0dc5861994
+          groups:
+            - test-patea
+      <<: *email_notification

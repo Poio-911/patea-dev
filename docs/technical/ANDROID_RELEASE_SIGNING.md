@@ -1,5 +1,10 @@
 # Firma de la app Android
 
+> El deploy en sí (qué se dispara con un push, de dónde sale cada número de
+> versión, y lo mismo para iOS) está en
+> [DEPLOYS_Y_VERSIONES.md](./DEPLOYS_Y_VERSIONES.md). Acá queda lo específico
+> de la clave de firma y su respaldo.
+
 ## Lo que hay que saber primero
 
 La clave de subida (*upload key*) de Pateá existe **en un solo lugar del mundo**:
