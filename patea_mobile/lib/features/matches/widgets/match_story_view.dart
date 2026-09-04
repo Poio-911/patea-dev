@@ -102,7 +102,6 @@ class _MatchStoryViewState extends ConsumerState<MatchStoryView> {
             _CoverPending(
               generating: _generating,
               error: _error,
-              enabled: match.status == 'evaluated',
               onTap: _generate,
             ),
 
@@ -462,25 +461,63 @@ class _Boxscore extends StatelessWidget {
                 size: 9, weight: FontWeight.w700, color: AppColors.textMuted)
                 .copyWith(letterSpacing: 3),
           ),
-          const SizedBox(height: 12),
-          for (final t in scorers)
-            _TallyLine(
-              icon: Icons.sports_soccer_rounded,
-              player: playerOf(t.playerId),
-              name: nameOf(t.playerId),
-              count: t.goals,
-              color: AppColors.voltNeon,
-            ),
-          for (final t in assisters)
-            _TallyLine(
-              icon: Icons.compare_arrows_rounded,
-              player: playerOf(t.playerId),
-              name: nameOf(t.playerId),
-              count: t.assists,
-              color: AppColors.info,
-            ),
+          // Dos listas separadas y no una sola: quien marcó y asistió aparece
+          // en las dos, y sin el encabezado se lee como una fila repetida.
+          if (scorers.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _TallyHeader(
+                icon: Icons.sports_soccer_rounded,
+                text: 'GOLES',
+                color: AppColors.voltNeon),
+            const SizedBox(height: 8),
+            for (final t in scorers)
+              _TallyLine(
+                icon: Icons.sports_soccer_rounded,
+                player: playerOf(t.playerId),
+                name: nameOf(t.playerId),
+                count: t.goals,
+                color: AppColors.voltNeon,
+              ),
+          ],
+          if (assisters.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            _TallyHeader(
+                icon: Icons.compare_arrows_rounded,
+                text: 'ASISTENCIAS',
+                color: AppColors.info),
+            const SizedBox(height: 8),
+            for (final t in assisters)
+              _TallyLine(
+                icon: Icons.compare_arrows_rounded,
+                player: playerOf(t.playerId),
+                name: nameOf(t.playerId),
+                count: t.assists,
+                color: AppColors.info,
+              ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+class _TallyHeader extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  const _TallyHeader({required this.icon, required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 6),
+        Text(text,
+            style: AppTypography.condensed(
+                size: 12, weight: FontWeight.w700, color: color, letterSpacing: 1.4)),
+      ],
     );
   }
 }
@@ -517,7 +554,7 @@ class _TallyLine extends StatelessWidget {
               name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTypography.headline(size: 13, weight: FontWeight.w700),
+              style: AppTypography.condensed(size: 15, weight: FontWeight.w600),
             ),
           ),
           Icon(icon, size: 14, color: color),
@@ -684,16 +721,18 @@ class _VoiceCard extends StatelessWidget {
   }
 }
 
-/// Todavía no hay relato: la tapa en blanco de la revista.
+/// Todavía no hay relato, pero ya se puede pedir.
+///
+/// No existe el caso "esperá a que todos evalúen": la pantalla de detalle no
+/// monta la revista hasta que el partido está evaluado, así que si esto se ve,
+/// el botón sirve.
 class _CoverPending extends StatelessWidget {
   final bool generating;
-  final bool enabled;
   final String? error;
   final VoidCallback onTap;
 
   const _CoverPending({
     required this.generating,
-    required this.enabled,
     required this.error,
     required this.onTap,
   });
@@ -712,11 +751,8 @@ class _CoverPending extends StatelessWidget {
               color: AppColors.voltNeon.withValues(alpha: 0.12),
               border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.3)),
             ),
-            child: Icon(
-              enabled ? Icons.auto_stories_rounded : Icons.hourglass_empty_rounded,
-              size: 24,
-              color: AppColors.voltNeon,
-            ),
+            child: Icon(Icons.auto_stories_rounded,
+                size: 24, color: AppColors.voltNeon),
           ),
           const SizedBox(height: 16),
           Text(
@@ -728,17 +764,13 @@ class _CoverPending extends StatelessWidget {
           const _Ornament(),
           const SizedBox(height: 14),
           Text(
-            enabled
-                ? 'Un cronista escribe la historia con los goles, las etiquetas de '
-                    'rendimiento y lo que contó cada uno.'
-                : 'Cuando todos terminen de evaluar se puede pedir el relato, con '
-                    'la figura, la planilla y las voces del vestuario.',
+            'Un cronista escribe la historia con los goles, las etiquetas de '
+            'rendimiento y lo que contó cada uno.',
             textAlign: TextAlign.center,
             style: AppTypography.body(
                 size: 12.5, color: AppColors.textSecondary, height: 1.5),
           ),
-          if (enabled) ...[
-            const SizedBox(height: 18),
+          const SizedBox(height: 18),
             FilledButton.icon(
               onPressed: generating ? null : onTap,
               style: FilledButton.styleFrom(
@@ -760,7 +792,6 @@ class _CoverPending extends StatelessWidget {
                     size: 14, weight: FontWeight.w700, color: AppColors.background),
               ),
             ),
-          ],
           if (error != null) ...[
             const SizedBox(height: 12),
             Text(error!,

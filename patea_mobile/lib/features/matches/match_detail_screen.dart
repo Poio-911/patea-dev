@@ -399,7 +399,11 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                 const SizedBox(height: 20),
                 MatchPlanningView(match: match, uid: uid),
               ],
-              if (match.status == 'completed' || match.status == 'evaluated') ...[
+              // El relato sólo cuando el partido está cerrado de verdad. Con
+              // `completed` la tarjeta salía siempre, vacía, avisando que
+              // había que esperar: ocupaba el mejor lugar de la pantalla para
+              // no decir nada.
+              if (match.status == 'evaluated' || match.chronicle != null) ...[
                 const SizedBox(height: 20),
                 // La revista trae su propia hoja: fondo, textura de papel y
                 // tipografía serif. No va dentro de una tarjeta de la app.
@@ -618,7 +622,8 @@ class _HeroCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (hasScore)
-                      Text('${match.teamA!.score} - ${match.teamB!.score}', style: AppTypography.sportNumber(size: 34))
+                      Text('${match.teamA!.score} - ${match.teamB!.score}',
+                          style: AppTypography.jersey(size: 36, letterSpacing: 1))
                     else if (isFinished) ...[
                       Text('—', style: AppTypography.sportNumber(size: 30, color: AppColors.textMuted)),
                       const SizedBox(height: 2),
@@ -796,7 +801,12 @@ class _HeroTeam extends StatelessWidget {
       children: [
         if (team.jersey != null) JerseyWidget(jersey: team.jersey!, size: 60) else Icon(Icons.checkroom, size: 52, color: AppColors.textMuted),
         const SizedBox(height: 8),
-        Text(team.name, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: AppTypography.body(size: 13, weight: FontWeight.w700)),
+        Text(team.name.toUpperCase(),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.condensed(
+                size: 15, weight: FontWeight.w600, letterSpacing: 0.6)),
       ],
     );
   }
@@ -885,10 +895,10 @@ class _PlayersConfirmedRoster extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          p.displayName.split(' ').first,
+                          p.displayName.split(' ').first.toUpperCase(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTypography.body(size: 10, weight: FontWeight.w600),
+                          style: AppTypography.condensed(size: 12, weight: FontWeight.w600),
                         ),
                         Text(
                           '${p.position} ${p.ovr}',
@@ -978,16 +988,24 @@ class _TeamBlock extends StatelessWidget {
           right: 0,
           child: IgnorePointer(
             child: ClipRect(
-              child: Text(
-                team.name.toUpperCase(),
-                maxLines: 1,
-                overflow: TextOverflow.clip,
-                softWrap: false,
-                style: AppTypography.headline(
-                  size: 54,
-                  weight: FontWeight.w900,
-                  color: Colors.white.withValues(alpha: 0.06),
-                ).copyWith(fontStyle: FontStyle.italic, letterSpacing: -2, height: 1),
+              // Anton no trae itálica y Flutter no la inventa, así que la
+              // inclinación es una deformación del widget. Es la letra de la
+              // espalda de una camiseta: por eso va acá y no la Grotesk.
+              child: Transform(
+                transform: Matrix4.skewX(-0.16),
+                alignment: Alignment.bottomLeft,
+                child: Text(
+                  team.name.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.clip,
+                  softWrap: false,
+                  style: AppTypography.jersey(
+                    size: 56,
+                    color: Colors.white.withValues(alpha: 0.07),
+                    letterSpacing: -1,
+                    height: 1,
+                  ),
+                ),
               ),
             ),
           ),
@@ -1010,8 +1028,7 @@ class _TeamBlock extends StatelessWidget {
                         team.name.toUpperCase(),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTypography.headline(size: 19, weight: FontWeight.w900)
-                            .copyWith(letterSpacing: -0.4),
+                        style: AppTypography.jersey(size: 22, letterSpacing: 0.3),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -1082,12 +1099,14 @@ class _MosaicPlayer extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Condensada: en dos columnas angostas entra el nombre entero
+              // donde la Grotesk ya cortaba con puntos suspensivos.
               Text(
                 player.displayName.toUpperCase(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.headline(size: 11.5, weight: FontWeight.w700)
-                    .copyWith(letterSpacing: -0.2),
+                style: AppTypography.condensed(
+                    size: 14, weight: FontWeight.w600, letterSpacing: 0.3),
               ),
               Text(
                 player.position,

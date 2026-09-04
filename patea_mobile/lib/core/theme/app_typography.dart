@@ -56,6 +56,53 @@ class AppTypography {
     );
   }
 
+  /// Condensada pesada: la voz del marcador y de la camiseta.
+  ///
+  /// Anton tiene un solo peso y es angosta y maciza, que es exactamente la
+  /// letra de un tanteador o del nombre en la espalda de una camiseta. Va sólo
+  /// en piezas grandes —el resultado, los nombres de los equipos, la marca de
+  /// agua— porque en tamaño chico se empasta.
+  ///
+  /// Anton no trae itálica y Flutter no la sintetiza: si se la quiere
+  /// inclinada, hay que aplicar un `Matrix4.skewX` sobre el widget.
+  static TextStyle jersey({
+    double size = 20,
+    Color color = AppColors.textPrimary,
+    double letterSpacing = 0,
+    double? height,
+  }) {
+    return GoogleFonts.anton(
+      fontSize: size,
+      color: color,
+      letterSpacing: letterSpacing,
+      height: height,
+    );
+  }
+
+  /// Condensada de texto: la chapita con el nombre del jugador.
+  ///
+  /// Barlow Condensed tiene toda la escala de pesos, así que sirve donde
+  /// [jersey] no entra: nombres en listas, etiquetas de dos palabras, columnas
+  /// angostas. Entra más texto en el mismo ancho sin achicar el cuerpo.
+  ///
+  /// (Oswald quedó afuera a propósito: está justo entre estas dos y sumarla
+  /// sería un tercer peso que no resuelve nada que estas no resuelvan.)
+  static TextStyle condensed({
+    double size = 13,
+    FontWeight weight = FontWeight.w600,
+    Color color = AppColors.textPrimary,
+    double letterSpacing = 0,
+    double? height,
+  }) {
+    return GoogleFonts.barlowCondensed(
+      fontSize: size,
+      fontWeight: weight,
+      color: color,
+      letterSpacing: letterSpacing,
+      height: height,
+    );
+  }
+
   /// Serif, sólo para el relato del partido.
   ///
   /// La app entera es Space Grotesk y Outfit —geométricas, deportivas—, así
