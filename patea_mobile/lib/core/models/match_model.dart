@@ -468,6 +468,15 @@ class MatchModel {
   /// Relato del partido. Existe recién cuando alguien lo pidió.
   final MatchChronicle? chronicle;
 
+  /// Si el partido tiene un resultado cargado de verdad.
+  ///
+  /// Hace falta distinguirlo de un 0-0: `finalScore` lo escribe recién la
+  /// finalización de evaluaciones (`evaluations.ts`), así que un partido que
+  /// terminó pero nadie evaluó no tiene marcador — y hasta ahora la pantalla
+  /// de detalle mostraba "0 - 0" como si el partido hubiera empatado. Un 0-0
+  /// real existe y se ve distinto de "todavía no hay resultado".
+  final bool hasFinalScore;
+
   MatchModel({
     required this.id,
     required this.title,
@@ -493,6 +502,7 @@ class MatchModel {
     this.weather,
     this.bestPlayerId,
     this.chronicle,
+    this.hasFinalScore = false,
     this.dateProposals = const [],
     this.locationProposals = const [],
     this.isVotingOpen = false,
@@ -522,12 +532,11 @@ class MatchModel {
     // La web guarda el resultado final en 'finalScore: {team1, team2}' a nivel
     // del partido, no en 'teams[].score' (que solo se usa para el marcador en vivo).
     final finalScore = data['finalScore'] as Map<String, dynamic>?;
-    if (finalScore != null) {
-      final score1 = (finalScore['team1'] as num?)?.toInt();
-      final score2 = (finalScore['team2'] as num?)?.toInt();
-      if (tA != null && score1 != null) tA = tA.copyWith(score: score1);
-      if (tB != null && score2 != null) tB = tB.copyWith(score: score2);
-    }
+    final score1 = (finalScore?['team1'] as num?)?.toInt();
+    final score2 = (finalScore?['team2'] as num?)?.toInt();
+    if (tA != null && score1 != null) tA = tA.copyWith(score: score1);
+    if (tB != null && score2 != null) tB = tB.copyWith(score: score2);
+    final hasFinalScore = score1 != null && score2 != null;
 
     final rawEvents = data['events'] as List<dynamic>? ?? [];
 
@@ -572,6 +581,7 @@ class MatchModel {
       timerPaused: data['timerPaused'] == true,
       bestPlayerId: _str(data['bestPlayerId']),
       chronicle: MatchChronicle.fromMap(data['chronicle']),
+      hasFinalScore: hasFinalScore,
       dateProposals: ((data['dateProposals'] as List<dynamic>?) ?? const [])
           .map(MatchDateProposal.fromMap)
           .whereType<MatchDateProposal>()

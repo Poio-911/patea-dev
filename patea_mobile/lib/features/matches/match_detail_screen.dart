@@ -23,6 +23,7 @@ import 'widgets/recruit_players_sheet.dart';
 import 'widgets/weather_alert.dart';
 import 'widgets/match_story_view.dart';
 import '../../core/widgets/jersey_painter.dart';
+import '../../core/widgets/parallax_background.dart';
 
 const _spanishMonths = [
   'ene', 'feb', 'mar', 'abr', 'may', 'jun',
@@ -352,7 +353,14 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     final uid = ref.watch(authStateProvider).valueOrNull?.uid;
 
     return Scaffold(
-      appBar: AppBar(title: Text('PARTIDO', style: AppTypography.headline(size: 18, weight: FontWeight.w800))),
+      // Sin esto el Scaffold pinta `AppColors.background` opaco por encima del
+      // `PateaBackground` que monta el router, y la pantalla queda gris plana
+      // mientras el resto de la app muestra la cancha de fondo.
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: Text('PARTIDO', style: AppTypography.headline(size: 18, weight: FontWeight.w800)),
+      ),
       body: matchAsync.when(
         data: (match) {
           if (match == null) {
@@ -392,7 +400,19 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
               ],
               if (match.status == 'completed' || match.status == 'evaluated') ...[
                 const SizedBox(height: 20),
-                MatchStoryView(match: match),
+                // Antes esto era una Column suelta entre dos tarjetas: la
+                // figura, la planilla y el relato quedaban flotando sobre el
+                // fondo y el aviso de "cuando todos evalúen" se leía como un
+                // error. Es el mejor contenido de la pantalla; va en tarjeta.
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.card.withValues(alpha: 0.40),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
+                  ),
+                  child: MatchStoryView(match: match),
+                ),
               ],
               if (isOwner && match.type == 'manual' && match.status == 'upcoming') ...[
                 const SizedBox(height: 20),
@@ -501,8 +521,15 @@ class _HeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = getMatchTypeTheme(match.type);
     final hasTeams = match.teamA != null && match.teamB != null;
-    final hasScore = match.status == 'completed' || match.status == 'evaluated';
+    final isFinished = match.status == 'completed' || match.status == 'evaluated';
     final isLive = match.status == 'active';
+    // Un partido puede haber terminado y no tener resultado: `finalScore` lo
+    // escribe recién la finalización de evaluaciones. Mostrar "0 - 0" ahí es
+    // inventar un empate.
+    final hasScore = isFinished && match.hasFinalScore;
+    // La misma foto de cancha que usa la tarjeta en la lista de partidos, para
+    // que al entrar al detalle la pantalla no cambie de idioma visual.
+    final photoIndex = (match.id.codeUnits.fold<int>(0, (acc, c) => acc + c).abs() % 9) + 1;
     final spotsLeft = match.matchSize - match.players.length;
     final needsApproval = match.needsApprovalFrom(uid);
     final showJoinButton = onJoinLeave != null &&
@@ -511,13 +538,40 @@ class _HeroCard extends StatelessWidget {
         !isOwner;
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.brandColor.withValues(alpha: 0.4), width: isLive ? 1.5 : 1),
+        border: Border.all(color: theme.brandColor.withValues(alpha: 0.45), width: isLive ? 1.5 : 1),
       ),
-      child: Column(
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ParallaxBackground(
+              asset: 'assets/backgrounds/fondo_$photoIndex.jpg',
+              // Un partido en vivo se muestra más fuerte y uno ya jugado más
+              // apagado: el estado se lee antes que el texto.
+              opacity: isLive ? 0.34 : (isFinished ? 0.14 : 0.24),
+            ),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    const Color(0xFF141A24).withValues(alpha: 0.96),
+                    const Color(0xFF141A24).withValues(alpha: 0.72),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(child: ColoredBox(color: theme.brandColor.withValues(alpha: 0.10))),
+          Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
@@ -548,7 +602,13 @@ class _HeroCard extends StatelessWidget {
                     const SizedBox(width: 5),
                     Text('EN VIVO', style: AppTypography.code(size: 10, weight: FontWeight.w700, color: AppColors.destructive)),
                   ]),
-                ),
+                )
+              // El chip de la izquierda dice el TIPO de partido; sin este, nada
+              // en la pantalla decía que el partido ya se jugó.
+              else if (match.status == 'evaluated')
+                _StatusChip(text: 'EVALUADO', color: AppColors.voltNeon)
+              else if (match.status == 'completed')
+                _StatusChip(text: 'TERMINADO', color: AppColors.textSecondary),
             ],
           ),
           const SizedBox(height: 18),
@@ -561,8 +621,14 @@ class _HeroCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (hasScore)
-                      Text('${match.teamA!.score} - ${match.teamB!.score}', style: AppTypography.sportNumber(size: 32))
-                    else
+                      Text('${match.teamA!.score} - ${match.teamB!.score}', style: AppTypography.sportNumber(size: 34))
+                    else if (isFinished) ...[
+                      Text('—', style: AppTypography.sportNumber(size: 30, color: AppColors.textMuted)),
+                      const SizedBox(height: 2),
+                      Text('SIN RESULTADO',
+                          textAlign: TextAlign.center,
+                          style: AppTypography.code(size: 8, weight: FontWeight.w700, color: AppColors.textMuted)),
+                    ] else
                       Text('VS', style: AppTypography.headline(size: 22, weight: FontWeight.w900, color: AppColors.textMuted)),
                   ],
                 ),
@@ -600,7 +666,7 @@ class _HeroCard extends StatelessWidget {
                     text: (match.status == 'planning' || match.time == null) ? 'A definir' : '${match.time} hs',
                   ),
                 ),
-                if (match.weather != null)
+                if (match.weather != null && !isFinished)
                   Expanded(
                     child: _InfoStripItem(icon: _weatherIcon(match.weather!.icon), text: '${match.weather!.temperature}°'),
                   ),
@@ -619,56 +685,88 @@ class _HeroCard extends StatelessWidget {
               ],
             ),
           ],
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onOpenMaps,
-                  icon: const Icon(Icons.navigation_outlined, size: 16),
-                  label: const Text('Cómo llegar'),
-                ),
-              ),
-              if (showJoinButton) ...[
-                const SizedBox(width: 8),
+          // "Cómo llegar" a un partido que ya se jugó no lleva a ningún
+          // lado, y sin botón de unirse la fila entera sobra.
+          if (!isFinished) ...[
+            const SizedBox(height: 14),
+            Row(
+              children: [
                 Expanded(
-                  flex: 2,
-                  child: isPending
-                      ? OutlinedButton.icon(
-                          onPressed: null,
-                          icon: const Icon(Icons.hourglass_top_rounded, size: 16),
-                          label: const Text('Pedido enviado'),
-                        )
-                      : isMatchFull && !isUserInMatch
-                          ? ElevatedButton(
-                              onPressed: null,
-                              child: const Text('Lleno'),
-                            )
-                          : ElevatedButton.icon(
-                              onPressed: isJoining ? null : onJoinLeave,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isUserInMatch ? AppColors.cardSurface : AppColors.voltNeon,
-                                foregroundColor: isUserInMatch ? AppColors.textPrimary : Colors.black,
-                              ),
-                              icon: isJoining
-                                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                                  : Icon(isUserInMatch
-                                      ? Icons.logout
-                                      : needsApproval
-                                          ? Icons.how_to_reg_rounded
-                                          : Icons.person_add_alt_1, size: 16),
-                              label: Text(isUserInMatch
-                                  ? 'Baja'
-                                  : needsApproval
-                                      ? 'Pedir entrar'
-                                      : 'Apuntarse'),
-                            ),
+                  child: OutlinedButton.icon(
+                    onPressed: onOpenMaps,
+                    icon: const Icon(Icons.navigation_outlined, size: 16),
+                    label: const Text('Cómo llegar'),
+                  ),
                 ),
+                if (showJoinButton) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: isPending
+                        ? OutlinedButton.icon(
+                            onPressed: null,
+                            icon: const Icon(Icons.hourglass_top_rounded, size: 16),
+                            label: const Text('Pedido enviado'),
+                          )
+                        : isMatchFull && !isUserInMatch
+                            ? ElevatedButton(
+                                onPressed: null,
+                                child: const Text('Lleno'),
+                              )
+                            : ElevatedButton.icon(
+                                onPressed: isJoining ? null : onJoinLeave,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isUserInMatch ? AppColors.cardSurface : AppColors.voltNeon,
+                                  foregroundColor: isUserInMatch ? AppColors.textPrimary : Colors.black,
+                                ),
+                                icon: isJoining
+                                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                                    : Icon(isUserInMatch
+                                        ? Icons.logout
+                                        : needsApproval
+                                            ? Icons.how_to_reg_rounded
+                                            : Icons.person_add_alt_1, size: 16),
+                                label: Text(isUserInMatch
+                                    ? 'Baja'
+                                    : needsApproval
+                                        ? 'Pedir entrar'
+                                        : 'Apuntarse'),
+                              ),
+                  ),
+                ],
               ],
+            ),
+          ],
             ],
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Chip de estado del partido, arriba a la derecha del hero.
+///
+/// El chip de la izquierda dice el TIPO (Amistoso, Por Equipos...). Sin este,
+/// nada en la pantalla decía si el partido ya se jugó.
+class _StatusChip extends StatelessWidget {
+  final String text;
+  final Color color;
+
+  const _StatusChip({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Text(text,
+          style: AppTypography.code(size: 10, weight: FontWeight.w700, color: color)),
     );
   }
 }
@@ -720,7 +818,13 @@ class _PlayersConfirmedRoster extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16)),
+      // Translúcida sobre el fondo de cancha: opaca se leía como un parche
+      // gris. Es el mismo `bg-card/40` que usan el header y Explorar.
+      decoration: BoxDecoration(
+        color: AppColors.card.withValues(alpha: 0.40),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -799,7 +903,13 @@ class _TeamsRoster extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16)),
+      // Translúcida sobre el fondo de cancha: opaca se leía como un parche
+      // gris. Es el mismo `bg-card/40` que usan el header y Explorar.
+      decoration: BoxDecoration(
+        color: AppColors.card.withValues(alpha: 0.40),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -887,7 +997,13 @@ class _ManagementActions extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16)),
+      // Translúcida sobre el fondo de cancha: opaca se leía como un parche
+      // gris. Es el mismo `bg-card/40` que usan el header y Explorar.
+      decoration: BoxDecoration(
+        color: AppColors.card.withValues(alpha: 0.40),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -988,7 +1104,13 @@ class _ChatSectionState extends State<_ChatSection> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16)),
+      // Translúcida sobre el fondo de cancha: opaca se leía como un parche
+      // gris. Es el mismo `bg-card/40` que usan el header y Explorar.
+      decoration: BoxDecoration(
+        color: AppColors.card.withValues(alpha: 0.40),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
+      ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
