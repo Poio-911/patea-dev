@@ -49,6 +49,44 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Permisos.
+
+	     Sin estas descripciones iOS no muestra el diálogo: la app se cierra
+	     al pedir cámara o galería. Y Apple rechaza en revisión cualquier
+	     binario que use esas APIs sin explicar para qué. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Pateá usa la cámara para grabar los clips del partido y sacarte la foto de tu carta de jugador.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Pateá accede a tus fotos para que elijas la foto de tu carta de jugador o un clip ya grabado del partido.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Pateá graba el audio junto con los clips del partido.</string>
+
+	<!-- Ubicación: el Mercado de Fichajes busca jugadores libres por cercanía
+	     a la cancha del partido. -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Pateá usa tu ubicación para mostrarte partidos y jugadores cerca tuyo.</string>
+
+	<!-- Vuelta del inicio de sesión con Google. El esquema sale del
+	     REVERSED_CLIENT_ID de GoogleService-Info.plist; sin esto Google
+	     abre el navegador y nunca vuelve a la app. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.5614567933-nap45f75nh45ljk499r8v4eqqv22nqjg</string>
+			</array>
+		</dict>
+	</array>
+
+	<!-- Push: recibir avisos de partido con la app en segundo plano. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

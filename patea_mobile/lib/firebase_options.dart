@@ -49,9 +49,14 @@ class DefaultFirebaseOptions {
     storageBucket: 'mil-disculpis.firebasestorage.app',
   );
 
+  // Valores reales de la app iOS registrada en Firebase, no inventados.
+  //
+  // Lo que había antes era el appId de "Futbol con IA" —una app WEB del mismo
+  // proyecto— con el `web` cambiado a mano por `ios`. No existía ninguna app
+  // iOS registrada, así que ese bloque nunca pudo funcionar.
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAes7EVn8hQswS8XgvDMJfN6U4IT_ZL_WY',
-    appId: '1:5614567933:ios:6d7b7dde5f994c36861994',
+    apiKey: 'AIzaSyDznMyS_i_WyK2qpsk5Ojb1X8ud0-VbzBU',
+    appId: '1:5614567933:ios:040e51bd084d88b6861994',
     messagingSenderId: '5614567933',
     projectId: 'mil-disculpis',
     storageBucket: 'mil-disculpis.firebasestorage.app',
