@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pateá — El Muro del Potrero: 3 Versiones con Jerseys Reales (Sin Cajas)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Source+Code+Pro:wght@600;800;900&family=Space+Grotesk:ital,wght@0,500;0,700;0,800;0,900;1,700;1,900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #090D14;
+      --volt: #CCFF00;
+      --turquoise: #00E5CC;
+      --white: #F8FAFC;
+      --muted: #64748B;
+      --secondary: #94A3B8;
+      --red: #FF3B30;
+      --gold: #FFD700;
+      --bronze: #CD7F32;
+      --border-line: rgba(255, 255, 255, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background: #040608;
+      color: var(--white);
+      font-family: 'Space Grotesk', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 24px 16px 60px;
+    }
+
+    /* TOP CONTROLLER */
+    .top-controller {
+      width: 100%;
+      max-width: 980px;
+      margin-bottom: 24px;
+      background: #0d131d;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 18px 22px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+
+    .controller-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .controller-title {
+      font-size: 13px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--secondary);
+      font-weight: 800;
+    }
+
+    .badge-volt {
+      background: var(--volt);
+      color: #000;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .versions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .ver-btn {
+      background: #141c28;
+      border: 2px solid transparent;
+      color: var(--white);
+      padding: 14px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      text-align: left;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .ver-btn:hover {
+      background: #1c2637;
+    }
+
+    .ver-btn.active {
+      background: #182332;
+      border-color: var(--volt);
+      box-shadow: 0 0 20px rgba(204, 255, 0, 0.2);
+    }
+
+    .ver-btn .ver-sub {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .ver-btn.active .ver-sub {
+      color: var(--volt);
+    }
+
+    /* PREVIEW STAGE */
+    .preview-stage {
+      display: flex;
+      gap: 32px;
+      width: 100%;
+      max-width: 980px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* PHONE SHELL */
+    .phone-container {
+      width: 390px;
+      height: 844px;
+      background: var(--bg);
+      border-radius: 46px;
+      border: 8px solid #1e293b;
+      box-shadow: 0 30px 70px -15px rgba(0,0,0,0.95);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .status-bar {
+      height: 38px;
+      padding: 12px 26px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 800;
+      color: rgba(255,255,255,0.7);
+      z-index: 50;
+    }
+
+    .phone-tabs {
+      display: flex;
+      padding: 0 22px;
+      gap: 22px;
+      margin: 8px 0 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      z-index: 20;
+    }
+
+    .phone-tab {
+      padding-bottom: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .phone-tab.active {
+      color: var(--white);
+    }
+
+    .phone-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2.5px;
+      background: var(--volt);
+      border-radius: 2px;
+      box-shadow: 0 0 8px var(--volt);
+    }
+
+    .screen-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 22px 85px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+    }
+
+    /* BOTTOM NAV DOCK */
+    .bottom-dock {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 70px;
+      padding: 0 16px 14px;
+      background: rgba(9, 13, 20, 0.92);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 50;
+    }
+
+    .dock-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .dock-item.active {
+      color: var(--volt);
+    }
+
+    /* MATE SVG OFICIAL PATEA */
+    .mate-icon {
+      width: 34px;
+      height: 34px;
+      fill: var(--volt);
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 10px rgba(204, 255, 0, 0.4));
+    }
+
+    /* ===================================================================== */
+    /* REALISTIC VECTOR FOOTBALL JERSEYS (SVG)                               */
+    /* ===================================================================== */
+    .kit-svg {
+      filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6));
+      transition: transform 0.2s ease;
+    }
+
+    .kit-svg:hover {
+      transform: scale(1.05);
+    }
+
+    /* SIDE EXPLANATION PANEL */
+    .explanation-panel {
+      flex: 1;
+      min-width: 320px;
+      background: #0d131d;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .exp-title {
+      font-size: 19px;
+      font-weight: 900;
+      color: var(--white);
+    }
+
+    .exp-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .exp-tag {
+      background: #17202e;
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--volt);
+    }
+
+    .exp-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--secondary);
+      line-height: 1.5;
+    }
+
+    .exp-list li strong {
+      color: var(--white);
+    }
+
+    /* ===================================================================== */
+    /* VERSIÓN 1: "EL CHOQUE FRONTAL" (Facing Kits & Stadium Lightning)     */
+    /* ===================================================================== */
+    .ver-1-clash .clash-stage {
+      padding: 16px 0 20px;
+      border-bottom: 2px solid var(--border-line);
+      position: relative;
+    }
+
+    .ver-1-clash .clash-jerseys-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 12px 0 8px;
+    }
+
+    .ver-1-clash .clash-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .ver-1-clash .clash-timer {
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: -1.5px;
+      color: var(--volt);
+      line-height: 0.9;
+      text-shadow: 0 0 20px rgba(204, 255, 0, 0.35);
+    }
+
+    .ver-1-clash .clash-team-name {
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.3px;
+      width: 95px;
+      line-height: 1.1;
+    }
+
+    /* ===================================================================== */
+    /* VERSIÓN 2: "EL DORSAL MONUMENTAL" (Jersey Back Dominance)            */
+    /* ===================================================================== */
+    .ver-2-dorsal .dorsal-hero {
+      padding: 18px 0 22px;
+      border-bottom: 2px solid var(--border-line);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .ver-2-dorsal .match-stamp {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .ver-2-dorsal .timer-big-block {
+      font-size: 50px;
+      font-weight: 900;
+      letter-spacing: -2px;
+      line-height: 0.85;
+      color: var(--white);
+    }
+
+    .ver-2-dorsal .timer-big-block span {
+      color: var(--volt);
+    }
+
+    /* ===================================================================== */
+    /* VERSIÓN 3: "EL TÚNEL DE VESTUARIOS" (Kinetic Slash & Formation Tape) */
+    /* ===================================================================== */
+    .ver-3-tunnel .tunnel-header-match {
+      padding: 14px 0 20px;
+      border-bottom: 2px solid var(--border-line);
+      position: relative;
+    }
+
+    .ver-3-tunnel .diagonal-beam {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 45%;
+      width: 2px;
+      background: linear-gradient(180deg, transparent, var(--volt), transparent);
+      transform: skewX(-15deg);
+      opacity: 0.4;
+    }
+
+    .ver-3-tunnel .tunnel-timer-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .ver-3-tunnel .neon-countdown {
+      font-size: 46px;
+      font-weight: 900;
+      font-style: italic;
+      color: var(--volt);
+      letter-spacing: -1.5px;
+      line-height: 0.85;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP SELECTOR -->
+  <div class="top-controller">
+    <div class="controller-header">
+      <span class="controller-title">Opción 1: El Muro del Potrero · 3 Versiones con Jerseys Reales</span>
+      <span class="badge-volt">Cero Cajas · Identidad Pura</span>
+    </div>
+
+    <div class="versions-grid">
+      <button class="ver-btn active" onclick="setVer('1')">
+        <span>1. El Choque Frontal</span>
+        <span class="ver-sub">Camisetas enfrentadas en escala real + Countdown central</span>
+      </button>
+      <button class="ver-btn" onclick="setVer('2')">
+        <span>2. El Dorsal Monumental</span>
+        <span class="ver-sub">Jerarquía de camiseta #10 + Ficha atlética de pared</span>
+      </button>
+      <button class="ver-btn" onclick="setVer('3')">
+        <span>3. El Túnel de Vestuarios</span>
+        <span class="ver-sub">Corte cinético itálico + Camisetas con glow de reflectores</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN PREVIEW STAGE -->
+  <div class="preview-stage">
+
+    <!-- PHONE SHELL -->
+    <div class="phone-container ver-1-clash" id="phoneContainer">
+      <!-- Status bar -->
+      <div class="status-bar">
+        <span>21:45</span>
+        <span>5G · 98%</span>
+      </div>
+
+      <!-- Phone tabs -->
+      <div class="phone-tabs">
+        <div class="phone-tab active" id="tabResumenBtn" onclick="togglePhoneTab('resumen')">Mi Resumen</div>
+        <div class="phone-tab" id="tabGrupoBtn" onclick="togglePhoneTab('grupo')">Mi Grupo</div>
+      </div>
+
+      <!-- Content viewport -->
+      <div class="screen-content" id="screenContent">
+
+        <!-- ============================================================ -->
+        <!-- VIEW: MI RESUMEN                                             -->
+        <!-- ============================================================ -->
+        <div id="viewResumen" style="display:flex; flex-direction:column;">
+          
+          <!-- HEADER: MATE OFICIAL PATEÁ + EL VESTUARIO -->
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0 10px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <!-- REAL PATEA MATE SVG (assets/icons/mate.svg) -->
+              <svg class="mate-icon" viewBox="0 0 48 48">
+                <path d="M39.580078 1.9941406 A 1.50015 1.50015 0 0 0 39.035156 2.0742188L35.132812 3.3457031L35.103516 3.3574219C32.973703 4.1550658 31.195652 5.6835617 30.091797 7.6699219C30.091797 7.6699219 30.089844 7.6699219 30.089844 7.6699219L30.082031 7.6894531L30.039062 7.7714844L28.208984 12.667969C27.052003 12.865401 25.647338 13 24 13C19.66 13 16.979688 12.07 16.179688 11.5C16.979688 10.93 19.66 10 24 10C24.7 10 25.360469 10.020312 25.980469 10.070312L27.080078 7.1601562C25.980078 7.0501562 24.92 7 24 7C20.598149 7 15.257647 7.6619276 13.552734 9.9257812 A 1.50015 1.50015 0 0 0 13.320312 10.173828C13.320312 10.173828 12.536919 11.167614 11.746094 12.369141C11.350681 12.969904 10.949638 13.624605 10.625 14.277344C10.300362 14.930083 10 15.517212 10 16.394531C10 16.563 10.013687 16.728396 10.037109 16.890625C8.8130173 18.299926 5 23.262428 5 30.568359C5 35.537722 7.6190476 39.324858 11.255859 41.648438C14.892672 43.972017 19.514706 45 24 45C28.485294 45 33.107328 43.972017 36.744141 41.648438C40.380953 39.324858 43 35.537722 43 30.568359C43 23.262428 39.186983 18.299926 37.962891 16.890625C37.986313 16.728396 38 16.563 38 16.394531C38 15.517212 37.699638 14.930083 37.375 14.277344C37.050362 13.624605 36.649319 12.969904 36.253906 12.369141C35.463081 11.167614 34.679688 10.173828 34.679688 10.173828 A 1.50015 1.50015 0 0 0 34.439453 9.9277344C34.090598 9.4654123 33.598448 9.0679725 32.992188 8.7324219C33.752823 7.5718136 34.8403 6.661454 36.148438 6.1699219L39.964844 4.9257812 A 1.50015 1.50015 0 0 0 39.580078 1.9941406 z"/>
+              </svg>
+              <div>
+                <div style="font-size:30px; font-weight:900; line-height:0.9; letter-spacing:-1px;">
+                  EL <span style="color:var(--volt);">VESTUARIO</span>
+                </div>
+                <div style="font-size:11px; color:var(--secondary); margin-top:2px;">El pantallazo del cuadro sin vueltas.</div>
+              </div>
+            </div>
+            <div style="font-family:'Source Code Pro'; font-size:10px; font-weight:800; color:var(--bronze); border:1px solid var(--bronze); padding:2px 8px; border-radius:12px;">
+              #10 BRISEIDA
+            </div>
+          </div>
+
+          <!-- DYNAMIC HERO SECTION (REPLACED BY JS ACCORDING TO VERSION) -->
+          <div id="dynamicMatchHero">
+            <!-- DEFAULT: VERSIÓN 1 "CHOQUE FRONTAL" -->
+          </div>
+
+          <!-- DYNAMIC STATS SECTION -->
+          <div id="dynamicStats">
+            <!-- DEFAULT: STATS MURO -->
+          </div>
+
+          <!-- ÚLTIMO PARTIDO (Línea pura sin contenedor) -->
+          <div style="padding:16px 0; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-family:'Source Code Pro'; font-size:9px; color:var(--muted); font-weight:800; letter-spacing:1px;">ÚLTIMO JUGADO · 27 DE AGO</div>
+              <div style="font-size:14px; font-weight:800; margin-top:3px;">Huracán Buceo 4 — 2 Dep. Malvín</div>
+              <div style="font-size:11px; color:var(--secondary);">Doblete tuyo y figura de la cancha</div>
+            </div>
+            <div style="font-size:24px; font-weight:900; color:var(--volt);">W</div>
+          </div>
+
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- VIEW: MI GRUPO                                               -->
+        <!-- ============================================================ -->
+        <div id="viewGrupo" style="display:none; flex-direction:column;">
+          
+          <!-- CUADRO CON SU CAMISETA REAL -->
+          <div style="padding:14px 0 18px; border-bottom:2px solid var(--border-line);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-family:'Source Code Pro'; font-size:9px; color:var(--muted); font-weight:800; letter-spacing:1.5px;">TU CUADRO OFICIAL</div>
+                <div style="font-size:34px; font-weight:900; line-height:0.9; letter-spacing:-1px; text-transform:uppercase; margin:4px 0 6px;">
+                  HURACÁN <span style="color:var(--volt);">BUCEO</span>
+                </div>
+                <div style="font-family:'Source Code Pro'; font-size:12px; font-weight:800; color:var(--white);">
+                  CÓDIGO: <span style="color:var(--volt);">HB-9842K</span>
+                </div>
+              </div>
+              
+              <!-- JERSEY OFICIAL HURACÁN BUCEO -->
+              <svg class="kit-svg" width="68" height="68" viewBox="0 0 64 64">
+                <!-- Sleeves -->
+                <path d="M12 18 L2 28 L10 36 L16 28 Z" fill="#e11d48" />
+                <path d="M52 18 L62 28 L54 36 L48 28 Z" fill="#e11d48" />
+                <!-- Torso -->
+                <path d="M16 18 L22 10 L42 10 L48 18 L46 54 L18 54 Z" fill="#e11d48" />
+                <!-- Franja Diagonal Blanca -->
+                <path d="M16 18 L22 10 L32 10 L18 42 L18 54 L24 54 L44 14 L42 10 L38 10 Z" fill="#ffffff" opacity="0.9" />
+                <!-- Cuello -->
+                <path d="M26 10 C26 15 38 15 38 10 Z" fill="#ffffff" />
+                <!-- Escudo HB -->
+                <circle cx="24" cy="22" r="4" fill="#ffffff" />
+                <text x="32" y="42" text-anchor="middle" font-size="16" font-weight="900" fill="#ffffff" font-family="'Space Grotesk'">10</text>
+              </svg>
+            </div>
+          </div>
+
+          <!-- TOTALES DEL GRUPO EN LÍNEA ABIERTA -->
+          <div style="display:flex; justify-content:space-between; padding:18px 0; border-bottom:2px solid var(--border-line);">
+            <div>
+              <div style="font-family:'Source Code Pro'; font-size:9px; color:var(--muted); font-weight:800; letter-spacing:1px;">PLANTEL TOTAL</div>
+              <div style="font-size:38px; font-weight:900; line-height:0.9;">21</div>
+              <div style="font-size:11px; color:var(--secondary);">14 convocados esta fecha</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-family:'Source Code Pro'; font-size:9px; color:var(--muted); font-weight:800; letter-spacing:1px;">PARTIDOS JUGADOS</div>
+              <div style="font-size:38px; font-weight:900; line-height:0.9; color:var(--volt);">26</div>
+              <div style="font-size:11px; color:var(--secondary);">18 victorias · 4 empates</div>
+            </div>
+          </div>
+
+          <!-- FIGURAS DEL PLANTEL CON SUS JERSEYS DE TIER -->
+          <div style="padding:18px 0; border-bottom:2px solid var(--border-line);">
+            <div style="font-family:'Source Code Pro'; font-size:9px; color:var(--muted); font-weight:800; letter-spacing:1px; margin-bottom:14px;">LOS DESTACADOS DEL CUADRO</div>
+            
+            <!-- PEPE (ÉLITE PLATINO 99) CON JERSEY PLATINO -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <svg width="44" height="44" viewBox="0 0 64 64" class="kit-svg">
+                  <path d="M12 18 L2 28 L10 36 L16 28 Z" fill="#f8fafc" />
+                  <path d="M52 18 L62 28 L54 36 L48 28 Z" fill="#f8fafc" />
+                  <path d="M16 18 L22 10 L42 10 L48 18 L46 54 L18 54 Z" fill="#f8fafc" />
+                  <path d="M26 10 C26 15 38 15 38 10 Z" fill="#000000" />
+                  <text x="32" y="42" text-anchor="middle" font-size="16" font-weight="900" fill="#000000" font-family="'Space Grotesk'">9</text>
+                </svg>
+                <div>
+                  <div style="font-size:18px; font-weight:900;">PEPE</div>
+                  <div style="font-family:'Source Code Pro'; font-size:9px; color:var(--white); font-weight:800; letter-spacing:1px;">MEJOR OVR · ÉLITE PLATINO</div>
+                </div>
+              </div>
+              <div style="font-size:32px; font-weight:900; color:var(--white);">99</div>
+            </div>
+
+            <!-- CRACKTASTICO (ORO 14 GOLES) CON JERSEY ORO -->
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <svg width="44" height="44" viewBox="0 0 64 64" class="kit-svg">
+                  <path d="M12 18 L2 28 L10 36 L16 28 Z" fill="#ffd700" />
+                  <path d="M52 18 L62 28 L54 36 L48 28 Z" fill="#ffd700" />
+                  <path d="M16 18 L22 10 L42 10 L48 18 L46 54 L18 54 Z" fill="#ffd700" />
+                  <path d="M26 10 C26 15 38 15 38 10 Z" fill="#000000" />
+                  <text x="32" y="42" text-anchor="middle" font-size="16" font-weight="900" fill="#000000" font-family="'Space Grotesk'">11</text>
+                </svg>
+                <div>
+                  <div style="font-size:18px; font-weight:900;">CRACKTASTICO</div>
+                  <div style="font-family:'Source Code Pro'; font-size:9px; color:var(--gold); font-weight:800; letter-spacing:1px;">MÁXIMO GOLEADOR · ORO</div>
+                </div>
+              </div>
+              <div style="font-size:32px; font-weight:900; color:var(--volt);">14 <span style="font-size:14px;">G</span></div>
+            </div>
+          </div>
+
+          <!-- AGENDA ABIERTA -->
+          <div style="padding:16px 0;">
+            <div style="font-family:'Source Code Pro'; font-size:9px; color:var(--muted); font-weight:800; letter-spacing:1px; margin-bottom:10px;">PRÓXIMAS FECHAS</div>
+            <div style="display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid rgba(255,255,255,0.06);">
+              <span style="font-size:14px; font-weight:800;">vs La Blanqueada</span>
+              <span style="font-family:'Source Code Pro'; font-size:11px; color:var(--volt); font-weight:800;">JUE 21:00</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:7px 0;">
+              <span style="font-size:14px; font-weight:800; color:var(--secondary);">vs Buceo Central</span>
+              <span style="font-family:'Source Code Pro'; font-size:11px; color:var(--muted);">DOM 19:30</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Dock -->
+      <div class="bottom-dock">
+        <div class="dock-item active"><span>Panel</span></div>
+        <div class="dock-item"><span>Plantel</span></div>
+        <div class="dock-item"><span>Partidos</span></div>
+        <div class="dock-item"><span>Explorar</span></div>
+        <div class="dock-item"><span>Evaluaciones</span></div>
+      </div>
+    </div>
+
+    <!-- EXPLANATION PANEL -->
+    <div class="explanation-panel">
+      <div class="exp-title" id="expTitle">1. El Choque Frontal</div>
+      
+      <div class="exp-tags" id="expBadges">
+        <span class="exp-tag">Jerseys Encarados</span>
+        <span class="exp-tag">Countdown 42px Central</span>
+        <span class="exp-tag">Cero Cajas</span>
+      </div>
+
+      <p style="font-size: 13px; color: var(--secondary); line-height: 1.6;" id="expDesc">
+        Las dos camisetas reales de juego (#10 Huracán Buceo vs #7 La Blanqueada) protagonizan el centro de la escena. En el medio de ambas late la cuenta regresiva en 42px Volt Neón. Todo sobre el lienzo de juego, sin ninguna caja envolviéndolas.
+      </p>
+
+      <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px;">
+        <div style="font-size: 12px; font-weight: 800; color: var(--white); margin-bottom: 8px;">DETALLES VISUALES CLAVE:</div>
+        <ul class="exp-list" id="expPoints">
+          <li><strong>Jerseys vectoriales con dorsal</strong>: Cada equipo muestra su indumentaria real con su número y franja.</li>
+          <li><strong>OVR 72px monumental</strong>: En la sección de rendimiento, el OVR toma escala de afiche deportivo.</li>
+          <li><strong>Mate oficial de Pateá</strong>: Ubicado en el header con la bombilla y resplandor Volt intacto.</li>
+        </ul>
+      </div>
+
+      <div style="margin-top:auto; font-size:11px; color:var(--muted); background:rgba(255,255,255,0.02); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+        💡 <em>Probá las 3 versiones en los botones superiores para ver 3 formas completamente diferentes de componer El Muro del Potrero con las camisetas.</em>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Templates for the 3 distinct versions of Option 1
+    const versions = {
+      '1': {
+        name: '1. El Choque Frontal',
+        badges: ['Jerseys Encarados', 'Countdown Central', 'Cero Cajas', 'Escala Frontal'],
+        desc: 'Las dos camisetas reales de juego (#10 Huracán Buceo vs #7 La Blanqueada) protagonizan el centro de la pantalla como en una previa televisiva. En el centro exacto late la cuenta regresiva en Volt Neón 42px. Toda la composición respira sin ninguna caja.',
+        points: [
+          '<strong>Confrontación directa</strong>: Las dos camisetas se miran frente a frente en la cancha.',
+          '<strong>Cuenta regresiva en el foco</strong>: El ojo va directo al reloj central entre las dos camisetas.',
+          '<strong>OVR 72px en canvas</strong>: Tu nivel flota con peso monumental y línea de tiza separadora.'
+        ],
+        matchHtml: `
+          <div class="clash-stage">
+            <div style="display:flex; justify-content:space-between; font-family:'Source Code Pro'; font-size:9px; color:var(--muted); font-weight:800; letter-spacing:1.5px;">
+              <span>FECHA 4 · AMISTOSO</span>
+              <span style="color:var(--volt);">JUE 21:00 HS</span>
+            </div>
+
+            <div class="clash-jerseys-row">
+              <!-- JERSEY LOCAL -->
+              <div style="text-align:center;">
+                <svg class="kit-svg" width="76" height="76" viewBox="0 0 64 64">
+                  <path d="M12 18 L2 28 L10 36 L16 28 Z" fill="#e11d48" />
+                  <path d="M52 18 L62 28 L54 36 L48 28 Z" fill="#e11d48" />
+                  <path d="M16 18 L22 10 L42 10 L48 18 L46 54 L18 54 Z" fill="#e11d48" />
+                  <path d="M16 18 L22 10 L32 10 L18 42 L18 54 L24 54 L44 14 L42 10 L38 10 Z" fill="#ffffff" opacity="0.9" />
+                  <path d="M26 10 C26 15 38 15 38 10 Z" fill="#ffffff" />
+                  <text x="32" y="42" text-anchor="middle" font-size="16" font-weight="900" fill="#ffffff" font-family="'Space Grotesk'">10</text>
+                </svg>
+                <div class="clash-team-name" style="margin-top:6px;">HURACÁN BUCEO</div>
+              </div>
+
+              <!-- VS & COUNTDOWN -->
+              <div class="clash-center">
+                <div style="font-family:'Source Code Pro'; font-size:8px; color:var(--muted); font-weight:800; letter-spacing:2px; margin-bottom:4px;">ARRANCA EN</div>
+                <div class="clash-timer">05:14:22</div>
+                <div style="font-size:11px; font-weight:900; color:var(--secondary); background:rgba(255,255,255,0.08); padding:2px 10px; border-radius:10px; margin-top:6px;">VS</div>
+              </div>
+
+              <!-- JERSEY VISITA -->
+              <div style="text-align:center;">
+                <svg class="kit-svg" width="76" height="76" viewBox="0 0 64 64">
+                  <path d="M12 18 L2 28 L10 36 L16 28 Z" fill="#0284c7" />
+                  <path d="M52 18 L62 28 L54 36 L48 28 Z" fill="#0284c7" />
+                  <path d="M16 18 L22 10 L42 10 L48 18 L46 54 L18 54 Z" fill="#0284c7" />
+                  <!-- Rayas verticales celestes y blancas -->
+                  <rect x="25" y="10" width="4" height="44" fill="#ffffff" opacity="0.85" />
+                  <rect x="35" y="10" width="4" height="44" fill="#ffffff" opacity="0.85" />
+                  <path d="M26 10 C26 15 38 15 38 10 Z" fill="#0f172a" />
+                  <text x="32" y="42" text-anchor="middle" font-size="16" font-weight="900" fill="#ffffff" font-family="'Space Grotesk'">7</text>
+                </svg>
+                <div class="clash-team-name" style="margin-top:6px; color:var(--secondary);">LA BLANQUEADA</div>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; margin-top:10px; font-family:'Source Code Pro'; font-size:10px; color:var(--secondary);">
+              <span>📍 LOS CEIBOS (CANCHA 2)</span>
+              <span style="color:var(--volt); font-weight:800;">12/14 CONVOCADOS</span>
+            </div>
+          </div>
+        `,
+        statsHtml: `
+          <div style="display:flex; padding:20px 0; border-bottom:2px solid var(--border-line); align-items:baseline; justify-content:space-between;">
+            <div>
+              <div style="font-family:'Source Code Pro'; font-size:9px; color:var(--muted); font-weight:800; letter-spacing:1px;">TU OVR ACTUAL</div>
+              <div style="display:flex; align-items:baseline;">
+                <span style="font-size:72px; font-weight:900; line-height:0.8; letter-spacing:-3px;">55</span>
+                <span style="font-size:16px; font-weight:900; color:var(--volt); margin-left:4px;">+2</span>
+              </div>
+              <div style="font-size:10px; color:var(--bronze); font-weight:800; text-transform:uppercase; margin-top:4px;">Tier Bronce Progresivo</div>
+            </div>
+
+            <div style="text-align:right;">
+              <div style="font-family:'Source Code Pro'; font-size:9px; color:var(--muted); font-weight:800; letter-spacing:1px;">TUS NÚMEROS</div>
+              <div style="font-size:34px; font-weight:900; line-height:0.9;"><span style="color:var(--volt);">3</span> GOLES</div>
+              <div style="font-size:13px; font-weight:800; color:var(--secondary);">EN 2 PARTIDOS</div>
+              <div style="font-size:11px; color:var(--volt); font-weight:700; margin-top:2px;">1.5 de promedio</div>
+            </div>
+          </div>
+        `
+      },
+
+      '2': {
+        name: '2. El Dorsal Monumental',
+        badges: ['Dorsal 80px', 'Camiseta Integrada', 'Ficha de Pared', 'Serigrafía'],
+        desc: 'El foco es la camiseta y el dorsal del jugador como estandarte: tu camiseta #10 de Huracán Buceo se despliega en grande a la izquierda, y al lado la información del partido corre como un parte de vestuario oficial.',
+        points: [
+          '<strong>Tu camiseta como identidad</strong>: Tu indumentaria de juego está siempre presente arriba.',
+          '<strong>Countdown 50px vertical</strong>: Número contundente en blanco puro con segundos en Volt.',
+          '<strong>Ficha atlética</strong>: Partidos, goles y convocatoria se leen en una cuadrícula limpia de tiza.'
+        ],
+        matchHtml: `
+          <div class="dorsal-hero">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <!-- TU CAMISETA GRANDE -->
+              <div style="display:flex; align-items:center; gap:14px;">
+                <svg class="kit-svg" width="90" height="90" viewBox="0 0 64 64">
+                  <path d="M12 18 L2 28 L10 36 L16 28 Z" fill="#e11d48" />
+                  <path d="M52 18 L62 28 L54 36 L48 28 Z" fill="#e11d48" />
+                  <path d="M16 18 L22 10 L42 10 L48 18 L46 54 L18 54 Z" fill="#e11d48" />
+                  <path d="M16 18 L22 10 L32 10 L18 42 L18 54 L24 54 L44 14 L42 10 L38 10 Z" fill="#ffffff" opacity="0.9" />
+                  <path d="M26 10 C26 15 38 15 38 10 Z" fill="#ffffff" />
+                  <text x="32" y="42" text-anchor="middle" font-size="16" font-weight="900" fill="#ffffff" font-family="'Space Grotesk'">10</text>
+                </svg>
+                <div>
+                  <div style="font-family:'Source Code Pro'; font-size:9px; color:var(--volt); font-weight:800; letter-spacing:1px;">TU INDUMENTARIA</div>
+                  <div style="font-size:22px; font-weight:900; line-height:1; margin:2px 0;">HURACÁN BUCEO</div>
+                  <div style="font-size:11px; color:var(--secondary);">vs La Blanqueada (#7)</div>
+                </div>
+              </div>
+
+              <!-- MINI CAMISETA RIVAL -->
+              <svg width="42" height="42" viewBox="0 0 64 64" class="kit-svg" style="opacity:0.75;">
+                <path d="M12 18 L2 28 L10 36 L16 28 Z" fill="#0284c7" />
+                <path d="M52 18 L62 28 L54 36 L48 28 Z" fill="#0284c7" />
+                <path d="M16 18 L22 10 L42 10 L48 18 L46 54 L18 54 Z" fill="#0284c7" />
+                <text x="32" y="42" text-anchor="middle" font-size="16" font-weight="900" fill="#ffffff">7</text>
+              </svg>
+            </div>
+
+            <!-- COUNTDOWN GIGANTE DORSAL -->
+            <div style="margin-top:14px;">
+              <div style="font-family:'Source Code Pro'; font-size:8px; color:var(--muted); font-weight:800; letter-spacing:2px;">TIEMPO HASTA EL PITAZO</div>
+              <div class="timer-big-block">05:14:<span>22</span></div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; margin-top:8px; font-family:'Source Code Pro'; font-size:10px; color:var(--secondary);">
+              <span>📍 LOS CEIBOS · CANCHA 2</span>
+              <span style="color:var(--volt); font-weight:800;">12/14 EN LISTA</span>
+            </div>
+          </div>
+        `,
+        statsHtml: `
+          <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:16px; padding:18px 0; border-bottom:2px solid var(--border-line);">
+            <div>
+              <div style="font-family:'Source Code Pro'; font-size:9px; color:var(--muted); font-weight:800; letter-spacing:1px;">VALORACIÓN OVR</div>
+              <div style="font-size:64px; font-weight:900; line-height:0.85; letter-spacing:-2px;">55<span style="font-size:20px; color:var(--volt); margin-left:4px;">+2</span></div>
+              <div style="font-size:11px; color:var(--secondary); margin-top:4px;">Progreso de las últimas 3 fechas</div>
+            </div>
+            
+            <div style="border-left:1px solid rgba(255,255,255,0.08); padding-left:16px;">
+              <div style="font-family:'Source Code Pro'; font-size:9px; color:var(--muted); font-weight:800; letter-spacing:1px;">EFECTIVIDAD</div>
+              <div style="font-size:30px; font-weight:900; line-height:0.9; margin-top:2px;">3 <span style="font-size:14px; color:var(--secondary);">GOLES</span></div>
+              <div style="font-size:16px; font-weight:800; color:var(--volt); margin-top:4px;">1.5 <span style="font-size:11px; color:var(--secondary);">G/PJ</span></div>
+            </div>
+          </div>
+        `
+      },
+
+      '3': {
+        name: '3. El Túnel de Vestuarios',
+        badges: ['Inclinación Itálica', 'Camisetas Flotantes', 'Rayas de Foco', 'Corte Cinético'],
+        desc: 'Inspirado en la salida del túnel hacia el césped bajo los reflectores: tipografía itálica veloz (`Space Grotesk Italic`), haz de luz diagonal y las camisetas en formación de salida.',
+        points: [
+          '<strong>Velocidad itálica</strong>: Todo el encabezado y reloj se inclinan dando dinamismo de partido.',
+          '<strong>Haz de reflector diagonal</strong>: Una línea de luz cruza la pantalla detrás de los dorsales.',
+          '<strong>Camisetas en relieve</strong>: Con sombras profundas que parecen salir de la pared.'
+        ],
+        matchHtml: `
+          <div class="tunnel-header-match">
+            <div class="diagonal-beam"></div>
+
+            <div class="tunnel-timer-row">
+              <div>
+                <div style="font-family:'Source Code Pro'; font-size:8px; color:var(--muted); font-weight:800; letter-spacing:2px;">ARRANCA EN</div>
+                <div class="neon-countdown">05:14:22</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-family:'Source Code Pro'; font-size:9px; color:var(--volt); font-weight:800;">JUEVES 21:00 HS</div>
+                <div style="font-size:11px; color:var(--secondary);">Cancha 2 Los Ceibos</div>
+              </div>
+            </div>
+
+            <!-- CAMISETAS CON PERSPECTIVA -->
+            <div style="display:flex; justify-content:space-around; align-items:center; margin:14px 0 6px;">
+              <!-- LOCAL -->
+              <div style="text-align:center;">
+                <svg class="kit-svg" width="80" height="80" viewBox="0 0 64 64" style="transform:rotate(-4deg);">
+                  <path d="M12 18 L2 28 L10 36 L16 28 Z" fill="#e11d48" />
+                  <path d="M52 18 L62 28 L54 36 L48 28 Z" fill="#e11d48" />
+                  <path d="M16 18 L22 10 L42 10 L48 18 L46 54 L18 54 Z" fill="#e11d48" />
+                  <path d="M16 18 L22 10 L32 10 L18 42 L18 54 L24 54 L44 14 L42 10 L38 10 Z" fill="#ffffff" opacity="0.9" />
+                  <path d="M26 10 C26 15 38 15 38 10 Z" fill="#ffffff" />
+                  <text x="32" y="42" text-anchor="middle" font-size="16" font-weight="900" fill="#ffffff" font-family="'Space Grotesk'">10</text>
+                </svg>
+                <div style="font-size:14px; font-weight:900; font-style:italic; margin-top:4px;">HURACÁN BUCEO</div>
+              </div>
+
+              <!-- RAYA DIAGONAL VS -->
+              <div style="font-size:18px; font-weight:900; font-style:italic; color:var(--volt);">/VS/</div>
+
+              <!-- VISITA -->
+              <div style="text-align:center;">
+                <svg class="kit-svg" width="80" height="80" viewBox="0 0 64 64" style="transform:rotate(4deg);">
+                  <path d="M12 18 L2 28 L10 36 L16 28 Z" fill="#0284c7" />
+                  <path d="M52 18 L62 28 L54 36 L48 28 Z" fill="#0284c7" />
+                  <path d="M16 18 L22 10 L42 10 L48 18 L46 54 L18 54 Z" fill="#0284c7" />
+                  <rect x="25" y="10" width="4" height="44" fill="#ffffff" opacity="0.85" />
+                  <rect x="35" y="10" width="4" height="44" fill="#ffffff" opacity="0.85" />
+                  <path d="M26 10 C26 15 38 15 38 10 Z" fill="#0f172a" />
+                  <text x="32" y="42" text-anchor="middle" font-size="16" font-weight="900" fill="#ffffff" font-family="'Space Grotesk'">7</text>
+                </svg>
+                <div style="font-size:14px; font-weight:900; font-style:italic; margin-top:4px; color:var(--secondary);">LA BLANQUEADA</div>
+              </div>
+            </div>
+          </div>
+        `,
+        statsHtml: `
+          <div style="display:flex; justify-content:space-between; padding:20px 0; border-bottom:2px solid var(--border-line); align-items:center;">
+            <div>
+              <div style="font-family:'Source Code Pro'; font-size:9px; color:var(--muted); font-weight:800; letter-spacing:1px;">NIVEL DE JUEGO</div>
+              <div style="font-size:68px; font-weight:900; font-style:italic; line-height:0.8; letter-spacing:-2px;">55<span style="color:var(--volt); font-size:18px;">+2</span></div>
+            </div>
+            
+            <div style="text-align:right;">
+              <div style="font-size:28px; font-weight:900; font-style:italic; color:var(--volt); line-height:0.9;">3 GOLES</div>
+              <div style="font-size:13px; font-weight:700; color:var(--secondary);">2 PARTIDOS JUGADOS</div>
+              <div style="font-family:'Source Code Pro'; font-size:10px; color:var(--white); margin-top:3px;">PROMEDIO: 1.5</div>
+            </div>
+          </div>
+        `
+      }
+    };
+
+    function setVer(key) {
+      const data = versions[key];
+      const container = document.getElementById('phoneContainer');
+
+      // Update buttons
+      document.querySelectorAll('.ver-btn').forEach(btn => btn.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      // Update phone class
+      container.className = 'phone-container ver-' + key + (key === '1' ? '-clash' : key === '2' ? '-dorsal' : '-tunnel');
+
+      // Inject Match & Stats HTML
+      document.getElementById('dynamicMatchHero').innerHTML = data.matchHtml;
+      document.getElementById('dynamicStats').innerHTML = data.statsHtml;
+
+      // Update panel
+      document.getElementById('expTitle').innerText = data.name;
+      document.getElementById('expDesc').innerHTML = data.desc;
+      document.getElementById('expBadges').innerHTML = data.badges.map(b => `<span class="exp-tag">${b}</span>`).join('');
+      document.getElementById('expPoints').innerHTML = data.points.map(p => `<li>${p}</li>`).join('');
+    }
+
+    function togglePhoneTab(tab) {
+      const btnResumen = document.getElementById('tabResumenBtn');
+      const btnGrupo = document.getElementById('tabGrupoBtn');
+      const viewResumen = document.getElementById('viewResumen');
+      const viewGrupo = document.getElementById('viewGrupo');
+
+      if (tab === 'resumen') {
+        btnResumen.classList.add('active');
+        btnGrupo.classList.remove('active');
+        viewResumen.style.display = 'flex';
+        viewGrupo.style.display = 'none';
+      } else {
+        btnResumen.classList.remove('active');
+        btnGrupo.classList.add('active');
+        viewResumen.style.display = 'none';
+        viewGrupo.style.display = 'flex';
+      }
+    }
+
+    // Init with Version 1
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('dynamicMatchHero').innerHTML = versions['1'].matchHtml;
+      document.getElementById('dynamicStats').innerHTML = versions['1'].statsHtml;
+    });
+  </script>
+</body>
+</html>

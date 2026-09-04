@@ -11,10 +11,15 @@ import 'jersey_designer.dart';
 
 /// Port de create-team-dialog.tsx + JerseyDesigner (team-builder/jersey-designer.tsx):
 /// wizard de 2 pasos (Identidad: nombre+camiseta; Plantel: selección de
-/// jugadores). Simplificación consciente respecto a la web: no distingue
-/// titular/suplente ni asigna dorsal "inteligente" (assignSmartDorsal) — acá
-/// el dorsal es simplemente el orden de selección, y el estado siempre
-/// 'titular'. El límite de "máximo 3 equipos por jugador" tampoco se portó.
+/// jugadores).
+///
+/// Al crear, todos entran como titulares con dorsal según el orden de
+/// selección: es un punto de partida, no una limitación. Los dorsales, el
+/// banco y las altas/bajas se manejan después desde el detalle del equipo,
+/// con `ManageRosterSheet`.
+///
+/// No portado: `assignSmartDorsal` y el límite de "máximo 3 equipos por
+/// jugador" de la web.
 class CreateTeamScreen extends ConsumerStatefulWidget {
   final String groupId;
 

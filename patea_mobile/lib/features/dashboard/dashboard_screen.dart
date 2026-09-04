@@ -1,21 +1,22 @@
-import 'package:fl_chart/fl_chart.dart';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/theme/match_theme.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/models/match_model.dart';
 import '../../core/widgets/match_countdown.dart';
 import '../../core/models/player_model.dart';
-import '../../core/models/group_model.dart';
 import '../../core/widgets/jersey_painter.dart';
 
 const _spanishMonths = [
@@ -41,19 +42,15 @@ DateTime? _matchDateTime(MatchModel m) {
   return DateTime(local.year, local.month, local.day, hh, mm);
 }
 
+DateTime? _kickoffOf(MatchModel m) {
+  return _matchDateTime(m);
+}
 
-/// Port de src/app/dashboard/page.tsx + components/dashboard/*: 2 tabs
-/// ("Mi Resumen"/"Mi Grupo"), persistidos localmente (SharedPreferences ~
-/// localStorage de la web). El tab activo, el próximo partido, partidos en
-/// vivo, estadísticas reales del jugador (no hardcodeadas) y la progresión
-/// de OVR viven en "Mi Resumen"; el grupo activo, sus stats rápidas, agenda
-/// y últimos partidos evaluados viven en "Mi Grupo".
-///
-/// Deliberadamente NO portado en esta pasada: pantallas de onboarding
-/// completas para "sin grupo"/"usuario nuevo" (dominio Auth, fuera del
-/// barrido), TeamList/Equipos Guardados (depende de Sección 5
-/// Grupos/Equipos, 0%), Amistosos Intergrupos, crónica de partido (IA) en
-/// las cards de partidos evaluados, video de fondo del GroupHeroCard.
+/// Rediseño "El Túnel de Vestuarios" (Versión 3):
+/// Cero contenedores y cajas anidadas. Los datos viven directamente en el lienzo
+/// de juego, con escala tipográfica monumental itálica, camisetas vectoriales
+/// oficiales con rotación angular enfrentada, cuenta regresiva viva en Volt Neón,
+/// y líneas de cal sutiles como separadores.
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
@@ -86,78 +83,115 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final currentUser = ref.watch(authServiceProvider).currentUser;
     final uid = currentUser?.uid;
+    final playerAsync = uid != null ? ref.watch(singlePlayerStreamProvider(uid)) : null;
+    final player = playerAsync?.value;
 
-    // El fondo de cancha ahora se aplica una sola vez en el shell
-    // (_ScaffoldWithNavBar), no hace falta repetirlo por pantalla.
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
-          child: CustomScrollView(
-            slivers: [
-              // Título real de la web (src/app/dashboard/page.tsx): ícono
-              // de mate + "El Vestuario" — no "PATEÁ / ¡Hola X!" (eso no
-              // existe en la web, era invención de una pasada anterior).
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
-                sliver: SliverToBoxAdapter(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SvgPicture.asset(
-                        'assets/icons/mate.svg',
-                        width: 34,
-                        height: 34,
-                        colorFilter: const ColorFilter.mode(AppColors.voltNeon, BlendMode.srcIn),
+        child: CustomScrollView(
+          slivers: [
+            // Cabecera: Mate Oficial + EL VESTUARIO en Italic + Dorsal Pill
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              sliver: SliverToBoxAdapter(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SvgPicture.asset(
+                      'assets/icons/mate.svg',
+                      width: 34,
+                      height: 34,
+                      colorFilter: const ColorFilter.mode(AppColors.voltNeon, BlendMode.srcIn),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'EL VESTUARIO',
+                            style: AppTypography.headline(
+                              size: 26,
+                              weight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          Text(
+                            'El pantallazo del cuadro sin vueltas.',
+                            style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 13),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                    if (player != null) ...[
+                      const SizedBox(width: 8),
+                      // Acá iba el nombre del jugador pintado con el color
+                      // del tier de OVR: el color hablaba de una cosa y el
+                      // texto de otra. El tier es del OVR, así que muestra el
+                      // OVR — y el nombre ya está arriba, en el header.
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.getOvrBorderColor(player.ovr)),
+                          borderRadius: AppRadii.chipAll,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              'EL VESTUARIO',
-                              style: AppTypography.headline(
-                                size: 24,
+                              '${player.ovr}',
+                              style: AppTypography.code(
+                                size: 13,
                                 weight: FontWeight.w900,
-                                letterSpacing: -0.5,
+                                color: AppColors.getOvrBorderColor(player.ovr),
                               ),
                             ),
-                            const SizedBox(height: 1),
-                            Text(
-                              'Un pantallazo de cómo está el cuadro.',
-                              style: AppTypography.body(size: 12, color: AppColors.textSecondary),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            const SizedBox(width: 4),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 1),
+                              child: Text(
+                                'OVR',
+                                style: AppTypography.code(
+                                  size: 8,
+                                  weight: FontWeight.w700,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
                             ),
                           ],
                         ),
                       ),
                     ],
-                  ),
+                  ],
                 ),
               ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-                sliver: SliverToBoxAdapter(
-                  child: _DashboardTabBar(active: _tab, onChanged: _saveTab),
-                ),
+            ),
+
+            // Tab Bar con barra deslizante Volt
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              sliver: SliverToBoxAdapter(
+                child: _DashboardTabBar(active: _tab, onChanged: _saveTab),
               ),
-              // SliverFillRemaining en vez de SliverToBoxAdapter: le da al
-              // contenido la altura que sobra, para que las piezas del tablero
-              // la ocupen en vez de dejar media pantalla vacía. Con
-              // hasScrollBody en false, si el contenido es más alto igual
-              // scrollea.
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
-                sliver: SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: uid == null
-                      ? const SizedBox()
-                      : (_tab == 0 ? _ResumenTab(uid: uid) : _GrupoTab(uid: uid)),
-                ),
+            ),
+
+            // Contenido dinámico según Tab
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+              sliver: SliverToBoxAdapter(
+                child: uid == null
+                    ? const SizedBox.shrink()
+                    : (_tab == 0
+                        ? _ResumenTab(uid: uid, player: player)
+                        : _GrupoTab(uid: uid)),
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -171,9 +205,6 @@ class _DashboardTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Antes eran dos cajas redondeadas metidas dentro de otra caja
-    // redondeada, con borde las tres. Ahora es un subrayado: el estándar de
-    // cualquier app deportiva, y ocupa la mitad de alto.
     Widget tab(String label, int index) {
       final selected = active == index;
       return Expanded(
@@ -190,10 +221,10 @@ class _DashboardTabBar extends StatelessWidget {
                 child: Text(
                   label.toUpperCase(),
                   style: AppTypography.headline(
-                    size: 13,
+                    size: 12,
                     weight: selected ? FontWeight.w900 : FontWeight.w600,
                     color: selected ? AppColors.textPrimary : AppColors.textMuted,
-                    letterSpacing: 0.3,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),
@@ -204,6 +235,9 @@ class _DashboardTabBar extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: selected ? AppColors.voltNeon : Colors.transparent,
                   borderRadius: BorderRadius.circular(2),
+                  boxShadow: selected
+                      ? [BoxShadow(color: AppColors.voltNeon.withValues(alpha: 0.4), blurRadius: 8)]
+                      : null,
                 ),
               ),
             ],
@@ -220,49 +254,48 @@ class _DashboardTabBar extends StatelessWidget {
             tab('Mi Grupo', 1),
           ],
         ),
-        Container(height: 1, color: Colors.white.withValues(alpha: 0.07)),
+        Container(height: 1, color: Colors.white.withValues(alpha: 0.08)),
       ],
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// PESTAÑA 1: MI RESUMEN (EL TÚNEL DE VESTUARIOS)
+// ─────────────────────────────────────────────────────────────────────────
 class _ResumenTab extends ConsumerWidget {
   final String uid;
+  final PlayerModel? player;
 
-  const _ResumenTab({required this.uid});
+  const _ResumenTab({required this.uid, required this.player});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final groupIdAsync = ref.watch(activeGroupIdStreamProvider(uid));
 
     return groupIdAsync.when(
-      data: (groupId) => _ResumenTabBody(uid: uid, groupId: groupId),
-      loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      data: (groupId) => _ResumenTabBody(uid: uid, groupId: groupId, player: player),
+      loading: () => const Padding(
+        padding: EdgeInsets.all(40),
+        child: Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
+      ),
+      error: (e, _) => Center(
+        child: Text('Error: $e', style: AppTypography.body(color: AppColors.destructive)),
+      ),
     );
   }
 }
 
-/// "Mi Resumen" como tablero: todo en una pantalla, sin scroll.
-///
-/// Mosaico de piezas de distinto peso, como el gráfico de una transmisión. La
-/// pieza más grande es la que contesta la pregunta por la que se abre la app:
-/// cuánto falta para el próximo partido. Si hay uno en curso, esa pieza pasa a
-/// ser el partido en vivo.
-///
-/// Rehecho de cero: antes era una pila de secciones con tarjeta y borde, cada
-/// una del mismo peso, que obligaba a scrollear para llegar a los datos
-/// propios.
 class _ResumenTabBody extends ConsumerWidget {
   final String uid;
   final String? groupId;
+  final PlayerModel? player;
 
-  const _ResumenTabBody({required this.uid, required this.groupId});
+  const _ResumenTabBody({required this.uid, required this.groupId, required this.player});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final matchesAsync = ref.watch(matchesStreamProvider(groupId));
-    final playerAsync = ref.watch(singlePlayerStreamProvider(uid));
     final ovrHistoryAsync = ref.watch(ovrHistoryStreamProvider(uid));
 
     return matchesAsync.when(
@@ -275,11 +308,26 @@ class _ResumenTabBody extends ConsumerWidget {
         child: Text('No se pudo cargar tu panel.',
             style: AppTypography.body(size: 13, color: AppColors.textMuted)),
       ),
-      data: (matches) {
+      data: (allMatches) {
         final now = DateTime.now();
 
-        final live = matches.where((m) => m.status == 'active').toList();
+        // La pestaña se llama "Mi Resumen": son los partidos que jugás vos, no
+        // todos los del grupo. Antes te mostraba el próximo partido del cuadro
+        // aunque no estuvieras anotada. Los partidos viejos no siempre tienen
+        // `playerUids`, así que también se mira el roster de los equipos.
+        bool imIn(MatchModel m) {
+          if (m.playerUids.contains(uid)) return true;
+          for (final t in [m.teamA, m.teamB]) {
+            if (t == null) continue;
+            if (t.playerIds.contains(uid)) return true;
+            if (t.players.any((p) => p.uid == uid)) return true;
+          }
+          return false;
+        }
 
+        final matches = allMatches.where(imIn).toList();
+
+        final live = matches.where((m) => m.status == 'active').toList();
         final upcoming = matches.where((m) {
           if (m.status != 'upcoming') return false;
           final dt = _matchDateTime(m);
@@ -292,7 +340,6 @@ class _ResumenTabBody extends ConsumerWidget {
             ? live.first
             : (upcoming.isNotEmpty ? upcoming.first : null);
 
-        // Último partido con resultado real, para la pieza de abajo.
         final played = matches
             .where((m) =>
                 (m.status == 'completed' || m.status == 'evaluated') &&
@@ -303,92 +350,50 @@ class _ResumenTabBody extends ConsumerWidget {
               .compareTo(DateTime.tryParse(a.date) ?? DateTime(0)));
         final lastPlayed = played.isNotEmpty ? played.first : null;
 
-        final player = playerAsync.value;
         final history = ovrHistoryAsync.value ?? const <OvrHistoryEntry>[];
         final trend = history.isEmpty ? 0 : history.last.newOVR - history.first.oldOVR;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Pieza principal ──────────────────────────────────────────
-            Expanded(
-              flex: 5,
-              child: next != null
-                  ? _KickoffTile(match: next, isLive: live.isNotEmpty)
-                  : const _EmptyTile(
-                      label: 'SIN PARTIDOS',
-                      value: 'Nada agendado',
-                      hint: 'Armá uno desde Partidos.',
-                    ),
-            ),
-
-            const SizedBox(height: 5),
-
-            // ── Dónde · Anotados ─────────────────────────────────────────
+            // ── 1. EL TÚNEL DE PRÓXIMO PARTIDO (CON CAMISETAS ROTADAS) ──
             if (next != null)
-              Expanded(
-                flex: 3,
-                child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: _Tile(
-                      label: 'DÓNDE',
-                      value: next.location ?? 'A definir',
-                      valueSize: 15,
-                      hint: _whenLine(next),
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  Expanded(
-                    flex: 2,
-                    child: _Tile(
-                      label: 'ANOTADOS',
-                      value: '${next.playerUids.length}',
-                      suffix: next.matchSize > 0 ? '/${next.matchSize}' : null,
-                    ),
-                  ),
-                ],
-                ),
+              _TunnelMatchHero(match: next, isLive: live.isNotEmpty)
+            else
+              _EmptyMural(
+                label: 'SIN PARTIDOS AGENDADOS',
+                message: 'No estás anotada en ningún partido todavía.',
+                actionLabel: 'Crear partido',
+                onAction: () => context.push('/matches'),
               ),
 
-            const SizedBox(height: 5),
+            const SizedBox(height: 16),
+            Divider(height: 1, thickness: 1.5, color: Colors.white.withValues(alpha: 0.1)),
+            const SizedBox(height: 16),
 
-            // ── Tu OVR · Tus números ─────────────────────────────────────
+            // ── 2. TUS NÚMEROS (OVR MONUMENTAL + EFECTIVIDAD) ───────────
             if (player != null)
-              Expanded(
-                flex: 4,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: _OvrTile(ovr: player.ovr, trend: trend, history: history),
-                    ),
-                    const SizedBox(width: 5),
-                    Expanded(
-                      child: _TotalsTile(
-                        matches: player.stats.matchesPlayed,
-                        goals: player.stats.goals,
-                      ),
-                    ),
-                  ],
-                ),
+              _PlayerPerformanceMural(player: player!, trend: trend)
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Text('Cargando ficha del jugador...',
+                    style: AppTypography.body(size: 12, color: AppColors.textMuted)),
               ),
 
-            const SizedBox(height: 5),
+            const SizedBox(height: 16),
+            Divider(height: 1, thickness: 1.5, color: Colors.white.withValues(alpha: 0.1)),
+            const SizedBox(height: 16),
 
-            // ── Último resultado ─────────────────────────────────────────
-            Expanded(
-              flex: 3,
-              child: lastPlayed != null
-                  ? _LastResultTile(match: lastPlayed)
-                  : const _EmptyTile(
-                      label: 'ÚLTIMO RESULTADO',
-                      value: 'Todavía nada',
-                      hint: 'Acá va a aparecer cuando jueguen el primero.',
-                    ),
-            ),
+            // ── 3. ÚLTIMO PARTIDO JUGADO EN LÍNEA ABIERTA ────────────────
+            if (lastPlayed != null)
+              _LastResultMural(match: lastPlayed)
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text('Todavía no disputaste ningún partido evaluado.',
+                    style: AppTypography.body(size: 12, color: AppColors.textMuted)),
+              ),
           ],
         );
       },
@@ -396,430 +401,608 @@ class _ResumenTabBody extends ConsumerWidget {
   }
 }
 
-/// Cuándo y hora en una línea.
-String _whenLine(MatchModel m) {
-  final d = _fmtDate(m.date);
-  final t = m.time;
-  return t == null ? d : '$d · $t';
-}
-
-// ─────────────────────────────────────────────────────────────────────────
-// Piezas del tablero
-// ─────────────────────────────────────────────────────────────────────────
-
-const _tileBg = Color(0xFF151C27);
-
-/// Combina `date` (ISO) con `time` ("21:00" o "21:00 hs") para saber a qué
-/// hora arranca. Sin hora, se asume el arranque del día.
-DateTime? _kickoffOf(MatchModel m) {
-  final d = DateTime.tryParse(m.date);
-  if (d == null) return null;
-  final local = d.toLocal();
-  final clean = (m.time ?? '').replaceAll('hs', '').trim();
-  final parts = clean.split(':');
-  final hh = parts.isNotEmpty ? int.tryParse(parts[0]) ?? 0 : 0;
-  final mm = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
-  return DateTime(local.year, local.month, local.day, hh, mm);
-}
-
-class _Tile extends StatelessWidget {
-  final String label;
-  final String value;
-  final String? suffix;
-  final String? hint;
-  final double valueSize;
-  final Color? valueColor;
-
-  const _Tile({
-    required this.label,
-    required this.value,
-    this.suffix,
-    this.hint,
-    this.valueSize = 24,
-    this.valueColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(11, 9, 11, 11),
-      color: _tileBg,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: AppTypography.code(size: 8, color: AppColors.textMuted)),
-          const SizedBox(height: 3),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Flexible(
-                child: Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.sportNumber(
-                    size: valueSize,
-                    color: valueColor ?? AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              if (suffix != null)
-                Text(
-                  suffix!,
-                  style: AppTypography.sportNumber(size: 13, color: AppColors.textMuted),
-                ),
-            ],
-          ),
-          if (hint != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              hint!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.code(size: 9, color: AppColors.textMuted),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyTile extends StatelessWidget {
-  final String label;
-  final String value;
-  final String hint;
-
-  const _EmptyTile({required this.label, required this.value, required this.hint});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(13, 11, 13, 13),
-      color: _tileBg,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: AppTypography.code(size: 8, color: AppColors.textMuted)),
-          const SizedBox(height: 4),
-          Text(value, style: AppTypography.headline(size: 16, weight: FontWeight.w700)),
-          const SizedBox(height: 2),
-          Text(hint, style: AppTypography.body(size: 11, color: AppColors.textMuted)),
-        ],
-      ),
-    );
-  }
-}
-
-/// La pieza grande: cuánto falta, o el marcador si ya está jugándose.
-class _KickoffTile extends StatelessWidget {
+/// Hero del Partido con Camisetas en Perspectiva ("El Túnel")
+/// El próximo partido: las dos camisetas saliendo del túnel y el choque.
+///
+/// La animación es una sola coreografía, no efectos sueltos:
+///
+/// 1. **Salida al campo.** Cada camiseta entra desde su costado, más ladeada
+///    de lo que va a quedar (±16° contra los ±4° de reposo) y más chica, y se
+///    va acomodando sobre el eje. La visitante sale 120 ms después que la
+///    local, para que se lea como dos equipos y no como un bloque.
+/// 2. **El choque.** El `/VS/` no aparece: entra de golpe justo cuando las dos
+///    camisetas terminan de cruzarse, del triple de su tamaño, con un rebote.
+///    Ese instante es el que le da sentido al resto.
+/// 3. **La tela.** Después nada se queda quieto: cada camiseta oscila sobre su
+///    ángulo de reposo y flota, con frecuencias distintas (1.00 y 1.18) y
+///    desfasadas un cuarto de ciclo. Frecuencias iguales se sincronizan y el
+///    ojo lo lee como un GIF; distintas y sin múltiplo común, nunca repite.
+/// 4. **En vivo.** El marcador late y el `/VS/` se pone rojo.
+///
+/// Si el sistema pide menos movimiento (`MediaQuery.disableAnimations`), se
+/// dibuja el estado final quieto y no se crea ningún ticker.
+class _TunnelMatchHero extends StatefulWidget {
   final MatchModel match;
   final bool isLive;
 
-  const _KickoffTile({required this.match, required this.isLive});
+  const _TunnelMatchHero({required this.match, required this.isLive});
+
+  @override
+  State<_TunnelMatchHero> createState() => _TunnelMatchHeroState();
+}
+
+class _TunnelMatchHeroState extends State<_TunnelMatchHero>
+    with TickerProviderStateMixin {
+  late final AnimationController _entrance;
+  late final AnimationController _ambient;
+
+  /// Reposo de cada camiseta, en radianes (unos 4°).
+  static const _restAngle = 0.07;
+
+  @override
+  void initState() {
+    super.initState();
+    _entrance = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1150),
+    );
+    // El vaivén: 4,2 s da un movimiento de tela, no de péndulo.
+    _ambient = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 4200),
+    );
+  }
+
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Arranca acá y no en initState porque necesita saber si el sistema pide
+    // menos movimiento, y eso sale del MediaQuery.
+    if (_started) return;
+    _started = true;
+    if (!MediaQuery.disableAnimationsOf(context)) {
+      _entrance.forward();
+      _ambient.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _TunnelMatchHero old) {
+    super.didUpdateWidget(old);
+    // Si cambió el partido, vuelven a salir del túnel.
+    if (old.match.id != widget.match.id &&
+        !MediaQuery.disableAnimationsOf(context)) {
+      _entrance.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _entrance.dispose();
+    _ambient.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final match = widget.match;
+    final isLive = widget.isLive;
     final kickoff = _kickoffOf(match);
     final a = match.teamA;
     final b = match.teamB;
 
+    final aColor = a != null
+        ? _parseHexColor(a.jersey?.primaryColor ?? a.color, const Color(0xFF2563EB))
+        : const Color(0xFF2563EB);
+    final bColor = b != null
+        ? _parseHexColor(b.jersey?.primaryColor ?? b.color, const Color(0xFFEA580C))
+        : const Color(0xFFEA580C);
+
     return InkWell(
       onTap: () => context.push('/matches/${match.id}'),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(13, 11, 13, 13),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF17202E), Color(0xFF131A26)],
-          ),
-          border: isLive
-              ? Border.all(color: AppColors.destructive.withValues(alpha: 0.55))
-              : null,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              isLive ? 'EN VIVO · ${match.currentMinute ?? 1}\'' : 'ARRANCA EN',
-              style: AppTypography.code(
-                size: 8,
-                color: isLive ? AppColors.destructive : AppColors.textMuted,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Fila Superior: Reloj Countdown + Fecha & Hora
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isLive
+                          ? 'EN VIVO · MINUTO ${match.currentMinute ?? 1}\''
+                          : 'ARRANCA EN',
+                      style: AppTypography.code(
+                        size: 9,
+                        weight: FontWeight.w800,
+                        color: isLive ? AppColors.destructive : AppColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    if (isLive && a != null && b != null)
+                      _LivePulse(
+                        listenable: _ambient,
+                        child: Text(
+                          '${a.score} — ${b.score}',
+                          style: AppTypography.sportNumber(
+                                  size: 42, color: AppColors.voltNeon)
+                              .copyWith(fontStyle: FontStyle.italic),
+                        ),
+                      )
+                    else if (kickoff != null)
+                      MatchCountdown(
+                        kickoff: kickoff,
+                        size: 42,
+                        color: AppColors.voltNeon,
+                        isItalic: true,
+                      )
+                    else
+                      Text(
+                        match.title,
+                        style: AppTypography.headline(size: 22, weight: FontWeight.w900)
+                            .copyWith(fontStyle: FontStyle.italic),
+                      ),
+                  ],
+                ),
               ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    match.time == null
+                        ? _fmtDate(match.date).toUpperCase()
+                        : '${_fmtDate(match.date).toUpperCase()} · ${match.time}',
+                    style: AppTypography.code(
+                        size: 10, weight: FontWeight.w800, color: AppColors.voltNeon),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'DÍA DE PARTIDO',
+                    style: AppTypography.code(size: 9, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Choque de Camisetas y Nombres jugando con sus colores
+          if (a != null && b != null)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: _CleanTunnelSide(
+                    entrance: _entrance,
+                    ambient: _ambient,
+                    team: a,
+                    teamColor: aColor,
+                    fromLeft: true,
+                  ),
+                ),
+                _CleanVsDivider(
+                  entrance: _entrance,
+                  live: isLive,
+                ),
+                Flexible(
+                  child: _CleanTunnelSide(
+                    entrance: _entrance,
+                    ambient: _ambient,
+                    team: b,
+                    teamColor: bColor,
+                    fromLeft: false,
+                  ),
+                ),
+              ],
             ),
 
-            if (isLive && a != null && b != null)
-              Text(
-                '${a.score} — ${b.score}',
-                style: AppTypography.sportNumber(size: 40, color: AppColors.voltNeon),
-              )
-            else if (kickoff != null)
-              MatchCountdown(kickoff: kickoff)
-            else
-              Text(match.title, style: AppTypography.headline(size: 20, weight: FontWeight.w800)),
+          const SizedBox(height: 18),
 
-            // Quién juega contra quién, en una línea.
-            if (a != null && b != null)
+          // Metadatos Limpios: Sede recortada (solo nombre local) y Convocados
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _MiniKit(jersey: a.jersey),
+                  const Icon(Icons.stadium_outlined, size: 14, color: AppColors.textMuted),
                   const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      a.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+                  Text(
+                    _shortLocation(match.location),
+                    style: AppTypography.code(
+                      size: 10,
+                      weight: FontWeight.w700,
+                      color: AppColors.textSecondary,
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text('VS',
-                        style: AppTypography.code(size: 9, color: AppColors.textMuted)),
-                  ),
-                  Flexible(
-                    child: Text(
-                      b.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.body(size: 11, color: AppColors.textSecondary),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  _MiniKit(jersey: b.jersey),
                 ],
-              )
-            else
-              Text(
-                match.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.body(size: 11, color: AppColors.textSecondary),
               ),
-          ],
-        ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.groups_outlined, size: 14, color: AppColors.textMuted),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${match.playerUids.length}/${match.matchSize > 0 ? match.matchSize : 14} CONVOCADOS',
+                    style: AppTypography.code(
+                      size: 10,
+                      weight: FontWeight.w800,
+                      color: AppColors.voltNeon,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-class _MiniKit extends StatelessWidget {
-  final JerseyModel? jersey;
+String _shortLocation(String? loc) {
+  if (loc == null || loc.trim().isEmpty) return 'CANCHA A DEFINIR';
+  final first = loc.split(',').first.trim();
+  return (first.isNotEmpty ? first : loc).toUpperCase();
+}
 
-  const _MiniKit({required this.jersey});
+Color _parseHexColor(String? hex, Color fallback) {
+  if (hex == null) return fallback;
+  final clean = hex.replaceAll('#', '').trim();
+  if (clean.length == 6) {
+    final val = int.tryParse(clean, radix: 16);
+    if (val != null) return Color(0xFF000000 | val);
+  } else if (clean.length == 3) {
+    final r = clean[0];
+    final g = clean[1];
+    final b = clean[2];
+    final val = int.tryParse('$r$r$g$g$b$b', radix: 16);
+    if (val != null) return Color(0xFF000000 | val);
+  }
+  return fallback;
+}
+
+/// Lado de Equipo Limpio: Camiseta + Nombre con barra de acento en su color
+class _CleanTunnelSide extends StatelessWidget {
+  final Animation<double> entrance;
+  final Animation<double> ambient;
+  final MatchTeam team;
+  final Color teamColor;
+  final bool fromLeft;
+
+  const _CleanTunnelSide({
+    required this.entrance,
+    required this.ambient,
+    required this.team,
+    required this.teamColor,
+    required this.fromLeft,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final j = jersey;
-    if (j == null) {
-      return Icon(Icons.checkroom, size: 17, color: AppColors.textMuted);
-    }
-    return JerseyWidget(jersey: j, size: 20);
+    final delay = fromLeft ? 0.0 : 0.08;
+    final rest = _TunnelMatchHeroState._restAngle * (fromLeft ? -1 : 1);
+
+    final slide = CurvedAnimation(
+      parent: entrance,
+      curve: Interval(delay, delay + 0.60, curve: Curves.easeOutCubic),
+    );
+    final settle = CurvedAnimation(
+      parent: entrance,
+      curve: Interval(delay + 0.15, delay + 0.85, curve: Curves.easeOutBack),
+    );
+    final nameIn = CurvedAnimation(
+      parent: entrance,
+      curve: Interval(delay + 0.30, delay + 0.75, curve: Curves.easeOut),
+    );
+
+    return AnimatedBuilder(
+      animation: Listenable.merge([entrance, ambient]),
+      builder: (context, _) {
+        final dx = (1 - slide.value) * (fromLeft ? -80.0 : 80.0);
+        final angle = rest + (1 - settle.value) * (fromLeft ? -0.15 : 0.15);
+        final scale = 0.80 + 0.20 * slide.value;
+
+        return Transform.translate(
+          offset: Offset(dx, 0),
+          child: Opacity(
+            opacity: slide.value.clamp(0.0, 1.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Camiseta rotada limpiamente sobre el césped
+                Transform.rotate(
+                  angle: angle,
+                  child: Transform.scale(
+                    scale: scale,
+                    child: team.jersey != null
+                        ? JerseyWidget(jersey: team.jersey!, size: 82)
+                        : const Icon(Icons.checkroom,
+                            size: 64, color: AppColors.textMuted),
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+
+                // Sombra sutil y limpia de apoyo
+                Container(
+                  width: 50,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                // Nombre del equipo en tipografía deportiva pura (sin cajas ni bordes)
+                Opacity(
+                  opacity: nameIn.value,
+                  child: Transform.translate(
+                    offset: Offset(0, (1 - nameIn.value) * 8),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          team.name.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.bebasNeue(
+                            fontSize: 22,
+                            letterSpacing: 1.5,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        // Barra deportiva mínima en el color de su camiseta
+                        Container(
+                          width: 22,
+                          height: 2.5,
+                          decoration: BoxDecoration(
+                            color: teamColor,
+                            borderRadius: BorderRadius.circular(1.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
-/// OVR con su línea de evolución de fondo.
-class _OvrTile extends StatelessWidget {
-  final int ovr;
-  final int trend;
-  final List<OvrHistoryEntry> history;
+/// Divisor VS Deportivo: Solo "VS" en blanco sólido con tipografía atlética
+class _CleanVsDivider extends StatelessWidget {
+  final Animation<double> entrance;
+  final bool live;
 
-  const _OvrTile({required this.ovr, required this.trend, required this.history});
+  const _CleanVsDivider({
+    required this.entrance,
+    required this.live,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final impact = CurvedAnimation(
+      parent: entrance,
+      curve: const Interval(0.45, 0.80, curve: Curves.easeOutBack),
+    );
+
+    return AnimatedBuilder(
+      animation: entrance,
+      builder: (context, _) {
+        final k = impact.value;
+        final scale = 0.75 + 0.25 * k.clamp(0.0, 1.0);
+
+        return Opacity(
+          opacity: k.clamp(0.0, 1.0),
+          child: Transform.scale(
+            scale: scale,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                'VS',
+                style: GoogleFonts.bebasNeue(
+                  fontSize: 26,
+                  letterSpacing: 2.0,
+                  color: live ? AppColors.destructive : Colors.white,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// El marcador en vivo latiendo, enganchado al mismo ciclo que todo lo demás.
+class _LivePulse extends StatelessWidget {
+  final Listenable listenable;
+  final Widget child;
+
+  const _LivePulse({required this.listenable, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final anim = listenable as Animation<double>;
+    return AnimatedBuilder(
+      animation: anim,
+      builder: (context, ch) => Transform.scale(
+        // Late al doble de rápido que la tela: se lee como pulso, no como vaivén.
+        scale: 1 + math.sin(4 * math.pi * anim.value).abs() * 0.04,
+        alignment: Alignment.centerLeft,
+        child: ch,
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Rendimiento del Jugador: OVR Monumental y Totales
+class _PlayerPerformanceMural extends StatelessWidget {
+  final PlayerModel player;
+  final int trend;
+
+  const _PlayerPerformanceMural({required this.player, required this.trend});
 
   @override
   Widget build(BuildContext context) {
     final up = trend > 0;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(11, 9, 11, 9),
-      color: _tileBg,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text('TU OVR', style: AppTypography.code(size: 8, color: AppColors.textMuted)),
-          const SizedBox(height: 3),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text('$ovr', style: AppTypography.sportNumber(size: 30)),
-              const SizedBox(width: 6),
-              if (trend != 0)
-                Text(
-                  '${up ? '+' : ''}$trend',
-                  style: AppTypography.sportNumber(
-                    size: 14,
-                    color: up ? AppColors.success : AppColors.destructive,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          // La progresión como línea chica, no como sección aparte: mostrar un
-          // gráfico de media pantalla para decir que pasaste de 51 a 53 no se
-          // justifica.
-          SizedBox(
-            height: 22,
-            width: double.infinity,
-            child: history.length < 2
-                ? const SizedBox.shrink()
-                : CustomPaint(painter: _Sparkline(history.map((e) => e.newOVR).toList())),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Sparkline extends CustomPainter {
-  final List<int> values;
-
-  _Sparkline(this.values);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (values.length < 2 || size.isEmpty) return;
-    final lo = values.reduce((a, b) => a < b ? a : b).toDouble();
-    final hi = values.reduce((a, b) => a > b ? a : b).toDouble();
-    final span = (hi - lo).abs() < 0.5 ? 1.0 : hi - lo;
-
-    final path = Path();
-    for (var i = 0; i < values.length; i++) {
-      final x = size.width * (i / (values.length - 1));
-      final y = size.height - ((values[i] - lo) / span) * size.height;
-      i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
-    }
-
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = AppColors.voltNeon
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.8
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_Sparkline old) => old.values != values;
-}
-
-/// Partidos y goles juntos: son la misma pregunta.
-class _TotalsTile extends StatelessWidget {
-  final int matches;
-  final int goals;
-
-  const _TotalsTile({required this.matches, required this.goals});
-
-  @override
-  Widget build(BuildContext context) {
+    final matches = player.stats.matchesPlayed;
+    final goals = player.stats.goals;
     final avg = matches > 0 ? (goals / matches).toStringAsFixed(1) : '0.0';
-    return Container(
-      padding: const EdgeInsets.fromLTRB(11, 9, 11, 9),
-      color: _tileBg,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text('PARTIDOS', style: AppTypography.code(size: 8, color: AppColors.textMuted)),
-          Text('$matches', style: AppTypography.sportNumber(size: 24)),
-          const SizedBox(height: 7),
-          Text('GOLES', style: AppTypography.code(size: 8, color: AppColors.textMuted)),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        // Columna Izquierda: OVR Gigante en Canvas
+        Expanded(
+          flex: 5,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('$goals', style: AppTypography.sportNumber(size: 24)),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  '$avg por partido',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.code(size: 9, color: AppColors.textMuted),
+              Text(
+                'TU OVR ACTUAL',
+                style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted),
+              ),
+              const SizedBox(height: 2),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    '${player.ovr}',
+                    style: AppTypography.sportNumber(size: 68, color: Colors.white)
+                        .copyWith(fontStyle: FontStyle.italic, letterSpacing: -2),
+                  ),
+                  if (trend != 0) ...[
+                    const SizedBox(width: 4),
+                    Text(
+                      '${up ? '+' : ''}$trend',
+                      style: AppTypography.sportNumber(
+                        size: 18,
+                        color: up ? AppColors.voltNeon : AppColors.destructive,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              Text(
+                'TIER ${player.tier.toUpperCase()}',
+                style: AppTypography.code(
+                  size: 9,
+                  weight: FontWeight.w800,
+                  color: AppColors.getOvrBorderColor(player.ovr),
                 ),
               ),
             ],
           ),
-        ],
-      ),
+        ),
+
+        // Columna Derecha: Totales Deportivos
+        Expanded(
+          flex: 6,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '$goals GOLES',
+                style: AppTypography.sportNumber(size: 30, color: AppColors.voltNeon)
+                    .copyWith(fontStyle: FontStyle.italic),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '$matches PARTIDOS JUGADOS',
+                style: AppTypography.body(size: 13, weight: FontWeight.w700, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'PROMEDIO: $avg G/PJ',
+                style: AppTypography.code(size: 10, weight: FontWeight.w700, color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _LastResultTile extends StatelessWidget {
+/// Último Partido en Línea
+class _LastResultMural extends StatelessWidget {
   final MatchModel match;
 
-  const _LastResultTile({required this.match});
+  const _LastResultMural({required this.match});
 
   @override
   Widget build(BuildContext context) {
     final a = match.teamA!;
     final b = match.teamB!;
+    final diff = a.score - b.score;
+    final stamp = diff > 0 ? 'W' : (diff < 0 ? 'L' : 'D');
+    final stampColor = diff > 0 ? AppColors.voltNeon : (diff < 0 ? AppColors.destructive : AppColors.textMuted);
+
     return InkWell(
       onTap: () => context.push('/matches/${match.id}'),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(11, 9, 11, 11),
-        color: _tileBg,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Row(
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('ÚLTIMO RESULTADO',
-                    style: AppTypography.code(size: 8, color: AppColors.textMuted)),
-                const Spacer(),
-                Text(_fmtDate(match.date),
-                    style: AppTypography.code(size: 8, color: AppColors.textMuted)),
-              ],
-            ),
-            const SizedBox(height: 5),
-            Row(
-              children: [
-                Flexible(
-                  child: Text(
-                    a.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(size: 12, weight: FontWeight.w600),
-                  ),
+                Text(
+                  'ÚLTIMO JUGADO · ${_fmtDate(match.date).toUpperCase()}',
+                  style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Text('${a.score} — ${b.score}',
-                      style: AppTypography.sportNumber(size: 20)),
+                const SizedBox(height: 3),
+                Text(
+                  '${a.name} ${a.score} — ${b.score} ${b.name}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.body(size: 14, weight: FontWeight.w800),
                 ),
-                Flexible(
-                  child: Text(
-                    b.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: AppTypography.body(size: 12, weight: FontWeight.w600),
-                  ),
+                Text(
+                  'Toque para ver crónica y calificaciones',
+                  style: AppTypography.body(size: 11, color: AppColors.textSecondary),
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+          Text(
+            stamp,
+            style: AppTypography.sportNumber(size: 28, color: stampColor)
+                .copyWith(fontStyle: FontStyle.italic),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Port de PlayerStatsCard: 4 métricas reales (no hardcodeadas como el
-/// dashboard viejo tenía: Partidos/Goles/Asistencias/Rating no eran datos
-/// reales). Coinciden exactamente con la web: Partidos Jugados, Goles,
-/// Promedio de Goles por partido, y Tendencia de OVR (de ovrHistory).
+// ─────────────────────────────────────────────────────────────────────────
+// PESTAÑA 2: MI GRUPO (EL CUADRO EN EL TÚNEL)
+// ─────────────────────────────────────────────────────────────────────────
 class _GrupoTab extends ConsumerWidget {
   final String uid;
 
@@ -832,30 +1015,22 @@ class _GrupoTab extends ConsumerWidget {
     return groupIdAsync.when(
       data: (groupId) {
         if (groupId == null) {
-          return Container(
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16)),
-            child: Column(
-              children: [
-                Icon(Icons.groups_2_outlined, size: 40, color: AppColors.textMuted),
-                const SizedBox(height: 10),
-                Text('No hay un grupo activo', style: AppTypography.headline(size: 15)),
-                const SizedBox(height: 4),
-                Text('Creá un grupo o unite a uno para empezar.', style: AppTypography.body(size: 12, color: AppColors.textMuted), textAlign: TextAlign.center),
-                const SizedBox(height: 14),
-                ElevatedButton(
-                  onPressed: () => context.push('/groups'),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: Colors.black),
-                  child: const Text('Ir a Grupos'),
-                ),
-              ],
-            ),
+          return _EmptyMural(
+            label: 'SIN GRUPO ACTIVO',
+            message: 'Unite o creá tu grupo para ver las estadísticas del cuadro.',
+            actionLabel: 'Ir a Mis Grupos',
+            onAction: () => context.push('/groups'),
           );
         }
         return _GrupoTabBody(groupId: groupId);
       },
-      loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      loading: () => const Padding(
+        padding: EdgeInsets.all(40),
+        child: Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
+      ),
+      error: (e, _) => Center(
+        child: Text('Error: $e', style: AppTypography.body(color: AppColors.destructive)),
+      ),
     );
   }
 }
@@ -872,367 +1047,377 @@ class _GrupoTabBody extends ConsumerWidget {
     final matchesAsync = ref.watch(matchesStreamProvider(groupId));
 
     return groupAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 48),
+        child: Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
+      ),
+      error: (e, _) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        child: Text('No se pudo cargar el grupo.',
+            style: AppTypography.body(size: 13, color: AppColors.textMuted)),
+      ),
       data: (group) {
-        if (group == null) return const SizedBox();
-        final players = playersAsync.value ?? const <PlayerModel>[];
-        final matches = matchesAsync.value ?? const <MatchModel>[];
+        if (group == null) {
+          return _EmptyMural(
+            label: 'GRUPO NO ENCONTRADO',
+            message: 'El grupo no existe o fue eliminado.',
+            actionLabel: 'Explorar Grupos',
+            onAction: () => context.push('/groups'),
+          );
+        }
 
-        final topMvp = ([...players]..sort((a, b) => b.stats.mvpCount.compareTo(a.stats.mvpCount)))
-            .where((p) => p.stats.mvpCount > 0)
-            .toList();
-        final topMvpPlayer = topMvp.isNotEmpty ? topMvp.first : null;
+        final players = playersAsync.value ?? const [];
+        final matches = matchesAsync.value ?? const [];
+        final played = matches.where((m) => m.status == 'completed' || m.status == 'evaluated').toList();
 
-        final totalMatchesCount = matches.where((m) => m.status == 'evaluated' || m.status == 'completed' || m.status == 'active').length;
+        final byGoals = [...players]..sort((a, b) => b.stats.goals.compareTo(a.stats.goals));
+        final byOvr = [...players]..sort((a, b) => b.ovr.compareTo(a.ovr));
+        final topScorer = byGoals.isNotEmpty && byGoals.first.stats.goals > 0 ? byGoals.first : null;
+        final topOvr = byOvr.isNotEmpty ? byOvr.first : null;
 
-        final upcoming = matches.where((m) => m.status == 'upcoming').toList()
-          ..sort((a, b) => (DateTime.tryParse(a.date) ?? DateTime(9999)).compareTo(DateTime.tryParse(b.date) ?? DateTime(9999)));
-
-        final evaluated = matches.where((m) => m.status == 'evaluated').toList()
-          ..sort((a, b) => (DateTime.tryParse(b.date) ?? DateTime(0)).compareTo(DateTime.tryParse(a.date) ?? DateTime(0)));
-        final recentEvaluated = evaluated.take(4).toList();
+        final now = DateTime.now();
+        final agenda = matches.where((m) {
+          if (m.status != 'upcoming') return false;
+          final dt = _matchDateTime(m);
+          return dt != null && !dt.isBefore(now);
+        }).toList()
+          ..sort((a, b) => (_matchDateTime(a) ?? DateTime(9999)).compareTo(_matchDateTime(b) ?? DateTime(9999)));
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _GroupHeroCard(group: group),
-            const SizedBox(height: 20),
-
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: AppColors.card.withValues(alpha: 0.4), borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [
-                    Icon(Icons.search, size: 16, color: AppColors.voltNeon),
-                    const SizedBox(width: 8),
-                    Text('LA LUPA', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.voltNeon)),
-                  ]),
-                  const SizedBox(height: 14),
-                  Row(
+            // ── 1. CABECERA DEL CUADRO CON SU CAMISETA OFICIAL ──────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: _QuickStatBox(
-                          icon: Icons.history,
-                          label: 'Partidos\nTotales',
-                          value: '$totalMatchesCount',
-                        ),
+                      Text(
+                        'TU CUADRO',
+                        style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _MvpBox(player: topMvpPlayer),
+                      const SizedBox(height: 2),
+                      Text(
+                        group.name.toUpperCase(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.headline(size: 32, weight: FontWeight.w900)
+                            .copyWith(fontStyle: FontStyle.italic, letterSpacing: -1),
+                      ),
+                      const SizedBox(height: 4),
+                      InkWell(
+                        onTap: () {
+                          Clipboard.setData(ClipboardData(text: group.inviteCode));
+                          HapticFeedback.selectionClick();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Código copiado: ${group.inviteCode}'),
+                              backgroundColor: AppColors.cardSurface,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'CÓDIGO: ',
+                              style: AppTypography.code(size: 11, color: AppColors.textMuted),
+                            ),
+                            Text(
+                              group.inviteCode,
+                              style: AppTypography.code(size: 12, weight: FontWeight.w800, color: AppColors.voltNeon),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.copy_rounded, size: 12, color: AppColors.voltNeon),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            _SectionCard(
-              icon: Icons.newspaper_outlined,
-              title: 'En Agenda',
-              child: upcoming.isEmpty
-                  ? Text('No hay partidos próximos.', style: AppTypography.body(size: 12, color: AppColors.textMuted))
-                  : Column(
-                      children: upcoming
-                          .take(5)
-                          .map((m) => InkWell(
-                                onTap: () => context.push('/matches/${m.id}'),
-                                borderRadius: BorderRadius.circular(10),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textMuted),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(m.title, style: AppTypography.body(size: 13, weight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                      ),
-                                      Text(_fmtDate(m.date), style: AppTypography.body(size: 11, color: AppColors.textMuted)),
-                                    ],
-                                  ),
-                                ),
-                              ))
-                          .toList(),
-                    ),
-            ),
-            const SizedBox(height: 20),
-
-            if (recentEvaluated.isNotEmpty)
-              _SectionCard(
-                icon: Icons.emoji_events_outlined,
-                title: 'Últimos Partidos',
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 0.95),
-                  itemCount: recentEvaluated.length,
-                  itemBuilder: (context, index) => _EvaluatedMatchCard(match: recentEvaluated[index]),
                 ),
-              ),
-          ],
-        );
-      },
-      loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
-      error: (e, _) => Center(child: Text('Error: $e')),
-    );
-  }
-}
+                _TeamJerseyStack(groupId: groupId),
+              ],
+            ),
 
-class _GroupHeroCard extends StatelessWidget {
-  final GroupModel group;
+            const SizedBox(height: 16),
+            Divider(height: 1, thickness: 1.5, color: Colors.white.withValues(alpha: 0.1)),
+            const SizedBox(height: 16),
 
-  const _GroupHeroCard({required this.group});
-
-  Future<void> _shareInvite(BuildContext context) async {
-    final text = '¡Sumate a nuestro grupo de fútbol "${group.name}" en Pateá! Usá este código para unirte: ${group.inviteCode}';
-    final uri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(text)}');
-    if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.card, AppColors.cardSurface],
-        ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5), width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            Icon(Icons.groups_2_outlined, size: 14, color: AppColors.voltNeon),
-            const SizedBox(width: 6),
-            Text('GRUPO ACTIVO', style: AppTypography.code(size: 10, weight: FontWeight.w800, color: AppColors.voltNeon)),
-          ]),
-          const SizedBox(height: 8),
-          Text(group.name, style: AppTypography.headline(size: 24, weight: FontWeight.w900), maxLines: 2, overflow: TextOverflow.ellipsis),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Clipboard.setData(ClipboardData(text: group.inviteCode));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('¡Código copiado!'), backgroundColor: AppColors.success),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.border)),
-                    child: Row(
-                      children: [
-                        Text('CÓDIGO', style: AppTypography.body(size: 10, color: AppColors.textMuted)),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text(group.inviteCode, style: AppTypography.code(size: 14, weight: FontWeight.w800), overflow: TextOverflow.ellipsis)),
-                        Icon(Icons.copy, size: 14, color: AppColors.textMuted),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: () => _shareInvite(context),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366), foregroundColor: Colors.white),
-                icon: const Icon(Icons.share, size: 16),
-                label: const Text('Invitar'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickStatBox extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _QuickStatBox({required this.icon, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-      decoration: BoxDecoration(color: AppColors.cardSurface.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border.withValues(alpha: 0.5))),
-      child: Column(
-        children: [
-          Icon(icon, size: 20, color: AppColors.textMuted),
-          const SizedBox(height: 6),
-          Text(label, textAlign: TextAlign.center, style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted)),
-          const SizedBox(height: 4),
-          Text(value, style: AppTypography.headline(size: 22, weight: FontWeight.w900, color: AppColors.voltNeon)),
-        ],
-      ),
-    );
-  }
-}
-
-class _MvpBox extends StatelessWidget {
-  final PlayerModel? player;
-
-  const _MvpBox({required this.player});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.goldBorder.withValues(alpha: 0.4)),
-      ),
-      child: Column(
-        children: [
-          if (player != null)
-            CircleAvatar(
-              radius: 14,
-              backgroundColor: AppColors.goldBorder.withValues(alpha: 0.2),
-              backgroundImage: player!.photoUrl != null && player!.photoUrl!.isNotEmpty ? NetworkImage(player!.photoUrl!) : null,
-              child: player!.photoUrl == null || player!.photoUrl!.isEmpty ? Text(player!.name.isNotEmpty ? player!.name[0] : '?', style: AppTypography.body(size: 12, weight: FontWeight.w700)) : null,
-            )
-          else
-            Icon(Icons.military_tech_outlined, size: 20, color: AppColors.textMuted),
-          const SizedBox(height: 6),
-          Text('TOP\nMVP', textAlign: TextAlign.center, style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted)),
-          const SizedBox(height: 4),
-          Text(
-            player != null ? player!.name.split(' ').first : '-',
-            style: AppTypography.headline(size: 13, weight: FontWeight.w800, color: AppColors.goldBorder),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (player != null) Text('${player!.stats.mvpCount}x', style: AppTypography.body(size: 10, color: AppColors.goldBorder.withValues(alpha: 0.7))),
-        ],
-      ),
-    );
-  }
-}
-
-class _EvaluatedMatchCard extends StatelessWidget {
-  final MatchModel match;
-
-  const _EvaluatedMatchCard({required this.match});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = getMatchTypeTheme(match.type);
-    final hasTeams = match.teamA != null && match.teamB != null;
-
-    return InkWell(
-      onTap: () => context.push('/matches/${match.id}'),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(color: AppColors.cardSurface.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(12), border: Border.all(color: theme.brandColor.withValues(alpha: 0.3))),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
+            // ── 2. TOTALES DEL PLANTEL (EN LÍNEA ABIERTA) ────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: theme.brandColor)),
-                Text('✓ EVALUADO', style: AppTypography.code(size: 8, weight: FontWeight.w800, color: AppColors.success)),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('PLANTEL TOTAL', style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted)),
+                    Text('${players.length}', style: AppTypography.sportNumber(size: 38)),
+                    Text('jugadores registrados', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('PARTIDOS JUGADOS', style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted)),
+                    Text('${played.length}', style: AppTypography.sportNumber(size: 38, color: AppColors.voltNeon)),
+                    Text('en el historial', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                  ],
+                ),
               ],
             ),
+
+            const SizedBox(height: 16),
+            Divider(height: 1, thickness: 1.5, color: Colors.white.withValues(alpha: 0.1)),
+            const SizedBox(height: 16),
+
+            // ── 3. DESTACADOS DEL PLANTEL (MEJOR OVR Y GOLEADOR) ────────
+            Text(
+              'FIGURAS DEL PLANTEL',
+              style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted),
+            ),
+            const SizedBox(height: 12),
+
+            if (topOvr != null)
+              _GroupFigureRow(
+                label: 'MEJOR OVR · ${topOvr.tier.toUpperCase()}',
+                name: topOvr.name,
+                value: '${topOvr.ovr}',
+                valueColor: Colors.white,
+                tierColor: AppColors.getOvrBorderColor(topOvr.ovr),
+                onTap: () => context.push('/players/${topOvr.id}'),
+              ),
+
+            if (topScorer != null) ...[
+              const SizedBox(height: 10),
+              _GroupFigureRow(
+                label: 'MÁXIMO GOLEADOR',
+                name: topScorer.name,
+                value: '${topScorer.stats.goals} G',
+                valueColor: AppColors.voltNeon,
+                tierColor: AppColors.getOvrBorderColor(topScorer.ovr),
+                onTap: () => context.push('/players/${topScorer.id}'),
+              ),
+            ],
+
+            const SizedBox(height: 16),
+            Divider(height: 1, thickness: 1.5, color: Colors.white.withValues(alpha: 0.1)),
+            const SizedBox(height: 16),
+
+            // ── 4. EN AGENDA (LISTA ABIERTA) ─────────────────────────────
+            Text(
+              'EN AGENDA',
+              style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted),
+            ),
             const SizedBox(height: 8),
-            if (hasTeams)
-              Row(
-                children: [
-                  Expanded(child: Text(match.teamA!.name, style: AppTypography.body(size: 10, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                  Text('${match.teamA!.score}-${match.teamB!.score}', style: AppTypography.body(size: 11, weight: FontWeight.w800)),
-                  Expanded(child: Text(match.teamB!.name, textAlign: TextAlign.right, style: AppTypography.body(size: 10, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                ],
+
+            if (agenda.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text('Nada agendado todavía.',
+                    style: AppTypography.body(size: 12, color: AppColors.textMuted)),
               )
             else
-              Text(match.title, style: AppTypography.body(size: 12, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
-            const Spacer(),
-            Text(_fmtDate(match.date), style: AppTypography.body(size: 9, color: AppColors.textMuted)),
+              ...agenda.take(4).map(
+                    (m) => InkWell(
+                      onTap: () => context.push('/matches/${m.id}'),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 7),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                m.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.body(size: 13, weight: FontWeight.w800),
+                              ),
+                            ),
+                            Text(
+                              m.time == null ? _fmtDate(m.date) : '${_fmtDate(m.date)} · ${m.time}',
+                              style: AppTypography.code(size: 10, weight: FontWeight.w800, color: AppColors.voltNeon),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => SharePlus.instance.share(
+                ShareParams(text: '¡Sumate a "${group.name}" en Pateá! Código: ${group.inviteCode}'),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.voltNeon,
+                side: const BorderSide(color: AppColors.voltNeon, width: 1.2),
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              icon: const Icon(Icons.share_rounded, size: 16),
+              label: Text('Invitar al cuadro', style: AppTypography.headline(size: 13, weight: FontWeight.w800)),
+            ),
           ],
+        );
+      },
+    );
+  }
+}
+
+/// Las camisetas de los equipos del grupo, encimadas.
+///
+/// Acá antes iba `group.defaultJersey`, un campo que no existe ni en Firestore
+/// ni en el schema de la web: siempre dibujaba la camiseta por defecto, igual
+/// para todos los grupos. Las camisetas son de los equipos, así que se muestran
+/// esas — hasta tres, la del frente es el equipo más nuevo.
+class _TeamJerseyStack extends ConsumerWidget {
+  final String groupId;
+
+  const _TeamJerseyStack({required this.groupId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final teams = ref.watch(groupTeamsStreamProvider(groupId)).value ?? const [];
+
+    if (teams.isEmpty) {
+      return SizedBox(
+        width: 72,
+        height: 72,
+        child: Center(
+          child: Icon(Icons.checkroom_rounded,
+              size: 34, color: AppColors.textMuted.withValues(alpha: 0.4)),
         ),
+      );
+    }
+
+    final shown = teams.take(3).toList();
+
+    return SizedBox(
+      width: 72,
+      height: 72,
+      child: Stack(
+        alignment: Alignment.centerRight,
+        children: [
+          // Se dibujan de atrás hacia adelante: el último de la lista queda al
+          // fondo, corrido y más chico.
+          for (var i = shown.length - 1; i >= 0; i--)
+            Positioned(
+              right: i * 13.0,
+              child: Transform.rotate(
+                angle: i * -0.09,
+                child: Opacity(
+                  opacity: i == 0 ? 1 : 0.55 - (i - 1) * 0.15,
+                  child: JerseyWidget(jersey: shown[i].jersey, size: 58 - i * 4.0),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 }
 
-// ---------------------------------------------------------------------
-// Widgets compartidos
-// ---------------------------------------------------------------------
-/// Bloque de sección: barra de acento, título y contenido apoyado sobre el
-/// fondo.
-///
-/// Antes cada sección era una tarjeta con fondo propio y borde. Apiladas —
-/// próximo partido, en vivo, estadísticas, progresión, anteriores— la pantalla
-/// terminaba siendo una pila de recuadros grises, todos del mismo peso, sin
-/// que ninguno destacara sobre otro.
-class _SectionCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final Widget child;
+class _GroupFigureRow extends StatelessWidget {
+  final String label;
+  final String name;
+  final String value;
+  final Color valueColor;
+  final Color tierColor;
+  final VoidCallback onTap;
 
-  const _SectionCard({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    required this.child,
+  const _GroupFigureRow({
+    required this.label,
+    required this.name,
+    required this.value,
+    required this.valueColor,
+    required this.tierColor,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 3,
-              height: 15,
-              margin: const EdgeInsets.only(top: 1, right: 9),
-              color: AppColors.voltNeon,
-            ),
-            Expanded(
-              child: Column(
+    return InkWell(
+      onTap: onTap,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: tierColor,
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: tierColor.withValues(alpha: 0.5), blurRadius: 6)],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title.toUpperCase(),
-                    style: AppTypography.headline(
-                      size: 13,
-                      weight: FontWeight.w900,
-                      letterSpacing: 0.4,
-                    ),
+                    name.toUpperCase(),
+                    style: AppTypography.headline(size: 14, weight: FontWeight.w800),
                   ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      style: AppTypography.body(size: 11, color: AppColors.textMuted),
-                    ),
-                  ],
+                  Text(
+                    label,
+                    style: AppTypography.code(size: 9, color: AppColors.textMuted),
+                  ),
                 ],
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        child,
-      ],
+            ],
+          ),
+          Text(
+            value,
+            style: AppTypography.sportNumber(size: 26, color: valueColor)
+                .copyWith(fontStyle: FontStyle.italic),
+          ),
+        ],
+      ),
     );
   }
 }
 
+class _EmptyMural extends StatelessWidget {
+  final String label;
+  final String message;
+  final String actionLabel;
+  final VoidCallback onAction;
+
+  const _EmptyMural({
+    required this.label,
+    required this.message,
+    required this.actionLabel,
+    required this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted)),
+          const SizedBox(height: 6),
+          Text(message, style: AppTypography.headline(size: 16, weight: FontWeight.w800)),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: onAction,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.voltNeon,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: Text(actionLabel, style: AppTypography.headline(size: 12, weight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -1,6 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- INTERNET llegaba sólo por el manifiesto de debug/profile y, en release,
+         por el de alguna librería de Firebase. Declararlo acá lo saca de esa
+         dependencia transitiva: si mañana cambia una dependencia, la app de
+         producción no se queda sin red.
+         POST_NOTIFICATIONS es obligatorio desde Android 13 para poder siquiera
+         pedirle el permiso al usuario. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
     <application
-        android:label="patea_mobile"
+        android:label="Pateá"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

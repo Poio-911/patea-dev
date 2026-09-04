@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pateá — 4 Animaciones de Banner Deportivo</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:ital,wght@0,400;0,700;0,900;1,700;1,900&family=JetBrains+Mono:wght@700;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <!-- GSAP for authentic 60fps cinematic animation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+  <style>
+    :root {
+      --bg-pitch: #0B110D;
+      --volt-neon: #CCFF00;
+      --volt-glow: rgba(204, 255, 0, 0.45);
+      --electric-blue: #00E5FF;
+      --flame-orange: #FF5500;
+      --dark-card: #0D1410;
+      --border-line: rgba(255, 255, 255, 0.12);
+      --text-muted: #8E9B90;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background: #060907;
+      color: #FFFFFF;
+      font-family: 'Space Grotesk', -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 60px;
+    }
+
+    /* Top Control Bar */
+    .header-bar {
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .header-bar h1 {
+      font-size: 20px;
+      font-weight: 900;
+      font-style: italic;
+      letter-spacing: -0.5px;
+      text-transform: uppercase;
+      color: #FFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .header-bar h1 span {
+      color: var(--volt-neon);
+    }
+
+    .header-bar p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Selector de Opciones */
+    .tabs-nav {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      max-width: 480px;
+      width: 100%;
+      margin-bottom: 24px;
+    }
+
+    .tab-btn {
+      background: #111914;
+      border: 1px solid var(--border-line);
+      color: #99A89C;
+      padding: 10px 4px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      text-align: center;
+    }
+
+    .tab-btn:hover {
+      border-color: rgba(204, 255, 0, 0.4);
+      color: #FFF;
+    }
+
+    .tab-btn.active {
+      background: rgba(204, 255, 0, 0.12);
+      border-color: var(--volt-neon);
+      color: var(--volt-neon);
+      box-shadow: 0 0 16px rgba(204, 255, 0, 0.25);
+    }
+
+    .tab-btn .badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      opacity: 0.7;
+    }
+
+    /* Device Mockup Canvas */
+    .phone-stage {
+      width: 100%;
+      max-width: 440px;
+      background: #0E1611;
+      border: 2px solid #1E2B22;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      position: relative;
+    }
+
+    /* Top Action Bar in Phone */
+    .phone-header {
+      padding: 16px 20px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .phone-title {
+      font-size: 16px;
+      font-weight: 900;
+      font-style: italic;
+      color: #FFF;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .replay-pill {
+      background: var(--volt-neon);
+      color: #000;
+      border: none;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 0 14px var(--volt-glow);
+      transition: transform 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .replay-pill:active {
+      transform: scale(0.95);
+    }
+
+    /* Arena Container */
+    .arena-box {
+      position: relative;
+      min-height: 380px;
+      padding: 24px 20px;
+      background: #0A110D;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Real pitch texture background */
+    .pitch-underlay {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(ellipse at 50% 30%, rgba(20, 38, 25, 0.6) 0%, rgba(8, 14, 10, 0.95) 75%),
+                        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 2px, transparent 2px, transparent 48px);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Common Top Telemetry */
+    .top-telemetry {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .countdown-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .countdown-clock {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 40px;
+      font-weight: 900;
+      font-style: italic;
+      color: var(--volt-neon);
+      line-height: 1;
+      letter-spacing: -1.5px;
+      text-shadow: 0 0 20px var(--volt-glow);
+    }
+
+    .countdown-clock span {
+      font-size: 14px;
+      color: rgba(204, 255, 0, 0.7);
+      margin-right: 4px;
+    }
+
+    .date-badge {
+      text-align: right;
+    }
+
+    .date-badge .time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--volt-neon);
+    }
+
+    .date-badge .tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 3px;
+    }
+
+    /* Clash Center Area */
+    .clash-container {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      margin: 28px 0 20px;
+      perspective: 800px;
+    }
+
+    .team-fighter {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .jersey-wrap {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: center center;
+    }
+
+    .jersey-svg {
+      width: 82px;
+      height: 82px;
+      filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.8));
+    }
+
+    .jersey-shadow {
+      width: 60px;
+      height: 14px;
+      background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.8) 0%, rgba(0,0,0,0) 70%);
+      margin-top: 4px;
+      border-radius: 50%;
+    }
+
+    .team-name {
+      font-size: 13px;
+      font-weight: 900;
+      font-style: italic;
+      color: #FFF;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 8px;
+    }
+
+    /* Bottom Info Strip */
+    .bottom-strip {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .strip-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+    }
+
+    .strip-pill.accent {
+      background: rgba(204, 255, 0, 0.08);
+      border-color: rgba(204, 255, 0, 0.3);
+    }
+
+    .strip-pill .pill-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    /* ==========================================================================
+       ESPECÍFICOS DE CADA OPCIÓN
+       ========================================================================== */
+
+    /* --- OPCIÓN 1: EL CHOQUE CALLEJERO (Spring Recoil + Impact Sparks) --- */
+    .opt1-spotlight {
+      position: absolute;
+      top: -20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle, rgba(204, 255, 0, 0.16) 0%, transparent 65%);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .opt1-vs-badge {
+      position: relative;
+      transform: skewX(-14deg);
+      background: #0B1015;
+      border: 2px solid var(--volt-neon);
+      padding: 8px 16px;
+      border-radius: 6px;
+      box-shadow: 0 0 25px var(--volt-glow), inset 0 0 12px rgba(204, 255, 0, 0.2);
+    }
+
+    .opt1-vs-badge .vs-core {
+      font-size: 20px;
+      font-weight: 900;
+      font-style: italic;
+      color: #FFF;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .opt1-vs-badge .vs-core .bolt {
+      color: var(--volt-neon);
+      font-size: 16px;
+    }
+
+    .opt1-clash-shockwave {
+      position: absolute;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      border: 3px solid var(--volt-neon);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* --- OPCIÓN 2: BROADCAST SPLIT / EA SPORTS (Slanted HUD + Scanline) --- */
+    .opt2-split-bg {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .opt2-slice-local {
+      position: absolute;
+      top: -20%;
+      left: -20%;
+      width: 80%;
+      height: 140%;
+      background: linear-gradient(135deg, rgba(0, 102, 255, 0.22) 0%, transparent 60%);
+      transform: skewX(-20deg);
+      border-right: 2px solid rgba(0, 229, 255, 0.4);
+    }
+
+    .opt2-slice-away {
+      position: absolute;
+      bottom: -20%;
+      right: -20%;
+      width: 80%;
+      height: 140%;
+      background: linear-gradient(315deg, rgba(255, 85, 0, 0.22) 0%, transparent 60%);
+      transform: skewX(-20deg);
+      border-left: 2px solid rgba(255, 102, 0, 0.4);
+    }
+
+    .opt2-scanline {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--volt-neon), transparent);
+      box-shadow: 0 0 10px var(--volt-neon);
+      z-index: 3;
+      opacity: 0.6;
+    }
+
+    .opt2-vs-badge {
+      width: 52px;
+      height: 52px;
+      background: #000;
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+    }
+
+    .opt2-vs-badge .vs-text {
+      font-size: 17px;
+      font-weight: 900;
+      font-style: italic;
+      color: #FFF;
+    }
+
+    /* --- OPCIÓN 3: POTRERO UNDERGROUND / STENCIL (Heavy Slam & Wall Poster) --- */
+    .opt3-stencil-bg {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 3px);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .opt3-spray-circle {
+      position: absolute;
+      top: 48%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 140px;
+      height: 140px;
+      background: radial-gradient(circle, rgba(204, 255, 0, 0.35) 0%, rgba(204,255,0,0.08) 50%, transparent 70%);
+      filter: blur(8px);
+      z-index: 3;
+    }
+
+    .opt3-vs-badge {
+      font-size: 38px;
+      font-weight: 900;
+      font-style: italic;
+      color: #000;
+      -webkit-text-stroke: 2px var(--volt-neon);
+      text-shadow: 4px 4px 0px rgba(0,0,0,0.9), 0 0 20px var(--volt-neon);
+      transform: rotate(-8deg);
+      letter-spacing: -2px;
+      z-index: 10;
+    }
+
+    /* --- OPCIÓN 4: TÚNEL EN PERSPECTIVA 3D (Z-Depth & Stadium Beams) --- */
+    .opt4-tunnel-lights {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .opt4-light-beam-left {
+      position: absolute;
+      top: -50px;
+      left: 10%;
+      width: 90px;
+      height: 450px;
+      background: linear-gradient(170deg, rgba(204, 255, 0, 0.25) 0%, transparent 80%);
+      transform: rotate(25deg);
+      filter: blur(14px);
+    }
+
+    .opt4-light-beam-right {
+      position: absolute;
+      top: -50px;
+      right: 10%;
+      width: 90px;
+      height: 450px;
+      background: linear-gradient(190deg, rgba(0, 229, 255, 0.25) 0%, transparent 80%);
+      transform: rotate(-25deg);
+      filter: blur(14px);
+    }
+
+    .opt4-monolith {
+      background: linear-gradient(180deg, #18231C 0%, #080D0A 100%);
+      border: 1.5px solid rgba(204, 255, 0, 0.5);
+      border-radius: 10px;
+      padding: 10px 14px;
+      box-shadow: 0 16px 30px rgba(0,0,0,0.9), 0 0 20px rgba(204, 255, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .opt4-monolith .tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      color: var(--volt-neon);
+      letter-spacing: 2px;
+      font-weight: 800;
+    }
+
+    .opt4-monolith .main-vs {
+      font-size: 22px;
+      font-weight: 900;
+      font-style: italic;
+      color: #FFF;
+    }
+
+    /* Explanation Card below phone */
+    .concept-card {
+      max-width: 440px;
+      width: 100%;
+      background: #111A14;
+      border: 1px solid var(--border-line);
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin-top: 20px;
+    }
+
+    .concept-card h3 {
+      font-size: 15px;
+      font-weight: 900;
+      font-style: italic;
+      color: var(--volt-neon);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .concept-card .doctrine-pill {
+      font-size: 9px;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 3px 8px;
+      background: rgba(204, 255, 0, 0.15);
+      color: var(--volt-neon);
+      border-radius: 4px;
+    }
+
+    .concept-card p {
+      font-size: 13px;
+      color: #C0CDC3;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 12px;
+      color: #8E9B90;
+    }
+
+    .feature-list li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .feature-list li::before {
+      content: "▪";
+      color: var(--volt-neon);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-bar">
+    <h1><span>PATEÁ</span> · 4 ANIMACIONES DE BANNER</h1>
+    <p>Diseñadas con las doctrinas de <code>motion-doctrine</code> y <code>cut-the-curve</code></p>
+  </div>
+
+  <!-- Selector de Pestañas -->
+  <div class="tabs-nav">
+    <button class="tab-btn active" onclick="switchOption(1)">
+      <span class="badge">OPT 1</span>
+      EL CHOQUE
+    </button>
+    <button class="tab-btn" onclick="switchOption(2)">
+      <span class="badge">OPT 2</span>
+      BROADCAST
+    </button>
+    <button class="tab-btn" onclick="switchOption(3)">
+      <span class="badge">OPT 3</span>
+      POTRERO
+    </button>
+    <button class="tab-btn" onclick="switchOption(4)">
+      <span class="badge">OPT 4</span>
+      TÚNEL 3D
+    </button>
+  </div>
+
+  <!-- Celular / Marco de Presentación -->
+  <div class="phone-stage">
+    <div class="phone-header">
+      <div class="phone-title">EL VESTUARIO</div>
+      <button class="replay-pill" onclick="replayCurrent()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+        REPETIR
+      </button>
+    </div>
+
+    <!-- Arena Interactiva -->
+    <div class="arena-box" id="arenaBox">
+      <div class="pitch-underlay"></div>
+
+      <!-- Fondos dinámicos según opción -->
+      <div id="dynamicBackdrop"></div>
+
+      <!-- Fila superior: Countdown + Fecha -->
+      <div class="top-telemetry">
+        <div>
+          <div class="countdown-tag">ARRANCA EN</div>
+          <div class="countdown-clock" id="countdownClock">02<span>H</span>: 57<span>M</span>: 45<span>S</span></div>
+        </div>
+        <div class="date-badge">
+          <div class="time">03 DE SEP · 21:00</div>
+          <div class="tag">PREVIA OFICIAL</div>
+        </div>
+      </div>
+
+      <!-- Choque Central -->
+      <div class="clash-container">
+        <!-- Team A (Sin Chaleco - Azul) -->
+        <div class="team-fighter" id="teamA">
+          <div class="jersey-wrap" id="jerseyWrapA">
+            <svg class="jersey-svg" viewBox="0 0 100 100" fill="none">
+              <!-- Jersey Local Azul Marino -->
+              <path d="M22 28 L38 18 Q50 28 62 18 L78 28 L70 45 L62 41 L62 82 L38 82 L38 41 L30 45 Z" fill="#1D4ED8" stroke="#000" stroke-width="2.5" stroke-linejoin="round"/>
+              <path d="M38 18 Q50 28 62 18" stroke="#0F172A" stroke-width="4" fill="none"/>
+              <path d="M38 41 L38 82 M62 41 L62 82" stroke="rgba(0,0,0,0.3)" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="jersey-shadow" id="shadowA"></div>
+          <div class="team-name" id="nameA">SIN CHALECO</div>
+        </div>
+
+        <!-- VS Badge Container -->
+        <div id="vsSlot"></div>
+
+        <!-- Team B (Con Chaleco - Naranja) -->
+        <div class="team-fighter" id="teamB">
+          <div class="jersey-wrap" id="jerseyWrapB">
+            <svg class="jersey-svg" viewBox="0 0 100 100" fill="none">
+              <!-- Jersey Visitante Naranja Fuego -->
+              <path d="M22 28 L38 18 Q50 28 62 18 L78 28 L70 45 L62 41 L62 82 L38 82 L38 41 L30 45 Z" fill="#EA580C" stroke="#000" stroke-width="2.5" stroke-linejoin="round"/>
+              <path d="M38 18 Q50 28 62 18" stroke="#1C1917" stroke-width="4" fill="none"/>
+              <path d="M38 41 L38 82 M62 41 L62 82" stroke="rgba(0,0,0,0.3)" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="jersey-shadow" id="shadowB"></div>
+          <div class="team-name" id="nameB">CON CHALECO</div>
+        </div>
+      </div>
+
+      <!-- Fila inferior: Sede de Estadio + Cupos -->
+      <div class="bottom-strip" id="bottomStrip">
+        <div class="strip-pill">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#CCFF00" stroke-width="2"><path d="M2 9a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V9z"/><path d="M6 6V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/><path d="M10 12h4"/></svg>
+          <span class="pill-text" id="venueText">CANCHA PARQUE BATLLE</span>
+        </div>
+        <div class="strip-pill accent">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#CCFF00" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="pill-text" style="color: var(--volt-neon);">10/10 CONVOCADOS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ficha Técnica de la Opción Activa -->
+  <div class="concept-card" id="conceptCard">
+    <!-- Contenido inyectado dinámicamente -->
+  </div>
+
+  <script>
+    let currentOption = 1;
+    let mainTl = null;
+
+    const concepts = {
+      1: {
+        title: "Opción 1: El Choque Callejero (Collision & Spring Recoil)",
+        doctrine: "cut-the-curve §3 + causal motion",
+        desc: "Las camisetas entran lanzadas desde los costados con aceleración agresiva (power4.in). Justo en el punto de contacto detonan el emblema del VS en Volt Neón, rebotan con retroceso elástico (elastic.out) y se acomodan en el piso con sus sombras vivas.",
+        features: [
+          "Causal Motion real: el impacto de las camisetas CREA el destello del VS.",
+          "Cero flotación boba: quedan ancladas al césped con inclinación de combate (±6°).",
+          "Onda expansiva perimétrica que ilumina el reloj de cuenta regresiva."
+        ]
+      },
+      2: {
+        title: "Opción 2: Broadcast Split / EA Sports (Slanted HUD)",
+        doctrine: "hyperframes-animation (slant cut)",
+        desc: "Estilo transmisión deportiva oficial: un corte diagonal de pantalla abre el haz azul local desde arriba y el haz naranja visitante desde abajo. Un scanline láser sincronizado barre el banner mientras un emblema hexagonal metálico se bloquea en el centro.",
+        features: [
+          "División cromática de cancha que empodera los colores de cada camiseta.",
+          "Scanline horizontal que da textura de transmisión de TV en vivo.",
+          "Emblema geométrico nítido que respira con pulso de energía."
+        ]
+      },
+      3: {
+        title: "Opción 3: Potrero Underground / Stencil Poster",
+        doctrine: "emil-design-eng (mass & impact)",
+        desc: "Inspirado en los afiches callejeros de fútbol y arte urbano: las camisetas caen con fuerza vertical pesada (heavy ground slam) haciendo vibrar la pantalla. El VS se estampa con un sello stencil gigante en Volt Neón como pintura en aerosol sobre hormigón.",
+        features: [
+          "Impacto con masa física y micro-temblor de cámara (shake de 150ms).",
+          "VS Stencil gigante con tipografía callejera desgastada.",
+          "Atmósfera nocturna de potrero con halo de spray en el centro."
+        ]
+      },
+      4: {
+        title: "Opción 4: Túnel en Perspectiva 3D (Z-Depth)",
+        doctrine: "cut-the-curve §2 (inverse zoom-through)",
+        desc: "Las dos camisetas arrancan pequeñas en la oscuridad del fondo del túnel y avanzan a toda velocidad hacia la cámara en el eje Z (rotateY y translateZ), como jugadores saliendo al campo de noche bajo reflectores volumétricos cruzados.",
+        features: [
+          "Profundidad 3D real con perspectiva de vestuario a cancha.",
+          "Haces de reflectores de estadio que barren dinámicamente el fondo.",
+          "Monolito central VS suspendido en primer plano con luz perimetral."
+        ]
+      }
+    };
+
+    function switchOption(num) {
+      currentOption = num;
+      document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
+        btn.classList.toggle('active', idx + 1 === num);
+      });
+      renderOption(num);
+    }
+
+    function replayCurrent() {
+      if (mainTl) mainTl.restart();
+    }
+
+    function renderOption(num) {
+      if (mainTl) mainTl.kill();
+
+      const backdrop = document.getElementById('dynamicBackdrop');
+      const vsSlot = document.getElementById('vsSlot');
+      const teamA = document.getElementById('teamA');
+      const teamB = document.getElementById('teamB');
+      const jerseyWrapA = document.getElementById('jerseyWrapA');
+      const jerseyWrapB = document.getElementById('jerseyWrapB');
+      const shadowA = document.getElementById('shadowA');
+      const shadowB = document.getElementById('shadowB');
+      const card = document.getElementById('conceptCard');
+
+      // Actualizar Ficha Técnica
+      const info = concepts[num];
+      card.innerHTML = `
+        <h3>${info.title} <span class="doctrine-pill">${info.doctrine}</span></h3>
+        <p>${info.desc}</p>
+        <ul class="feature-list">
+          ${info.features.map(f => `<li>${f}</li>`).join('')}
+        </ul>
+      `;
+
+      // Resetear transforms
+      gsap.set([teamA, teamB, jerseyWrapA, jerseyWrapB, shadowA, shadowB], { clearProps: "all" });
+
+      if (num === 1) {
+        // --- OPCIÓN 1: EL CHOQUE CALLEJERO ---
+        backdrop.innerHTML = `
+          <div class="opt1-spotlight" id="spotlight"></div>
+          <div class="opt1-clash-shockwave" id="shockwave"></div>
+        `;
+        vsSlot.innerHTML = `
+          <div class="opt1-vs-badge" id="vsBadge">
+            <div class="vs-core"><span class="bolt">⚡</span>VS<span class="bolt">⚡</span></div>
+          </div>
+        `;
+
+        mainTl = gsap.timeline({ defaults: { ease: "power4.out" } });
+
+        // Posiciones iniciales fuera de cuadro
+        gsap.set(teamA, { x: -160, opacity: 0 });
+        gsap.set(teamB, { x: 160, opacity: 0 });
+        gsap.set('#vsBadge', { scale: 3.5, opacity: 0 });
+        gsap.set(jerseyWrapA, { rotation: -18 });
+        gsap.set(jerseyWrapB, { rotation: 18 });
+
+        mainTl
+          // 1. Entrada lanzada a colisión
+          .to(teamA, { x: 0, opacity: 1, duration: 0.45, ease: "power3.in" }, 0)
+          .to(teamB, { x: 0, opacity: 1, duration: 0.45, ease: "power3.in" }, 0.04)
+          // 2. El impacto en el centro (0.45s): shockwave + VS estallando
+          .to('#shockwave', { scale: 2.2, opacity: 0.9, duration: 0.15, ease: "power1.out" }, 0.45)
+          .to('#shockwave', { opacity: 0, duration: 0.35 }, 0.6)
+          .to('#vsBadge', { scale: 1, opacity: 1, duration: 0.35, ease: "back.out(2.5)" }, 0.45)
+          // 3. Rebote elástico de camisetas tras colisión
+          .to(jerseyWrapA, { rotation: -6, duration: 0.8, ease: "elastic.out(1, 0.4)" }, 0.48)
+          .to(jerseyWrapB, { rotation: 6, duration: 0.8, ease: "elastic.out(1, 0.4)" }, 0.48)
+          // 4. Pulso continuo de iluminación
+          .to('#spotlight', { opacity: 0.7, scale: 1.1, repeat: -1, yoyo: true, duration: 2, ease: "sine.inOut" }, 0.8)
+          .to('#vsBadge', { boxShadow: "0 0 35px rgba(204,255,0,0.7)", repeat: -1, yoyo: true, duration: 1.2, ease: "sine.inOut" }, 0.8);
+
+      } else if (num === 2) {
+        // --- OPCIÓN 2: BROADCAST SPLIT ---
+        backdrop.innerHTML = `
+          <div class="opt2-split-bg">
+            <div class="opt2-slice-local" id="sliceLocal"></div>
+            <div class="opt2-slice-away" id="sliceAway"></div>
+            <div class="opt2-scanline" id="scanline"></div>
+          </div>
+        `;
+        vsSlot.innerHTML = `
+          <div class="opt2-vs-badge" id="vsBadge">
+            <div class="vs-text">VS</div>
+          </div>
+        `;
+
+        mainTl = gsap.timeline({ defaults: { ease: "expo.out" } });
+
+        gsap.set('#sliceLocal', { x: -300, opacity: 0 });
+        gsap.set('#sliceAway', { x: 300, opacity: 0 });
+        gsap.set(teamA, { x: -80, y: -40, opacity: 0 });
+        gsap.set(teamB, { x: 80, y: 40, opacity: 0 });
+        gsap.set('#vsBadge', { scale: 0, rotation: -90 });
+        gsap.set('#scanline', { top: "0%" });
+
+        mainTl
+          // Barrido de apertura de televisión
+          .to('#sliceLocal', { x: 0, opacity: 1, duration: 0.6 }, 0)
+          .to('#sliceAway', { x: 0, opacity: 1, duration: 0.6 }, 0.08)
+          // Camisetas entran siguiendo las diagonales
+          .to(teamA, { x: 0, y: 0, opacity: 1, duration: 0.7 }, 0.15)
+          .to(teamB, { x: 0, y: 0, opacity: 1, duration: 0.7 }, 0.22)
+          // Badge hexagonal se bloquea en el centro
+          .to('#vsBadge', { scale: 1, rotation: 0, duration: 0.5, ease: "back.out(1.8)" }, 0.35)
+          // Scanline cíclica
+          .to('#scanline', { top: "100%", duration: 2.2, repeat: -1, ease: "none" }, 0.4);
+
+      } else if (num === 3) {
+        // --- OPCIÓN 3: POTRERO UNDERGROUND ---
+        backdrop.innerHTML = `
+          <div class="opt3-stencil-bg"></div>
+          <div class="opt3-spray-circle" id="spray"></div>
+        `;
+        vsSlot.innerHTML = `
+          <div class="opt3-vs-badge" id="vsBadge">VS</div>
+        `;
+
+        mainTl = gsap.timeline();
+
+        gsap.set(teamA, { y: -180, opacity: 0, scale: 1.3 });
+        gsap.set(teamB, { y: -180, opacity: 0, scale: 1.3 });
+        gsap.set('#vsBadge', { scale: 4, opacity: 0, rotation: 25 });
+        gsap.set('#spray', { scale: 0, opacity: 0 });
+
+        mainTl
+          // 1. Caída pesada de camisetas (ground slam)
+          .to(teamA, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: "power4.in" }, 0.1)
+          .to(teamB, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: "power4.in" }, 0.18)
+          // 2. Micro-shake del teléfono al aterrizar
+          .to('#arenaBox', { x: 4, duration: 0.05, yoyo: true, repeat: 3 }, 0.6)
+          // 3. Estampado de graffiti stencil
+          .to('#spray', { scale: 1.2, opacity: 0.9, duration: 0.2 }, 0.55)
+          .to('#vsBadge', { scale: 1, opacity: 1, rotation: -8, duration: 0.3, ease: "back.out(2)" }, 0.6)
+          // 4. Vaivén sutil de afiche en pared
+          .to(jerseyWrapA, { rotation: -5, duration: 0.4 }, 0.7)
+          .to(jerseyWrapB, { rotation: 5, duration: 0.4 }, 0.7);
+
+      } else if (num === 4) {
+        // --- OPCIÓN 4: TÚNEL EN PERSPECTIVA 3D ---
+        backdrop.innerHTML = `
+          <div class="opt4-tunnel-lights">
+            <div class="opt4-light-beam-left" id="beamLeft"></div>
+            <div class="opt4-light-beam-right" id="beamRight"></div>
+          </div>
+        `;
+        vsSlot.innerHTML = `
+          <div class="opt4-monolith" id="vsBadge">
+            <div class="tag">MATCHDAY</div>
+            <div class="main-vs">VS</div>
+          </div>
+        `;
+
+        mainTl = gsap.timeline({ defaults: { ease: "expo.out" } });
+
+        // Inician pequeñas al fondo en Z
+        gsap.set(teamA, { scale: 0.2, z: -400, x: -60, opacity: 0 });
+        gsap.set(teamB, { scale: 0.2, z: -400, x: 60, opacity: 0 });
+        gsap.set('#vsBadge', { y: -80, opacity: 0, scale: 0.7 });
+        gsap.set('#beamLeft', { opacity: 0, x: -50 });
+        gsap.set('#beamRight', { opacity: 0, x: 50 });
+
+        mainTl
+          // Encendido de reflectores
+          .to('#beamLeft', { opacity: 0.8, x: 0, duration: 0.8 }, 0)
+          .to('#beamRight', { opacity: 0.8, x: 0, duration: 0.8 }, 0.1)
+          // Avance en Z hacia la cámara
+          .to(teamA, { scale: 1, z: 0, x: 0, opacity: 1, duration: 0.9, ease: "power3.out" }, 0.2)
+          .to(teamB, { scale: 1, z: 0, x: 0, opacity: 1, duration: 0.9, ease: "power3.out" }, 0.3)
+          // Descenso del monolito
+          .to('#vsBadge', { y: 0, opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.6)" }, 0.5)
+          // Movimiento de barrido de los reflectores
+          .to('#beamLeft', { rotation: 35, repeat: -1, yoyo: true, duration: 3, ease: "sine.inOut" }, 0.8)
+          .to('#beamRight', { rotation: -35, repeat: -1, yoyo: true, duration: 3.2, ease: "sine.inOut" }, 0.8);
+      }
+    }
+
+    // Arrancar con Opción 1
+    window.addEventListener('DOMContentLoaded', () => {
+      renderOption(1);
+    });
+  </script>
+</body>
+</html>

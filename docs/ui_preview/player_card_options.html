@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pateá - Opciones Player Card (Basadas en la App & OVR Tiers)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Source+Code+Pro:wght@500;700;800&family=Space+Grotesk:ital,wght@0,500;0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            appBg: '#0C1017',
+            appCard: '#141923',
+            appCardSurface: '#1E2636',
+            appBorder: '#2E384D',
+            volt: '#CCFF33',
+            turquoise: '#00E5CC',
+            posDel: '#F47171',
+            posMed: '#B87BF4',
+            posDef: '#7BB8F4',
+            posPor: '#F7B26E',
+            ovrBronze: '#CD7F32',
+            ovrSilver: '#CBD5E1',
+            ovrGold: '#FBC437',
+            ovrElite: '#00E5CC',
+          },
+          fontFamily: {
+            headline: ['"Space Grotesk"', 'sans-serif'],
+            body: ['"Outfit"', 'sans-serif'],
+            mono: ['"Source Code Pro"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #080C11;
+      color: #F8FAFC;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    /* Speed lines pattern */
+    .speed-lines {
+      background-image: repeating-linear-gradient(
+        -45deg,
+        rgba(255, 255, 255, 0.02) 0px,
+        rgba(255, 255, 255, 0.02) 2px,
+        transparent 2px,
+        transparent 8px
+      );
+    }
+
+    /* Carbon mesh texture */
+    .carbon-mesh {
+      background-image: 
+        radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 0);
+      background-size: 6px 6px;
+    }
+
+    /* Card 3D tilt */
+    .card-wrap {
+      perspective: 1000px;
+    }
+    .card-inner {
+      transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease;
+      transform-style: preserve-3d;
+    }
+    .card-inner:hover {
+      transform: translateY(-6px) scale(1.02);
+    }
+
+    /* Shimmer effect for Elite */
+    @keyframes elite-shimmer {
+      0% { transform: translateX(-150%) skewX(-20deg); }
+      100% { transform: translateX(200%) skewX(-20deg); }
+    }
+    .shimmer-bar {
+      animation: elite-shimmer 4s infinite cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Glow utilities */
+    .glow-bronze { box-shadow: 0 8px 24px -4px rgba(205, 127, 50, 0.25); }
+    .glow-silver { box-shadow: 0 8px 24px -4px rgba(203, 213, 225, 0.22); }
+    .glow-gold   { box-shadow: 0 8px 28px -4px rgba(251, 196, 55, 0.35); }
+    .glow-elite  { box-shadow: 0 8px 32px -2px rgba(0, 229, 204, 0.40); }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+  <!-- HEADER -->
+  <header class="max-w-7xl mx-auto mb-8 text-center">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-volt/10 border border-volt/30 text-volt text-xs font-mono font-bold uppercase tracking-wider mb-3">
+      ⚡ ADN Pateá Mobile &bull; Formato Real de la App (Aspect Ratio 2:3)
+    </div>
+    <h1 class="text-3xl md:text-4xl font-headline font-bold text-white tracking-tight">
+      Evolución de la Player Card por OVR
+    </h1>
+    <p class="text-slate-400 text-sm max-w-2xl mx-auto mt-2">
+      Sin cambiar la estructura ni el tamaño de la tarjeta de la app. Cada carta muta sus <strong>acentos, auras, aros y OVR según su Tier</strong>, integrando los colores y tipografías oficiales de Pateá.
+    </p>
+
+    <!-- SELECTORES EN VIVO -->
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-4 bg-appCard p-3.5 rounded-2xl border border-appBorder/60 max-w-3xl mx-auto shadow-xl">
+      <!-- Selector Tier OVR -->
+      <div class="flex items-center gap-1.5">
+        <span class="text-xs font-mono text-slate-400 uppercase mr-1">OVR Tier:</span>
+        <button onclick="setTier('bronze')" id="btn-bronze" class="tier-btn px-3 py-1 rounded-lg text-xs font-headline font-bold transition-all bg-transparent text-slate-400 hover:text-white border border-transparent">
+          Bronce (54)
+        </button>
+        <button onclick="setTier('silver')" id="btn-silver" class="tier-btn px-3 py-1 rounded-lg text-xs font-headline font-bold transition-all bg-transparent text-slate-400 hover:text-white border border-transparent">
+          Plata (68)
+        </button>
+        <button onclick="setTier('gold')" id="btn-gold" class="tier-btn px-3 py-1 rounded-lg text-xs font-headline font-bold transition-all bg-ovrGold/20 text-ovrGold border border-ovrGold/40 shadow-sm">
+          Oro (81)
+        </button>
+        <button onclick="setTier('elite')" id="btn-elite" class="tier-btn px-3 py-1 rounded-lg text-xs font-headline font-bold transition-all bg-transparent text-slate-400 hover:text-white border border-transparent">
+          Élite (92)
+        </button>
+      </div>
+
+      <div class="h-5 w-px bg-appBorder hidden sm:block"></div>
+
+      <!-- Selector Posición -->
+      <div class="flex items-center gap-1.5">
+        <span class="text-xs font-mono text-slate-400 uppercase mr-1">Pos:</span>
+        <button onclick="setPosition('DEL')" id="pos-DEL" class="pos-btn px-2.5 py-1 rounded-lg text-xs font-headline font-bold bg-posDel/20 text-posDel border border-posDel/40">DEL</button>
+        <button onclick="setPosition('MED')" id="pos-MED" class="pos-btn px-2.5 py-1 rounded-lg text-xs font-headline font-bold bg-transparent text-slate-400 hover:text-white border border-transparent">MED</button>
+        <button onclick="setPosition('DEF')" id="pos-DEF" class="pos-btn px-2.5 py-1 rounded-lg text-xs font-headline font-bold bg-transparent text-slate-400 hover:text-white border border-transparent">DEF</button>
+        <button onclick="setPosition('POR')" id="pos-POR" class="pos-btn px-2.5 py-1 rounded-lg text-xs font-headline font-bold bg-transparent text-slate-400 hover:text-white border border-transparent">POR</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENEDOR 3 OPCIONES -->
+  <main class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+
+    <!-- ============================================================= -->
+    <!-- OPCIÓN 1: APP NATIVE REFINED (Evolución Fiel) -->
+    <!-- ============================================================= -->
+    <div class="flex flex-col items-center">
+      <div class="mb-4 text-center">
+        <span class="text-xs font-mono text-volt uppercase font-bold tracking-wider">Opción 1</span>
+        <h2 class="text-lg font-headline font-bold text-white">App Native Refined</h2>
+        <p class="text-xs text-slate-400">Evolución directa de la app actual. OVR coloreado, badge deportivo de posición y aro de tier.</p>
+      </div>
+
+      <div class="card-wrap w-[240px]">
+        <div id="card1" class="card-inner relative w-full aspect-[2/3] rounded-2xl bg-appCard border border-appBorder overflow-hidden shadow-2xl flex flex-col justify-between p-3.5 select-none">
+          
+          <!-- Aura de fondo por Tier -->
+          <div id="card1-aura" class="absolute inset-0 pointer-events-none transition-all duration-500" style="background: radial-gradient(ellipse at top right, rgba(251,196,55,0.22) 0%, transparent 70%);"></div>
+
+          <!-- Marca de agua de posición (SVG) -->
+          <div class="absolute -bottom-3 -right-3 w-28 h-28 opacity-[0.08] pointer-events-none transition-all">
+            <svg viewBox="0 0 24 24" class="w-full h-full" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+            </svg>
+          </div>
+
+          <!-- HEADER: Posición & OVR -->
+          <div class="relative z-10 flex items-start justify-between">
+            <!-- Badge Posición Deportivo -->
+            <div id="card1-pos-badge" class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-posDel/15 border border-posDel/40 text-posDel transition-colors">
+              <span class="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
+              <span id="card1-pos" class="font-headline font-bold text-xs uppercase tracking-wider">DEL</span>
+            </div>
+
+            <!-- OVR Protagónico por Tier -->
+            <div class="flex flex-col items-end leading-none">
+              <span id="card1-ovr" class="font-headline font-black text-3xl tracking-tight text-ovrGold transition-colors drop-shadow-sm">
+                81
+              </span>
+              <span class="text-[8px] font-mono font-bold text-slate-400 uppercase tracking-widest mt-0.5">OVR</span>
+            </div>
+          </div>
+
+          <!-- AVATAR CENTRAL CON ARO DE TIER -->
+          <div class="relative z-10 flex flex-col items-center my-auto">
+            <div class="relative">
+              <div id="card1-avatar-ring" class="w-24 h-24 rounded-full p-1 border-2 border-ovrGold/80 transition-all duration-300 shadow-md">
+                <div class="w-full h-full rounded-full overflow-hidden bg-slate-800 flex items-center justify-center">
+                  <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=faces" alt="Player" class="w-full h-full object-cover">
+                </div>
+              </div>
+              <!-- Micro tag de estado/dorsal -->
+              <div class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-appCard border border-appBorder text-[9px] font-mono font-bold text-slate-300 shadow">
+                #10
+              </div>
+            </div>
+
+            <!-- Nombre del Jugador -->
+            <h3 class="font-headline font-bold text-sm text-white mt-2.5 truncate max-w-[190px] text-center tracking-tight">
+              Agustín Canobbio
+            </h3>
+          </div>
+
+          <!-- STATS GRID 2x3 -->
+          <div class="relative z-10 space-y-1">
+            <div class="grid grid-cols-2 gap-1.5">
+              <!-- RIT -->
+              <div class="bg-appCardSurface/80 border border-appBorder/50 rounded-md px-2 py-1 flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">RIT</span>
+                <div class="w-8 h-1 rounded-full bg-slate-700 overflow-hidden mx-1">
+                  <div id="card1-bar-rit" class="h-full bg-volt rounded-full" style="width: 84%;"></div>
+                </div>
+                <span id="card1-val-rit" class="text-[10px] font-mono font-bold text-white">84</span>
+              </div>
+              <!-- REG -->
+              <div class="bg-appCardSurface/80 border border-appBorder/50 rounded-md px-2 py-1 flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">REG</span>
+                <div class="w-8 h-1 rounded-full bg-slate-700 overflow-hidden mx-1">
+                  <div id="card1-bar-reg" class="h-full bg-ovrGold rounded-full" style="width: 82%;"></div>
+                </div>
+                <span id="card1-val-reg" class="text-[10px] font-mono font-bold text-white">82</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-1.5">
+              <!-- TIR -->
+              <div class="bg-appCardSurface/80 border border-appBorder/50 rounded-md px-2 py-1 flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">TIR</span>
+                <div class="w-8 h-1 rounded-full bg-slate-700 overflow-hidden mx-1">
+                  <div id="card1-bar-tir" class="h-full bg-ovrGold rounded-full" style="width: 78%;"></div>
+                </div>
+                <span id="card1-val-tir" class="text-[10px] font-mono font-bold text-white">78</span>
+              </div>
+              <!-- DEF -->
+              <div class="bg-appCardSurface/80 border border-appBorder/50 rounded-md px-2 py-1 flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">DEF</span>
+                <div class="w-8 h-1 rounded-full bg-slate-700 overflow-hidden mx-1">
+                  <div id="card1-bar-def" class="h-full bg-slate-500 rounded-full" style="width: 55%;"></div>
+                </div>
+                <span id="card1-val-def" class="text-[10px] font-mono font-bold text-white">55</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-1.5">
+              <!-- PAS -->
+              <div class="bg-appCardSurface/80 border border-appBorder/50 rounded-md px-2 py-1 flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">PAS</span>
+                <div class="w-8 h-1 rounded-full bg-slate-700 overflow-hidden mx-1">
+                  <div id="card1-bar-pas" class="h-full bg-ovrGold rounded-full" style="width: 76%;"></div>
+                </div>
+                <span id="card1-val-pas" class="text-[10px] font-mono font-bold text-white">76</span>
+              </div>
+              <!-- FIS -->
+              <div class="bg-appCardSurface/80 border border-appBorder/50 rounded-md px-2 py-1 flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">FIS</span>
+                <div class="w-8 h-1 rounded-full bg-slate-700 overflow-hidden mx-1">
+                  <div id="card1-bar-fis" class="h-full bg-ovrGold rounded-full" style="width: 79%;"></div>
+                </div>
+                <span id="card1-val-fis" class="text-[10px] font-mono font-bold text-white">79</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- OPCIÓN 2: SPORT NEON & SPEED (Game / Nike Athletic) -->
+    <!-- ============================================================= -->
+    <div class="flex flex-col items-center">
+      <div class="mb-4 text-center">
+        <span class="text-xs font-mono text-volt uppercase font-bold tracking-wider">Opción 2</span>
+        <h2 class="text-lg font-headline font-bold text-white">Sport Neon & Speed</h2>
+        <p class="text-xs text-slate-400">Líneas de velocidad, cápsula diagonal atlética, doble aro con acento Volt.</p>
+      </div>
+
+      <div class="card-wrap w-[240px]">
+        <div id="card2" class="card-inner relative w-full aspect-[2/3] rounded-2xl bg-appCard border border-appBorder overflow-hidden shadow-2xl flex flex-col justify-between p-3.5 select-none speed-lines">
+          
+          <!-- Aura & Iluminación angular -->
+          <div id="card2-aura" class="absolute inset-0 pointer-events-none transition-all duration-500" style="background: linear-gradient(135deg, rgba(251,196,55,0.18) 0%, transparent 60%);"></div>
+
+          <!-- HEADER: Posición Angulada & OVR Capsule -->
+          <div class="relative z-10 flex items-center justify-between">
+            <!-- Posición con corte angular atlético -->
+            <div id="card2-pos-badge" class="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900/90 border-l-2 border-posDel text-posDel shadow-sm">
+              <svg class="w-3 h-3 text-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span id="card2-pos" class="font-headline font-bold text-xs uppercase italic tracking-wider">DEL</span>
+            </div>
+
+            <!-- OVR con Mini Chip de Rareza -->
+            <div class="flex items-center gap-1.5">
+              <span id="card2-tier-tag" class="px-1.5 py-0.5 rounded bg-ovrGold/20 border border-ovrGold/40 text-[9px] font-mono font-extrabold text-ovrGold">
+                GLD
+              </span>
+              <span id="card2-ovr" class="font-headline font-black italic text-3xl tracking-tighter text-ovrGold transition-colors">
+                81
+              </span>
+            </div>
+          </div>
+
+          <!-- AVATAR CON DUAL RIM (Tier + Volt) -->
+          <div class="relative z-10 flex flex-col items-center my-auto">
+            <div class="relative">
+              <!-- Anillo exterior Tier -->
+              <div id="card2-avatar-ring" class="w-24 h-24 rounded-full p-0.5 border-2 border-ovrGold transition-all duration-300">
+                <!-- Anillo interior Volt -->
+                <div class="w-full h-full rounded-full p-1 border border-volt/60 bg-slate-900 overflow-hidden">
+                  <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=faces" alt="Player" class="w-full h-full object-cover rounded-full">
+                </div>
+              </div>
+              <!-- Badge Club / Posición en base del círculo -->
+              <div id="card2-circle-pos" class="absolute -bottom-1 right-0 w-6 h-6 rounded-full bg-posDel text-slate-950 font-headline font-black text-[10px] flex items-center justify-center border-2 border-appCard shadow">
+                D
+              </div>
+            </div>
+
+            <!-- Nombre del Jugador con estilo itálico deportivo -->
+            <h3 class="font-headline font-bold italic text-sm text-white mt-2.5 truncate max-w-[190px] text-center tracking-tight uppercase">
+              Agustín Canobbio
+            </h3>
+          </div>
+
+          <!-- STATS GRID CON MEDIDORES SEGMENTADOS -->
+          <div class="relative z-10 space-y-1">
+            <div class="grid grid-cols-2 gap-1.5">
+              <!-- RIT -->
+              <div class="bg-slate-900/90 border border-slate-800 rounded px-2 py-1 flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">RIT</span>
+                <!-- Segmented 4-bar indicator -->
+                <div class="flex gap-0.5 mx-1">
+                  <span class="w-1.5 h-2 rounded-sm bg-volt"></span>
+                  <span class="w-1.5 h-2 rounded-sm bg-volt"></span>
+                  <span class="w-1.5 h-2 rounded-sm bg-volt"></span>
+                  <span class="w-1.5 h-2 rounded-sm bg-volt/30"></span>
+                </div>
+                <span id="card2-val-rit" class="text-[10px] font-headline font-bold text-volt">84</span>
+              </div>
+              <!-- REG -->
+              <div class="bg-slate-900/90 border border-slate-800 rounded px-2 py-1 flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">REG</span>
+                <div class="flex gap-0.5 mx-1">
+                  <span id="card2-seg-reg1" class="w-1.5 h-2 rounded-sm bg-ovrGold"></span>
+                  <span id="card2-seg-reg2" class="w-1.5 h-2 rounded-sm bg-ovrGold"></span>
+                  <span id="card2-seg-reg3" class="w-1.5 h-2 rounded-sm bg-ovrGold"></span>
+                  <span class="w-1.5 h-2 rounded-sm bg-slate-700"></span>
+                </div>
+                <span id="card2-val-reg" class="text-[10px] font-headline font-bold text-white">82</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-1.5">
+              <!-- TIR -->
+              <div class="bg-slate-900/90 border border-slate-800 rounded px-2 py-1 flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">TIR</span>
+                <div class="flex gap-0.5 mx-1">
+                  <span id="card2-seg-tir1" class="w-1.5 h-2 rounded-sm bg-ovrGold"></span>
+                  <span id="card2-seg-tir2" class="w-1.5 h-2 rounded-sm bg-ovrGold"></span>
+                  <span id="card2-seg-tir3" class="w-1.5 h-2 rounded-sm bg-ovrGold"></span>
+                  <span class="w-1.5 h-2 rounded-sm bg-slate-700"></span>
+                </div>
+                <span id="card2-val-tir" class="text-[10px] font-headline font-bold text-white">78</span>
+              </div>
+              <!-- DEF -->
+              <div class="bg-slate-900/90 border border-slate-800 rounded px-2 py-1 flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">DEF</span>
+                <div class="flex gap-0.5 mx-1">
+                  <span class="w-1.5 h-2 rounded-sm bg-slate-500"></span>
+                  <span class="w-1.5 h-2 rounded-sm bg-slate-500"></span>
+                  <span class="w-1.5 h-2 rounded-sm bg-slate-700"></span>
+                  <span class="w-1.5 h-2 rounded-sm bg-slate-700"></span>
+                </div>
+                <span id="card2-val-def" class="text-[10px] font-headline font-bold text-white">55</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-1.5">
+              <!-- PAS -->
+              <div class="bg-slate-900/90 border border-slate-800 rounded px-2 py-1 flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">PAS</span>
+                <div class="flex gap-0.5 mx-1">
+                  <span id="card2-seg-pas1" class="w-1.5 h-2 rounded-sm bg-ovrGold"></span>
+                  <span id="card2-seg-pas2" class="w-1.5 h-2 rounded-sm bg-ovrGold"></span>
+                  <span id="card2-seg-pas3" class="w-1.5 h-2 rounded-sm bg-ovrGold"></span>
+                  <span class="w-1.5 h-2 rounded-sm bg-slate-700"></span>
+                </div>
+                <span id="card2-val-pas" class="text-[10px] font-headline font-bold text-white">76</span>
+              </div>
+              <!-- FIS -->
+              <div class="bg-slate-900/90 border border-slate-800 rounded px-2 py-1 flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">FIS</span>
+                <div class="flex gap-0.5 mx-1">
+                  <span id="card2-seg-fis1" class="w-1.5 h-2 rounded-sm bg-ovrGold"></span>
+                  <span id="card2-seg-fis2" class="w-1.5 h-2 rounded-sm bg-ovrGold"></span>
+                  <span id="card2-seg-fis3" class="w-1.5 h-2 rounded-sm bg-ovrGold"></span>
+                  <span class="w-1.5 h-2 rounded-sm bg-slate-700"></span>
+                </div>
+                <span id="card2-val-fis" class="text-[10px] font-headline font-bold text-white">79</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- OPCIÓN 3: TIER CREST & PRISM EDGE (Coleccionable Premium) -->
+    <!-- ============================================================= -->
+    <div class="flex flex-col items-center">
+      <div class="mb-4 text-center">
+        <span class="text-xs font-mono text-volt uppercase font-bold tracking-wider">Opción 3</span>
+        <h2 class="text-lg font-headline font-bold text-white">Tier Crest & Prism Edge</h2>
+        <p class="text-xs text-slate-400">Línea de luz superior prismática, OVR metálico colosal y halo de rareza.</p>
+      </div>
+
+      <div class="card-wrap w-[240px]">
+        <div id="card3" class="card-inner relative w-full aspect-[2/3] rounded-2xl bg-appCard border border-appBorder overflow-hidden shadow-2xl flex flex-col justify-between p-3.5 select-none carbon-mesh">
+          
+          <!-- PRISM EDGE: Franja de luz en el borde superior -->
+          <div id="card3-prism" class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-ovrGold to-transparent"></div>
+
+          <!-- Aura envolvente radial -->
+          <div id="card3-aura" class="absolute inset-0 pointer-events-none transition-all duration-500" style="background: radial-gradient(circle at 50% 30%, rgba(251,196,55,0.15) 0%, transparent 70%);"></div>
+
+          <!-- HEADER: Escudo de Posición & OVR Escultural -->
+          <div class="relative z-10 flex items-start justify-between">
+            <!-- Escudo de Posición -->
+            <div id="card3-pos-badge" class="flex flex-col items-center px-2 py-1 rounded-b-lg bg-posDel/20 border-b-2 border-x border-posDel text-posDel shadow-sm -mt-3.5">
+              <span id="card3-pos" class="font-headline font-black text-xs uppercase tracking-wider">DEL</span>
+            </div>
+
+            <!-- OVR Escultural Metálico -->
+            <div class="flex flex-col items-end leading-none">
+              <span id="card3-ovr" class="font-headline font-black text-4xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white via-ovrGold to-ovrGold transition-all drop-shadow-md">
+                81
+              </span>
+              <span id="card3-tier-name" class="text-[8px] font-headline font-extrabold uppercase tracking-widest text-ovrGold mt-0.5">
+                GOLD TIER
+              </span>
+            </div>
+          </div>
+
+          <!-- AVATAR CON PRISM GLOW -->
+          <div class="relative z-10 flex flex-col items-center my-auto">
+            <div class="relative">
+              <!-- Halo brillante -->
+              <div id="card3-avatar-glow" class="absolute inset-0 rounded-full blur-md opacity-40 bg-ovrGold"></div>
+              <div id="card3-avatar-ring" class="relative w-24 h-24 rounded-full p-1 border-2 border-ovrGold bg-appCardSurface shadow-lg">
+                <div class="w-full h-full rounded-full overflow-hidden">
+                  <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=faces" alt="Player" class="w-full h-full object-cover">
+                </div>
+              </div>
+            </div>
+
+            <!-- Nombre del Jugador con detalle deportivo -->
+            <h3 class="font-headline font-bold text-sm text-white mt-2.5 truncate max-w-[190px] text-center tracking-wide">
+              Agustín Canobbio
+            </h3>
+            <span class="text-[9px] font-mono text-slate-400 uppercase tracking-widest">Extremo Derecho</span>
+          </div>
+
+          <!-- STATS CON BARRAS CALIBRADAS AL OVR -->
+          <div class="relative z-10 space-y-1">
+            <div class="grid grid-cols-2 gap-1.5">
+              <!-- RIT -->
+              <div class="bg-appCardSurface/70 border-b border-appBorder/60 px-2 py-1 rounded flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">RIT</span>
+                <div class="w-10 h-1.5 rounded-full bg-slate-800 overflow-hidden mx-1">
+                  <div id="card3-bar-rit" class="h-full bg-volt rounded-full" style="width: 84%;"></div>
+                </div>
+                <span id="card3-val-rit" class="text-[10px] font-mono font-bold text-volt">84</span>
+              </div>
+              <!-- REG -->
+              <div class="bg-appCardSurface/70 border-b border-appBorder/60 px-2 py-1 rounded flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">REG</span>
+                <div class="w-10 h-1.5 rounded-full bg-slate-800 overflow-hidden mx-1">
+                  <div id="card3-bar-reg" class="h-full bg-ovrGold rounded-full" style="width: 82%;"></div>
+                </div>
+                <span id="card3-val-reg" class="text-[10px] font-mono font-bold text-white">82</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-1.5">
+              <!-- TIR -->
+              <div class="bg-appCardSurface/70 border-b border-appBorder/60 px-2 py-1 rounded flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">TIR</span>
+                <div class="w-10 h-1.5 rounded-full bg-slate-800 overflow-hidden mx-1">
+                  <div id="card3-bar-tir" class="h-full bg-ovrGold rounded-full" style="width: 78%;"></div>
+                </div>
+                <span id="card3-val-tir" class="text-[10px] font-mono font-bold text-white">78</span>
+              </div>
+              <!-- DEF -->
+              <div class="bg-appCardSurface/70 border-b border-appBorder/60 px-2 py-1 rounded flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">DEF</span>
+                <div class="w-10 h-1.5 rounded-full bg-slate-800 overflow-hidden mx-1">
+                  <div id="card3-bar-def" class="h-full bg-slate-600 rounded-full" style="width: 55%;"></div>
+                </div>
+                <span id="card3-val-def" class="text-[10px] font-mono font-bold text-white">55</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-1.5">
+              <!-- PAS -->
+              <div class="bg-appCardSurface/70 border-b border-appBorder/60 px-2 py-1 rounded flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">PAS</span>
+                <div class="w-10 h-1.5 rounded-full bg-slate-800 overflow-hidden mx-1">
+                  <div id="card3-bar-pas" class="h-full bg-ovrGold rounded-full" style="width: 76%;"></div>
+                </div>
+                <span id="card3-val-pas" class="text-[10px] font-mono font-bold text-white">76</span>
+              </div>
+              <!-- FIS -->
+              <div class="bg-appCardSurface/70 border-b border-appBorder/60 px-2 py-1 rounded flex items-center justify-between">
+                <span class="text-[9px] font-mono font-bold text-slate-400">FIS</span>
+                <div class="w-10 h-1.5 rounded-full bg-slate-800 overflow-hidden mx-1">
+                  <div id="card3-bar-fis" class="h-full bg-ovrGold rounded-full" style="width: 79%;"></div>
+                </div>
+                <span id="card3-val-fis" class="text-[10px] font-mono font-bold text-white">79</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ============================================================= -->
+  <!-- VISTA PANORÁMICA: CÓMO SE VEN LOS 4 TIERS SIMULTÁNEOS -->
+  <!-- ============================================================= -->
+  <section class="max-w-6xl mx-auto mt-12 bg-appCard/50 border border-appBorder/50 rounded-3xl p-6 md:p-8">
+    <div class="text-center mb-8">
+      <h2 class="text-xl md:text-2xl font-headline font-bold text-white">
+        Escala Visual por Nivel de OVR (De Bronce a Élite)
+      </h2>
+      <p class="text-xs text-slate-400 mt-1">
+        Así se transforma la tarjeta en la grilla del plantel según el rendimiento del jugador:
+      </p>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+      <!-- 1. BRONCE (54) -->
+      <div class="flex flex-col items-center">
+        <div class="w-full aspect-[2/3] rounded-2xl bg-appCard border border-ovrBronze/50 p-3 flex flex-col justify-between relative overflow-hidden shadow-lg">
+          <div class="absolute inset-0 bg-gradient-to-tr from-ovrBronze/15 to-transparent pointer-events-none"></div>
+          <div class="flex justify-between items-start relative z-10">
+            <span class="px-2 py-0.5 rounded bg-posDel/15 text-posDel text-[10px] font-headline font-bold">DEL</span>
+            <div class="text-right leading-none">
+              <span class="font-headline font-black text-2xl text-ovrBronze">54</span>
+              <span class="block text-[7px] font-mono text-slate-400">BRONCE</span>
+            </div>
+          </div>
+          <div class="flex flex-col items-center my-auto relative z-10">
+            <div class="w-16 h-16 rounded-full border-2 border-ovrBronze/70 overflow-hidden bg-slate-800">
+              <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=faces" class="w-full h-full object-cover">
+            </div>
+            <span class="font-headline font-bold text-xs text-white mt-1.5">F. Pellistri</span>
+          </div>
+          <div class="space-y-1 relative z-10">
+            <div class="flex justify-between text-[9px] font-mono text-slate-400"><span>RIT 58</span><span>REG 54</span></div>
+            <div class="flex justify-between text-[9px] font-mono text-slate-400"><span>TIR 50</span><span>DEF 42</span></div>
+            <div class="flex justify-between text-[9px] font-mono text-slate-400"><span>PAS 52</span><span>FIS 49</span></div>
+          </div>
+        </div>
+        <span class="text-xs font-mono font-bold text-ovrBronze mt-2">OVR &lt; 65 &bull; Bronce</span>
+      </div>
+
+      <!-- 2. PLATA (68) -->
+      <div class="flex flex-col items-center">
+        <div class="w-full aspect-[2/3] rounded-2xl bg-appCard border border-ovrSilver/50 p-3 flex flex-col justify-between relative overflow-hidden shadow-lg">
+          <div class="absolute inset-0 bg-gradient-to-tr from-ovrSilver/15 to-transparent pointer-events-none"></div>
+          <div class="flex justify-between items-start relative z-10">
+            <span class="px-2 py-0.5 rounded bg-posMed/15 text-posMed text-[10px] font-headline font-bold">MED</span>
+            <div class="text-right leading-none">
+              <span class="font-headline font-black text-2xl text-ovrSilver">68</span>
+              <span class="block text-[7px] font-mono text-slate-400">PLATA</span>
+            </div>
+          </div>
+          <div class="flex flex-col items-center my-auto relative z-10">
+            <div class="w-16 h-16 rounded-full border-2 border-ovrSilver/70 overflow-hidden bg-slate-800">
+              <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=faces" class="w-full h-full object-cover">
+            </div>
+            <span class="font-headline font-bold text-xs text-white mt-1.5">M. Ugarte</span>
+          </div>
+          <div class="space-y-1 relative z-10">
+            <div class="flex justify-between text-[9px] font-mono text-slate-400"><span>RIT 70</span><span>REG 68</span></div>
+            <div class="flex justify-between text-[9px] font-mono text-slate-400"><span>TIR 61</span><span>DEF 69</span></div>
+            <div class="flex justify-between text-[9px] font-mono text-slate-400"><span>PAS 71</span><span>FIS 72</span></div>
+          </div>
+        </div>
+        <span class="text-xs font-mono font-bold text-ovrSilver mt-2">OVR 65-75 &bull; Plata</span>
+      </div>
+
+      <!-- 3. ORO (81) -->
+      <div class="flex flex-col items-center">
+        <div class="w-full aspect-[2/3] rounded-2xl bg-appCard border border-ovrGold/60 p-3 flex flex-col justify-between relative overflow-hidden shadow-xl glow-gold">
+          <div class="absolute inset-0 bg-gradient-to-tr from-ovrGold/20 to-transparent pointer-events-none"></div>
+          <div class="flex justify-between items-start relative z-10">
+            <span class="px-2 py-0.5 rounded bg-posDel/15 text-posDel text-[10px] font-headline font-bold">DEL</span>
+            <div class="text-right leading-none">
+              <span class="font-headline font-black text-2xl text-ovrGold">81</span>
+              <span class="block text-[7px] font-mono text-ovrGold/80">ORO</span>
+            </div>
+          </div>
+          <div class="flex flex-col items-center my-auto relative z-10">
+            <div class="w-16 h-16 rounded-full border-2 border-ovrGold overflow-hidden bg-slate-800 shadow-md">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=faces" class="w-full h-full object-cover">
+            </div>
+            <span class="font-headline font-bold text-xs text-white mt-1.5">A. Canobbio</span>
+          </div>
+          <div class="space-y-1 relative z-10">
+            <div class="flex justify-between text-[9px] font-mono"><span class="text-volt font-bold">RIT 84</span><span class="text-white">REG 82</span></div>
+            <div class="flex justify-between text-[9px] font-mono"><span class="text-white">TIR 78</span><span class="text-slate-400">DEF 55</span></div>
+            <div class="flex justify-between text-[9px] font-mono"><span class="text-white">PAS 76</span><span class="text-white">FIS 79</span></div>
+          </div>
+        </div>
+        <span class="text-xs font-mono font-bold text-ovrGold mt-2">OVR 76-85 &bull; Oro</span>
+      </div>
+
+      <!-- 4. ÉLITE (92) -->
+      <div class="flex flex-col items-center">
+        <div class="w-full aspect-[2/3] rounded-2xl bg-appCard border border-turquoise/80 p-3 flex flex-col justify-between relative overflow-hidden shadow-2xl glow-elite">
+          <div class="absolute inset-0 bg-gradient-to-tr from-turquoise/25 via-volt/10 to-transparent pointer-events-none"></div>
+          <!-- Shimmer line -->
+          <div class="absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent shimmer-bar pointer-events-none"></div>
+          
+          <div class="flex justify-between items-start relative z-10">
+            <span class="px-2 py-0.5 rounded bg-posMed/20 text-posMed text-[10px] font-headline font-bold border border-posMed/30">MED</span>
+            <div class="text-right leading-none">
+              <span class="font-headline font-black text-2xl text-turquoise drop-shadow-[0_0_8px_rgba(0,229,204,0.6)]">92</span>
+              <span class="block text-[7px] font-mono text-turquoise font-bold">ÉLITE</span>
+            </div>
+          </div>
+          <div class="flex flex-col items-center my-auto relative z-10">
+            <div class="w-16 h-16 rounded-full border-2 border-turquoise p-0.5 shadow-lg bg-slate-900">
+              <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&h=200&fit=crop&crop=faces" class="w-full h-full object-cover rounded-full">
+            </div>
+            <span class="font-headline font-bold text-xs text-white mt-1.5 flex items-center gap-1">
+              F. Valverde <span class="text-volt text-[10px]">★</span>
+            </span>
+          </div>
+          <div class="space-y-1 relative z-10">
+            <div class="flex justify-between text-[9px] font-mono"><span class="text-volt font-bold">RIT 88</span><span class="text-turquoise font-bold">REG 86</span></div>
+            <div class="flex justify-between text-[9px] font-mono"><span class="text-turquoise font-bold">TIR 89</span><span class="text-white">DEF 81</span></div>
+            <div class="flex justify-between text-[9px] font-mono"><span class="text-turquoise font-bold">PAS 90</span><span class="text-volt font-bold">FIS 91</span></div>
+          </div>
+        </div>
+        <span class="text-xs font-mono font-bold text-turquoise mt-2">OVR 86+ &bull; Élite</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- LÓGICA DE INTERACTIVIDAD -->
+  <script>
+    const TIERS = {
+      bronze: {
+        name: 'BRONCE',
+        ovr: 54,
+        color: '#CD7F32',
+        borderClass: 'border-[#CD7F32]/60',
+        aura1: 'radial-gradient(ellipse at top right, rgba(205,127,50,0.22) 0%, transparent 70%)',
+        aura2: 'linear-gradient(135deg, rgba(205,127,50,0.18) 0%, transparent 60%)',
+        aura3: 'radial-gradient(circle at 50% 30%, rgba(205,127,50,0.18) 0%, transparent 70%)',
+        prism: 'via-[#CD7F32]',
+        stats: { rit: 58, reg: 54, tir: 50, def: 42, pas: 52, fis: 49 },
+        tag: 'BRZ',
+        tierLabel: 'BRONZE TIER'
+      },
+      silver: {
+        name: 'PLATA',
+        ovr: 68,
+        color: '#CBD5E1',
+        borderClass: 'border-[#CBD5E1]/60',
+        aura1: 'radial-gradient(ellipse at top right, rgba(203,213,225,0.20) 0%, transparent 70%)',
+        aura2: 'linear-gradient(135deg, rgba(203,213,225,0.18) 0%, transparent 60%)',
+        aura3: 'radial-gradient(circle at 50% 30%, rgba(203,213,225,0.18) 0%, transparent 70%)',
+        prism: 'via-[#CBD5E1]',
+        stats: { rit: 70, reg: 68, tir: 61, def: 69, pas: 71, fis: 72 },
+        tag: 'SLV',
+        tierLabel: 'SILVER TIER'
+      },
+      gold: {
+        name: 'ORO',
+        ovr: 81,
+        color: '#FBC437',
+        borderClass: 'border-[#FBC437]/60',
+        aura1: 'radial-gradient(ellipse at top right, rgba(251,196,55,0.22) 0%, transparent 70%)',
+        aura2: 'linear-gradient(135deg, rgba(251,196,55,0.18) 0%, transparent 60%)',
+        aura3: 'radial-gradient(circle at 50% 30%, rgba(251,196,55,0.18) 0%, transparent 70%)',
+        prism: 'via-[#FBC437]',
+        stats: { rit: 84, reg: 82, tir: 78, def: 55, pas: 76, fis: 79 },
+        tag: 'GLD',
+        tierLabel: 'GOLD TIER'
+      },
+      elite: {
+        name: 'ÉLITE',
+        ovr: 92,
+        color: '#00E5CC',
+        borderClass: 'border-[#00E5CC]/80',
+        aura1: 'radial-gradient(ellipse at top right, rgba(0,229,204,0.30) 0%, rgba(204,255,51,0.10) 50%, transparent 75%)',
+        aura2: 'linear-gradient(135deg, rgba(0,229,204,0.25) 0%, transparent 60%)',
+        aura3: 'radial-gradient(circle at 50% 30%, rgba(0,229,204,0.25) 0%, transparent 70%)',
+        prism: 'via-[#00E5CC]',
+        stats: { rit: 88, reg: 86, tir: 89, def: 81, pas: 90, fis: 91 },
+        tag: 'ELT',
+        tierLabel: 'ELITE TIER'
+      }
+    };
+
+    let currentTier = 'gold';
+    let currentPos = 'DEL';
+
+    const POS_CONFIG = {
+      DEL: { color: '#F47171', bg: 'rgba(244,113,113,0.15)', border: 'rgba(244,113,113,0.4)', initial: 'D' },
+      MED: { color: '#B87BF4', bg: 'rgba(184,123,244,0.15)', border: 'rgba(184,123,244,0.4)', initial: 'M' },
+      DEF: { color: '#7BB8F4', bg: 'rgba(123,184,244,0.15)', border: 'rgba(123,184,244,0.4)', initial: 'D' },
+      POR: { color: '#F7B26E', bg: 'rgba(247,178,110,0.15)', border: 'rgba(247,178,110,0.4)', initial: 'P' },
+    };
+
+    function setTier(tier) {
+      currentTier = tier;
+      const t = TIERS[tier];
+
+      // Update active button
+      document.querySelectorAll('.tier-btn').forEach(btn => {
+        btn.className = 'tier-btn px-3 py-1 rounded-lg text-xs font-headline font-bold transition-all bg-transparent text-slate-400 hover:text-white border border-transparent';
+      });
+      const activeBtn = document.getElementById('btn-' + tier);
+      activeBtn.className = `tier-btn px-3 py-1 rounded-lg text-xs font-headline font-bold transition-all border shadow-sm`;
+      activeBtn.style.backgroundColor = `${t.color}25`;
+      activeBtn.style.color = t.color;
+      activeBtn.style.borderColor = `${t.color}60`;
+
+      // Update Card 1
+      document.getElementById('card1').style.borderColor = `${t.color}60`;
+      document.getElementById('card1-aura').style.background = t.aura1;
+      document.getElementById('card1-ovr').innerText = t.ovr;
+      document.getElementById('card1-ovr').style.color = t.color;
+      document.getElementById('card1-avatar-ring').style.borderColor = `${t.color}`;
+      
+      // Update Card 2
+      document.getElementById('card2').style.borderColor = `${t.color}60`;
+      document.getElementById('card2-aura').style.background = t.aura2;
+      document.getElementById('card2-ovr').innerText = t.ovr;
+      document.getElementById('card2-ovr').style.color = t.color;
+      document.getElementById('card2-tier-tag').innerText = t.tag;
+      document.getElementById('card2-tier-tag').style.color = t.color;
+      document.getElementById('card2-tier-tag').style.borderColor = `${t.color}60`;
+      document.getElementById('card2-tier-tag').style.backgroundColor = `${t.color}20`;
+      document.getElementById('card2-avatar-ring').style.borderColor = t.color;
+
+      // Update Card 3
+      document.getElementById('card3').style.borderColor = `${t.color}60`;
+      document.getElementById('card3-aura').style.background = t.aura3;
+      document.getElementById('card3-ovr').innerText = t.ovr;
+      document.getElementById('card3-ovr').style.backgroundImage = `linear-gradient(to bottom, #FFFFFF, ${t.color}, ${t.color})`;
+      document.getElementById('card3-tier-name').innerText = t.tierLabel;
+      document.getElementById('card3-tier-name').style.color = t.color;
+      document.getElementById('card3-prism').className = `absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent ${t.prism} to-transparent`;
+      document.getElementById('card3-avatar-ring').style.borderColor = t.color;
+      document.getElementById('card3-avatar-glow').style.backgroundColor = t.color;
+
+      // Update Stats Numbers
+      ['1', '2', '3'].forEach(num => {
+        document.getElementById(`card${num}-val-rit`).innerText = t.stats.rit;
+        document.getElementById(`card${num}-val-reg`).innerText = t.stats.reg;
+        document.getElementById(`card${num}-val-tir`).innerText = t.stats.tir;
+        document.getElementById(`card${num}-val-def`).innerText = t.stats.def;
+        document.getElementById(`card${num}-val-pas`).innerText = t.stats.pas;
+        document.getElementById(`card${num}-val-fis`).innerText = t.stats.fis;
+      });
+
+      // Update bars on Card 1 & 3
+      ['1', '3'].forEach(num => {
+        document.getElementById(`card${num}-bar-rit`).style.width = `${t.stats.rit}%`;
+        document.getElementById(`card${num}-bar-reg`).style.width = `${t.stats.reg}%`;
+        document.getElementById(`card${num}-bar-tir`).style.width = `${t.stats.tir}%`;
+        document.getElementById(`card${num}-bar-def`).style.width = `${t.stats.def}%`;
+        document.getElementById(`card${num}-bar-pas`).style.width = `${t.stats.pas}%`;
+        document.getElementById(`card${num}-bar-fis`).style.width = `${t.stats.fis}%`;
+
+        // Color bars
+        document.getElementById(`card${num}-bar-reg`).style.backgroundColor = t.color;
+        document.getElementById(`card${num}-bar-tir`).style.backgroundColor = t.color;
+        document.getElementById(`card${num}-bar-pas`).style.backgroundColor = t.color;
+        document.getElementById(`card${num}-bar-fis`).style.backgroundColor = t.color;
+      });
+    }
+
+    function setPosition(pos) {
+      currentPos = pos;
+      const p = POS_CONFIG[pos];
+
+      // Update buttons
+      document.querySelectorAll('.pos-btn').forEach(btn => {
+        btn.className = 'pos-btn px-2.5 py-1 rounded-lg text-xs font-headline font-bold bg-transparent text-slate-400 hover:text-white border border-transparent';
+      });
+      const activePosBtn = document.getElementById('pos-' + pos);
+      activePosBtn.className = 'pos-btn px-2.5 py-1 rounded-lg text-xs font-headline font-bold border';
+      activePosBtn.style.backgroundColor = p.bg;
+      activePosBtn.style.color = p.color;
+      activePosBtn.style.borderColor = p.border;
+
+      // Card 1
+      const badge1 = document.getElementById('card1-pos-badge');
+      badge1.style.backgroundColor = p.bg;
+      badge1.style.borderColor = p.border;
+      badge1.style.color = p.color;
+      document.getElementById('card1-pos').innerText = pos;
+
+      // Card 2
+      const badge2 = document.getElementById('card2-pos-badge');
+      badge2.style.borderLeftColor = p.color;
+      badge2.style.color = p.color;
+      document.getElementById('card2-pos').innerText = pos;
+      document.getElementById('card2-circle-pos').style.backgroundColor = p.color;
+      document.getElementById('card2-circle-pos').innerText = p.initial;
+
+      // Card 3
+      const badge3 = document.getElementById('card3-pos-badge');
+      badge3.style.backgroundColor = p.bg;
+      badge3.style.borderColor = p.border;
+      badge3.style.color = p.color;
+      document.getElementById('card3-pos').innerText = pos;
+    }
+
+    // Init
+    setTier('gold');
+    setPosition('DEL');
+  </script>
+</body>
+</html>

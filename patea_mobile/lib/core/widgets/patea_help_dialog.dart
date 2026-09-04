@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
 import 'soccer_runner_icon.dart';
 
@@ -68,8 +69,8 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
       child: Container(
         constraints: const BoxConstraints(maxWidth: 420),
         decoration: BoxDecoration(
-          color: const Color(0xF50D131F),
-          borderRadius: BorderRadius.circular(24),
+          color: AppColors.popover,
+          borderRadius: AppRadii.surfaceAll,
           border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1),
           boxShadow: [
             BoxShadow(
@@ -122,8 +123,8 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
                   return Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF141C2B),
-                      borderRadius: BorderRadius.circular(16),
+                      color: AppColors.card,
+                      borderRadius: AppRadii.cardAll,
                       border: Border.all(
                         color: AppColors.voltNeon.withValues(alpha: 0.25),
                         width: 1,
@@ -199,9 +200,9 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.voltNeon,
-                  foregroundColor: const Color(0xFF0D121B),
+                  foregroundColor: AppColors.background,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadii.cardAll,
                   ),
                   elevation: 0,
                 ),
@@ -210,7 +211,7 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
                   style: AppTypography.headline(
                     size: 14,
                     weight: FontWeight.w900,
-                    color: const Color(0xFF0D121B),
+                    color: AppColors.background,
                   ),
                 ),
               ),

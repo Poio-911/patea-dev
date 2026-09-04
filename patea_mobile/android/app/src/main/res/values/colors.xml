@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Los mismos dos colores que AppColors en Dart, para la pantalla de arranque
+     nativa: esa se dibuja antes de que exista Flutter, así que no puede leer
+     nada de lib/. Si cambia la paleta, hay que cambiarlos acá también. -->
+<resources>
+    <color name="volt_neon">#FFCCFF33</color>
+    <color name="patea_background">#FF0C1017</color>
+</resources>

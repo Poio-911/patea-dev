@@ -9,6 +9,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/patea_top_header.dart';
 import '../widgets/patea_background.dart';
+import '../../features/splash/splash_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/players/players_list_screen.dart';
@@ -101,7 +102,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/splash',
-        builder: (context, state) => const _SplashScreen(),
+        builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
         path: '/login',
@@ -256,21 +257,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 /// del tema. En la web el fondo está en la raíz y se ve en TODAS las páginas.
 Widget _withBackground(Widget child) => PateaBackground(child: child);
 
-/// Pantalla de arranque mientras Firebase Auth resuelve si hay sesión.
-class _SplashScreen extends StatelessWidget {
-  const _SplashScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: AppColors.background,
-      body: Center(
-        child: CircularProgressIndicator(color: AppColors.voltNeon),
-      ),
-    );
-  }
-}
-
 /// Índices de las ramas del `StatefulShellRoute`, en el mismo orden que
 /// `branches` de arriba.
 class _Branch {
@@ -370,7 +356,7 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xB3090E17), // 70% dark carbon glass
+              color: AppColors.card.withValues(alpha: 0.40), // bg-card/40
               border: Border(
                 top: BorderSide(
                   color: Colors.white.withValues(alpha: 0.12),
