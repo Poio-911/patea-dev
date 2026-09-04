@@ -17,6 +17,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
   bool _isRegister = false;
+
+  /// Puesto con el que arranca el jugador. La web lo pide en el registro
+  /// porque de ahí salen las stats base; el móvil no lo pedía y por eso no
+  /// se podía crear el jugador.
+  String _position = 'MED';
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -42,10 +47,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await ref.read(authServiceProvider).registerWithEmail(
           email,
           password,
-          name.isNotEmpty ? name : 'Jugador',
+          displayName: name.isNotEmpty ? name : 'Jugador',
+          position: _position,
         );
       } else {
         await ref.read(authServiceProvider).signInWithEmail(email, password);
+        // Repara cuentas creadas antes de que el registro completara el
+        // perfil. Es idempotente y no bloquea el ingreso si falla.
+        await ref.read(authServiceProvider).ensureProfile();
       }
     } catch (e) {
       if (mounted) {
@@ -174,6 +183,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           hintText: 'Tu nombre en la cancha',
                           prefixIcon: Icon(Icons.person_outline, size: 18, color: AppColors.textMuted),
                         ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Tu puesto',
+                        style: AppTypography.headline(
+                            size: 12, weight: FontWeight.w600, color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          for (final pos in const ['POR', 'DEF', 'MED', 'DEL'])
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: _PositionChip(
+                                  label: pos,
+                                  selected: _position == pos,
+                                  onTap: () => setState(() => _position = pos),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -333,6 +364,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Un puesto para elegir en el registro.
+class _PositionChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _PositionChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? AppColors.voltNeon : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected ? AppColors.voltNeon : Colors.white.withValues(alpha: 0.18),
+          ),
+        ),
+        child: Text(
+          label,
+          style: AppTypography.headline(
+            size: 12,
+            weight: FontWeight.w800,
+            color: selected ? Colors.black : AppColors.textSecondary,
           ),
         ),
       ),

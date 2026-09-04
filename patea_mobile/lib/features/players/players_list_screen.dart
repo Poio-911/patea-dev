@@ -356,9 +356,13 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                             // mismo tag en el árbol durante la transición.
                             tag: 'player-card-${player.id}',
                             flightShuttleBuilder: (_, _, _, _, _) =>
-                                PlayerCardWidget(player: player),
+                                PlayerCardWidget(
+                              player: player,
+                              photoStyle: CardPhotoStyle.halfTop,
+                            ),
                             child: PlayerCardWidget(
                               player: player,
+                              photoStyle: CardPhotoStyle.halfTop,
                               highlightStat: _sortBy == 'OVR' ? null : _sortBy,
                               onTap: () => context.push('/players/${player.id}'),
                             ),

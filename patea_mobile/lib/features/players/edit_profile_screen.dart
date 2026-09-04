@@ -364,9 +364,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         child: SizedBox(
                           width: 260,
                           height: 380,
+                          // La previsualización tiene que mostrar la carta
+                          // real: si acá se ve circular y en el plantel con la
+                          // foto arriba, el usuario elige el encuadre mirando
+                          // algo que no es lo que va a quedar.
                           child: PlayerCardWidget(
                             player: preview,
                             localPhoto: _pickedPhoto,
+                            photoStyle: CardPhotoStyle.halfTop,
                           ),
                         ),
                       ),

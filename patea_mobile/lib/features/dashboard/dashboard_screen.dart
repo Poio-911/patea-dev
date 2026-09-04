@@ -18,6 +18,7 @@ import '../../core/models/match_model.dart';
 import '../../core/widgets/match_countdown.dart';
 import '../../core/models/player_model.dart';
 import '../../core/widgets/jersey_painter.dart';
+import '../../core/widgets/patea_help_dialog.dart';
 
 const _spanishMonths = [
   'ene', 'feb', 'mar', 'abr', 'may', 'jun',
@@ -65,6 +66,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void initState() {
     super.initState();
     _loadSavedTab();
+    _maybeShowWelcome();
+  }
+
+  /// Abre el tutorial la primera vez, como hace la web.
+  ///
+  /// Allá el registro redirige a `/dashboard?new_user=true` y `WelcomeDialog`
+  /// fuerza el `HelpDialog`. Acá el diálogo ya estaba portado pero sólo se
+  /// abría desde el "?" del header, así que el usuario nuevo entraba a una
+  /// app vacía sin que nadie le dijera por dónde empezar.
+  Future<void> _maybeShowWelcome() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool('welcomeShown') == true) return;
+    await prefs.setBool('welcomeShown', true);
+    if (!mounted) return;
+    // Después del primer frame: si no, el diálogo compite con el armado de
+    // la pantalla y aparece a medias.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showDialog<void>(context: context, builder: (_) => const PateaHelpDialog());
+    });
   }
 
   Future<void> _loadSavedTab() async {
@@ -126,46 +147,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ],
                       ),
                     ),
-                    if (player != null) ...[
-                      const SizedBox(width: 8),
-                      // Acá iba el nombre del jugador pintado con el color
-                      // del tier de OVR: el color hablaba de una cosa y el
-                      // texto de otra. El tier es del OVR, así que muestra el
-                      // OVR — y el nombre ya está arriba, en el header.
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.getOvrBorderColor(player.ovr)),
-                          borderRadius: AppRadii.chipAll,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '${player.ovr}',
-                              style: AppTypography.code(
-                                size: 13,
-                                weight: FontWeight.w900,
-                                color: AppColors.getOvrBorderColor(player.ovr),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 1),
-                              child: Text(
-                                'OVR',
-                                style: AppTypography.code(
-                                  size: 8,
-                                  weight: FontWeight.w700,
-                                  color: AppColors.textMuted,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -274,7 +255,14 @@ class _ResumenTab extends ConsumerWidget {
     final groupIdAsync = ref.watch(activeGroupIdStreamProvider(uid));
 
     return groupIdAsync.when(
-      data: (groupId) => _ResumenTabBody(uid: uid, groupId: groupId, player: player),
+      data: (groupId) {
+        // Sin grupo no hay nada que resumir. Esta es la pantalla que ve el
+        // usuario recién registrado, así que en vez de dejarla vacía dice
+        // qué hacer. El tab "Mi Grupo" ya tenía su estado vacío; éste no,
+        // y es el que se abre por defecto.
+        if (groupId == null) return const _WelcomeEmptyState();
+        return _ResumenTabBody(uid: uid, groupId: groupId, player: player);
+      },
       loading: () => const Padding(
         padding: EdgeInsets.all(40),
         child: Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
@@ -1415,6 +1403,77 @@ class _EmptyMural extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: Text(actionLabel, style: AppTypography.headline(size: 12, weight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Lo que ve alguien que acaba de crear su cuenta.
+///
+/// Un panel en blanco no le dice nada a quien recién llega: acá están las dos
+/// únicas cosas que puede hacer —armar su grupo o entrar al de un amigo con
+/// el código— y el acceso al tutorial.
+class _WelcomeEmptyState extends StatelessWidget {
+  const _WelcomeEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('PRIMER PASO',
+              style: AppTypography.headline(
+                  size: 11,
+                  weight: FontWeight.w800,
+                  color: AppColors.textMuted,
+                  letterSpacing: 1.2)),
+          const SizedBox(height: 8),
+          Text('Todavía no estás en ningún grupo',
+              style: AppTypography.headline(size: 22, weight: FontWeight.w900)),
+          const SizedBox(height: 8),
+          Text(
+            'Un grupo es tu cuadro: ahí viven los jugadores, los partidos y las '
+            'evaluaciones. Armá el tuyo o entrá al de un amigo con su código.',
+            style: AppTypography.body(size: 13, color: AppColors.textSecondary, height: 1.5),
+          ),
+          const SizedBox(height: 22),
+          FilledButton.icon(
+            onPressed: () => context.push('/groups'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.voltNeon,
+              foregroundColor: AppColors.background,
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
+            ),
+            icon: const Icon(Icons.group_add_rounded, size: 18),
+            label: Text('Crear mi grupo',
+                style: AppTypography.headline(
+                    size: 14, weight: FontWeight.w800, color: AppColors.background)),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: () => context.push('/groups'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 15),
+            ),
+            icon: const Icon(Icons.vpn_key_outlined, size: 18),
+            label: const Text('Tengo un código de invitación'),
+          ),
+          const SizedBox(height: 22),
+          Center(
+            child: TextButton.icon(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => const PateaHelpDialog(),
+              ),
+              icon: const Icon(Icons.help_outline, size: 16),
+              label: const Text('Cómo funciona Pateá'),
+              style: TextButton.styleFrom(foregroundColor: AppColors.textMuted),
+            ),
           ),
         ],
       ),

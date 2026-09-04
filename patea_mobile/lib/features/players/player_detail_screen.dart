@@ -89,9 +89,18 @@ class PlayerDetailScreen extends ConsumerWidget {
                   // su lugar en el plantel hasta acá.
                   child: Hero(
                     tag: 'player-card-${player.id}',
-                    flightShuttleBuilder: (_, _, _, _, _) =>
-                        PlayerCardWidget(player: player),
-                    child: PlayerCardWidget(player: player),
+                    // Mismo estilo que en el plantel: si acá fuera `circular`
+                    // y allá `halfTop`, el Hero volaría entre dos cartas
+                    // distintas y se vería como un cambio de diseño en pleno
+                    // vuelo.
+                    flightShuttleBuilder: (_, _, _, _, _) => PlayerCardWidget(
+                      player: player,
+                      photoStyle: CardPhotoStyle.halfTop,
+                    ),
+                    child: PlayerCardWidget(
+                      player: player,
+                      photoStyle: CardPhotoStyle.halfTop,
+                    ),
                   ),
                 ),
               ),
@@ -198,16 +207,20 @@ class _NotFound extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               asOwnProfile
-                  ? 'Se crea al sumarte a un grupo y jugar tu primer partido.'
+                  // Decía que el perfil se crea al sumarse a un grupo, y no es
+                  // así: se crea al registrarse. Si falta, la cuenta quedó a
+                  // medias y lo que corresponde es reintentar la sesión.
+                  ? 'Tu cuenta quedó incompleta. Cerrá sesión y volvé a entrar: '
+                    'se repara sola.'
                   : 'Puede haber sido eliminado del plantel.',
               textAlign: TextAlign.center,
               style: AppTypography.body(size: 12, color: AppColors.textMuted),
             ),
             const SizedBox(height: 20),
             OutlinedButton.icon(
-              onPressed: () => context.go('/players'),
+              onPressed: () => context.go(asOwnProfile ? '/' : '/players'),
               icon: const Icon(Icons.arrow_back, size: 16),
-              label: const Text('Volver al Plantel'),
+              label: Text(asOwnProfile ? 'Volver al Panel' : 'Volver al Plantel'),
             ),
           ],
         ),

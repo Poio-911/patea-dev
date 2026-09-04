@@ -8,6 +8,7 @@ import '../models/player_model.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import 'card_foil.dart';
+import 'player_avatar_fallback.dart';
 
 /// Estilo de visualización de la foto del jugador en la tarjeta.
 enum CardPhotoStyle {
@@ -458,23 +459,8 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 1),
-                                Text(
-                                  'OVR',
-                                  style: AppTypography.code(
-                                    size: 8.5,
-                                    weight: FontWeight.w800,
-                                    color: Colors.white70,
-                                  ).copyWith(
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black.withValues(alpha: 0.9),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 1),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                const SizedBox(height: 2),
+                                _ovrBadge(tier, avatarBorderColor, player.id),
                               ],
                             ),
                           ],
@@ -577,6 +563,86 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
 );
 }
 
+  /// La pastilla de "OVR", con el material del tier.
+  ///
+  /// Entra desde el borde derecho de la carta —redondeada del lado izquierdo,
+  /// al ras del lado derecho— porque el OVR vive en esa esquina y una pastilla
+  /// flotando en el medio se leería como un botón.
+  ///
+  /// El relleno es el mismo shader que le da material a la carta
+  /// (`CardFoil`), así que el brillo se corre al inclinarla igual que el
+  /// fondo: oro pulido, plata cepillada, élite holográfico, bronce mate. Sin
+  /// eso sería un rectángulo de color y no se leería como metal.
+  ///
+  /// Debajo del shader va el color del tier plano con un degradado corto, para
+  /// que también se lea como oro o plata **quieta**, no sólo al moverla.
+  Widget _ovrBadge(String tier, Color tierColor, String playerId) {
+    // Texto oscuro sobre los metales claros, blanco sobre el bronce. Se
+    // decide por luminancia y no por tier para que siga andando si algún día
+    // cambian los colores.
+    final onMetal =
+        tierColor.computeLuminance() > 0.45 ? const Color(0xFF10141C) : Colors.white;
+
+    return Transform.translate(
+      // Sale del padding del contenido (10) para tocar el borde de la carta.
+      offset: const Offset(10, 0),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(7),
+          bottomLeft: Radius.circular(7),
+        ),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color.lerp(tierColor, Colors.white, 0.28)!,
+                      tierColor,
+                      Color.lerp(tierColor, Colors.black, 0.30)!,
+                    ],
+                    stops: const [0.0, 0.45, 1.0],
+                  ),
+                ),
+              ),
+            ),
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CardFoil(
+                  tier: tier,
+                  tiltX: _curX / _maxTilt,
+                  tiltY: _curY / _maxTilt,
+                  seed: (playerId.hashCode % 1000) / 1000.0 * 6.28,
+                ),
+              ),
+            ),
+            // Sin Positioned: es este hijo el que le da tamaño al Stack.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(9, 2.5, 11, 3),
+              child: Text(
+                'OVR',
+                style: AppTypography.code(
+                  size: 8.5,
+                  weight: FontWeight.w800,
+                  color: onMetal,
+                ).copyWith(letterSpacing: 0.6),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// El avatar generado, para los tres casos sin foto: no hay, está cargando,
+  /// o falló la descarga.
+  Widget get _fallbackAvatar => PlayerAvatarFallback(
+        seed: widget.player.id.isNotEmpty ? widget.player.id : widget.player.name,
+      );
+
   Widget _buildPhotoImage({
     required double? cacheWidth,
     BoxFit fit = BoxFit.cover,
@@ -604,35 +670,14 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
         alignment: alignment,
         memCacheWidth: cacheWidth?.toInt(),
         maxWidthDiskCache: 512,
-        placeholder: (context, url) => Container(
-          color: const Color(0xFF1E2636),
-          child: Center(
-            child: Text(
-              widget.player.name.isNotEmpty ? widget.player.name[0] : 'P',
-              style: AppTypography.sportNumber(size: 28, color: Colors.white),
-            ),
-          ),
-        ),
-        errorWidget: (context, url, error) => Container(
-          color: const Color(0xFF1E2636),
-          child: Center(
-            child: Text(
-              widget.player.name.isNotEmpty ? widget.player.name[0] : 'P',
-              style: AppTypography.sportNumber(size: 28, color: Colors.white),
-            ),
-          ),
-        ),
+        // Mientras carga y si falla: el mismo avatar que cuando no hay foto.
+        // Antes eran dos recuadros grises con la inicial, y la transición a
+        // la foto real era un salto.
+        placeholder: (context, url) => _fallbackAvatar,
+        errorWidget: (context, url, error) => _fallbackAvatar,
       );
     } else {
-      imageWidget = Container(
-        color: const Color(0xFF1E2636),
-        child: Center(
-          child: Text(
-            widget.player.name.isNotEmpty ? widget.player.name[0] : 'P',
-            style: AppTypography.sportNumber(size: 28, color: Colors.white),
-          ),
-        ),
-      );
+      imageWidget = _fallbackAvatar;
     }
 
     return Transform.scale(
