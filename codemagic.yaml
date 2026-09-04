@@ -16,9 +16,9 @@
 #        APP_STORE_APPLE_ID -> 6808798274 (el "Apple ID" numérico de la app en
 #                              App Store Connect, el que aparece en la URL)
 #
-# El certificado y el perfil NO se cargan a mano: el bloque `ios_signing` los
-# emite y los renueva solo usando la clave de API. Es lo que evita el baile de
-# certificados vencidos.
+# El certificado y el perfil NO se cargan a mano: el paso "Firmar
+# automáticamente" los emite y los renueva solo usando la clave de API. Es lo
+# que evita el baile de certificados vencidos.
 
 workflows:
   ios-testflight:
@@ -35,17 +35,30 @@ workflows:
     environment:
       groups:
         - patea_ios
+      vars:
+        BUNDLE_ID: "com.patea.app"
       flutter: stable
       xcode: latest
       cocoapods: default
 
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.patea.app
+      # Sin bloque `ios_signing`: ese sólo BUSCA certificado y perfil ya
+      # existentes y falla con "No matching profiles found" mientras no haya
+      # ninguno emitido para el bundle id. Se firma con el paso de abajo, que
+      # con `--create` los emite la primera vez y después los reusa.
 
     scripts:
       - name: Dependencias de Flutter
         script: flutter pub get
+
+      - name: Firmar automáticamente
+        # Emite (o reusa) el certificado de distribución y el provisioning
+        # profile, y los deja aplicados en el proyecto de Xcode. También deja
+        # escrito /Users/builder/export_options.plist, que usa el build.
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain add-certificates
+          xcode-project use-profiles
 
       - name: Pods
         script: |
@@ -67,8 +80,7 @@ workflows:
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $CM_ENV
 
       - name: Compilar el IPA
-        # El export_options.plist lo deja el paso de firma automática que
-        # Codemagic corre solo a partir del bloque `ios_signing`.
+        # El export_options.plist lo deja `xcode-project use-profiles`.
         script: |
           flutter build ipa --release \
             --build-number="$BUILD_NUMBER" \
