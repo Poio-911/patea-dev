@@ -6,6 +6,9 @@ import '../../core/theme/app_typography.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/evaluation_service.dart';
 import '../../core/models/evaluation_models.dart';
+import '../../core/theme/app_insets.dart';
+import '../../core/widgets/patea_page_header.dart';
+import '../../core/widgets/patea_tabs.dart';
 
 const _months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 String _fmtDay(String raw) {
@@ -57,6 +60,11 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    // Las pestañas dibujan `_tabController.index`, así que también tienen que
+    // seguir el deslizamiento del TabBarView, no sólo el toque.
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -71,11 +79,10 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
     if (uid == null) {
       return Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          title: Text('EVALUACIONES', style: AppTypography.headline(size: 20, weight: FontWeight.w800)),
+        body: Center(
+          child: Text('Debés iniciar sesión.',
+              style: AppTypography.body(color: AppColors.textMuted)),
         ),
-        body: Center(child: Text('Debés iniciar sesión.', style: AppTypography.body(color: AppColors.textMuted))),
       );
     }
 
@@ -89,11 +96,6 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Text('EVALUACIONES', style: AppTypography.headline(size: 20, weight: FontWeight.w800)),
-        actions: [IconButton(onPressed: refresh, icon: const Icon(Icons.refresh))],
-      ),
       body: RefreshIndicator(
         onRefresh: () async {
           refresh();
@@ -104,38 +106,68 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
             final pending = items.where((i) => !i.isSubmitted).toList();
             final history = items.where((i) => i.isSubmitted).toList();
             final requestsCount = requestsAsync.value?.length ?? 0;
+            final urgentCount = pending.where((i) => _urgency(i.matchDate).urgent).length;
 
             return Column(
               children: [
+                // Misma norma que Panel, Jugadores, Partidos y Explorar:
+                // titulo + descripcion como contenido, no como AppBar fijo.
+                // El "refrescar" pasa a ser el gesto de tirar hacia abajo,
+                // que ya estaba: el boton de la barra era la unica razon por
+                // la que esta pantalla necesitaba un AppBar.
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: Row(
-                    children: [
-                      Expanded(child: _StatBox(value: '${pending.length}', label: 'Pendientes')),
-                      const SizedBox(width: 10),
-                      Expanded(child: _StatBox(value: '${history.length}', label: 'Completadas', color: AppColors.success)),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _StatBox(
-                          value: '${pending.where((i) => _urgency(i.matchDate).urgent).length}',
-                          label: 'Urgentes',
-                          color: AppColors.destructive,
-                        ),
-                      ),
-                    ],
+                  padding: EdgeInsets.fromLTRB(
+                      16, MediaQuery.of(context).padding.top + 12, 16, 0),
+                  child: const PateaPageHeader(
+                    title: 'Evaluaciones',
+                    description:
+                        'Puntuá a tus compañeros después de cada partido: de ahí salen los OVR de todos.',
+                    showCountRow: false,
                   ),
                 ),
+                // Los números aparecen sólo si hay algo que contar. Tres cajas
+                // con cero adentro no informan: ocupan media pantalla para
+                // decir que no pasa nada, y "0 urgentes" en rojo se lee como
+                // una alarma que no existe.
+                if (pending.isNotEmpty || history.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                            child: _StatBox(
+                                value: '${pending.length}', label: 'Pendientes')),
+                        const SizedBox(width: 10),
+                        Expanded(
+                            child: _StatBox(
+                                value: '${history.length}',
+                                label: 'Completadas',
+                                color: AppColors.success)),
+                        if (urgentCount > 0) ...[
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _StatBox(
+                              value: '$urgentCount',
+                              label: 'Urgentes',
+                              color: AppColors.destructive,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 12),
-                TabBar(
-                  controller: _tabController,
-                  labelColor: AppColors.voltNeon,
-                  unselectedLabelColor: AppColors.textMuted,
-                  indicatorColor: AppColors.voltNeon,
-                  tabs: [
-                    const Tab(text: 'Pendientes'),
-                    const Tab(text: 'Historial'),
-                    Tab(text: requestsCount > 0 ? 'Solicitudes ($requestsCount)' : 'Solicitudes'),
-                  ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: PateaTabs(
+                    tabs: [
+                      PateaTab('Pendientes', count: pending.length),
+                      PateaTab('Historial', count: history.length),
+                      PateaTab('Solicitudes', count: requestsCount),
+                    ],
+                    active: _tabController.index,
+                    onChanged: (i) => setState(() => _tabController.index = i),
+                  ),
                 ),
                 Expanded(
                   child: TabBarView(
@@ -218,7 +250,7 @@ class _PendingList extends StatelessWidget {
       return const _EmptyState(icon: Icons.verified_outlined, title: '¡Todo al día!', description: 'No tenés evaluaciones pendientes.');
     }
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
@@ -317,7 +349,7 @@ class _HistoryList extends StatelessWidget {
       return const _EmptyState(icon: Icons.history, title: 'Historial vacío', description: 'Acá van a aparecer tus evaluaciones enviadas.');
     }
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
@@ -368,7 +400,7 @@ class _RequestsList extends ConsumerWidget {
           );
         }
         return ListView.separated(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
           itemCount: requests.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) => _IdentityRequestCard(
@@ -419,7 +451,7 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
   Widget build(BuildContext context) {
     final r = widget.request;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
       decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -10,6 +10,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/player_card_widget.dart';
 import 'create_player_dialog.dart';
+import '../../core/theme/app_insets.dart';
 
 class PlayersListScreen extends ConsumerStatefulWidget {
   const PlayersListScreen({super.key});
@@ -337,7 +338,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                   )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(14, 6, 14, 100),
+                    padding: EdgeInsets.fromLTRB(14, 6, 14, bottomInset(context, extra: 24)),
                     sliver: SliverGrid(
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,

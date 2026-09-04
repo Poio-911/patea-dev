@@ -14,6 +14,11 @@ import '../../core/services/location_service.dart';
 import '../../core/models/match_model.dart';
 import '../../core/models/available_player_model.dart';
 import '../../core/widgets/jersey_painter.dart';
+import '../../core/theme/app_insets.dart';
+import '../../core/services/match_service.dart';
+import '../../core/theme/app_radii.dart';
+import '../../core/widgets/patea_page_header.dart';
+import '../../core/widgets/patea_tabs.dart';
 
 const _spanishMonths = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 String _fmtDate(String raw) {
@@ -68,69 +73,39 @@ class _ExplorarScreenState extends ConsumerState<ExplorarScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Text('EXPLORAR', style: AppTypography.headline(size: 20, weight: FontWeight.w800)),
-      ),
       body: Column(
         children: [
+          // Misma norma que Jugadores y Partidos: titulo + descripcion como
+          // contenido de la pagina, no como AppBar fijo. La cabecera no
+          // scrollea aca porque las dos pestanas traen su propia lista y
+          // meterlas dentro de un solo scroll obligaria a reescribir las dos
+          // con slivers sin ganar nada.
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: _TabBar(active: _tab, onChanged: (i) => setState(() => _tab = i)),
+            padding: EdgeInsets.fromLTRB(
+                16, MediaQuery.of(context).padding.top + 12, 16, 0),
+            child: const PateaPageHeader(
+              title: 'Explorar',
+              description:
+                  'Reclutá agentes libres para tus partidos, o sumate a partidos abiertos.',
+              showCountRow: false,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            child: PateaTabs(
+              tabs: const [
+                PateaTab('Mercado'),
+                PateaTab('Partidos abiertos'),
+              ],
+              active: _tab,
+              onChanged: (i) => setState(() => _tab = i),
+            ),
           ),
           Expanded(
             child: uid == null
                 ? const SizedBox()
                 : (_tab == 0 ? _MercadoTab(uid: uid) : _PartidosAbiertosTab(uid: uid)),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TabBar extends StatelessWidget {
-  final int active;
-  final ValueChanged<int> onChanged;
-
-  const _TabBar({required this.active, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    Widget tab(String label, IconData icon, int index) {
-      final selected = active == index;
-      return Expanded(
-        child: InkWell(
-          onTap: () => onChanged(index),
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: selected ? AppColors.background : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
-              border: selected ? Border.all(color: AppColors.border.withValues(alpha: 0.5)) : null,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 16, color: selected ? AppColors.textPrimary : AppColors.textMuted),
-                const SizedBox(height: 3),
-                Text(label, textAlign: TextAlign.center, style: AppTypography.body(size: 11, weight: FontWeight.w700, color: selected ? AppColors.textPrimary : AppColors.textMuted)),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(color: AppColors.card.withValues(alpha: 0.4), borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
-      child: Row(
-        children: [
-          tab('Mercado de Fichajes', Icons.person_search_outlined, 0),
-          const SizedBox(width: 6),
-          tab('Partidos Abiertos', Icons.calendar_month_outlined, 1),
         ],
       ),
     );
@@ -231,7 +206,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
         final filteredPlayers = _positionFilter == null ? _players : _players.where((p) => p.position == _positionFilter).toList();
 
         return ListView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
           children: [
             _FreeAgentBanner(isFreeAgent: isFreeAgent, onTap: () => _showAvailabilitySheet(isFreeAgent)),
             const SizedBox(height: 18),
@@ -808,7 +783,7 @@ class _PartidosAbiertosTabState extends ConsumerState<_PartidosAbiertosTab> {
         }
 
         return ListView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
           children: [
             Wrap(
               spacing: 6,
@@ -844,13 +819,11 @@ class _PartidosAbiertosTabState extends ConsumerState<_PartidosAbiertosTab> {
                 children: [
                   Text('${filtered.length} partido${filtered.length != 1 ? 's' : ''} disponible${filtered.length != 1 ? 's' : ''}', style: AppTypography.body(size: 12, color: AppColors.textMuted)),
                   const SizedBox(height: 10),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 0.82),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) => _PublicMatchCard(match: filtered[index]),
-                  ),
+                  for (final m in filtered)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _PublicMatchCard(match: m, uid: widget.uid),
+                    ),
                 ],
               ),
           ],
@@ -862,58 +835,161 @@ class _PartidosAbiertosTabState extends ConsumerState<_PartidosAbiertosTab> {
   }
 }
 
-class _PublicMatchCard extends StatelessWidget {
+/// Un partido al que te podes sumar.
+///
+/// Antes era media tarjeta en una grilla de dos columnas y el unico gesto era
+/// tocarla para ir al detalle. Ahora la accion vive en la tarjeta: sumarse es
+/// lo que uno viene a hacer aca, y no tiene por que costar dos pantallas.
+class _PublicMatchCard extends ConsumerStatefulWidget {
   final MatchModel match;
+  final String uid;
 
-  const _PublicMatchCard({required this.match});
+  const _PublicMatchCard({required this.match, required this.uid});
+
+  @override
+  ConsumerState<_PublicMatchCard> createState() => _PublicMatchCardState();
+}
+
+class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
+  bool _busy = false;
+
+  Future<void> _join() async {
+    setState(() => _busy = true);
+    try {
+      final pending =
+          await ref.read(matchServiceProvider).joinOrRequest(widget.match, widget.uid);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(pending
+            ? 'Solicitud enviada. El organizador te va a responder.'
+            : 'Te anotaste a "${widget.match.title}".'),
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('$e'),
+        backgroundColor: AppColors.destructive,
+      ));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final match = widget.match;
     final theme = getMatchTypeTheme(match.type);
     final hasTeams = match.teamA != null && match.teamB != null;
+    final pending = match.pendingPlayerUids.contains(widget.uid);
+    final spots = match.matchSize - match.playerUids.length;
+    final needsApproval = match.needsApprovalFrom(widget.uid);
 
-    return InkWell(
-      onTap: () => context.push('/matches/${match.id}'),
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(14), border: Border.all(color: theme.brandColor.withValues(alpha: 0.35))),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(children: [
-              Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: theme.brandColor)),
-              const SizedBox(width: 6),
-              Expanded(child: Text(theme.label.toUpperCase(), style: AppTypography.code(size: 9, weight: FontWeight.w700, color: AppColors.textSecondary), overflow: TextOverflow.ellipsis)),
-            ]),
-            const SizedBox(height: 8),
-            if (hasTeams)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  if (match.teamA!.jersey != null) JerseyWidget(jersey: match.teamA!.jersey!, size: 32),
-                  Text('vs', style: AppTypography.body(size: 11, color: AppColors.textMuted)),
-                  if (match.teamB!.jersey != null) JerseyWidget(jersey: match.teamB!.jersey!, size: 32),
-                ],
-              )
-            else
-              SizedBox(
-                height: 32,
-                child: Center(child: Text(match.title, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: AppTypography.body(size: 12, weight: FontWeight.w700))),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: AppRadii.cardAll,
+        border: Border.all(color: theme.brandColor.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: theme.brandColor),
               ),
-            const SizedBox(height: 8),
-            _row(Icons.calendar_today_outlined, _fmtDate(match.date)),
-            const SizedBox(height: 3),
-            _row(Icons.access_time, '${match.time ?? ''} hs'),
-            if (match.location != null) ...[
-              const SizedBox(height: 3),
-              _row(Icons.location_on_outlined, match.location!),
+              const SizedBox(width: 7),
+              Text(theme.label.toUpperCase(),
+                  style: AppTypography.code(
+                      size: 9, weight: FontWeight.w700, color: AppColors.textSecondary)),
+              const Spacer(),
+              if (match.matchSize > 0 && spots > 0)
+                Text(spots == 1 ? 'falta 1' : 'faltan $spots',
+                    style: AppTypography.code(
+                        size: 10, weight: FontWeight.w800, color: AppColors.voltNeon)),
             ],
-            const SizedBox(height: 6),
-            _row(Icons.groups_outlined, match.matchSize > 0 ? '${match.playerUids.length}/${match.matchSize} jugadores' : '${match.playerUids.length} jugadores'),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              if (hasTeams) ...[
+                if (match.teamA!.jersey != null)
+                  JerseyWidget(jersey: match.teamA!.jersey!, size: 30),
+                const SizedBox(width: 4),
+                if (match.teamB!.jersey != null)
+                  JerseyWidget(jersey: match.teamB!.jersey!, size: 30),
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                child: Text(match.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.headline(size: 15, weight: FontWeight.w800)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _row(Icons.calendar_today_outlined,
+              '${_fmtDate(match.date)}  -  ${match.time ?? ''} hs'),
+          if (match.location != null) ...[
+            const SizedBox(height: 4),
+            _row(Icons.location_on_outlined, match.location!),
           ],
-        ),
+          const SizedBox(height: 4),
+          _row(
+            Icons.groups_outlined,
+            match.matchSize > 0
+                ? '${match.playerUids.length}/${match.matchSize} jugadores'
+                : '${match.playerUids.length} jugadores',
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => context.push('/matches/${match.id}'),
+                  child: const Text('Ver detalles'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 2,
+                child: pending
+                    ? OutlinedButton.icon(
+                        onPressed: null,
+                        icon: const Icon(Icons.hourglass_top_rounded, size: 16),
+                        label: const Text('Pedido enviado'),
+                      )
+                    : FilledButton.icon(
+                        onPressed: _busy ? null : _join,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.voltNeon,
+                          foregroundColor: AppColors.background,
+                        ),
+                        icon: _busy
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: AppColors.background))
+                            : Icon(
+                                needsApproval
+                                    ? Icons.how_to_reg_rounded
+                                    : Icons.person_add_alt_1,
+                                size: 16),
+                        label: Text(needsApproval ? 'Solicitar' : 'Unirme',
+                            style: AppTypography.headline(
+                                size: 13,
+                                weight: FontWeight.w800,
+                                color: AppColors.background)),
+                      ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -921,9 +997,14 @@ class _PublicMatchCard extends StatelessWidget {
   Widget _row(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 11, color: AppColors.textMuted),
-        const SizedBox(width: 4),
-        Expanded(child: Text(text, style: AppTypography.body(size: 10, color: AppColors.textMuted), maxLines: 1, overflow: TextOverflow.ellipsis)),
+        Icon(icon, size: 12, color: AppColors.textMuted),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(text,
+              style: AppTypography.body(size: 11, color: AppColors.textMuted),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
+        ),
       ],
     );
   }
