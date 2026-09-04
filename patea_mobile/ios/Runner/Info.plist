@@ -18,6 +18,13 @@
 	<string>patea_mobile</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<!-- La app sólo usa criptografía estándar: HTTPS contra Firebase y las
+	     APIs de clima/geocoding. Sin esta clave, cada build queda en
+	     TestFlight como "Lista para enviar" esperando que alguien conteste
+	     a mano el cuestionario de cumplimiento de exportación, y la subida
+	     automática falla al esperar una build que nunca se habilita. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleShortVersionString</key>
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
