@@ -56,7 +56,14 @@ workflows:
         # el mismo número se rechazan, y acá se toma el último publicado y se
         # le suma uno. Así no hay que acordarse de subirlo a mano.
         script: |
-          BUILD_NUMBER=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" --increment)
+          # La primera vez no hay ninguna build publicada y el comando falla:
+          # ahí se arranca en 1.
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || true)
+          if [ -z "$LATEST" ]; then
+            BUILD_NUMBER=1
+          else
+            BUILD_NUMBER=$((LATEST + 1))
+          fi
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $CM_ENV
 
       - name: Compilar el IPA
