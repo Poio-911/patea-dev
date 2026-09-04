@@ -139,88 +139,97 @@ workflows:
   # ──────────────────────────────────────────────────────────────────────────
   # Android → Firebase App Distribution
   #
-  # Requisitos cargados en Codemagic (una sola vez; los dos son secretos y los
-  # tiene que subir una persona):
-  #   · Team settings > Code signing identities > Android keystores: el
-  #     keystore de subida con nombre de referencia `patea_upload`
-  #     (~/.patea-keys/patea-upload.jks, alias `patea-upload`).
-  #   · Grupo de variables `patea_android` con FIREBASE_SERVICE_ACCOUNT = el
-  #     JSON de una cuenta de servicio de mil-disculpis con el rol
-  #     "Firebase App Distribution Admin", marcado como secreto.
+  # DESACTIVADO hasta que estén cargados los dos secretos de abajo. No está
+  # comentado por prolijidad: si un workflow referencia una variable o un
+  # keystore que no existe, Codemagic marca **todo el archivo** como inválido
+  # y deja de correr también el workflow de iOS. Se comprueba en el diálogo de
+  # "Start new build", que muestra "codemagic.yaml is invalid".
+  #
+  # Para activarlo:
+  #   1. Team settings > Code signing identities > Android keystores: subir
+  #      ~/.patea-keys/patea-upload.jks (alias `patea-upload`) con su
+  #      contraseña, nombre de referencia `patea_upload`.
+  #   2. App > Environment variables: crear el grupo `patea_android` con
+  #      FIREBASE_SERVICE_ACCOUNT = el JSON de una cuenta de servicio de
+  #      mil-disculpis con rol "Firebase App Distribution Admin", marcada
+  #      como secreta.
+  #   3. Descomentar todo lo que sigue (quitar el "# " del principio de cada
+  #      línea) y pushear.
   # ──────────────────────────────────────────────────────────────────────────
-  android-app-distribution:
-    name: Android · App Distribution
-    max_build_duration: 45
-    # Se podría usar `linux_x2`, más barato para Android, si el plan lo
-    # habilita; se deja en la máquina que ya se sabe que funciona en esta
-    # cuenta.
-    instance_type: mac_mini_m2
-
-    working_directory: patea_mobile
-
-    triggering:
-      <<: *push_to_branch
-    when:
-      <<: *mobile_changes
-
-    environment:
-      groups:
-        - patea_android
-      android_signing:
-        - patea_upload
-      flutter: stable
-      java: 17
-
-    scripts:
-      - name: Dependencias de Flutter
-        script: flutter pub get
-
-      - name: Escribir key.properties
-        # `android/app/build.gradle.kts` lee la firma de `key.properties`, no
-        # de variables de entorno, y si el archivo no existe cae en silencio a
-        # la firma de debug: saldría un APK que instala pero rompe el login
-        # con Google y App Check, porque el SHA no sería el registrado en
-        # Firebase. Por eso se arma acá con lo que inyecta `android_signing`.
-        script: |
-          cat > android/key.properties <<PROPS
-          storePassword=$CM_KEYSTORE_PASSWORD
-          keyPassword=$CM_KEY_PASSWORD
-          keyAlias=$CM_KEY_ALIAS
-          storeFile=$CM_KEYSTORE_PATH
-          PROPS
-
-      - name: Compilar el APK
-        # APK y no AAB porque App Distribution lo instala directo en el
-        # teléfono. Para Play hace falta `flutter build appbundle`.
-        #
-        # El versionCode es el número de build de Codemagic, que sólo sube.
-        # Si se usara el `+N` del pubspec, todas las entregas le aparecerían
-        # iguales al tester en la lista.
-        script: |
-          flutter build apk --release --build-number=$PROJECT_BUILD_NUMBER
-
-      - name: Verificar que no salió firmado con la clave de debug
-        # El fallback silencioso de Gradle es justo el error que no se nota
-        # hasta que un tester no puede entrar con Google. El SHA-256 esperado
-        # es el de la clave de subida (ver ANDROID_RELEASE_SIGNING.md).
-        script: |
-          APK=build/app/outputs/flutter-apk/app-release.apk
-          APKSIGNER=$(find "$ANDROID_SDK_ROOT/build-tools" -name apksigner | sort | tail -1)
-          "$APKSIGNER" verify --print-certs "$APK" | tee /tmp/certs.txt
-          ESPERADO=DF:CE:3E:9B:E7:A6:40:9C:EE:E9:18:0C:D8:64:35:5F:2B:FA:78:98:0E:43:65:6A:B9:53:FB:1D:46:A8:59:7E
-          if ! grep -qi "$ESPERADO" /tmp/certs.txt; then
-            echo "El APK NO esta firmado con la clave de subida de Patea"
-            exit 1
-          fi
-
-    artifacts:
-      - build/app/outputs/flutter-apk/app-release.apk
-
-    publishing:
-      firebase:
-        firebase_service_account: $FIREBASE_SERVICE_ACCOUNT
-        android:
-          app_id: 1:5614567933:android:4b0b919482aa0dc5861994
-          groups:
-            - test-patea
-      <<: *email_notification
+  # android-app-distribution:
+  #   name: Android · App Distribution
+  #   max_build_duration: 45
+  #   # Se podría usar `linux_x2`, más barato para Android, si el plan lo
+  #   # habilita; se deja en la máquina que ya se sabe que funciona en esta
+  #   # cuenta.
+  #   instance_type: mac_mini_m2
+  #
+  #   working_directory: patea_mobile
+  #
+  #   triggering:
+  #     <<: *push_to_branch
+  #   when:
+  #     <<: *mobile_changes
+  #
+  #   environment:
+  #     groups:
+  #       - patea_android
+  #     android_signing:
+  #       - patea_upload
+  #     flutter: stable
+  #     java: 17
+  #
+  #   scripts:
+  #     - name: Dependencias de Flutter
+  #       script: flutter pub get
+  #
+  #     - name: Escribir key.properties
+  #       # `android/app/build.gradle.kts` lee la firma de `key.properties`, no
+  #       # de variables de entorno, y si el archivo no existe cae en silencio a
+  #       # la firma de debug: saldría un APK que instala pero rompe el login
+  #       # con Google y App Check, porque el SHA no sería el registrado en
+  #       # Firebase. Por eso se arma acá con lo que inyecta `android_signing`.
+  #       script: |
+  #         cat > android/key.properties <<PROPS
+  #         storePassword=$CM_KEYSTORE_PASSWORD
+  #         keyPassword=$CM_KEY_PASSWORD
+  #         keyAlias=$CM_KEY_ALIAS
+  #         storeFile=$CM_KEYSTORE_PATH
+  #         PROPS
+  #
+  #     - name: Compilar el APK
+  #       # APK y no AAB porque App Distribution lo instala directo en el
+  #       # teléfono. Para Play hace falta `flutter build appbundle`.
+  #       #
+  #       # El versionCode es el número de build de Codemagic, que sólo sube.
+  #       # Si se usara el `+N` del pubspec, todas las entregas le aparecerían
+  #       # iguales al tester en la lista.
+  #       script: |
+  #         flutter build apk --release --build-number=$PROJECT_BUILD_NUMBER
+  #
+  #     - name: Verificar que no salió firmado con la clave de debug
+  #       # El fallback silencioso de Gradle es justo el error que no se nota
+  #       # hasta que un tester no puede entrar con Google. El SHA-256 esperado
+  #       # es el de la clave de subida (ver ANDROID_RELEASE_SIGNING.md).
+  #       script: |
+  #         APK=build/app/outputs/flutter-apk/app-release.apk
+  #         APKSIGNER=$(find "$ANDROID_SDK_ROOT/build-tools" -name apksigner | sort | tail -1)
+  #         "$APKSIGNER" verify --print-certs "$APK" | tee /tmp/certs.txt
+  #         ESPERADO=DF:CE:3E:9B:E7:A6:40:9C:EE:E9:18:0C:D8:64:35:5F:2B:FA:78:98:0E:43:65:6A:B9:53:FB:1D:46:A8:59:7E
+  #         if ! grep -qi "$ESPERADO" /tmp/certs.txt; then
+  #           echo "El APK NO esta firmado con la clave de subida de Patea"
+  #           exit 1
+  #         fi
+  #
+  #   artifacts:
+  #     - build/app/outputs/flutter-apk/app-release.apk
+  #
+  #   publishing:
+  #     firebase:
+  #       firebase_service_account: $FIREBASE_SERVICE_ACCOUNT
+  #       android:
+  #         app_id: 1:5614567933:android:4b0b919482aa0dc5861994
+  #         groups:
+  #           - test-patea
+  #     <<: *email_notification
+  #

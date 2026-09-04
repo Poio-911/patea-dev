@@ -7,9 +7,13 @@ número. Para el detalle de la clave de firma de Android y su respaldo, ver
 ## En una línea
 
 Un push a `feat/flutter-mobile-app` que toque `patea_mobile/` o
-`codemagic.yaml` dispara **dos** builds en Codemagic: el IPA va a TestFlight y
-el APK a Firebase App Distribution. No hay que subir números a mano ni correr
-nada localmente.
+`codemagic.yaml` dispara la build de Codemagic: el IPA va a TestFlight. No hay
+que subir números a mano ni correr nada localmente.
+
+El workflow de Android está escrito y listo en `codemagic.yaml`, pero
+**comentado**, porque le faltan dos secretos que tiene que cargar una persona
+(ver *Lo que hay que cargar una sola vez*). En cuanto estén, se descomenta y
+el mismo push despliega las dos plataformas.
 
 ## Versiones
 
@@ -162,8 +166,21 @@ Los dos que faltan son secretos y los tiene que subir una persona:
   *Firebase App Distribution Admin*, bajar el JSON y pegarlo como variable
   `FIREBASE_SERVICE_ACCOUNT` en el grupo `patea_android`, marcada como secreta.
 
-Hasta que estén, el workflow de Android falla y el de iOS anda igual: son
-independientes.
+**Los workflows no son independientes para la validación.** Si uno referencia
+una variable o un keystore que no existe, Codemagic marca **todo el archivo**
+como inválido y deja de correr también el de iOS:
+
+```
+Configuration error in workflow "android-app-distribution":
+  Environment variable FIREBASE_SERVICE_ACCOUNT used in
+  "workflows -> android-app-distribution -> publishing -> firebase ->
+  firebase_service_account" is not accessible
+```
+
+Por eso el workflow de Android está comentado en vez de simplemente presente.
+La forma rápida de comprobar si el archivo es válido es abrir *Start new build*
+y mirar el desplegable de workflows: si dice `codemagic.yaml is invalid`, ahí
+mismo aparece el motivo.
 
 ## Deploy manual, cuando hace falta
 
@@ -187,5 +204,8 @@ Codemagic.
 - iOS: primera build en TestFlight, **1.0.2 (1)**. Le falta contestar el
   cuestionario de cumplimiento de exportación a esa compilación puntual (las
   próximas ya salen derecho por el `Info.plist`) y crear un grupo de testers.
-- Android: se venía distribuyendo a mano; el workflow existe pero espera los
-  dos secretos de arriba.
+- Android: se sigue distribuyendo a mano; el workflow existe comentado y
+  espera los dos secretos de arriba.
+- Webhook de GitHub registrado (`create`, `pull_request`, `push`), así que el
+  disparo automático ya está activo. Los pushes anteriores a su creación no
+  dispararon nada.
