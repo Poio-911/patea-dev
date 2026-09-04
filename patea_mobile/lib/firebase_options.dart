@@ -60,6 +60,10 @@ class DefaultFirebaseOptions {
     messagingSenderId: '5614567933',
     projectId: 'mil-disculpis',
     storageBucket: 'mil-disculpis.firebasestorage.app',
+    // Sin `iosClientId` el login con Google en iOS no arranca: el flujo nativo
+    // de `signInWithProvider` lo necesita para armar la URL de OAuth, y el
+    // esquema inverso que ya está en Info.plist es el de este mismo id.
+    iosClientId: '5614567933-nap45f75nh45ljk499r8v4eqqv22nqjg.apps.googleusercontent.com',
     iosBundleId: 'com.patea.app',
   );
 }

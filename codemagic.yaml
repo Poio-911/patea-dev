@@ -1,24 +1,24 @@
 # Build de iOS para TestFlight.
 #
-# Vive en el repo y no sólo en la interfaz de Codemagic a propósito: así la
-# receta queda versionada y cualquiera puede ver con qué se compiló una
-# release. En Codemagic hay que elegir "codemagic.yaml" como fuente de la
-# configuración del workflow.
+# Vive en la raíz del repo porque Codemagic sólo busca `codemagic.yaml` ahí,
+# aunque la app Flutter esté en `patea_mobile/` — de eso se encarga el
+# `working_directory` del workflow. En Codemagic hay que elegir
+# "codemagic.yaml" como fuente de la configuración del workflow.
 #
 # Antes de que corra hacen falta dos cosas cargadas en Codemagic:
 #
-#   1. Una integración de App Store Connect con una clave de API (Users and
-#      Access > Integrations > App Store Connect API en App Store Connect).
-#      La clave necesita rol "App Manager" para poder subir a TestFlight.
-#      En Codemagic se carga en Teams > Integrations > Apple Developer Portal.
+#   1. Una integración de App Store Connect llamada `patea`, con la clave de
+#      API "codemagic" (rol "Gestor de apps") generada en App Store Connect en
+#      Usuarios y acceso > Integraciones. Se carga en Codemagic en
+#      Teams > Personal Account > Integrations > Developer Portal.
 #
 #   2. Un grupo de variables llamado `patea_ios` con:
-#        APP_STORE_APPLE_ID  -> el "Apple ID" numérico de la app en App Store
-#                               Connect (App Information > General Information)
+#        APP_STORE_APPLE_ID -> 6808798274 (el "Apple ID" numérico de la app en
+#                              App Store Connect, el que aparece en la URL)
 #
-# El certificado y el perfil NO se cargan a mano: `automatic_code_signing`
-# los emite y los renueva solo usando la clave de API. Es lo que evita el
-# baile de certificados vencidos.
+# El certificado y el perfil NO se cargan a mano: el bloque `ios_signing` los
+# emite y los renueva solo usando la clave de API. Es lo que evita el baile de
+# certificados vencidos.
 
 workflows:
   ios-testflight:
@@ -26,14 +26,15 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m2
 
+    # La app Flutter no está en la raíz del repo: todo el workflow corre acá.
+    working_directory: patea_mobile
+
     integrations:
       app_store_connect: patea
 
     environment:
       groups:
         - patea_ios
-      vars:
-        BUNDLE_ID: "com.patea.app"
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -45,17 +46,6 @@ workflows:
     scripts:
       - name: Dependencias de Flutter
         script: flutter pub get
-
-      - name: Firmar automáticamente
-        # Emite (o reusa) el certificado de distribución y el provisioning
-        # profile, y los deja aplicados en el proyecto de Xcode.
-        script: |
-          keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
-          keychain add-certificates
-          xcode-project use-profiles
 
       - name: Pods
         script: |
@@ -70,6 +60,8 @@ workflows:
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $CM_ENV
 
       - name: Compilar el IPA
+        # El export_options.plist lo deja el paso de firma automática que
+        # Codemagic corre solo a partir del bloque `ios_signing`.
         script: |
           flutter build ipa --release \
             --build-number="$BUILD_NUMBER" \

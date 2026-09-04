@@ -33,5 +33,6 @@ export { requestJoinMatch, respondJoinRequest } from './callable/match-join-requ
 export { proposeMatchDate, voteMatchDate, confirmMatchDate, proposeMatchLocation, voteMatchLocation, confirmMatchLocation } from './callable/match-planning';
 export { getPlayerEvaluations } from './callable/player-profile';
 export { updateProfile } from './callable/update-profile';
+export { initializeUserProfile } from './callable/initialize-user-profile';
 export { generatePlayerPhoto } from './callable/generate-player-photo';
 // NOTE: onUserCreate requires GCIP (paid plan). Client-side rollback in register/page.tsx is used instead.
