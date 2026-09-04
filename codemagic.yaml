@@ -5,20 +5,20 @@
 # `working_directory` del workflow. En Codemagic hay que elegir
 # "codemagic.yaml" como fuente de la configuración del workflow.
 #
-# Antes de que corra hacen falta dos cosas cargadas en Codemagic:
+# Lo que tiene que estar cargado en Codemagic para que esto corra:
 #
-#   1. Una integración de App Store Connect llamada `patea`, con la clave de
-#      API "codemagic" (rol "Gestor de apps") generada en App Store Connect en
-#      Usuarios y acceso > Integraciones. Se carga en Codemagic en
-#      Teams > Personal Account > Integrations > Developer Portal.
+#   1. Integración de App Store Connect llamada `patea`, con la clave de API
+#      "codemagic" (rol "Gestor de apps", Key ID A2R79NVDJ3) generada en App
+#      Store Connect > Usuarios y acceso > Integraciones.
 #
-#   2. Un grupo de variables llamado `patea_ios` con:
+#   2. Grupo de variables `patea_ios` con:
 #        APP_STORE_APPLE_ID -> 6808798274 (el "Apple ID" numérico de la app en
 #                              App Store Connect, el que aparece en la URL)
 #
-# El certificado y el perfil NO se cargan a mano: el paso "Firmar
-# automáticamente" los emite y los renueva solo usando la clave de API. Es lo
-# que evita el baile de certificados vencidos.
+#   3. En Team settings > Code signing identities:
+#        - certificado `patea_distribution` (generado por Codemagic, que se
+#          queda con la clave privada)
+#        - perfil `patea_appstore` (App Store, com.patea.app)
 
 workflows:
   ios-testflight:
@@ -35,30 +35,32 @@ workflows:
     environment:
       groups:
         - patea_ios
-      vars:
-        BUNDLE_ID: "com.patea.app"
       flutter: stable
       xcode: latest
       cocoapods: default
 
-      # Sin bloque `ios_signing`: ese sólo BUSCA certificado y perfil ya
-      # existentes y falla con "No matching profiles found" mientras no haya
-      # ninguno emitido para el bundle id. Se firma con el paso de abajo, que
-      # con `--create` los emite la primera vez y después los reusa.
+      # Firma con material guardado en Codemagic (Team settings > Code signing
+      # identities), no emitido al vuelo. Se llegó acá porque el equipo de Apple
+      # ya tenía un certificado de distribución de otra app cuya clave privada
+      # Codemagic no tiene: `fetch-signing-files --create` lo encontraba, no
+      # podía usarlo ("Cannot save Signing Certificates without certificate
+      # private key") y entonces tampoco emitía el perfil. El certificado
+      # `patea_distribution` lo generó Codemagic, así que sí tiene su clave.
+      ios_signing:
+        certificates:
+          - patea_distribution
+        provisioning_profiles:
+          - patea_appstore
 
     scripts:
       - name: Dependencias de Flutter
         script: flutter pub get
 
-      - name: Firmar automáticamente
-        # Emite (o reusa) el certificado de distribución y el provisioning
-        # profile, y los deja aplicados en el proyecto de Xcode. También deja
-        # escrito /Users/builder/export_options.plist, que usa el build.
-        script: |
-          keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
-          keychain add-certificates
-          xcode-project use-profiles
+      - name: Aplicar la firma al proyecto de Xcode
+        # Codemagic ya dejó certificado y perfil en el llavero; esto los
+        # escribe en el proyecto y genera /Users/builder/export_options.plist,
+        # que usa el build.
+        script: xcode-project use-profiles
 
       - name: Pods
         script: |
