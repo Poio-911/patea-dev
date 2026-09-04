@@ -120,7 +120,15 @@ class _FoilPainter extends CustomPainter {
       ..setFloat(4, tier)
       ..setFloat(5, seed);
 
-    canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
+    // Redondeado propio, no sólo por el recorte de arriba.
+    //
+    // No era la causa del artefacto —se reprodujo sin shader—, pero ya
+    // sabemos que bajo la transformación 3D de la carta las formas
+    // redondeadas se degradan. Si el foil nace con sus esquinas, deja de
+    // depender de que el recorte sobreviva a la matriz.
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(16)));
+    canvas.drawPath(path, Paint()..shader = shader);
   }
 
   @override

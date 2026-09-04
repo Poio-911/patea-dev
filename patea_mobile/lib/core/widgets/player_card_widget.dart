@@ -100,27 +100,13 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
     }
   }
 
-  List<String> _getKeyStats(String pos) {
-    switch (pos.toUpperCase()) {
-      case 'DEL':
-        return ['PAC', 'SHO'];
-      case 'MED':
-        return ['PAS', 'DRI'];
-      case 'DEF':
-      case 'POR':
-      default:
-        return ['DEF', 'PHY'];
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final player = widget.player;
     final tier = _getOvrTier(player.ovr);
     final posColor = _getPositionColor(player.position);
-    final keyStats = _getKeyStats(player.position);
 
-    // Identificar el atributo más alto para resaltarlo
     final statsList = [
       {'key': 'PAC', 'label': 'RIT', 'val': player.pac},
       {'key': 'SHO', 'label': 'TIR', 'val': player.sho},
@@ -129,38 +115,20 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
       {'key': 'DEF', 'label': 'DEF', 'val': player.def},
       {'key': 'PHY', 'label': 'FIS', 'val': player.phy},
     ];
-    int maxVal = -1;
-    String topKey = 'PAC';
-    for (var s in statsList) {
-      if ((s['val'] as int) > maxVal) {
-        maxVal = s['val'] as int;
-        topKey = s['key'] as String;
-      }
-    }
 
-    // Configuración visual por tier — valores exactos de `.game .aura-*` y
-    // `photoBorderClasses` en src/app/globals.css / player-styles.tsx (no
-    // aproximados: mismo hue/alpha que la web para ese tier). Este color NO
-    // se usa para el texto de OVR ni de posición: en `globals.css`,
-    // `.game .player-card [class*="font-bold"] { color: rgba(255,255,255,.95) !important }`
-    // pisa cualquier color-por-tier en elementos con `font-bold` (OVR y
-    // posición lo son), así que en el tema game ambos quedan blancos siempre.
+    // Configuración visual por tier (OVR)
+    Color tierColor;
     Border cardBorder;
-    List<BoxShadow> cardShadows;
     Alignment auraAlignment;
     List<Color> auraColors;
     Color avatarBorderColor;
     double avatarBorderAlpha;
-    BoxShadow? avatarGlow; // solo gold y elite tienen drop-shadow real
+    BoxShadow? avatarGlow;
 
     switch (tier) {
       case 'elite':
+        tierColor = const Color(0xFFC8D2F0); // Platino
         cardBorder = Border.all(color: const Color(0xFFC8D2F0).withValues(alpha: 0.65), width: 1.5);
-        cardShadows = [
-          BoxShadow(color: const Color(0xFFC8D2F0).withValues(alpha: 0.28), blurRadius: 16),
-          const BoxShadow(color: Color(0x99000000), blurRadius: 10, offset: Offset(0, 4)),
-        ];
-        // .game .aura-elite: dos capas (bloom superior + relleno central)
         auraAlignment = Alignment.topCenter;
         auraColors = [const Color(0xFFD2DEFF).withValues(alpha: 0.62), Colors.transparent];
         avatarBorderColor = const Color(0xFFC8D2F0);
@@ -169,42 +137,33 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
         break;
 
       case 'gold':
-        cardBorder = Border.all(color: const Color(0xFFFBC437).withValues(alpha: 0.45), width: 1.0);
-        cardShadows = [
-          BoxShadow(color: const Color(0xFFFBC437).withValues(alpha: 0.16), blurRadius: 8),
-          const BoxShadow(color: Color(0x99000000), blurRadius: 10, offset: Offset(0, 4)),
-        ];
+        tierColor = const Color(0xFFFBC437); // Gold
+        cardBorder = Border.all(color: const Color(0xFFFBC437).withValues(alpha: 0.55), width: 1.2);
         auraAlignment = Alignment.topRight;
-        auraColors = [const Color(0xFFFBC437).withValues(alpha: 0.38), Colors.transparent];
+        auraColors = [const Color(0xFFFBC437).withValues(alpha: 0.32), Colors.transparent];
         avatarBorderColor = const Color(0xFFFBC437);
-        avatarBorderAlpha = 0.8;
-        avatarGlow = BoxShadow(color: const Color(0xFFFBBF24).withValues(alpha: 0.4), blurRadius: 4);
+        avatarBorderAlpha = 0.85;
+        avatarGlow = BoxShadow(color: const Color(0xFFFBBF24).withValues(alpha: 0.40), blurRadius: 8);
         break;
 
       case 'silver':
-        cardBorder = Border.all(color: const Color(0xFFC4C9D4).withValues(alpha: 0.38), width: 1.0);
-        cardShadows = [
-          BoxShadow(color: const Color(0xFFC4C9D4).withValues(alpha: 0.12), blurRadius: 6),
-          const BoxShadow(color: Color(0x99000000), blurRadius: 10, offset: Offset(0, 4)),
-        ];
+        tierColor = const Color(0xFFCBD5E1); // Silver
+        cardBorder = Border.all(color: const Color(0xFFCBD5E1).withValues(alpha: 0.45), width: 1.0);
         auraAlignment = Alignment.topCenter;
-        auraColors = [const Color(0xFFC4C9D4).withValues(alpha: 0.32), Colors.transparent];
-        avatarBorderColor = const Color(0xFFC4C9D4);
-        avatarBorderAlpha = 0.7;
-        avatarGlow = null; // silver no tiene drop-shadow en la web
+        auraColors = [const Color(0xFFCBD5E1).withValues(alpha: 0.25), Colors.transparent];
+        avatarBorderColor = const Color(0xFFCBD5E1);
+        avatarBorderAlpha = 0.75;
+        avatarGlow = null; // el glow separa oro y elite del resto
         break;
 
       default: // bronze
-        cardBorder = Border.all(color: const Color(0xFFD18C47).withValues(alpha: 0.35), width: 1.0);
-        cardShadows = [
-          BoxShadow(color: const Color(0xFFD18C47).withValues(alpha: 0.14), blurRadius: 6),
-          const BoxShadow(color: Color(0x99000000), blurRadius: 10, offset: Offset(0, 4)),
-        ];
+        tierColor = const Color(0xFFCD7F32); // Bronze
+        cardBorder = Border.all(color: const Color(0xFFCD7F32).withValues(alpha: 0.45), width: 1.0);
         auraAlignment = Alignment.bottomLeft;
         auraColors = [const Color(0xFFCD7F32).withValues(alpha: 0.28), Colors.transparent];
-        avatarBorderColor = const Color(0xFFD18C47);
-        avatarBorderAlpha = 0.6;
-        avatarGlow = null; // bronze no tiene drop-shadow en la web
+        avatarBorderColor = const Color(0xFFCD7F32);
+        avatarBorderAlpha = 0.70;
+        avatarGlow = null; // idem bronce
         break;
     }
 
@@ -233,35 +192,52 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
         _fromY = _rotateY;
         _settle.forward(from: 0);
       },
-      child: Transform(
-        transform: Matrix4.identity()
-          ..setEntry(3, 2, 0.0012)
-          ..rotateX(_rotateX)
-          ..rotateY(_rotateY),
-        alignment: Alignment.center,
-        child: AspectRatio(
-          aspectRatio: 2.0 / 3.0,
-          child: Container(
-            decoration: BoxDecoration(
+      // Arquitectura visual de la carta:
+      //
+      // 1) Sombra en el plano base (fuera del Transform 3D):
+      //    Se dibuja sobre la superficie 2D de la pantalla pero se atenúa
+      //    hasta desaparecer al inclinar la carta. Si la sombra se dejara
+      //    estática afuera, al rotar la carta en 3D la huella 2D queda
+      //    expuesta como un "rectángulo fijo" detrás. Y si se intenta meter
+      //    un BoxShadow adentro del Transform, Skia no proyecta desenfoques
+      //    gaussianos en matrices 3D y genera un bloque rectangular rígido.
+      //
+      // 2) Recorte por Path con antiAliasWithSaveLayer:
+      //    Garantiza que la carta conserve sus esquinas redondeadas de 16 px
+      //    impecables en cualquier ángulo 3D, sin sangrado de hijos ni
+      //    esquinas degradadas a 90°.
+      //
+      // 3) Borde y foil trazados como Path (no RRect primitivo):
+      //    Evita cualquier degradación en el pipeline Skia/Impeller.
+      child: AspectRatio(
+        aspectRatio: 2.0 / 3.0,
+        child: Transform(
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.0012)
+            ..rotateX(_rotateX)
+            ..rotateY(_rotateY),
+          alignment: Alignment.center,
+          child: ClipPath(
+            clipper: const _CardClipper(),
+            clipBehavior: Clip.antiAliasWithSaveLayer,
+            child: ColoredBox(
               color: const Color(0xFF141923), // bg-card
-              borderRadius: BorderRadius.circular(16),
-              border: cardBorder,
-              boxShadow: cardShadows,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(15),
               child: Stack(
                 children: [
                   // 1. Efecto Aura por Tier (radial-gradient de `.game .aura-*`).
-                  // Se desplaza con la inclinación pero MENOS que el resto: es
-                  // la capa del fondo, y esa diferencia de recorrido entre
-                  // capas es lo que da la sensación de profundidad real.
+                  // El centro del gradiente se desplaza con la inclinación para
+                  // dar sensación de profundidad física sin mover el contenedor
+                  // ni generar cortes rectangulares en los bordes.
                   Positioned.fill(
-                    child: Transform.translate(
-                      offset: Offset(_rotateY * 90, -_rotateX * 90),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: RadialGradient(center: auraAlignment, radius: 1.2, colors: auraColors),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          center: Alignment(
+                            (auraAlignment.x + (_rotateY / _maxTilt) * 0.35).clamp(-1.0, 1.0),
+                            (auraAlignment.y - (_rotateX / _maxTilt) * 0.35).clamp(-1.0, 1.0),
+                          ),
+                          radius: 1.2,
+                          colors: auraColors,
                         ),
                       ),
                     ),
@@ -358,39 +334,59 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                       ),
                     ),
 
-                  // 5. Contenido de la Carta
+                  // 5. Borde, trazado como path por el mismo motivo que la
+                  // forma: con BoxDecoration se pierde una esquina al
+                  // inclinar la carta.
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: _CardBorderPainter(
+                          color: cardBorder.top.color,
+                          width: cardBorder.top.width,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // 6. Contenido de la Carta
+                  // Vertical 9 y no 10: con la relación de aspecto 2:3 el
+                  // contenido entra justo, y el borde de élite (1,5 px contra
+                  // 1 del resto) se come esa diferencia — la carta élite
+                  // desbordaba por 0,229 px y en debug eso pinta la franja
+                  // amarilla y negra sobre los atributos.
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Fila Superior: Posición (texto puro, sin caja — la web
-                        // usa PlayerPositionBadge textOnly=true, y en el tema
-                        // game el color por posición queda pisado a blanco por
-                        // `.game .player-card [class*="font-bold"]`) y OVR.
+                        // Fila Superior: Badge deportivo de posición & OVR por Tier
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Posición: el código corto, blanco y en negrita.
+                            // El nombre completo vive como marca de agua
+                            // detrás del contenido, así el puesto se lee dos
+                            // veces sin que ninguna de las dos grite.
                             Text(
                               player.position.toUpperCase(),
                               style: AppTypography.headline(
                                 size: 14,
-                                weight: FontWeight.w700,
+                                weight: FontWeight.w800,
                                 color: Colors.white,
+                                letterSpacing: 0.5,
                               ),
                             ),
 
-                            // OVR — también texto blanco puro en tema game (no
-                            // coloreado por tier: mismo pisado de `font-bold`).
+                            // OVR protagónico coloreado por Tier
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
                                   '${player.ovr}',
                                   style: AppTypography.sportNumber(
-                                    size: 36,
-                                    color: Colors.white,
+                                    size: 34,
+                                    color: tierColor,
                                   ),
                                 ),
                                 Text(
@@ -406,9 +402,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                           ],
                         ),
 
-                        // Avatar Circular — 96x96 (h-24 w-24 real) con borde de
-                        // 4px (border-4 real) coloreado por tier; glow solo en
-                        // gold/elite, igual que `photoBorderClasses` en la web.
+                        // Avatar Circular — 96x96 con aro y glow del Tier
                         Stack(
                           alignment: Alignment.bottomCenter,
                           clipBehavior: Clip.none,
@@ -420,7 +414,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: avatarBorderColor.withValues(alpha: avatarBorderAlpha),
-                                  width: 4,
+                                  width: 3,
                                 ),
                                 boxShadow: avatarGlow != null ? [avatarGlow] : null,
                               ),
@@ -508,25 +502,25 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                             children: [
                               Row(
                                 children: [
-                                  Expanded(child: _attributeBox(statsList[0], topKey, posColor, keyStats)),
+                                  Expanded(child: _attributeBox(statsList[0])),
                                   const SizedBox(width: 5),
-                                  Expanded(child: _attributeBox(statsList[1], topKey, posColor, keyStats)),
+                                  Expanded(child: _attributeBox(statsList[1])),
                                 ],
                               ),
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  Expanded(child: _attributeBox(statsList[2], topKey, posColor, keyStats)),
+                                  Expanded(child: _attributeBox(statsList[2])),
                                   const SizedBox(width: 5),
-                                  Expanded(child: _attributeBox(statsList[3], topKey, posColor, keyStats)),
+                                  Expanded(child: _attributeBox(statsList[3])),
                                 ],
                               ),
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  Expanded(child: _attributeBox(statsList[4], topKey, posColor, keyStats)),
+                                  Expanded(child: _attributeBox(statsList[4])),
                                   const SizedBox(width: 5),
-                                  Expanded(child: _attributeBox(statsList[5], topKey, posColor, keyStats)),
+                                  Expanded(child: _attributeBox(statsList[5])),
                                 ],
                               ),
                             ],
@@ -544,24 +538,20 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
     );
   }
 
-  Widget _attributeBox(
-    Map<String, dynamic> stat,
-    String topKey,
-    Color posColor,
-    List<String> keyStats,
-  ) {
+  /// Una fila de la grilla de atributos.
+  ///
+  /// Recibe sólo el atributo: el resaltado por posición y por "atributo más
+  /// alto" se sacaron (no comunicaban nada — en un delantero se prendían RIT
+  /// y TIR sin que eso significara algo), y el color por tier también, porque
+  /// en una carta bronce salían las seis barras marrones sobre oscuro. El
+  /// único resaltado que queda es el del criterio de orden, que sí dice por
+  /// qué la grilla está ordenada así.
+  Widget _attributeBox(Map<String, dynamic> stat) {
     final key = stat['key'] as String;
     final label = stat['label'] as String;
     final val = stat['val'] as int;
     final isSorted = widget.highlightStat == key;
 
-    // Antes se coloreaban dos cosas más, heredadas de la web: la barra del
-    // atributo más alto y la etiqueta de los atributos "clave" de la posición.
-    // Se sacaron porque no comunicaban nada: en un delantero, RIT y TIR salían
-    // los dos en rojo sin que ese rojo significara algo, y con los atributos
-    // parejos el "más alto" caía siempre en el mismo por orden de la lista.
-    // El único resaltado que queda es el del criterio de orden, que sí dice
-    // algo: por qué está ordenada la grilla así.
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
@@ -573,7 +563,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
         border: Border.all(
           color: isSorted
               ? AppColors.voltNeon.withValues(alpha: 0.65)
-              : Colors.white.withValues(alpha: 0.10),
+              : Colors.white.withValues(alpha: 0.08),
           width: isSorted ? 1.2 : 0.8,
         ),
       ),
@@ -587,7 +577,9 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
               style: AppTypography.code(
                 size: 9,
                 weight: FontWeight.w800,
-                color: const Color(0xFF94A3B8),
+                color: isSorted
+                    ? AppColors.voltNeon
+                    : const Color(0xFF94A3B8),
               ),
             ),
           ),
@@ -599,7 +591,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
               borderRadius: BorderRadius.circular(2),
               child: Container(
                 height: 3.5,
-                color: Colors.white.withValues(alpha: 0.15),
+                color: Colors.white.withValues(alpha: 0.12),
                 child: FractionallySizedBox(
                   alignment: Alignment.centerLeft,
                   widthFactor: (val / 99.0).clamp(0.05, 1.0),
@@ -617,7 +609,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
           ),
           const SizedBox(width: 4),
 
-          // Valor Numérico — siempre blanco (font-bold pisado a blanco)
+          // Valor Numérico
           Text(
             '$val',
             style: AppTypography.code(
@@ -630,4 +622,54 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
       ),
     );
   }
+}
+
+/// Clipper exacto por Path para garantizar bordes redondeados (16 px)
+/// suaves y anti-aliaseados bajo cualquier matriz de perspectiva 3D.
+class _CardClipper extends CustomClipper<Path> {
+  const _CardClipper();
+
+  @override
+  Path getClip(Size size) {
+    return Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        Offset.zero & size,
+        const Radius.circular(16),
+      ));
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
+/// El borde de la carta, trazado como path.
+///
+/// No es un capricho: ver la nota en el build. Un borde de `BoxDecoration`
+/// se pierde en una esquina cuando la carta se inclina.
+class _CardBorderPainter extends CustomPainter {
+  final Color color;
+  final double width;
+
+  const _CardBorderPainter({required this.color, required this.width});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // El trazo se centra en el path, así que se mete media pincelada hacia
+    // adentro para que no lo coma el recorte.
+    final rect = Offset.zero & size;
+    final inset = rect.deflate(width / 2);
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(inset, Radius.circular(16 - width / 2)));
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = width
+        ..color = color,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CardBorderPainter old) =>
+      old.color != color || old.width != width;
 }
