@@ -24,6 +24,7 @@ import 'widgets/weather_alert.dart';
 import 'widgets/match_story_view.dart';
 import '../../core/widgets/jersey_painter.dart';
 import '../../core/widgets/parallax_background.dart';
+import '../../core/widgets/player_avatar_fallback.dart';
 
 const _spanishMonths = [
   'ene', 'feb', 'mar', 'abr', 'may', 'jun',
@@ -400,19 +401,9 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
               ],
               if (match.status == 'completed' || match.status == 'evaluated') ...[
                 const SizedBox(height: 20),
-                // Antes esto era una Column suelta entre dos tarjetas: la
-                // figura, la planilla y el relato quedaban flotando sobre el
-                // fondo y el aviso de "cuando todos evalúen" se leía como un
-                // error. Es el mejor contenido de la pantalla; va en tarjeta.
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.card.withValues(alpha: 0.40),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
-                  ),
-                  child: MatchStoryView(match: match),
-                ),
+                // La revista trae su propia hoja: fondo, textura de papel y
+                // tipografía serif. No va dentro de una tarjeta de la app.
+                MatchStoryView(match: match),
               ],
               if (isOwner && match.type == 'manual' && match.status == 'upcoming') ...[
                 const SizedBox(height: 20),
@@ -569,6 +560,12 @@ class _HeroCard extends StatelessWidget {
             ),
           ),
           Positioned.fill(child: ColoredBox(color: theme.brandColor.withValues(alpha: 0.10))),
+          // Scanlines: la textura que la web le pone al hero en el tema
+          // `game`. Casi no se ve y es justamente lo que hace que la foto no
+          // parezca un wallpaper pegado.
+          Positioned.fill(
+            child: IgnorePointer(child: CustomPaint(painter: _ScanlinesPainter())),
+          ),
           Padding(
             padding: const EdgeInsets.all(18),
             child: Column(
@@ -746,6 +743,22 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
+/// Líneas horizontales finísimas sobre el hero, como una pantalla vieja.
+class _ScanlinesPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.09)
+      ..strokeWidth = 1;
+    for (double y = 0; y < size.height; y += 4) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 /// Chip de estado del partido, arriba a la derecha del hero.
 ///
 /// El chip de la izquierda dice el TIPO (Amistoso, Por Equipos...). Sin este,
@@ -893,7 +906,13 @@ class _PlayersConfirmedRoster extends StatelessWidget {
   }
 }
 
-/// Port simplificado de MatchTeams: 2 columnas con jersey + roster de cada equipo.
+/// Los equipos, sin tarjeta.
+///
+/// La web (`MatchTeams`) no los encierra en una caja: los deja sueltos sobre
+/// el fondo, con el nombre del equipo repetido enorme por detrás como marca
+/// de agua y los jugadores en mosaico. Es lo que hace que se lean como dos
+/// planteles y no como una lista de nombres, que es en lo que se había
+/// convertido acá.
 class _TeamsRoster extends StatelessWidget {
   final MatchModel match;
 
@@ -901,67 +920,190 @@ class _TeamsRoster extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      // Translúcida sobre el fondo de cancha: opaca se leía como un parche
-      // gris. Es el mismo `bg-card/40` que usan el header y Explorar.
-      decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.40),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Equipos Generados', style: AppTypography.headline(size: 15)),
-          const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: _TeamColumn(team: match.teamA!)),
-              const SizedBox(width: 12),
-              Expanded(child: _TeamColumn(team: match.teamB!)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TeamColumn extends StatelessWidget {
-  final MatchTeam team;
-
-  const _TeamColumn({required this.team});
-
-  @override
-  Widget build(BuildContext context) {
+    final teams = [match.teamA!, match.teamB!];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            if (team.jersey != null) JerseyWidget(jersey: team.jersey!, size: 28),
+            Text('Equipos', style: AppTypography.headline(size: 17, weight: FontWeight.w900)),
             const SizedBox(width: 8),
-            Expanded(child: Text(team.name, style: AppTypography.body(size: 13, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis)),
+            Text(
+              '${match.players.length} JUGADORES',
+              style: AppTypography.code(
+                      size: 9, weight: FontWeight.w700, color: AppColors.textMuted)
+                  .copyWith(letterSpacing: 1.6),
+            ),
           ],
         ),
-        const SizedBox(height: 8),
-        ...team.players.map((p) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(p.displayName, style: AppTypography.body(size: 11, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  ),
-                  Text(p.position, style: AppTypography.code(size: 9, weight: FontWeight.w700, color: AppColors.getPositionColor(p.position))),
-                ],
-              ),
-            )),
+        for (final team in teams) ...[
+          const SizedBox(height: 22),
+          _TeamBlock(team: team, match: match),
+        ],
       ],
     );
   }
 }
+
+class _TeamBlock extends StatelessWidget {
+  final MatchTeam team;
+  final MatchModel match;
+
+  const _TeamBlock({required this.team, required this.match});
+
+  /// La foto no siempre viaja dentro de `teams[].players`; la del roster del
+  /// partido sí. Mismo cruce que hace la web.
+  String? _photoOf(MatchPlayerEntry p) {
+    if (p.photoURL != null && p.photoURL!.isNotEmpty) return p.photoURL;
+    for (final mp in match.players) {
+      if (mp.uid == p.uid && mp.photoURL != null && mp.photoURL!.isNotEmpty) {
+        return mp.photoURL;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final players = [...team.players]..sort((a, b) => b.ovr.compareTo(a.ovr));
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // Marca de agua: el nombre del equipo en itálica pesada, recortado por
+        // el ancho. Da fondo sin necesitar una caja.
+        Positioned(
+          left: -6,
+          top: -24,
+          right: 0,
+          child: IgnorePointer(
+            child: ClipRect(
+              child: Text(
+                team.name.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.clip,
+                softWrap: false,
+                style: AppTypography.headline(
+                  size: 54,
+                  weight: FontWeight.w900,
+                  color: Colors.white.withValues(alpha: 0.06),
+                ).copyWith(fontStyle: FontStyle.italic, letterSpacing: -2, height: 1),
+              ),
+            ),
+          ),
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (team.jersey != null)
+                  JerseyWidget(jersey: team.jersey!, size: 44)
+                else
+                  Icon(Icons.checkroom, size: 38, color: AppColors.textMuted),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        team.name.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.headline(size: 19, weight: FontWeight.w900)
+                            .copyWith(letterSpacing: -0.4),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${team.players.length} JUGADORES',
+                        style: AppTypography.code(
+                                size: 8.5, weight: FontWeight.w700, color: AppColors.textMuted)
+                            .copyWith(letterSpacing: 1.6),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Mosaico de dos columnas, como la web.
+            for (var i = 0; i < players.length; i += 2)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                        child: _MosaicPlayer(player: players[i], photo: _photoOf(players[i]))),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: i + 1 < players.length
+                          ? _MosaicPlayer(
+                              player: players[i + 1], photo: _photoOf(players[i + 1]))
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _MosaicPlayer extends StatelessWidget {
+  final MatchPlayerEntry player;
+  final String? photo;
+
+  const _MosaicPlayer({required this.player, required this.photo});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 32,
+          height: 32,
+          child: ClipOval(
+            child: (photo == null || photo!.isEmpty)
+                ? PlayerAvatarFallback(seed: player.uid.isNotEmpty ? player.uid : player.displayName)
+                : Image.network(
+                    photo!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, error, stack) => PlayerAvatarFallback(
+                        seed: player.uid.isNotEmpty ? player.uid : player.displayName),
+                  ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                player.displayName.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.headline(size: 11.5, weight: FontWeight.w700)
+                    .copyWith(letterSpacing: -0.2),
+              ),
+              Text(
+                player.position,
+                style: AppTypography.code(
+                    size: 8.5,
+                    weight: FontWeight.w700,
+                    color: AppColors.getPositionColor(player.position)),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 
 class _ManagementActions extends StatelessWidget {
   final MatchModel match;
@@ -995,19 +1137,16 @@ class _ManagementActions extends StatelessWidget {
     final hasTeams = match.teamA != null && match.teamB != null;
     final canShuffle = !isCompetition && match.type != 'intergroup_friendly' && match.status != 'evaluated';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      // Translúcida sobre el fondo de cancha: opaca se leía como un parche
-      // gris. Es el mismo `bg-card/40` que usan el header y Explorar.
-      decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.40),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
-      ),
+    // Sin tarjeta: son herramientas del organizador, no contenido del
+    // partido. La web las deja igual, como un título y botones sueltos, y así
+    // no compiten con el relato ni con los equipos.
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Acciones', style: AppTypography.headline(size: 15)),
+          Text('Acciones',
+              style: AppTypography.headline(size: 15, weight: FontWeight.w800)),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
